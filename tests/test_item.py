@@ -262,12 +262,12 @@ class ItemTest(unittest.TestCase):
         """Make sure the DictItem deprecation warning is not issued for
         Item"""
         with catch_warnings(record=True) as warnings:
-            item = Item()
+            Item()
             self.assertEqual(len(warnings), 0)
 
             class SubclassedItem(Item):
                 pass
-            subclassed_item = SubclassedItem()
+            SubclassedItem()
             self.assertEqual(len(warnings), 0)
 
 
@@ -319,13 +319,13 @@ class DictItemTest(unittest.TestCase):
 
     def test_deprecation_warning(self):
         with catch_warnings(record=True) as warnings:
-            dict_item = DictItem()
+            DictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         with catch_warnings(record=True) as warnings:
             class SubclassedDictItem(DictItem):
                 pass
-            subclassed_dict_item = SubclassedDictItem()
+            SubclassedDictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
