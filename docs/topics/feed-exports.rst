@@ -437,24 +437,27 @@ FEED_STORAGE_BATCH_ITEM_COUNT
 ----------------------
 Default: ``None``
 
-An integer number which represent number of scraped items stored in each output
+An integer number that represents the number of scraped items stored in each output
 file. Whenever the number of items exceeds this setting, a new file is
-created and output redirects to it.  The name of the new file will be selected
-based on timestamp when the feed is being created and/or batch sequence number.
-Therefore you must specify %(batch_time)s or %(batch_id)s or both in FEED_URI.
+created and the output is redirected to it.  The name of the new file will be selected
+based on the timestamp when the feed is being created and/or on the batch sequence number.
+Therefore you must specify %(batch_time)s or %(batch_id)s or both in :setting:`FEED_URI`.
 
 * ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
-* ``%(batch_id)s`` - gets replaced by sequence number of batch
+(e.g. `2020-03-28T14-45-08.237134`)
 
-For instance::
+* ``%(batch_id)s`` - gets replaced by the batch  sequence number of batch
+(e.g. `2` for the second file)
+
+For instance, if your settings include::
 
     FEED_STORAGE_BATCH_ITEM_COUNT=100
 
-Your request can be like::
+And your :command:`crawl` command line is::
 
   scrapy crawl spidername -o dirname/%(batch_id)s-filename%(batch_time)s.json
 
-The result directory tree of above can be like::
+The resulting directory tree of above can be like::
 
 ->projectname
 -->dirname
@@ -462,5 +465,5 @@ The result directory tree of above can be like::
 --->2-filename2020-03-28T14-45-09.148903.json
 --->3-filename2020-03-28T14-45-10.046092.json
 
-Where first and second files contain exactly 100 items. The last one contains
+Where the first and second files contain exactly 100 items. The last one contains
 <= 100 items.

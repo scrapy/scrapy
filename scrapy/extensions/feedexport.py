@@ -25,6 +25,7 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -337,9 +338,9 @@ class FeedExporter:
                     spider=spider,
                     template_uri=slot.template_uri,
                 ))
-                self.slots[idx] = None
-        self.slots = [slot for slot in self.slots if slot is not None]
-        self.slots.extend(slots)
+            else:
+                slots.append(slot)
+        self.slots = slots
 
     def _load_components(self, setting_prefix):
         conf = without_none_values(self.settings.getwithbase(setting_prefix))
