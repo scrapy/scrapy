@@ -444,10 +444,10 @@ based on the timestamp when the feed is being created and/or on the batch sequen
 Therefore you must specify %(batch_time)s or %(batch_id)s or both in :setting:`FEED_URI`.
 
 * ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
-(e.g. `2020-03-28T14-45-08.237134`)
+  (e.g. `2020-03-28T14-45-08.237134`)
 
 * ``%(batch_id)s`` - gets replaced by the batch  sequence number of batch
-(e.g. `2` for the second file)
+  (e.g. `2` for the second file)
 
 For instance, if your settings include::
 
