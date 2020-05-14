@@ -46,9 +46,10 @@ class RFC2616Policy:
     def __init__(self, settings):
         self.always_store = settings.getbool('HTTPCACHE_ALWAYS_STORE')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_response_cache_controls = [to_bytes(cc) for cc in
-            settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')]
         self._cc_parsed = WeakKeyDictionary()
+        self.ignore_response_cache_controls = [
+            to_bytes(cc) for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
+        ]
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:

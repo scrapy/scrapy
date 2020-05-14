@@ -20,7 +20,7 @@ class SendCatchLogTest(unittest.TestCase):
 
         dispatcher.connect(self.error_handler, signal=test_signal)
         dispatcher.connect(self.ok_handler, signal=test_signal)
-        with LogCapture() as l:
+        with LogCapture() as log:
             result = yield defer.maybeDeferred(
                 self._get_result, test_signal, arg='test',
                 handlers_called=handlers_called
@@ -28,8 +28,8 @@ class SendCatchLogTest(unittest.TestCase):
 
         assert self.error_handler in handlers_called
         assert self.ok_handler in handlers_called
-        self.assertEqual(len(l.records), 1)
-        record = l.records[0]
+        self.assertEqual(len(log.records), 1)
+        record = log.records[0]
         self.assertIn('error_handler', record.getMessage())
         self.assertEqual(record.levelname, 'ERROR')
         self.assertEqual(result[0][0], self.error_handler)
@@ -95,8 +95,8 @@ class SendCatchLogTest2(unittest.TestCase):
 
         test_signal = object()
         dispatcher.connect(test_handler, test_signal)
-        with LogCapture() as l:
+        with LogCapture() as log:
             send_catch_log(test_signal)
-        self.assertEqual(len(l.records), 1)
-        self.assertIn("Cannot return deferreds from signal handler", str(l))
+        self.assertEqual(len(log.records), 1)
+        self.assertIn("Cannot return deferreds from signal handler", str(log))
         dispatcher.disconnect(test_handler, test_signal)

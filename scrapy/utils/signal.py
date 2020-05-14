@@ -28,8 +28,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     responses = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         try:
-            response = robustApply(receiver, signal=signal, sender=sender,
-                *arguments, **named)
+            response = robustApply(receiver, signal=signal, sender=sender, *arguments, **named)
             if isinstance(response, Deferred):
                 logger.error("Cannot return deferreds from signal handler: %(receiver)s",
                              {'receiver': receiver}, extra={'spider': spider})
@@ -63,8 +62,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     spider = named.get('spider', None)
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        d = maybeDeferred_coro(robustApply, receiver, signal=signal, sender=sender,
-                *arguments, **named)
+        d = maybeDeferred_coro(robustApply, receiver, signal=signal, sender=sender, *arguments, **named)
         d.addErrback(logerror, receiver)
         d.addBoth(lambda result: (receiver, result))
         dfds.append(d)
