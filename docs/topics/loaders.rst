@@ -99,6 +99,48 @@ it can be define as a default processor through
     please refer to itemloaders_ documentation.
 
 
+Declaring field processors
+==========================
+
+Besides defining field processors as ``_in``/``_out`` attributes in
+Item Loaders, scrapy allows to define these functions in
+:ref:`Items <topics-items>`.
+In this case, each ``Item`` field declares it's own ``input_processor`` and
+``output_processor`` as in the example below::
+
+    import scrapy
+    from itemloaders.processors import Join, MapCompose, TakeFirst
+    from w3lib.html import remove_tags
+
+    def filter_price(value):
+        if value.isdigit():
+            return value
+
+    class Product(scrapy.Item):
+        name = scrapy.Field(
+            input_processor=MapCompose(remove_tags),
+            output_processor=Join(),
+        )
+        price = scrapy.Field(
+            input_processor=MapCompose(remove_tags, filter_price),
+            output_processor=TakeFirst(),
+        )
+
+    >>> from scrapy.loader import ItemLoader
+    >>> il = ItemLoader(item=Product())
+    >>> il.add_value('name', ['Welcome to my', u'<strong>website</strong>'])
+    >>> il.add_value('price', ['&euro;', u'<span>1000</span>'])
+    >>> il.load_item()
+    {'name': 'Welcome to my website', 'price': '1000'}
+
+The precedence order, for both input and output processors, is as follows:	
+
+1. Item Loader field-specific attributes: ``field_in`` and ``field_out`` (most	
+   precedence)	
+2. Field metadata (``input_processor`` and ``output_processor`` key)
+3. Item Loader defaults: :meth:`ItemLoader.default_input_processor` and	
+   :meth:`ItemLoader.default_output_processor` (least precedence)	
+
 ItemLoader objects
 ==================
 
