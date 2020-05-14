@@ -753,17 +753,12 @@ class FeedExportTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
-        items = [
-            self.MyItem({'foo': 'FOO', 'egg': 'EGG'}),
-            self.MyItem2({'hello': 'world', 'foo': 'bar'}),
-        ]
+        items = [dict({'foo': u'FOO', 'bar': u'BAR'})]
 
         formats = {
-            'json': u'[\n{"foo": "FOO"},\n{"foo": "bar"}\n]'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <egg>EGG</egg>\n  </item>\n  <item>\n  </item>\n</items>'.encode('latin-1'),
-            'csv': u'egg,hello\r\nEGG,\r\n,world\r\n'.encode('utf-8'),
-            'jsonlines': u'{"foo": "FOO", "egg": "EGG"}\n'.encode('utf-8'),
-
+            'json': u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
+            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
+            'csv': u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
         }
 
         settings = {
@@ -771,25 +766,48 @@ class FeedExportTest(unittest.TestCase):
                 self._random_temp_filename(): {
                     'format': 'json',
                     'indent': 0,
-                    'fields': ['foo'],
+                    'fields': ['bar'],
                     'encoding': 'utf-8',
                 },
                 self._random_temp_filename(): {
                     'format': 'xml',
                     'indent': 2,
-                    'fields': ['egg'],
+                    'fields': ['foo'],
                     'encoding': 'latin-1',
                 },
                 self._random_temp_filename(): {
                     'format': 'csv',
                     'indent': None,
-                    'fields': ['egg', 'hello'],
+                    'fields': ['bar', 'foo'],
                     'encoding': 'utf-8',
+                },
+            },
+        }
+
+        data = yield self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            self.assertEqual(expected, data[fmt])
+
+    @defer.inlineCallbacks
+    def test_export_based_on_item_class(self):
+        items = [
+            self.MyItem({'foo': 'FOO', 'egg': 'EGG'}),
+            self.MyItem2({'hello': 'world', 'foo': 'bar'}),
+        ]
+
+        formats = {
+            'json': b'[\n{"foo": "FOO", "egg": "EGG"},\n{"hello": "world", "foo": "bar"}\n]',
+            'jsonlines': b'{"foo": "FOO", "egg": "EGG"}\n',
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'json'
                 },
                 self._random_temp_filename(): {
                     'format': 'jsonlines',
-                    'items': [self.MyItem],
-                    'encoding': 'utf-8',
+                    'item_classes': self.MyItem
                 },
             },
         }

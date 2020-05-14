@@ -245,7 +245,7 @@ For instance::
         'items.json': {
             'format': 'json',
             'encoding': 'utf8',
-            'items': [Product]
+            'item_classes': [Product]
             'fields': None,
             'indent': 4,
             'store_empty': False,
@@ -269,7 +269,7 @@ as a fallback value if that key is not provided for a specific feed definition.
   See :ref:`topics-feed-format` for possible values. 
   Mandatory, no fallback setting
 * ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`
-* ``items``: no fallback setting, defaults to ``None`` (which will include all item classes)
+* ``item_classes``: no fallback setting, defaults to ``None`` (which will include all item classes)
 * ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
 * ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
 * ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`

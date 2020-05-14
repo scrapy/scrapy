@@ -255,7 +255,7 @@ class FeedExporter:
             exporter = self._get_exporter(
                 file=file,
                 format=feed['format'],
-                items_to_export=feed['items'],
+                item_classes_to_export=feed['item_classes'],
                 fields_to_export=feed['fields'],
                 encoding=feed['encoding'],
                 indent=feed['indent'],
