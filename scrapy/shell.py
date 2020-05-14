@@ -146,14 +146,13 @@ class Shell:
         b.append("Useful shortcuts:")
         if self.inthread:
             b.append("  fetch(url[, redirect=True]) "
-                     "Fetch URL and update local objects "
-                     "(by default, redirects are followed)")
+                     "Fetch URL and update local objects (by default, redirects are followed)")
             b.append("  fetch(req)                  "
                      "Fetch a scrapy.Request and update local objects ")
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join("[s] %s" % l for l in b)
+        return "\n".join("[s] %s" % line for line in b)
 
     def _is_relevant(self, value):
         return isinstance(value, self.relevant_classes)

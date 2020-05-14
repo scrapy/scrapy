@@ -96,5 +96,4 @@ def iterloc(it, alt=False):
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and 'alternate' in d:
-            for l in d['alternate']:
-                yield l
+            yield from d['alternate']
