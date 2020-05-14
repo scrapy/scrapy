@@ -16,7 +16,8 @@ def wrap_loader_context(function, context):
     warnings.warn(
         "scrapy.loader.common.wrap_loader_context has moved to a new library."
         "Please update your reference to itemloaders.common.wrap_loader_context",
-        ScrapyDeprecationWarning
+        ScrapyDeprecationWarning,
+        stacklevel=2
     )
 
     return common.wrap_loader_context(function, context)
