@@ -152,6 +152,7 @@ def memoizemethod_noargs(method):
     weak reference to its object
     """
     cache = weakref.WeakKeyDictionary()
+
     @wraps(method)
     def new_method(self, *args, **kwargs):
         if self not in cache:
