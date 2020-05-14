@@ -37,7 +37,7 @@ class TopLevelFormatter(logging.Filter):
         self.loggers = loggers or []
 
     def filter(self, record):
-        if any(record.name.startswith(l + '.') for l in self.loggers):
+        if any(record.name.startswith(logger + '.') for logger in self.loggers):
             record.name = record.name.split('.', 1)[0]
         return True
 

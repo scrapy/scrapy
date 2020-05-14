@@ -160,7 +160,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             shutil.rmtree(path)
 
     def test_log(self):
-        with LogCapture() as l:
+        with LogCapture() as log:
             settings = {'DUPEFILTER_DEBUG': False,
                         'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
@@ -177,7 +177,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r2, spider)
 
             assert crawler.stats.get_value('dupefilter/filtered') == 2
-            l.check_present(
+            log.check_present(
                 (
                     'scrapy.dupefilters',
                     'DEBUG',
@@ -188,7 +188,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.close('finished')
 
     def test_log_debug(self):
-        with LogCapture() as l:
+        with LogCapture() as log:
             settings = {'DUPEFILTER_DEBUG': True,
                         'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
@@ -206,14 +206,14 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r2, spider)
 
             assert crawler.stats.get_value('dupefilter/filtered') == 2
-            l.check_present(
+            log.check_present(
                 (
                     'scrapy.dupefilters',
                     'DEBUG',
                     'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: None)'
                 )
             )
-            l.check_present(
+            log.check_present(
                 (
                     'scrapy.dupefilters',
                     'DEBUG',
