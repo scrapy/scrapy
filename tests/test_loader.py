@@ -622,7 +622,7 @@ class NoInputReprocessingItemLoader(BaseNoInputReprocessingLoader):
 
 class NoInputReprocessingFromItemTest(unittest.TestCase):
     """
-    Loaders initialized from loaded items must not reprocess fields (BaseItem instances)
+    Loaders initialized from loaded items must not reprocess fields (Item instances)
     """
     def test_avoid_reprocessing_with_initial_values_single(self):
         il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title='foo'))

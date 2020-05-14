@@ -52,8 +52,8 @@ class XMLFeedSpider(Spider):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an Selector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a BaseItem, a dict, a dataclass,
-        a Request, or a list containing any of them.
+        This method must return either an item, a request, or a list
+        containing any of them.
         """
 
         for selector in nodes:

@@ -10,10 +10,10 @@ import pprint
 import warnings
 from xml.sax.saxutils import XMLGenerator
 
-from itemadapter import ItemAdapter
+from itemadapter import ItemAdapter, is_item
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
@@ -305,6 +305,7 @@ class PythonItemExporter(BaseItemExporter):
 
     .. _msgpack: https://pypi.org/project/msgpack/
     """
+
     def _configure(self, options, dont_fail=False):
         self.binary = options.pop('binary', True)
         super(PythonItemExporter, self)._configure(options, dont_fail)
@@ -320,18 +321,18 @@ class PythonItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _serialize_value(self, value):
-        if isinstance(value, BaseItem):
+        if isinstance(value, _BaseItem):
             return self.export_item(value)
-        if isinstance(value, dict):
-            return dict(self._serialize_dict(value))
-        if is_listlike(value):
+        elif is_item(value):
+            return dict(self._serialize_item(value))
+        elif is_listlike(value):
             return [self._serialize_value(v) for v in value]
         encode_func = to_bytes if self.binary else to_unicode
         if isinstance(value, (str, bytes)):
             return encode_func(value, encoding=self.encoding)
         return value
 
-    def _serialize_dict(self, value):
+    def _serialize_item(self, value):
         for key, val in value.items():
             key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(val)
@@ -339,5 +340,5 @@ class PythonItemExporter(BaseItemExporter):
     def export_item(self, item):
         result = dict(self._get_serialized_fields(item))
         if self.binary:
-            result = dict(self._serialize_dict(result))
+            result = dict(self._serialize_item(result))
         return result
