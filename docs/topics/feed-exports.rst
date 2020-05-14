@@ -245,13 +245,14 @@ For instance::
         'items.json': {
             'format': 'json',
             'encoding': 'utf8',
-            'item_classes': [Product]
+            'item_classes': (ProductItemClass, AnotherItemClass)
             'fields': None,
             'indent': 4,
             'store_empty': False,
         }, 
         '/home/user/documents/items.xml': {
             'format': 'xml',
+            'item_classes': ProductItemClass
             'fields': ['name', 'price'],
             'encoding': 'latin1',
             'indent': 8,
