@@ -753,8 +753,6 @@ class FeedExportTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
-        items = [dict({'foo': u'FOO', 'bar': u'BAR'})]
-
         items = [
             self.MyItem({'foo': 'FOO', 'egg': 'EGG'}),
             self.MyItem2({'hello': 'world', 'foo': 'bar'}),
