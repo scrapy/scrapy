@@ -172,9 +172,9 @@ class Base:
             self.assertEqual(lx.matches(url1), False)
             self.assertEqual(lx.matches(url2), True)
 
-            lx = self.extractor_cls(allow=('blah1',), deny=('blah2',),
-                                   allow_domains=('blah1.com',),
-                                   deny_domains=('blah2.com',))
+            lx = self.extractor_cls(allow=['blah1'], deny=['blah2'],
+                                    allow_domains=['blah1.com'],
+                                    deny_domains=['blah2.com'])
             self.assertEqual(lx.matches('http://blah1.com/blah1'), True)
             self.assertEqual(lx.matches('http://blah1.com/blah2'), False)
             self.assertEqual(lx.matches('http://blah2.com/blah1'), False)

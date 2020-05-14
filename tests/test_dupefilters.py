@@ -177,10 +177,13 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r2, spider)
 
             assert crawler.stats.get_value('dupefilter/filtered') == 2
-            log.check_present(('scrapy.dupefilters', 'DEBUG',
-                ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
-                ' - no more duplicates will be shown'
-                ' (see DUPEFILTER_DEBUG to show all duplicates)')))
+            log.check_present(
+                (
+                    'scrapy.dupefilters',
+                    'DEBUG',
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> - no more duplicates will be shown (see DUPEFILTER_DEBUG to show all duplicates)'
+                )
+            )
 
             dupefilter.close('finished')
 
@@ -203,11 +206,19 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r2, spider)
 
             assert crawler.stats.get_value('dupefilter/filtered') == 2
-            log.check_present(('scrapy.dupefilters', 'DEBUG',
-                ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
-                ' (referer: None)')))
-            log.check_present(('scrapy.dupefilters', 'DEBUG',
-                ('Filtered duplicate request: <GET http://scrapytest.org/index.html>'
-                ' (referer: http://scrapytest.org/INDEX.html)')))
+            log.check_present(
+                (
+                    'scrapy.dupefilters',
+                    'DEBUG',
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: None)'
+                )
+            )
+            log.check_present(
+                (
+                    'scrapy.dupefilters',
+                    'DEBUG',
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: http://scrapytest.org/INDEX.html)'
+                )
+            )
 
             dupefilter.close('finished')

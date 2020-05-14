@@ -22,8 +22,13 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>""")
         assert s.type == 'urlset'
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'}, {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'}])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'},
+            ]
+        )
 
     def test_sitemap_index(self):
         s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>

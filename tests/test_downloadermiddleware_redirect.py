@@ -70,7 +70,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
         req = Request(url, method='POST', body='test',
-            headers={'Content-Type': 'text/plain', 'Content-length': '4'})
+                      headers={'Content-Type': 'text/plain', 'Content-length': '4'})
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)

@@ -33,29 +33,29 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None,
-            help="use this spider without looking for one")
+                          help="use this spider without looking for one")
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
-            help="set spider argument (may be repeated)")
+                          help="set spider argument (may be repeated)")
         parser.add_option("--pipelines", action="store_true",
-            help="process items through pipelines")
+                          help="process items through pipelines")
         parser.add_option("--nolinks", dest="nolinks", action="store_true",
-            help="don't show links to follow (extracted requests)")
+                          help="don't show links to follow (extracted requests)")
         parser.add_option("--noitems", dest="noitems", action="store_true",
-            help="don't show scraped items")
+                          help="don't show scraped items")
         parser.add_option("--nocolour", dest="nocolour", action="store_true",
-            help="avoid using pygments to colorize the output")
+                          help="avoid using pygments to colorize the output")
         parser.add_option("-r", "--rules", dest="rules", action="store_true",
-            help="use CrawlSpider rules to discover the callback")
+                          help="use CrawlSpider rules to discover the callback")
         parser.add_option("-c", "--callback", dest="callback",
-            help="use this callback for parsing, instead looking for a callback")
+                          help="use this callback for parsing, instead looking for a callback")
         parser.add_option("-m", "--meta", dest="meta",
-            help="inject extra meta into the Request, it must be a valid raw json string")
+                          help="inject extra meta into the Request, it must be a valid raw json string")
         parser.add_option("--cbkwargs", dest="cbkwargs",
-            help="inject extra callback kwargs into the Request, it must be a valid raw json string")
+                          help="inject extra callback kwargs into the Request, it must be a valid raw json string")
         parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
-            help="maximum depth for parsing requests [default: %default]")
+                          help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
-            help="print each depth level one by one")
+                          help="print each depth level one by one")
 
     @property
     def max_level(self):

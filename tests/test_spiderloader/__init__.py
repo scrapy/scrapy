@@ -40,7 +40,8 @@ class SpiderLoaderTest(unittest.TestCase):
         verifyObject(ISpiderLoader, self.spider_loader)
 
     def test_list(self):
-        self.assertEqual(set(self.spider_loader.list()),
+        self.assertEqual(
+            set(self.spider_loader.list()),
             set(['spider1', 'spider2', 'spider3', 'spider4']))
 
     def test_load(self):
@@ -48,17 +49,23 @@ class SpiderLoaderTest(unittest.TestCase):
         self.assertEqual(spider1.__name__, 'Spider1')
 
     def test_find_by_request(self):
-        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy1.org/test')),
+        self.assertEqual(
+            self.spider_loader.find_by_request(Request('http://scrapy1.org/test')),
             ['spider1'])
-        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy2.org/test')),
+        self.assertEqual(
+            self.spider_loader.find_by_request(Request('http://scrapy2.org/test')),
             ['spider2'])
-        self.assertEqual(set(self.spider_loader.find_by_request(Request('http://scrapy3.org/test'))),
+        self.assertEqual(
+            set(self.spider_loader.find_by_request(Request('http://scrapy3.org/test'))),
             set(['spider1', 'spider2']))
-        self.assertEqual(self.spider_loader.find_by_request(Request('http://scrapy999.org/test')),
+        self.assertEqual(
+            self.spider_loader.find_by_request(Request('http://scrapy999.org/test')),
             [])
-        self.assertEqual(self.spider_loader.find_by_request(Request('http://spider3.com')),
+        self.assertEqual(
+            self.spider_loader.find_by_request(Request('http://spider3.com')),
             [])
-        self.assertEqual(self.spider_loader.find_by_request(Request('http://spider3.com/onlythis')),
+        self.assertEqual(
+            self.spider_loader.find_by_request(Request('http://spider3.com/onlythis')),
             ['spider3'])
 
     def test_load_spider_module(self):
