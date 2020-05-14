@@ -834,6 +834,10 @@ TextResponse objects
 
     .. automethod:: TextResponse.follow_all
 
+    .. automethod:: Response.json()
+
+        Returns a Python object from deserialized JSON document.
+        Result is cached after the first call.
 
 HtmlResponse objects
 --------------------

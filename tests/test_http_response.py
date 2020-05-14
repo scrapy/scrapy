@@ -672,12 +672,17 @@ class TextResponseTest(BaseResponseTest):
     def test_json_response(self):
         json_body = b"""{"ip": "109.187.217.200"}"""
         json_response = self.response_class("http://www.example.com", body=json_body)
-        self.assertEqual(json_response.json, {'ip': '109.187.217.200'})
+        self.assertEqual(json_response.json(), {'ip': '109.187.217.200'})
+
+        json_body = b"""null"""
+        json_response = self.response_class("http://www.example.com", body=json_body)
+        _NONE = object()
+        self.assertNotEqual(json_response.json(), _NONE)
 
         text_body = b'''<html><body>text</body></html>'''
         text_response = self.response_class("http://www.example.com", body=text_body)
         with self.assertRaises(ValueError):
-            text_response.json
+            text_response.json()
 
 
 class HtmlResponseTest(TextResponseTest):
