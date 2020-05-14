@@ -36,6 +36,47 @@ class ItemLoader(itemloaders.ItemLoader):
 
     The item, selector, response and the remaining keyword arguments are
     assigned to the Loader context (accessible through the :attr:`context` attribute).
+
+    .. attribute:: item
+
+        The item object being parsed by this Item Loader.
+        This is mostly used as a property so when attempting to override this
+        value, you may want to check out :attr:`default_item_class` first.
+
+    .. attribute:: context
+
+        The currently active :ref:`Context <loaders-context>` of this Item Loader.
+        Refer to <loaders-context> for more information about the Loader Context.
+
+    .. attribute:: default_item_class
+
+        An Item class (or factory), used to instantiate items when not given in
+        the ``__init__`` method.
+
+    .. attribute:: default_input_processor
+
+        The default input processor to use for those fields which don't specify
+        one.
+
+    .. attribute:: default_output_processor
+
+        The default output processor to use for those fields which don't specify
+        one.
+
+    .. attribute:: default_selector_class	
+
+        The class used to construct the :attr:`selector` of this	
+        :class:`ItemLoader`, if only a response is given in the ``__init__`` method.	
+        If a selector is given in the ``__init__`` method this attribute is ignored.	
+        This attribute is sometimes overridden in subclasses.
+
+    .. attribute:: selector
+
+        The :class:`~scrapy.selector.Selector` object to extract data from.	
+        It's either the selector given in the ``__init__`` method or one created from	
+        the response given in the ``__init__`` method using the	
+        :attr:`default_selector_class`. This attribute is meant to be	
+        read-only.
     """
 
     default_item_class = Item
