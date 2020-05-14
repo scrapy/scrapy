@@ -54,6 +54,9 @@ class BaseItemExporter:
         pass
 
     def _is_export_item(self, item):
+        """Determine whether or not an item should be exported
+        based on the 'items' key in FEEDS
+        """
         if self.items_to_export is None:
             return True
         elif type(item) in self.items_to_export:
