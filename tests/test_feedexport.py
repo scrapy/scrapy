@@ -397,6 +397,10 @@ class FeedExportTest(unittest.TestCase):
         egg = scrapy.Field()
         baz = scrapy.Field()
 
+    class MyItem2(scrapy.Item):
+        foo = scrapy.Field()
+        hello = scrapy.Field()
+
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
 
@@ -626,13 +630,9 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
 
-        class MyItem2(scrapy.Item):
-            foo = scrapy.Field()
-            hello = scrapy.Field()
-
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
-            MyItem2({'hello': 'world2', 'foo': 'bar2'}),
+            self.MyItem2({'hello': 'world2', 'foo': 'bar2'}),
             self.MyItem({'foo': 'bar3', 'egg': 'spam3', 'baz': 'quux3'}),
             {'hello': 'world4', 'egg': 'spam4'},
         ]
@@ -755,10 +755,17 @@ class FeedExportTest(unittest.TestCase):
     def test_export_multiple_configs(self):
         items = [dict({'foo': u'FOO', 'bar': u'BAR'})]
 
+        items = [
+            self.MyItem({'foo': 'FOO', 'egg': 'EGG'}),
+            self.MyItem2({'hello': 'world', 'foo': 'bar'}),
+        ]
+
         formats = {
-            'json': u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
-            'csv': u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
+            'json': u'[\n{"foo": "FOO"},\n{"foo": "bar"}\n]'.encode('utf-8'),
+            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <egg>EGG</egg>\n  </item>\n  <item>\n  </item>\n</items>'.encode('latin-1'),
+            'csv': u'egg,hello\r\nEGG,\r\n,world\r\n'.encode('utf-8'),
+            'jsonlines': u'{"foo": "FOO", "egg": "EGG"}\n'.encode('utf-8'),
+
         }
 
         settings = {
@@ -766,19 +773,24 @@ class FeedExportTest(unittest.TestCase):
                 self._random_temp_filename(): {
                     'format': 'json',
                     'indent': 0,
-                    'fields': ['bar'],
+                    'fields': ['foo'],
                     'encoding': 'utf-8',
                 },
                 self._random_temp_filename(): {
                     'format': 'xml',
                     'indent': 2,
-                    'fields': ['foo'],
+                    'fields': ['egg'],
                     'encoding': 'latin-1',
                 },
                 self._random_temp_filename(): {
                     'format': 'csv',
                     'indent': None,
-                    'fields': ['bar', 'foo'],
+                    'fields': ['egg', 'hello'],
+                    'encoding': 'utf-8',
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'items': [self.MyItem],
                     'encoding': 'utf-8',
                 },
             },

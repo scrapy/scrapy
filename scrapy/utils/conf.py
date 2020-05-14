@@ -114,6 +114,7 @@ def get_sources(use_closest=True):
 def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
+    out.setdefault("items", None)
     out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
     out.setdefault("uri_params", settings["FEED_URI_PARAMS"])

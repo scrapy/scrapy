@@ -33,6 +33,7 @@ class BaseItemExporter:
         (useful for using with keyword arguments in subclasses ``__init__`` methods)
         """
         self.encoding = options.pop('encoding', None)
+        self.items_to_export = options.pop('items_to_export', None)
         self.fields_to_export = options.pop('fields_to_export', None)
         self.export_empty_fields = options.pop('export_empty_fields', False)
         self.indent = options.pop('indent', None)
@@ -51,6 +52,14 @@ class BaseItemExporter:
 
     def finish_exporting(self):
         pass
+
+    def _is_export_item(self, item):
+        if self.items_to_export is None:
+            return True
+        elif type(item) in self.items_to_export:
+            return True
+        else:
+            return False
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples
@@ -88,9 +97,10 @@ class JsonLinesItemExporter(BaseItemExporter):
         self.encoder = ScrapyJSONEncoder(**self._kwargs)
 
     def export_item(self, item):
-        itemdict = dict(self._get_serialized_fields(item))
-        data = self.encoder.encode(itemdict) + '\n'
-        self.file.write(to_bytes(data, self.encoding))
+        if self._is_export_item(item):
+            itemdict = dict(self._get_serialized_fields(item))
+            data = self.encoder.encode(itemdict) + '\n'
+            self.file.write(to_bytes(data, self.encoding))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -120,14 +130,15 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item):
-        if self.first_item:
-            self.first_item = False
-        else:
-            self.file.write(b',')
-            self._beautify_newline()
-        itemdict = dict(self._get_serialized_fields(item))
-        data = self.encoder.encode(itemdict)
-        self.file.write(to_bytes(data, self.encoding))
+        if self._is_export_item(item):
+            if self.first_item:
+                self.first_item = False
+            else:
+                self.file.write(b',')
+                self._beautify_newline()
+            itemdict = dict(self._get_serialized_fields(item))
+            data = self.encoder.encode(itemdict)
+            self.file.write(to_bytes(data, self.encoding))
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -154,14 +165,15 @@ class XmlItemExporter(BaseItemExporter):
         self._beautify_newline(new_item=True)
 
     def export_item(self, item):
-        self._beautify_indent(depth=1)
-        self.xg.startElement(self.item_element, {})
-        self._beautify_newline()
-        for name, value in self._get_serialized_fields(item, default_value=''):
-            self._export_xml_field(name, value, depth=2)
-        self._beautify_indent(depth=1)
-        self.xg.endElement(self.item_element)
-        self._beautify_newline(new_item=True)
+        if self._is_export_item(item):
+            self._beautify_indent(depth=1)
+            self.xg.startElement(self.item_element, {})
+            self._beautify_newline()
+            for name, value in self._get_serialized_fields(item, default_value=''):
+                self._export_xml_field(name, value, depth=2)
+            self._beautify_indent(depth=1)
+            self.xg.endElement(self.item_element)
+            self._beautify_newline(new_item=True)
 
     def finish_exporting(self):
         self.xg.endElement(self.root_element)
@@ -219,14 +231,15 @@ class CsvItemExporter(BaseItemExporter):
         return value
 
     def export_item(self, item):
-        if self._headers_not_written:
-            self._headers_not_written = False
-            self._write_headers_and_set_fields_to_export(item)
+        if self._is_export_item(item):
+            if self._headers_not_written:
+                self._headers_not_written = False
+                self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value='',
-                                             include_empty=True)
-        values = list(self._build_row(x for _, x in fields))
-        self.csv_writer.writerow(values)
+            fields = self._get_serialized_fields(item, default_value='',
+                                                 include_empty=True)
+            values = list(self._build_row(x for _, x in fields))
+            self.csv_writer.writerow(values)
 
     def _build_row(self, values):
         for s in values:
@@ -256,8 +269,9 @@ class PickleItemExporter(BaseItemExporter):
         self.protocol = protocol
 
     def export_item(self, item):
-        d = dict(self._get_serialized_fields(item))
-        pickle.dump(d, self.file, self.protocol)
+        if self._is_export_item(item):
+            d = dict(self._get_serialized_fields(item))
+            pickle.dump(d, self.file, self.protocol)
 
 
 class MarshalItemExporter(BaseItemExporter):
@@ -274,7 +288,8 @@ class MarshalItemExporter(BaseItemExporter):
         self.file = file
 
     def export_item(self, item):
-        marshal.dump(dict(self._get_serialized_fields(item)), self.file)
+        if self._is_export_item(item):
+            marshal.dump(dict(self._get_serialized_fields(item)), self.file)
 
 
 class PprintItemExporter(BaseItemExporter):
@@ -284,8 +299,9 @@ class PprintItemExporter(BaseItemExporter):
         self.file = file
 
     def export_item(self, item):
-        itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(to_bytes(pprint.pformat(itemdict) + '\n'))
+        if self._is_export_item(item):
+            itemdict = dict(self._get_serialized_fields(item))
+            self.file.write(to_bytes(pprint.pformat(itemdict) + '\n'))
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -329,7 +345,8 @@ class PythonItemExporter(BaseItemExporter):
             yield key, self._serialize_value(val)
 
     def export_item(self, item):
-        result = dict(self._get_serialized_fields(item))
-        if self.binary:
-            result = dict(self._serialize_dict(result))
-        return result
+        if self._is_export_item(item):
+            result = dict(self._get_serialized_fields(item))
+            if self.binary:
+                result = dict(self._serialize_dict(result))
+            return result
