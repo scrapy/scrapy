@@ -153,6 +153,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
         self.assertEqual(new_feed, {
             "encoding": "custom encoding",
             "fields": ["f1", "f2", "f3"],
+            "items": None,
             "indent": 42,
             "store_empty": True,
             "uri_params": (1, 2, 3, 4),
@@ -161,6 +162,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
     def test_feed_complete_default_values_from_settings_non_empty(self):
         feed = {
             "encoding": "other encoding",
+            "items": None,
             "fields": None,
         }
         settings = Settings({
@@ -172,6 +174,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
             "encoding": "other encoding",
+            "items": None,
             "fields": None,
             "indent": 42,
             "store_empty": True,
