@@ -1,8 +1,14 @@
 import unittest
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError,
+    ConnectionDone,
+    ConnectionLost,
+    ConnectionRefusedError,
+    DNSLookupError,
+    TCPTimedOutError,
+    TimeoutError,
+)
 from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
@@ -75,9 +81,17 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/count') == 2
 
     def test_twistederrors(self):
-        exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
-                DNSLookupError, ConnectionRefusedError, ConnectionDone,
-                ConnectError, ConnectionLost, ResponseFailed]
+        exceptions = [
+            ConnectError,
+            ConnectionDone,
+            ConnectionLost,
+            ConnectionRefusedError,
+            defer.TimeoutError,
+            DNSLookupError,
+            ResponseFailed,
+            TCPTimedOutError,
+            TimeoutError,
+        ]
 
         for exc in exceptions:
             req = Request('http://www.scrapytest.org/%s' % exc.__name__)

@@ -70,10 +70,13 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ]
+        )
 
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -92,10 +95,13 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ]
+        )
 
     def test_sitemap_wrong_ns2(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -115,10 +121,13 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """)
         assert s.type == 'urlset'
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ]
+        )
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *

@@ -103,15 +103,13 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     @defer.inlineCallbacks
     def test_local_nofile(self):
         filepath = 'file:///tests/sample_data/test_site/nothinghere.html'
-        errcode, out, err = yield self.execute([filepath, '-c', 'item'],
-                                       check_code=False)
+        errcode, out, err = yield self.execute([filepath, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'No such file or directory', err)
 
     @defer.inlineCallbacks
     def test_dns_failures(self):
         url = 'www.somedomainthatdoesntexi.st'
-        errcode, out, err = yield self.execute([url, '-c', 'item'],
-                                       check_code=False)
+        errcode, out, err = yield self.execute([url, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'DNS lookup failed', err)

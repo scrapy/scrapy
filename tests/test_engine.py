@@ -13,22 +13,24 @@ module with the ``runserver`` argument::
 import os
 import re
 import sys
+from collections import defaultdict
 from urllib.parse import urlparse
 
 from twisted.internet import reactor, defer
-from twisted.web import server, static, util
 from twisted.trial import unittest
+from twisted.web import server, static, util
+from pydispatch import dispatcher
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.utils.test import get_crawler
-from pydispatch import dispatcher
-from tests import tests_datadir
-from scrapy.spiders import Spider
+from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
-from scrapy.http import Request
+from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.test import get_crawler
+
+from tests import tests_datadir, get_testdata
 
 
 class TestItem(Item):
@@ -88,6 +90,8 @@ def start_test_site(debug=False):
     r = static.File(root_dir)
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
     r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
+    numbers = [str(x).encode("utf8") for x in range(2**14)]
+    r.putChild(b"numbers", static.Data(b"".join(numbers), "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
@@ -107,15 +111,20 @@ class CrawlerRun:
         self.reqreached = []
         self.itemerror = []
         self.itemresp = []
-        self.signals_catched = {}
+        self.bytes = defaultdict(lambda: list())
+        self.signals_caught = {}
         self.spider_class = spider_class
 
     def run(self):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
 
-        start_urls = [self.geturl("/"), self.geturl("/redirect"),
-                      self.geturl("/redirect")]  # a duplicate
+        start_urls = [
+            self.geturl("/"),
+            self.geturl("/redirect"),
+            self.geturl("/redirect"),  # duplicate
+            self.geturl("/numbers"),
+        ]
 
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
@@ -124,6 +133,7 @@ class CrawlerRun:
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.item_error, signals.item_error)
+        self.crawler.signals.connect(self.bytes_received, signals.bytes_received)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.request_reached, signals.request_reached_downloader)
@@ -155,6 +165,9 @@ class CrawlerRun:
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
 
+    def bytes_received(self, data, request, spider):
+        self.bytes[request].append(data)
+
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
 
@@ -172,7 +185,7 @@ class CrawlerRun:
         signalargs = kwargs.copy()
         sig = signalargs.pop('signal')
         signalargs.pop('sender', None)
-        self.signals_catched[sig] = signalargs
+        self.signals_caught[sig] = signalargs
 
 
 class EngineTest(unittest.TestCase):
@@ -183,16 +196,17 @@ class EngineTest(unittest.TestCase):
             self.run = CrawlerRun(spider)
             yield self.run.run()
             self._assert_visited_urls()
-            self._assert_scheduled_requests(urls_to_visit=8)
+            self._assert_scheduled_requests(urls_to_visit=9)
             self._assert_downloaded_responses()
             self._assert_scraped_items()
-            self._assert_signals_catched()
+            self._assert_signals_caught()
+            self._assert_bytes_received()
 
     @defer.inlineCallbacks
     def test_crawler_dupefilter(self):
         self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
-        self._assert_scheduled_requests(urls_to_visit=7)
+        self._assert_scheduled_requests(urls_to_visit=8)
         self._assert_dropped_requests()
 
     @defer.inlineCallbacks
@@ -204,8 +218,8 @@ class EngineTest(unittest.TestCase):
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
-        urls_visited = set([rp[0].url for rp in self.run.respplug])
-        urls_expected = set([self.run.geturl(p) for p in must_be_visited])
+        urls_visited = {rp[0].url for rp in self.run.respplug}
+        urls_expected = {self.run.geturl(p) for p in must_be_visited}
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
 
     def _assert_scheduled_requests(self, urls_to_visit=None):
@@ -213,8 +227,8 @@ class EngineTest(unittest.TestCase):
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
-        urls_requested = set([rq[0].url for rq in self.run.reqplug])
-        urls_expected = set([self.run.geturl(p) for p in paths_expected])
+        urls_requested = {rq[0].url for rq in self.run.reqplug}
+        urls_expected = {self.run.geturl(p) for p in paths_expected}
         assert urls_expected <= urls_requested
         scheduled_requests_count = len(self.run.reqplug)
         dropped_requests_count = len(self.run.reqdropped)
@@ -229,8 +243,8 @@ class EngineTest(unittest.TestCase):
 
     def _assert_downloaded_responses(self):
         # response tests
-        self.assertEqual(8, len(self.run.respplug))
-        self.assertEqual(8, len(self.run.reqreached))
+        self.assertEqual(9, len(self.run.respplug))
+        self.assertEqual(9, len(self.run.reqreached))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':
@@ -263,19 +277,61 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
 
-    def _assert_signals_catched(self):
-        assert signals.engine_started in self.run.signals_catched
-        assert signals.engine_stopped in self.run.signals_catched
-        assert signals.spider_opened in self.run.signals_catched
-        assert signals.spider_idle in self.run.signals_catched
-        assert signals.spider_closed in self.run.signals_catched
+    def _assert_bytes_received(self):
+        self.assertEqual(9, len(self.run.bytes))
+        for request, data in self.run.bytes.items():
+            joined_data = b"".join(data)
+            if self.run.getpath(request.url) == "/":
+                self.assertEqual(joined_data, get_testdata("test_site", "index.html"))
+            elif self.run.getpath(request.url) == "/item1.html":
+                self.assertEqual(joined_data, get_testdata("test_site", "item1.html"))
+            elif self.run.getpath(request.url) == "/item2.html":
+                self.assertEqual(joined_data, get_testdata("test_site", "item2.html"))
+            elif self.run.getpath(request.url) == "/redirected":
+                self.assertEqual(joined_data, b"Redirected here")
+            elif self.run.getpath(request.url) == '/redirect':
+                self.assertEqual(
+                    joined_data,
+                    b"\n<html>\n"
+                    b"    <head>\n"
+                    b"        <meta http-equiv=\"refresh\" content=\"0;URL=/redirected\">\n"
+                    b"    </head>\n"
+                    b"    <body bgcolor=\"#FFFFFF\" text=\"#000000\">\n"
+                    b"    <a href=\"/redirected\">click here</a>\n"
+                    b"    </body>\n"
+                    b"</html>\n"
+                )
+            elif self.run.getpath(request.url) == "/tem999.html":
+                self.assertEqual(
+                    joined_data,
+                    b"\n<html>\n"
+                    b"  <head><title>404 - No Such Resource</title></head>\n"
+                    b"  <body>\n"
+                    b"    <h1>No Such Resource</h1>\n"
+                    b"    <p>File not found.</p>\n"
+                    b"  </body>\n"
+                    b"</html>\n"
+                )
+            elif self.run.getpath(request.url) == "/numbers":
+                # signal was fired multiple times
+                self.assertTrue(len(data) > 1)
+                # bytes were received in order
+                numbers = [str(x).encode("utf8") for x in range(2**14)]
+                self.assertEqual(joined_data, b"".join(numbers))
+
+    def _assert_signals_caught(self):
+        assert signals.engine_started in self.run.signals_caught
+        assert signals.engine_stopped in self.run.signals_caught
+        assert signals.spider_opened in self.run.signals_caught
+        assert signals.spider_idle in self.run.signals_caught
+        assert signals.spider_closed in self.run.signals_caught
 
         self.assertEqual({'spider': self.run.spider},
-                         self.run.signals_catched[signals.spider_opened])
+                         self.run.signals_caught[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
-                         self.run.signals_catched[signals.spider_idle])
+                         self.run.signals_caught[signals.spider_idle])
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
-                         self.run.signals_catched[signals.spider_closed])
+                         self.run.signals_caught[signals.spider_closed])
 
     @defer.inlineCallbacks
     def test_close_downloader(self):

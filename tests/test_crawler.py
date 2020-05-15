@@ -87,7 +87,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         class MySpider(scrapy.Spider):
             name = 'spider'
 
-        crawler = Crawler(MySpider, {})
+        Crawler(MySpider, {})
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
@@ -240,13 +240,13 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
-            runner = CrawlerRunner(settings={
+            CrawlerRunner(settings={
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             })
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                runner = CrawlerRunner(settings={
+                CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 })
 
@@ -313,14 +313,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
     def test_ipv6_alternative_name_resolver(self):
         log = self.run_script('alternative_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertTrue(any([
-            "twisted.internet.error.ConnectionRefusedError" in log,
-            "twisted.internet.error.ConnectError" in log,
-        ]))
-        self.assertTrue(any([
-            "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
-            "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
-        ]))
+        self.assertNotIn("twisted.internet.error.DNSLookupError", log)
 
     def test_reactor_select(self):
         log = self.run_script("twisted_reactor_select.py")

@@ -49,7 +49,7 @@ class MailSenderTest(unittest.TestCase):
 
         mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
-                       attachs=attachs, _callback=self._catch_mail_sent)
+                        attachs=attachs, _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])

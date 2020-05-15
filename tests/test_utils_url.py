@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from scrapy.spiders import Spider
@@ -59,7 +58,7 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', spider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', spider))
 
-        spider = Spider(name='example.com', allowed_domains=set(('example.com', 'example.net')))
+        spider = Spider(name='example.com', allowed_domains={'example.com', 'example.net'})
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
 
         spider = Spider(name='example.com', allowed_domains=('example.com', 'example.net'))

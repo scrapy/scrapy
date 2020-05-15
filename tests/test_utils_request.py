@@ -36,8 +36,9 @@ class UtilsRequestTest(unittest.TestCase):
         self.assertEqual(request_fingerprint(r1),
                          request_fingerprint(r1, include_headers=['Accept-Language']))
 
-        self.assertNotEqual(request_fingerprint(r1),
-                         request_fingerprint(r2, include_headers=['Accept-Language']))
+        self.assertNotEqual(
+            request_fingerprint(r1),
+            request_fingerprint(r2, include_headers=['Accept-Language']))
 
         self.assertEqual(request_fingerprint(r3, include_headers=['accept-language', 'sessionid']),
                          request_fingerprint(r3, include_headers=['SESSIONID', 'Accept-Language']))

@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
 import unittest
+from warnings import catch_warnings
 
 from w3lib.encoding import resolve_encoding
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
@@ -497,8 +498,10 @@ class TextResponseTest(BaseResponseTest):
             response.xpath("normalize-space(//p[@class=\"content\"])").getall(),
         )
         self.assertEqual(
-            response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
-                pclass="content", pcount=1).getall(),
+            response.xpath(
+                "//title[count(following::p[@class=$pclass])=$pcount]/text()",
+                pclass="content", pcount=1,
+            ).getall(),
             response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").getall(),
         )
 
@@ -578,12 +581,14 @@ class TextResponseTest(BaseResponseTest):
             'http://example.com',
             body=b'''<html><body><a href=" foo\n">click me</a></body></html>'''
         )
-        self._assert_followed_url(resp.css('a')[0],
-                                 'http://example.com/foo',
-                                  response=resp)
-        self._assert_followed_url(resp.css('a::attr(href)')[0],
-                                 'http://example.com/foo',
-                                  response=resp)
+        self._assert_followed_url(
+            resp.css('a')[0],
+            'http://example.com/foo',
+            response=resp)
+        self._assert_followed_url(
+            resp.css('a::attr(href)')[0],
+            'http://example.com/foo',
+            response=resp)
 
     def test_follow_encoding(self):
         resp1 = self.response_class(
@@ -672,6 +677,13 @@ class TextResponseTest(BaseResponseTest):
         response = self._links_response()
         with self.assertRaises(ValueError):
             response.follow_all(css='a[href*="example.com"]', xpath='//a[contains(@href, "example.com")]')
+
+    def test_body_as_unicode_deprecation_warning(self):
+        with catch_warnings(record=True) as warnings:
+            r1 = self.response_class("http://www.example.com", body=u'Hello', encoding='utf-8')
+            self.assertEqual(r1.body_as_unicode(), u'Hello')
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 class HtmlResponseTest(TextResponseTest):
