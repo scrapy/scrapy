@@ -63,8 +63,9 @@ class ResponseTypesTest(unittest.TestCase):
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
-            ({'Content-Type': ['application/octet-stream'], 'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
             ({'Content-Type': ['text/html; charset=utf-8'], 'Content-Encoding': ['gzip']}, Response),
+            ({'Content-Type': ['application/octet-stream'],
+              'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
         ]
         for source, cls in mappings:
             source = Headers(source)
@@ -76,8 +77,10 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             # headers takes precedence over url
-            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}), 'url': 'http://www.example.com/item/'}, HtmlResponse),
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}), 'url': 'http://www.example.com/page/'}, Response),
+            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
+              'url': 'http://www.example.com/item/'}, HtmlResponse),
+            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
+              'url': 'http://www.example.com/page/'}, Response),
 
 
         ]
