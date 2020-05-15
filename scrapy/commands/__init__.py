@@ -108,8 +108,7 @@ class ScrapyCommand:
 
 class BaseRunSpiderCommand(ScrapyCommand):
     """
-    The BaseRunSpiderCommands class inherits the ScrapyCommand class and it Used for
-    performing common functionality between crawl.py and runspider.py
+    Common class used to share functionality between the crawl and runspider commands
     """
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
