@@ -86,8 +86,7 @@ class DictItem(MutableMapping, BaseItem):
         if key in self.fields:
             self._values[key] = value
         else:
-            raise KeyError("%s does not support field: %s" %
-                (self.__class__.__name__, key))
+            raise KeyError("%s does not support field: %s" % (self.__class__.__name__, key))
 
     def __delitem__(self, key):
         del self._values[key]
@@ -99,8 +98,7 @@ class DictItem(MutableMapping, BaseItem):
 
     def __setattr__(self, name, value):
         if not name.startswith('_'):
-            raise AttributeError("Use item[%r] = %r to set field value" %
-                (name, value))
+            raise AttributeError("Use item[%r] = %r to set field value" % (name, value))
         super(DictItem, self).__setattr__(name, value)
 
     def __len__(self):

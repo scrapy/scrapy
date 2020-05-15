@@ -162,8 +162,7 @@ class ItemTest(unittest.TestCase):
         item = D(save='X', load='Y')
         self.assertEqual(item['save'], 'X')
         self.assertEqual(item['load'], 'Y')
-        self.assertEqual(D.fields, {'load': {'default': 'A'},
-            'save': {'default': 'A'}})
+        self.assertEqual(D.fields, {'load': {'default': 'A'}, 'save': {'default': 'A'}})
 
         # D class inverted
         class E(C, B):
@@ -171,8 +170,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
-        self.assertEqual(E.fields, {'load': {'default': 'C'},
-            'save': {'default': 'C'}})
+        self.assertEqual(E.fields, {'load': {'default': 'C'}, 'save': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_diamond(self):
         class A(Item):
@@ -193,8 +191,9 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(D(save='X')['save'], 'X')
         self.assertEqual(D(load='X')['load'], 'X')
-        self.assertEqual(D.fields, {'save': {'default': 'C'},
-            'load': {'default': 'D'}, 'update': {'default': 'D'}})
+        self.assertEqual(
+            D.fields,
+            {'save': {'default': 'C'}, 'load': {'default': 'D'}, 'update': {'default': 'D'}})
 
         # D class inverted
         class E(C, B):
@@ -202,8 +201,9 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
-        self.assertEqual(E.fields, {'save': {'default': 'C'},
-            'load': {'default': 'E'}, 'update': {'default': 'C'}})
+        self.assertEqual(
+            E.fields,
+            {'save': {'default': 'C'}, 'load': {'default': 'E'}, 'update': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_without_metaclass(self):
         class A(Item):
@@ -223,8 +223,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertRaises(KeyError, D, not_allowed='value')
         self.assertEqual(D(save='X')['save'], 'X')
-        self.assertEqual(D.fields, {'save': {'default': 'A'},
-            'load': {'default': 'A'}})
+        self.assertEqual(D.fields, {'save': {'default': 'A'}, 'load': {'default': 'A'}})
 
         # D class inverted
         class E(C, B):
@@ -232,8 +231,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertRaises(KeyError, E, not_allowed='value')
         self.assertEqual(E(save='X')['save'], 'X')
-        self.assertEqual(E.fields, {'save': {'default': 'A'},
-            'load': {'default': 'A'}})
+        self.assertEqual(E.fields, {'save': {'default': 'A'}, 'load': {'default': 'A'}})
 
     def test_to_dict(self):
         class TestItem(Item):
@@ -264,12 +262,12 @@ class ItemTest(unittest.TestCase):
         """Make sure the DictItem deprecation warning is not issued for
         Item"""
         with catch_warnings(record=True) as warnings:
-            item = Item()
+            Item()
             self.assertEqual(len(warnings), 0)
 
             class SubclassedItem(Item):
                 pass
-            subclassed_item = SubclassedItem()
+            SubclassedItem()
             self.assertEqual(len(warnings), 0)
 
 
@@ -321,13 +319,13 @@ class DictItemTest(unittest.TestCase):
 
     def test_deprecation_warning(self):
         with catch_warnings(record=True) as warnings:
-            dict_item = DictItem()
+            DictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         with catch_warnings(record=True) as warnings:
             class SubclassedDictItem(DictItem):
                 pass
-            subclassed_dict_item = SubclassedDictItem()
+            SubclassedDictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
