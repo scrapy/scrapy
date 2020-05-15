@@ -57,12 +57,10 @@ class BaseItemExporter:
         """Determine whether or not an item should be exported
         based on the 'items_classes' key in the FEEDS setting
         """
-        if self.item_classes_to_export is None:
-            return True
-        elif isinstance(item, self.item_classes_to_export):
-            return True
-        else:
-            return False
+        return (
+            self.item_classes_to_export is None
+            or isinstance(item, self.item_classes_to_export)
+        )
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples
