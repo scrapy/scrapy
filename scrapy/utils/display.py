@@ -34,6 +34,7 @@ def _colorize(text, colorize=True):
                 raise ValueError
         except ValueError:
             return text
+
     if _color_support_info() == 256:
         format_alias = 'terminal256'
         format_options = {'style': 'default'}
