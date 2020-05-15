@@ -23,7 +23,7 @@ from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
-from scrapy.utils.python import without_none_values
+from scrapy.utils.python import get_func_args, without_none_values
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri, feed_options):
+    def __init__(uri, *, feed_options=None):
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
@@ -64,11 +64,11 @@ class BlockingFeedStorage:
 @implementer(IFeedStorage)
 class StdoutFeedStorage:
 
-    def __init__(self, uri, feed_options, _stdout=None):
+    def __init__(self, uri, _stdout=None, *, feed_options=None):
         if not _stdout:
             _stdout = sys.stdout.buffer
         self._stdout = _stdout
-        if feed_options.get('overwrite', False) is True:
+        if feed_options and feed_options.get('overwrite', False) is True:
             logger.warning('Standard output (stdout) storage does not support '
                            'overwritting. To supress this warning, remove the '
                            'overwrite option from your FEEDS setting, or set '
@@ -84,8 +84,9 @@ class StdoutFeedStorage:
 @implementer(IFeedStorage)
 class FileFeedStorage:
 
-    def __init__(self, uri, feed_options):
+    def __init__(self, uri, *, feed_options=None):
         self.path = file_uri_to_path(uri)
+        feed_options = feed_options or {}
         self.write_mode = 'wb' if feed_options.get('overwrite', False) else 'ab'
 
     def open(self, spider):
@@ -100,8 +101,8 @@ class FileFeedStorage:
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, feed_options, access_key=None, secret_key=None,
-                 acl=None):
+    def __init__(self, uri, access_key=None, secret_key=None, acl=None, *,
+                 feed_options=None):
         # BEGIN Backward compatibility for initialising without keys (and
         # without using from_crawler)
         no_defaults = access_key is None and secret_key is None
@@ -135,19 +136,28 @@ class S3FeedStorage(BlockingFeedStorage):
         else:
             import boto
             self.connect_s3 = boto.connect_s3
-        if feed_options.get('overwrite', True) is False:
+        if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
                            'supress this warning, remove the overwrite option '
                            'from your FEEDS setting or set it to True.')
 
     @classmethod
-    def from_crawler(cls, crawler, uri, feed_options):
+    def from_crawler(cls, crawler, uri, *, feed_options=None):
+        kwargs = {}
+        if 'feed_options' in get_func_args(cls):
+            kwargs['feed_options'] = feed_options
+        else:
+            warnings.warn(
+                "{} does not support the 'feed_options' keyword argument"
+                .format(cls.__qualname__),
+                category=ScrapyDeprecationWarning
+            )
         return cls(
             uri,
-            feed_options,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
             acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
+            **kwargs,
         )
 
     def _store_in_thread(self, file):
@@ -168,7 +178,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class FTPFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, feed_options, use_active_mode=False):
+    def __init__(self, uri, use_active_mode=False, *, feed_options=None):
         u = urlparse(uri)
         self.host = u.hostname
         self.port = int(u.port or '21')
@@ -176,14 +186,23 @@ class FTPFeedStorage(BlockingFeedStorage):
         self.password = unquote(u.password or '')
         self.path = u.path
         self.use_active_mode = use_active_mode
-        self.overwrite = feed_options.get('overwrite', True)
+        self.overwrite = not feed_options or feed_options.get('overwrite', True)
 
     @classmethod
-    def from_crawler(cls, crawler, uri, feed_options):
+    def from_crawler(cls, crawler, uri, *, feed_options=None):
+        kwargs = {}
+        if 'feed_options' in get_func_args(cls):
+            kwargs['feed_options'] = feed_options
+        else:
+            warnings.warn(
+                "{} does not support the 'feed_options' keyword argument"
+                .format(cls.__qualname__),
+                category=ScrapyDeprecationWarning
+            )
         return cls(
             uri,
-            feed_options,
             crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE'),
+            **kwargs,
         )
 
     def _store_in_thread(self, file):
@@ -345,7 +364,39 @@ class FeedExporter:
         return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
     def _get_storage(self, uri, feed_options):
-        return self._get_instance(self.storages[urlparse(uri).scheme], uri, feed_options)
+        """Fork of create_instance specific to feed storage classes
+
+        It supports not passing the *feed_options* parameters to classes that
+        do not support it, and issuing a deprecation warning instead.
+        """
+        feedcls = self.storages[urlparse(uri).scheme]
+        crawler = getattr(self, 'crawler', None)
+
+        def build_instance(builder, *args):
+            argument_names = get_func_args(builder)
+            if 'feed_options' in argument_names:
+                _kwargs = {'feed_options': feed_options}
+            else:
+                warnings.warn(
+                    "{} does not support the 'feed_options' keyword argument"
+                    .format(builder.__qualname__),
+                    category=ScrapyDeprecationWarning
+                )
+                _kwargs = {}
+            return builder(*args, uri, **_kwargs)
+
+        if crawler and hasattr(feedcls, 'from_crawler'):
+            instance = build_instance(feedcls.from_crawler, crawler)
+            method_name = 'from_crawler'
+        elif hasattr(feedcls, 'from_settings'):
+            instance = build_instance(feedcls.from_settings, self.settings)
+            method_name = 'from_settings'
+        else:
+            instance = build_instance(feedcls)
+            method_name = '__new__'
+        if instance is None:
+            raise TypeError("%s.%s returned None" % (feedcls.__qualname__, method_name))
+        return instance
 
     def _get_uri_params(self, spider, uri_params):
         params = {}

@@ -45,30 +45,30 @@ class FileFeedStorageTest(unittest.TestCase):
     def test_store_file_uri(self):
         path = os.path.abspath(self.mktemp())
         uri = path_to_file_uri(path)
-        return self._assert_stores(FileFeedStorage(uri, {}), path)
+        return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_file_uri_makedirs(self):
         path = os.path.abspath(self.mktemp())
         path = os.path.join(path, 'more', 'paths', 'file.txt')
         uri = path_to_file_uri(path)
-        return self._assert_stores(FileFeedStorage(uri, {}), path)
+        return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_direct_path(self):
         path = os.path.abspath(self.mktemp())
-        return self._assert_stores(FileFeedStorage(path, {}), path)
+        return self._assert_stores(FileFeedStorage(path), path)
 
     def test_store_direct_path_relative(self):
         path = self.mktemp()
-        return self._assert_stores(FileFeedStorage(path, {}), path)
+        return self._assert_stores(FileFeedStorage(path), path)
 
     def test_interface(self):
         path = self.mktemp()
-        st = FileFeedStorage(path, {})
+        st = FileFeedStorage(path)
         verifyObject(IFeedStorage, st)
 
     def _store(self, feed_options=None):
         path = os.path.abspath(self.mktemp())
-        storage = FileFeedStorage(path, feed_options or {})
+        storage = FileFeedStorage(path, feed_options=feed_options)
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
@@ -77,11 +77,14 @@ class FileFeedStorageTest(unittest.TestCase):
 
     def test_append(self):
         path = self._store()
-        return self._assert_stores(FileFeedStorage(path, {}), path, b"contentcontent")
+        return self._assert_stores(FileFeedStorage(path), path, b"contentcontent")
 
     def test_overwrite(self):
         path = self._store({"overwrite": True})
-        return self._assert_stores(FileFeedStorage(path, {"overwrite": True}), path)
+        return self._assert_stores(
+            FileFeedStorage(path, feed_options={"overwrite": True}),
+            path
+        )
 
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path, expected_content=b"content"):
@@ -108,7 +111,11 @@ class FTPFeedStorageTest(unittest.TestCase):
 
     def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
-        storage = FTPFeedStorage.from_crawler(crawler, uri, feed_options or {})
+        storage = FTPFeedStorage.from_crawler(
+            crawler,
+            uri,
+            feed_options=feed_options,
+        )
         verifyObject(IFeedStorage, storage)
         spider = self.get_test_spider()
         file = storage.open(spider)
@@ -224,20 +231,17 @@ class S3FeedStorageTest(unittest.TestCase):
         storage = S3FeedStorage.from_crawler(
             crawler,
             's3://mybucket/export.csv',
-            {},
         )
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
         # Instantiate directly
         storage = S3FeedStorage('s3://mybucket/export.csv',
-                                {},
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
         # URI priority > settings priority
         storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
-                                {},
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'uri_key')
@@ -257,20 +261,19 @@ class S3FeedStorageTest(unittest.TestCase):
             raise unittest.SkipTest("No S3 URI available for testing")
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        storage = S3FeedStorage(uri, {}, access_key, secret_key)
+        storage = S3FeedStorage(uri, access_key, secret_key)
         verifyObject(IFeedStorage, storage)
         file = storage.open(scrapy.Spider("default"))
         expected_content = b"content: \xe2\x98\x83"
         file.write(expected_content)
         yield storage.store(file)
-        u = urlparse(uri, {})
+        u = urlparse(uri)
         content = get_s3_content_and_delete(u.hostname, u.path[1:])
         self.assertEqual(content, expected_content)
 
     def test_init_without_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            {},
             'access_key',
             'secret_key'
         )
@@ -281,7 +284,6 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_init_with_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            {},
             'access_key',
             'secret_key',
             'custom-acl'
@@ -299,7 +301,6 @@ class S3FeedStorageTest(unittest.TestCase):
         storage = S3FeedStorage.from_crawler(
             crawler,
             's3://mybucket/export.csv',
-            {},
         )
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
@@ -315,7 +316,6 @@ class S3FeedStorageTest(unittest.TestCase):
         storage = S3FeedStorage.from_crawler(
             crawler,
             's3://mybucket/export.csv',
-            {},
         )
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
@@ -330,7 +330,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            {},
             'access_key',
             'secret_key',
         )
@@ -351,7 +350,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            {},
             'access_key',
             'secret_key',
             'custom-acl'
@@ -371,7 +369,6 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_store_not_botocore_without_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            {},
             'access_key',
             'secret_key',
         )
@@ -397,7 +394,6 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_store_not_botocore_with_acl(self):
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
-            {},
             'access_key',
             'secret_key',
             'custom-acl'
@@ -424,7 +420,6 @@ class S3FeedStorageTest(unittest.TestCase):
         with LogCapture() as log:
             S3FeedStorage(
                 's3://mybucket/export.csv',
-                {},
                 'access_key',
                 'secret_key',
                 'custom-acl'
@@ -435,10 +430,10 @@ class S3FeedStorageTest(unittest.TestCase):
         with LogCapture() as log:
             S3FeedStorage(
                 's3://mybucket/export.csv',
-                {'overwrite': False},
                 'access_key',
                 'secret_key',
-                'custom-acl'
+                'custom-acl',
+                feed_options={'overwrite': False},
             )
         self.assertIn('S3 does not support appending to files', str(log))
 
@@ -448,7 +443,7 @@ class StdoutFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         out = BytesIO()
-        storage = StdoutFeedStorage('stdout:', {}, _stdout=out)
+        storage = StdoutFeedStorage('stdout:', _stdout=out)
         file = storage.open(scrapy.Spider("default"))
         file.write(b"content")
         yield storage.store(file)
@@ -456,12 +451,12 @@ class StdoutFeedStorageTest(unittest.TestCase):
 
     def test_overwrite_default(self):
         with LogCapture() as log:
-            StdoutFeedStorage('stdout:', {})
+            StdoutFeedStorage('stdout:')
         self.assertNotIn('Standard output (stdout) storage does not support overwritting', str(log))
 
     def test_overwrite_true(self):
         with LogCapture() as log:
-            StdoutFeedStorage('stdout:', {'overwrite': True})
+            StdoutFeedStorage('stdout:', feed_options={'overwrite': True})
         self.assertIn('Standard output (stdout) storage does not support overwritting', str(log))
 
 
@@ -469,9 +464,9 @@ class FromCrawlerMixin:
     init_with_crawler = False
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    def from_crawler(cls, crawler, *args, feed_options=None, **kwargs):
         cls.init_with_crawler = True
-        return cls(*args, **kwargs)
+        return cls(*args, feed_options=feed_options, **kwargs)
 
 
 class FromCrawlerCsvItemExporter(CsvItemExporter, FromCrawlerMixin):
@@ -1086,3 +1081,195 @@ class FeedExportInitTest(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings)
         with self.assertRaises(NotConfigured):
             FeedExporter.from_crawler(crawler)
+
+
+class StdoutFeedStorageWithoutFeedOptions(StdoutFeedStorage):
+
+    def __init__(self, uri):
+        super().__init__(uri)
+
+
+class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
+    """Make sure that any feed exporter created by users before the
+    introduction of the ``feed_options`` parameter continues to work as
+    expected, and simply issues a warning."""
+
+    def test_init(self):
+        settings_dict = {
+            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_STORAGES': {
+                'file': 'tests.test_feedexport.StdoutFeedStorageWithoutFeedOptions'
+            },
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(
+                str(w[0].message),
+                (
+                    "StdoutFeedStorageWithoutFeedOptions does not support the "
+                    "'feed_options' keyword argument"
+                )
+            )
+
+
+class FileFeedStorageWithoutFeedOptions(FileFeedStorage):
+
+    def __init__(self, uri):
+        super().__init__(uri)
+
+
+class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
+    """Make sure that any feed exporter created by users before the
+    introduction of the ``feed_options`` parameter continues to work as
+    expected, and simply issues a warning."""
+
+    def test_init(self):
+        settings_dict = {
+            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_STORAGES': {
+                'file': 'tests.test_feedexport.FileFeedStorageWithoutFeedOptions'
+            },
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(
+                str(w[0].message),
+                (
+                    "FileFeedStorageWithoutFeedOptions does not support the "
+                    "'feed_options' keyword argument"
+                )
+            )
+
+
+class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
+
+    def __init__(self, uri, access_key, secret_key, acl):
+        super().__init__(uri, access_key, secret_key, acl)
+
+
+class S3FeedStorageWithoutFeedOptionsWithFromCrawler(S3FeedStorage):
+
+    @classmethod
+    def from_crawler(cls, crawler, uri):
+        return super().from_crawler(crawler, uri)
+
+
+class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
+    """Make sure that any feed exporter created by users before the
+    introduction of the ``feed_options`` parameter continues to work as
+    expected, and simply issues a warning."""
+
+    def test_init(self):
+        settings_dict = {
+            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_STORAGES': {
+                'file': 'tests.test_feedexport.S3FeedStorageWithoutFeedOptions'
+            },
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(
+                str(w[0].message),
+                (
+                    "S3FeedStorageWithoutFeedOptions does not support the "
+                    "'feed_options' keyword argument"
+                )
+            )
+
+    def test_from_crawler(self):
+        settings_dict = {
+            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_STORAGES': {
+                'file': 'tests.test_feedexport.S3FeedStorageWithoutFeedOptionsWithFromCrawler'
+            },
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(
+                str(w[0].message),
+                (
+                    "S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
+                    "does not support the 'feed_options' keyword argument"
+                )
+            )
+
+
+class FTPFeedStorageWithoutFeedOptions(FTPFeedStorage):
+
+    def __init__(self, uri, use_active_mode=False):
+        super().__init__(uri)
+
+
+class FTPFeedStorageWithoutFeedOptionsWithFromCrawler(FTPFeedStorage):
+
+    @classmethod
+    def from_crawler(cls, crawler, uri):
+        return super().from_crawler(crawler, uri)
+
+
+class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
+    """Make sure that any feed exporter created by users before the
+    introduction of the ``feed_options`` parameter continues to work as
+    expected, and simply issues a warning."""
+
+    def test_init(self):
+        settings_dict = {
+            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_STORAGES': {
+                'file': 'tests.test_feedexport.FTPFeedStorageWithoutFeedOptions'
+            },
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(
+                str(w[0].message),
+                (
+                    "FTPFeedStorageWithoutFeedOptions does not support the "
+                    "'feed_options' keyword argument"
+                )
+            )
+
+    def test_from_crawler(self):
+        settings_dict = {
+            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_STORAGES': {
+                'file': 'tests.test_feedexport.FTPFeedStorageWithoutFeedOptionsWithFromCrawler'
+            },
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(
+                str(w[0].message),
+                (
+                    "FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
+                    "does not support the 'feed_options' keyword argument"
+                )
+            )
