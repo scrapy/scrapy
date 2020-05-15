@@ -102,10 +102,8 @@ class Command(ScrapyCommand):
         move(join(project_dir, 'module'), join(project_dir, project_name))
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
-            tplfile = join(project_dir,
-                string.Template(path).substitute(project_name=project_name))
-            render_templatefile(tplfile, project_name=project_name,
-                ProjectName=string_camelcase(project_name))
+            tplfile = join(project_dir, string.Template(path).substitute(project_name=project_name))
+            render_templatefile(tplfile, project_name=project_name, ProjectName=string_camelcase(project_name))
         print("New Scrapy project '%s', using template directory '%s', "
               "created in:" % (project_name, self.templates_dir))
         print("    %s\n" % abspath(project_dir))

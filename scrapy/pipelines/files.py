@@ -83,8 +83,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
-                        # FilesPipeline.from_settings.
+    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }

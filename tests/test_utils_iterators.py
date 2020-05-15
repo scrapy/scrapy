@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 
 from twisted.trial import unittest
@@ -47,8 +46,7 @@ class XmliterTestCase(unittest.TestCase):
             </root>
         """
         response = XmlResponse(url="http://example.com", body=body)
-        nodenames = [e.xpath('name()').getall()
-                 for e in self.xmliter(response, 'matchme...')]
+        nodenames = [e.xpath('name()').getall() for e in self.xmliter(response, 'matchme...')]
         self.assertEqual(nodenames, [['matchme...']])
 
     def test_xmliter_unicode(self):
@@ -359,15 +357,23 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         response = TextResponse(url="http://example.com/", body=body1, encoding='latin1')
         csv = csviter(response)
-        self.assertEqual([row for row in csv],
-            [{u'id': u'1', u'name': u'latin1', u'value': u'test'},
-             {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'}])
+        self.assertEqual(
+            list(csv),
+            [
+                {u'id': u'1', u'name': u'latin1', u'value': u'test'},
+                {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'},
+            ]
+        )
 
         response = TextResponse(url="http://example.com/", body=body2, encoding='cp852')
         csv = csviter(response)
-        self.assertEqual([row for row in csv],
-            [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
-             {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
+        self.assertEqual(
+            list(csv),
+            [
+                {u'id': u'1', u'name': u'cp852', u'value': u'test'},
+                {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'},
+            ]
+        )
 
 
 class TestHelper(unittest.TestCase):
