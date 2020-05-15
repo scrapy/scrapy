@@ -54,7 +54,7 @@ class BaseItemExporter:
         pass
 
     def _should_export_item(self, item):
-        """Determine whether or not an item should be exported
+        """Determine whether an item should be exported
         based on the 'items_classes' key in the FEEDS setting
         """
         return (
