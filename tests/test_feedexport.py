@@ -66,9 +66,9 @@ class FileFeedStorageTest(unittest.TestCase):
         st = FileFeedStorage(path, {})
         verifyObject(IFeedStorage, st)
 
-    def _store(self, feed=None):
+    def _store(self, feed_options=None):
         path = os.path.abspath(self.mktemp())
-        storage = FileFeedStorage(path, feed or {})
+        storage = FileFeedStorage(path, feed_options or {})
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
@@ -106,9 +106,9 @@ class FTPFeedStorageTest(unittest.TestCase):
         spider = TestSpider.from_crawler(crawler)
         return spider
 
-    def _store(self, uri, content, feed=None, settings=None):
+    def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
-        storage = FTPFeedStorage.from_crawler(crawler, uri, feed or {})
+        storage = FTPFeedStorage.from_crawler(crawler, uri, feed_options or {})
         verifyObject(IFeedStorage, storage)
         spider = self.get_test_spider()
         file = storage.open(spider)
@@ -128,9 +128,9 @@ class FTPFeedStorageTest(unittest.TestCase):
         with MockFTPServer() as ftp_server:
             filename = 'file'
             url = ftp_server.url(filename)
-            feed = {'overwrite': False}
-            yield self._store(url, b"foo", feed=feed)
-            yield self._store(url, b"bar", feed=feed)
+            feed_options = {'overwrite': False}
+            yield self._store(url, b"foo", feed_options=feed_options)
+            yield self._store(url, b"bar", feed_options=feed_options)
             self._assert_stored(ftp_server.path / filename, b"foobar")
 
     @defer.inlineCallbacks
@@ -148,9 +148,9 @@ class FTPFeedStorageTest(unittest.TestCase):
             settings = {'FEED_STORAGE_FTP_ACTIVE': True}
             filename = 'file'
             url = ftp_server.url(filename)
-            feed = {'overwrite': False}
-            yield self._store(url, b"foo", feed=feed, settings=settings)
-            yield self._store(url, b"bar", feed=feed, settings=settings)
+            feed_options = {'overwrite': False}
+            yield self._store(url, b"foo", feed_options=feed_options, settings=settings)
+            yield self._store(url, b"bar", feed_options=feed_options, settings=settings)
             self._assert_stored(ftp_server.path / filename, b"foobar")
 
     @defer.inlineCallbacks
@@ -506,8 +506,8 @@ class FeedExportTest(unittest.TestCase):
 
         FEEDS = settings.get('FEEDS') or {}
         settings['FEEDS'] = {
-            urljoin('file:', pathname2url(str(file_path))): feed
-            for file_path, feed in FEEDS.items()
+            urljoin('file:', pathname2url(str(file_path))): feed_options
+            for file_path, feed_options in FEEDS.items()
         }
 
         content = {}
@@ -517,9 +517,9 @@ class FeedExportTest(unittest.TestCase):
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            for file_path, feed in FEEDS.items():
+            for file_path, feed_options in FEEDS.items():
                 with open(str(file_path), 'rb') as f:
-                    content[feed['format']] = f.read()
+                    content[feed_options['format']] = f.read()
 
         finally:
             for file_path in FEEDS.keys():
