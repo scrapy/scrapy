@@ -415,8 +415,7 @@ class FormRequestTest(RequestTest):
         # using multiples values for a single key
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = self.request_class("http://www.example.com", formdata=data)
-        self.assertQueryEqual(r3.body,
-            b'colours=red&colours=blue&colours=green&price=%C2%A3+100')
+        self.assertQueryEqual(r3.body, b'colours=red&colours=blue&colours=green&price=%C2%A3+100')
 
     def test_from_response_post(self):
         response = _buildresponse(
@@ -426,8 +425,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx">
             </form>""",
             url="http://www.example.com/this/list.html")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -446,8 +444,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx \xc2\xb5">
             </form>""",
             url="http://www.example.com/this/list.html")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -468,8 +465,7 @@ class FormRequestTest(RequestTest):
             url="http://www.example.com/this/list.html",
             encoding='latin1',
         )
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -488,8 +484,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx µ">
             </form>""",
             url="http://www.example.com/this/list.html")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -502,11 +497,13 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_duplicate_form_key(self):
         response = _buildresponse(
-                '<form></form>',
-                url='http://www.example.com')
-        req = self.request_class.from_response(response,
-                method='GET',
-                formdata=(('foo', 'bar'), ('foo', 'baz')))
+            '<form></form>',
+            url='http://www.example.com')
+        req = self.request_class.from_response(
+            response=response,
+            method='GET',
+            formdata=(('foo', 'bar'), ('foo', 'baz')),
+        )
         self.assertEqual(urlparse(req.url).hostname, 'www.example.com')
         self.assertEqual(urlparse(req.url).query, 'foo=bar&foo=baz')
 
@@ -530,9 +527,11 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test" value="val2">
             <input type="hidden" name="test2" value="xxx">
             </form>""")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'},
-                headers={"Accept-Encoding": "gzip,deflate"})
+        req = self.request_class.from_response(
+            response=response,
+            formdata={'one': ['two', 'three'], 'six': 'seven'},
+            headers={"Accept-Encoding": "gzip,deflate"},
+        )
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers['Content-type'], b'application/x-www-form-urlencoded')
         self.assertEqual(req.headers['Accept-Encoding'], b'gzip,deflate')
@@ -545,8 +544,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx">
             </form>""",
             url="http://www.example.com/this/list.html")
-        r1 = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(r1.method, 'GET')
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
         self.assertEqual(urlparse(r1.url).path, "/this/get.php")
@@ -580,9 +578,9 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_override_method(self):
         response = _buildresponse(
-                '''<html><body>
-                <form action="/app"></form>
-                </body></html>''')
+            '''<html><body>
+            <form action="/app"></form>
+            </body></html>''')
         request = FormRequest.from_response(response)
         self.assertEqual(request.method, 'GET')
         request = FormRequest.from_response(response, method='POST')
@@ -590,9 +588,9 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_override_url(self):
         response = _buildresponse(
-                '''<html><body>
-                <form action="/app"></form>
-                </body></html>''')
+            '''<html><body>
+            <form action="/app"></form>
+            </body></html>''')
         request = FormRequest.from_response(response)
         self.assertEqual(request.url, 'http://example.com/app')
         request = FormRequest.from_response(response, url='http://foo.bar/absolute')

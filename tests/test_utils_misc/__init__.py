@@ -67,12 +67,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         assert hasattr(arg_to_iter(100), '__iter__')
         assert hasattr(arg_to_iter('lala'), '__iter__')
         assert hasattr(arg_to_iter([1, 2, 3]), '__iter__')
-        assert hasattr(arg_to_iter(l for l in 'abcd'), '__iter__')
+        assert hasattr(arg_to_iter(c for c in 'abcd'), '__iter__')
 
         self.assertEqual(list(arg_to_iter(None)), [])
         self.assertEqual(list(arg_to_iter('lala')), ['lala'])
         self.assertEqual(list(arg_to_iter(100)), [100])
-        self.assertEqual(list(arg_to_iter(l for l in 'abc')), ['a', 'b', 'c'])
+        self.assertEqual(list(arg_to_iter(c for c in 'abc')), ['a', 'b', 'c'])
         self.assertEqual(list(arg_to_iter([1, 2, 3])), [1, 2, 3])
         self.assertEqual(list(arg_to_iter({'a': 1})), [{'a': 1}])
         self.assertEqual(list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")])
@@ -114,8 +114,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         #   2. with from_settings() constructor
         #   3. with from_crawler() constructor
         #   4. with from_settings() and from_crawler() constructor
-        spec_sets = ([], ['from_settings'], ['from_crawler'],
-                     ['from_settings', 'from_crawler'])
+        spec_sets = (
+            ['__qualname__'],
+            ['__qualname__', 'from_settings'],
+            ['__qualname__', 'from_crawler'],
+            ['__qualname__', 'from_settings', 'from_crawler'],
+        )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
             _test_with_settings(m, settings)
@@ -123,13 +127,17 @@ class UtilsMiscTestCase(unittest.TestCase):
             _test_with_crawler(m, settings, crawler)
 
         # Check adoption of crawler settings
-        m = mock.MagicMock(spec_set=['from_settings'])
+        m = mock.MagicMock(spec_set=['__qualname__', 'from_settings'])
         create_instance(m, None, crawler, *args, **kwargs)
         m.from_settings.assert_called_once_with(crawler.settings, *args,
                                                 **kwargs)
 
         with self.assertRaises(ValueError):
             create_instance(m, None, None)
+
+        m.from_settings.return_value = None
+        with self.assertRaises(TypeError):
+            create_instance(m, settings, None)
 
     def test_set_environ(self):
         assert os.environ.get('some_test_environ') is None

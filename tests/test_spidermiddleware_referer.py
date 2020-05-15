@@ -459,7 +459,6 @@ class TestRequestMetaSettingFallback(TestCase):
         target = 'http://www.example.com'
 
         for settings, response_headers, request_meta, policy_class, check_warning in self.params[3:]:
-            spider = Spider('foo')
             mw = RefererMiddleware(Settings(settings))
 
             response = Response(origin, headers=response_headers)
@@ -511,7 +510,7 @@ class TestSettingsPolicyByName(TestCase):
     def test_invalid_name(self):
         settings = Settings({'REFERRER_POLICY': 'some-custom-unknown-policy'})
         with self.assertRaises(RuntimeError):
-            mw = RefererMiddleware(settings)
+            RefererMiddleware(settings)
 
 
 class TestPolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):

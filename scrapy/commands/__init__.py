@@ -70,8 +70,7 @@ class ScrapyCommand:
                          help="write process ID to FILE")
         group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE",
                          help="set/override setting (may be repeated)")
-        group.add_option("--pdb", action="store_true",
-                         help="enable pdb on failure")
+        group.add_option("--pdb", action="store_true", help="enable pdb on failure")
 
         parser.add_option_group(group)
 

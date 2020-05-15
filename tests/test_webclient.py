@@ -18,6 +18,14 @@ except ImportError:
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
+from twisted.web.test.test_webclient import (
+    ForeverTakingResource,
+    ErrorResource,
+    NoLengthResource,
+    HostHeaderResource,
+    PayloadResource,
+    BrokenDownloadResource,
+)
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
@@ -39,8 +47,9 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
         return f
 
     from twisted.web.client import _makeGetterFactory
-    return _makeGetterFactory(to_bytes(url), _clientfactory,
-        contextFactory=contextFactory, *args, **kwargs).deferred
+    return _makeGetterFactory(
+        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
+    ).deferred
 
 
 class ParseUrlTestCase(unittest.TestCase):
@@ -97,7 +106,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 'Content-Length': '12981',
                 'Useful': 'value'}))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Content-Length: 9\r\n"
             b"Useful: value\r\n"
@@ -110,7 +120,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request('http://foo/bar'))
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"\r\n")
@@ -122,7 +133,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             body='name=value',
             headers={'Content-Type': 'application/x-www-form-urlencoded'}))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"POST /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"Connection: close\r\n"
@@ -137,7 +149,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             url='http://foo/bar'
         ))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"POST /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"Content-Length: 0\r\n"
@@ -152,7 +165,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             },
         ))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"X-Meta-Multivalued: value1\r\n"
@@ -169,7 +183,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             }),
         ))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"X-Meta-Multivalued: value1\r\n"
@@ -198,13 +213,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol.dataReceived(b"Hello: World\n")
         protocol.dataReceived(b"Foo: Bar\n")
         protocol.dataReceived(b"\n")
-        self.assertEqual(protocol.headers,
-            Headers({'Hello': ['World'], 'Foo': ['Bar']}))
-
-
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        ErrorResource, NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+        self.assertEqual(protocol.headers, Headers({'Hello': ['World'], 'Foo': ['Bar']}))
 
 
 class EncodingResource(resource.Resource):
@@ -337,10 +346,11 @@ class WebClientTestCase(unittest.TestCase):
         return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
 
     def _cbRedirect(self, pageData):
-        self.assertEqual(pageData,
-                b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
-                b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
-                b'<a href="/file">click here</a>\n    </body>\n</html>\n')
+        self.assertEqual(
+            pageData,
+            b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
+            b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
+            b'<a href="/file">click here</a>\n    </body>\n</html>\n')
 
     def test_encoding(self):
         """ Test that non-standart body encoding matches
@@ -400,8 +410,9 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         s = "0123456789" * 10
         settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': self.custom_ciphers})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
-        return getPage(self.getURL("payload"), body=s,
-                       contextFactory=client_context_factory).addCallback(self.assertEqual, to_bytes(s))
+        return getPage(
+            self.getURL("payload"), body=s, contextFactory=client_context_factory
+        ).addCallback(self.assertEqual, to_bytes(s))
 
     def testPayloadDefaultCiphers(self):
         s = "0123456789" * 10
