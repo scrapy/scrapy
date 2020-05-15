@@ -5,7 +5,6 @@ from collections import defaultdict
 from zope.interface import implementer
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
@@ -19,15 +18,6 @@ class SpiderLoader:
 
     def __init__(self, settings):
         self.require_name = settings.getbool('SPIDER_LOADER_REQUIRE_NAME')
-        if self.require_name:
-            message = (
-                'SPIDER_LOADER_REQUIRE_NAME is True. In a future version of '
-                'Scrapy, the SPIDER_LOADER_REQUIRE_NAME setting will be '
-                'removed, and Scrapy will always behave as if '
-                'SPIDER_LOADER_REQUIRE_NAME were False. To remove this '
-                'warning, set SPIDER_LOADER_REQUIRE_NAME to False.'
-            )
-            warnings.warn(message, ScrapyDeprecationWarning)
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
         self._spiders = {}
