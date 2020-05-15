@@ -18,7 +18,7 @@ try:
 except ImportError:
     skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
-    encoders = set(('jpeg_encoder', 'jpeg_decoder'))
+    encoders = {'jpeg_encoder', 'jpeg_decoder'}
     if not encoders.issubset(set(Image.core.__dict__)):
         skip = 'Missing JPEG encoders'
 

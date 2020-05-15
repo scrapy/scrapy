@@ -549,8 +549,8 @@ class FormRequestTest(RequestTest):
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
         self.assertEqual(urlparse(r1.url).path, "/this/get.php")
         fs = _qs(r1)
-        self.assertEqual(set(fs[b'test']), set([b'val1', b'val2']))
-        self.assertEqual(set(fs[b'one']), set([b'two', b'three']))
+        self.assertEqual(set(fs[b'test']), {b'val1', b'val2'})
+        self.assertEqual(set(fs[b'one']), {b'two', b'three'})
         self.assertEqual(fs[b'test2'], [b'xxx'])
         self.assertEqual(fs[b'six'], [b'seven'])
 
@@ -1047,7 +1047,7 @@ class FormRequestTest(RequestTest):
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(set(fs), set([b'h2', b'i2', b'i1', b'i3', b'h1', b'i5', b'i4']))
+        self.assertEqual(set(fs), {b'h2', b'i2', b'i1', b'i3', b'h1', b'i5', b'i4'})
 
     def test_from_response_xpath(self):
         response = _buildresponse(

@@ -217,7 +217,7 @@ class SequenceExcludeTest(unittest.TestCase):
 
     def test_set(self):
         """Anything that is not in the supplied sequence will evaluate as 'in' the container."""
-        seq = set([-3, "test", 1.1])
+        seq = {-3, "test", 1.1}
         d = SequenceExclude(seq)
         self.assertIn(0, d)
         self.assertIn("foo", d)
