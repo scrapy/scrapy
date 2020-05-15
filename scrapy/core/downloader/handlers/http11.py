@@ -18,6 +18,7 @@ from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from zope.interface import implementer
 
+from scrapy import signals
 from scrapy.core.downloader.tls import openssl_methods
 from scrapy.core.downloader.webclient import _parse
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -34,6 +35,8 @@ class HTTP11DownloadHandler:
     lazy = False
 
     def __init__(self, settings, crawler=None):
+        self._crawler = crawler
+
         from twisted.internet import reactor
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
@@ -79,6 +82,7 @@ class HTTP11DownloadHandler:
             maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
             warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
             fail_on_dataloss=self._fail_on_dataloss,
+            crawler=self._crawler,
         )
         return agent.download_request(request)
 
@@ -276,7 +280,7 @@ class ScrapyAgent:
     _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
-                 maxsize=0, warnsize=0, fail_on_dataloss=True):
+                 maxsize=0, warnsize=0, fail_on_dataloss=True, crawler=None):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -285,6 +289,7 @@ class ScrapyAgent:
         self._warnsize = warnsize
         self._fail_on_dataloss = fail_on_dataloss
         self._txresponse = None
+        self._crawler = crawler
 
     def _get_agent(self, request, timeout):
         from twisted.internet import reactor
@@ -407,7 +412,15 @@ class ScrapyAgent:
 
         d = defer.Deferred(_cancel)
         txresponse.deliverBody(
-            _ResponseReader(d, txresponse, request, maxsize, warnsize, fail_on_dataloss)
+            _ResponseReader(
+                finished=d,
+                txresponse=txresponse,
+                request=request,
+                maxsize=maxsize,
+                warnsize=warnsize,
+                fail_on_dataloss=fail_on_dataloss,
+                crawler=self._crawler,
+            )
         )
 
         # save response for timeouts
@@ -449,7 +462,7 @@ class _RequestBodyProducer:
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, txresponse, request, maxsize, warnsize, fail_on_dataloss):
+    def __init__(self, finished, txresponse, request, maxsize, warnsize, fail_on_dataloss, crawler):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
@@ -462,6 +475,7 @@ class _ResponseReader(protocol.Protocol):
         self._bytes_received = 0
         self._certificate = None
         self._ip_address = None
+        self._crawler = crawler
 
     def connectionMade(self):
         if self._certificate is None:
@@ -478,6 +492,13 @@ class _ResponseReader(protocol.Protocol):
 
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
+
+        self._crawler.signals.send_catch_log(
+            signal=signals.bytes_received,
+            data=bodyBytes,
+            request=self._request,
+            spider=self._crawler.spider,
+        )
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "

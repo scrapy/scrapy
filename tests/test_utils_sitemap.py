@@ -22,8 +22,13 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>""")
         assert s.type == 'urlset'
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'}, {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'}])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'},
+            ]
+        )
 
     def test_sitemap_index(self):
         s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -58,10 +63,13 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ]
+        )
 
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -80,10 +88,13 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ]
+        )
 
     def test_sitemap_wrong_ns2(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -103,10 +114,13 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """)
         assert s.type == 'urlset'
-        self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+                {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ]
+        )
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
@@ -195,11 +209,19 @@ Disallow: /forum/active/
         </url>
     </urlset>""")
 
-        self.assertEqual(list(s), [
-            {'loc': 'http://www.example.com/english/',
-             'alternate': ['http://www.example.com/deutsch/', 'http://www.example.com/schweiz-deutsch/', 'http://www.example.com/english/']
-            }
-        ])
+        self.assertEqual(
+            list(s),
+            [
+                {
+                    'loc': 'http://www.example.com/english/',
+                    'alternate': [
+                        'http://www.example.com/deutsch/',
+                        'http://www.example.com/schweiz-deutsch/',
+                        'http://www.example.com/english/',
+                    ],
+                }
+            ]
+        )
 
     def test_xml_entity_expansion(self):
         s = Sitemap(b"""<?xml version="1.0" encoding="utf-8"?>

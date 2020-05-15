@@ -83,8 +83,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
-                        # FilesPipeline.from_settings.
+    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
@@ -230,6 +229,20 @@ class GCSFilesStore:
         bucket, prefix = uri[5:].split('/', 1)
         self.bucket = client.bucket(bucket)
         self.prefix = prefix
+        permissions = self.bucket.test_iam_permissions(
+            ['storage.objects.get', 'storage.objects.create']
+        )
+        if 'storage.objects.get' not in permissions:
+            logger.warning(
+                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "Checking if files are up to date will be impossible. Files will be downloaded every time.",
+                {'bucket': bucket}
+            )
+        if 'storage.objects.create' not in permissions:
+            logger.error(
+                "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
+                {'bucket': bucket}
+            )
 
     def stat_file(self, path, info):
         def _onsuccess(blob):

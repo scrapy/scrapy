@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import unittest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware, MetaRefreshMiddleware
@@ -72,7 +70,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
         req = Request(url, method='POST', body='test',
-            headers={'Content-Type': 'text/plain', 'Content-length': '4'})
+                      headers={'Content-Type': 'text/plain', 'Content-length': '4'})
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)
@@ -181,8 +179,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
             rsp = Response(url, headers={'Location': url2}, status=301, request=req)
             r = self.mw.process_response(req, rsp, self.spider)
             self.assertIs(r, rsp)
-        _test_passthrough(Request(url, meta={'handle_httpstatus_list':
-                                                           [404, 301, 302]}))
+        _test_passthrough(Request(url, meta={'handle_httpstatus_list': [404, 301, 302]}))
         _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
 
     def test_latin1_location(self):
