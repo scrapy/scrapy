@@ -792,11 +792,11 @@ class FeedExportTest(unittest.TestCase):
     def test_export_based_on_item_class(self):
         items = [
             self.MyItem({'foo': 'FOO', 'egg': 'EGG'}),
-            self.MyItem2({'hello': 'world', 'foo': 'bar'}),
+            self.MyItem2({'foo': 'bar', 'hello': 'world'}),
         ]
 
         formats = {
-            'json': b'[\n{"foo": "FOO", "egg": "EGG"},\n{"hello": "world", "foo": "bar"}\n]',
+            'json': b'[\n{"foo": "FOO", "egg": "EGG"},\n{"foo": "bar", "hello": "world"}\n]',
             'jsonlines': b'{"foo": "FOO", "egg": "EGG"}\n',
         }
 
