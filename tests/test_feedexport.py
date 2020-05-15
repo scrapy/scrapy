@@ -1106,12 +1106,14 @@ class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            self.assertEqual(len(w), 1)
+            messages = tuple(str(item.message) for item in w)
             self.assertEqual(
-                str(w[0].message),
+                messages,
                 (
-                    "StdoutFeedStorageWithoutFeedOptions does not support the "
-                    "'feed_options' keyword argument"
+                    (
+                        "StdoutFeedStorageWithoutFeedOptions does not support "
+                        "the 'feed_options' keyword argument"
+                    ),
                 )
             )
 
@@ -1139,12 +1141,14 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            self.assertEqual(len(w), 1)
+            messages = tuple(str(item.message) for item in w)
             self.assertEqual(
-                str(w[0].message),
+                messages,
                 (
-                    "FileFeedStorageWithoutFeedOptions does not support the "
-                    "'feed_options' keyword argument"
+                    (
+                        "FileFeedStorageWithoutFeedOptions does not support "
+                        "the 'feed_options' keyword argument"
+                    ),
                 )
             )
 
@@ -1180,12 +1184,14 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            self.assertEqual(len(w), 1)
+            messages = tuple(str(item.message) for item in w)
             self.assertEqual(
-                str(w[0].message),
+                messages,
                 (
-                    "S3FeedStorageWithoutFeedOptions does not support the "
-                    "'feed_options' keyword argument"
+                    (
+                        "S3FeedStorageWithoutFeedOptions does not support "
+                        "the 'feed_options' keyword argument"
+                    ),
                 )
             )
 
@@ -1245,12 +1251,14 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            self.assertEqual(len(w), 1)
+            messages = tuple(str(item.message) for item in w)
             self.assertEqual(
-                str(w[0].message),
+                messages,
                 (
-                    "FTPFeedStorageWithoutFeedOptions does not support the "
-                    "'feed_options' keyword argument"
+                    (
+                        "FTPFeedStorageWithoutFeedOptions does not support "
+                        "the 'feed_options' keyword argument"
+                    ),
                 )
             )
 
@@ -1267,11 +1275,13 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            self.assertEqual(len(w), 1)
+            messages = tuple(str(item.message) for item in w)
             self.assertEqual(
-                str(w[0].message),
+                messages,
                 (
-                    "FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
-                    "does not support the 'feed_options' keyword argument"
+                    (
+                        "FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
+                        "does not support the 'feed_options' keyword argument"
+                    ),
                 )
             )
