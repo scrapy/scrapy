@@ -125,7 +125,7 @@ and defines some attributes and methods:
   the page content and has further helpful methods to handle it.
 
   The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response: it extracts
-  the scraped data as dicts, finds new URLs to
+  the scraped data as dicts, and finds new URLs to
   follow and creates new requests (:class:`~scrapy.http.Request`) from them.
 
 How to run our spider
