@@ -986,7 +986,7 @@ class FeedExportTest(FeedExportTestBase):
         self.assertEqual(data['csv'], b'')
 
 
-class PartialDeliveriesTest(FeedExportTestBase):
+class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
     _file_mark = '_%(batch_time)s_#%(batch_id)s_'
 

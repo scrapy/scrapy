@@ -243,11 +243,11 @@ class FeedExporter:
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
-        self.storage_batch_size = self.settings.get('FEED_STORAGE_BATCH_ITEM_COUNT', None)
+        self.storage_batch_item_count = self.settings.get('FEED_STORAGE_BATCH_ITEM_COUNT', None)
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
                 raise NotConfigured
-            if not self._batch_deliveries_supported(uri):
+            if not self._settings_are_valid(uri):
                 raise NotConfigured
             if not self._exporter_supported(feed['format']):
                 raise NotConfigured
@@ -328,7 +328,7 @@ class FeedExporter:
             slot.exporter.export_item(item)
             slot.itemcount += 1
             # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_ITEM_COUNT and close the old one
-            if self.storage_batch_size and slot.itemcount == self.storage_batch_size:
+            if self.storage_batch_item_count and slot.itemcount == self.storage_batch_item_count:
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
@@ -357,12 +357,12 @@ class FeedExporter:
             return True
         logger.error("Unknown feed format: %(format)s", {'format': format})
 
-    def _batch_deliveries_supported(self, uri):
+    def _settings_are_valid(self, uri):
         """
         If FEED_STORAGE_BATCH_ITEM_COUNT setting is specified uri has to contain %(batch_time)s or %(batch_id)s
         to distinguish different files of partial output
         """
-        if self.storage_batch_size is None or '%(batch_time)s' in uri or '%(batch_id)s' in uri:
+        if not self.storage_batch_item_count or '%(batch_time)s' in uri or '%(batch_id)s' in uri:
             return True
         logger.warning('%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_ITEM_COUNT setting is specified')
         return False

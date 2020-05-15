@@ -467,4 +467,4 @@ The command line above can generate a directory tree like::
 --->3-filename2020-03-28T14-45-10.046092.json
 
 Where the first and second files contain exactly 100 items. The last one contains
-100 items or fever.
+100 items or fewer.
