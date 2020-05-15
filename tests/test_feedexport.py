@@ -796,18 +796,20 @@ class FeedExportTest(unittest.TestCase):
         ]
 
         formats = {
-            'json': b'[\n{"foo": "FOO", "egg": "EGG"},\n{"foo": "bar", "hello": "world"}\n]',
-            'jsonlines': b'{"foo": "FOO", "egg": "EGG"}\n',
+            'json': u'[\n{"foo": "FOO", "egg": "EGG"},\n{"foo": "bar", "hello": "world"}\n]'.encode('utf-8'),
+            'jsonlines': u'{"foo": "FOO", "egg": "EGG"}\n'.encode('utf-8'),
         }
 
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {
-                    'format': 'json'
+                    'format': 'json',
+                    'encoding': 'utf-8',
                 },
                 self._random_temp_filename(): {
                     'format': 'jsonlines',
-                    'item_classes': self.MyItem
+                    'item_classes': self.MyItem,
+                    'encoding': 'utf-8',
                 },
             },
         }
