@@ -202,6 +202,10 @@ class _FeedSlot:
             self.exporter.finish_exporting()
             self._exporting = False
 
+    def export_item(self, item):
+        if self.exporter._should_export_item(item):
+            self.exporter.export_item(item)
+
 
 class FeedExporter:
 
@@ -289,7 +293,7 @@ class FeedExporter:
     def item_scraped(self, item, spider):
         for slot in self.slots:
             slot.start_exporting()
-            slot.exporter.export_item(item)
+            slot.export_item(item)
             slot.itemcount += 1
 
     def _load_components(self, setting_prefix):
