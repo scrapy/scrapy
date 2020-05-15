@@ -1202,12 +1202,14 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            self.assertEqual(len(w), 1)
+            messages = tuple(str(item.message) for item in w)
             self.assertEqual(
-                str(w[0].message),
+                messages,
                 (
-                    "S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
-                    "does not support the 'feed_options' keyword argument"
+                    (
+                        "S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
+                        "does not support the 'feed_options' keyword argument"
+                    ),
                 )
             )
 
