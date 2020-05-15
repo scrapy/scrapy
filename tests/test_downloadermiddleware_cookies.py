@@ -63,7 +63,7 @@ class CookiesMiddlewareTest(TestCase):
         mw = CookiesMiddleware.from_crawler(crawler)
         with LogCapture('scrapy.downloadermiddlewares.cookies',
                         propagate=False,
-                        level=logging.DEBUG) as l:
+                        level=logging.DEBUG) as log:
             req = Request('http://scrapytest.org/')
             res = Response('http://scrapytest.org/',
                            headers={'Set-Cookie': 'C1=value1; path=/'})
@@ -71,7 +71,7 @@ class CookiesMiddlewareTest(TestCase):
             req2 = Request('http://scrapytest.org/sub1/')
             mw.process_request(req2, crawler.spider)
 
-            l.check(
+            log.check(
                 ('scrapy.downloadermiddlewares.cookies',
                  'DEBUG',
                  'Received cookies from: <200 http://scrapytest.org/>\n'
@@ -87,7 +87,7 @@ class CookiesMiddlewareTest(TestCase):
         mw = CookiesMiddleware.from_crawler(crawler)
         with LogCapture('scrapy.downloadermiddlewares.cookies',
                         propagate=False,
-                        level=logging.DEBUG) as l:
+                        level=logging.DEBUG) as log:
             req = Request('http://scrapytest.org/')
             res = Response('http://scrapytest.org/',
                            headers={'Set-Cookie': 'C1=value1; path=/'})
@@ -95,7 +95,7 @@ class CookiesMiddlewareTest(TestCase):
             req2 = Request('http://scrapytest.org/sub1/')
             mw.process_request(req2, crawler.spider)
 
-            l.check()
+            log.check()
 
     def test_do_not_break_on_non_utf8_header(self):
         req = Request('http://scrapytest.org/')
