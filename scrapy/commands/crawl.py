@@ -1,8 +1,8 @@
-from scrapy.commands import BaseRunSpiderCommands
+from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 
 
-class Command(BaseRunSpiderCommands):
+class Command(BaseRunSpiderCommand):
 
     requires_project = True
 

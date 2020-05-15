@@ -107,7 +107,7 @@ class ScrapyCommand:
         raise NotImplementedError
 
 
-class BaseRunSpiderCommands(ScrapyCommand):
+class BaseRunSpiderCommand(ScrapyCommand):
     """
     The BaseRunSpiderCommands class inherits the ScrapyCommand class and it Used for
     performing common functionality between crawl.py and runspider.py
