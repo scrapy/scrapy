@@ -791,13 +791,14 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_export_based_on_item_class(self):
         items = [
-            self.MyItem({'foo': 'FOO', 'egg': 'EGG'}),
-            self.MyItem2({'foo': 'bar', 'hello': 'world'}),
+            self.MyItem({'foo': 'BAR'}),
+            self.MyItem2({'hello': 'WORLD'}),
         ]
 
         formats = {
-            'json': b'[\n{"foo": "FOO", "egg": "EGG"},\n{"foo": "bar", "hello": "world"}\n]',
-            'jsonlines': b'{"foo": "FOO", "egg": "EGG"}\n',
+            'json': b'[\n{"foo": "BAR"},\n{"hello": "WORLD"}\n]',
+            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>BAR</foo></item>\n</items>',
+            'jsonlines': b'{"foo": "BAR"}\n{"hello": "WORLD"}\n',
         }
 
         settings = {
@@ -806,8 +807,13 @@ class FeedExportTest(unittest.TestCase):
                     'format': 'json',
                 },
                 self._random_temp_filename(): {
-                    'format': 'jsonlines',
+                    'format': 'xml',
                     'item_classes': self.MyItem,
+                    'encoding': 'utf-8',
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'item_classes': (self.MyItem, self.MyItem2),
                 },
             },
         }
