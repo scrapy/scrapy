@@ -14,7 +14,7 @@ class TestDisplay(TestCase):
                 '{\x1b[38;5;124m"\x1b[39m\x1b[38;5;124ma\x1b[39m\x1b[38;5;124m"\x1b[39m: \x1b[38;5;241m1\x1b[39m}\n'
             )
         else:
-            self.assertEquals(
+            self.assertEqual(
                 _colorize('{"a": 1}'),
                 '{\x1b[33m"\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m"\x1b[39;49;00m: \x1b[94m1\x1b[39;49;00m}\n'
             )
