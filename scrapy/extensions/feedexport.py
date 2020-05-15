@@ -180,7 +180,7 @@ class FTPFeedStorage(BlockingFeedStorage):
 
 
 class _FeedSlot:
-    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, template_uri):
+    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, uri_template):
         self.file = file
         self.exporter = exporter
         self.storage = storage
@@ -188,7 +188,7 @@ class _FeedSlot:
         self.batch_id = batch_id
         self.format = format
         self.store_empty = store_empty
-        self.template_uri = template_uri
+        self.uri_template = uri_template
         self.uri = uri
         # flags
         self.itemcount = 0
@@ -260,7 +260,7 @@ class FeedExporter:
                 uri=uri % uri_params,
                 feed=feed,
                 spider=spider,
-                template_uri=uri,
+                uri_template=uri,
             ))
 
     def close_spider(self, spider):
@@ -288,7 +288,7 @@ class FeedExporter:
                                             extra={'spider': spider}))
         return d
 
-    def _start_new_batch(self, batch_id, uri, feed, spider, template_uri):
+    def _start_new_batch(self, batch_id, uri, feed, spider, uri_template):
         """
         Redirect the output data stream to a new file.
         Execute multiple times if 'FEED_STORAGE_BATCH_ITEM_COUNT' setting is specified.
@@ -296,7 +296,7 @@ class FeedExporter:
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
         :param spider: user spider
-        :param template_uri: template uri which contains %(batch_time)s or %(batch_id)s to create new uri
+        :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)s to create new uri
         """
         storage = self._get_storage(uri)
         file = storage.open(spider)
@@ -315,7 +315,7 @@ class FeedExporter:
             format=feed['format'],
             store_empty=feed['store_empty'],
             batch_id=batch_id,
-            template_uri=template_uri,
+            uri_template=uri_template,
         )
         if slot.store_empty:
             slot.start_exporting()
@@ -329,14 +329,14 @@ class FeedExporter:
             slot.itemcount += 1
             # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_ITEM_COUNT and close the old one
             if self.storage_batch_size and slot.itemcount == self.storage_batch_size:
-                uri_params = self._get_uri_params(spider, self.feeds[slot.template_uri]['uri_params'], slot)
+                uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
                     batch_id=slot.batch_id + 1,
-                    uri=slot.template_uri % uri_params,
-                    feed=self.feeds[slot.template_uri],
+                    uri=slot.uri_template % uri_params,
+                    feed=self.feeds[slot.uri_template],
                     spider=spider,
-                    template_uri=slot.template_uri,
+                    uri_template=slot.uri_template,
                 ))
             else:
                 slots.append(slot)
