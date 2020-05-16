@@ -36,7 +36,7 @@ class BaseItem(_BaseItem, metaclass=_BaseItemMeta):
     """
 
     def __new__(cls, *args, **kwargs):
-        if issubclass(cls, BaseItem) and not (issubclass(cls, Item) or issubclass(cls, DictItem)):
+        if issubclass(cls, BaseItem) and not issubclass(cls, (Item, DictItem)):
             warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
                  ScrapyDeprecationWarning, stacklevel=2)
         return super(BaseItem, cls).__new__(cls, *args, **kwargs)
