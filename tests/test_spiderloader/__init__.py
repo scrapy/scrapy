@@ -42,7 +42,7 @@ class SpiderLoaderTest(unittest.TestCase):
     def test_list(self):
         self.assertEqual(
             set(self.spider_loader.list()),
-            set(['spider1', 'spider2', 'spider3', 'spider4']))
+            {'spider1', 'spider2', 'spider3', 'spider4'})
 
     def test_load(self):
         spider1 = self.spider_loader.load("spider1")
@@ -57,7 +57,7 @@ class SpiderLoaderTest(unittest.TestCase):
             ['spider2'])
         self.assertEqual(
             set(self.spider_loader.find_by_request(Request('http://scrapy3.org/test'))),
-            set(['spider1', 'spider2']))
+            {'spider1', 'spider2'})
         self.assertEqual(
             self.spider_loader.find_by_request(Request('http://scrapy999.org/test')),
             [])
@@ -151,7 +151,7 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             self.assertNotIn("'spider4'", msg)
 
             spiders = set(spider_loader.list())
-            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
+            self.assertEqual(spiders, {'spider1', 'spider2', 'spider3', 'spider4'})
 
     def test_multiple_dupename_warning(self):
         # copy 2 spider modules so as to have duplicate spider name
@@ -177,4 +177,4 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
             self.assertNotIn("'spider4'", msg)
 
             spiders = set(spider_loader.list())
-            self.assertEqual(spiders, set(['spider1', 'spider2', 'spider3', 'spider4']))
+            self.assertEqual(spiders, {'spider1', 'spider2', 'spider3', 'spider4'})
