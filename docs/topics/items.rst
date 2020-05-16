@@ -21,9 +21,11 @@ receives an item, your code should :ref:`work for any item type
 Item Types
 ==========
 
-Scrapy supports the following types of items: :ref:`dictionaries <dict-items>`,
-:ref:`Item objects <item-objects>`, :ref:`dataclass objects <dataclass-items>`,
-and :ref:`attrs objects <attrs-items>`.
+Scrapy supports the following types of items, via the `itemadapter`_ library:
+:ref:`dictionaries <dict-items>`, :ref:`Item objects <item-objects>`,
+:ref:`dataclass objects <dataclass-items>`, and :ref:`attrs objects <attrs-items>`.
+
+.. _itemadapter: https://github.com/scrapy/itemadapter
 
 .. _dict-items:
 
