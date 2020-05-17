@@ -686,7 +686,7 @@ class TextResponseTest(BaseResponseTest):
             json_response = self.response_class("http://www.example.com", body=json_body)
 
             with mock.patch('json.loads') as mock_json:
-                for i in range(2):
+                for _ in range(2):
                     json_response.json()
                 mock_json.assert_called_once_with(json_body.decode())
 
