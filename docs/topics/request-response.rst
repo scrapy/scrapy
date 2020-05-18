@@ -837,7 +837,7 @@ TextResponse objects
     .. automethod:: TextResponse.json()
 
         Returns a Python object from deserialized JSON document.
-        Result is cached after the first call.
+        The result is cached after the first call.
 
 
 HtmlResponse objects
