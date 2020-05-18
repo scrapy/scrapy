@@ -85,7 +85,6 @@ contain a price::
 
     from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
-    
     class PricePipeline:
 
         vat_factor = 1.15
