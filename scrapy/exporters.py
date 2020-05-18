@@ -10,7 +10,7 @@ import pprint
 import warnings
 from xml.sax.saxutils import XMLGenerator
 
-from itemadapter import ItemAdapter, is_item
+from itemadapter import is_item, ItemAdapter
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import _BaseItem
