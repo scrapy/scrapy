@@ -1,5 +1,5 @@
 # coding: utf-8
-import inspect
+from scrapy.utils.defer import isasyncgen
 
 
 def process_normal_iterable_helper(it, in_predicate=None, out_predicate=None, processor=None):
@@ -18,7 +18,7 @@ def process_iterable_helper(it, in_predicate=None, out_predicate=None, processor
     For each item in the iterable: skips it if in_predicate is False, applies processor,
     skips the result if out_predicate is False, else yields it.
     """
-    if hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(it):
+    if isasyncgen(it):
         from scrapy.utils.asyncgen import process_async_iterable_helper  # Python 3.5 limitation
         return process_async_iterable_helper(it, in_predicate, out_predicate, processor)
     else:

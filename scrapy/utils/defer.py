@@ -170,3 +170,10 @@ def maybeDeferred_coro(f, *args, **kw):
         return defer.fail(result)
     else:
         return defer.succeed(result)
+
+
+def isasyncgen(o):
+    """ Returns inspect.isasyncgen() result if it's available (requires Python 3.6),
+    otherwise returns False.
+    """
+    return hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(o)
