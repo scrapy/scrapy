@@ -360,15 +360,6 @@ Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameReso
 Note that by doing so, you lose the ability to set a specific timeout for DNS requests
 (the value of the :setting:`DNS_TIMEOUT` setting is ignored).
 
-.. _faq-dataclass-items:
-
-Can I use dataclasses as items?
--------------------------------
-
-Support for :class:`dataclasses.dataclass` objects as items was added in version 2.1.
-This works natively in Python 3.7+, or using the `dataclasses backport`_ in Python 3.6.
-See :ref:`topics-items` for more information.
-
 
 .. _faq-specific-reactor:
 
@@ -385,4 +376,3 @@ different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
 .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search
-.. _dataclasses backport: https://pypi.org/project/dataclasses/
