@@ -63,19 +63,19 @@ class ItemLoader(itemloaders.ItemLoader):
         The default output processor to use for those fields which don't specify
         one.
 
-    .. attribute:: default_selector_class	
+    .. attribute:: default_selector_class
 
-        The class used to construct the :attr:`selector` of this	
-        :class:`ItemLoader`, if only a response is given in the ``__init__`` method.	
-        If a selector is given in the ``__init__`` method this attribute is ignored.	
+        The class used to construct the :attr:`selector` of this
+        :class:`ItemLoader`, if only a response is given in the ``__init__`` method.
+        If a selector is given in the ``__init__`` method this attribute is ignored.
         This attribute is sometimes overridden in subclasses.
 
     .. attribute:: selector
 
-        The :class:`~scrapy.selector.Selector` object to extract data from.	
-        It's either the selector given in the ``__init__`` method or one created from	
-        the response given in the ``__init__`` method using the	
-        :attr:`default_selector_class`. This attribute is meant to be	
+        The :class:`~scrapy.selector.Selector` object to extract data from.
+        It's either the selector given in the ``__init__`` method or one created from
+        the response given in the ``__init__`` method using the
+        :attr:`default_selector_class`. This attribute is meant to be
         read-only.
     """
 
