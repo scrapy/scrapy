@@ -275,6 +275,38 @@ as a fallback value if that key is not provided for a specific feed definition.
 * ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
 * ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
 
+item_classes
+------------
+
+.. versionadded:: 2.2
+
+Default: ``None``
+
+Acceptable key in FEEDS that allows for filtering which item class types get exported to each URI. If 'item_classes' is unset, it defaults to ``None`` which will include all item classes. 
+
+Acceptable values include None, a single Item class object, or a tuple of Item class objects
+
+For instance::
+
+    from my_project.items import Item, AnotherItem
+    
+    FEEDS = {
+            'export.json': {
+                'format': json,
+            },
+            'file:///tmp/export.json': {
+                'format': json,
+                'item_classes': None,
+            },
+            'ftp://user:pass@ftp.example.com/path/to/export.json': {
+                'format': json,
+                'item_classes': Item,
+            },
+            's3://mybucket/path/to/export.json': {
+                'format': json,
+                'item_classes': (Item, AnotherItem),
+            }
+
 .. setting:: FEED_EXPORT_ENCODING
 
 FEED_EXPORT_ENCODING
