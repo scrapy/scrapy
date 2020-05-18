@@ -332,10 +332,10 @@ class PythonItemExporter(BaseItemExporter):
             return encode_func(value, encoding=self.encoding)
         return value
 
-    def _serialize_item(self, value):
-        for key, val in value.items():
+    def _serialize_item(self, item):
+        for key, value in ItemAdapter(item).items():
             key = to_bytes(key) if self.binary else key
-            yield key, self._serialize_value(val)
+            yield key, self._serialize_value(value)
 
     def export_item(self, item):
         result = dict(self._get_serialized_fields(item))
