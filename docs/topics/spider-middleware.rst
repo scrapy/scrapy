@@ -148,8 +148,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
     .. method:: process_start_requests(start_requests, spider)
 
         .. versionadded:: 0.15
-        .. versionchanged:: 2.1
-           Since 2.1 this can take and return an :term:`python:asynchronous
+        .. versionchanged:: 2.2
+           Since 2.2 this can take and return an :term:`python:asynchronous
            iterable`.
 
         This method is called with the start requests of the spider, and works
@@ -165,7 +165,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         middleware method should be an :term:`python:asynchronous generator`,
         which should support both synchronous and asynchronous
         ``start_requests``. :func:`scrapy.utils.asyncgen.as_async_generator`
-        can be used to convert both kinds of ``start_requests`` to an
+        can be used to convert both kinds of ``start_requests`` into an
         asynchronous iterable.
 
         .. note:: When implementing this method in your spider middleware, you

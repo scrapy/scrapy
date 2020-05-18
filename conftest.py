@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import pytest
@@ -8,8 +9,6 @@ def _py_files(folder):
 
 
 collect_ignore = [
-    # no tests and not importable on 3.5
-    "scrapy/utils/asyncgen.py",
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
@@ -19,6 +18,10 @@ collect_ignore = [
     # Py36-only parts of respective tests
     *_py_files("tests/py36"),
 ]
+
+if sys.version_info < (3, 6):
+    # not importable on 3.5
+    collect_ignore.append("scrapy/utils/asyncgen.py")
 
 for line in open('tests/ignores.txt'):
     file_path = line.strip()
