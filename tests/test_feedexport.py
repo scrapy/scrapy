@@ -1112,7 +1112,10 @@ class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 (
                     (
                         "StdoutFeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument"
+                        "the 'feed_options' keyword argument. Add a "
+                        "'feed_options' parameter to its signature to remove "
+                        "this warning. This parameter will become mandatory "
+                        "in a future version of Scrapy."
                     ),
                 )
             )
@@ -1147,7 +1150,10 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 (
                     (
                         "FileFeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument"
+                        "the 'feed_options' keyword argument. Add a "
+                        "'feed_options' parameter to its signature to remove "
+                        "this warning. This parameter will become mandatory "
+                        "in a future version of Scrapy."
                     ),
                 )
             )
@@ -1190,7 +1196,10 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
                 (
                     (
                         "S3FeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument"
+                        "the 'feed_options' keyword argument. Add a "
+                        "'feed_options' parameter to its signature to remove "
+                        "this warning. This parameter will become mandatory "
+                        "in a future version of Scrapy."
                     ),
                 )
             )
@@ -1214,7 +1223,10 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
                 (
                     (
                         "S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
-                        "does not support the 'feed_options' keyword argument"
+                        "does not support the 'feed_options' keyword argument. Add a "
+                        "'feed_options' parameter to its signature to remove "
+                        "this warning. This parameter will become mandatory "
+                        "in a future version of Scrapy."
                     ),
                 )
             )
@@ -1257,7 +1269,10 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 (
                     (
                         "FTPFeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument"
+                        "the 'feed_options' keyword argument. Add a "
+                        "'feed_options' parameter to its signature to remove "
+                        "this warning. This parameter will become mandatory "
+                        "in a future version of Scrapy."
                     ),
                 )
             )
@@ -1281,7 +1296,10 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 (
                     (
                         "FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
-                        "does not support the 'feed_options' keyword argument"
+                        "does not support the 'feed_options' keyword argument. Add a "
+                        "'feed_options' parameter to its signature to remove "
+                        "this warning. This parameter will become mandatory "
+                        "in a future version of Scrapy."
                     ),
                 )
             )
