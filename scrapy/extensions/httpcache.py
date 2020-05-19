@@ -46,9 +46,10 @@ class RFC2616Policy:
     def __init__(self, settings):
         self.always_store = settings.getbool('HTTPCACHE_ALWAYS_STORE')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_response_cache_controls = [to_bytes(cc) for cc in
-            settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')]
         self._cc_parsed = WeakKeyDictionary()
+        self.ignore_response_cache_controls = [
+            to_bytes(cc) for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
+        ]
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:
@@ -250,7 +251,7 @@ class DbmCacheStorage:
             'headers': dict(response.headers),
             'body': response.body,
         }
-        self.db['%s_data' % key] = pickle.dumps(data, protocol=2)
+        self.db['%s_data' % key] = pickle.dumps(data, protocol=4)
         self.db['%s_time' % key] = str(time())
 
     def _read_data(self, spider, request):
@@ -317,7 +318,7 @@ class FilesystemCacheStorage:
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
             f.write(to_bytes(repr(metadata)))
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
-            pickle.dump(metadata, f, protocol=2)
+            pickle.dump(metadata, f, protocol=4)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
             f.write(headers_dict_to_raw(response.headers))
         with self._open(os.path.join(rpath, 'response_body'), 'wb') as f:

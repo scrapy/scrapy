@@ -100,11 +100,12 @@ class S3DownloadHandler:
                 url=url, headers=awsrequest.headers.items())
         else:
             signed_headers = self.conn.make_request(
-                    method=request.method,
-                    bucket=bucket,
-                    key=unquote(p.path),
-                    query_args=unquote(p.query),
-                    headers=request.headers,
-                    data=request.body)
+                method=request.method,
+                bucket=bucket,
+                key=unquote(p.path),
+                query_args=unquote(p.query),
+                headers=request.headers,
+                data=request.body,
+            )
             request = request.replace(url=url, headers=signed_headers)
         return self._download_http(request, spider)

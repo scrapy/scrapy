@@ -12,7 +12,7 @@ from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.utils.python import to_bytes, to_unicode, is_listlike
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
@@ -258,7 +258,7 @@ class CsvItemExporter(BaseItemExporter):
 
 class PickleItemExporter(BaseItemExporter):
 
-    def __init__(self, file, protocol=2, **kwargs):
+    def __init__(self, file, protocol=4, **kwargs):
         super().__init__(**kwargs)
         self.file = file
         self.protocol = protocol
@@ -320,7 +320,7 @@ class PythonItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _serialize_value(self, value):
-        if isinstance(value, BaseItem):
+        if isinstance(value, _BaseItem):
             return self.export_item(value)
         if isinstance(value, dict):
             return dict(self._serialize_dict(value))

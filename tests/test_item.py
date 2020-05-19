@@ -4,7 +4,7 @@ from unittest import mock
 from warnings import catch_warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
+from scrapy.item import ABCMeta, _BaseItem, BaseItem, DictItem, Field, Item, ItemMeta
 
 
 PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
@@ -131,12 +131,12 @@ class ItemTest(unittest.TestCase):
         self.assertSortedEqual(list(item.values()), [u'New'])
 
     def test_metaclass_inheritance(self):
-        class BaseItem(Item):
+        class ParentItem(Item):
             name = Field()
             keys = Field()
             values = Field()
 
-        class TestItem(BaseItem):
+        class TestItem(ParentItem):
             keys = Field()
 
         i = TestItem()
@@ -162,8 +162,7 @@ class ItemTest(unittest.TestCase):
         item = D(save='X', load='Y')
         self.assertEqual(item['save'], 'X')
         self.assertEqual(item['load'], 'Y')
-        self.assertEqual(D.fields, {'load': {'default': 'A'},
-            'save': {'default': 'A'}})
+        self.assertEqual(D.fields, {'load': {'default': 'A'}, 'save': {'default': 'A'}})
 
         # D class inverted
         class E(C, B):
@@ -171,8 +170,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
-        self.assertEqual(E.fields, {'load': {'default': 'C'},
-            'save': {'default': 'C'}})
+        self.assertEqual(E.fields, {'load': {'default': 'C'}, 'save': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_diamond(self):
         class A(Item):
@@ -193,8 +191,9 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(D(save='X')['save'], 'X')
         self.assertEqual(D(load='X')['load'], 'X')
-        self.assertEqual(D.fields, {'save': {'default': 'C'},
-            'load': {'default': 'D'}, 'update': {'default': 'D'}})
+        self.assertEqual(
+            D.fields,
+            {'save': {'default': 'C'}, 'load': {'default': 'D'}, 'update': {'default': 'D'}})
 
         # D class inverted
         class E(C, B):
@@ -202,8 +201,9 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
-        self.assertEqual(E.fields, {'save': {'default': 'C'},
-            'load': {'default': 'E'}, 'update': {'default': 'C'}})
+        self.assertEqual(
+            E.fields,
+            {'save': {'default': 'C'}, 'load': {'default': 'E'}, 'update': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_without_metaclass(self):
         class A(Item):
@@ -223,8 +223,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertRaises(KeyError, D, not_allowed='value')
         self.assertEqual(D(save='X')['save'], 'X')
-        self.assertEqual(D.fields, {'save': {'default': 'A'},
-            'load': {'default': 'A'}})
+        self.assertEqual(D.fields, {'save': {'default': 'A'}, 'load': {'default': 'A'}})
 
         # D class inverted
         class E(C, B):
@@ -232,8 +231,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertRaises(KeyError, E, not_allowed='value')
         self.assertEqual(E(save='X')['save'], 'X')
-        self.assertEqual(E.fields, {'save': {'default': 'A'},
-            'load': {'default': 'A'}})
+        self.assertEqual(E.fields, {'save': {'default': 'A'}, 'load': {'default': 'A'}})
 
     def test_to_dict(self):
         class TestItem(Item):
@@ -264,12 +262,12 @@ class ItemTest(unittest.TestCase):
         """Make sure the DictItem deprecation warning is not issued for
         Item"""
         with catch_warnings(record=True) as warnings:
-            item = Item()
+            Item()
             self.assertEqual(len(warnings), 0)
 
             class SubclassedItem(Item):
                 pass
-            subclassed_item = SubclassedItem()
+            SubclassedItem()
             self.assertEqual(len(warnings), 0)
 
 
@@ -321,15 +319,87 @@ class DictItemTest(unittest.TestCase):
 
     def test_deprecation_warning(self):
         with catch_warnings(record=True) as warnings:
-            dict_item = DictItem()
+            DictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         with catch_warnings(record=True) as warnings:
             class SubclassedDictItem(DictItem):
                 pass
-            subclassed_dict_item = SubclassedDictItem()
+            SubclassedDictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+
+class BaseItemTest(unittest.TestCase):
+
+    def test_isinstance_check(self):
+
+        class SubclassedBaseItem(BaseItem):
+            pass
+
+        class SubclassedItem(Item):
+            pass
+
+        self.assertTrue(isinstance(BaseItem(), BaseItem))
+        self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
+        self.assertTrue(isinstance(Item(), BaseItem))
+        self.assertTrue(isinstance(SubclassedItem(), BaseItem))
+
+        # make sure internal checks using private _BaseItem class succeed
+        self.assertTrue(isinstance(BaseItem(), _BaseItem))
+        self.assertTrue(isinstance(SubclassedBaseItem(), _BaseItem))
+        self.assertTrue(isinstance(Item(), _BaseItem))
+        self.assertTrue(isinstance(SubclassedItem(), _BaseItem))
+
+    def test_deprecation_warning(self):
+        """
+        Make sure deprecation warnings are logged whenever BaseItem is used,
+        either instantiated or in an isinstance check
+        """
+        with catch_warnings(record=True) as warnings:
+            BaseItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+        with catch_warnings(record=True) as warnings:
+
+            class SubclassedBaseItem(BaseItem):
+                pass
+
+            SubclassedBaseItem()
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+        with catch_warnings(record=True) as warnings:
+            self.assertFalse(isinstance("foo", BaseItem))
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+        with catch_warnings(record=True) as warnings:
+            self.assertTrue(isinstance(BaseItem(), BaseItem))
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+
+class ItemNoDeprecationWarningTest(unittest.TestCase):
+    def test_no_deprecation_warning(self):
+        """
+        Make sure deprecation warnings are NOT logged whenever BaseItem subclasses are used.
+        """
+        class SubclassedItem(Item):
+            pass
+
+        with catch_warnings(record=True) as warnings:
+            Item()
+            SubclassedItem()
+            _BaseItem()
+            self.assertFalse(isinstance("foo", _BaseItem))
+            self.assertFalse(isinstance("foo", Item))
+            self.assertFalse(isinstance("foo", SubclassedItem))
+            self.assertTrue(isinstance(_BaseItem(), _BaseItem))
+            self.assertTrue(isinstance(Item(), Item))
+            self.assertTrue(isinstance(SubclassedItem(), SubclassedItem))
+            self.assertEqual(len(warnings), 0)
 
 
 if __name__ == "__main__":
