@@ -416,11 +416,22 @@ account::
         def fingerprint(self, request):
             return request_fingerprint(request, include_headers=['X-ID'])
 
-You can also write your own fingerprinting logic from scratch. However, if you
-do not use :func:`~scrapy.utils.request.request_fingerprint`, make sure you use
-:class:`~weakref.WeakKeyDictionary` to cache request fingerprints. For example,
-to take into account only the URL of a request, without any prior URL
-canonicalization::
+You can also write your own fingerprinting logic from scratch.
+
+However, if you do not use :func:`~scrapy.utils.request.request_fingerprint`,
+make sure you use :class:`~weakref.WeakKeyDictionary` to cache request
+fingerprints:
+
+-   Caching saves CPU by ensuring that fingerprints are calculated only once
+    per request, and not once per Scrapy component that needs the fingerprint
+    of a request.
+
+-   Using :class:`~weakref.WeakKeyDictionary` saves memory by ensuring that
+    request objects do not stay in memory forever just because you have
+    references to them in your cache dictionary.
+
+For example, to take into account only the URL of a request, without any prior
+URL canonicalization::
 
     from hashlib import sha1
     from weakref import WeakKeyDictionary
