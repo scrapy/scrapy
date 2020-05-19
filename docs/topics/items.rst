@@ -257,6 +257,4 @@ Field objects
 Other classes related to Item
 =============================
 
-.. autoclass:: BaseItem
-
 .. autoclass:: ItemMeta

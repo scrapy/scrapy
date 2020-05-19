@@ -27,8 +27,8 @@ class Command(ScrapyCommand):
         parser.add_option("--spider", dest="spider", help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true",
                           help="print response HTTP headers instead of body")
-        parser.add_option("--no-redirect", dest="no_redirect", action="store_true",
-                          default=False, help="do not handle HTTP 3xx status codes and print response as-is")
+        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", default=False,
+                          help="do not handle HTTP 3xx status codes and print response as-is")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():

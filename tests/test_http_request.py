@@ -415,8 +415,7 @@ class FormRequestTest(RequestTest):
         # using multiples values for a single key
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = self.request_class("http://www.example.com", formdata=data)
-        self.assertQueryEqual(r3.body,
-            b'colours=red&colours=blue&colours=green&price=%C2%A3+100')
+        self.assertQueryEqual(r3.body, b'colours=red&colours=blue&colours=green&price=%C2%A3+100')
 
     def test_from_response_post(self):
         response = _buildresponse(
@@ -426,8 +425,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx">
             </form>""",
             url="http://www.example.com/this/list.html")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -446,8 +444,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx \xc2\xb5">
             </form>""",
             url="http://www.example.com/this/list.html")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -468,8 +465,7 @@ class FormRequestTest(RequestTest):
             url="http://www.example.com/this/list.html",
             encoding='latin1',
         )
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -488,8 +484,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx µ">
             </form>""",
             url="http://www.example.com/this/list.html")
-        req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        req = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
 
         self.assertEqual(req.method, 'POST')
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
@@ -549,14 +544,13 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx">
             </form>""",
             url="http://www.example.com/this/list.html")
-        r1 = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(r1.method, 'GET')
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
         self.assertEqual(urlparse(r1.url).path, "/this/get.php")
         fs = _qs(r1)
-        self.assertEqual(set(fs[b'test']), set([b'val1', b'val2']))
-        self.assertEqual(set(fs[b'one']), set([b'two', b'three']))
+        self.assertEqual(set(fs[b'test']), {b'val1', b'val2'})
+        self.assertEqual(set(fs[b'one']), {b'two', b'three'})
         self.assertEqual(fs[b'test2'], [b'xxx'])
         self.assertEqual(fs[b'six'], [b'seven'])
 
@@ -1053,7 +1047,7 @@ class FormRequestTest(RequestTest):
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(set(fs), set([b'h2', b'i2', b'i1', b'i3', b'h1', b'i5', b'i4']))
+        self.assertEqual(set(fs), {b'h2', b'i2', b'i1', b'i3', b'h1', b'i5', b'i4'})
 
     def test_from_response_xpath(self):
         response = _buildresponse(
@@ -1264,7 +1258,10 @@ class XmlRpcRequestTest(RequestTest):
 class JsonRequestTest(RequestTest):
     request_class = JsonRequest
     default_method = 'GET'
-    default_headers = {b'Content-Type': [b'application/json'], b'Accept': [b'application/json, text/javascript, */*; q=0.01']}
+    default_headers = {
+        b'Content-Type': [b'application/json'],
+        b'Accept': [b'application/json, text/javascript, */*; q=0.01'],
+    }
 
     def setUp(self):
         warnings.simplefilter("always")
