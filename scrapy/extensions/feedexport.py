@@ -35,7 +35,10 @@ def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
         kwargs['feed_options'] = feed_options
     else:
         warnings.warn(
-            "{} does not support the 'feed_options' keyword argument"
+            "{} does not support the 'feed_options' keyword argument. Add a "
+            "'feed_options' parameter to its signature to remove this "
+            "warning. This parameter will become mandatory in a future "
+            "version of Scrapy."
             .format(builder.__qualname__),
             category=ScrapyDeprecationWarning
         )
