@@ -383,17 +383,5 @@ projects. Scrapy only provides the mechanism; it doesn't impose any specific
 organization of your Loaders collection - that's up to you and your project's
 needs.
 
-<<<<<<< HEAD
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
 .. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html
-=======
-.. _topics-loaders-available-processors:
-
-Available built-in processors
-=============================
-
-.. automodule:: itemloaders.processors
-    :members:
-
-.. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
->>>>>>> 68f2dbc394060d619cef80e0f714d5f21cd5e369
