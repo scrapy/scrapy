@@ -200,10 +200,11 @@ class Scraper:
             pass
         else:
             typename = type(output).__name__
-            logger.error('Spider must return Request, BaseItem, dict, dataclass or None, '
-                         'got %(typename)r in %(request)s',
-                         {'request': request, 'typename': typename},
-                         extra={'spider': spider})
+            logger.error(
+                'Spider must return request, item, or None, got %(typename)r in %(request)s',
+                {'request': request, 'typename': typename},
+                extra={'spider': spider},
+            )
 
     def _log_download_errors(self, spider_failure, download_failure, request, spider):
         """Log and silence errors that come from the engine (typically download

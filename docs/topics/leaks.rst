@@ -62,7 +62,7 @@ Debugging memory leaks with ``trackref``
 
 :mod:`trackref` is a module provided by Scrapy to debug the most common cases of
 memory leaks. It basically tracks the references to all live Request,
-Response, BaseItem, Spider and Selector objects.
+Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
@@ -92,7 +92,7 @@ subclasses):
 
 * :class:`scrapy.http.Request`
 * :class:`scrapy.http.Response`
-* :class:`scrapy.item.BaseItem`
+* :class:`scrapy.item.Item`
 * :class:`scrapy.selector.Selector`
 * :class:`scrapy.spiders.Spider`
 
