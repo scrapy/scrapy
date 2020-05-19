@@ -22,6 +22,7 @@ collect_ignore = [
 if sys.version_info < (3, 6):
     # not importable on 3.5
     collect_ignore.append("scrapy/utils/asyncgen.py")
+    collect_ignore.append("scrapy/utils/py36.py")
 
 for line in open('tests/ignores.txt'):
     file_path = line.strip()
