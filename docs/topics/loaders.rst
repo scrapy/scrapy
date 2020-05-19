@@ -154,7 +154,7 @@ processors are collected internally (in lists) and then passed to output
 processors to populate the fields.
 
 Last, but not least, ``itemloaders`` comes with some :ref:`commonly used
-processors <topics-loaders-available-processors>` built-in for convenience.
+processors <processors>` built-in for convenience.
 
 
 
@@ -164,8 +164,8 @@ Declaring Item Loaders
 Item Loaders are declared like Items, by using a class definition syntax. Here
 is an example::
 
-    from scrapy.loader import ItemLoader
     from itemloaders.processors import TakeFirst, MapCompose, Join
+    from scrapy.loader import ItemLoader
 
     class ProductLoader(ItemLoader):
 
@@ -195,8 +195,8 @@ this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
-    import scrapy
     from itemloaders.processors import Join, MapCompose, TakeFirst
+    import scrapy
     from w3lib.html import remove_tags
 
     def filter_price(value):
@@ -383,12 +383,5 @@ projects. Scrapy only provides the mechanism; it doesn't impose any specific
 organization of your Loaders collection - that's up to you and your project's
 needs.
 
-.. _topics-loaders-available-processors:
-
-Available built-in processors
-=============================
-
-.. automodule:: itemloaders.processors
-    :members:
-
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
+.. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html
