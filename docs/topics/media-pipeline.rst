@@ -156,7 +156,7 @@ following forms::
 
     ftp://username:password@address:port/path
     ftp://address:port/path
-    
+
 If ``username`` and ``password`` are not provided, they are taken from the :setting:`FTP_USER` and
 :setting:`FTP_PASSWORD` settings respectively.
 
@@ -257,7 +257,7 @@ using the images pipeline, items must define both the ``image_urls`` and the
 ``images`` field.
 
 If you want to use another field name for the URLs key or for the results key,
-it is also possible to override it:
+it is also possible to override it.
 
 For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or
 :setting:`FILES_RESULT_FIELD` settings::
