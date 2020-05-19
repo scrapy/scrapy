@@ -21,9 +21,9 @@ Item Loaders are designed to provide a flexible, efficient and easy mechanism
 for extending and overriding different field parsing rules, either by spider,
 or by source format (HTML, XML, etc) without becoming a nightmare to maintain.
 
-.. note:: Item Loaders are an extension of itemloaders_ library that make it
-    easier to work with scrapy by adding support to :ref:`Items <topics-items>`
-    and :ref:`Response <topics-request-response>`.
+.. note:: Item Loaders are an extension of the itemloaders_ library that make it
+    easier to work with Scrapy by adding support for :ref:`Items <topics-items>`
+    and :ref:`responses <topics-request-response>`.
 
 Using Item Loaders to populate items
 ====================================
@@ -383,5 +383,17 @@ projects. Scrapy only provides the mechanism; it doesn't impose any specific
 organization of your Loaders collection - that's up to you and your project's
 needs.
 
+<<<<<<< HEAD
 .. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
 .. _processors: https://itemloaders.readthedocs.io/en/latest/built-in-processors.html
+=======
+.. _topics-loaders-available-processors:
+
+Available built-in processors
+=============================
+
+.. automodule:: itemloaders.processors
+    :members:
+
+.. _itemloaders: https://itemloaders.readthedocs.io/en/latest/
+>>>>>>> 68f2dbc394060d619cef80e0f714d5f21cd5e369
