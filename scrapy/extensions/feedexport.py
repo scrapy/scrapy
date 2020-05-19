@@ -29,6 +29,19 @@ from scrapy.utils.python import get_func_args, without_none_values
 logger = logging.getLogger(__name__)
 
 
+def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
+    argument_names = get_func_args(builder)
+    if 'feed_options' in argument_names:
+        kwargs['feed_options'] = feed_options
+    else:
+        warnings.warn(
+            "{} does not support the 'feed_options' keyword argument"
+            .format(builder.__qualname__),
+            category=ScrapyDeprecationWarning
+        )
+    return builder(*preargs, uri, *args, **kwargs)
+
+
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
@@ -143,21 +156,13 @@ class S3FeedStorage(BlockingFeedStorage):
 
     @classmethod
     def from_crawler(cls, crawler, uri, *, feed_options=None):
-        kwargs = {}
-        if 'feed_options' in get_func_args(cls):
-            kwargs['feed_options'] = feed_options
-        else:
-            warnings.warn(
-                "{} does not support the 'feed_options' keyword argument"
-                .format(cls.__qualname__),
-                category=ScrapyDeprecationWarning
-            )
-        return cls(
+        return build_storage(
+            cls,
             uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
             acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
-            **kwargs,
+            feed_options=feed_options,
         )
 
     def _store_in_thread(self, file):
@@ -190,19 +195,11 @@ class FTPFeedStorage(BlockingFeedStorage):
 
     @classmethod
     def from_crawler(cls, crawler, uri, *, feed_options=None):
-        kwargs = {}
-        if 'feed_options' in get_func_args(cls):
-            kwargs['feed_options'] = feed_options
-        else:
-            warnings.warn(
-                "{} does not support the 'feed_options' keyword argument"
-                .format(cls.__qualname__),
-                category=ScrapyDeprecationWarning
-            )
-        return cls(
+        return build_storage(
+            cls,
             uri,
             crawler.settings.getbool('FEED_STORAGE_FTP_ACTIVE'),
-            **kwargs,
+            feed_options=feed_options,
         )
 
     def _store_in_thread(self, file):
@@ -372,18 +369,8 @@ class FeedExporter:
         feedcls = self.storages[urlparse(uri).scheme]
         crawler = getattr(self, 'crawler', None)
 
-        def build_instance(builder, *args):
-            argument_names = get_func_args(builder)
-            if 'feed_options' in argument_names:
-                _kwargs = {'feed_options': feed_options}
-            else:
-                warnings.warn(
-                    "{} does not support the 'feed_options' keyword argument"
-                    .format(builder.__qualname__),
-                    category=ScrapyDeprecationWarning
-                )
-                _kwargs = {}
-            return builder(*args, uri, **_kwargs)
+        def build_instance(builder, *preargs):
+            return build_storage(builder, uri, preargs=preargs)
 
         if crawler and hasattr(feedcls, 'from_crawler'):
             instance = build_instance(feedcls.from_crawler, crawler)
