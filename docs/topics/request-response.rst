@@ -393,9 +393,12 @@ Additionally, they may also implement the following methods:
    :class:`~scrapy.settings.Settings` object. It must return a new instance of
    the request fingerprinter.
 
+The ``fingerprint`` method of the default request fingerprinter,
+:class:`scrapy.utils.request.RequestFingerprinter`, uses
+:func:`scrapy.utils.request.request_fingerprint` with its default parameters.
 For some common use cases you can use
-:func:`~scrapy.utils.request.request_fingerprint` in your ``fingerprint``
-method implementation:
+:func:`~scrapy.utils.request.request_fingerprint` as well in your
+``fingerprint`` method implementation:
 
 .. autofunction:: scrapy.utils.request.request_fingerprint
 
