@@ -37,7 +37,7 @@ class TopLevelFormatter(logging.Filter):
         self.loggers = loggers or []
 
     def filter(self, record):
-        if any(record.name.startswith(l + '.') for l in self.loggers):
+        if any(record.name.startswith(logger + '.') for logger in self.loggers):
             record.name = record.name.split('.', 1)[0]
         return True
 
@@ -142,10 +142,12 @@ def _get_handler(settings):
 def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
-    logger.info("Versions: %(versions)s",
-                {'versions': ", ".join("%s %s" % (name, version)
-                    for name, version in scrapy_components_versions()
-                    if name != "Scrapy")})
+    versions = [
+        "%s %s" % (name, version)
+        for name, version in scrapy_components_versions()
+        if name != "Scrapy"
+    ]
+    logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
     from twisted.internet import reactor
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
 

@@ -43,8 +43,11 @@ class TestHttpProxyMiddleware(TestCase):
         os.environ.pop('file_proxy', None)
         mw = HttpProxyMiddleware()
 
-        for url, proxy in [('http://e.com', http_proxy),
-                ('https://e.com', https_proxy), ('file://tmp/a', None)]:
+        for url, proxy in [
+            ('http://e.com', http_proxy),
+            ('https://e.com', https_proxy),
+            ('file://tmp/a', None),
+        ]:
             req = Request(url)
             assert mw.process_request(req, spider) is None
             self.assertEqual(req.url, url)
