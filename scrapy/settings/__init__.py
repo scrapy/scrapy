@@ -83,7 +83,6 @@ class BaseSettings(MutableMapping):
     def __init__(self, values=None, priority='project'):
         self.frozen = False
         self.attributes = {}
-        self._singletons = {}
         self.update(values, priority)
 
     def __getitem__(self, opt_name):
