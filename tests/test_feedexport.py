@@ -1132,6 +1132,8 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
     introduction of the ``feed_options`` parameter continues to work as
     expected, and simply issues a warning."""
 
+    maxDiff = None
+
     def test_init(self):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
@@ -1176,6 +1178,8 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
     """Make sure that any feed exporter created by users before the
     introduction of the ``feed_options`` parameter continues to work as
     expected, and simply issues a warning."""
+
+    maxDiff = None
 
     def test_init(self):
         settings_dict = {
@@ -1249,6 +1253,8 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
     """Make sure that any feed exporter created by users before the
     introduction of the ``feed_options`` parameter continues to work as
     expected, and simply issues a warning."""
+
+    maxDiff = None
 
     def test_init(self):
         settings_dict = {
