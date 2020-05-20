@@ -119,7 +119,7 @@ format::
            self.file.close()
 
        def process_item(self, item, spider):
-           line = json.dumps(dict(ItemAdapter(item).items())) + "\n"
+           line = json.dumps(dict(ItemAdapter(item))) + "\n"
            self.file.write(line)
            return item
 
@@ -163,7 +163,7 @@ method and how to clean up the resources properly.::
             self.client.close()
 
         def process_item(self, item, spider):
-            self.db[self.collection_name].insert_one(dict(ItemAdapter(item).items()))
+            self.db[self.collection_name].insert_one(dict(ItemAdapter(item)))
             return item
 
 .. _MongoDB: https://www.mongodb.com/
