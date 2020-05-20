@@ -1,6 +1,6 @@
 import json
 
-from itemadapter import is_item
+from itemadapter import is_item, ItemAdapter
 
 from scrapy.contracts import Contract
 from scrapy.exceptions import ContractFail
@@ -104,7 +104,7 @@ class ScrapesContract(Contract):
     def post_process(self, output):
         for x in output:
             if is_item(x):
-                missing = [arg for arg in self.args if arg not in x]
+                missing = [arg for arg in self.args if arg not in ItemAdapter(x)]
                 if missing:
                     missing_str = ", ".join(missing)
                     raise ContractFail("Missing fields: %s" % missing_str)

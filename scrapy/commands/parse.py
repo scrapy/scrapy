@@ -1,7 +1,7 @@
 import json
 import logging
 
-from itemadapter import is_item
+from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([dict(x) for x in items], colorize=colour)
+        display.pprint([dict(ItemAdapter(x) for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
         if lvl is None:
