@@ -2,7 +2,7 @@
 jmespath
 mitmproxy; python_version >= '3.6'
 mitmproxy<4.0.0; python_version < '3.6'
-pytest < 5.4
+pytest != 5.4, != 5.4.1
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
