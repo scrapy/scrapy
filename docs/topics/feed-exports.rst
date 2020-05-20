@@ -252,7 +252,7 @@ For instance::
         }, 
         '/home/user/documents/items.xml': {
             'format': 'xml',
-            'item_classes': ProductItemClass
+            'item_classes': ProductItemClass,
             'fields': ['name', 'price'],
             'encoding': 'latin1',
             'indent': 8,
