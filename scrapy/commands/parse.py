@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([dict(ItemAdapter(x) for x in items], colorize=colour)
+        display.pprint([dict(ItemAdapter(x)) for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
         if lvl is None:
