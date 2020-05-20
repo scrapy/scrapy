@@ -98,7 +98,7 @@ backport`_ in Python 3.6.
 
 .. _attrs-items:
 
-Attr.s objects
+attr.s objects
 --------------
 
 .. versionadded:: 2.2
