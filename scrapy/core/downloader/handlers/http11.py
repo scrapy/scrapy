@@ -523,10 +523,8 @@ class _ResponseReader(protocol.Protocol):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": self._request, "handler": handler.__qualname__})
                 self.transport._producer.loseConnection()
-                self._finish_response(
-                    flags=["download_stopped"],
-                    failure=result if result.value.fail else None,
-                )
+                failure = result if result.value.fail else None
+                self._finish_response(flags=["download_stopped"], failure=failure)
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "
