@@ -293,10 +293,12 @@ class BytesReceivedCallbackSpider(MetaSpider):
         self.meta["failure"] = failure
 
     def bytes_received(self, data, request, spider):
+        self.meta["bytes_received"] = data
         raise StopDownload(fail=False)
 
 
 class BytesReceivedErrbackSpider(BytesReceivedCallbackSpider):
 
     def bytes_received(self, data, request, spider):
+        self.meta["bytes_received"] = data
         raise StopDownload(fail=True)

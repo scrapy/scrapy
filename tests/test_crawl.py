@@ -478,7 +478,8 @@ with multiples lines
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertIsNone(crawler.spider.meta.get("failure"))
         self.assertIsInstance(crawler.spider.meta["response"], Response)
-        self.assertLess(len(crawler.spider.meta["response"].text), crawler.spider.full_response_length)
+        self.assertEqual(crawler.spider.meta["response"].body, crawler.spider.meta.get("bytes_received"))
+        self.assertLess(len(crawler.spider.meta["response"].body), crawler.spider.full_response_length)
 
     @defer.inlineCallbacks
     def test_stop_download_errback(self):
@@ -488,4 +489,5 @@ with multiples lines
         self.assertIsInstance(crawler.spider.meta["failure"], Failure)
         self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
         self.assertIsInstance(crawler.spider.meta["failure"].response, Response)
-        self.assertLess(len(crawler.spider.meta["failure"].response.text), crawler.spider.full_response_length)
+        self.assertEqual(crawler.spider.meta["failure"].response.body, crawler.spider.meta.get("bytes_received"))
+        self.assertLess(len(crawler.spider.meta["failure"].response.body), crawler.spider.full_response_length)
