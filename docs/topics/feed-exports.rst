@@ -245,7 +245,7 @@ For instance::
         'items.json': {
             'format': 'json',
             'encoding': 'utf8',
-            'item_classes': (ProductItemClass, AnotherItemClass)
+            'item_classes': (ProductItemClass, AnotherItemClass),
             'fields': None,
             'indent': 4,
             'store_empty': False,
