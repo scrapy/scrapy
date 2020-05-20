@@ -270,10 +270,13 @@ as a fallback value if that key is not provided for a specific feed definition.
   See :ref:`topics-feed-format` for possible values. 
   Mandatory, no fallback setting
 * ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`
-* ``item_classes``: no fallback setting, defaults to ``None`` (which will include all item classes)
-  - .. versionadded:: 2.2
-  - Allows for filtering which item class types get exported to each URI.
-  - Acceptable values include None, a single Item class object, or a tuple of Item class objects
+* ``item_classes``: filter of exported items based on their item class.
+
+  .. versionadded:: 2.2
+   
+  If the value is ``None`` (default), all items are exported. If the value is 
+  an item class, or a tuple of item classes, only items that are instances of 
+  those item classes are exported.
 * ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
 * ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
 * ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
