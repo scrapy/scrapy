@@ -98,7 +98,7 @@ Additionally, ``dataclass`` items also allow to:
 
 * define the type and default value of each defined field.
 
-* define custom `field metadata`_, which can be used to
+* define custom field metadata through :func:`dataclasses.field`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
 .. note:: Field names and types are not enforced at run time.
@@ -106,7 +106,6 @@ Additionally, ``dataclass`` items also allow to:
 They work natively in Python 3.7 or later, or using the `dataclasses
 backport`_ in Python 3.6.
 
-.. _field metadata: https://docs.python.org/3/library/dataclasses.html#dataclasses.field
 .. _dataclasses backport: https://pypi.org/project/dataclasses/
 
 Example::
