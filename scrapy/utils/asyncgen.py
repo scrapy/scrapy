@@ -27,5 +27,5 @@ async def process_async_iterable_helper(it, in_predicate=None, out_predicate=Non
         if processor is not None:
             o = processor(o)
         if out_predicate and not out_predicate(o):
-            return
+            continue
         yield o
