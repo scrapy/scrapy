@@ -244,15 +244,6 @@ class EngineTest(unittest.TestCase):
         yield self.run.run()
         self._assert_visited_urls()
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
-    @mark.only_asyncio()
-    @defer.inlineCallbacks
-    def test_crawler_startrequests_asyncgen_asyncio_mw1(self):
-        from tests.py36._test_engine import StartRequestsAsyncGenAsyncioSpider
-        self.run = CrawlerRun(StartRequestsAsyncGenAsyncioSpider)
-        yield self.run.run()
-        self._assert_visited_urls()
-
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
