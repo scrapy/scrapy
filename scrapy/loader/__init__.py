@@ -11,13 +11,10 @@ from scrapy.selector import Selector
 
 class ItemLoader(itemloaders.ItemLoader):
     """
-    Return a new Item Loader for populating the given Item. If no item is
-    given, one is instantiated automatically using the class in
-    :attr:`default_item_class`.
-
-    When instantiated with a ``selector`` or a ``response`` parameters
-    the :class:`ItemLoader` class provides convenient mechanisms for extracting
-    data from web pages using :ref:`selectors <topics-selectors>`.
+    A user-fiendly abstraction to populate data to an :ref:`Item <topics-items>`
+    by applying :ref:`field processors <topics-loaders-processors>` to scraped data.
+    When instantiated with a ``selector`` or a ``response`` it supports
+    data extraction from web pages using :ref:`selectors <topics-selectors>`.
 
     :param item: The item instance to populate using subsequent calls to
         :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
@@ -34,6 +31,8 @@ class ItemLoader(itemloaders.ItemLoader):
         in which case this argument is ignored.
     :type response: :class:`~scrapy.http.Response` object
 
+    If no item is given, one is instantiated automatically using the class in
+    :attr:`default_item_class`.
     The item, selector, response and the remaining keyword arguments are
     assigned to the Loader context (accessible through the :attr:`context` attribute).
 
