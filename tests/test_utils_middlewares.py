@@ -4,7 +4,6 @@ import sys
 from pytest import mark
 from twisted.trial import unittest
 
-from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.middlewares import process_iterable_helper
 
@@ -58,6 +57,7 @@ class ProcessIterableHelperAsyncTest(unittest.TestCase):
 
     @deferred_f_from_coro_f
     async def test_async_in_predicate(self):
+        from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
         iterable1 = as_async_generator([1, 2, 3])
         iterable2 = process_iterable_helper(iterable1, in_predicate=predicate1)
         self.assertIsInstance(iterable2, collections.abc.AsyncIterable)
@@ -66,6 +66,7 @@ class ProcessIterableHelperAsyncTest(unittest.TestCase):
 
     @deferred_f_from_coro_f
     async def test_async_out_predicate(self):
+        from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
         iterable1 = as_async_generator([1, 2, 10, 3, 15])
         iterable2 = process_iterable_helper(iterable1, out_predicate=predicate2)
         self.assertIsInstance(iterable2, collections.abc.AsyncIterable)
@@ -74,6 +75,7 @@ class ProcessIterableHelperAsyncTest(unittest.TestCase):
 
     @deferred_f_from_coro_f
     async def test_async_processor(self):
+        from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
         iterable1 = as_async_generator([1, 2, 3])
         iterable2 = process_iterable_helper(iterable1, processor=processor)
         self.assertIsInstance(iterable2, collections.abc.AsyncIterable)
@@ -82,6 +84,7 @@ class ProcessIterableHelperAsyncTest(unittest.TestCase):
 
     @deferred_f_from_coro_f
     async def test_async_combined(self):
+        from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
         iterable1 = as_async_generator([1, 2, 10, 3, 6, 18, 5, 15])
         iterable2 = process_iterable_helper(iterable1, in_predicate=predicate1,
                                             out_predicate=predicate2, processor=processor)
