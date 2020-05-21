@@ -101,8 +101,6 @@ Additionally, ``dataclass`` items also allow to:
 * define custom field metadata through :func:`dataclasses.field`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-.. note:: Field names and types are not enforced at run time.
-
 They work natively in Python 3.7 or later, or using the `dataclasses
 backport`_ in Python 3.6.
 
@@ -116,6 +114,8 @@ Example::
     class CustomItem:
         one_field: str
         another_field: int
+
+.. note:: Field types are not enforced at run time.
 
 .. _attrs-items:
 
@@ -132,14 +132,11 @@ Additionally, ``attr.s`` items also allow to:
 
 * define the type and default value of each defined field.
 
-* define custom field `metadata`_, which can be used to
+* define custom field :ref:`metadata <attrs:metadata>`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
-
-.. note:: Field names and types are not enforced at run time.
 
 In order to use this type, the `attrs package`_ needs to be installed.
 
-.. _metadata: https://www.attrs.org/en/stable/examples.html#metadata
 .. _attrs package: https://www.attrs.org
 
 Example::
