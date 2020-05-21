@@ -364,7 +364,9 @@ class FeedExporter:
         """
         if not self.storage_batch_item_count or '%(batch_time)s' in uri or '%(batch_id)s' in uri:
             return True
-        logger.error('%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_ITEM_COUNT setting is specified')
+        logger.error(
+            '%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_ITEM_COUNT setting is specified'
+        )
         return False
 
     def _storage_supported(self, uri):

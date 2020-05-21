@@ -1204,12 +1204,20 @@ class BatchDeliveriesTest(FeedExportTestBase):
         items = [dict({'foo': u'FOO', 'bar': u'BAR'}), dict({'foo': u'FOO1', 'bar': u'BAR1'})]
 
         formats = {
-            'json': [u'[\n{"bar": "BAR"}\n]'.encode('utf-8'),
-                     u'[\n{"bar": "BAR1"}\n]'.encode('utf-8')],
-            'xml': [u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'.encode('latin-1'),
-                    u'<?xml version="1.0" encoding="latin-1"?>\n<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>'.encode('latin-1')],
-            'csv': [u'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
-                    u'bar,foo\r\nBAR1,FOO1\r\n'.encode('utf-8')],
+            'json': ['[\n{"bar": "BAR"}\n]'.encode('utf-8'),
+                     '[\n{"bar": "BAR1"}\n]'.encode('utf-8')],
+            'xml': [
+                (
+                    '<?xml version="1.0" encoding="latin-1"?>\n'
+                    '<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'
+                ).encode('latin-1'),
+                (
+                    '<?xml version="1.0" encoding="latin-1"?>\n'
+                    '<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>'
+                ).encode('latin-1')
+            ],
+            'csv': ['bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
+                    'bar,foo\r\nBAR1,FOO1\r\n'.encode('utf-8')],
         }
 
         settings = {
