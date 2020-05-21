@@ -26,7 +26,8 @@ class SitemapTest(unittest.TestCase):
             list(s),
             [
                 {'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-                {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'},
+                {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html',
+                 'lastmod': '2009-08-16', 'changefreq': 'weekly'},
             ]
         )
 
@@ -43,7 +44,13 @@ class SitemapTest(unittest.TestCase):
    </sitemap>
 </sitemapindex>""")
         assert s.type == 'sitemapindex'
-        self.assertEqual(list(s), [{'loc': 'http://www.example.com/sitemap1.xml.gz', 'lastmod': '2004-10-01T18:23:17+00:00'}, {'loc': 'http://www.example.com/sitemap2.xml.gz', 'lastmod': '2005-01-01'}])
+        self.assertEqual(
+            list(s),
+            [
+                {'loc': 'http://www.example.com/sitemap1.xml.gz', 'lastmod': '2004-10-01T18:23:17+00:00'},
+                {'loc': 'http://www.example.com/sitemap2.xml.gz', 'lastmod': '2005-01-01'},
+            ]
+        )
 
     def test_sitemap_strip(self):
         """Assert we can deal with trailing spaces inside <loc> tags - we've

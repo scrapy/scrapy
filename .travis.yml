@@ -17,12 +17,16 @@ matrix:
       python: 3.7  # Keep in sync with .readthedocs.yml
 
     - env: TOXENV=pypy3
+    - env: TOXENV=pinned
+      python: 3.5.1
+      dist: trusty
+    - env: TOXENV=asyncio
+      python: 3.5.1  # We use additional code to support 3.5.3 and earlier
+      dist: trusty
     - env: TOXENV=py
       python: 3.5
-    - env: TOXENV=pinned
-      python: 3.5
     - env: TOXENV=asyncio
-      python: 3.5.2
+      python: 3.5  # We use specific code to support >= 3.5.4, < 3.6
     - env: TOXENV=py
       python: 3.6
     - env: TOXENV=py

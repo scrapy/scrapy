@@ -218,8 +218,8 @@ class EngineTest(unittest.TestCase):
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
-        urls_visited = set([rp[0].url for rp in self.run.respplug])
-        urls_expected = set([self.run.geturl(p) for p in must_be_visited])
+        urls_visited = {rp[0].url for rp in self.run.respplug}
+        urls_expected = {self.run.geturl(p) for p in must_be_visited}
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
 
     def _assert_scheduled_requests(self, urls_to_visit=None):
@@ -227,8 +227,8 @@ class EngineTest(unittest.TestCase):
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
-        urls_requested = set([rq[0].url for rq in self.run.reqplug])
-        urls_expected = set([self.run.geturl(p) for p in paths_expected])
+        urls_requested = {rq[0].url for rq in self.run.reqplug}
+        urls_expected = {self.run.geturl(p) for p in paths_expected}
         assert urls_expected <= urls_requested
         scheduled_requests_count = len(self.run.reqplug)
         dropped_requests_count = len(self.run.reqdropped)

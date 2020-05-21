@@ -493,7 +493,10 @@ class Http11TestCase(HttpTestCase):
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
 
-    tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", subject "/C=IE/O=Scrapy/CN=localhost"'
+    tls_log_message = (
+        'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
+        'subject "/C=IE/O=Scrapy/CN=localhost"'
+    )
 
     @defer.inlineCallbacks
     def test_tls_logging(self):
@@ -542,7 +545,10 @@ class Https11InvalidDNSPattern(Https11TestCase):
             from service_identity.exceptions import CertificateError  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("cryptography lib is too old")
-        self.tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
+        self.tls_log_message = (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
+            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
+        )
         super(Https11InvalidDNSPattern, self).setUp()
 
 
