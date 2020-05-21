@@ -135,9 +135,7 @@ Additionally, ``attr.s`` items also allow to:
 * define custom field :ref:`metadata <attrs:metadata>`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-In order to use this type, the `attrs package`_ needs to be installed.
-
-.. _attrs package: https://www.attrs.org
+In order to use this type, the :doc:`attrs package <attrs:index>` needs to be installed.
 
 Example::
 
