@@ -417,16 +417,17 @@ class XmlItemExporterTest(BaseItemExporterTest):
         item = TestItem(name='name', age=[18, 65])
         self.assertExportResult(
             item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<root>'
-                b'<node>'
-                    b'<name>name</name>'
-                    b'<age>'
-                        b'<item>18</item>'
-                        b'<item>65</item>'
-                    b'</age>'
-                b'</node>'
-            b'</root>',
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <root>
+                    <node>
+                        <name>name</name>
+                        <age>
+                            <item>18</item>
+                            <item>65</item>
+                        </age>
+                    </node>'
+                </root>
+            ''',
             exporter=partial(XmlItemExporter, root_element='root',
                              item_element='node', list_element='item'),
         )
@@ -445,15 +446,16 @@ class XmlItemExporterTest(BaseItemExporterTest):
         item = {'ages': [18, 65]}
         self.assertExportResult(
             item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<ages>'
-                        b'<age>18</age>'
-                        b'<age>65</age>'
-                    b'</ages>'
-                b'</item>'
-            b'</items>',
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <ages>
+                            <age>18</age>
+                            <age>65</age>
+                        </ages>
+                    </item>
+                </items>
+            ''',
             exporter=CustomXmlItemExporter,
         )
 
@@ -473,15 +475,16 @@ class XmlItemExporterTest(BaseItemExporterTest):
         item = {'ages': [18, 65]}
         self.assertExportResult(
             item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<ages>'
-                        b'<value1>18</value1>'
-                        b'<value2>65</value2>'
-                    b'</ages>'
-                b'</item>'
-            b'</items>',
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <ages>
+                            <value1>18</value1>
+                            <value2>65</value2>
+                        </ages>
+                    </item>
+                </items>
+            ''',
             exporter=CustomXmlItemExporter,
         )
 
@@ -498,15 +501,16 @@ class XmlItemExporterTest(BaseItemExporterTest):
         item = {'ages': [18, 65]}
         self.assertExportResult(
             item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<ages>'
-                        b'<value index="0">18</value>'
-                        b'<value index="1">65</value>'
-                    b'</ages>'
-                b'</item>'
-            b'</items>',
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <ages>
+                            <value index="0">18</value>
+                            <value index="1">65</value>
+                        </ages>
+                    </item>
+                </items>
+            ''',
             exporter=CustomXmlItemExporter,
         )
 
@@ -540,21 +544,22 @@ class XmlItemExporterTest(BaseItemExporterTest):
                 'programming': {'people': ['Jane']}}
         self.assertExportResult(
             item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<design>'
-                        b'<people>'
-                            b'<designer>John</designer>'
-                        b'</people>'
-                    b'</design>'
-                    b'<programming>'
-                        b'<people>'
-                            b'<programmer>Jane</programmer>'
-                        b'</people>'
-                    b'</programming>'
-                b'</item>'
-            b'</items>',
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <design>
+                            <people>
+                                <designer>John</designer>
+                            </people>
+                        </design>
+                        <programming>
+                            <people>
+                                <programmer>Jane</programmer>
+                            </people>
+                        </programming>
+                    </item>
+                </items>
+            ''',
             exporter=CustomXmlItemExporter,
         )
 
@@ -572,22 +577,23 @@ class XmlItemExporterTest(BaseItemExporterTest):
                            {'name': 'John', 'role': 'designer'}]}
         self.assertExportResult(
             item,
-            b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<items>'
-                b'<item>'
-                    b'<team>A</team>'
-                    b'<people>'
-                        b'<programmer>'
-                            b'<name>Jane</name>'
-                            b'<role>programmer</role>'
-                        b'</programmer>'
-                        b'<designer>'
-                            b'<name>John</name>'
-                            b'<role>designer</role>'
-                        b'</designer>'
-                    b'</people>'
-                b'</item>'
-            b'</items>',
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <team>A</team>
+                        <people>
+                            <programmer>
+                                <name>Jane</name>
+                                <role>programmer</role>
+                            </programmer>
+                            <designer>
+                                <name>John</name>
+                                <role>designer</role>
+                            </designer>
+                        </people>
+                    </item>
+                </items>
+            ''',
             exporter=CustomXmlItemExporter,
         )
 
