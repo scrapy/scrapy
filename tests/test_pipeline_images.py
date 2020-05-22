@@ -5,6 +5,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
 
+import attr
 from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
@@ -202,6 +203,21 @@ class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, u
                     ("custom_images", list, dataclass_field(default_factory=list)),
                 ],
             )
+
+
+@attr.s
+class ImagesPipelineTestAttrsItem:
+    name = attr.ib(default="")
+    # default fields
+    image_urls = attr.ib(default=lambda: [])
+    images = attr.ib(default=lambda: [])
+    # overridden fields
+    custom_image_urls = attr.ib(default=lambda: [])
+    custom_images = attr.ib(default=lambda: [])
+
+
+class ImagesPipelineTestCaseFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestAttrsItem
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):

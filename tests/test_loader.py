@@ -1,6 +1,7 @@
 from functools import partial
 import unittest
 
+import attr
 from itemadapter import ItemAdapter
 
 from scrapy.http import HtmlResponse
@@ -35,6 +36,11 @@ class TestNestedItem(Item):
 
     url = Field()
     image = Field()
+
+
+@attr.s
+class AttrsNameItem:
+    name = attr.ib(default="")
 
 
 # test item loaders
@@ -558,6 +564,10 @@ class InitializationFromDictTest(InitializationTestMixin, unittest.TestCase):
 
 class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
     item_class = NameItem
+
+
+class InitializationFromAttrsItemTest(InitializationTestMixin, unittest.TestCase):
+    item_class = AttrsNameItem
 
 
 @unittest.skipIf(not make_dataclass, "dataclasses module is not available")

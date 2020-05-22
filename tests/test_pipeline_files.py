@@ -7,6 +7,7 @@ from tempfile import mkdtemp
 from unittest import mock, skipIf
 from urllib.parse import urlparse
 
+import attr
 from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -204,6 +205,21 @@ class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, uni
                     ("custom_files", list, dataclass_field(default_factory=list)),
                 ],
             )
+
+
+@attr.s
+class FilesPipelineTestAttrsItem:
+    name = attr.ib(default="")
+    # default fields
+    file_urls = attr.ib(default=lambda: [])
+    files = attr.ib(default=lambda: [])
+    # overridden fields
+    custom_file_urls = attr.ib(default=lambda: [])
+    custom_files = attr.ib(default=lambda: [])
+
+
+class FilesPipelineTestCaseFieldsAttrsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestAttrsItem
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):

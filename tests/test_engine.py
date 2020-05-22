@@ -16,6 +16,7 @@ import sys
 from collections import defaultdict
 from urllib.parse import urlparse
 
+import attr
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from twisted.internet import defer, reactor
@@ -38,6 +39,13 @@ class TestItem(Item):
     name = Field()
     url = Field()
     price = Field()
+
+
+@attr.s
+class AttrsItem:
+    name = attr.ib(default="")
+    url = attr.ib(default="")
+    price = attr.ib(default=0)
 
 
 class TestSpider(Spider):
@@ -76,6 +84,10 @@ class TestDupeFilterSpider(TestSpider):
 
 class DictItemsSpider(TestSpider):
     item_cls = dict
+
+
+class AttrsItemsSpider(TestSpider):
+    item_class = AttrsItem
 
 
 try:
@@ -211,7 +223,7 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawler(self):
 
-        for spider in (TestSpider, DictItemsSpider, DataClassItemsSpider):
+        for spider in (TestSpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider):
             if spider is None:
                 continue
             self.run = CrawlerRun(spider)

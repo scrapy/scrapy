@@ -3,6 +3,7 @@ import json
 import unittest
 from decimal import Decimal
 
+import attr
 from twisted.internet import defer
 
 from scrapy.http import Request, Response
@@ -62,6 +63,20 @@ class JsonEncoderTestCase(unittest.TestCase):
             [("name", str), ("url", str), ("price", int)],
         )
         item = TestDataClass(name="Product", url="http://product.org", price=1)
+        encoded = self.encoder.encode(item)
+        self.assertEqual(
+            encoded,
+            '{"name": "Product", "price": 1, "url": "http://product.org"}'
+        )
+
+    def test_encode_attrs_item(self):
+        @attr.s
+        class AttrsItem:
+            name = attr.ib(type=str)
+            url = attr.ib(type=str)
+            price = attr.ib(type=int)
+
+        item = AttrsItem(name="Product", url="http://product.org", price=1)
         encoded = self.encoder.encode(item)
         self.assertEqual(
             encoded,
