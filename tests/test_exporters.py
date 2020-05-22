@@ -438,8 +438,10 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
             def element(self, breadcrumbs, value):
                 if isinstance(breadcrumbs[-1], int):
-                    if (isinstance(breadcrumbs[-2], str) and
-                            breadcrumbs[-2].endswith('s')):
+                    if (
+                        isinstance(breadcrumbs[-2], str)
+                        and breadcrumbs[-2].endswith('s')
+                    ):
                         return {'name': breadcrumbs[-2][:-1]}
                 return super().element(breadcrumbs, value)
 
