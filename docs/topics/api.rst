@@ -36,7 +36,7 @@ how you :ref:`configure the downloader middlewares
 
     .. attribute:: request_fingerprinter
 
-        The generator of request fingerprints of this crawler.
+        The request fingerprint builder of this crawler.
 
         This is used from extensions and middlewares to build short, unique
         identifiers for requests. See :ref:`request-fingerprints`.
