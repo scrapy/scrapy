@@ -398,8 +398,9 @@ class FeedExporter:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        params['time'] = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
-        params['batch_time'] = datetime.utcnow().isoformat().replace(':', '-')
+        utc_now = datetime.utcnow()
+        params['time'] = utc_now.replace(microsecond=0).isoformat().replace(':', '-')
+        params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
         uripar_function(params, spider)
