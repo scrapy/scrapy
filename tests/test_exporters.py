@@ -429,10 +429,10 @@ class XmlItemExporterTest(BaseItemExporterTest):
                 </root>
             ''',
             exporter=partial(XmlItemExporter, root_element='root',
-                             item_element='node', list_element='item'),
+                             item_element='node', list_item_element='item'),
         )
 
-    def test_parent_based_list_element_names(self):
+    def test_parent_based_list_item_element_names(self):
 
         class CustomXmlItemExporter(XmlItemExporter):
 
@@ -461,7 +461,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
             exporter=CustomXmlItemExporter,
         )
 
-    def test_list_element_numbered_names(self):
+    def test_list_item_element_numbered_names(self):
 
         class CustomXmlItemExporter(XmlItemExporter):
 
@@ -470,7 +470,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                 logger = getLogger(__name__)
                 logger.error(breadcrumbs[-1])
                 if isinstance(breadcrumbs[-1], int):
-                    name = self.list_element + str(breadcrumbs[-1] + 1)
+                    name = self.list_item_element + str(breadcrumbs[-1] + 1)
                     return {'name': name}
                 return super().element(breadcrumbs, value)
 
@@ -490,13 +490,13 @@ class XmlItemExporterTest(BaseItemExporterTest):
             exporter=CustomXmlItemExporter,
         )
 
-    def test_indexed_list_elements(self):
+    def test_indexed_list_item_elements(self):
 
         class CustomXmlItemExporter(XmlItemExporter):
 
             def element(self, breadcrumbs, value):
                 if isinstance(breadcrumbs[-1], int):
-                    return {'name': self.list_element,
+                    return {'name': self.list_item_element,
                             'attrs': {'index': str(breadcrumbs[-1])}}
                 return super().element(breadcrumbs, value)
 
