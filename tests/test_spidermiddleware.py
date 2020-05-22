@@ -11,7 +11,6 @@ from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.exceptions import _InvalidOutput
 from scrapy.utils.defer import deferred_from_coro
-from scrapy.utils.middlewares import process_iterable_helper
 from scrapy.utils.test import get_crawler
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from tests.test_engine import StartRequestsAsyncDefSpider
@@ -116,11 +115,6 @@ class ProcessStartRequestsSimpleMiddleware:
             yield r
 
 
-class ProcessStartRequestsUniversalMiddleware:
-    def process_start_requests(self, start_requests, spider):
-        return process_iterable_helper(start_requests)
-
-
 class ProcessStartRequestsSimple(TestCase):
     """ process_start_requests tests for simple start_requests"""
 
@@ -190,39 +184,6 @@ class ProcessStartRequestsSimple(TestCase):
         self.assertTrue(inspect.isgenerator(processed_start_requests))
         self.assertAsyncGeneratorNotIterable(processed_start_requests)
 
-    @defer.inlineCallbacks
-    def test_universal(self):
-        """ Universal mw """
-        yield self._test_simple_base(ProcessStartRequestsUniversalMiddleware)
-
-    @defer.inlineCallbacks
-    def test_universal_simple(self):
-        """ Universal mw -> simple mw """
-        yield self._test_simple_base(ProcessStartRequestsSimpleMiddleware,
-                                     ProcessStartRequestsUniversalMiddleware)
-
-    @defer.inlineCallbacks
-    def test_simple_universal(self):
-        """ Simple mw -> universal mw """
-        yield self._test_simple_base(ProcessStartRequestsUniversalMiddleware,
-                                     ProcessStartRequestsSimpleMiddleware)
-
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
-    @defer.inlineCallbacks
-    def test_universal_asyncgen(self):
-        """ Universal mw -> asyncgen mw """
-        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
-        yield self._test_asyncgen_base(ProcessStartRequestsAsyncGenMiddleware,
-                                       ProcessStartRequestsUniversalMiddleware)
-
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
-    @defer.inlineCallbacks
-    def test_asyncgen_universal(self):
-        """ Asyncgen mw -> universal mw """
-        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
-        yield self._test_asyncgen_base(ProcessStartRequestsUniversalMiddleware,
-                                       ProcessStartRequestsAsyncGenMiddleware)
-
 
 class ProcessStartRequestsAsyncDef(ProcessStartRequestsSimple):
     """ process_start_requests tests for async def start_requests """
@@ -255,27 +216,4 @@ class ProcessStartRequestsAsyncGen(ProcessStartRequestsSimple):
             ProcessStartRequestsAsyncGenMiddleware,
             ProcessStartRequestsSimpleMiddleware)
         self.assertTrue(inspect.isasyncgen(processed_start_requests))
-        self.assertAsyncGeneratorNotIterable(processed_start_requests)
-
-    @defer.inlineCallbacks
-    def test_universal(self):
-        """ Universal mw """
-        yield self._test_asyncgen_base(ProcessStartRequestsUniversalMiddleware)
-
-    @defer.inlineCallbacks
-    def test_universal_simple(self):
-        """ Universal mw -> simple mw; cannot work """
-        processed_start_requests = yield self._get_processed_start_requests(
-            ProcessStartRequestsSimpleMiddleware,
-            ProcessStartRequestsUniversalMiddleware)
-        self.assertTrue(inspect.isgenerator(processed_start_requests))
-        self.assertAsyncGeneratorNotIterable(processed_start_requests)
-
-    @defer.inlineCallbacks
-    def test_simple_universal(self):
-        """ Simple mw -> universal mw; cannot work """
-        processed_start_requests = yield self._get_processed_start_requests(
-            ProcessStartRequestsUniversalMiddleware,
-            ProcessStartRequestsSimpleMiddleware)
-        self.assertTrue(inspect.isgenerator(processed_start_requests))
         self.assertAsyncGeneratorNotIterable(processed_start_requests)
