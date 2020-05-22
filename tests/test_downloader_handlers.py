@@ -493,7 +493,10 @@ class Http11TestCase(HttpTestCase):
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
 
-    tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", subject "/C=IE/O=Scrapy/CN=localhost"'
+    tls_log_message = (
+        'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
+        'subject "/C=IE/O=Scrapy/CN=localhost"'
+    )
 
     @defer.inlineCallbacks
     def test_tls_logging(self):
@@ -542,7 +545,10 @@ class Https11InvalidDNSPattern(Https11TestCase):
             from service_identity.exceptions import CertificateError  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("cryptography lib is too old")
-        self.tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
+        self.tls_log_message = (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
+            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
+        )
         super(Https11InvalidDNSPattern, self).setUp()
 
 
@@ -730,6 +736,9 @@ class Http11ProxyTestCase(HttpProxyTestCase):
 
 class HttpDownloadHandlerMock:
 
+    def __init__(self, *args, **kwargs):
+        pass
+
     def download_request(self, request, spider):
         return request
 
@@ -853,8 +862,7 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
         date = 'Tue, 27 Mar 2007 19:44:46 +0000'
-        req = Request('s3://johnsmith/?acl',
-            method='GET', headers={'Date': date})
+        req = Request('s3://johnsmith/?acl', method='GET', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'],
@@ -879,8 +887,9 @@ class S3TestCase(unittest.TestCase):
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         # botocore does not override Date with x-amz-date
-        self.assertEqual(httpreq.headers['Authorization'],
-                b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
+        self.assertEqual(
+            httpreq.headers['Authorization'],
+            b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
 
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
