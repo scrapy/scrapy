@@ -236,7 +236,7 @@ PythonItemExporter
 XmlItemExporter
 ---------------
 
-.. class:: XmlItemExporter(file, item_element='item', root_element='items', \**kwargs)
+.. class:: XmlItemExporter(file, *, item_element='item', root_element='items', list_item_element='value', **kwargs)
 
    Exports Items in XML format to the specified file object.
 
@@ -248,6 +248,10 @@ XmlItemExporter
 
    :param item_element: The name of each item element in the exported XML.
    :type item_element: str
+
+   :param list_item_element: The name of each list item element in the exported
+                             XML.
+   :type list_item_element: str
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
@@ -266,9 +270,10 @@ XmlItemExporter
         </item>
        </items>
 
-   Unless overridden in the :meth:`serialize_field` method, multi-valued fields are
-   exported by serializing each value inside a ``<value>`` element. This is for
-   convenience, as multi-valued fields are very common.
+   Unless overridden in the :meth:`serialize_field` method, multi-valued fields
+   are exported by serializing each value inside an element named according to
+   the `list_item_element` parameter. This is for convenience, as multi-valued
+   fields are very common.
 
    For example, the item::
 
@@ -286,6 +291,8 @@ XmlItemExporter
            <age>23</age>
          </item>
        </items>
+
+   .. automethod:: element
 
 CsvItemExporter
 ---------------

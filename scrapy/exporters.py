@@ -134,7 +134,7 @@ class XmlItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
-        self.list_element = kwargs.pop('list_element', 'value')
+        self.list_item_element = kwargs.pop('list_item_element', 'value')
         self.root_element = kwargs.pop('root_element', 'items')
         super().__init__(**kwargs)
         if not self.encoding:
@@ -169,8 +169,66 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.endDocument()
 
     def element(self, breadcrumbs, value):
+        """Return a dictionary indicating the XML element name and attributes
+        of a leaf `value` of an item being exported, given the `breadcrumbs`
+        that indicate the global position of that `value` within an item.
+
+        The return value must be a dictionary with the following keys:
+
+        -   ``name`` is the name of the XML element that will contain `value`.
+
+            For example, if you return ``{'name': 'foo'}`` for a `value`
+            ``'bar'``, ``'bar'`` is serialized as ``<foo>bar</foo>``.
+
+        -   ``attrs`` (optional) is a dictionary of key-value pairs to use as
+            attributes of the serialized XML element.
+
+            For example, if you return ``{'name': 'foo', 'attrs': {'k': 'v'}}``
+            for a `value` ``'bar'``, ``'bar'`` is serialized as
+            ``<foo k="v">bar</foo>``.
+
+        `breadcrumbs` is a non-empty tuple:
+
+        -   The first tuple item is a string containing the name of the
+            Scrapy item field that contains the `value`.
+
+            If that is the only tuple item, `value` is the field value of an
+            item. If the tuple has additional tuple items, `value` is just one
+            part of an item field value which is made of a list, a dictionary,
+            or a combination of both.
+
+        -   The remaining tuple items may be:
+
+            -   A string, representing a key in a dictionary.
+
+            -   An integer, representing a 0-based position in a list.
+
+        For example, given the item below, the source comments indicate the
+        breadcrumbs that you get for each leaf value within the item:
+
+        .. code-block:: python
+
+            {
+                'id': 'item1',  # ('id',)
+                'tags': [
+                    'foo'  # ('tags', 0)
+                ],
+                'metadata': {
+                    'size': 300,  # ('metadata', 'size')
+                },
+                'comments': [
+                    {
+                        'text': 'Lorem ipsum',  # ('comments', 0, 'text')
+                    },
+                ],
+            }
+
+        `value` is a serialized leaf value. For example, in the code above,
+        `value` would be as follows for each of the 4 calls to this method:
+        ``'item1'``, ``'foo'``, ``'300'``, ``'Lorem ipsum'``.
+        """
         if isinstance(breadcrumbs[-1], int):
-            return {'name': self.list_element}
+            return {'name': self.list_item_element}
         assert isinstance(breadcrumbs[-1], str)
         return {'name': breadcrumbs[-1]}
 
