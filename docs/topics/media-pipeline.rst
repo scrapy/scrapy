@@ -248,13 +248,20 @@ In order to use a media pipeline, first :ref:`enable it
 
 Then, if a spider returns an :ref:`item object <topics-items>` with the URLs
 field (``file_urls`` or ``image_urls``, for the Files or Images Pipeline
-respectively), the pipeline will put the results under respective field
+respectively), the pipeline will put the results under the respective field
 (``files`` or ``images``).
 
-When using :ref:`item types <item-types>` where fields are defined beforehand,
+When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field.
+``images`` field. For instance, using the :class:`~scrapy.item.Item` class::
+
+    import scrapy
+
+    class MyItem(scrapy.Item):
+        # ... other item fields ...
+        image_urls = scrapy.Field()
+        images = scrapy.Field()
 
 If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.
