@@ -182,6 +182,7 @@ class S3FeedStorage(BlockingFeedStorage):
             kwargs = {'policy': self.acl} if self.acl else {}
             key.set_contents_from_file(file, **kwargs)
             key.close()
+        file.close()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
