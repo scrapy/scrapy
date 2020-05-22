@@ -262,7 +262,6 @@ scrapy.utils.log module
     This is an example on how to redirect ``INFO`` or higher messages to a file::
 
         import logging
-        from scrapy.utils.log import configure_logging
 
         logging.basicConfig(
             filename='log.txt',
