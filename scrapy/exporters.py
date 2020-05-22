@@ -76,11 +76,8 @@ class BaseItemExporter:
 
         for field_name in field_iter:
             if field_name in item:
-                value = self.serialize_field(
-                    item.get_field_meta(field_name),
-                    field_name,
-                    item[field_name]
-                )
+                field_meta = item.get_field_meta(field_name)
+                value = self.serialize_field(field_meta, field_name, item[field_name])
             else:
                 value = default_value
 
