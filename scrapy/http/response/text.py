@@ -78,7 +78,6 @@ class TextResponse(Response):
         """
         if self._cached_decoded_json is _NONE:
             self._cached_decoded_json = json.loads(self.text)
-
         return self._cached_decoded_json
 
     @property
