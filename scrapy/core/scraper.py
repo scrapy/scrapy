@@ -11,7 +11,7 @@ from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errba
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
-from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest, StopDownload
+from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import _BaseItem
@@ -147,14 +147,6 @@ class Scraper:
 
     def call_spider(self, result, request, spider):
         result.request = request
-        # StopDownload exceptions: make the partial response an attribute of the failure
-        if (
-            isinstance(result, Failure)
-            and isinstance(result.value, StopDownload)
-            and hasattr(result.value, "response")
-        ):
-            result.response = result.value.response
-            delattr(result.value, "response")
         dfd = defer_result(result)
         callback = request.callback or spider.parse
         warn_on_generator_with_return_value(spider, callback)

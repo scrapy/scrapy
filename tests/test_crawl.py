@@ -488,6 +488,10 @@ with multiples lines
         self.assertIsNone(crawler.spider.meta.get("response"))
         self.assertIsInstance(crawler.spider.meta["failure"], Failure)
         self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
-        self.assertIsInstance(crawler.spider.meta["failure"].response, Response)
-        self.assertEqual(crawler.spider.meta["failure"].response.body, crawler.spider.meta.get("bytes_received"))
-        self.assertLess(len(crawler.spider.meta["failure"].response.body), crawler.spider.full_response_length)
+        self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
+        self.assertEqual(
+            crawler.spider.meta["failure"].value.response.body,
+            crawler.spider.meta.get("bytes_received"))
+        self.assertLess(
+            len(crawler.spider.meta["failure"].value.response.body),
+            crawler.spider.full_response_length)

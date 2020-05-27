@@ -442,12 +442,8 @@ class ScrapyAgent:
             ip_address=result["ip_address"],
         )
         if result.get("failure"):
-            # This failure is not the same object that will reach the errback,
-            # so we need to temporarily store the response in the exception.
-            # It will be moved to the failure in core/scraper.py
-            failure = result["failure"]
-            failure.value.response = response
-            return failure
+            result["failure"].value.response = response
+            return result["failure"]
         return response
 
 
