@@ -202,6 +202,9 @@ A custom log format can be set for different actions by extending
 .. autoclass:: scrapy.logformatter.LogFormatter
    :members:
 
+
+.. _topics-logging-advanced-customization:
+
 Advanced customization
 ----------------------
 
