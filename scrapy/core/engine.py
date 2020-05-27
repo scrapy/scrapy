@@ -14,7 +14,7 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
-from scrapy.utils.defer import deferred_from_coro, isasyncgen
+from scrapy.utils.defer import deferred_from_coro, _isasyncgen
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
@@ -27,7 +27,7 @@ class Slot:
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
         self.inprogress = set()  # requests in progress
-        if isasyncgen(start_requests):
+        if _isasyncgen(start_requests):
             self.start_requests = start_requests
         else:
             self.start_requests = iter(start_requests)
@@ -131,7 +131,7 @@ class ExecutionEngine:
 
         if slot.start_requests and not self._needs_backout(spider):
             try:
-                if isasyncgen(slot.start_requests):
+                if _isasyncgen(slot.start_requests):
                     request = yield deferred_from_coro(slot.start_requests.__anext__())
                 else:
                     request = next(slot.start_requests)

@@ -100,7 +100,7 @@ synchronous :meth:`~scrapy.spiders.Spider.start_requests`.
 Another option is to make separate methods for normal and asynchronous
 iterables and choose one at run time::
 
-    from scrapy.utils.defer import isasyncgen
+    from inspect import isasyncgen
 
     class ProcessStartRequestsAsyncGenMiddleware:
         def _normal_process_start_requests(self, start_requests, spider):
