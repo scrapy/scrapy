@@ -119,6 +119,17 @@ class AsyncDefAsyncioReturnSpider(SimpleSpider):
         return [{'id': 1}, {'id': 2}]
 
 
+class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
+
+    name = "asyncdef_asyncio_return_single_element"
+
+    async def parse(self, response):
+        await asyncio.sleep(0.1)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+        return {"foo": 42}
+
+
 class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
 
     name = 'asyncdef_asyncio_reqs_return'
