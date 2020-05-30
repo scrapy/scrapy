@@ -371,6 +371,19 @@ Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switch
 different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
 
 
+.. _faq-stop-response-download:
+
+How can I cancel the download of a given response?
+--------------------------------------------------
+
+In some situations, it might be useful to stop the download of a certain response.
+For instance, if you only need the first part of a large response and you would like
+to save resources by avoiding the download of the whole body.
+In that case, you could attach a handler to the :class:`~scrapy.signals.bytes_received`
+signal and raise a :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to
+the :ref:`topics-stop-response-download` topic for additional information and examples.
+
+
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)

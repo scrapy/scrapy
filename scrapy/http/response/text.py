@@ -65,7 +65,7 @@ class TextResponse(Response):
         """Return body as unicode"""
         warnings.warn('Response.body_as_unicode() is deprecated, '
                       'please use Response.text instead.',
-                      ScrapyDeprecationWarning)
+                      ScrapyDeprecationWarning, stacklevel=2)
         return self.text
 
     @property
