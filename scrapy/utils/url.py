@@ -133,3 +133,11 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
         '' if origin_only else parsed_url.query,
         '' if strip_fragment else parsed_url.fragment
     ))
+
+
+def is_uri(text):
+    regex = r'^(([a-zA-Z][-+.\w]*):)(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?'
+    pattern = re.compile(regex)
+    if pattern.fullmatch(text) is not None:
+        return True
+    return False
