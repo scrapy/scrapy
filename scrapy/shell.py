@@ -13,7 +13,7 @@ from w3lib.url import any_to_uri
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.console import start_python_console
@@ -26,8 +26,7 @@ from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 class Shell:
 
-    relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
-                        Settings)
+    relevant_classes = (Crawler, Spider, Request, Response, _BaseItem, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler

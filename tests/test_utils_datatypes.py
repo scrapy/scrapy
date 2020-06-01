@@ -217,7 +217,7 @@ class SequenceExcludeTest(unittest.TestCase):
 
     def test_set(self):
         """Anything that is not in the supplied sequence will evaluate as 'in' the container."""
-        seq = set([-3, "test", 1.1])
+        seq = {-3, "test", 1.1}
         d = SequenceExclude(seq)
         self.assertIn(0, d)
         self.assertIn("foo", d)
@@ -271,6 +271,7 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         self.assertNotIn(r1, cache)
         self.assertIn(r2, cache)
         self.assertIn(r3, cache)
+        self.assertEqual(cache[r1], None)
         self.assertEqual(cache[r2], 2)
         self.assertEqual(cache[r3], 3)
         del r2

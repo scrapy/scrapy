@@ -50,7 +50,7 @@ this:
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
    about the downloaded files, such as the downloaded path, the original
-   scraped url (taken from the ``file_urls`` field) , and the file checksum.
+   scraped url (taken from the ``file_urls`` field), the file checksum and the file status.
    The files in the list of the ``files`` field will retain the same order of
    the original ``file_urls`` field. If some file failed downloading, an
    error will be logged and the file won't be present in the ``files`` field.
@@ -470,6 +470,14 @@ See here the methods that you can override in your custom Files Pipeline:
 
         * ``checksum`` - a `MD5 hash`_ of the image contents
 
+        * ``status`` - the file status indication. It can be one of the following:
+
+          * ``downloaded`` - file was downloaded.
+          * ``uptodate`` - file was not downloaded, as it was downloaded recently,
+            according to the file expiration policy.
+          * ``cached`` - file was already scheduled for download, by another item
+            sharing the same file.
+
       The list of tuples received by :meth:`~item_completed` is
       guaranteed to retain the same order of the requests returned from the
       :meth:`~get_media_requests` method.
@@ -479,7 +487,8 @@ See here the methods that you can override in your custom Files Pipeline:
           [(True,
             {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
              'path': 'full/0a79c461a4062ac383dc4fade7bc09f1384a3910.jpg',
-             'url': 'http://www.example.com/files/product1.pdf'}),
+             'url': 'http://www.example.com/files/product1.pdf',
+             'status': 'downloaded'}),
            (False,
             Failure(...))]
 

@@ -9,17 +9,31 @@ from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.ssl import Certificate
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import StopDownload
 from scrapy.http import Request
+from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
-from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
-                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback,
-                           AsyncDefSpider, AsyncDefAsyncioSpider, AsyncDefAsyncioReturnSpider,
-                           AsyncDefAsyncioReqsReturnSpider)
+from tests.spiders import (
+    AsyncDefAsyncioReqsReturnSpider,
+    AsyncDefAsyncioReturnSpider,
+    AsyncDefAsyncioSpider,
+    AsyncDefSpider,
+    BrokenStartRequestsSpider,
+    BytesReceivedCallbackSpider,
+    BytesReceivedErrbackSpider,
+    CrawlSpiderWithErrback,
+    DelaySpider,
+    DuplicateStartRequestsSpider,
+    FollowAllSpider,
+    SimpleSpider,
+    SingleRequestSpider,
+)
 
 
 class CrawlTestCase(TestCase):
@@ -457,3 +471,27 @@ with multiples lines
         ip_address = crawler.spider.meta['responses'][0].ip_address
         self.assertIsInstance(ip_address, IPv4Address)
         self.assertEqual(str(ip_address), gethostbyname(expected_netloc))
+
+    @defer.inlineCallbacks
+    def test_stop_download_callback(self):
+        crawler = self.runner.create_crawler(BytesReceivedCallbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("failure"))
+        self.assertIsInstance(crawler.spider.meta["response"], Response)
+        self.assertEqual(crawler.spider.meta["response"].body, crawler.spider.meta.get("bytes_received"))
+        self.assertLess(len(crawler.spider.meta["response"].body), crawler.spider.full_response_length)
+
+    @defer.inlineCallbacks
+    def test_stop_download_errback(self):
+        crawler = self.runner.create_crawler(BytesReceivedErrbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("response"))
+        self.assertIsInstance(crawler.spider.meta["failure"], Failure)
+        self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
+        self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
+        self.assertEqual(
+            crawler.spider.meta["failure"].value.response.body,
+            crawler.spider.meta.get("bytes_received"))
+        self.assertLess(
+            len(crawler.spider.meta["failure"].value.response.body),
+            crawler.spider.full_response_length)

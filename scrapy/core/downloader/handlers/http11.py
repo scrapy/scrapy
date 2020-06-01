@@ -12,6 +12,7 @@ from urllib.parse import urldefrag
 from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
+from twisted.python.failure import Failure
 from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.http_headers import Headers as TxHeaders
@@ -21,7 +22,7 @@ from zope.interface import implementer
 from scrapy import signals
 from scrapy.core.downloader.tls import openssl_methods
 from scrapy.core.downloader.webclient import _parse
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.misc import create_instance, load_object
@@ -431,7 +432,7 @@ class ScrapyAgent:
     def _cb_bodydone(self, result, request, url):
         headers = Headers(result["txresponse"].headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
-        return respcls(
+        response = respcls(
             url=url,
             status=int(result["txresponse"].code),
             headers=headers,
@@ -440,6 +441,10 @@ class ScrapyAgent:
             certificate=result["certificate"],
             ip_address=result["ip_address"],
         )
+        if result.get("failure"):
+            result["failure"].value.response = response
+            return result["failure"]
+        return response
 
 
 @implementer(IBodyProducer)
@@ -477,6 +482,16 @@ class _ResponseReader(protocol.Protocol):
         self._ip_address = None
         self._crawler = crawler
 
+    def _finish_response(self, flags=None, failure=None):
+        self._finished.callback({
+            "txresponse": self._txresponse,
+            "body": self._bodybuf.getvalue(),
+            "flags": flags,
+            "certificate": self._certificate,
+            "ip_address": self._ip_address,
+            "failure": failure,
+        })
+
     def connectionMade(self):
         if self._certificate is None:
             with suppress(AttributeError):
@@ -493,12 +508,19 @@ class _ResponseReader(protocol.Protocol):
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
 
-        self._crawler.signals.send_catch_log(
+        bytes_received_result = self._crawler.signals.send_catch_log(
             signal=signals.bytes_received,
             data=bodyBytes,
             request=self._request,
             spider=self._crawler.spider,
         )
+        for handler, result in bytes_received_result:
+            if isinstance(result, Failure) and isinstance(result.value, StopDownload):
+                logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
+                             {"request": self._request, "handler": handler.__qualname__})
+                self.transport._producer.loseConnection()
+                failure = result if result.value.fail else None
+                self._finish_response(flags=["download_stopped"], failure=failure)
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.error("Received (%(bytes)s) bytes larger than download "
@@ -521,36 +543,17 @@ class _ResponseReader(protocol.Protocol):
         if self._finished.called:
             return
 
-        body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
-            self._finished.callback({
-                "txresponse": self._txresponse,
-                "body": body,
-                "flags": None,
-                "certificate": self._certificate,
-                "ip_address": self._ip_address,
-            })
+            self._finish_response()
             return
 
         if reason.check(PotentialDataLoss):
-            self._finished.callback({
-                "txresponse": self._txresponse,
-                "body": body,
-                "flags": ["partial"],
-                "certificate": self._certificate,
-                "ip_address": self._ip_address,
-            })
+            self._finish_response(flags=["partial"])
             return
 
         if reason.check(ResponseFailed) and any(r.check(_DataLoss) for r in reason.value.reasons):
             if not self._fail_on_dataloss:
-                self._finished.callback({
-                    "txresponse": self._txresponse,
-                    "body": body,
-                    "flags": ["dataloss"],
-                    "certificate": self._certificate,
-                    "ip_address": self._ip_address,
-                })
+                self._finish_response(flags=["dataloss"])
                 return
 
             elif not self._fail_on_dataloss_warned:

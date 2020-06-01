@@ -149,7 +149,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
-        self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+        self.assertEqual(
+            req3.meta['redirect_urls'],
+            ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
+        )
 
     def test_redirect_reasons(self):
         req1 = Request('http://scrapytest.org/first')
@@ -279,7 +282,10 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
-        self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+        self.assertEqual(
+            req3.meta['redirect_urls'],
+            ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
+        )
 
     def test_redirect_reasons(self):
         req1 = Request('http://scrapytest.org/first')
