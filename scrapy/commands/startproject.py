@@ -4,6 +4,7 @@ import string
 from importlib import import_module
 from os.path import join, exists, abspath
 from shutil import ignore_patterns, move, copy2, copystat
+import stat
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -79,6 +80,28 @@ class Command(ScrapyCommand):
                 copy2(srcname, dstname)
         copystat(src, dst)
 
+    def _set_rw_permissions(self, path):
+        """
+        Sets permissions of a directory tree to +rw and +rwx for folders.
+        This is necessary if the start template files come without write
+        permissions.
+        """
+        mode_rw = (stat.S_IRUSR
+                   | stat.S_IWUSR
+                   | stat.S_IRGRP
+                   | stat.S_IROTH)
+
+        mode_x = (stat.S_IXUSR
+                  | stat.S_IXGRP
+                  | stat.S_IXOTH)
+
+        os.chmod(path, mode_rw | mode_x)
+        for root, dirs, files in os.walk(path):
+            for dir in dirs:
+                os.chmod(join(root, dir), mode_rw | mode_x)
+            for file in files:
+                os.chmod(join(root, file), mode_rw)
+
     def run(self, args, opts):
         if len(args) not in (1, 2):
             raise UsageError()
@@ -99,6 +122,9 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(self.templates_dir, abspath(project_dir))
+
+        self._set_rw_permissions(abspath(project_dir))
+
         move(join(project_dir, 'module'), join(project_dir, project_name))
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
