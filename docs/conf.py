@@ -303,3 +303,4 @@ hoverxref_role_types = {
     "mod": "tooltip",
     "ref": "tooltip",
 }
+hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
