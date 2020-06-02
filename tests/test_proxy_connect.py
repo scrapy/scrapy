@@ -4,6 +4,7 @@ import re
 import sys
 from subprocess import Popen, PIPE
 from urllib.parse import urlsplit, urlunsplit
+from unittest import skipIf
 
 import pytest
 from testfixtures import LogCapture
@@ -56,6 +57,8 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
+@skipIf(sys.version_info < (3, 5, 4),
+        "requires mitmproxy < 3.0.0, which these tests do not support")
 class ProxyConnectTestCase(TestCase):
 
     def setUp(self):
@@ -80,7 +83,7 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, log)
 
-    @pytest.mark.xfail(reason='Python 3.6+ fails this earlier', condition=sys.version_info.minor >= 6)
+    @pytest.mark.xfail(reason='Python 3.6+ fails this earlier', condition=sys.version_info >= (3, 6))
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
         crawler = get_crawler(SimpleSpider)

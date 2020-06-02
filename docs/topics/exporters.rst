@@ -236,7 +236,7 @@ PythonItemExporter
 XmlItemExporter
 ---------------
 
-.. class:: XmlItemExporter(file, item_element='item', root_element='items', \**kwargs)
+.. class:: XmlItemExporter(file, item_element='item', root_element='items', **kwargs)
 
    Exports Items in XML format to the specified file object.
 
@@ -290,7 +290,7 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', \**kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', **kwargs)
 
    Exports Items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
@@ -323,7 +323,7 @@ CsvItemExporter
 PickleItemExporter
 ------------------
 
-.. class:: PickleItemExporter(file, protocol=0, \**kwargs)
+.. class:: PickleItemExporter(file, protocol=0, **kwargs)
 
    Exports Items in pickle format to the given file-like object.
 
@@ -343,7 +343,7 @@ PickleItemExporter
 PprintItemExporter
 ------------------
 
-.. class:: PprintItemExporter(file, \**kwargs)
+.. class:: PprintItemExporter(file, **kwargs)
 
    Exports Items in pretty print format to the specified file object.
 
@@ -363,7 +363,7 @@ PprintItemExporter
 JsonItemExporter
 ----------------
 
-.. class:: JsonItemExporter(file, \**kwargs)
+.. class:: JsonItemExporter(file, **kwargs)
 
    Exports Items in JSON format to the specified file-like object, writing all
    objects as a list of objects. The additional ``__init__`` method arguments are
@@ -392,7 +392,7 @@ JsonItemExporter
 JsonLinesItemExporter
 ---------------------
 
-.. class:: JsonLinesItemExporter(file, \**kwargs)
+.. class:: JsonLinesItemExporter(file, **kwargs)
 
    Exports Items in JSON format to the specified file-like object, writing one
    JSON-encoded item per line. The additional ``__init__`` method arguments are passed

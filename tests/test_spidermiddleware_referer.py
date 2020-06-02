@@ -119,7 +119,11 @@ class MixinSameOrigin:
         ('https://example.com:443/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('http://example.com:80/page.html', 'http://example.com/not-page.html', b'http://example.com/page.html'),
         ('http://example.com/page.html', 'http://example.com:80/not-page.html', b'http://example.com/page.html'),
-        ('http://example.com:8888/page.html', 'http://example.com:8888/not-page.html', b'http://example.com:8888/page.html'),
+        (
+            'http://example.com:8888/page.html',
+            'http://example.com:8888/not-page.html',
+            b'http://example.com:8888/page.html',
+        ),
 
         # Different host: do NOT send referrer
         ('https://example.com/page.html', 'https://not.example.com/otherpage.html', None),
@@ -139,8 +143,12 @@ class MixinSameOrigin:
         ('ftps://example.com/urls.zip', 'https://example.com/not-page.html', None),
 
         # test for user/password stripping
-        ('https://user:password@example.com/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('https://user:password@example.com/page.html', 'http://example.com/not-page.html', None),
+        (
+            'https://user:password@example.com/page.html',
+            'https://example.com/not-page.html',
+            b'https://example.com/page.html',
+        ),
     ]
 
 
@@ -184,7 +192,11 @@ class MixinOriginWhenCrossOrigin:
         ('https://example.com:443/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('http://example.com:80/page.html', 'http://example.com/not-page.html', b'http://example.com/page.html'),
         ('http://example.com/page.html', 'http://example.com:80/not-page.html', b'http://example.com/page.html'),
-        ('http://example.com:8888/page.html', 'http://example.com:8888/not-page.html', b'http://example.com:8888/page.html'),
+        (
+            'http://example.com:8888/page.html',
+            'http://example.com:8888/not-page.html',
+            b'http://example.com:8888/page.html',
+        ),
 
         # Different host: send origin as referrer
         ('https://example2.com/page.html', 'https://scrapy.org/otherpage.html', b'https://example2.com/'),
@@ -205,9 +217,17 @@ class MixinOriginWhenCrossOrigin:
         ('ftps://example4.com/urls.zip', 'https://example4.com/not-page.html', b'ftps://example4.com/'),
 
         # test for user/password stripping
-        ('https://user:password@example5.com/page.html', 'https://example5.com/not-page.html', b'https://example5.com/page.html'),
+        (
+            'https://user:password@example5.com/page.html',
+            'https://example5.com/not-page.html',
+            b'https://example5.com/page.html',
+        ),
         # TLS to non-TLS downgrade: send origin
-        ('https://user:password@example5.com/page.html', 'http://example5.com/not-page.html', b'https://example5.com/'),
+        (
+            'https://user:password@example5.com/page.html',
+            'http://example5.com/not-page.html',
+            b'https://example5.com/',
+        ),
     ]
 
 
@@ -219,7 +239,11 @@ class MixinStrictOriginWhenCrossOrigin:
         ('https://example.com:443/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('http://example.com:80/page.html', 'http://example.com/not-page.html', b'http://example.com/page.html'),
         ('http://example.com/page.html', 'http://example.com:80/not-page.html', b'http://example.com/page.html'),
-        ('http://example.com:8888/page.html', 'http://example.com:8888/not-page.html', b'http://example.com:8888/page.html'),
+        (
+            'http://example.com:8888/page.html',
+            'http://example.com:8888/not-page.html',
+            b'http://example.com:8888/page.html',
+        ),
 
         # Different host: send origin as referrer
         ('https://example2.com/page.html', 'https://scrapy.org/otherpage.html', b'https://example2.com/'),
@@ -248,7 +272,11 @@ class MixinStrictOriginWhenCrossOrigin:
         ('ftps://example4.com/urls.zip', 'https://example4.com/not-page.html', b'ftps://example4.com/'),
 
         # test for user/password stripping
-        ('https://user:password@example5.com/page.html', 'https://example5.com/not-page.html', b'https://example5.com/page.html'),
+        (
+            'https://user:password@example5.com/page.html',
+            'https://example5.com/not-page.html',
+            b'https://example5.com/page.html',
+        ),
 
         # TLS to non-TLS downgrade: send nothing
         ('https://user:password@example5.com/page.html', 'http://example5.com/not-page.html', None),
@@ -281,8 +309,16 @@ class MixinUnsafeUrl:
         ('ftp://example3.com/urls.zip', 'https://scrapy.org/', b'ftp://example3.com/urls.zip'),
 
         # test for user/password stripping
-        ('http://user:password@example4.com/page.html', 'https://not.example4.com/', b'http://example4.com/page.html'),
-        ('https://user:password@example4.com/page.html', 'http://scrapy.org/', b'https://example4.com/page.html'),
+        (
+            'http://user:password@example4.com/page.html',
+            'https://not.example4.com/',
+            b'http://example4.com/page.html',
+        ),
+        (
+            'https://user:password@example4.com/page.html',
+            'http://scrapy.org/',
+            b'https://example4.com/page.html',
+        ),
     ]
 
 

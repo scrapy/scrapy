@@ -181,7 +181,8 @@ class RFPDupeFilterTest(unittest.TestCase):
                 (
                     'scrapy.dupefilters',
                     'DEBUG',
-                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> - no more duplicates will be shown (see DUPEFILTER_DEBUG to show all duplicates)'
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> - no more'
+                    ' duplicates will be shown (see DUPEFILTER_DEBUG to show all duplicates)'
                 )
             )
 
@@ -217,7 +218,8 @@ class RFPDupeFilterTest(unittest.TestCase):
                 (
                     'scrapy.dupefilters',
                     'DEBUG',
-                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: http://scrapytest.org/INDEX.html)'
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html>'
+                    ' (referer: http://scrapytest.org/INDEX.html)'
                 )
             )
 

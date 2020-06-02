@@ -432,7 +432,7 @@ class FilesPipeline(MediaPipeline):
             self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
-            return {'url': request.url, 'path': path, 'checksum': checksum}
+            return {'url': request.url, 'path': path, 'checksum': checksum, 'status': 'uptodate'}
 
         path = self.file_path(request, info=info)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
@@ -509,7 +509,7 @@ class FilesPipeline(MediaPipeline):
             )
             raise FileException(str(exc))
 
-        return {'url': request.url, 'path': path, 'checksum': checksum}
+        return {'url': request.url, 'path': path, 'checksum': checksum, 'status': status}
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)

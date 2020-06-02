@@ -273,7 +273,7 @@ There are several ways to modify Item Loader context values:
 ItemLoader objects
 ==================
 
-.. class:: ItemLoader([item, selector, response], \**kwargs)
+.. class:: ItemLoader([item, selector, response], **kwargs)
 
     Return a new Item Loader for populating the given Item. If no item is
     given, one is instantiated automatically using the class in
@@ -303,7 +303,7 @@ ItemLoader objects
 
     :class:`ItemLoader` instances have the following methods:
 
-    .. method:: get_value(value, \*processors, \**kwargs)
+    .. method:: get_value(value, *processors, **kwargs)
 
         Process the given ``value`` by the given ``processors`` and keyword
         arguments.
@@ -321,7 +321,7 @@ ItemLoader objects
         >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
         'FOO`
 
-    .. method:: add_value(field_name, value, \*processors, \**kwargs)
+    .. method:: add_value(field_name, value, *processors, **kwargs)
 
         Process and then add the given ``value`` for the given field.
 
@@ -343,11 +343,11 @@ ItemLoader objects
             loader.add_value('name', u'name: foo', TakeFirst(), re='name: (.+)')
             loader.add_value(None, {'name': u'foo', 'sex': u'male'})
 
-    .. method:: replace_value(field_name, value, \*processors, \**kwargs)
+    .. method:: replace_value(field_name, value, *processors, **kwargs)
 
         Similar to :meth:`add_value` but replaces the collected data with the
         new value instead of adding it.
-    .. method:: get_xpath(xpath, \*processors, \**kwargs)
+    .. method:: get_xpath(xpath, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
         value, which is used to extract a list of unicode strings from the
@@ -367,7 +367,7 @@ ItemLoader objects
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.get_xpath('//p[@id="price"]', TakeFirst(), re='the price is (.*)')
 
-    .. method:: add_xpath(field_name, xpath, \*processors, \**kwargs)
+    .. method:: add_xpath(field_name, xpath, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
         value, which is used to extract a list of unicode strings from the
@@ -385,12 +385,12 @@ ItemLoader objects
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
 
-    .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
+    .. method:: replace_xpath(field_name, xpath, *processors, **kwargs)
 
         Similar to :meth:`add_xpath` but replaces collected data instead of
         adding it.
 
-    .. method:: get_css(css, \*processors, \**kwargs)
+    .. method:: get_css(css, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.get_value` but receives a CSS selector
         instead of a value, which is used to extract a list of unicode strings
@@ -410,7 +410,7 @@ ItemLoader objects
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.get_css('p#price', TakeFirst(), re='the price is (.*)')
 
-    .. method:: add_css(field_name, css, \*processors, \**kwargs)
+    .. method:: add_css(field_name, css, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.add_value` but receives a CSS selector
         instead of a value, which is used to extract a list of unicode strings
@@ -428,7 +428,7 @@ ItemLoader objects
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.add_css('price', 'p#price', re='the price is (.*)')
 
-    .. method:: replace_css(field_name, css, \*processors, \**kwargs)
+    .. method:: replace_css(field_name, css, *processors, **kwargs)
 
         Similar to :meth:`add_css` but replaces collected data instead of
         adding it.
@@ -678,7 +678,7 @@ Here is a list of all built-in processors:
     >>> proc(['one', 'two', 'three'])
     'one<br>two<br>three'
 
-.. class:: Compose(\*functions, \**default_loader_context)
+.. class:: Compose(*functions, **default_loader_context)
 
     A processor which is constructed from the composition of the given
     functions. This means that each input value of this processor is passed to
@@ -706,7 +706,7 @@ Here is a list of all built-in processors:
     active Loader context accessible through the :meth:`ItemLoader.context`
     attribute.
 
-.. class:: MapCompose(\*functions, \**default_loader_context)
+.. class:: MapCompose(*functions, **default_loader_context)
 
     A processor which is constructed from the composition of the given
     functions, similar to the :class:`Compose` processor. The difference with

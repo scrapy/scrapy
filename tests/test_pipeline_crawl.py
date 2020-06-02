@@ -91,6 +91,11 @@ class FileDownloadCrawlTestCase(TestCase):
         file_dl_success = 'File (downloaded): Downloaded file from'
         self.assertEqual(logs.count(file_dl_success), 3)
 
+        # check that the images/files status is `downloaded`
+        for item in items:
+            for i in item[self.media_key]:
+                self.assertEqual(i['status'], 'downloaded')
+
         # check that the images/files checksums are what we know they should be
         if self.expected_checksums is not None:
             checksums = set(
