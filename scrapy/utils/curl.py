@@ -18,7 +18,7 @@ curl_parser = CurlParser()
 curl_parser.add_argument('url')
 curl_parser.add_argument('-H', '--header', dest='headers', action='append')
 curl_parser.add_argument('-X', '--request', dest='method', default='get')
-curl_parser.add_argument('-d', '--data', dest='data')
+curl_parser.add_argument('-d', '--data', '--data-raw', dest='data')
 curl_parser.add_argument('-u', '--user', dest='auth')
 
 
@@ -90,5 +90,9 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
         result['cookies'] = cookies
     if parsed_args.data:
         result['body'] = parsed_args.data
+        if result.get('method') == 'GET':
+            # if the "data" is specified but the "method" is not specified,
+            # the default method is 'POST'
+            result['method'] = 'POST'
 
     return result
