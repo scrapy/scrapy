@@ -110,6 +110,6 @@ class Spider(object_ref):
 
 
 # Top-level imports
-from scrapy.spiders.crawl import CrawlSpider, Rule  # noqa: F401
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider  # noqa: F401
-from scrapy.spiders.sitemap import SitemapSpider  # noqa: F401
+from scrapy.spiders.crawl import CrawlSpider, Rule
+from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.spiders.sitemap import SitemapSpider

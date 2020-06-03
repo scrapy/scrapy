@@ -38,27 +38,36 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
-        self.assertEqual(file_path(Request("https://dev.mydeco.com/mydeco.pdf")),
-                         'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
-        self.assertEqual(file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.txt")),
-                         'full/4ce274dd83db0368bafd7e406f382ae088e39219.txt')
-        self.assertEqual(file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.doc")),
-                         'full/94ccc495a17b9ac5d40e3eabf3afcb8c2c9b9e1a.doc')
-        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
-                         'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
-        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
-                         'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2')
-        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
-                         'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
-        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                                   response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                                   info=object()),
-                         'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
-        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha")),
-                         'full/76c00cef2ef669ae65052661f68d451162829507')
-        self.assertEqual(file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
+        self.assertEqual(
+            file_path(Request("https://dev.mydeco.com/mydeco.pdf")),
+            'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
+        self.assertEqual(
+            file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.txt")),
+            'full/4ce274dd83db0368bafd7e406f382ae088e39219.txt')
+        self.assertEqual(
+            file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.doc")),
+            'full/94ccc495a17b9ac5d40e3eabf3afcb8c2c9b9e1a.doc')
+        self.assertEqual(
+            file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
+            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
+        self.assertEqual(
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
+            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2')
+        self.assertEqual(
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
+                      response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                      info=object()),
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(
+            file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg.bohaha")),
+            'full/76c00cef2ef669ae65052661f68d451162829507')
+        self.assertEqual(
+            file_path(Request("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAR0AAACxCAMAAADOHZloAAACClBMVEX/\
                                     //+F0tzCwMK76ZKQ21AMqr7oAAC96JvD5aWM2kvZ78J0N7fmAAC46Y4Ap7y")),
-                         'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
+            'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)
@@ -84,6 +93,7 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         result = yield self.pipeline.process_item(item, None)
         self.assertEqual(result['files'][0]['checksum'], 'abc')
+        self.assertEqual(result['files'][0]['status'], 'uptodate')
 
         for p in patchers:
             p.stop()
@@ -105,6 +115,29 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         result = yield self.pipeline.process_item(item, None)
         self.assertNotEqual(result['files'][0]['checksum'], 'abc')
+        self.assertEqual(result['files'][0]['status'], 'downloaded')
+
+        for p in patchers:
+            p.stop()
+
+    @defer.inlineCallbacks
+    def test_file_cached(self):
+        item_url = "http://example.com/file3.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
+            mock.patch.object(FSFilesStore, 'stat_file', return_value={
+                'checksum': 'abc',
+                'last_modified': time.time() - (self.pipeline.expires * 60 * 60 * 24 * 2)}),
+            mock.patch.object(FilesPipeline, 'get_media_requests',
+                              return_value=[_prepare_request_object(item_url, flags=['cached'])])
+        ]
+        for p in patchers:
+            p.start()
+
+        result = yield self.pipeline.process_item(item, None)
+        self.assertNotEqual(result['files'][0]['checksum'], 'abc')
+        self.assertEqual(result['files'][0]['status'], 'cached')
 
         for p in patchers:
             p.stop()
@@ -403,10 +436,10 @@ def _create_item_with_files(*files):
     return item
 
 
-def _prepare_request_object(item_url):
+def _prepare_request_object(item_url, flags=None):
     return Request(
         item_url,
-        meta={'response': Response(item_url, status=200, body=b'data')})
+        meta={'response': Response(item_url, status=200, body=b'data', flags=flags)})
 
 
 if __name__ == "__main__":

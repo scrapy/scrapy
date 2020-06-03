@@ -158,6 +158,12 @@ class CallbackKeywordArgumentsTestCase(TestCase):
                 if key in line.getMessage():
                     exceptions[key] = line
         self.assertEqual(exceptions['takes_less'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_less'].exc_info[1]), "parse_takes_less() got an unexpected keyword argument 'number'")
+        self.assertEqual(
+            str(exceptions['takes_less'].exc_info[1]),
+            "parse_takes_less() got an unexpected keyword argument 'number'"
+        )
         self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_more'].exc_info[1]), "parse_takes_more() missing 1 required positional argument: 'other'")
+        self.assertEqual(
+            str(exceptions['takes_more'].exc_info[1]),
+            "parse_takes_more() missing 1 required positional argument: 'other'"
+        )

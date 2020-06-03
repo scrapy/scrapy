@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Scrapy documentation build configuration file, created by
 # sphinx-quickstart on Mon Nov 24 12:02:52 2008.
 #
@@ -101,6 +99,9 @@ exclude_trees = ['.build']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# List of Sphinx warnings that will not be raised
+suppress_warnings = ['epub.unknown_project_files']
 
 
 # Options for HTML output
@@ -295,3 +296,11 @@ intersphinx_mapping = {
 # ------------------------------------
 
 hoverxref_auto_ref = True
+hoverxref_role_types = {
+    "class": "tooltip",
+    "confval": "tooltip",
+    "hoverxref": "tooltip",
+    "mod": "tooltip",
+    "ref": "tooltip",
+}
+hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']

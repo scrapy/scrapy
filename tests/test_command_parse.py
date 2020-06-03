@@ -142,8 +142,8 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     @defer.inlineCallbacks
     def test_request_without_meta(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
-                                          '-c', 'parse_request_without_meta',
-                                          '--nolinks',
+                                           '-c', 'parse_request_without_meta',
+                                           '--nolinks',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 

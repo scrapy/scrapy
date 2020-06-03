@@ -1,6 +1,6 @@
 import json
 
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
 from scrapy.http import Request
 from scrapy.exceptions import ContractFail
 
@@ -51,14 +51,18 @@ class ReturnsContract(Contract):
     objects = {
         'request': Request,
         'requests': Request,
-        'item': (BaseItem, dict),
-        'items': (BaseItem, dict),
+        'item': (_BaseItem, dict),
+        'items': (_BaseItem, dict),
     }
 
     def __init__(self, *args, **kwargs):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
-        assert len(self.args) in [1, 2, 3]
+        if len(self.args) not in [1, 2, 3]:
+            raise ValueError(
+                "Incorrect argument quantity: expected 1, 2 or 3, got %i"
+                % len(self.args)
+            )
         self.obj_name = self.args[0] or None
         self.obj_type = self.objects[self.obj_name]
 
@@ -99,7 +103,7 @@ class ScrapesContract(Contract):
 
     def post_process(self, output):
         for x in output:
-            if isinstance(x, (BaseItem, dict)):
+            if isinstance(x, (_BaseItem, dict)):
                 missing = [arg for arg in self.args if arg not in x]
                 if missing:
                     raise ContractFail(

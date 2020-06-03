@@ -167,11 +167,13 @@ method and how to clean up the resources properly.::
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return a
-:class:`~twisted.internet.defer.Deferred` from the :meth:`process_item` method.
-It uses Splash_ to render screenshot of item url. Pipeline
-makes request to locally running instance of Splash_. After request is downloaded,
-it saves the screenshot to a file and adds filename to the item.
+This example demonstrates how to use :doc:`coroutine syntax <coroutines>` in
+the :meth:`process_item` method.
+
+This item pipeline makes a request to a locally-running instance of Splash_ to
+render a screenshot of the item URL. After the request response is downloaded,
+the item pipeline saves the screenshot to a file and adds the filename to the
+item.
 
 ::
 

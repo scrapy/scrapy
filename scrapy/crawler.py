@@ -78,7 +78,8 @@ class Crawler:
 
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):
-        assert not self.crawling, "Crawling already taking place"
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
         self.crawling = True
 
         try:

@@ -16,12 +16,12 @@ from w3lib.encoding import resolve_encoding
 SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
-        'gzip': ('html-gzip.bin', 'gzip'),
-        'x-gzip': ('html-gzip.bin', 'gzip'),
-        'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
-        'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
-        'br': ('html-br.bin', 'br')
-        }
+    'gzip': ('html-gzip.bin', 'gzip'),
+    'x-gzip': ('html-gzip.bin', 'gzip'),
+    'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
+    'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
+    'br': ('html-br.bin', 'br'),
+}
 
 
 class HttpCompressionTest(TestCase):
@@ -40,12 +40,12 @@ class HttpCompressionTest(TestCase):
             body = sample.read()
 
         headers = {
-                'Server': 'Yaws/1.49 Yet Another Web Server',
-                'Date': 'Sun, 08 Mar 2009 00:41:03 GMT',
-                'Content-Length': len(body),
-                'Content-Type': 'text/html',
-                'Content-Encoding': contentencoding,
-                }
+            'Server': 'Yaws/1.49 Yet Another Web Server',
+            'Date': 'Sun, 08 Mar 2009 00:41:03 GMT',
+            'Content-Length': len(body),
+            'Content-Type': 'text/html',
+            'Content-Encoding': contentencoding,
+        }
 
         response = Response('http://scrapytest.org/', body=body, headers=headers)
         response.request = Request('http://scrapytest.org', headers={'Accept-Encoding': 'gzip, deflate'})
@@ -124,7 +124,8 @@ class HttpCompressionTest(TestCase):
             'Content-Encoding': 'gzip',
         }
         f = BytesIO()
-        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        plainbody = (b'<html><head><title>Some page</title>'
+                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -142,7 +143,8 @@ class HttpCompressionTest(TestCase):
             'Content-Encoding': 'gzip',
         }
         f = BytesIO()
-        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        plainbody = (b'<html><head><title>Some page</title>'
+                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -158,7 +160,8 @@ class HttpCompressionTest(TestCase):
         headers = {
             'Content-Encoding': 'identity',
         }
-        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        plainbody = (b'<html><head><title>Some page</title>'
+                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
         respcls = responsetypes.from_args(url="http://www.example.com/index", headers=headers, body=plainbody)
         response = respcls("http://www.example.com/index", headers=headers, body=plainbody)
         request = Request("http://www.example.com/index")

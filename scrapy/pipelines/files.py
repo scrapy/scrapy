@@ -83,8 +83,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
-                        # FilesPipeline.from_settings.
+    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
@@ -106,7 +105,8 @@ class S3FilesStore:
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
-        assert uri.startswith('s3://')
+        if not uri.startswith("s3://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
@@ -229,6 +229,20 @@ class GCSFilesStore:
         bucket, prefix = uri[5:].split('/', 1)
         self.bucket = client.bucket(bucket)
         self.prefix = prefix
+        permissions = self.bucket.test_iam_permissions(
+            ['storage.objects.get', 'storage.objects.create']
+        )
+        if 'storage.objects.get' not in permissions:
+            logger.warning(
+                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "Checking if files are up to date will be impossible. Files will be downloaded every time.",
+                {'bucket': bucket}
+            )
+        if 'storage.objects.create' not in permissions:
+            logger.error(
+                "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
+                {'bucket': bucket}
+            )
 
     def stat_file(self, path, info):
         def _onsuccess(blob):
@@ -266,7 +280,8 @@ class FTPFilesStore:
     USE_ACTIVE_MODE = None
 
     def __init__(self, uri):
-        assert uri.startswith('ftp://')
+        if not uri.startswith("ftp://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
         u = urlparse(uri)
         self.port = u.port
         self.host = u.hostname
@@ -417,7 +432,7 @@ class FilesPipeline(MediaPipeline):
             self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
-            return {'url': request.url, 'path': path, 'checksum': checksum}
+            return {'url': request.url, 'path': path, 'checksum': checksum, 'status': 'uptodate'}
 
         path = self.file_path(request, info=info)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
@@ -494,13 +509,13 @@ class FilesPipeline(MediaPipeline):
             )
             raise FileException(str(exc))
 
-        return {'url': request.url, 'path': path, 'checksum': checksum}
+        return {'url': request.url, 'path': path, 'checksum': checksum, 'status': status}
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
         spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
 
-    ### Overridable Interface
+    # Overridable Interface
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get(self.files_urls_field, [])]
 

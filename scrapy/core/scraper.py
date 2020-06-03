@@ -14,7 +14,7 @@ from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
 
 
@@ -123,7 +123,11 @@ class Scraper:
     def _scrape(self, response, request, spider):
         """Handle the downloaded response or failure through the spider
         callback/errback"""
-        assert isinstance(response, (Response, Failure))
+        if not isinstance(response, (Response, Failure)):
+            raise TypeError(
+                "Incorrect type: expected Response or Failure, got %s: %r"
+                % (type(response), response)
+            )
 
         dfd = self._scrape2(response, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)
@@ -187,7 +191,7 @@ class Scraper:
         """
         if isinstance(output, Request):
             self.crawler.engine.crawl(request=output, spider=spider)
-        elif isinstance(output, (BaseItem, dict)):
+        elif isinstance(output, (_BaseItem, dict)):
             self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, response, spider)
