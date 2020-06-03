@@ -202,6 +202,9 @@ A custom log format can be set for different actions by extending
 .. autoclass:: scrapy.logformatter.LogFormatter
    :members:
 
+
+.. _topics-logging-advanced-customization:
+
 Advanced customization
 ----------------------
 
@@ -262,7 +265,6 @@ scrapy.utils.log module
     This is an example on how to redirect ``INFO`` or higher messages to a file::
 
         import logging
-        from scrapy.utils.log import configure_logging
 
         logging.basicConfig(
             filename='log.txt',

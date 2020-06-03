@@ -91,7 +91,7 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(\*args, \**kwargs)
+    .. method:: crawl(*args, **kwargs)
 
         Starts the crawler by instantiating its spider class with the given
         ``args`` and ``kwargs`` arguments, while setting the execution engine in

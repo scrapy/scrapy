@@ -121,7 +121,7 @@ scrapy.Spider
       send log messages through it as described on
       :ref:`topics-logging-from-spiders`.
 
-   .. method:: from_crawler(crawler, \*args, \**kwargs)
+   .. method:: from_crawler(crawler, *args, **kwargs)
 
        This is the class method used by Scrapy to create your spiders.
 

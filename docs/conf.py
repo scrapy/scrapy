@@ -100,6 +100,9 @@ exclude_trees = ['.build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# List of Sphinx warnings that will not be raised
+suppress_warnings = ['epub.unknown_project_files']
+
 
 # Options for HTML output
 # -----------------------
@@ -300,3 +303,4 @@ hoverxref_role_types = {
     "mod": "tooltip",
     "ref": "tooltip",
 }
+hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
