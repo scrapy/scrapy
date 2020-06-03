@@ -56,9 +56,9 @@ class Command(ScrapyCommand):
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                           help="print each depth level one by one")
         parser.add_option("-o", "--output", metavar="FILE", action="append",
-            help="dump scraped items into FILE (use - for stdout)")
+                          help="dump scraped items into FILE (use - for stdout)")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
-            help="format to use for dumping items with -o")
+                          help="format to use for dumping items with -o")
 
     @property
     def max_level(self):
