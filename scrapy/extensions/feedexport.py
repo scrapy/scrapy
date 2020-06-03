@@ -205,6 +205,7 @@ class _FeedSlot:
     def export_item(self, item):
         if self.exporter._should_export_item(item):
             self.exporter.export_item(item)
+            self.itemcount += 1
 
 
 class FeedExporter:
@@ -294,7 +295,6 @@ class FeedExporter:
         for slot in self.slots:
             slot.start_exporting()
             slot.export_item(item)
-            slot.itemcount += 1
 
     def _load_components(self, setting_prefix):
         conf = without_none_values(self.settings.getwithbase(setting_prefix))
