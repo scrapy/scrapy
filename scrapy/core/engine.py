@@ -73,6 +73,7 @@ class ExecutionEngine:
         self.downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._spider_closed_callback = spider_closed_callback
+        self._waiting_for_request = False
 
     @defer.inlineCallbacks
     def start(self):
@@ -125,30 +126,33 @@ class ExecutionEngine:
         if self.paused:
             return
 
-        while not self._needs_backout(spider):
-            if not self._next_request_from_scheduler(spider):
-                break
+        if self._waiting_for_request:
+            return
+        self._waiting_for_request = True
+        try:
+            while not self._needs_backout(spider):
+                if not self._next_request_from_scheduler(spider):
+                    break
 
-        if slot.start_requests and not self._needs_backout(spider):
-            try:
-                if _isasyncgen(slot.start_requests):
-                    request = yield deferred_from_coro(slot.start_requests.__anext__())
+            if slot.start_requests and not self._needs_backout(spider):
+                try:
+                    if _isasyncgen(slot.start_requests):
+                        request = yield deferred_from_coro(slot.start_requests.__anext__())
+                    else:
+                        request = next(slot.start_requests)
+                except (StopIteration, StopAsyncIteration):
+                    slot.start_requests = None
+                except Exception:
+                    slot.start_requests = None
+                    logger.error('Error while obtaining start requests',
+                                 exc_info=True, extra={'spider': spider})
                 else:
-                    request = next(slot.start_requests)
-            except (StopIteration, StopAsyncIteration):
-                if slot.start_requests is None:
-                    # the crawl is already stopping
-                    return
-                slot.start_requests = None
-            except Exception:
-                slot.start_requests = None
-                logger.error('Error while obtaining start requests',
-                             exc_info=True, extra={'spider': spider})
-            else:
-                self.crawl(request, spider)
+                    self.crawl(request, spider)
 
-        if self.spider_is_idle(spider) and slot.close_if_idle:
-            self._spider_idle(spider)
+            if self.spider_is_idle(spider) and slot.close_if_idle:
+                self._spider_idle(spider)
+        finally:
+            self._waiting_for_request = False
 
     def _needs_backout(self, spider):
         slot = self.slot

@@ -16,4 +16,4 @@ class StartRequestsAsyncGenAsyncioSpider(TestSpider):
     async def start_requests(self):
         for url in self.start_urls:
             yield Request(url, dont_filter=True)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1)
