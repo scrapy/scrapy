@@ -42,7 +42,12 @@ sys.exit(mitmdump())
                            ],
                           stdout=PIPE, env=get_testenv())
         line = self.proc.stdout.readline().decode('utf-8')
-        host_port = re.search(r'listening at http://([^:]+:\d+)', line).group(1)
+        pattern = r'listening at http://([^:]+:\d+)'
+        match = re.search(pattern, line)
+        if not match:
+            raise RuntimeError('Could not find {} in stdout line {}'
+                               .format(repr(pattern), repr(line)))
+        host_port = match.group(1)
         address = 'http://%s:%s@%s' % (self.auth_user, self.auth_pass, host_port)
         return address
 
