@@ -12,8 +12,7 @@ def _colorize(text, colorize=True):
     if not colorize or not sys.stdout.isatty():
         return text
     try:
-        import pygments.util
-        from pygments.formatters import get_formatter_by_name
+        from pygments.formatters import TerminalFormatter
         from pygments import highlight
         from pygments.lexers import PythonLexer
     except ImportError:
@@ -35,19 +34,10 @@ def _colorize(text, colorize=True):
         except ValueError:
             return text
 
-    if _color_support_info() == 256:
-        format_alias = 'terminal256'
-        format_options = {'style': 'default'}
-    else:
-        format_alias = 'terminal'
-        format_options = {'bg': 'dark'}
-    try:
-        formatter = get_formatter_by_name(format_alias, **format_options)
-    except pygments.util.ClassNotFound as err:
-        sys.stderr.write(str(err) + "\n")
-        formatter = get_formatter_by_name(format_alias)
+    if _color_support_info():
+        return highlight(text, PythonLexer(), TerminalFormatter())
 
-    return highlight(text, PythonLexer(), formatter)
+    return text
 
 
 def _color_support_info():
@@ -55,9 +45,16 @@ def _color_support_info():
         import curses
     except ImportError:
         # Usually Windows, which doesn't have great curses support
-        return 16
-    curses.setupterm()
-    return curses.tigetnum('colors')
+        return True
+
+    curses.initscr()
+    color_support = curses.has_colors()
+    try:
+        curses.endwin()
+    except curses.error:
+        pass
+
+    return color_support
 
 
 def pformat(obj, *args, **kwargs):
