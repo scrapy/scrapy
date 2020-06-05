@@ -47,14 +47,15 @@ def _color_support_info():
         # Usually Windows, which doesn't have great curses support
         return True
 
-    curses.initscr()
-    color_support = curses.has_colors()
     try:
+        curses.initscr()
+        color_support = curses.has_colors()
         curses.endwin()
+        return color_support
     except curses.error:
         pass
 
-    return color_support
+    return False
 
 
 def pformat(obj, *args, **kwargs):
