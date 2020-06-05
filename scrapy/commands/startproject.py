@@ -79,6 +79,7 @@ class Command(ScrapyCommand):
             else:
                 copy2(srcname, dstname)
         copystat(src, dst)
+        self._set_rw_permissions(dst)
 
     def _set_rw_permissions(self, path):
         """
@@ -122,8 +123,6 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(self.templates_dir, abspath(project_dir))
-
-        self._set_rw_permissions(abspath(project_dir))
 
         move(join(project_dir, 'module'), join(project_dir, project_name))
         for paths in TEMPLATES_TO_RENDER:
