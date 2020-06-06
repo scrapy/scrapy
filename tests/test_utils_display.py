@@ -4,6 +4,8 @@ from unittest import mock, TestCase
 
 from scrapy.utils.display import _colorize, _color_support_info
 
+TestStr = '{\x1b[33m"\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m"\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}\n'
+
 
 class TestDisplay(TestCase):
     if sys.platform != "win32":
@@ -11,10 +13,7 @@ class TestDisplay(TestCase):
         def test_color(self, mock_isatty):
             mock_isatty.return_value = True
             if _color_support_info():
-                self.assertEqual(
-                    _colorize('{"a": 1}'),
-                    '{\x1b[33m"\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m"\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}\n'
-                )
+                self.assertEqual(_colorize('{"a": 1}'), TestStr)
             else:
                 self.assertEqual(_colorize('{"a": 1}'), '{"a": 1}')
     else:
@@ -25,7 +24,4 @@ class TestDisplay(TestCase):
             with mock.patch('sys.stdout.isatty', autospec=True) as mock_isatty:
                 mock_isatty.return_value = True
                 if _color_support_info():
-                    self.assertEqual(
-                        _colorize('{"a": 1}'),
-                        '{\x1b[33m"\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m"\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}\n'
-                    )
+                    self.assertEqual(_colorize('{"a": 1}'), TestStr)
