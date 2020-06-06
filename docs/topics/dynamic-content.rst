@@ -248,8 +248,34 @@ Using a headless browser
 A `headless browser`_ is a special web browser that provides an API for
 automation.
 
-The easiest way to use a headless browser with Scrapy is to use Selenium_,
-along with `scrapy-selenium`_ for seamless integration.
+Since version 2.0, it is possible to integrate libraries that use the
+``async/await`` syntax. One such library is `pyppeteer`_ (an unnoficial
+Python port of `puppeteer`_), which uses headless Chrome to download and
+render pages.
+The following is a simple snippet to illustrate its usage within Scrapy::
+
+    import pyppeteer
+    import scrapy
+
+    class PyppeteerSpider(scrapy.Spider):
+        name = "pyppeteer"
+        start_urls = ["data:,"]  # avoid making an actual upstream request
+
+        async def parse(self, response):
+            browser = await pyppeteer.launch()
+            page = await browser.newPage()
+            await page.goto("https:/example.org")
+            title = await page.title()
+            yield {"title": title}
+
+Keep in mind that this is just a proof of concept, since it circumvents
+most of the Scrapy components (middlewares, dupefilter, etc).
+
+There are some 3rd party projects which provider better integration:
+
+* https://github.com/elacuesta/scrapy-pyppeteer
+* https://github.com/lopuhin/scrapy-pyppeteer
+* https://github.com/clemfromspace/scrapy-puppeteer
 
 
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
@@ -259,10 +285,10 @@ along with `scrapy-selenium`_ for seamless integration.
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
+.. _puppeteer: https://pptr.dev/
+.. _pyppeteer: https://pyppeteer.github.io/pyppeteer/
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
-.. _Selenium: https://www.selenium.dev/
 .. _Splash: https://github.com/scrapinghub/splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/
