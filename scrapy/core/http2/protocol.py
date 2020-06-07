@@ -1,19 +1,18 @@
-from h2.connection import H2Connection
+import logging
+
 from h2.config import H2Configuration
+from h2.connection import H2Connection
 from h2.events import (
-    ConnectionTerminated, DataReceived, ResponseReceived, StreamEnded,
-    StreamReset, TrailersReceived, WindowUpdated
+    ConnectionTerminated, DataReceived, ResponseReceived, RemoteSettingsChanged,
+    StreamEnded, StreamReset, TrailersReceived, WindowUpdated
 )
-
-from scrapy.http import Request
-from scrapy.core.http2.stream import Stream
-
-from twisted.internet.defer import Deferred
-from twisted.internet.protocol import Protocol
-
-from urllib.parse import urlparse
-
+from twisted.internet.protocol import connectionDone, Protocol
 from zope.interface import implementer, Interface
+
+from scrapy.core.http2.stream import Stream
+from scrapy.http import Request
+
+LOGGER = logging.getLogger(__name__)
 
 
 class IH2EventsHandler(Interface):
@@ -24,6 +23,9 @@ class IH2EventsHandler(Interface):
         pass
 
     def response_received(event: ResponseReceived):
+        pass
+
+    def remote_settings_changed(event: RemoteSettingsChanged):
         pass
 
     def stream_ended(event: StreamEnded):
@@ -46,7 +48,7 @@ class H2ClientProtocol(Protocol):
     # TODO: Handle priority updates
 
     def __init__(self):
-        config = H2Configuration(client_side=True)
+        config = H2Configuration(client_side=True, header_encoding='utf-8')
         self.conn = H2Connection(config=config)
 
         # ID of the next request stream
@@ -57,60 +59,69 @@ class H2ClientProtocol(Protocol):
         # Streams are stored in a dictionary keyed off their stream IDs
         self.streams = {}
 
-    def _new_stream(self, headers):
+        # Boolean to keep track the connection is made
+        # If requests are received before connection is made
+        # we keep all requests in a pool and send them as the connection
+        # is made
+        self.is_connection_made = False
+        self._pending_request_stream_pool = []
+
+    def _new_stream(self, request: Request):
         """Instantiates a new Stream object
         """
-        stream = Stream(self.next_stream_id, headers)
-
+        stream = Stream(self.next_stream_id, request, self)
         self.next_stream_id += 2
 
+        self.streams[stream.stream_id] = stream
         return stream
 
+    def _write_to_transport(self):
+        """ Write data to the underlying transport connection
+        from the HTTP2 connection instance if any
+        """
+        data = self.conn.data_to_send()
+        if data:
+            self.transport.write(data)
+
     def request(self, _request: Request):
-        """
-
-        Arguments:
-            _request {Request} -- [description]
-        """
-        url = urlparse(_request.url)
-
-        _request[":method"] = _request.method
-
-        # TODO: Make authority private class variable instead
-        # of parsing it from request url all requests to same
-        # host are multiplexed into one connection & a connection
-        # can have only 1 host at a time
-        _request[":authority"] = url.netloc
-
-        # TODO: Check if scheme can be 'http' for HTTP/2 ?
-        _request[":scheme"] = "https"
-        _request[":path"] = url.path
-
-        stream = self._new_stream(_request.headers)
+        stream = self._new_stream(_request)
         d = stream.get_response()
 
-        return d
+        # If connection is not yet established then add the
+        # stream to pool or initiate request
+        if self.is_connection_made:
+            stream.initiate_request()
+        else:
+            self._pending_request_stream_pool.append(stream)
 
+        return d
 
     def connectionMade(self):
         """Called by Twisted when the connection is established. We can start
         sending some data now: we should open with the connection preamble.
         """
+        LOGGER.info("Connection made to {}".format(self.transport))
         self.conn.initiate_connection()
-        self.transport.write(self.conn.data_to_send())
+        self._write_to_transport()
+
+        self.is_connection_made = True
+
+        # Initiate all pending requests
+        for stream in self._pending_request_stream_pool:
+            assert isinstance(stream, Stream)
+            stream.initiate_request()
+
+        self._pending_request_stream_pool.clear()
 
     def dataReceived(self, data):
         events = self.conn.receive_data(data)
         self._handle_events(events)
+        self._write_to_transport()
 
-        _data = self.conn.data_to_send()
-        if _data:
-            self.transport.write(data)
+    def connectionLost(self, reason=connectionDone):
 
-    def connectionLost(self, reason):
         """Called by Twisted when the transport connection is lost.
         """
-
         for stream_id in self.streams.keys():
             # TODO: Close each Stream instance in a clean manner
             self.conn.end_stream(stream_id)
@@ -138,18 +149,43 @@ class H2ClientProtocol(Protocol):
                 self.trailers_received(event)
             elif isinstance(event, WindowUpdated):
                 self.window_updated(event)
+            elif isinstance(event, RemoteSettingsChanged):
+                self.remote_settings_changed(event)
+
+    def send_headers(self, stream_id, headers):
+        """ Send the headers for a given stream to the resource
+        Initiates a new connection hence.
+
+        Arguments:
+            stream_id {int} -- Valid stream id
+            headers {List[Tuple[str, str]]} -- Headers of the request
+        """
+        if stream_id in self.streams:
+            self.conn.send_headers(stream_id, headers, end_stream=True)
+            self._write_to_transport()
+        else:
+            pass
 
     def connection_terminated(self, event: ConnectionTerminated):
         pass
 
     def data_received(self, event: DataReceived):
-        pass
+        stream_id = event.stream_id
+        # TODO: Stream do not exist in self.streams dict
+        self.streams[stream_id].receive_data(event.data)
 
     def response_received(self, event: ResponseReceived):
+        stream_id = event.stream_id
+        # TODO: Stream do not exist in self.streams dict
+        self.streams[stream_id].receive_headers(event.headers)
+
+    def remote_settings_changed(self, event: RemoteSettingsChanged):
         pass
 
     def stream_ended(self, event: StreamEnded):
-        pass
+        stream_id = event.stream_id
+        # TODO: Stream do not exist in self.streams dict
+        self.streams[stream_id].end_stream()
 
     def stream_reset(self, event: StreamReset):
         pass
