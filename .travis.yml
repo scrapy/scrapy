@@ -18,10 +18,10 @@ matrix:
 
     - env: TOXENV=pypy3
     - env: TOXENV=pinned
-      python: 3.5.1
+      python: 3.5.2
       dist: trusty
     - env: TOXENV=asyncio
-      python: 3.5.1  # We use additional code to support 3.5.3 and earlier
+      python: 3.5.2  # We use additional code to support 3.5.3 and earlier
       dist: trusty
     - env: TOXENV=py
       python: 3.5
