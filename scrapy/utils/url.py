@@ -135,9 +135,13 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
     ))
 
 
-def is_uri(text):
+def is_uri(text, protocols={'http', 'https', 'file'}):
     regex = r'^(([a-zA-Z][-+.\w]*):)(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?'
     pattern = re.compile(regex)
-    if pattern.fullmatch(text) is not None:
-        return True
-    return False
+    match = pattern.fullmatch(text)
+    if match is None:
+        return False
+    scheme = match.group(2).lower()
+    if protocols is not None and scheme not in protocols:
+        return False
+    return True

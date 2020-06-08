@@ -79,9 +79,9 @@ class UrlUtilsTest(unittest.TestCase):
     def test_is_uri(self):
         self.assertTrue(is_uri('http://example.com/some/page.html'))
         self.assertTrue(is_uri('file://some/path/'))
-        self.assertTrue(is_uri('s3://name/key'))
+        self.assertTrue(is_uri('s3://name/key', {'s3', 'asdf'}))
+        self.assertFalse(is_uri('s3://name/key', {'not', 'on', 'the', 'list'}))
         self.assertTrue(is_uri('HTTPS://example.com'))
-        self.assertTrue(is_uri('ftp://ftp.example.com/file.txt'))
         self.assertTrue(is_uri('http://admin@example.com:123/some/path?query#fragment'))
         self.assertFalse(is_uri('://no/scheme'))
         self.assertFalse(is_uri('#?$://weird/characters'))

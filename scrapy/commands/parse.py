@@ -8,6 +8,7 @@ from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.utils.url import is_uri
+from scrapy.utils.project import get_project_settings
 from scrapy.exceptions import UsageError
 
 logger = logging.getLogger(__name__)
@@ -250,10 +251,15 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         # parse arguments
-        if not len(args) == 1 or not is_uri(args[0]):
+        if not len(args) == 1:
             raise UsageError()
-        else:
-            url = args[0]
+
+        settings = get_project_settings()
+        supported_protocols = settings.getdict('DOWNLOAD_HANDLERS_BASE').keys()
+        supported_protocols |= settings.getdict('DOWNLOAD_HANDLERS').keys()
+        if not is_uri(args[0], supported_protocols):
+            raise UsageError()
+        url = args[0]
 
         # prepare spidercls
         self.set_spidercls(url, opts)
