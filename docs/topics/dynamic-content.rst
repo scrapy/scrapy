@@ -271,7 +271,7 @@ The following is a simple snippet to illustrate its usage within Scrapy::
 Keep in mind that this is just a proof of concept, since it circumvents
 most of the Scrapy components (middlewares, dupefilter, etc).
 
-There are some 3rd party projects which provider better integration:
+There are some 3rd party projects which provide better integration:
 
 * https://github.com/elacuesta/scrapy-pyppeteer
 * https://github.com/lopuhin/scrapy-pyppeteer
