@@ -383,7 +383,7 @@ Additionally, it may also implement the following methods:
    signals; it is a way for the request fingerprinter to access them and hook
    its functionality into Scrapy.
 
-   :param crawler: crawler that uses this pipeline
+   :param crawler: crawler that uses this request fingerprinter
    :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 .. classmethod:: from_settings(cls, settings)
