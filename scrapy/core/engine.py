@@ -241,7 +241,8 @@ class ExecutionEngine:
                     % (type(response), response)
                 )
             if isinstance(response, Response):
-                response.request = request  # tie request to response received
+                if response.request is None:
+                    response.request = request
                 logkws = self.logformatter.crawled(request, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})

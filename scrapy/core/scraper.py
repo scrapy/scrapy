@@ -146,7 +146,8 @@ class Scraper:
                 self._log_download_errors, request_result, request, spider)
 
     def call_spider(self, result, request, spider):
-        result.request = request
+        if getattr(result, "request", None) is None:
+            result.request = request
         dfd = defer_result(result)
         callback = request.callback or spider.parse
         warn_on_generator_with_return_value(spider, callback)
