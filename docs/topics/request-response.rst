@@ -371,7 +371,7 @@ A request fingerprinter is a class that must implement the following method:
    :param request: request to fingerprint
    :type request: scrapy.http.Request
 
-Additionally, they may also implement the following methods:
+Additionally, it may also implement the following methods:
 
 .. classmethod:: from_crawler(cls, crawler)
 
