@@ -1,10 +1,10 @@
 import re
 import os
+import stat
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
 from shutil import ignore_patterns, move, copy2, copystat
-import stat
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -123,7 +123,6 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(self.templates_dir, abspath(project_dir))
-
         move(join(project_dir, 'module'), join(project_dir, project_name))
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
