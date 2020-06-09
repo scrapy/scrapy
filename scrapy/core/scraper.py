@@ -146,7 +146,11 @@ class Scraper:
                 self._log_download_errors, request_result, request, spider)
 
     def call_spider(self, result, request, spider):
-        result.request = request
+        if not hasattr(result, "request") or result.request is None:
+            result.request = request
+            result._request_set_in_scraper = True
+        else:
+            result._request_set_in_scraper = False
         dfd = defer_result(result)
         callback = request.callback or spider.parse
         warn_on_generator_with_return_value(spider, callback)
