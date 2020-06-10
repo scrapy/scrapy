@@ -266,12 +266,16 @@ The following is a simple snippet to illustrate its usage within Scrapy::
             page = await browser.newPage()
             await page.goto("https:/example.org")
             title = await page.title()
+            await page.close()
             yield {"title": title}
+
+For this example to work, Scrapy needs to be running on top of the
+:ref:`asyncio reactor <install-asyncio>`.
 
 Keep in mind that this is just a proof of concept, since it circumvents
 most of the Scrapy components (middlewares, dupefilter, etc).
 
-There are some 3rd party projects which provide better integration:
+The following is a list of 3rd party projects which provide better integration:
 
 * https://github.com/elacuesta/scrapy-pyppeteer
 * https://github.com/lopuhin/scrapy-pyppeteer
