@@ -172,7 +172,7 @@ BaseItemExporter
       :param field: the field being serialized. If the source :ref:`item object
           <item-types>` does not define field metadata, *field* is an empty
           :class:`dict`.
-      :type field: :class:`~scrapy.item.Field` object or an empty :class:`dict`
+      :type field: :class:`~scrapy.item.Field` object or a :class:`dict` instance
 
       :param name: the name of the field being serialized
       :type name: str
