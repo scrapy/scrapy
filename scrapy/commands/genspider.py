@@ -65,14 +65,10 @@ class Command(ScrapyCommand):
         if self.settings.get('BOT_NAME') == module:
             print("Cannot create a spider with the same name as your project")
             return
-        
-        #check to see if there are any spiders in the same directory
-        current_directory = os.listdir()
-        for file_name in current_directory:
-            temp_name = name + ".py"
-            if file_name == temp_name:
-                print("Spider %r already exists in module:" % name)
-                return
+
+        if exists(name + ".py"):
+            print("Spider %r already exists in module" % name)
+            return
 
         try:
             spidercls = self.crawler_process.spider_loader.load(name)
