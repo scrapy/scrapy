@@ -188,6 +188,10 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(2, self.call('genspider', self.project_name))
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
+    def test_same_name_as_existing_spider(self):
+        self.call('genspider', 'example', 'example.com')
+        self.assertEqual(0, self.call('genspider', 'example', 'example.com'))
+
 
 class GenspiderStandaloneCommandTest(ProjectTest):
 
