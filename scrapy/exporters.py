@@ -52,6 +52,24 @@ class BaseItemExporter:
     def finish_exporting(self):
         pass
 
+    def _serialize_nested_items(self, value, default_value, include_empty):
+        def serialize_iterable(it):
+            ret = []
+            for x in it:
+                ret.append(self._serialize_nested_items(x, default_value, include_empty))
+            return ret
+
+        if isinstance(value, BaseItem):
+            return dict(self._get_serialized_fields(value, default_value, include_empty))
+        elif is_listlike(value):
+            if isinstance(value, dict):
+                serialized_list = serialize_iterable(value.items())
+            else:
+                serialized_list = serialize_iterable(value)
+            return type(value)(serialized_list)
+        else:
+            return value
+
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
@@ -72,11 +90,15 @@ class BaseItemExporter:
         for field_name in field_iter:
             if field_name in item:
                 field = {} if isinstance(item, dict) else item.fields[field_name]
-                value = self.serialize_field(field, field_name, item[field_name])
+                value = self._serialize_nested_items(
+                    item[field_name],
+                    default_value,
+                    include_empty)
+                serialized_value = self.serialize_field(field, field_name, value)
             else:
-                value = default_value
+                serialized_value = default_value
 
-            yield field_name, value
+            yield field_name, serialized_value
 
 
 class JsonLinesItemExporter(BaseItemExporter):

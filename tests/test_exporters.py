@@ -23,6 +23,10 @@ class TestItem(Item):
     age = Field()
 
 
+class TestItemWithSerializer(Item):
+    a = Field(serializer=str.upper)
+
+
 class BaseItemExporterTest(unittest.TestCase):
 
     def setUp(self):
@@ -71,6 +75,11 @@ class BaseItemExporterTest(unittest.TestCase):
 
         res = self.ie.serialize_field(self.i.fields['age'], 'age', self.i['age'])
         self.assertEqual(res, u'22')
+
+    def test_serialize_nested_items(self):
+        i = TestItem(name=TestItemWithSerializer(a='asdf'), age=42)
+        res = self.ie._serialize_nested_items(i, None, None)['name']['a']
+        self.assertEqual(res, u'ASDF')
 
     def test_fields_to_export(self):
         ie = self._get_exporter(fields_to_export=['name'])
