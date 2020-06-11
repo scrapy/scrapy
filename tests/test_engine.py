@@ -16,13 +16,15 @@ import sys
 from collections import defaultdict
 from urllib.parse import urlparse
 
+from pydispatch import dispatcher
+from testfixtures import LogCapture
 from twisted.internet import reactor, defer
 from twisted.trial import unittest
 from twisted.web import server, static, util
-from pydispatch import dispatcher
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
+from scrapy.exceptions import StopDownload
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
@@ -90,7 +92,7 @@ def start_test_site(debug=False):
     r = static.File(root_dir)
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
     r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
-    numbers = [str(x).encode("utf8") for x in range(2**14)]
+    numbers = [str(x).encode("utf8") for x in range(2**18)]
     r.putChild(b"numbers", static.Data(b"".join(numbers), "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
@@ -186,6 +188,16 @@ class CrawlerRun:
         sig = signalargs.pop('signal')
         signalargs.pop('sender', None)
         self.signals_caught[sig] = signalargs
+
+
+class StopDownloadCrawlerRun(CrawlerRun):
+    """
+    Make sure raising the StopDownload exception stops the download of the response body
+    """
+
+    def bytes_received(self, data, request, spider):
+        super().bytes_received(data, request, spider)
+        raise StopDownload(fail=False)
 
 
 class EngineTest(unittest.TestCase):
@@ -316,7 +328,7 @@ class EngineTest(unittest.TestCase):
                 # signal was fired multiple times
                 self.assertTrue(len(data) > 1)
                 # bytes were received in order
-                numbers = [str(x).encode("utf8") for x in range(2**14)]
+                numbers = [str(x).encode("utf8") for x in range(2**18)]
                 self.assertEqual(joined_data, b"".join(numbers))
 
     def _assert_signals_caught(self):
@@ -355,6 +367,45 @@ class EngineTest(unittest.TestCase):
         yield e.close()
         self.assertFalse(e.running)
         self.assertEqual(len(e.open_spiders), 0)
+
+
+class StopDownloadEngineTest(EngineTest):
+
+    @defer.inlineCallbacks
+    def test_crawler(self):
+        for spider in TestSpider, DictItemsSpider:
+            self.run = StopDownloadCrawlerRun(spider)
+            with LogCapture() as log:
+                yield self.run.run()
+                log.check_present(("scrapy.core.downloader.handlers.http11",
+                                   "DEBUG",
+                                   "Download stopped for <GET http://localhost:{}/redirected> from signal handler"
+                                   " StopDownloadCrawlerRun.bytes_received".format(self.run.portno)))
+                log.check_present(("scrapy.core.downloader.handlers.http11",
+                                   "DEBUG",
+                                   "Download stopped for <GET http://localhost:{}/> from signal handler"
+                                   " StopDownloadCrawlerRun.bytes_received".format(self.run.portno)))
+                log.check_present(("scrapy.core.downloader.handlers.http11",
+                                   "DEBUG",
+                                   "Download stopped for <GET http://localhost:{}/numbers> from signal handler"
+                                   " StopDownloadCrawlerRun.bytes_received".format(self.run.portno)))
+            self._assert_visited_urls()
+            self._assert_scheduled_requests(urls_to_visit=9)
+            self._assert_downloaded_responses()
+            self._assert_signals_caught()
+            self._assert_bytes_received()
+
+    def _assert_bytes_received(self):
+        self.assertEqual(9, len(self.run.bytes))
+        for request, data in self.run.bytes.items():
+            joined_data = b"".join(data)
+            self.assertTrue(len(data) == 1)  # signal was fired only once
+            if self.run.getpath(request.url) == "/numbers":
+                # Received bytes are not the complete response. The exact amount depends
+                # on the buffer size, which can vary, so we only check that the amount
+                # of received bytes is strictly less than the full response.
+                numbers = [str(x).encode("utf8") for x in range(2**18)]
+                self.assertTrue(len(joined_data) < len(b"".join(numbers)))
 
 
 if __name__ == "__main__":
