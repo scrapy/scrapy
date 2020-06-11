@@ -165,3 +165,21 @@ interest!
 .. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _Sitemaps: https://www.sitemaps.org/index.html
+
+
+Why Learn Scrapy?
+=================
+
+As of 2020, Indeed reported that Python Developers across multiples states command an average salary of $121,468.
+
+According to towardsdatascience.com, a popular Data Science Blog, a high percentage of Data Scientist job listings
+include knowledge of analysis, statistics, visualization, machine learning, and data engineering. Scrapy is a
+technology that works well with all of these desired skills.
+
+According to Upwork, widely-used freelancer hiring site, Python developers who know Scrapy can charge an hourly
+rate of well over $60/hour, reaching up to $100/hour and potentially even more! Python developers who take the
+time to understand and learn Scrapy can do quite well as a freelancer.
+
+With a high hourly rate, skill desirability, and a strong salary, learning and contributing to Scrapy can be both
+intellectually and financially rewarding. We are excited for you to come and learn more about how to contribute
+and use Scrapy!
