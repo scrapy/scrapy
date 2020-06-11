@@ -248,8 +248,10 @@ ROBOTSTXT_PARSER = 'scrapy.robotstxt.ProtegoRobotParser'
 ROBOTSTXT_USER_AGENT = None
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
-SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
+#SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeues.LifoRedisQueue_disk'
+#SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
+SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoRedisQueue'
 SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000

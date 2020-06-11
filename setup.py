@@ -69,9 +69,10 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         'Twisted>=17.9.0',
+        #'Twisted-19.10.0-cp38-cp38-win_amd64.whl', # checking out a specific
         'cryptography>=2.0',
         'cssselect>=0.9.1',
-        'lxml>=3.5.0',
+        'lxml>=3.5.0',	
         'parsel>=1.5.0',
         'PyDispatcher>=2.0.5',
         'pyOpenSSL>=16.2.0',
@@ -80,6 +81,7 @@ setup(
         'w3lib>=1.17.0',
         'zope.interface>=4.1.3',
         'protego>=0.1.15',
+        'redis>= 3.4.1', #added the current release of redis-py interface library
     ],
     extras_require=extras_require,
 )

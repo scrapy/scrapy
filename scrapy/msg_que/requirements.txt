@@ -1,0 +1,6 @@
+#location is to be kept within the root scrapy folder(#forme=scrapy_rep) and then run for pip install
+# This first line will grab the requirements from setup.py
+-e .
+
+../Twisted-19.10.0-cp38-cp38-win_amd64.whl #some issue with visual c++ updation so precompiled wheleer
+redis >= 3.4.1 #just being specific 

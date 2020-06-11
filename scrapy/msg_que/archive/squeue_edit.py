@@ -1,3 +1,5 @@
+#temporary working file to get test modification in scrapy/squeue
+
 """
 Scheduler queues
 """
@@ -75,17 +77,19 @@ def _scrapy_non_serialization_queue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             return cls()
+    #print(ScrapyRequestQueue.__mro__)
 
     return ScrapyRequestQueue
 
 
 def _pickle_serialize(obj):
     try:
-        return pickle.dumps(obj, protocol=4)
-    # Both pickle.PicklingError and AttributeError can be raised by pickle.dump(s)
-    # TypeError is raised from parsel.Selector
+        return pickle.dumps(obj, protocol=2)
+    # Python <= 3.4 raises pickle.PicklingError here while
+    # 3.5 <= Python < 3.6 raises AttributeError and
+    # Python >= 3.6 raises TypeError
     except (pickle.PicklingError, AttributeError, TypeError) as e:
-        raise ValueError(str(e)) from e
+        raise ValueError(str(e))
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
@@ -123,6 +127,7 @@ MarshalLifoDiskQueue = _scrapy_serialization_queue(
 )
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
+
 
 #changes/modifications from here onwards:
 from scrapy.msg_que import redis_queue
