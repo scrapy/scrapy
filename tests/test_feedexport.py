@@ -7,6 +7,7 @@ import string
 import tempfile
 import warnings
 from io import BytesIO
+from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
 from unittest import mock
@@ -14,9 +15,11 @@ from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
 
 import lxml.etree
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial import unittest
-from w3lib.url import path_to_file_uri
+from w3lib.url import file_uri_to_path, path_to_file_uri
+from zope.interface import implementer
 from zope.interface.verify import verifyObject
 
 import scrapy
@@ -390,6 +393,25 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
     pass
 
 
+@implementer(IFeedStorage)
+class LogOnStoreFileStorage:
+    """
+    This storage logs inside `store` method.
+    It can be used to make sure `store` method is invoked.
+    """
+
+    def __init__(self, uri):
+        self.path = file_uri_to_path(uri)
+        self.logger = getLogger()
+
+    def open(self, spider):
+        return tempfile.NamedTemporaryFile(prefix='feed-')
+
+    def store(self, file):
+        self.logger.info('Storage.store is called')
+        file.close()
+
+
 class FeedExportTest(unittest.TestCase):
 
     class MyItem(scrapy.Item):
@@ -426,11 +448,17 @@ class FeedExportTest(unittest.TestCase):
                 yield runner.crawl(spider_cls)
 
             for file_path, feed in FEEDS.items():
+                if not os.path.exists(str(file_path)):
+                    continue
+
                 with open(str(file_path), 'rb') as f:
                     content[feed['format']] = f.read()
 
         finally:
             for file_path in FEEDS.keys():
+                if not os.path.exists(str(file_path)):
+                    continue
+
                 os.remove(str(file_path))
 
         return content
@@ -622,6 +650,25 @@ class FeedExportTest(unittest.TestCase):
             }
             data = yield self.exported_no_data(settings)
             self.assertEqual(data[fmt], expctd)
+
+    @defer.inlineCallbacks
+    def test_export_no_items_multiple_feeds(self):
+        """ Make sure that `storage.store` is called for every feed. """
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.LogOnStoreFileStorage'},
+            'FEED_STORE_EMPTY': False
+        }
+
+        with LogCapture() as log:
+            yield self.exported_no_data(settings)
+
+        print(log)
+        self.assertEqual(str(log).count('Storage.store is called'), 3)
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
