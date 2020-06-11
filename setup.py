@@ -66,7 +66,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.5.2',
     install_requires=[
         'Twisted>=17.9.0',
         'cryptography>=2.0',
