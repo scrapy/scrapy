@@ -1,14 +1,14 @@
 import json
 import logging
 
-from w3lib.url import is_url
-
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import _BaseItem
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
+from scrapy.utils.url import is_uri
+from scrapy.utils.project import get_project_settings
 from scrapy.exceptions import UsageError
 
 logger = logging.getLogger(__name__)
@@ -25,10 +25,10 @@ class Command(ScrapyCommand):
     first_response = None
 
     def syntax(self):
-        return "[options] <url>"
+        return "[options] <uri>"
 
     def short_desc(self):
-        return "Parse URL (using its spider) and print the results"
+        return "Parse URI (using its spider) and print the results"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
@@ -251,10 +251,15 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         # parse arguments
-        if not len(args) == 1 or not is_url(args[0]):
+        if not len(args) == 1:
             raise UsageError()
-        else:
-            url = args[0]
+
+        settings = get_project_settings()
+        supported_protocols = settings.getdict('DOWNLOAD_HANDLERS_BASE').keys()
+        supported_protocols |= settings.getdict('DOWNLOAD_HANDLERS').keys()
+        if not is_uri(args[0], supported_protocols):
+            raise UsageError()
+        url = args[0]
 
         # prepare spidercls
         self.set_spidercls(url, opts)

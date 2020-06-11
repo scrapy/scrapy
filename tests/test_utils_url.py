@@ -2,7 +2,8 @@ import unittest
 
 from scrapy.spiders import Spider
 from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme, strip_url)
+                              add_http_if_no_scheme, guess_scheme, strip_url,
+                              is_uri)
 
 
 __doctests__ = ['scrapy.utils.url']
@@ -74,6 +75,17 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', MySpider))
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySpider))
+
+    def test_is_uri(self):
+        self.assertTrue(is_uri('http://example.com/some/page.html'))
+        self.assertTrue(is_uri('file://some/path/'))
+        self.assertTrue(is_uri('s3://name/key', {'s3', 'asdf'}))
+        self.assertFalse(is_uri('s3://name/key', {'not', 'on', 'the', 'list'}))
+        self.assertTrue(is_uri('HTTPS://example.com'))
+        self.assertTrue(is_uri('http://admin@example.com:123/some/path?query#fragment'))
+        self.assertFalse(is_uri('://no/scheme'))
+        self.assertFalse(is_uri('#?$://weird/characters'))
+        self.assertFalse(is_uri('some random text'))
 
 
 class AddHttpIfNoScheme(unittest.TestCase):

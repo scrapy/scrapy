@@ -1,11 +1,12 @@
 import sys
-from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.exceptions import UsageError
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+from scrapy.utils.url import is_uri
+from scrapy.utils.project import get_project_settings
 
 
 class Command(ScrapyCommand):
@@ -13,13 +14,13 @@ class Command(ScrapyCommand):
     requires_project = False
 
     def syntax(self):
-        return "[options] <url>"
+        return "[options] <uri>"
 
     def short_desc(self):
-        return "Fetch a URL using the Scrapy downloader"
+        return "Fetch a URI using the Scrapy downloader"
 
     def long_desc(self):
-        return "Fetch a URL using the Scrapy downloader and print its content " \
+        return "Fetch a URI using the Scrapy downloader and print its content " \
             "to stdout. You may want to use --nolog to disable logging"
 
     def add_options(self, parser):
@@ -47,8 +48,15 @@ class Command(ScrapyCommand):
         sys.stdout.buffer.write(bytes_ + b'\n')
 
     def run(self, args, opts):
-        if len(args) != 1 or not is_url(args[0]):
+        if len(args) != 1:
             raise UsageError()
+
+        settings = get_project_settings()
+        supported_protocols = settings.getdict('DOWNLOAD_HANDLERS_BASE').keys()
+        supported_protocols |= settings.getdict('DOWNLOAD_HANDLERS').keys()
+        if not is_uri(args[0], supported_protocols):
+            raise UsageError()
+
         request = Request(args[0], callback=self._print_response,
                           cb_kwargs={"opts": opts}, dont_filter=True)
         # by default, let the framework handle redirects,
