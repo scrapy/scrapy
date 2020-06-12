@@ -21,7 +21,7 @@ def _colorize(text, colorize=True):
     # All Windows versions >= "10.0.14393" interpret ANSI escape sequences
     # using terminal processing.
     #
-    # Enable enivornment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
+    # Enable environment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
     # to activate terminal processing.
     if sys.platform == "win32" and parse_version(version()) >= parse_version("10.0.14393"):
         try:
@@ -40,7 +40,7 @@ def _colorize(text, colorize=True):
     return text
 
 
-def _color_support_info():
+def _color_support_info(color_support=False):
     try:
         import curses
     except ImportError:
@@ -51,11 +51,10 @@ def _color_support_info():
         curses.initscr()
         color_support = curses.has_colors()
         curses.endwin()
-        return color_support
     except curses.error:
         pass
 
-    return False
+    return color_support
 
 
 def pformat(obj, *args, **kwargs):
