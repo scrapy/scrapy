@@ -188,16 +188,18 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(2, self.call('genspider', self.project_name))
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
-    def test_same_name_as_existing_spider(self):
-        self.call('genspider', 'example', 'example.com')
-        self.assertEqual(0, self.call('genspider', 'example', 'example.com'))
-
 
 class GenspiderStandaloneCommandTest(ProjectTest):
 
     def test_generate_standalone_spider(self):
         self.call('genspider', 'example', 'example.com')
         assert exists(join(self.temp_path, 'example.py'))
+
+    def test_same_name_as_existing_file(self):
+        filename = "example"
+        self.call('genspider', filename, 'example.com')
+        p, out, err = self.proc('genspider', filename, 'example.com')
+        self.assertIn("File %r already exists in the current directory" % (filename + ".py"), out)
 
 
 class MiscCommandsTest(CommandTest):
