@@ -15,11 +15,12 @@ class TestDisplay(TestCase):
         def test_color(self, mock_isatty):
             mock_isatty.return_value = True
             if _color_support_info():
-                self.assertEqual(_colorize("{'a': 1}"), TestStr)
                 self.assertEqual(pformat({'a': 1}), TestStr)
             with mock.patch("scrapy.utils.display._color_support_info") as mock_color:
                 mock_color.return_value = False
                 self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+                mock_color.return_value = True
+                self.assertEqual(_colorize("{'a': 1}"), TestStr)
             mock_isatty.return_value = False
             self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
     else:
@@ -29,11 +30,12 @@ class TestDisplay(TestCase):
             with mock.patch('sys.stdout.isatty', autospec=True) as mock_isatty:
                 mock_isatty.return_value = True
                 if _color_support_info():
-                    self.assertEqual(_colorize("{'a': 1}"), TestStr)
                     self.assertEqual(pformat({'a': 1}), TestStr)
                 with mock.patch("scrapy.utils.display._color_support_info") as mock_color:
                     mock_color.return_value = False
                     self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+                    mock_color.return_value = True
+                    self.assertEqual(_colorize("{'a': 1}"), TestStr)
                 mock_isatty.return_value = False
                 self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
 
