@@ -197,7 +197,8 @@ class GenspiderStandaloneCommandTest(ProjectTest):
 
     def test_same_name_as_existing_file(self):
         filename = "example"
-        self.call('genspider', filename, 'example.com')
+        p, out, err = self.proc('genspider', filename, 'example.com')
+        self.assertNotIn("File %r already exists in the current directory" % (filename + ".py"), out)
         p, out, err = self.proc('genspider', filename, 'example.com')
         self.assertIn("File %r already exists in the current directory" % (filename + ".py"), out)
 
