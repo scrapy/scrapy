@@ -67,7 +67,7 @@ class Command(ScrapyCommand):
             return
 
         if exists(name + ".py"):
-            print("Spider %r already exists in module" % name)
+            print("File %r already exists in the current directory" % (name + ".py"))
             return
 
         try:
