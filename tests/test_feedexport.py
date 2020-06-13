@@ -393,6 +393,27 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
     pass
 
 
+class DummyBlockingFeedStorage(BlockingFeedStorage):
+
+    def __init__(self, uri):
+        self.path = file_uri_to_path(uri)
+
+    def _store_in_thread(self, file):
+        dirname = os.path.dirname(self.path)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
+        with open(self.path, 'ab') as output_file:
+            output_file.write(file.read())
+
+        file.close()
+
+
+class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
+
+    def _store_in_thread(self, file):
+        raise OSError('Cannot store')
+
+
 @implementer(IFeedStorage)
 class LogOnStoreFileStorage:
     """
@@ -1025,3 +1046,45 @@ class FeedExportTest(unittest.TestCase):
         }
         data = yield self.exported_no_data(settings)
         self.assertEqual(data['csv'], b'')
+
+    @defer.inlineCallbacks
+    def test_multiple_feeds_success_logs_blocking_feed_storage(self):
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.DummyBlockingFeedStorage'},
+        }
+        items = [
+            {'foo': 'bar1', 'baz': ''},
+            {'foo': 'bar2', 'baz': 'quux'},
+        ]
+        with LogCapture() as log:
+            yield self.exported_data(items, settings)
+
+        print(log)
+        for fmt in ['json', 'xml', 'csv']:
+            self.assertIn('Stored %s feed (2 items)' % fmt, str(log))
+
+    @defer.inlineCallbacks
+    def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.FailingBlockingFeedStorage'},
+        }
+        items = [
+            {'foo': 'bar1', 'baz': ''},
+            {'foo': 'bar2', 'baz': 'quux'},
+        ]
+        with LogCapture() as log:
+            yield self.exported_data(items, settings)
+
+        print(log)
+        for fmt in ['json', 'xml', 'csv']:
+            self.assertIn('Error storing %s feed (2 items)' % fmt, str(log))

@@ -279,11 +279,20 @@ class FeedExporter:
                         'itemcount': slot.itemcount,
                         'uri': slot.uri}
             d = defer.maybeDeferred(slot.storage.store, slot.file)
-            d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
-                                                extra={'spider': spider}))
-            d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
-                                                exc_info=failure_to_exc_info(f),
-                                                extra={'spider': spider}))
+
+            # Use `largs=log_args` to copy log_args into function's scope
+            # instead of using `log_args` from the outer scope
+            d.addCallback(
+                lambda _, largs=log_args: logger.info(
+                    logfmt % "Stored", largs, extra={'spider': spider}
+                )
+            )
+            d.addErrback(
+                lambda f, largs=log_args: logger.error(
+                    logfmt % "Error storing", largs,
+                    exc_info=failure_to_exc_info(f), extra={'spider': spider}
+                )
+            )
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
