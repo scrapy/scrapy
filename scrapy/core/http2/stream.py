@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 
+from h2.connection import H2Connection
 from twisted.internet.defer import Deferred
 
 from scrapy.http import Request, Response
@@ -17,7 +18,7 @@ class Stream:
     1. Combine all the data frames
     """
 
-    def __init__(self, stream_id: int, request: Request, connection):
+    def __init__(self, stream_id: int, request: Request, connection: H2Connection):
         """
         Arguments:
             stream_id {int} -- For one HTTP/2 connection each stream is
@@ -27,7 +28,7 @@ class Stream:
         """
         self.stream_id = stream_id
         self._request = request
-        self._client_protocol = connection
+        self._conn = connection
 
         self._request_body = self._request.body
         self.content_length = 0 if self._request_body is None else len(self._request_body)
@@ -70,13 +71,12 @@ class Stream:
             # TODO: Check if scheme can be "http" for HTTP/2 ?
             (":scheme", "https"),
             (":path", url.path),
-            # ("Content-Length", str(self.content_length))
 
             # TODO: Make sure 'Content-Type' and 'Content-Encoding' headers
             #  are sent for request having body
         ]
 
-        self._client_protocol.send_headers(self.stream_id, http2_request_headers)
+        self._conn.send_headers(self.stream_id, http2_request_headers, end_stream=False)
         self.send_data()
 
     def send_data(self):
@@ -95,10 +95,10 @@ class Stream:
         #    3.2 Small number of requests
 
         # Firstly, check what the flow control window is for current stream.
-        window_size = self._client_protocol.conn.local_flow_control_window(stream_id=self.stream_id)
+        window_size = self._conn.local_flow_control_window(stream_id=self.stream_id)
 
         # Next, check what the maximum frame size is.
-        max_frame_size = self._client_protocol.conn.max_outbound_frame_size
+        max_frame_size = self._conn.max_outbound_frame_size
 
         # We will send no more than the window size or the remaining file size
         # of data in this call, whichever is smaller.
@@ -111,14 +111,14 @@ class Stream:
             data_chunk_start = self.content_length - self.remaining_content_length
             data_chunk = self._request_body[data_chunk_start:data_chunk_start + chunk_size]
 
-            self._client_protocol.send_data(self.stream_id, data_chunk, end_stream=False)
+            self._conn.send_data(self.stream_id, data_chunk, end_stream=False)
 
             bytes_to_send = max(0, bytes_to_send - chunk_size)
             self.remaining_content_length = max(0, self.remaining_content_length - chunk_size)
 
         # End the stream if no more data has to be send
         if self.remaining_content_length == 0:
-            self._client_protocol.end_stream(self.stream_id)
+            self._conn.end_stream(self.stream_id)
         else:
             # TODO: Continue from here :)
             pass
