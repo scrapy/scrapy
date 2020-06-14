@@ -188,6 +188,22 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(2, self.call('genspider', self.project_name))
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
+    def test_same_filename_as_existing_spider(self):
+        file_name = 'example'
+        file_path = join(self.proj_mod_path, 'spiders', '%s.py' % file_name)
+        self.assertEqual(0, self.call('genspider', file_name, 'example.com'))
+        assert exists(file_path)
+
+        # change name of spider but not its file name
+        with open(file_path) as spider_file:
+            file_data = spider_file.read()
+        file_data = file_data.replace("name = \'example\'", "name = \'renamed\'")
+        with open(file_path, 'w') as spider_file:
+            spider_file.write(file_data)
+
+        p, out, err = self.proc('genspider', file_name, 'example.com')
+        self.assertIn("Spider with filename %r already exists in directory:" % (file_name + ".py"), out)
+
 
 class GenspiderStandaloneCommandTest(ProjectTest):
 
@@ -222,7 +238,7 @@ class MySpider(scrapy.Spider):
         return []
 """
 
-    @contextmanager
+    @ contextmanager
     def _create_file(self, content, name):
         tmpdir = self.mktemp()
         os.mkdir(tmpdir)
