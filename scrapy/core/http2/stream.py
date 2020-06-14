@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlparse
 
 from h2.connection import H2Connection
@@ -5,6 +6,8 @@ from twisted.internet.defer import Deferred
 
 from scrapy.http import Request, Response
 from scrapy.http.headers import Headers
+
+LOGGER = logging.getLogger(__name__)
 
 
 class Stream:
@@ -18,17 +21,30 @@ class Stream:
     1. Combine all the data frames
     """
 
-    def __init__(self, stream_id: int, request: Request, connection: H2Connection):
+    def __init__(
+            self,
+            stream_id: int,
+            request: Request,
+            connection: H2Connection,
+            write_to_transport,
+            cb_close
+    ):
         """
         Arguments:
             stream_id {int} -- For one HTTP/2 connection each stream is
                 uniquely identified by a single integer
             request {Request} -- HTTP request
             connection {H2Connection} -- HTTP/2 connection this stream belongs to.
+            write_to_transport {callable} -- Method used to write & send data to the server
+                This method should be used whenever some frame is to be sent to the server.
+            cb_close {callable} -- Method called when this stream is closed
+                to notify the TCP connection instance.
         """
         self.stream_id = stream_id
         self._request = request
         self._conn = connection
+        self._write_to_transport = write_to_transport
+        self._cb_close = cb_close
 
         self._request_body = self._request.body
         self.content_length = 0 if self._request_body is None else len(self._request_body)
@@ -36,12 +52,19 @@ class Stream:
         # Each time we send a data frame, we will decrease value by the amount send.
         self.remaining_content_length = self.content_length
 
-        # Flag to keep track whether we have ended this stream
-        self.stream_ended = True
+        # Flag to keep track whether we have closed this stream
+        self.stream_closed_local = False
+
+        # Flag to keep track whether the server has closed the stream
+        self.stream_closed_server = False
 
         # Data received frame by frame from the server is appended
         # and passed to the response Deferred when completely received.
         self._response_data = b""
+
+        # The amount of data received that counts against the flow control
+        # window
+        self._response_flow_controlled_size = 0
 
         # Headers received after sending the request
         self._response_headers = Headers({})
@@ -77,6 +100,8 @@ class Stream:
         ]
 
         self._conn.send_headers(self.stream_id, http2_request_headers, end_stream=False)
+        self._write_to_transport()
+
         self.send_data()
 
     def send_data(self):
@@ -112,31 +137,58 @@ class Stream:
             data_chunk = self._request_body[data_chunk_start:data_chunk_start + chunk_size]
 
             self._conn.send_data(self.stream_id, data_chunk, end_stream=False)
+            self._write_to_transport()
 
             bytes_to_send = max(0, bytes_to_send - chunk_size)
             self.remaining_content_length = max(0, self.remaining_content_length - chunk_size)
 
         # End the stream if no more data has to be send
         if self.remaining_content_length == 0:
+            self.stream_closed_local = True
             self._conn.end_stream(self.stream_id)
-        else:
-            # TODO: Continue from here :)
-            pass
 
-    def window_updated(self):
+        self._write_to_transport()
+
+        # Q. What about the rest of the data?
+        # Ans: Remaining Data frames will be sent when we get a WindowUpdate frame
+
+    def receive_window_update(self, delta):
         """Flow control window size was changed.
         Send data that earlier could not be sent as we were
         blocked behind the flow control.
+
+        Arguments:
+            delta -- Window change delta
         """
-        if self.remaining_content_length > 0 and not self.stream_ended:
+        if self.remaining_content_length > 0 and not self.stream_closed_local:
             self.send_data()
 
-    def receive_data(self, data: bytes):
+    def receive_data(self, data: bytes, flow_controlled_length: int):
         self._response_data += data
+        self._response_flow_controlled_size += flow_controlled_length
+
+        # Acknowledge the data received
+        self._conn.acknowledge_received_data(
+            self._response_flow_controlled_size,
+            self.stream_id
+        )
 
     def receive_headers(self, headers):
         for name, value in headers:
             self._response_headers[name] = value
+
+    def reset(self):
+        """Received a RST_STREAM -- forcefully reset"""
+        # TODO:
+        #  Q1. Do we need to send the request again?
+        #  Q2. What response should we send now?
+        self.stream_closed_server = True
+        self._cb_close()
+
+    def lost_connection(self):
+        # TODO: Same as self.reset
+        self.stream_closed_server = True
+        self._cb_close()
 
     def end_stream(self):
         """Stream is ended by the server hence no further
@@ -145,7 +197,20 @@ class Stream:
         We will call the response deferred callback passing
         the response object
         """
-        # TODO: Set flags, certificate, ip_address
+        assert self.stream_closed_server is False
+        self.stream_closed_server = True
+
+        self._fire_response_deferred()
+        self._cb_close()
+
+    def _fire_response_deferred(self):
+        # TODO:
+        #  1. Set flags, certificate, ip_address in response
+        #  2. Should we fire this in case of
+        #   2.1 StreamReset in between when data is received partially
+        #   2.2 Forcefully closed the stream
+
+        # NOTE: Presently on fired with successful response
         response = Response(
             url=self._request.url,
             status=self._response_headers[":status"],

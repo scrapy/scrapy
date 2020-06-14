@@ -1,10 +1,10 @@
 import logging
-from typing import Dict, List
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
 from h2.events import (
-    ConnectionTerminated, DataReceived, ResponseReceived, StreamEnded, StreamReset, WindowUpdated
+    ConnectionTerminated, DataReceived, ResponseReceived,
+    StreamEnded, StreamReset, WindowUpdated
 )
 from twisted.internet.protocol import connectionDone, Protocol
 
@@ -18,32 +18,56 @@ class H2ClientProtocol(Protocol):
     # TODO:
     #  1. Check for user-agent while testing
     #  2. Add support for cookies
-    #  3. Handle priority updates
+    #  3. Handle priority updates (Not required)
+    #  4. Handle case when received events have StreamID = 0 (applied to H2Connection)
+    #  1 & 2:
+    #   - Automatically handled by the Request middleware
+    #   - request.headers will have 'Set-Cookie' value
 
     def __init__(self):
         config = H2Configuration(client_side=True, header_encoding='utf-8')
         self.conn = H2Connection(config=config)
 
+        # Address of the server we are connected to
+        # these are updated when connection is successfully made
+        self.destination = None
+
         # ID of the next request stream
-        # Assuming each request stream creates a new response stream
-        # we increment by 2 for each new request stream created
+        # Following the convention made by hyper-h2 each client ID
+        # will be odd.
         self.next_stream_id = 1
 
         # Streams are stored in a dictionary keyed off their stream IDs
-        self.streams: Dict[int, Stream] = {}
+        self.streams = {}
 
         # Boolean to keep track the connection is made
         # If requests are received before connection is made
         # we keep all requests in a pool and send them as the connection
         # is made
         self.is_connection_made = False
-        self._pending_request_stream_pool: List[Stream] = []
+        self._pending_request_stream_pool = []
+
+    def _stream_close_cb(self, stream_id: int):
+        """Called when stream is closed completely
+        """
+        try:
+            del self.streams[stream_id]
+        except KeyError:
+            pass
 
     def _new_stream(self, request: Request):
         """Instantiates a new Stream object
         """
-        stream = Stream(self.next_stream_id, request, self.conn)
+        stream_id = self.next_stream_id
         self.next_stream_id += 2
+
+        stream = Stream(
+            stream_id=stream_id,
+            request=request,
+            connection=self.conn,
+            write_to_transport=self._write_to_transport,
+            cb_close=lambda: self._stream_close_cb(stream_id)
+        )
 
         self.streams[stream.stream_id] = stream
         return stream
@@ -53,7 +77,6 @@ class H2ClientProtocol(Protocol):
         # Initiate all pending requests
         for stream in self._pending_request_stream_pool:
             stream.initiate_request()
-            self._write_to_transport()
 
         self._pending_request_stream_pool.clear()
 
@@ -81,12 +104,14 @@ class H2ClientProtocol(Protocol):
         """Called by Twisted when the connection is established. We can start
         sending some data now: we should open with the connection preamble.
         """
+        self.destination = self.transport.connector.getDestination()
+        LOGGER.info('Connection made to {}'.format(self.destination))
+
         self.conn.initiate_connection()
         self._write_to_transport()
+        self.is_connection_made = True
 
         self._send_pending_requests()
-
-        self.is_connection_made = True
 
     def dataReceived(self, data):
         events = self.conn.receive_data(data)
@@ -95,15 +120,18 @@ class H2ClientProtocol(Protocol):
 
     def connectionLost(self, reason=connectionDone):
         """Called by Twisted when the transport connection is lost.
+        No need to write anything to transport here.
         """
-        stream_ids = list(self.streams.keys())
+        # Pop all streams which were pending and were not yet started
+        for stream_id in list(self.streams):
+            try:
+                self.streams[stream_id].lost_connection()
+            except KeyError:
+                pass
 
-        for stream in self._pending_request_stream_pool:
-            stream_ids.remove(stream.stream_id)
+        self.conn.close_connection()
 
-        for stream_id in stream_ids:
-            # TODO: Close each Stream instance in a clean manner
-            self.conn.end_stream(stream_id)
+        LOGGER.info("Connection lost with reason " + str(reason))
 
     def _handle_events(self, events):
         """Private method which acts as a bridge between the events
@@ -136,7 +164,7 @@ class H2ClientProtocol(Protocol):
 
     def data_received(self, event: DataReceived):
         stream_id = event.stream_id
-        self.streams[stream_id].receive_data(event.data)
+        self.streams[stream_id].receive_data(event.data, event.flow_controlled_length)
 
     def response_received(self, event: ResponseReceived):
         stream_id = event.stream_id
@@ -147,9 +175,15 @@ class H2ClientProtocol(Protocol):
         self.streams[stream_id].end_stream()
 
     def stream_reset(self, event: StreamReset):
-        pass
+        # TODO: event.stream_id was abruptly closed
+        #  Q. What should be the response? (Failure/Partial/???)
+        self.streams[event.stream_id].reset()
 
     def window_updated(self, event: WindowUpdated):
         stream_id = event.stream_id
         if stream_id != 0:
-            self.streams[stream_id].window_updated()
+            self.streams[stream_id].receive_window_update(event.delta)
+        else:
+            # TODO:
+            #  Q. What to do when StreamID=0 ?
+            pass
