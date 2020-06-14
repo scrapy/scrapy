@@ -15,7 +15,7 @@ Highlights:
   :ref:`attrs objects <attrs-items>` are now valid :ref:`item types
   <item-types>`
 * New :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method
-* New :signal:`bytes_received` signal
+* New :signal:`bytes_received` signal that allows canceling response download
 * :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` fixes
 
 Backward-incompatible changes
