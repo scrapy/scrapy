@@ -7,13 +7,12 @@ Item Loaders
 .. module:: scrapy.loader
    :synopsis: Item Loader class
 
-Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
-<topics-items>`. Even though Items can be populated using their own
-dictionary-like API, Item Loaders provide a much more convenient API for
-populating them from a scraping process, by automating some common tasks like
-parsing the raw extracted data before assigning it.
+Item Loaders provide a convenient mechanism for populating scraped :ref:`items
+<topics-items>`. Even though items can be populated directly, Item Loaders provide a
+much more convenient API for populating them from a scraping process, by automating
+some common tasks like parsing the raw extracted data before assigning it.
 
-In other words, :ref:`Items <topics-items>` provide the *container* of
+In other words, :ref:`items <topics-items>` provide the *container* of
 scraped data, while Item Loaders provide the mechanism for *populating* that
 container.
 
@@ -25,10 +24,10 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with a dict-like object (e.g. Item or dict) or without one, in
-which case an Item is automatically instantiated in the Item Loader ``__init__`` method
-using the Item class specified in the :attr:`ItemLoader.default_item_class`
-attribute.
+instantiate it with an :ref:`item object <topics-items>` or without one, in which
+case an instance of :class:`~scrapy.item.Item` is automatically created in the
+Item Loader ``__init__`` method using the :class:`~scrapy.item.Item` subclass
+specified in the :attr:`ItemLoader.default_item_class` attribute.
 
 Then, you start collecting values into the Item Loader, typically using
 :ref:`Selectors <topics-selectors>`. You can add more than one value to
@@ -88,7 +87,7 @@ received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
 :meth:`ItemLoader.load_item` method is called to populate and get the populated
-:class:`~scrapy.item.Item` object.  That's when the output processor is
+:ref:`item object <topics-items>`.  That's when the output processor is
 called with the data previously collected (and processed using the input
 processor). The result of the output processor is the final value that gets
 assigned to the item.
@@ -153,12 +152,10 @@ Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
 
 
-
 Declaring Item Loaders
 ======================
 
-Item Loaders are declared like Items, by using a class definition syntax. Here
-is an example::
+Item Loaders are declared using a class definition syntax. Here is an example::
 
     from scrapy.loader import ItemLoader
     from scrapy.loader.processors import TakeFirst, MapCompose, Join
@@ -275,9 +272,9 @@ ItemLoader objects
 
 .. class:: ItemLoader([item, selector, response], **kwargs)
 
-    Return a new Item Loader for populating the given Item. If no item is
-    given, one is instantiated automatically using the class in
-    :attr:`default_item_class`.
+    Return a new Item Loader for populating the given :ref:`item object
+    <topics-items>`. If no item object is given, one is instantiated
+    automatically using the class in :attr:`default_item_class`.
 
     When instantiated with a ``selector`` or a ``response`` parameters
     the :class:`ItemLoader` class provides convenient mechanisms for extracting
@@ -286,7 +283,7 @@ ItemLoader objects
     :param item: The item instance to populate using subsequent calls to
         :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
         or :meth:`~ItemLoader.add_value`.
-    :type item: :class:`~scrapy.item.Item` object
+    :type item: :ref:`item object <topics-items>`
 
     :param selector: The selector to extract data from, when using the
         :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
@@ -444,17 +441,19 @@ ItemLoader objects
 
         Create a nested loader with an xpath selector.
         The supplied selector is applied relative to selector associated
-        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
-        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
-        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected.
+        with this :class:`ItemLoader`. The nested loader shares the :ref:`item
+        object <topics-items>` with the parent :class:`ItemLoader` so calls to
+        :meth:`add_xpath`, :meth:`add_value`, :meth:`replace_value`, etc. will
+        behave as expected.
 
     .. method:: nested_css(css)
 
         Create a nested loader with a css selector.
         The supplied selector is applied relative to selector associated
-        with this :class:`ItemLoader`. The nested loader shares the :class:`Item`
-        with the parent :class:`ItemLoader` so calls to :meth:`add_xpath`,
-        :meth:`add_value`, :meth:`replace_value`, etc. will behave as expected.
+        with this :class:`ItemLoader`. The nested loader shares the :ref:`item
+        object <topics-items>` with the parent :class:`ItemLoader` so calls to
+        :meth:`add_xpath`, :meth:`add_value`, :meth:`replace_value`, etc. will
+        behave as expected.
 
     .. method:: get_collected_values(field_name)
 
@@ -477,7 +476,7 @@ ItemLoader objects
 
     .. attribute:: item
 
-        The :class:`~scrapy.item.Item` object being parsed by this Item Loader.
+        The :ref:`item object <topics-items>` being parsed by this Item Loader.
         This is mostly used as a property so when attempting to override this
         value, you may want to check out :attr:`default_item_class` first.
 
@@ -488,8 +487,8 @@ ItemLoader objects
 
     .. attribute:: default_item_class
 
-        An Item class (or factory), used to instantiate items when not given in
-        the ``__init__`` method.
+        An :ref:`item object <topics-items>` class or factory, used to
+        instantiate items when not given in the ``__init__`` method.
 
     .. attribute:: default_input_processor
 
