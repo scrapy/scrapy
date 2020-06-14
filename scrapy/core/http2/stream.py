@@ -81,25 +81,27 @@ class Stream:
         """
         return self._deferred_response
 
-    def initiate_request(self):
-        http2_request_headers = []
-        for name, value in self._request.headers.items():
-            http2_request_headers.append((name, value))
-
+    def _get_request_headers(self):
         url = urlparse(self._request.url)
-        http2_request_headers += [
-            (":method", self._request.method),
-            (":authority", url.netloc),
 
-            # TODO: Check if scheme can be "http" for HTTP/2 ?
-            (":scheme", "https"),
-            (":path", url.path),
+        # Make sure pseudo-headers comes before all the other headers
+        headers = [
+            (':method', self._request.method),
+            (':authority', url.netloc),
 
-            # TODO: Make sure 'Content-Type' and 'Content-Encoding' headers
-            #  are sent for request having body
+            # TODO: Check if scheme can be 'http' for HTTP/2 ?
+            (':scheme', 'https'),
+            (':path', url.path),
         ]
 
-        self._conn.send_headers(self.stream_id, http2_request_headers, end_stream=False)
+        for name, value in self._request.headers.items():
+            headers.append((name, value[0]))
+
+        return headers
+
+    def initiate_request(self):
+        headers = self._get_request_headers()
+        self._conn.send_headers(self.stream_id, headers, end_stream=False)
         self._write_to_transport()
 
         self.send_data()
@@ -127,23 +129,24 @@ class Stream:
 
         # We will send no more than the window size or the remaining file size
         # of data in this call, whichever is smaller.
-        bytes_to_send = min(window_size, self.remaining_content_length)
+        bytes_to_send_size = min(window_size, self.remaining_content_length)
 
         # We now need to send a number of data frames.
-        while bytes_to_send > 0:
-            chunk_size = min(bytes_to_send, max_frame_size)
+        while bytes_to_send_size > 0:
+            chunk_size = min(bytes_to_send_size, max_frame_size)
 
-            data_chunk_start = self.content_length - self.remaining_content_length
-            data_chunk = self._request_body[data_chunk_start:data_chunk_start + chunk_size]
+            data_chunk_start_id = self.content_length - self.remaining_content_length
+            data_chunk = self._request_body[data_chunk_start_id:data_chunk_start_id + chunk_size]
 
             self._conn.send_data(self.stream_id, data_chunk, end_stream=False)
-            self._write_to_transport()
 
-            bytes_to_send = max(0, bytes_to_send - chunk_size)
-            self.remaining_content_length = max(0, self.remaining_content_length - chunk_size)
+            bytes_to_send_size = bytes_to_send_size - chunk_size
+            self.remaining_content_length = self.remaining_content_length - chunk_size
 
         # End the stream if no more data has to be send
-        if self.remaining_content_length == 0:
+        if self.remaining_content_length <= 0:
+            self.remaining_content_length = 0
+
             self.stream_closed_local = True
             self._conn.end_stream(self.stream_id)
 
@@ -183,12 +186,12 @@ class Stream:
         #  Q1. Do we need to send the request again?
         #  Q2. What response should we send now?
         self.stream_closed_server = True
-        self._cb_close()
+        self._cb_close(self.stream_id)
 
     def lost_connection(self):
         # TODO: Same as self.reset
         self.stream_closed_server = True
-        self._cb_close()
+        self._cb_close(self.stream_id)
 
     def end_stream(self):
         """Stream is ended by the server hence no further
@@ -201,7 +204,7 @@ class Stream:
         self.stream_closed_server = True
 
         self._fire_response_deferred()
-        self._cb_close()
+        self._cb_close(self.stream_id)
 
     def _fire_response_deferred(self):
         # TODO:

@@ -50,10 +50,7 @@ class H2ClientProtocol(Protocol):
     def _stream_close_cb(self, stream_id: int):
         """Called when stream is closed completely
         """
-        try:
-            del self.streams[stream_id]
-        except KeyError:
-            pass
+        self.streams.pop(stream_id, None)
 
     def _new_stream(self, request: Request):
         """Instantiates a new Stream object
@@ -66,7 +63,7 @@ class H2ClientProtocol(Protocol):
             request=request,
             connection=self.conn,
             write_to_transport=self._write_to_transport,
-            cb_close=lambda: self._stream_close_cb(stream_id)
+            cb_close=self._stream_close_cb
         )
 
         self.streams[stream.stream_id] = stream
@@ -124,10 +121,7 @@ class H2ClientProtocol(Protocol):
         """
         # Pop all streams which were pending and were not yet started
         for stream_id in list(self.streams):
-            try:
-                self.streams[stream_id].lost_connection()
-            except KeyError:
-                pass
+            self.streams[stream_id].lost_connection()
 
         self.conn.close_connection()
 
