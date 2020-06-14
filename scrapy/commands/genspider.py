@@ -66,14 +66,22 @@ class Command(ScrapyCommand):
             print("Cannot create a spider with the same name as your project")
             return
 
-        if exists(name + ".py"):
-            print("File %r already exists in the current directory" % (name + ".py"))
-            return
-
         try:
             spidercls = self.crawler_process.spider_loader.load(name)
         except KeyError:
-            pass
+            if not self.settings.get('NEWSPIDER_MODULE'):
+                if exists(name + ".py"):
+                    print("File %r already exists in the current directory" % (name + ".py"))
+                    return
+            else:
+                spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
+                spiders_dir = dirname(spiders_module.__file__)
+                spiders_dir_abs = abspath(spiders_dir)
+                if exists(join(spiders_dir_abs, name + ".py")):
+                    print("Spider with filename %r already exists in directory:" % (name + ".py"))
+                    print("  %s" % spiders_dir)
+                    return
+            # pass
         else:
             # if spider already exists and not --force then halt
             if not opts.force:
