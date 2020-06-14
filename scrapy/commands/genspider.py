@@ -81,7 +81,6 @@ class Command(ScrapyCommand):
                     print("Spider with filename %r already exists in directory:" % (name + ".py"))
                     print("  %s" % spiders_dir)
                     return
-            # pass
         else:
             # if spider already exists and not --force then halt
             if not opts.force:
