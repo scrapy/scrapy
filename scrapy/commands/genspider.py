@@ -71,15 +71,14 @@ class Command(ScrapyCommand):
         except KeyError:
             if not self.settings.get('NEWSPIDER_MODULE'):
                 if exists(name + ".py"):
-                    print("File %r already exists in the current directory" % (name + ".py"))
+                    print("%r already exists" % (abspath(name + ".py")))
                     return
             else:
                 spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
                 spiders_dir = dirname(spiders_module.__file__)
                 spiders_dir_abs = abspath(spiders_dir)
                 if exists(join(spiders_dir_abs, name + ".py")):
-                    print("Spider with filename %r already exists in directory:" % (name + ".py"))
-                    print("  %s" % spiders_dir)
+                    print("%r already exists" % (join(spiders_dir_abs, (name + ".py"))))
                     return
         else:
             # if spider already exists and not --force then halt
