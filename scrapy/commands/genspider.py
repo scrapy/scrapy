@@ -69,17 +69,23 @@ class Command(ScrapyCommand):
         try:
             spidercls = self.crawler_process.spider_loader.load(name)
         except KeyError:
+            # check if run from a project or standalone
             if not self.settings.get('NEWSPIDER_MODULE'):
+                # if run as a standalone command and file with same filename already exists
                 if exists(name + ".py"):
-                    print("%r already exists" % (abspath(name + ".py")))
-                    return
+                    if not opts.force:
+                        print("%s already exists" % (abspath(name + ".py")))
+                        return
             else:
+                # if spider with different spidername but same filename exists
                 spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
                 spiders_dir = dirname(spiders_module.__file__)
                 spiders_dir_abs = abspath(spiders_dir)
+
                 if exists(join(spiders_dir_abs, name + ".py")):
-                    print("%r already exists" % (join(spiders_dir_abs, (name + ".py"))))
-                    return
+                    if not opts.force:
+                        print("%s already exists" % (join(spiders_dir_abs, (name + ".py"))))
+                        return
         else:
             # if spider already exists and not --force then halt
             if not opts.force:
