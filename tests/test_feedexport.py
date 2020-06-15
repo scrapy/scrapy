@@ -22,7 +22,7 @@ from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (
     BlockingFeedStorage,
@@ -1115,7 +1115,8 @@ class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w)
+            messages = tuple(str(item.message) for item in w
+                             if item.category is ScrapyDeprecationWarning)
             self.assertEqual(
                 messages,
                 (
@@ -1155,7 +1156,8 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w)
+            messages = tuple(str(item.message) for item in w
+                             if item.category is ScrapyDeprecationWarning)
             self.assertEqual(
                 messages,
                 (
@@ -1203,7 +1205,8 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w)
+            messages = tuple(str(item.message) for item in w
+                             if item.category is ScrapyDeprecationWarning)
             self.assertEqual(
                 messages,
                 (
@@ -1230,7 +1233,8 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w)
+            messages = tuple(str(item.message) for item in w
+                             if item.category is ScrapyDeprecationWarning)
             self.assertEqual(
                 messages,
                 (
@@ -1278,7 +1282,8 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w)
+            messages = tuple(str(item.message) for item in w
+                             if item.category is ScrapyDeprecationWarning)
             self.assertEqual(
                 messages,
                 (
@@ -1305,7 +1310,8 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         spider.crawler = crawler
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w)
+            messages = tuple(str(item.message) for item in w
+                             if item.category is ScrapyDeprecationWarning)
             self.assertEqual(
                 messages,
                 (

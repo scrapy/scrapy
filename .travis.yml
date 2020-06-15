@@ -7,14 +7,14 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
-    #- env: TOXENV=security
-      #python: 3.8
-    #- env: TOXENV=flake8
-      #python: 3.8
-    #- env: TOXENV=pylint
-      #python: 3.8
-    #- env: TOXENV=docs
-      #python: 3.7  # Keep in sync with .readthedocs.yml
+    - env: TOXENV=security
+      python: 3.8
+    - env: TOXENV=flake8
+      python: 3.8
+    - env: TOXENV=pylint
+      python: 3.8
+    - env: TOXENV=docs
+      python: 3.7  # Keep in sync with .readthedocs.yml
 
     - env: TOXENV=pypy3
     - env: TOXENV=pinned
