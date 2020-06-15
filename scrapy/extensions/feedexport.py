@@ -86,7 +86,7 @@ class StdoutFeedStorage:
         self._stdout = _stdout
         if feed_options and feed_options.get('overwrite', False) is True:
             logger.warning('Standard output (stdout) storage does not support '
-                           'overwritting. To supress this warning, remove the '
+                           'overwriting. To suppress this warning, remove the '
                            'overwrite option from your FEEDS setting, or set '
                            'it to False.')
 
@@ -154,8 +154,8 @@ class S3FeedStorage(BlockingFeedStorage):
             self.connect_s3 = boto.connect_s3
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
-                           'supress this warning, remove the overwrite option '
-                           'from your FEEDS setting or set it to True.')
+                           'suppress this warning, remove the overwrite '
+                           'option from your FEEDS setting or set it to True.')
 
     @classmethod
     def from_crawler(cls, crawler, uri, *, feed_options=None):
