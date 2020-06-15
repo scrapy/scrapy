@@ -281,6 +281,7 @@ coverage_ignore_pyobjects = [
 # -------------------------------------
 
 intersphinx_mapping = {
+    'attrs': ('https://www.attrs.org/en/stable/', None),
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
     'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),

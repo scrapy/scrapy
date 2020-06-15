@@ -16,9 +16,11 @@ import sys
 from collections import defaultdict
 from urllib.parse import urlparse
 
+import attr
+from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from testfixtures import LogCapture
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor
 from twisted.trial import unittest
 from twisted.web import server, static, util
 
@@ -32,13 +34,20 @@ from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 
-from tests import tests_datadir, get_testdata
+from tests import get_testdata, tests_datadir
 
 
 class TestItem(Item):
     name = Field()
     url = Field()
     price = Field()
+
+
+@attr.s
+class AttrsItem:
+    name = attr.ib(default="")
+    url = attr.ib(default="")
+    price = attr.ib(default=0)
 
 
 class TestSpider(Spider):
@@ -77,6 +86,27 @@ class TestDupeFilterSpider(TestSpider):
 
 class DictItemsSpider(TestSpider):
     item_cls = dict
+
+
+class AttrsItemsSpider(TestSpider):
+    item_class = AttrsItem
+
+
+try:
+    from dataclasses import make_dataclass
+except ImportError:
+    DataClassItemsSpider = None
+else:
+    TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
+
+    class DataClassItemsSpider(DictItemsSpider):
+        def parse_item(self, response):
+            item = super().parse_item(response)
+            return TestDataClass(
+                name=item.get('name'),
+                url=item.get('url'),
+                price=item.get('price'),
+            )
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
@@ -204,7 +234,10 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler(self):
-        for spider in TestSpider, DictItemsSpider:
+
+        for spider in (TestSpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider):
+            if spider is None:
+                continue
             self.run = CrawlerRun(spider)
             yield self.run.run()
             self._assert_visited_urls()
@@ -281,6 +314,7 @@ class EngineTest(unittest.TestCase):
     def _assert_scraped_items(self):
         self.assertEqual(2, len(self.run.itemresp))
         for item, response in self.run.itemresp:
+            item = ItemAdapter(item)
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
                 self.assertEqual('Item 1 name', item['name'])

@@ -69,7 +69,7 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 3.5.1+
+Scrapy is supported under Python 3.5.2+
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 Python 3 support was added in Scrapy 1.1.
 PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
@@ -342,15 +342,15 @@ method for this purpose. For example::
 
     from copy import deepcopy
 
-    from scrapy.item import Item
-
+    from itemadapter import is_item, ItemAdapter
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (Item, dict)):
-                    for _ in range(item['multiply_by']):
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
