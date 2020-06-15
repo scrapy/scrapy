@@ -188,7 +188,7 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(2, self.call('genspider', self.project_name))
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
-    def test_same_filename_as_existing_spider(self):
+    def test_same_filename_as_existing_spider(self, force=False):
         file_name = 'example'
         file_path = join(self.proj_mod_path, 'spiders', '%s.py' % file_name)
         self.assertEqual(0, self.call('genspider', file_name, 'example.com'))
@@ -201,8 +201,15 @@ class GenspiderCommandTest(CommandTest):
         with open(file_path, 'w') as spider_file:
             spider_file.write(file_data)
 
-        p, out, err = self.proc('genspider', file_name, 'example.com')
-        self.assertIn("%r already exists" % (file_path), out)
+        if force:
+            p, out, err = self.proc('genspider', '--force', file_name, 'example.com')
+            self.assertIn("Created spider %r using template \'basic\' in module" % file_name, out)
+        else:
+            p, out, err = self.proc('genspider', file_name, 'example.com')
+            self.assertIn("%s already exists" % (file_path), out)
+
+    def test_same_filename_as_existing_spider_force(self):
+        self.test_same_filename_as_existing_spider(force=True)
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):
@@ -211,12 +218,21 @@ class GenspiderStandaloneCommandTest(ProjectTest):
         self.call('genspider', 'example', 'example.com')
         assert exists(join(self.temp_path, 'example.py'))
 
-    def test_same_name_as_existing_file(self):
-        filename = "example"
-        p, out, err = self.proc('genspider', filename, 'example.com')
-        self.assertNotIn("%r already exists" % join(self.temp_path, filename + ".py"), out)
-        p, out, err = self.proc('genspider', filename, 'example.com')
-        self.assertIn("%r already exists" % join(self.temp_path, filename + ".py"), out)
+    def test_same_name_as_existing_file(self, force=False):
+        file_name = 'example'
+        p, out, err = self.proc('genspider', file_name, 'example.com')
+        self.assertIn("Created spider %r using template \'basic\' " % file_name, out)
+        assert exists(join(self.temp_path, file_name + '.py'))
+
+        if force:
+            p, out, err = self.proc('genspider', '--force', file_name, 'example.com')
+            self.assertIn("Created spider %r using template \'basic\' " % file_name, out)
+        else:
+            p, out, err = self.proc('genspider', file_name, 'example.com')
+            self.assertIn("%s already exists" % join(self.temp_path, file_name + ".py"), out)
+
+    def test_same_name_as_existing_file_force(self):
+        self.test_same_name_as_existing_file(force=True)
 
 
 class MiscCommandsTest(CommandTest):
