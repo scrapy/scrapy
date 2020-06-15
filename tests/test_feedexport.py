@@ -452,12 +452,12 @@ class StdoutFeedStorageTest(unittest.TestCase):
     def test_overwrite_default(self):
         with LogCapture() as log:
             StdoutFeedStorage('stdout:')
-        self.assertNotIn('Standard output (stdout) storage does not support overwritting', str(log))
+        self.assertNotIn('Standard output (stdout) storage does not support overwriting', str(log))
 
     def test_overwrite_true(self):
         with LogCapture() as log:
             StdoutFeedStorage('stdout:', feed_options={'overwrite': True})
-        self.assertIn('Standard output (stdout) storage does not support overwritting', str(log))
+        self.assertIn('Standard output (stdout) storage does not support overwriting', str(log))
 
 
 class FromCrawlerMixin:
