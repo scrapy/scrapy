@@ -76,5 +76,5 @@ class TestDisplay(TestCase):
 
     def test_pprint(self):
         with mock.patch('sys.stdout', new=StringIO()) as mock_out:
-            pprint("{'a': 1}")
+            pprint(self.object)
             self.assertEqual(mock_out.getvalue(), f'{self.plain_string}\n')
