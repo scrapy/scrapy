@@ -66,32 +66,9 @@ class Command(ScrapyCommand):
             print("Cannot create a spider with the same name as your project")
             return
 
-        try:
-            spidercls = self.crawler_process.spider_loader.load(name)
-        except KeyError:
-            # check if run from a project or standalone
-            if not self.settings.get('NEWSPIDER_MODULE'):
-                # if run as a standalone command and file with same filename already exists
-                if exists(name + ".py"):
-                    if not opts.force:
-                        print("%s already exists" % (abspath(name + ".py")))
-                        return
-            else:
-                # if spider with different spidername but same filename exists
-                spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-                spiders_dir = dirname(spiders_module.__file__)
-                spiders_dir_abs = abspath(spiders_dir)
+        if not opts.force and self._spider_exists(name):
+            return
 
-                if exists(join(spiders_dir_abs, name + ".py")):
-                    if not opts.force:
-                        print("%s already exists" % (join(spiders_dir_abs, (name + ".py"))))
-                        return
-        else:
-            # if spider already exists and not --force then halt
-            if not opts.force:
-                print("Spider %r already exists in module:" % name)
-                print("  %s" % spidercls.__module__)
-                return
         template_file = self._find_template(opts.template)
         if template_file:
             self._genspider(module, name, domain, opts.template, template_file)
@@ -134,6 +111,32 @@ class Command(ScrapyCommand):
         for filename in sorted(os.listdir(self.templates_dir)):
             if filename.endswith('.tmpl'):
                 print("  %s" % splitext(filename)[0])
+
+    def _spider_exists(self, name):
+        if not self.settings.get('NEWSPIDER_MODULE'):
+            # if run as a standalone command and file with same filename already exists
+            if exists(name + ".py"):
+                print("%s already exists" % (abspath(name + ".py")))
+                return True
+        else:
+            try:
+                spidercls = self.crawler_process.spider_loader.load(name)
+            except KeyError:
+                pass
+            else:
+                # if spider with same name exists
+                print("Spider %r already exists in module:" % name)
+                print("  %s" % spidercls.__module__)
+                return False
+            # if spider same filename exists
+            spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
+            spiders_dir = dirname(spiders_module.__file__)
+            spiders_dir_abs = abspath(spiders_dir)
+            if exists(join(spiders_dir_abs, name + ".py")):
+                print("%s already exists" % (join(spiders_dir_abs, (name + ".py"))))
+                return True
+
+        return False
 
     @property
     def templates_dir(self):
