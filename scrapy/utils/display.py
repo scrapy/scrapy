@@ -2,59 +2,43 @@
 pprint and pformat wrappers with colorization support
 """
 
+import ctypes
+import platform
 import sys
 from distutils.version import LooseVersion as parse_version
-from platform import version
 from pprint import pformat as pformat_
 
 
-def _colorize(text, colorize=True):
-    if not colorize or not sys.stdout.isatty():
-        return text
-    try:
-        from pygments.formatters import TerminalFormatter
-        from pygments import highlight
-        from pygments.lexers import PythonLexer
-    except ImportError:
-        return text
-
-    # All Windows versions >= "10.0.14393" interpret ANSI escape sequences
-    # using terminal processing.
-    #
-    # Enable environment variable `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
-    # to activate terminal processing.
-    if sys.platform == "win32" and parse_version(version()) >= parse_version("10.0.14393"):
-        try:
-            import ctypes
-            kernel32 = ctypes.windll.kernel32
-            handle = kernel32.GetStdHandle(-11)
-            # set `ENABLE_VIRTUAL_TERMINAL_PROCESSING` flag
-            if not kernel32.SetConsoleMode(handle, 7):
-                raise ValueError
-        except ValueError:
-            return text
-
-    if _color_support_info():
-        return highlight(text, PythonLexer(), TerminalFormatter())
-
-    return text
+def _enable_windows_terminal_processing():
+    # https://stackoverflow.com/a/36760881
+    kernel32 = ctypes.windll.kernel32
+    return bool(kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7))
 
 
-def _color_support_info(color_support=False):
-    try:
-        import curses
-    except ImportError:
-        # Usually Windows, which doesn't have great curses support
+def _tty_supports_color():
+    if sys.platform != "win32":
         return True
 
-    try:
-        curses.initscr()
-        color_support = curses.has_colors()
-        curses.endwin()
-    except curses.error:
-        pass
+    # Windows < 10.0.14393 cannot interpret ANSI escape sequences
+    if parse_version(platform.version()) < parse_version("10.0.14393"):
+        return False
 
-    return color_support
+    # Windows >= 10.0.14393 interprets ANSI escape sequences providing terminal
+    # processing is enabled.
+    return _enable_windows_terminal_processing()
+
+
+def _colorize(text, colorize=True):
+    if not colorize or not sys.stdout.isatty() or not _tty_supports_color():
+        return text
+    try:
+        from pygments import highlight
+    except ImportError:
+        return text
+    else:
+        from pygments.formatters import TerminalFormatter
+        from pygments.lexers import PythonLexer
+        return highlight(text, PythonLexer(), TerminalFormatter())
 
 
 def pformat(obj, *args, **kwargs):

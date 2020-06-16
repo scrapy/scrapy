@@ -1,64 +1,80 @@
 import sys
-
 from io import StringIO
 
 from unittest import mock, TestCase
 
-from scrapy.utils.display import _colorize, _color_support_info, pformat, pprint
+from scrapy.utils.display import pformat, pprint
 
-TestStr = "{\x1b[33m'\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m'\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}\n"
 
 
 class TestDisplay(TestCase):
-    if sys.platform != "win32":
-        @mock.patch('sys.stdout.isatty', autospec=True)
-        def test_color(self, mock_isatty):
-            mock_isatty.return_value = True
-            if _color_support_info():
-                self.assertEqual(pformat({'a': 1}), TestStr)
+    object = {'a': 1}
+    colorized_string = (
+        "{\x1b[33m'\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m'"
+        "\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}\n"
+    )
+    plain_string = "{'a': 1}"
 
-            with mock.patch("scrapy.utils.display._color_support_info") as mock_color:
-                mock_color.return_value = False
-                self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+    @mock.patch('sys.platform', 'linux')
+    @mock.patch("sys.stdout.isatty")
+    def test_pformat(self, isatty):
+        isatty.return_value = True
+        self.assertEqual(pformat(self.object), self.colorized_string)
 
-                mock_color.return_value = True
-                self.assertEqual(_colorize("{'a': 1}"), TestStr)
+    @mock.patch("sys.stdout.isatty")
+    def test_pformat_dont_colorize(self, isatty):
+        isatty.return_value = True
+        self.assertEqual(pformat(self.object, colorize=False), self.plain_string)
 
-            sys.modules["curses"] = None
-            self.assertEqual(_colorize("{'a': 1}"), TestStr)
+    def test_pformat_not_tty(self):
+        self.assertEqual(pformat(self.object), self.plain_string)
 
-            sys.modules["pygments"] = None
-            self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+    @mock.patch('sys.platform', 'win32')
+    @mock.patch('platform.version')
+    @mock.patch("sys.stdout.isatty")
+    def test_pformat_old_windows(self, isatty, version):
+        isatty.return_value = True
+        version.return_value = '10.0.14392'
+        self.assertEqual(pformat(self.object), self.plain_string)
 
-            mock_isatty.return_value = False
-            self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+    @mock.patch('sys.platform', 'win32')
+    @mock.patch('scrapy.utils.display._enable_windows_terminal_processing')
+    @mock.patch('platform.version')
+    @mock.patch("sys.stdout.isatty")
+    def test_pformat_windows_no_terminal_processing(self, isatty, version, terminal_processing):
+        isatty.return_value = True
+        version.return_value = '10.0.14393'
+        terminal_processing.return_value = False
+        self.assertEqual(pformat(self.object), self.plain_string)
 
-    @mock.patch('sys.platform', mock.MagicMock(return_value="win32"))
-    @mock.patch('ctypes.windll')
-    def test_color_windows(self, mock_ctypes):
-        mock_ctypes.kernel32.GetStdHandle.return_value = -11
-        with mock.patch('sys.stdout.isatty', autospec=True) as mock_isatty:
-            mock_isatty.return_value = True
-            if _color_support_info():
-                self.assertEqual(pformat({'a': 1}), TestStr)
+    @mock.patch('sys.platform', 'win32')
+    @mock.patch('scrapy.utils.display._enable_windows_terminal_processing')
+    @mock.patch('platform.version')
+    @mock.patch("sys.stdout.isatty")
+    def test_pformat_windows(self, isatty, version, terminal_processing):
+        isatty.return_value = True
+        version.return_value = '10.0.14393'
+        terminal_processing.return_value = True
+        self.assertEqual(pformat(self.object), self.colorized_string)
 
-            with mock.patch("scrapy.utils.display._color_support_info") as mock_color:
-                mock_color.return_value = False
-                self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+    @mock.patch('sys.platform', 'linux')
+    @mock.patch("sys.stdout.isatty")
+    def test_pformat_no_pygments(self, isatty):
+        isatty.return_value = True
 
-                mock_color.return_value = True
-                self.assertEqual(_colorize("{'a': 1}"), TestStr)
+        import builtins
+        real_import = builtins.__import__
 
-            sys.modules["pygments"] = None
-            self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+        def mock_import(name, globals, locals, fromlist, level):
+            if 'pygments' in name:
+                raise ImportError
+            return real_import(name, globals, locals, fromlist, level)
 
-            sys.modules["ctypes"] = None
-            self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
+        builtins.__import__ = mock_import
+        self.assertEqual(pformat(self.object), self.plain_string)
+        builtins.__import__ = real_import
 
-            mock_isatty.return_value = False
-            self.assertEqual(_colorize("{'a': 1}"), "{'a': 1}")
-
-    def test_stdout(self):
+    def test_pprint(self):
         with mock.patch('sys.stdout', new=StringIO()) as mock_out:
             pprint("{'a': 1}")
-            self.assertEqual(mock_out.getvalue(), '"{\'a\': 1}"\n')
+            self.assertEqual(mock_out.getvalue(), f'{self.plain_string}\n')
