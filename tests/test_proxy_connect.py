@@ -41,7 +41,7 @@ sys.exit(mitmdump())
                            '--ssl-insecure',
                            ],
                           stdout=PIPE, env=get_testenv())
-        line = self.proc.stdout.readline().decode('utf-8')
+        line = self.proc.stdout.read().decode('utf-8')
         pattern = r'listening at http://([^:]+:\d+)'
         match = re.search(pattern, line)
         if not match:
