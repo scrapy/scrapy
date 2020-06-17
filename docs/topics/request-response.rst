@@ -323,30 +323,21 @@ Accessing additional data in errback functions
 In case of a failure to process the request, you may be interested in
 accessing arguments to the callback functions so you can process further
 based on the arguments in the errback. The following example shows how to
-achieve this by using ``Failure.request.cb_kwargs``
-
-::
+achieve this by using ``Failure.request.cb_kwargs``::
 
     def parse(self, response):
         request = scrapy.Request('http://www.example.com/index.html',
                                  callback=self.parse_page2,
                                  errback=self.errback_page2,
                                  cb_kwargs=dict(main_url=response.url))
-        request.cb_kwargs['foo'] = 'bar'  # add more arguments for the callback
         yield request
 
     def parse_page2(self, response, main_url, foo):
-        yield dict(
-            main_url=main_url,
-            other_url=response.url,
-            foo=foo,
-        )
+        pass
 
     def errback_page2(self, failure):
         yield dict(
             main_url=failure.request.cb_kwargs['main_url'],
-            other_url=failure.value.response.url,
-            foo=failure.request.cb_kwargs['foo'],
         )
 
 .. _topics-request-meta:
