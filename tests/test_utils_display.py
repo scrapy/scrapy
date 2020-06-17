@@ -1,10 +1,8 @@
-import sys
 from io import StringIO
 
 from unittest import mock, TestCase
 
 from scrapy.utils.display import pformat, pprint
-
 
 
 class TestDisplay(TestCase):
@@ -35,7 +33,7 @@ class TestDisplay(TestCase):
     def test_pformat_old_windows(self, isatty, version):
         isatty.return_value = True
         version.return_value = '10.0.14392'
-        self.assertEqual(pformat(self.object), self.plain_string)
+        self.assertEqual(pformat(self.object), self.colorized_string)
 
     @mock.patch('sys.platform', 'win32')
     @mock.patch('scrapy.utils.display._enable_windows_terminal_processing')
@@ -77,4 +75,4 @@ class TestDisplay(TestCase):
     def test_pprint(self):
         with mock.patch('sys.stdout', new=StringIO()) as mock_out:
             pprint(self.object)
-            self.assertEqual(mock_out.getvalue(), f'{self.plain_string}\n')
+            self.assertEqual(mock_out.getvalue(), "{'a': 1}\n")

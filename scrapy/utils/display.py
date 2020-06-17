@@ -19,9 +19,8 @@ def _tty_supports_color():
     if sys.platform != "win32":
         return True
 
-    # Windows < 10.0.14393 cannot interpret ANSI escape sequences
     if parse_version(platform.version()) < parse_version("10.0.14393"):
-        return False
+        return True
 
     # Windows >= 10.0.14393 interprets ANSI escape sequences providing terminal
     # processing is enabled.
