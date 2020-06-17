@@ -97,6 +97,10 @@ Bug fixes
     of the ``__init__`` method of :class:`~scrapy.http.Request.headers`
     (:issue:`2400`, :issue:`3575`)
 
+*   When :setting:`FEEDS` defines multiple URIs, :setting:`FEED_STORE_EMPTY` is
+    ``False`` and the crawl yields no items, Scrapy no longer stops feed
+    exports after the first URI (:issue:`4621`, :issue:`4626`)
+
 *   :class:`~scrapy.spiders.Spider` callbacks defined using :doc:`coroutine
     syntax <topics/coroutines>` no longer need to return an iterable, and may
     instead return a :class:`~scrapy.http.Request` object, an
@@ -159,6 +163,9 @@ Quality assurance
 
 *   Improved code sharing between the :command:`crawl` and :command:`runspider`
     commands (:issue:`4548`, :issue:`4552`)
+
+*   Replaced ``chain(*iterable)`` with ``chain.from_iterable(iterable)``
+    (:issue:`4635`)
 
 *   You may now run the :mod:`asyncio` tests with Tox on any Python version
     (:issue:`4521`)
