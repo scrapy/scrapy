@@ -152,12 +152,12 @@ class Scraper:
         else:
             result._request_set_in_scraper = False
         dfd = defer_result(result)
-        callback = request.callback or spider.parse
+        callback = result.request.callback or spider.parse
         warn_on_generator_with_return_value(spider, callback)
-        warn_on_generator_with_return_value(spider, request.errback)
+        warn_on_generator_with_return_value(spider, result.request.errback)
         dfd.addCallbacks(callback=callback,
-                         errback=request.errback,
-                         callbackKeywords=request.cb_kwargs)
+                         errback=result.request.errback,
+                         callbackKeywords=result.request.cb_kwargs)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, response, spider):
