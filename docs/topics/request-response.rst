@@ -190,7 +190,8 @@ Request objects
         accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
         In case of a failure to process the request, this dict can be accessed as
-        ``failure.request.cb_kwargs``. For more information, see :ref:`topics-request-response-ref-accessing-callback-arguments-in-errback`.
+        ``failure.request.cb_kwargs`` in the request's errback. For more information,
+        see :ref:`topics-request-response-ref-accessing-callback-arguments-in-errback`.
 
     .. method:: Request.copy()
 
