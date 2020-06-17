@@ -1,4 +1,6 @@
+import itertools
 import logging
+from collections import deque
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -35,7 +37,7 @@ class H2ClientProtocol(Protocol):
         # ID of the next request stream
         # Following the convention made by hyper-h2 each client ID
         # will be odd.
-        self.next_stream_id = 1
+        self.stream_id_count = itertools.count(start=1, step=2)
 
         # Streams are stored in a dictionary keyed off their stream IDs
         self.streams = {}
@@ -45,7 +47,7 @@ class H2ClientProtocol(Protocol):
         # we keep all requests in a pool and send them as the connection
         # is made
         self.is_connection_made = False
-        self._pending_request_stream_pool = []
+        self._pending_request_stream_pool = deque()
 
     def _stream_close_cb(self, stream_id: int):
         """Called when stream is closed completely
@@ -55,8 +57,7 @@ class H2ClientProtocol(Protocol):
     def _new_stream(self, request: Request):
         """Instantiates a new Stream object
         """
-        stream_id = self.next_stream_id
-        self.next_stream_id += 2
+        stream_id = next(self.stream_id_count)
 
         stream = Stream(
             stream_id=stream_id,
@@ -72,10 +73,9 @@ class H2ClientProtocol(Protocol):
     def _send_pending_requests(self):
         # TODO: handle MAX_CONCURRENT_STREAMS
         # Initiate all pending requests
-        for stream in self._pending_request_stream_pool:
+        while len(self._pending_request_stream_pool):
+            stream = self._pending_request_stream_pool.popleft()
             stream.initiate_request()
-
-        self._pending_request_stream_pool.clear()
 
     def _write_to_transport(self):
         """ Write data to the underlying transport connection
@@ -108,6 +108,8 @@ class H2ClientProtocol(Protocol):
         self._write_to_transport()
         self.is_connection_made = True
 
+        # Send off all the pending requests
+        # as now we have established a proper HTTP/2 connection
         self._send_pending_requests()
 
     def dataReceived(self, data):

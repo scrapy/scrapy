@@ -132,7 +132,7 @@ class Stream:
         bytes_to_send_size = min(window_size, self.remaining_content_length)
 
         # We now need to send a number of data frames.
-        while bytes_to_send_size > 0:
+        while bytes_to_send_size:
             chunk_size = min(bytes_to_send_size, max_frame_size)
 
             data_chunk_start_id = self.content_length - self.remaining_content_length
@@ -163,7 +163,7 @@ class Stream:
         Arguments:
             delta -- Window change delta
         """
-        if self.remaining_content_length > 0 and not self.stream_closed_local:
+        if self.stream_closed_local is False:
             self.send_data()
 
     def receive_data(self, data: bytes, flow_controlled_length: int):
