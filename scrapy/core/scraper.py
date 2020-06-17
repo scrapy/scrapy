@@ -146,7 +146,7 @@ class Scraper:
                 self._log_download_errors, request_result, request, spider)
 
     def call_spider(self, result, request, spider):
-        if not hasattr(result, "request") or result.request is None:
+        if getattr(result, "request", None) is None:
             result.request = request
             result._request_set_in_scraper = True
         else:
