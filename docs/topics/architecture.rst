@@ -104,7 +104,7 @@ Spiders
 -------
 
 Spiders are custom classes written by Scrapy users to parse responses and
-extract items (aka scraped items) from them or additional requests to
+extract :ref:`items <topics-items>` from them or additional requests to
 follow. For more information see :ref:`topics-spiders`.
 
 .. _component-pipelines:

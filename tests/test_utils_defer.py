@@ -64,7 +64,7 @@ class DeferUtilsTest(unittest.TestCase):
         gotexc = False
         try:
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
-        except TypeError as e:
+        except TypeError:
             gotexc = True
         self.assertTrue(gotexc)
 
@@ -104,7 +104,7 @@ class IterErrbackTest(unittest.TestCase):
         def iterbad():
             for x in range(10):
                 if x == 5:
-                    a = 1 / 0
+                    1 / 0
                 yield x
 
         errors = []
