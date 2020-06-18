@@ -118,23 +118,24 @@ class Command(ScrapyCommand):
             if exists(name + ".py"):
                 print("%s already exists" % (abspath(name + ".py")))
                 return True
+            return False
+
+        try:
+            spidercls = self.crawler_process.spider_loader.load(name)
+        except KeyError:
+            pass
         else:
-            try:
-                spidercls = self.crawler_process.spider_loader.load(name)
-            except KeyError:
-                pass
-            else:
-                # if spider with same name exists
-                print("Spider %r already exists in module:" % name)
-                print("  %s" % spidercls.__module__)
-                return False
-            # if spider same filename exists
-            spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-            spiders_dir = dirname(spiders_module.__file__)
-            spiders_dir_abs = abspath(spiders_dir)
-            if exists(join(spiders_dir_abs, name + ".py")):
-                print("%s already exists" % (join(spiders_dir_abs, (name + ".py"))))
-                return True
+            # if spider with same name exists
+            print("Spider %r already exists in module:" % name)
+            print("  %s" % spidercls.__module__)
+            return True
+        # if spider same filename exists
+        spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
+        spiders_dir = dirname(spiders_module.__file__)
+        spiders_dir_abs = abspath(spiders_dir)
+        if exists(join(spiders_dir_abs, name + ".py")):
+            print("%s already exists" % (join(spiders_dir_abs, (name + ".py"))))
+            return True
 
         return False
 
