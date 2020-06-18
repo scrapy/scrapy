@@ -68,6 +68,7 @@ class ProjectTest(unittest.TestCase):
 
         def kill_proc():
             p.kill()
+            p.communicate()
             assert False, 'Command took too much time to complete'
 
         timer = Timer(15, kill_proc)
