@@ -333,7 +333,7 @@ achieve this by using ``Failure.request.cb_kwargs``::
                                  cb_kwargs=dict(main_url=response.url))
         yield request
 
-    def parse_page2(self, response, main_url, foo):
+    def parse_page2(self, response, main_url):
         pass
 
     def errback_page2(self, failure):
