@@ -4,7 +4,7 @@
 Debugging memory leaks
 ======================
 
-In Scrapy, objects such as Requests, Responses and Items have a finite
+In Scrapy, objects such as requests, responses and items have a finite
 lifetime: they are created, used for a while, and finally destroyed.
 
 From all those objects, the Request is probably the one with the longest
@@ -61,8 +61,8 @@ Debugging memory leaks with ``trackref``
 ========================================
 
 :mod:`trackref` is a module provided by Scrapy to debug the most common cases of
-memory leaks. It basically tracks the references to all live Requests,
-Responses, Item and Selector objects.
+memory leaks. It basically tracks the references to all live Request,
+Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
@@ -200,11 +200,10 @@ Debugging memory leaks with muppy
 
 ``trackref`` provides a very convenient mechanism for tracking down memory
 leaks, but it only keeps track of the objects that are more likely to cause
-memory leaks (Requests, Responses, Items, and Selectors). However, there are
-other cases where the memory leaks could come from other (more or less obscure)
-objects. If this is your case, and you can't find your leaks using ``trackref``,
-you still have another resource: the muppy library.
-
+memory leaks. However, there are other cases where the memory leaks could come
+from other (more or less obscure) objects. If this is your case, and you can't
+find your leaks using ``trackref``, you still have another resource: the muppy
+library.
 
 You can use muppy from `Pympler`_.
 
