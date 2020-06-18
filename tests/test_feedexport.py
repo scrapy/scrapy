@@ -10,7 +10,6 @@ from io import BytesIO
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
-from testfixtures import LogCapture
 from unittest import mock
 from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
