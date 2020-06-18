@@ -48,7 +48,10 @@ _re_type = type(re.compile("", 0))
 
 
 def _matches(url, regexs):
-    return any(r.search(url) for r in regexs)
+    for r in regexs:
+        if r.search(url):
+            return True
+    return False
 
 
 def _is_valid_url(url):
