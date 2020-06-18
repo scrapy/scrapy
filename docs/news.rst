@@ -117,6 +117,9 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
+*   Added a new section about :ref:`accessing cb_kwargs from errbacks
+    <errback-cb_kwargs>` (:issue:`4598`, :issue:`4634`)
+
 *   Covered chompjs_ in :ref:`topics-parsing-javascript` (:issue:`4556`,
     :issue:`4562`)
 
