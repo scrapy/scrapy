@@ -4,6 +4,7 @@ import re
 import sys
 from subprocess import Popen, PIPE
 from urllib.parse import urlsplit, urlunsplit
+from unittest import skipIf
 
 import pytest
 from testfixtures import LogCapture
@@ -56,6 +57,8 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
+@skipIf(sys.version_info < (3, 5, 4),
+        "requires mitmproxy < 3.0.0, which these tests do not support")
 class ProxyConnectTestCase(TestCase):
 
     def setUp(self):
@@ -76,35 +79,35 @@ class ProxyConnectTestCase(TestCase):
     @defer.inlineCallbacks
     def test_https_connect_tunnel(self):
         crawler = get_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
-        self._assert_got_response_code(200, l)
+        self._assert_got_response_code(200, log)
 
-    @pytest.mark.xfail(reason='Python 3.6+ fails this earlier', condition=sys.version_info.minor >= 6)
+    @pytest.mark.xfail(reason='Python 3.6+ fails this earlier', condition=sys.version_info >= (3, 6))
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
         crawler = get_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl("https://localhost:99999/status?n=200")
-        self._assert_got_tunnel_error(l)
+        self._assert_got_tunnel_error(log)
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
         os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy'])
         crawler = get_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
-        self._assert_got_tunnel_error(l)
+        self._assert_got_tunnel_error(log)
 
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
         request = Request(self.mockserver.url("/echo", is_secure=True))
         crawler = get_crawler(SingleRequestSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(seed=request)
-        self._assert_got_response_code(200, l)
+        self._assert_got_response_code(200, log)
         echo = json.loads(crawler.spider.meta['responses'][0].text)
         self.assertTrue('Proxy-Authorization' not in echo['headers'])
 

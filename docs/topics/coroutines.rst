@@ -53,21 +53,28 @@ There are several use cases for coroutines in Scrapy. Code that would
 return Deferreds when written for previous Scrapy versions, such as downloader
 middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
+    from itemadapter import ItemAdapter
+
     class DbPipeline:
         def _update_item(self, data, item):
-            item['field'] = data
+            adapter = ItemAdapter(item)
+            adapter['field'] = data
             return item
 
         def process_item(self, item, spider):
-            dfd = db.get_some_data(item['id'])
+            adapter = ItemAdapter(item)
+            dfd = db.get_some_data(adapter['id'])
             dfd.addCallback(self._update_item, item)
             return dfd
 
 becomes::
 
+    from itemadapter import ItemAdapter
+
     class DbPipeline:
         async def process_item(self, item, spider):
-            item['field'] = await db.get_some_data(item['id'])
+            adapter = ItemAdapter(item)
+            adapter['field'] = await db.get_some_data(adapter['id'])
             return item
 
 Coroutines may be used to call asynchronous code. This includes other

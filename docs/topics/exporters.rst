@@ -40,6 +40,7 @@ Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
 Item Exporters to group scraped items to different files according to the
 value of one of their fields::
 
+    from itemadapter import ItemAdapter
     from scrapy.exporters import XmlItemExporter
 
     class PerYearXmlExportPipeline:
@@ -53,7 +54,8 @@ value of one of their fields::
                 exporter.finish_exporting()
 
         def _exporter_for_item(self, item):
-            year = item['year']
+            adapter = ItemAdapter(item)
+            year = adapter['year']
             if year not in self.year_to_exporter:
                 f = open('{}.xml'.format(year), 'wb')
                 exporter = XmlItemExporter(f)
@@ -167,9 +169,10 @@ BaseItemExporter
       value unchanged except for ``unicode`` values which are encoded to
       ``str`` using the encoding declared in the :attr:`encoding` attribute.
 
-      :param field: the field being serialized. If a raw dict is being
-          exported (not :class:`~.Item`) *field* value is an empty dict.
-      :type field: :class:`~scrapy.item.Field` object or an empty dict
+      :param field: the field being serialized. If the source :ref:`item object
+          <item-types>` does not define field metadata, *field* is an empty
+          :class:`dict`.
+      :type field: :class:`~scrapy.item.Field` object or a :class:`dict` instance
 
       :param name: the name of the field being serialized
       :type name: str
@@ -207,10 +210,10 @@ BaseItemExporter
               {'field1': 'Field 1', 'field2': 'Field 2'}
 
       .. [1] Not all exporters respect the specified field order.
-      .. [2] If you yield items as dicts (not :class:`Item` instances),
-             exporters that need to know the fields to export beforehand, like
-             :class:`CsvItemExporter`, only export the fields found in the
-             first item.
+      .. [2] When using :ref:`item objects <item-types>` that do not expose
+             all their possible fields, exporters that do not support exporting
+             a different subset of fields per item will only export the fields 
+             found in the first item exported.
       .. [3] Dicts preserve insertion order since `Python 3.7`_
              (`CPython 3.6`_, `PyPy 2.5`_). If you are using an older version
              of Python, use an OrderedDict_ to enforce a specific field order.
@@ -255,9 +258,9 @@ PythonItemExporter
 XmlItemExporter
 ---------------
 
-.. class:: XmlItemExporter(file, item_element='item', root_element='items', \**kwargs)
+.. class:: XmlItemExporter(file, item_element='item', root_element='items', **kwargs)
 
-   Exports Items in XML format to the specified file object.
+   Exports items in XML format to the specified file object.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -309,9 +312,9 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', \**kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', **kwargs)
 
-   Exports Items in CSV format to the given file-like object. If the
+   Exports items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
    CSV columns, their order and their column names. The
    :attr:`export_empty_fields` attribute has no effect on this exporter.
@@ -342,9 +345,9 @@ CsvItemExporter
 PickleItemExporter
 ------------------
 
-.. class:: PickleItemExporter(file, protocol=0, \**kwargs)
+.. class:: PickleItemExporter(file, protocol=0, **kwargs)
 
-   Exports Items in pickle format to the given file-like object.
+   Exports items in pickle format to the given file-like object.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -362,9 +365,9 @@ PickleItemExporter
 PprintItemExporter
 ------------------
 
-.. class:: PprintItemExporter(file, \**kwargs)
+.. class:: PprintItemExporter(file, **kwargs)
 
-   Exports Items in pretty print format to the specified file object.
+   Exports items in pretty print format to the specified file object.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
@@ -382,9 +385,9 @@ PprintItemExporter
 JsonItemExporter
 ----------------
 
-.. class:: JsonItemExporter(file, \**kwargs)
+.. class:: JsonItemExporter(file, **kwargs)
 
-   Exports Items in JSON format to the specified file-like object, writing all
+   Exports items in JSON format to the specified file-like object, writing all
    objects as a list of objects. The additional ``__init__`` method arguments are
    passed to the :class:`BaseItemExporter` ``__init__`` method, and the leftover
    arguments to the :class:`~json.JSONEncoder` ``__init__`` method, so you can use any
@@ -411,9 +414,9 @@ JsonItemExporter
 JsonLinesItemExporter
 ---------------------
 
-.. class:: JsonLinesItemExporter(file, \**kwargs)
+.. class:: JsonLinesItemExporter(file, **kwargs)
 
-   Exports Items in JSON format to the specified file-like object, writing one
+   Exports items in JSON format to the specified file-like object, writing one
    JSON-encoded item per line. The additional ``__init__`` method arguments are passed
    to the :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to
    the :class:`~json.JSONEncoder` ``__init__`` method, so you can use any
