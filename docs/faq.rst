@@ -69,7 +69,7 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy is supported under Python 3.5+
+Scrapy is supported under Python 3.5.2+
 under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
 Python 3 support was added in Scrapy 1.1.
 PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
@@ -343,15 +343,15 @@ method for this purpose. For example::
 
     from copy import deepcopy
 
-    from scrapy.item import BaseItem
-
+    from itemadapter import is_item, ItemAdapter
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (BaseItem, dict)):
-                    for _ in range(item['multiply_by']):
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
@@ -370,6 +370,19 @@ How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()
 This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
 Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
 different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+
+
+.. _faq-stop-response-download:
+
+How can I cancel the download of a given response?
+--------------------------------------------------
+
+In some situations, it might be useful to stop the download of a certain response.
+For instance, if you only need the first part of a large response and you would like
+to save resources by avoiding the download of the whole body.
+In that case, you could attach a handler to the :class:`~scrapy.signals.bytes_received`
+signal and raise a :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to
+the :ref:`topics-stop-response-download` topic for additional information and examples.
 
 
 Running ``runspider`` I get ``error: No spider found in file: <filename>``

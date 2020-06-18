@@ -270,7 +270,9 @@ class FeedExporter:
             if not slot.itemcount and not slot.store_empty:
                 # We need to call slot.storage.store nonetheless to get the file
                 # properly closed.
-                return defer.maybeDeferred(slot.storage.store, slot.file)
+                d = defer.maybeDeferred(slot.storage.store, slot.file)
+                deferred_list.append(d)
+                continue
             slot.finish_exporting()
             logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
             log_args = {'format': slot.format,
