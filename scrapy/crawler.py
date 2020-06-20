@@ -4,7 +4,15 @@ import signal
 import warnings
 
 from twisted.internet import defer
-from zope.interface.verify import DoesNotImplement, verifyClass
+from zope.interface.exceptions import DoesNotImplement
+
+try:
+    # zope >= 5.0 only supports MultipleInvalid
+    from zope.interface.exceptions import MultipleInvalid
+except ImportError:
+    MultipleInvalid = None
+
+from zope.interface.verify import verifyClass
 
 from scrapy import signals, Spider
 from scrapy.core.engine import ExecutionEngine
@@ -70,7 +78,8 @@ class Crawler:
 
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):
-        assert not self.crawling, "Crawling already taking place"
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
         self.crawling = True
 
         try:
@@ -124,9 +133,10 @@ class CrawlerRunner:
         """ Get SpiderLoader instance from settings """
         cls_path = settings.get('SPIDER_LOADER_CLASS')
         loader_cls = load_object(cls_path)
+        excs = (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
         try:
             verifyClass(ISpiderLoader, loader_cls)
-        except DoesNotImplement:
+        except excs:
             warnings.warn(
                 'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
                 'not fully implement scrapy.interfaces.ISpiderLoader interface. '

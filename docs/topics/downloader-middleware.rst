@@ -202,6 +202,11 @@ CookiesMiddleware
    sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
+   .. caution:: When non-UTF8 encoded byte sequences are passed to a
+      :class:`~scrapy.http.Request`, the ``CookiesMiddleware`` will log
+      a warning. Refer to :ref:`topics-logging-advanced-customization`
+      to customize the logging behaviour.
+
 The following settings can be used to configure the cookie middleware:
 
 * :setting:`COOKIES_ENABLED`
@@ -739,7 +744,7 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
-   Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
+   Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
 
    * ``http_proxy``
@@ -750,9 +755,6 @@ HttpProxyMiddleware
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
-
-.. _urllib: https://docs.python.org/2/library/urllib.html
-.. _urllib2: https://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -829,6 +831,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
+After this maximum, the request's response is returned as is.
 
 MetaRefreshMiddleware
 ---------------------
@@ -1036,8 +1039,7 @@ Scrapy uses this parser by default.
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-Based on `RobotFileParser
-<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+Based on :class:`~urllib.robotparser.RobotFileParser`:
 
 * is Python's built-in robots.txt_ parser
 

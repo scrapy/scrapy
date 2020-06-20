@@ -88,8 +88,11 @@ def process_chain_both(callbacks, errbacks, input, *a, **kw):
     """Return a Deferred built by chaining the given callbacks and errbacks"""
     d = defer.Deferred()
     for cb, eb in zip(callbacks, errbacks):
-        d.addCallbacks(cb, eb, callbackArgs=a, callbackKeywords=kw,
-            errbackArgs=a, errbackKeywords=kw)
+        d.addCallbacks(
+            callback=cb, errback=eb,
+            callbackArgs=a, callbackKeywords=kw,
+            errbackArgs=a, errbackKeywords=kw,
+        )
     if isinstance(input, failure.Failure):
         d.errback(input)
     else:

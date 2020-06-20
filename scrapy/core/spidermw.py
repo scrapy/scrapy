@@ -19,7 +19,7 @@ def _isiterable(possible_iterator):
 
 
 def _fname(f):
-    return "%s.%s".format(
+    return "{}.{}".format(
         f.__self__.__class__.__name__,
         f.__func__.__name__
     )
