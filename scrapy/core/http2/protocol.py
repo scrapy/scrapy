@@ -1,3 +1,4 @@
+import ipaddress
 import itertools
 import logging
 from collections import deque
@@ -5,7 +6,7 @@ from collections import deque
 from h2.config import H2Configuration
 from h2.connection import H2Connection
 from h2.events import (
-    ConnectionTerminated, DataReceived, ResponseReceived,
+    DataReceived, ResponseReceived, SettingsAcknowledged,
     StreamEnded, StreamReset, WindowUpdated
 )
 from twisted.internet.protocol import connectionDone, Protocol
@@ -49,6 +50,13 @@ class H2ClientProtocol(Protocol):
         self.is_connection_made = False
         self._pending_request_stream_pool = deque()
 
+        # Some meta data of this connection
+        # initialized when connection is successfully made
+        self._metadata = {
+            'certificate': None,
+            'ip_address': None
+        }
+
     def _stream_close_cb(self, stream_id: int):
         """Called when stream is closed completely
         """
@@ -63,6 +71,7 @@ class H2ClientProtocol(Protocol):
             stream_id=stream_id,
             request=request,
             connection=self.conn,
+            metadata=self._metadata,
             write_to_transport=self._write_to_transport,
             cb_close=self._stream_close_cb
         )
@@ -73,7 +82,7 @@ class H2ClientProtocol(Protocol):
     def _send_pending_requests(self):
         # TODO: handle MAX_CONCURRENT_STREAMS
         # Initiate all pending requests
-        while len(self._pending_request_stream_pool):
+        while self._pending_request_stream_pool:
             stream = self._pending_request_stream_pool.popleft()
             stream.initiate_request()
 
@@ -83,6 +92,8 @@ class H2ClientProtocol(Protocol):
         """
         data = self.conn.data_to_send()
         self.transport.write(data)
+
+        LOGGER.debug("Sent {} bytes to {} via transport".format(len(data), self._metadata['ip_address']))
 
     def request(self, _request: Request):
         stream = self._new_stream(_request)
@@ -101,16 +112,15 @@ class H2ClientProtocol(Protocol):
         """Called by Twisted when the connection is established. We can start
         sending some data now: we should open with the connection preamble.
         """
-        self.destination = self.transport.connector.getDestination()
+        self.destination = self.transport.getPeer()
         LOGGER.info('Connection made to {}'.format(self.destination))
+
+        self._metadata['certificate'] = self.transport.getPeerCertificate()
+        self._metadata['ip_address'] = ipaddress.ip_address(self.destination.host)
 
         self.conn.initiate_connection()
         self._write_to_transport()
         self.is_connection_made = True
-
-        # Send off all the pending requests
-        # as now we have established a proper HTTP/2 connection
-        self._send_pending_requests()
 
     def dataReceived(self, data):
         events = self.conn.receive_data(data)
@@ -123,7 +133,7 @@ class H2ClientProtocol(Protocol):
         """
         # Pop all streams which were pending and were not yet started
         for stream_id in list(self.streams):
-            self.streams[stream_id].lost_connection()
+            self.streams[stream_id].close()
 
         self.conn.close_connection()
 
@@ -139,9 +149,7 @@ class H2ClientProtocol(Protocol):
         """
         for event in events:
             LOGGER.debug(event)
-            if isinstance(event, ConnectionTerminated):
-                self.connection_terminated(event)
-            elif isinstance(event, DataReceived):
+            if isinstance(event, DataReceived):
                 self.data_received(event)
             elif isinstance(event, ResponseReceived):
                 self.response_received(event)
@@ -151,13 +159,12 @@ class H2ClientProtocol(Protocol):
                 self.stream_reset(event)
             elif isinstance(event, WindowUpdated):
                 self.window_updated(event)
+            elif isinstance(event, SettingsAcknowledged):
+                self.settings_acknowledged(event)
             else:
                 LOGGER.info("Received unhandled event {}".format(event))
 
     # Event handler functions starts here
-    def connection_terminated(self, event: ConnectionTerminated):
-        pass
-
     def data_received(self, event: DataReceived):
         stream_id = event.stream_id
         self.streams[stream_id].receive_data(event.data, event.flow_controlled_length)
@@ -166,20 +173,26 @@ class H2ClientProtocol(Protocol):
         stream_id = event.stream_id
         self.streams[stream_id].receive_headers(event.headers)
 
+    def settings_acknowledged(self, event: SettingsAcknowledged):
+        # Send off all the pending requests
+        # as now we have established a proper HTTP/2 connection
+        self._send_pending_requests()
+
     def stream_ended(self, event: StreamEnded):
         stream_id = event.stream_id
-        self.streams[stream_id].end_stream()
+        self.streams[stream_id].close()
 
     def stream_reset(self, event: StreamReset):
         # TODO: event.stream_id was abruptly closed
         #  Q. What should be the response? (Failure/Partial/???)
-        self.streams[event.stream_id].reset()
+        self.streams[event.stream_id].close(event)
 
     def window_updated(self, event: WindowUpdated):
         stream_id = event.stream_id
         if stream_id != 0:
             self.streams[stream_id].receive_window_update(event.delta)
         else:
-            # TODO:
-            #  Q. What to do when StreamID=0 ?
-            pass
+            # Send leftover data for all the streams
+            for stream in self.streams.values():
+                if stream.request_sent:
+                    stream.send_data()
