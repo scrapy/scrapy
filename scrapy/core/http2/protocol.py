@@ -11,7 +11,7 @@ from h2.events import (
 )
 from twisted.internet.protocol import connectionDone, Protocol
 
-from scrapy.core.http2.stream import Stream
+from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.http import Request
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class H2ClientProtocol(Protocol):
             stream_id=stream_id,
             request=request,
             connection=self.conn,
-            metadata=self._metadata,
+            conn_metadata=self._metadata,
             write_to_transport=self._write_to_transport,
             cb_close=self._stream_close_cb
         )
@@ -133,7 +133,7 @@ class H2ClientProtocol(Protocol):
         """
         # Pop all streams which were pending and were not yet started
         for stream_id in list(self.streams):
-            self.streams[stream_id].close()
+            self.streams[stream_id].close(StreamCloseReason.CONNECTION_LOST)
 
         self.conn.close_connection()
 
@@ -180,19 +180,18 @@ class H2ClientProtocol(Protocol):
 
     def stream_ended(self, event: StreamEnded):
         stream_id = event.stream_id
-        self.streams[stream_id].close()
+        self.streams[stream_id].close(StreamCloseReason.ENDED)
 
     def stream_reset(self, event: StreamReset):
         # TODO: event.stream_id was abruptly closed
         #  Q. What should be the response? (Failure/Partial/???)
-        self.streams[event.stream_id].close(event)
+        self.streams[event.stream_id].close(StreamCloseReason.RESET)
 
     def window_updated(self, event: WindowUpdated):
         stream_id = event.stream_id
         if stream_id != 0:
-            self.streams[stream_id].receive_window_update(event.delta)
+            self.streams[stream_id].receive_window_update()
         else:
             # Send leftover data for all the streams
             for stream in self.streams.values():
-                if stream.request_sent:
-                    stream.send_data()
+                stream.receive_window_update()
