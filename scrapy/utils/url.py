@@ -27,8 +27,7 @@ def url_is_from_any_domain(url, domains):
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(url,
-        [spider.name] + list(getattr(spider, 'allowed_domains', [])))
+    return url_is_from_any_domain(url, [spider.name] + list(getattr(spider, 'allowed_domains', [])))
 
 
 def url_has_any_extension(url, extensions):

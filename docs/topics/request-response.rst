@@ -189,6 +189,10 @@ Request objects
         cloned using the ``copy()`` or ``replace()`` methods, and can also be
         accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
+        In case of a failure to process the request, this dict can be accessed as
+        ``failure.request.cb_kwargs`` in the request's errback. For more information,
+        see :ref:`topics-request-response-ref-accessing-callback-arguments-in-errback`.
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -312,6 +316,31 @@ errors if needed::
                 request = failure.request
                 self.logger.error('TimeoutError on %s', request.url)
 
+.. _topics-request-response-ref-accessing-callback-arguments-in-errback:
+
+Accessing additional data in errback functions
+----------------------------------------------
+
+In case of a failure to process the request, you may be interested in
+accessing arguments to the callback functions so you can process further
+based on the arguments in the errback. The following example shows how to
+achieve this by using ``Failure.request.cb_kwargs``::
+
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 errback=self.errback_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        yield request
+
+    def parse_page2(self, response, main_url):
+        pass
+
+    def errback_page2(self, failure):
+        yield dict(
+            main_url=failure.request.cb_kwargs['main_url'],
+        )
+
 .. _topics-request-meta:
 
 Request.meta special keys
@@ -384,6 +413,51 @@ max_retry_times
 The meta key is used set retry times per request. When initialized, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+
+.. _topics-stop-response-download:
+
+Stopping the download of a Response
+===================================
+
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
+:class:`~scrapy.signals.bytes_received` signal handler will stop the
+download of a given response. See the following example::
+
+    import scrapy
+
+
+    class StopSpider(scrapy.Spider):
+        name = "stop"
+        start_urls = ["https://docs.scrapy.org/en/latest/"]
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            spider = super().from_crawler(crawler)
+            crawler.signals.connect(spider.on_bytes_received, signal=scrapy.signals.bytes_received)
+            return spider
+
+        def parse(self, response):
+            # 'last_chars' show that the full response was not downloaded
+            yield {"len": len(response.text), "last_chars": response.text[-40:]}
+
+        def on_bytes_received(self, data, request, spider):
+            raise scrapy.exceptions.StopDownload(fail=False)
+
+which produces the following output::
+
+    2020-05-19 17:26:12 [scrapy.core.engine] INFO: Spider opened
+    2020-05-19 17:26:12 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2020-05-19 17:26:13 [scrapy.core.downloader.handlers.http11] DEBUG: Download stopped for <GET https://docs.scrapy.org/en/latest/> from signal handler StopSpider.on_bytes_received
+    2020-05-19 17:26:13 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://docs.scrapy.org/en/latest/> (referer: None) ['download_stopped']
+    2020-05-19 17:26:13 [scrapy.core.scraper] DEBUG: Scraped from <200 https://docs.scrapy.org/en/latest/>
+    {'len': 279, 'last_chars': 'dth, initial-scale=1.0">\n  \n  <title>Scr'}
+    2020-05-19 17:26:13 [scrapy.core.engine] INFO: Closing spider (finished)
+
+By default, resulting responses are handled by their corresponding errbacks. To
+call their callback instead, like in this example, pass ``fail=False`` to the
+:exc:`~scrapy.exceptions.StopDownload` exception.
+
 
 .. _topics-request-response-ref-request-subclasses:
 
@@ -716,9 +790,9 @@ Response objects
         .. versionadded:: 2.1.0
 
         The IP address of the server from which the Response originated.
-        
+
         This attribute is currently only populated by the HTTP 1.1 download
-        handler, i.e. for ``http(s)`` responses. For other handlers, 
+        handler, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
 
     .. method:: Response.copy()
@@ -834,10 +908,10 @@ TextResponse objects
 
     .. automethod:: TextResponse.follow_all
 
-    .. method:: TextResponse.body_as_unicode()
+    .. automethod:: TextResponse.json()
 
-        The same as :attr:`text`, but available as a method. This method is
-        kept for backward compatibility; please prefer ``response.text``.
+        Returns a Python object from deserialized JSON document.
+        The result is cached after the first call.
 
 
 HtmlResponse objects

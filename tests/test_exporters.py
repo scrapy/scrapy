@@ -111,7 +111,10 @@ class PythonItemExporterTest(BaseItemExporterTest):
         ie = self._get_exporter()
         exported = ie.export_item(i3)
         self.assertEqual(type(exported), dict)
-        self.assertEqual(exported, {'age': {'age': {'age': '22', 'name': u'Joseph'}, 'name': u'Maria'}, 'name': 'Jesus'})
+        self.assertEqual(
+            exported,
+            {'age': {'age': {'age': '22', 'name': u'Joseph'}, 'name': u'Maria'}, 'name': 'Jesus'}
+        )
         self.assertEqual(type(exported['age']), dict)
         self.assertEqual(type(exported['age']['age']), dict)
 
@@ -121,7 +124,10 @@ class PythonItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'Jesus', age=[i2])
         ie = self._get_exporter()
         exported = ie.export_item(i3)
-        self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
+        self.assertEqual(
+            exported,
+            {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'}
+        )
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
 
@@ -131,7 +137,10 @@ class PythonItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'Jesus', age=[i2])
         ie = self._get_exporter()
         exported = ie.export_item(i3)
-        self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
+        self.assertEqual(
+            exported,
+            {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'}
+        )
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
 
@@ -328,13 +337,19 @@ class XmlItemExporterTest(BaseItemExporterTest):
         self.assertXmlEquivalent(fp.getvalue(), expected_value)
 
     def _check_output(self):
-        expected_value = b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
+        expected_value = (
+            b'<?xml version="1.0" encoding="utf-8"?>\n'
+            b'<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
+        )
         self.assertXmlEquivalent(self.output.getvalue(), expected_value)
 
     def test_multivalued_fields(self):
         self.assertExportResult(
             TestItem(name=[u'John\xa3', u'Doe']),
-            b'<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
+            (
+                b'<?xml version="1.0" encoding="utf-8"?>\n'
+                b'<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
+            )
         )
 
     def test_nested_item(self):
