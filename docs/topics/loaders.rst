@@ -25,7 +25,7 @@ Using Item Loaders to populate items
 
 To use an Item Loader, you must first instantiate it. You can either
 instantiate it with an :ref:`item object <topics-items>` or without one, in which
-case an instance of :class:`~scrapy.item.Item` is automatically created in the
+case an :ref:`item object <topics-items>` is automatically created in the
 Item Loader ``__init__`` method using the :ref:`item <topics-items>` class
 specified in the :attr:`ItemLoader.default_item_class` attribute.
 
