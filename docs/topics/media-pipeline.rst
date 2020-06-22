@@ -204,7 +204,6 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 Google Cloud Storage
 ---------------------
 
-.. setting:: GCS_PROJECT_ID
 .. setting:: FILES_STORE_GCS_ACL
 .. setting:: IMAGES_STORE_GCS_ACL
 
