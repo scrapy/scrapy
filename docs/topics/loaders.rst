@@ -84,9 +84,11 @@ Working with dataclass items
 
 By default, :ref:`dataclass items <dataclass-items>` require all fields to be
 passed when created. This could be an issue when using dataclass items with
-item loaders, since fields could be populated incrementally.
+item loaders: unless a pre-populated item is passed to the loader, fields
+will be populated incrementally using the loader's :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css` and :meth:`~ItemLoader.add_value` methods.
 
-Given the way that item loaders store data internally, the recommended approach
+Given the way that item loaders store data internally, one approach
 to overcome this is to define items using the :func:`~dataclasses.field`
 function, with ``list`` as the ``default_factory`` argument::
 
