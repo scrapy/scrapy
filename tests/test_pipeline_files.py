@@ -2,22 +2,41 @@ import os
 import random
 import time
 from io import BytesIO
-from tempfile import mkdtemp
 from shutil import rmtree
-from unittest import mock
+from tempfile import mkdtemp
+from unittest import mock, skipIf
 from urllib.parse import urlparse
 
-from twisted.trial import unittest
+import attr
+from itemadapter import ItemAdapter
 from twisted.internet import defer
+from twisted.trial import unittest
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore, FTPFilesStore
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
+from scrapy.item import Field, Item
+from scrapy.pipelines.files import (
+    FilesPipeline,
+    FSFilesStore,
+    FTPFilesStore,
+    GCSFilesStore,
+    S3FilesStore,
+)
 from scrapy.settings import Settings
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
-from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
-from scrapy.utils.test import get_ftp_content_and_delete
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.test import (
+    assert_aws_environ,
+    assert_gcs_environ,
+    get_ftp_content_and_delete,
+    get_gcs_content_and_delete,
+    get_s3_content_and_delete,
+)
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
 
 
 def _mocked_download_func(request, info):
@@ -143,43 +162,88 @@ class FilesPipelineTestCase(unittest.TestCase):
             p.stop()
 
 
-class FilesPipelineTestCaseFields(unittest.TestCase):
+class FilesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
-        class TestItem(Item):
-            name = Field()
-            file_urls = Field()
-            files = Field()
-
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/files/1.txt'
-            item = cls({'name': 'item1', 'file_urls': [url]})
-            pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['files'], [results[0][1]])
+        url = 'http://www.example.com/files/1.txt'
+        item = self.item_class(name='item1', file_urls=[url])
+        pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        files = ItemAdapter(item).get("files")
+        self.assertEqual(files, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
-        class TestItem(Item):
-            name = Field()
-            files = Field()
-            stored_file = Field()
+        url = 'http://www.example.com/files/1.txt'
+        item = self.item_class(name='item1', custom_file_urls=[url])
+        pipeline = FilesPipeline.from_settings(Settings({
+            'FILES_STORE': 's3://example/files/',
+            'FILES_URLS_FIELD': 'custom_file_urls',
+            'FILES_RESULT_FIELD': 'custom_files'
+        }))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        custom_files = ItemAdapter(item).get("custom_files")
+        self.assertEqual(custom_files, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/files/1.txt'
-            item = cls({'name': 'item1', 'files': [url]})
-            pipeline = FilesPipeline.from_settings(Settings({
-                'FILES_STORE': 's3://example/files/',
-                'FILES_URLS_FIELD': 'files',
-                'FILES_RESULT_FIELD': 'stored_file'
-            }))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['stored_file'], [results[0][1]])
+
+class FilesPipelineTestCaseFieldsDict(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = dict
+
+
+class FilesPipelineTestItem(Item):
+    name = Field()
+    # default fields
+    file_urls = Field()
+    files = Field()
+    # overridden fields
+    custom_file_urls = Field()
+    custom_files = Field()
+
+
+class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestItem
+
+
+@skipIf(not make_dataclass, "dataclasses module is not available")
+class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "FilesPipelineTestDataClass",
+                [
+                    ("name", str),
+                    # default fields
+                    ("file_urls", list, dataclass_field(default_factory=list)),
+                    ("files", list, dataclass_field(default_factory=list)),
+                    # overridden fields
+                    ("custom_file_urls", list, dataclass_field(default_factory=list)),
+                    ("custom_files", list, dataclass_field(default_factory=list)),
+                ],
+            )
+
+
+@attr.s
+class FilesPipelineTestAttrsItem:
+    name = attr.ib(default="")
+    # default fields
+    file_urls = attr.ib(default=lambda: [])
+    files = attr.ib(default=lambda: [])
+    # overridden fields
+    custom_file_urls = attr.ib(default=lambda: [])
+    custom_files = attr.ib(default=lambda: [])
+
+
+class FilesPipelineTestCaseFieldsAttrsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestAttrsItem
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):

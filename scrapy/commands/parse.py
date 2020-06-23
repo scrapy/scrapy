@@ -1,11 +1,11 @@
 import json
 import logging
 
+from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
-from scrapy.item import _BaseItem
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([dict(x) for x in items], colorize=colour)
+        display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
         if lvl is None:
@@ -117,7 +117,7 @@ class Command(ScrapyCommand):
         items, requests = [], []
 
         for x in iterate_spider_output(callback(response, **cb_kwargs)):
-            if isinstance(x, (_BaseItem, dict)):
+            if is_item(x):
                 items.append(x)
             elif isinstance(x, Request):
                 requests.append(x)

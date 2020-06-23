@@ -334,10 +334,10 @@ class MutableChain:
     """
 
     def __init__(self, *args):
-        self.data = chain(*args)
+        self.data = chain.from_iterable(args)
 
     def extend(self, *iterables):
-        self.data = chain(self.data, *iterables)
+        self.data = chain(self.data, chain.from_iterable(iterables))
 
     def __iter__(self):
         return self
