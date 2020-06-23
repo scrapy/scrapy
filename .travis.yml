@@ -15,6 +15,8 @@ matrix:
       python: 3.8
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
+    - env: TOXENV=typing
+      python: 3.8
 
     - env: TOXENV=pypy3
     - env: TOXENV=pinned
