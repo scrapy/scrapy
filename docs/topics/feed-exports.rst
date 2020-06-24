@@ -298,8 +298,8 @@ Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
 
 Use FEED_EXPORT_FIELDS option to define fields to export and their order.
 
-When FEED_EXPORT_FIELDS is empty or None (default), Scrapy uses fields
-defined in dicts or :class:`~.Item` subclasses a spider is yielding.
+When FEED_EXPORT_FIELDS is empty or None (default), Scrapy uses the fields
+defined in :ref:`item objects <topics-items>` yielded by your spider.
 
 If an exporter requires a fixed set of fields (this is the case for
 :ref:`CSV <topics-feed-format-csv>` export format) and FEED_EXPORT_FIELDS

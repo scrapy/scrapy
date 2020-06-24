@@ -342,15 +342,15 @@ method for this purpose. For example::
 
     from copy import deepcopy
 
-    from scrapy.item import Item
-
+    from itemadapter import is_item, ItemAdapter
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (Item, dict)):
-                    for _ in range(item['multiply_by']):
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
