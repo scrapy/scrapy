@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.2.0:
 
-Scrapy 2.2.0 (2020-06-??)
+Scrapy 2.2.0 (2020-06-24)
 -------------------------
 
 Highlights:
@@ -45,7 +45,7 @@ New features
     :ref:`attrs objects <attrs-items>` are now valid :ref:`item types
     <item-types>`, and a new itemadapter_ library makes it easy to
     write code that :ref:`supports any item type <supporting-item-types>`
-    (:issue:`2749`, :issue:`2807`, :issue:`3761`, :issue:`3881`)
+    (:issue:`2749`, :issue:`2807`, :issue:`3761`, :issue:`3881`, :issue:`4642`)
 
 *   A new :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method
     allows to deserialize JSON responses (:issue:`2444`, :issue:`4460`,
@@ -112,6 +112,11 @@ Bug fixes
 *   Fix a :exc:`KeyError` exception being sometimes raised from
     :class:`scrapy.utils.datatypes.LocalWeakReferencedCache` (:issue:`4597`,
     :issue:`4599`)
+
+*   When :setting:`FEEDS` defines multiple URIs, log messages about items being
+    stored now contain information from the corresponding feed, instead of
+    always containing information about only one of the feeds (:issue:`4619`,
+    :issue:`4629`)
 
 
 Documentation
@@ -184,6 +189,8 @@ Quality assurance
 
 *   Added a `Pylint <https://www.pylint.org/>`_ job to Travis CI
     (:issue:`3727`)
+
+*   Added a `Mypy <http://mypy-lang.org/>`_ job to Travis CI (:issue:`4637`)
 
 *   Made use of set literals in tests (:issue:`4573`)
 
