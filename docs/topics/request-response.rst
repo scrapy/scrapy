@@ -191,7 +191,7 @@ Request objects
 
         In case of a failure to process the request, this dict can be accessed as
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
-        see :ref:`topics-request-response-ref-accessing-callback-arguments-in-errback`.
+        see :ref:`errback-cb_kwargs`.
 
     .. method:: Request.copy()
 
@@ -317,7 +317,7 @@ errors if needed::
                 self.logger.error('TimeoutError on %s', request.url)
 
 
-.. _topics-request-response-ref-accessing-callback-arguments-in-errback:
+.. _errback-cb_kwargs:
 
 Accessing additional data in errback functions
 ----------------------------------------------

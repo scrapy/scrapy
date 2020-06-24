@@ -25,8 +25,8 @@ Using Item Loaders to populate items
 
 To use an Item Loader, you must first instantiate it. You can either
 instantiate it with an :ref:`item object <topics-items>` or without one, in which
-case an instance of :class:`~scrapy.item.Item` is automatically created in the
-Item Loader ``__init__`` method using the :class:`~scrapy.item.Item` subclass
+case an :ref:`item object <topics-items>` is automatically created in the
+Item Loader ``__init__`` method using the :ref:`item <topics-items>` class
 specified in the :attr:`ItemLoader.default_item_class` attribute.
 
 Then, you start collecting values into the Item Loader, typically using
@@ -75,6 +75,43 @@ Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
 called which actually returns the item populated with the data
 previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 :meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
+
+
+.. _topics-loaders-dataclass:
+
+Working with dataclass items
+============================
+
+By default, :ref:`dataclass items <dataclass-items>` require all fields to be
+passed when created. This could be an issue when using dataclass items with
+item loaders: unless a pre-populated item is passed to the loader, fields
+will be populated incrementally using the loader's :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css` and :meth:`~ItemLoader.add_value` methods.
+
+Given the way that item loaders store data internally, one approach
+to overcome this is to define items using the :func:`~dataclasses.field`
+function, with ``list`` as the ``default_factory`` argument::
+
+    from dataclasses import dataclass, field
+
+    @dataclass
+    class InventoryItem:
+        name: str = field(default_factory=list)
+        price: float = field(default_factory=list)
+        stock: int = field(default_factory=list)
+
+Note that in order to keep the example simple, the types do not match
+completely. A more accurate but verbose definition would be::
+
+    from dataclasses import dataclass, field
+    from typing import List, Union
+
+    @dataclass
+    class InventoryItem:
+        name: Union[str, List[str]] = field(default_factory=list)
+        price: Union[float, List[float]] = field(default_factory=list)
+        stock: Union[int, List[int]] = field(default_factory=list)
+
 
 .. _topics-loaders-processors:
 
