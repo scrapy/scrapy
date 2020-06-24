@@ -9,6 +9,8 @@ from h2.events import (
     DataReceived, ResponseReceived, SettingsAcknowledged,
     StreamEnded, StreamReset, WindowUpdated
 )
+
+from twisted.internet.ssl import Certificate
 from twisted.internet.protocol import connectionDone, Protocol
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
@@ -115,7 +117,7 @@ class H2ClientProtocol(Protocol):
         self.destination = self.transport.getPeer()
         LOGGER.info('Connection made to {}'.format(self.destination))
 
-        self._metadata['certificate'] = self.transport.getPeerCertificate()
+        self._metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
         self._metadata['ip_address'] = ipaddress.ip_address(self.destination.host)
 
         self.conn.initiate_connection()

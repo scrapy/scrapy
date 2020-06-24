@@ -117,7 +117,7 @@ class Stream:
         self._deferred_response = Deferred()
 
     def __str__(self):
-        return "Stream(id={})".format(self.stream_id)
+        return "Stream(id={})".format(repr(self.stream_id))
 
     __repr__ = __str__
 
@@ -299,9 +299,6 @@ class Stream:
     def close(self, reason: StreamCloseReason):
         """Based on the reason sent we will handle each case.
         """
-        # TODO: In case of abruptly stream close
-        #  Q1. Do we need to send the request again?
-        #  Q2. What response should we send now?
         if self.stream_closed_server:
             raise StreamClosedError(self.stream_id)
 
@@ -346,10 +343,7 @@ class Stream:
         and fires the response deferred callback with the
         generated response instance"""
         # TODO:
-        #  2. Should we fire this in case of
-        #   2.1 StreamReset in between when data is received partially
-        #   2.2 Forcefully closed the stream
-        #  3. Update Client Side Status Codes here
+        #  1. Update Client Side Status Codes here
 
         response_cls = responsetypes.from_args(
             headers=self._response['headers'],
