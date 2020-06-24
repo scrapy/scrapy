@@ -202,6 +202,11 @@ CookiesMiddleware
    sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
+   .. caution:: When non-UTF8 encoded byte sequences are passed to a
+      :class:`~scrapy.http.Request`, the ``CookiesMiddleware`` will log
+      a warning. Refer to :ref:`topics-logging-advanced-customization`
+      to customize the logging behaviour.
+
 The following settings can be used to configure the cookie middleware:
 
 * :setting:`COOKIES_ENABLED`

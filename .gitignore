@@ -17,6 +17,7 @@ htmlcov/
 .cache/
 /docs/locales/pot/.doctrees/
 /docs/locales/*/LC_MESSAGES/**/*.mo
+.mypy_cache/
 
 # Windows
 Thumbs.db

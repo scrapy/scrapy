@@ -217,11 +217,9 @@ class ExecutionEngine:
         self.slot.nextcall.schedule()
 
     def schedule(self, request, spider):
-        self.signals.send_catch_log(signal=signals.request_scheduled,
-                request=request, spider=spider)
+        self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
         if not self.slot.scheduler.enqueue_request(request):
-            self.signals.send_catch_log(signal=signals.request_dropped,
-                                        request=request, spider=spider)
+            self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
 
     def download(self, request, spider):
         d = self._download(request, spider)
@@ -247,8 +245,8 @@ class ExecutionEngine:
                 logkws = self.logformatter.crawled(request, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-                self.signals.send_catch_log(signal=signals.response_received,
-                    response=response, request=request, spider=spider)
+                self.signals.send_catch_log(signals.response_received,
+                                            response=response, request=request, spider=spider)
             return response
 
         def _on_complete(_):
@@ -286,8 +284,7 @@ class ExecutionEngine:
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle,
-            spider=spider, dont_log=DontCloseSpider)
+        res = self.signals.send_catch_log(signals.spider_idle, spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return
 
