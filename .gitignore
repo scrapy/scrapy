@@ -15,6 +15,7 @@ htmlcov/
 .pytest_cache/
 .coverage.*
 .cache/
+.mypy_cache/
 
 # Windows
 Thumbs.db

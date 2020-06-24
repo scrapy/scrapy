@@ -74,6 +74,8 @@ class TextResponse(Response):
 
     def json(self):
         """
+        .. versionadded:: 2.2
+
         Deserialize a JSON document to a Python object.
         """
         if self._cached_decoded_json is _NONE:
