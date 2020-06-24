@@ -5,6 +5,8 @@ from scrapy import Request, signals
 from scrapy.crawler import CrawlerRunner
 from scrapy.http.response import Response
 
+from testfixtures import LogCapture
+
 from tests.mockserver import MockServer
 from tests.spiders import SingleRequestSpider
 
@@ -161,3 +163,19 @@ class CrawlTestCase(TestCase):
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         self.assertEqual(signal_params["response"].url, url)
         self.assertEqual(signal_params["request"].url, OVERRIDEN_URL)
+
+    @defer.inlineCallbacks
+    def test_crawled_log_message(self):
+        url = self.mockserver.url("/status?n=200")
+        runner = CrawlerRunner(settings={
+            "DOWNLOADER_MIDDLEWARES": {
+                __name__ + ".ProcessResponseMiddleware": 595,
+            }
+        })
+        crawler = runner.create_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        print(log)
+        log.check_present(
+            ("scrapy.core.engine", "DEBUG", "Crawled (200) <GET https://example.org> (referer: None)"),
+        )
