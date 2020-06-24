@@ -9,9 +9,8 @@ from h2.events import (
     DataReceived, ResponseReceived, SettingsAcknowledged,
     StreamEnded, StreamReset, WindowUpdated
 )
-
-from twisted.internet.ssl import Certificate
 from twisted.internet.protocol import connectionDone, Protocol
+from twisted.internet.ssl import Certificate
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.http import Request
@@ -22,12 +21,7 @@ LOGGER = logging.getLogger(__name__)
 class H2ClientProtocol(Protocol):
     # TODO:
     #  1. Check for user-agent while testing
-    #  2. Add support for cookies
-    #  3. Handle priority updates (Not required)
-    #  4. Handle case when received events have StreamID = 0 (applied to H2Connection)
-    #  1 & 2:
-    #   - Automatically handled by the Request middleware
-    #   - request.headers will have 'Set-Cookie' value
+    #  2. Handle case when received events have StreamID = 0 (applied to H2Connection)
 
     def __init__(self):
         config = H2Configuration(client_side=True, header_encoding='utf-8')
@@ -185,8 +179,6 @@ class H2ClientProtocol(Protocol):
         self.streams[stream_id].close(StreamCloseReason.ENDED)
 
     def stream_reset(self, event: StreamReset):
-        # TODO: event.stream_id was abruptly closed
-        #  Q. What should be the response? (Failure/Partial/???)
         self.streams[event.stream_id].close(StreamCloseReason.RESET)
 
     def window_updated(self, event: WindowUpdated):

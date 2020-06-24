@@ -10,10 +10,19 @@ from h2.exceptions import StreamClosedError
 from twisted.internet.defer import Deferred, CancelledError
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
+# for python < 3.8 -- typing.TypedDict is undefined
+from typing_extensions import TypedDict
 
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
+
+
+class _ResponseTypedDict(TypedDict):
+    body: BytesIO
+    flow_controlled_size: int
+    headers: Headers
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -100,7 +109,7 @@ class Stream:
         # Private variable used to build the response
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
-        self._response = {
+        self._response: _ResponseTypedDict = {
             # Data received frame by frame from the server is appended
             # and passed to the response Deferred when completely received.
             'body': BytesIO(),
