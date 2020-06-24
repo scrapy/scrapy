@@ -1,7 +1,7 @@
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy import Request
+from scrapy import Request, signals
 from scrapy.crawler import CrawlerRunner
 from scrapy.http.response import Response
 
@@ -9,9 +9,12 @@ from tests.mockserver import MockServer
 from tests.spiders import SingleRequestSpider
 
 
+OVERRIDEN_URL = "https://example.org"
+
+
 class ProcessResponseMiddleware:
     def process_response(self, request, response, spider):
-        return response.replace(request=Request("https://example.org"))
+        return response.replace(request=Request(OVERRIDEN_URL))
 
 
 class RaiseExceptionMiddleware:
@@ -25,7 +28,7 @@ class CatchExceptionOverrideRequestMiddleware:
         return Response(
             url="http://localhost/",
             body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
-            request=Request("https://example.org"),
+            request=Request(OVERRIDEN_URL),
         )
 
 
@@ -95,7 +98,7 @@ class CrawlTestCase(TestCase):
         crawler = runner.create_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         response = crawler.spider.meta["responses"][0]
-        self.assertEqual(response.request.url, "https://example.org")
+        self.assertEqual(response.request.url, OVERRIDEN_URL)
 
     @defer.inlineCallbacks
     def test_downloader_middleware_override_in_process_exception(self):
@@ -116,7 +119,7 @@ class CrawlTestCase(TestCase):
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         response = crawler.spider.meta["responses"][0]
         self.assertEqual(response.body, b"Caught ZeroDivisionError")
-        self.assertEqual(response.request.url, "https://example.org")
+        self.assertEqual(response.request.url, OVERRIDEN_URL)
 
     @defer.inlineCallbacks
     def test_downloader_middleware_do_not_override_in_process_exception(self):
@@ -138,3 +141,23 @@ class CrawlTestCase(TestCase):
         response = crawler.spider.meta["responses"][0]
         self.assertEqual(response.body, b"Caught ZeroDivisionError")
         self.assertEqual(response.request.url, url)
+
+    @defer.inlineCallbacks
+    def test_response_received_signal(self):
+        signal_params = {}
+
+        def signal_handler(response, request, spider):
+            signal_params["response"] = response
+            signal_params["request"] = request
+
+        url = self.mockserver.url("/status?n=200")
+        runner = CrawlerRunner(settings={
+            "DOWNLOADER_MIDDLEWARES": {
+                __name__ + ".ProcessResponseMiddleware": 595,
+            }
+        })
+        crawler = runner.create_crawler(SingleRequestSpider)
+        crawler.signals.connect(signal_handler, signal=signals.response_received)
+        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        self.assertEqual(signal_params["response"].url, url)
+        self.assertEqual(signal_params["request"].url, OVERRIDEN_URL)
