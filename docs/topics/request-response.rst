@@ -189,6 +189,10 @@ Request objects
         cloned using the ``copy()`` or ``replace()`` methods, and can also be
         accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
+        In case of a failure to process the request, this dict can be accessed as
+        ``failure.request.cb_kwargs`` in the request's errback. For more information,
+        see :ref:`topics-request-response-ref-accessing-callback-arguments-in-errback`.
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -311,6 +315,31 @@ errors if needed::
             elif failure.check(TimeoutError, TCPTimedOutError):
                 request = failure.request
                 self.logger.error('TimeoutError on %s', request.url)
+
+.. _topics-request-response-ref-accessing-callback-arguments-in-errback:
+
+Accessing additional data in errback functions
+----------------------------------------------
+
+In case of a failure to process the request, you may be interested in
+accessing arguments to the callback functions so you can process further
+based on the arguments in the errback. The following example shows how to
+achieve this by using ``Failure.request.cb_kwargs``::
+
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 errback=self.errback_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        yield request
+
+    def parse_page2(self, response, main_url):
+        pass
+
+    def errback_page2(self, failure):
+        yield dict(
+            main_url=failure.request.cb_kwargs['main_url'],
+        )
 
 .. _topics-request-meta:
 
@@ -878,6 +907,11 @@ TextResponse objects
     .. automethod:: TextResponse.follow
 
     .. automethod:: TextResponse.follow_all
+
+    .. automethod:: TextResponse.json()
+
+        Returns a Python object from deserialized JSON document.
+        The result is cached after the first call.
 
 
 HtmlResponse objects
