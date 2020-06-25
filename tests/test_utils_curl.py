@@ -157,6 +157,15 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         }
         self._test_command(curl_command, expected_result)
 
+    def test_explicit_get_with_data(self):
+        curl_command = 'curl httpbin.org/anything -X GET --data asdf'
+        expected_result = {
+            "method": "GET",
+            "url": "http://httpbin.org/anything",
+            "body": "asdf"
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_patch(self):
         curl_command = (
             'curl "https://example.com/api/fake" -u "username:password" -H "Ac'
