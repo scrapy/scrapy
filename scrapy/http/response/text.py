@@ -5,6 +5,7 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import json
 import warnings
 from contextlib import suppress
 from typing import Generator
@@ -21,10 +22,13 @@ from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
+_NONE = object()
+
 
 class TextResponse(Response):
 
     _DEFAULT_ENCODING = 'ascii'
+    _cached_decoded_json = _NONE
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
@@ -67,6 +71,16 @@ class TextResponse(Response):
                       'please use Response.text instead.',
                       ScrapyDeprecationWarning, stacklevel=2)
         return self.text
+
+    def json(self):
+        """
+        .. versionadded:: 2.2
+
+        Deserialize a JSON document to a Python object.
+        """
+        if self._cached_decoded_json is _NONE:
+            self._cached_decoded_json = json.loads(self.text)
+        return self._cached_decoded_json
 
     @property
     def text(self):

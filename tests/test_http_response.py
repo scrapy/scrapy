@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 from warnings import catch_warnings
 
 from w3lib.encoding import resolve_encoding
@@ -684,6 +685,26 @@ class TextResponseTest(BaseResponseTest):
             self.assertEqual(r1.body_as_unicode(), u'Hello')
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+    def test_json_response(self):
+        json_body = b"""{"ip": "109.187.217.200"}"""
+        json_response = self.response_class("http://www.example.com", body=json_body)
+        self.assertEqual(json_response.json(), {'ip': '109.187.217.200'})
+
+        text_body = b"""<html><body>text</body></html>"""
+        text_response = self.response_class("http://www.example.com", body=text_body)
+        with self.assertRaises(ValueError):
+            text_response.json()
+
+    def test_cache_json_response(self):
+        json_valid_bodies = [b"""{"ip": "109.187.217.200"}""", b"""null"""]
+        for json_body in json_valid_bodies:
+            json_response = self.response_class("http://www.example.com", body=json_body)
+
+            with mock.patch('json.loads') as mock_json:
+                for _ in range(2):
+                    json_response.json()
+                mock_json.assert_called_once_with(json_body.decode())
 
 
 class HtmlResponseTest(TextResponseTest):

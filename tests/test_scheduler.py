@@ -296,7 +296,7 @@ class StartUrlsSpider(Spider):
 
     def __init__(self, start_urls):
         self.start_urls = start_urls
-        super(StartUrlsSpider, self).__init__(start_urls)
+        super(StartUrlsSpider, self).__init__(name='StartUrlsSpider')
 
     def parse(self, response):
         pass
