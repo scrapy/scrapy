@@ -146,7 +146,7 @@ FEED_STORAGES_BASE = {
     's3': 'scrapy.extensions.feedexport.S3FeedStorage',
     'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
 }
-FEED_STORAGE_BATCH_ITEM_COUNT = None
+FEED_STORAGE_BATCH_ITEM_COUNT = 0
 FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
     'json': 'scrapy.exporters.JsonItemExporter',

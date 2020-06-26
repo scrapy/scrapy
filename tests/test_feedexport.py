@@ -1144,7 +1144,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'jl', self._file_mark): {'format': 'jl'},
             },
         })
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         for batch in data['jl']:
@@ -1160,7 +1160,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {'format': 'csv'},
             },
         })
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         data = yield self.exported_data(items, settings)
         for batch in data['csv']:
             got_batch = csv.DictReader(to_unicode(batch).splitlines())
@@ -1176,7 +1176,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
             },
         })
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         for batch in data['xml']:
@@ -1194,7 +1194,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'json', self._file_mark): {'format': 'json'},
             },
         })
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         # XML
@@ -1219,7 +1219,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'pickle', self._file_mark): {'format': 'pickle'},
             },
         })
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         import pickle
@@ -1236,7 +1236,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'marshal', self._file_mark): {'format': 'marshal'},
             },
         })
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         import marshal
@@ -1262,7 +1262,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             'FEED_STORAGE_BATCH_ITEM_COUNT': 2
         }
         header = self.MyItem.fields.keys()
-        yield self.assertExported(items, header, rows, settings=settings)
+        yield self.assertExported(items, header, rows, settings=Settings(settings))
 
     def test_wrong_path(self):
         """ If path is without %(batch_time)s or %(batch_id)s an exception must be raised """
@@ -1412,14 +1412,14 @@ class BatchDeliveriesTest(FeedExportTestBase):
             bucket_name=s3_test_bucket_name, prefix=prefix
         )
         storage = S3FeedStorage(s3_test_bucket_name, access_key, secret_key)
-        settings = {
+        settings = Settings({
             'FEEDS': {
                 s3_test_file_uri: {
                     'format': 'json',
                 },
             },
             'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
-        }
+        })
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
@@ -1436,7 +1436,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         s3 = boto3.resource('s3')
         my_bucket = s3.Bucket(s3_test_bucket_name)
-        batch_size = settings['FEED_STORAGE_BATCH_ITEM_COUNT']
+        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
 
         with MockServer() as s:
             runner = CrawlerRunner(Settings(settings))

@@ -435,7 +435,7 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 
 FEED_STORAGE_BATCH_ITEM_COUNT
 -----------------------------
-Default: ``None``
+Default: ``0``
 
 If assigned an integer number higher than ``0``, Scrapy generates multiple output files
 storing up to the specified number of items in each output file.

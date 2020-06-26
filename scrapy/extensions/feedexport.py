@@ -243,7 +243,7 @@ class FeedExporter:
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
-        self.storage_batch_item_count = self.settings.get('FEED_STORAGE_BATCH_ITEM_COUNT', None)
+        self.storage_batch_item_count = self.settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
                 raise NotConfigured
