@@ -7,7 +7,7 @@ import warnings
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -255,7 +255,7 @@ class ScrapyProxyAgent(Agent):
             bindAddress=bindAddress,
             pool=pool,
         )
-        self._proxyURI = URI.fromBytes(proxyURI)
+        self._proxyURI = URI.fromBytes(urlparse(proxyURI)._replace(scheme=b'http').geturl())
 
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
