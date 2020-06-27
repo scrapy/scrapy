@@ -1327,8 +1327,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     '<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>'
                 ).encode('latin-1')
             ],
-            'csv': ['bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
-                    'bar,foo\r\nBAR1,FOO1\r\n'.encode('utf-8')],
+            'csv': ['foo,bar\r\nFOO,BAR\r\n'.encode('utf-8'),
+                    'foo,bar\r\nFOO1,BAR1\r\n'.encode('utf-8')],
+            'jsonlines': ['{"foo": "FOO", "bar": "BAR"}\n{"foo": "FOO1", "bar": "BAR1"}\n'.encode('utf-8')],
         }
 
         settings = {
@@ -1348,11 +1349,43 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {
                     'format': 'csv',
                     'indent': None,
-                    'fields': ['bar', 'foo'],
+                    'fields': ['foo', 'bar'],
                     'encoding': 'utf-8',
+                },
+                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {
+                    'format': 'jsonlines',
+                    'indent': None,
+                    'fields': ['foo', 'bar'],
+                    'encoding': 'utf-8',
+                    'batch_item_count': 0,
                 },
             },
             'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
+        }
+        data = yield self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            for expected_batch, got_batch in zip(expected, data[fmt]):
+                self.assertEqual(expected_batch, got_batch)
+
+    @defer.inlineCallbacks
+    def test_batch_item_count_feeds_setting(self):
+        items = [dict({'foo': u'FOO', 'bar': u'BAR'}), dict({'foo': u'FOO1', 'bar': u'BAR1'})]
+
+        formats = {
+            'jsonlines': ['{"foo": "FOO", "bar": "BAR"}\n'.encode('utf-8'),
+                          '{"foo": "FOO1", "bar": "BAR1"}\n'.encode('utf-8')],
+        }
+
+        settings = {
+            'FEEDS': {
+                os.path.join(self._random_temp_filename(), 'jsonlines', self._file_mark): {
+                    'format': 'jsonlines',
+                    'indent': None,
+                    'fields': ['foo', 'bar'],
+                    'encoding': 'utf-8',
+                    'batch_item_count': 1,
+                },
+            },
         }
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():

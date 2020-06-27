@@ -25,7 +25,6 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -337,7 +336,9 @@ class FeedExporter:
             slot.exporter.export_item(item)
             slot.itemcount += 1
             # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_ITEM_COUNT and close the old one
-            if self.storage_batch_item_count and slot.itemcount == self.storage_batch_item_count:
+            if self.feeds[slot.uri_template].get('batch_item_count', self.storage_batch_item_count) \
+                    and slot.itemcount == self.feeds[slot.uri_template].get('batch_item_count',
+                                                                            self.storage_batch_item_count):
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
