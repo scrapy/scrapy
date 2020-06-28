@@ -19,8 +19,15 @@ from scrapy.responsetypes import responsetypes
 
 
 class _ResponseTypedDict(TypedDict):
+    # Data received frame by frame from the server is appended
+    # and passed to the response Deferred when completely received.
     body: BytesIO
+
+    # The amount of data received that counts against the flow control
+    # window
     flow_controlled_size: int
+
+    # Headers received after sending the request
     headers: Headers
 
 
@@ -39,6 +46,9 @@ class StreamCloseReason(IntFlag):
 
     # Expected response body size is more than allowed limit
     MAXSIZE_EXCEEDED = auto()
+
+    # When the response deferred is cancelled
+    CANCELLED = auto()
 
 
 class Stream:
@@ -110,20 +120,16 @@ class Stream:
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
         self._response: _ResponseTypedDict = {
-            # Data received frame by frame from the server is appended
-            # and passed to the response Deferred when completely received.
             'body': BytesIO(),
-
-            # The amount of data received that counts against the flow control
-            # window
             'flow_controlled_size': 0,
-
-            # Headers received after sending the request
             'headers': Headers({})
         }
 
-        # TODO: Add canceller for the Deferred below
-        self._deferred_response = Deferred()
+        def _cancel(_):
+            # Close this stream as gracefully as possible :)
+            self.reset_stream(StreamCloseReason.CANCELLED)
+
+        self._deferred_response = Deferred(_cancel)
 
     def __str__(self):
         return "Stream(id={})".format(repr(self.stream_id))
@@ -177,13 +183,6 @@ class Stream:
             and has initiated request already by sending HEADER frame. If not then
             stream will raise ProtocolError (raise by h2 state machine).
          """
-        # TODO:
-        #  1. Add test for sending very large data
-        #  2. Add test for small data
-        #  3. Both (1) and (2) should be tested for
-        #    3.1 Large number of request
-        #    3.2 Small number of requests
-
         if self.stream_closed_local:
             raise StreamClosedError(self.stream_id)
 
@@ -221,7 +220,6 @@ class Stream:
 
         # End the stream if no more data needs to be send
         if self.remaining_content_length == 0:
-            self.stream_closed_local = True
             self._conn.end_stream(self.stream_id)
 
         # Write data to transport -- Empty the outstanding data
@@ -288,7 +286,6 @@ class Stream:
 
     def reset_stream(self, reason=StreamCloseReason.RESET):
         """Close this stream by sending a RST_FRAME to the remote peer"""
-        # TODO: Q. REFUSED_STREAM or CANCEL ?
         if self.stream_closed_local:
             raise StreamClosedError(self.stream_id)
 
@@ -305,14 +302,16 @@ class Stream:
 
         return expected_size != received_body_size
 
-    def close(self, reason: StreamCloseReason):
+    def close(self, reason: StreamCloseReason, failure=None):
         """Based on the reason sent we will handle each case.
         """
         if self.stream_closed_server:
             raise StreamClosedError(self.stream_id)
 
+        self._cb_close(self.stream_id)
         self.stream_closed_server = True
 
+        # Do nothing if the response deferred was cancelled
         flags = None
         if b'Content-Length' not in self._response['headers']:
             # Missing Content-Length - PotentialDataLoss
@@ -320,7 +319,6 @@ class Stream:
         elif self._is_data_lost():
             if self._fail_on_dataloss:
                 self._deferred_response.errback(ResponseFailed([Failure()]))
-                self._cb_close(self.stream_id)
                 return
             else:
                 flags = ['dataloss']
@@ -328,10 +326,19 @@ class Stream:
         if reason is StreamCloseReason.ENDED:
             self._fire_response_deferred(flags)
 
-        elif reason in (StreamCloseReason.RESET | StreamCloseReason.CONNECTION_LOST):
-            # Stream was abruptly ended here
-            self._deferred_response.errback(ResponseFailed([Failure()]))
+        # Stream was abruptly ended here
+        elif reason is StreamCloseReason.CANCELLED:
+            # Client has cancelled the request. Remove all the data
+            # received and fire the response deferred with no flags set
+            self._response['body'].truncate(0)
+            self._response['headers'].clear()
+            self._fire_response_deferred()
 
+        elif reason in (StreamCloseReason.RESET | StreamCloseReason.CONNECTION_LOST):
+            if failure is None:
+                self._deferred_response.errback(ResponseFailed([Failure()]))
+            else:
+                self._deferred_response.errback(failure)
         elif reason is StreamCloseReason.MAXSIZE_EXCEEDED:
             expected_size = int(self._response['headers'].get(b'Content-Length', -1))
             error_msg = ("Cancelling download of {url}: expected response "
@@ -345,22 +352,21 @@ class Stream:
             LOGGER.error(error_msg, error_args)
             self._deferred_response.errback(CancelledError(error_msg.format(**error_args)))
 
-        self._cb_close(self.stream_id)
-
     def _fire_response_deferred(self, flags=None):
         """Builds response from the self._response dict
         and fires the response deferred callback with the
         generated response instance"""
-        # TODO:
-        #  1. Update Client Side Status Codes here
+        # TODO: Update Client Side Status Codes here
 
+        body = self._response['body'].getvalue()
         response_cls = responsetypes.from_args(
             headers=self._response['headers'],
             url=self._request.url,
-            body=self._response['body']
+            body=body
         )
 
-        # If there is no :status in headers then
+        # If there is no :status in headers
+        # (happens when client called response_deferred.cancel())
         # HTTP Status Code: 499 - Client Closed Request
         status = self._response['headers'].get(':status', '499')
 
@@ -368,7 +374,7 @@ class Stream:
             url=self._request.url,
             status=status,
             headers=self._response['headers'],
-            body=self._response['body'].getvalue(),
+            body=body,
             request=self._request,
             flags=flags,
             certificate=self._conn_metadata['certificate'],

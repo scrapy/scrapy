@@ -67,7 +67,6 @@ setup(
     ],
     python_requires='>=3.5.2',
     install_requires=[
-        'Twisted>=17.9.0',
         'Twisted[http2]>=17.9.0'
         'cryptography>=2.0',
         'cssselect>=0.9.1',

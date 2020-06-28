@@ -129,11 +129,11 @@ class H2ClientProtocol(Protocol):
         """
         # Pop all streams which were pending and were not yet started
         for stream_id in list(self.streams):
-            self.streams[stream_id].close(StreamCloseReason.CONNECTION_LOST)
+            self.streams[stream_id].close(StreamCloseReason.CONNECTION_LOST, reason)
 
         self.conn.close_connection()
 
-        LOGGER.info("Connection lost with reason " + str(reason))
+        LOGGER.warning("Connection lost with reason " + str(reason))
 
     def _handle_events(self, events):
         """Private method which acts as a bridge between the events
