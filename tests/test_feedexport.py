@@ -1352,7 +1352,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     'fields': ['foo', 'bar'],
                     'encoding': 'utf-8',
                 },
-                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {
+                os.path.join(self._random_temp_filename(), 'jsonlines', self._file_mark): {
                     'format': 'jsonlines',
                     'indent': None,
                     'fields': ['foo', 'bar'],
@@ -1423,8 +1423,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
         [testenv]
         setenv =
             AWS_SECRET_ACCESS_KEY = ABCD
-            AWS_ACCESS_KEY_ID = ABCD
-            S3_TEST_BUCKET_NAME = ABCD
+            AWS_ACCESS_KEY_ID = EFGH
+            S3_TEST_BUCKET_NAME = IJKL
         """
         try:
             import boto3

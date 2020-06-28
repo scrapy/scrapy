@@ -272,6 +272,7 @@ as a fallback value if that key is not provided for a specific feed definition.
 * ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
 * ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
 * ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
+* ``batch_item_count``: falls back to :setting:`FEED_STORAGE_BATCH_ITEM_COUNT`
 
 .. setting:: FEED_EXPORT_ENCODING
 
