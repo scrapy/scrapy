@@ -89,8 +89,16 @@ class CrawlTestCase(TestCase):
         """
         Downloader middleware which returns a response with an specific 'request' attribute.
 
-        The spider callback should receive the overriden response.request
+        * The spider callback should receive the overriden response.request
+        * Handlers listening to the response_received signal should receive the overriden response.request
+        * The "crawled" log message should show the overriden response.request
         """
+        signal_params = {}
+
+        def signal_handler(response, request, spider):
+            signal_params["response"] = response
+            signal_params["request"] = request
+
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
@@ -98,9 +106,20 @@ class CrawlTestCase(TestCase):
             }
         })
         crawler = runner.create_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        crawler.signals.connect(signal_handler, signal=signals.response_received)
+
+        with LogCapture() as log:
+            yield crawler.crawl(seed=url, mockserver=self.mockserver)
+
         response = crawler.spider.meta["responses"][0]
         self.assertEqual(response.request.url, OVERRIDEN_URL)
+
+        self.assertEqual(signal_params["response"].url, url)
+        self.assertEqual(signal_params["request"].url, OVERRIDEN_URL)
+
+        log.check_present(
+            ("scrapy.core.engine", "DEBUG", "Crawled (200) <GET {}> (referer: None)".format(OVERRIDEN_URL)),
+        )
 
     @defer.inlineCallbacks
     def test_downloader_middleware_override_in_process_exception(self):
@@ -143,39 +162,3 @@ class CrawlTestCase(TestCase):
         response = crawler.spider.meta["responses"][0]
         self.assertEqual(response.body, b"Caught ZeroDivisionError")
         self.assertEqual(response.request.url, url)
-
-    @defer.inlineCallbacks
-    def test_response_received_signal(self):
-        signal_params = {}
-
-        def signal_handler(response, request, spider):
-            signal_params["response"] = response
-            signal_params["request"] = request
-
-        url = self.mockserver.url("/status?n=200")
-        runner = CrawlerRunner(settings={
-            "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".ProcessResponseMiddleware": 595,
-            }
-        })
-        crawler = runner.create_crawler(SingleRequestSpider)
-        crawler.signals.connect(signal_handler, signal=signals.response_received)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        self.assertEqual(signal_params["response"].url, url)
-        self.assertEqual(signal_params["request"].url, OVERRIDEN_URL)
-
-    @defer.inlineCallbacks
-    def test_crawled_log_message(self):
-        url = self.mockserver.url("/status?n=200")
-        runner = CrawlerRunner(settings={
-            "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".ProcessResponseMiddleware": 595,
-            }
-        })
-        crawler = runner.create_crawler(SingleRequestSpider)
-        with LogCapture() as log:
-            yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        print(log)
-        log.check_present(
-            ("scrapy.core.engine", "DEBUG", "Crawled (200) <GET https://example.org> (referer: None)"),
-        )
