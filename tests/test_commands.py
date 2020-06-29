@@ -242,15 +242,34 @@ class MySpider(scrapy.Spider):
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
 
+        if sys.platform == 'win32':
+            log = self.get_log(self.debug_log_spider, name='myspider.pyw')
+            self.assertIn("DEBUG: It Works!", log)
+            self.assertIn("INFO: Spider opened", log)
+            self.assertIn("INFO: Closing spider (finished)", log)
+            self.assertIn("INFO: Spider closed (finished)", log)
+
     def test_run_fail_spider(self):
         proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider))
         ret = proc.returncode
         self.assertNotEqual(ret, 0)
 
+        if sys.platform == 'win32':
+            proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider),
+                                        name='myspider.pyw')
+            ret = proc.returncode
+            self.assertNotEqual(ret, 0)
+
     def test_run_good_spider(self):
         proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider))
         ret = proc.returncode
         self.assertEqual(ret, 0)
+
+        if sys.platform == 'win32':
+            proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider),
+                                        name='myspider.pyw')
+            ret = proc.returncode
+            self.assertEqual(ret, 0)
 
     def test_runspider_log_level(self):
         log = self.get_log(self.debug_log_spider,
@@ -258,13 +277,19 @@ class MySpider(scrapy.Spider):
         self.assertNotIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
 
+        if sys.platform == 'win32':
+            log = self.get_log(self.debug_log_spider, name='myspider.pyw',
+                               args=('-s', 'LOG_LEVEL=INFO'))
+            self.assertNotIn("DEBUG: It Works!", log)
+            self.assertIn("INFO: Spider opened", log)
+
     def test_runspider_dnscache_disabled(self):
         # see https://github.com/scrapy/scrapy/issues/2811
         # The spider below should not be able to connect to localhost:12345,
         # which is intended,
         # but this should not be because of DNS lookup error
         # assumption: localhost will resolve in all cases (true?)
-        log = self.get_log("""
+        dnscache_spider = """
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -273,30 +298,51 @@ class MySpider(scrapy.Spider):
 
     def parse(self, response):
         return {'test': 'value'}
-""",
-                           args=('-s', 'DNSCACHE_ENABLED=False'))
-        print(log)
+"""
+        log = self.get_log(dnscache_spider, args=('-s', 'DNSCACHE_ENABLED=False'))
         self.assertNotIn("DNSLookupError", log)
         self.assertIn("INFO: Spider opened", log)
+
+        if sys.platform == 'win32':
+            log = self.get_log(dnscache_spider, name='myspider,pyw', args=('-s', 'DNSCACHE_ENABLED=False'))
+            self.assertNotIn("DNSLookupError", log)
+            self.assertIn("INFO: Spider opened", log)
 
     def test_runspider_log_short_names(self):
         log1 = self.get_log(self.debug_log_spider,
                             args=('-s', 'LOG_SHORT_NAMES=1'))
-        print(log1)
         self.assertIn("[myspider] DEBUG: It Works!", log1)
         self.assertIn("[scrapy]", log1)
         self.assertNotIn("[scrapy.core.engine]", log1)
 
         log2 = self.get_log(self.debug_log_spider,
                             args=('-s', 'LOG_SHORT_NAMES=0'))
-        print(log2)
         self.assertIn("[myspider] DEBUG: It Works!", log2)
         self.assertNotIn("[scrapy]", log2)
         self.assertIn("[scrapy.core.engine]", log2)
 
+        if sys.platform == 'win32':
+            log1 = self.get_log(self.debug_log_spider,
+                                name='myspider.pyw',
+                                args=('-s', 'LOG_SHORT_NAMES=1'))
+            self.assertIn("[myspider] DEBUG: It Works!", log1)
+            self.assertIn("[scrapy]", log1)
+            self.assertNotIn("[scrapy.core.engine]", log1)
+
+            log2 = self.get_log(self.debug_log_spider,
+                                name='myspider.pyw',
+                                args=('-s', 'LOG_SHORT_NAMES=0'))
+            self.assertIn("[myspider] DEBUG: It Works!", log2)
+            self.assertNotIn("[scrapy]", log2)
+            self.assertIn("[scrapy.core.engine]", log2)
+
     def test_runspider_no_spider_found(self):
         log = self.get_log("from scrapy.spiders import Spider\n")
         self.assertIn("No spider found in file", log)
+
+        if sys.platform == 'win32':
+            log = self.get_log("from scrapy.spiders import Spider\n", name='myspider.pyw')
+            self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
         _, _, log = self.proc('runspider', 'some_non_existent_file')
@@ -307,17 +353,22 @@ class MySpider(scrapy.Spider):
         self.assertIn('Unable to load', log)
 
     def test_start_requests_errors(self):
-        log = self.get_log("""
+        badspider = """
 import scrapy
 
 class BadSpider(scrapy.Spider):
     name = "bad"
     def start_requests(self):
         raise Exception("oops!")
-        """, name="badspider.py")
-        print(log)
+        """
+        log = self.get_log(badspider, name="badspider.py")
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
+
+        if sys.platform == 'win32':
+            log = self.get_log(badspider, name="badspider.pyw")
+            self.assertIn("start_requests", log)
+            self.assertIn("badspider.py", log)
 
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
@@ -325,9 +376,19 @@ class BadSpider(scrapy.Spider):
         ])
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+        if sys.platform == 'win32':
+            log = self.get_log(self.debug_log_spider, name='myspider.pyw', args=[
+                '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+            ])
+            self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
     def test_asyncio_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+        if sys.platform == 'win32':
+            log = self.get_log(self.debug_log_spider, name='myspider.pyw', args=[])
+            self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
 
 class BenchCommandTest(CommandTest):
