@@ -1,26 +1,26 @@
-# TODO: Add test cases for
-#   1. No Content Length response header
-#   2. Cancel Response Deferred
 import json
 import os
 import random
+import re
 import shutil
 import string
 
+from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, DeferredList
+from twisted.internet.defer import inlineCallbacks, DeferredList, CancelledError
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint, TCP4ServerEndpoint
 from twisted.internet.protocol import Factory
 from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 from twisted.web.http import Request as TxRequest
-from twisted.web.resource import Resource
-from twisted.web.server import Site
+from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.static import File
 
 from scrapy.core.http2.protocol import H2ClientProtocol
 from scrapy.http import Request, Response, JsonRequest
-from tests.mockserver import ssl_context_factory
+from scrapy.utils.python import to_bytes, to_unicode
+from tests.mockserver import ssl_context_factory, LeafResource
 
 
 def generate_random_string(size):
@@ -35,7 +35,7 @@ def make_html_body(val):
 <h1>Hello from HTTP2<h1>
 <p>{}</p>
 </html>'''.format(val)
-    return bytes(response, 'utf-8')
+    return to_bytes(response)
 
 
 class Data:
@@ -54,9 +54,8 @@ class Data:
     JSON_SMALL = {'data': STR_SMALL}
     JSON_LARGE = {'data': STR_LARGE}
 
-
-class LeafResource(Resource):
-    isLeaf = True
+    DATALOSS = b'Dataloss Content'
+    NO_CONTENT_LENGTH = b'This response do not have any content-length header'
 
 
 class GetDataHtmlSmall(LeafResource):
@@ -80,9 +79,9 @@ class PostDataJsonMixin:
             'extra-data': extra_data
         }
         for k, v in request.requestHeaders.getAllRawHeaders():
-            response['request-headers'][k.decode('utf-8')] = v[0].decode('utf-8')
+            response['request-headers'][to_unicode(k)] = to_unicode(v[0])
 
-        response_bytes = bytes(json.dumps(response), 'utf-8')
+        response_bytes = to_bytes(json.dumps(response))
         request.setHeader('Content-Type', 'application/json')
         return response_bytes
 
@@ -95,6 +94,31 @@ class PostDataJsonSmall(LeafResource, PostDataJsonMixin):
 class PostDataJsonLarge(LeafResource, PostDataJsonMixin):
     def render_POST(self, request: TxRequest):
         return self.make_response(request, Data.EXTRA_LARGE)
+
+
+class Dataloss(LeafResource):
+
+    def render_GET(self, request: TxRequest):
+        request.setHeader(b"Content-Length", b"1024")
+        self.deferRequest(request, 0, self._delayed_render, request)
+        return NOT_DONE_YET
+
+    @staticmethod
+    def _delayed_render(request: TxRequest):
+        request.write(Data.DATALOSS)
+        request.finish()
+
+
+class NoContentLengthHeader(LeafResource):
+    def render_GET(self, request: TxRequest):
+        request.requestHeaders.removeHeader('Content-Length')
+        self.deferRequest(request, 0, self._delayed_render, request)
+        return NOT_DONE_YET
+
+    @staticmethod
+    def _delayed_render(request: TxRequest):
+        request.write(Data.NO_CONTENT_LENGTH)
+        request.finish()
 
 
 def get_client_certificate(key_file, certificate_file):
@@ -118,6 +142,9 @@ class Https2ClientProtocolTestCase(TestCase):
 
         r.putChild(b'post-data-json-small', PostDataJsonSmall())
         r.putChild(b'post-data-json-large', PostDataJsonLarge())
+
+        r.putChild(b'dataloss', Dataloss())
+        r.putChild(b'no-content-length-header', NoContentLengthHeader())
         return r
 
     @inlineCallbacks
@@ -172,10 +199,10 @@ class Https2ClientProtocolTestCase(TestCase):
         return DeferredList(d_list, fireOnOneErrback=True)
 
     def _check_GET(
-            self,
-            request: Request,
-            expected_body,
-            expected_status
+        self,
+        request: Request,
+        expected_body,
+        expected_status
     ):
         def check_response(response: Response):
             self.assertEqual(response.status, expected_status)
@@ -220,11 +247,11 @@ class Https2ClientProtocolTestCase(TestCase):
         )
 
     def _check_POST_json(
-            self,
-            request: Request,
-            expected_request_body,
-            expected_extra_data,
-            expected_status: int
+        self,
+        request: Request,
+        expected_request_body,
+        expected_extra_data,
+        expected_status: int
     ):
         d = self.client.request(request)
 
@@ -237,7 +264,7 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(len(response.body), content_length)
 
             # Parse the body
-            body = json.loads(response.body.decode('utf-8'))
+            body = json.loads(to_unicode(response.body))
             self.assertIn('request-body', body)
             self.assertIn('extra-data', body)
             self.assertIn('request-headers', body)
@@ -251,11 +278,12 @@ class Https2ClientProtocolTestCase(TestCase):
             # Check if headers were sent successfully
             request_headers = body['request-headers']
             for k, v in request.headers.items():
-                k_str = k.decode('utf-8')
+                k_str = to_unicode(k)
                 self.assertIn(k_str, request_headers)
-                self.assertEqual(request_headers[k_str], v[0].decode('utf-8'))
+                self.assertEqual(request_headers[k_str], to_unicode(v[0]))
 
         d.addCallback(assert_response)
+        d.addErrback(self.fail)
         return d
 
     def test_POST_small_json(self):
@@ -310,6 +338,95 @@ class Https2ClientProtocolTestCase(TestCase):
 
         d = self.client.request(request)
         d.addCallback(assert_response)
+        d.addErrback(self.fail)
         d.cancel()
 
         return d
+
+    def test_download_maxsize_exceeded(self):
+        request = Request(url=self.get_url('/get-data-html-large'), meta={'download_maxsize': 1000})
+
+        def assert_cancelled_error(failure):
+            self.assertIsInstance(failure.value, CancelledError)
+
+        d = self.client.request(request)
+        d.addCallback(self.fail)
+        d.addErrback(assert_cancelled_error)
+        return d
+
+    # TODO: Test in multiple requests if one request fails due to dataloss
+    #  remaining request do not fail (change expected behaviour)
+    #  Can be done only when hyper-h2 don't terminate connection over
+    #  InvalidBodyLengthError check
+    def test_received_dataloss_response(self):
+        """In case when value of Header Content-Length != len(Received Data)
+        ProtocolError is raised"""
+        request = Request(url=self.get_url('/dataloss'))
+
+        def assert_failure(failure: Failure):
+            self.assertTrue(len(failure.value.reasons) > 0)
+            self.assertTrue(any(
+                isinstance(error, InvalidBodyLengthError)
+                for error in failure.value.reasons
+            ))
+
+        d = self.client.request(request)
+        d.addCallback(self.fail)
+        d.addErrback(assert_failure)
+        return d
+
+    def test_missing_content_length_header(self):
+        request = Request(url=self.get_url('/no-content-length-header'))
+
+        def assert_content_length(response: Response):
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.body, Data.NO_CONTENT_LENGTH)
+            self.assertEqual(response.request, request)
+            self.assertEqual(response.url, request.url)
+            self.assertIn('partial', response.flags)
+            self.assertNotIn('Content-Length', response.headers)
+
+        d = self.client.request(request)
+        d.addCallback(assert_content_length)
+        d.addErrback(self.fail)
+        return d
+
+    @inlineCallbacks
+    def _check_log_warnsize(
+        self,
+        request,
+        warn_pattern,
+        expected_body
+    ):
+        with self.assertLogs('scrapy.core.http2.stream', level='WARNING') as cm:
+            response = yield self.client.request(request)
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.request, request)
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.body, expected_body)
+
+            # Check the warning is raised only once for this request
+            self.assertEqual(sum(
+                len(re.findall(warn_pattern, log))
+                for log in cm.output
+            ), 1)
+
+    @inlineCallbacks
+    def test_log_expected_warnsize(self):
+        request = Request(url=self.get_url('/get-data-html-large'), meta={'download_warnsize': 1000})
+        warn_pattern = re.compile(
+            r'Expected response size \(\d*\) larger than '
+            r'download warn size \(1000\) in request {}'.format(request)
+        )
+
+        yield self._check_log_warnsize(request, warn_pattern, Data.HTML_LARGE)
+
+    @inlineCallbacks
+    def test_log_received_warnsize(self):
+        request = Request(url=self.get_url('/no-content-length-header'), meta={'download_warnsize': 10})
+        warn_pattern = re.compile(
+            r'Received more \(\d*\) bytes than download '
+            r'warn size \(10\) in request {}'.format(request)
+        )
+
+        yield self._check_log_warnsize(request, warn_pattern, Data.NO_CONTENT_LENGTH)
