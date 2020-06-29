@@ -1,7 +1,7 @@
 import logging
-from enum import IntFlag, auto
+from enum import Enum
 from io import BytesIO
-from typing import Dict
+from typing import Callable, List
 from urllib.parse import urlparse
 
 from h2.connection import H2Connection
@@ -10,45 +10,31 @@ from h2.exceptions import StreamClosedError
 from twisted.internet.defer import Deferred, CancelledError
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
-# for python < 3.8 -- typing.TypedDict is undefined
-from typing_extensions import TypedDict
 
+from scrapy.core.http2.types import H2ConnectionMetadataDict, H2ResponseDict
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 
-
-class _ResponseTypedDict(TypedDict):
-    # Data received frame by frame from the server is appended
-    # and passed to the response Deferred when completely received.
-    body: BytesIO
-
-    # The amount of data received that counts against the flow control
-    # window
-    flow_controlled_size: int
-
-    # Headers received after sending the request
-    headers: Headers
+logger = logging.getLogger(__name__)
 
 
-LOGGER = logging.getLogger(__name__)
-
-
-class StreamCloseReason(IntFlag):
+class StreamCloseReason(Enum):
     # Received a StreamEnded event
-    ENDED = auto()
+    ENDED = 1
 
     # Received a StreamReset event -- ended abruptly
-    RESET = auto()
+    RESET = 2
 
     # Transport connection was lost
-    CONNECTION_LOST = auto()
+    CONNECTION_LOST = 3
 
     # Expected response body size is more than allowed limit
-    MAXSIZE_EXCEEDED = auto()
+    MAXSIZE_EXCEEDED = 4
 
-    # When the response deferred is cancelled
-    CANCELLED = auto()
+    # When the response deferred is cancelled by the client
+    # (happens when client called response_deferred.cancel())
+    CANCELLED = 5
 
 
 class Stream:
@@ -63,34 +49,30 @@ class Stream:
     """
 
     def __init__(
-            self,
-            stream_id: int,
-            request: Request,
-            connection: H2Connection,
-            conn_metadata: Dict,
-            write_to_transport,
-            cb_close,
-            download_maxsize=0,
-            download_warnsize=0,
-            fail_on_data_loss=True
+        self,
+        stream_id: int,
+        request: Request,
+        connection: H2Connection,
+        conn_metadata: H2ConnectionMetadataDict,
+        cb_close: Callable[[int], None],
+        download_maxsize: int = 0,
+        download_warnsize: int = 0,
+        fail_on_data_loss: bool = True
     ):
         """
         Arguments:
-            stream_id {int} -- For one HTTP/2 connection each stream is
+            stream_id -- For one HTTP/2 connection each stream is
                 uniquely identified by a single integer
-            request {Request} -- HTTP request
-            connection {H2Connection} -- HTTP/2 connection this stream belongs to.
-            conn_metadata {Dict} -- Reference to dictionary having metadata of HTTP/2 connection
-            write_to_transport {callable} -- Method used to write & send data to the server
-                This method should be used whenever some frame is to be sent to the server.
-            cb_close {callable} -- Method called when this stream is closed
+            request -- HTTP request
+            connection -- HTTP/2 connection this stream belongs to.
+            conn_metadata -- Reference to dictionary having metadata of HTTP/2 connection
+            cb_close -- Method called when this stream is closed
                 to notify the TCP connection instance.
         """
         self.stream_id = stream_id
         self._request = request
         self._conn = connection
         self._conn_metadata = conn_metadata
-        self._write_to_transport = write_to_transport
         self._cb_close = cb_close
 
         self._download_maxsize = self._request.meta.get('download_maxsize', download_maxsize)
@@ -119,7 +101,7 @@ class Stream:
         # Private variable used to build the response
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
-        self._response: _ResponseTypedDict = {
+        self._response: H2ResponseDict = {
             'body': BytesIO(),
             'flow_controlled_size': 0,
             'headers': Headers({})
@@ -135,6 +117,25 @@ class Stream:
         return "Stream(id={})".format(repr(self.stream_id))
 
     __repr__ = __str__
+
+    @property
+    def _log_warnsize(self) -> bool:
+        """Checks if we have received data which exceeds the download warnsize
+        and whether we have not already logged about it.
+
+        Returns:
+            True if both the above conditions hold true
+            False if any of the conditions is false
+        """
+        content_length_header = int(self._response['headers'].get(b'Content-Length', -1))
+        return (
+            self._download_warnsize
+            and (
+                self._response['flow_controlled_size'] > self._download_warnsize
+                or content_length_header > self._download_warnsize
+            )
+            and not self._reached_warnsize
+        )
 
     def get_response(self):
         """Simply return a Deferred which fires when response
@@ -166,10 +167,7 @@ class Stream:
     def initiate_request(self):
         headers = self._get_request_headers()
         self._conn.send_headers(self.stream_id, headers, end_stream=False)
-        self._write_to_transport()
-
         self.request_sent = True
-
         self.send_data()
 
     def send_data(self):
@@ -211,19 +209,18 @@ class Stream:
             self.remaining_content_length = self.remaining_content_length - chunk_size
 
         self.remaining_content_length = max(0, self.remaining_content_length)
-        LOGGER.debug("{} sending {}/{} data bytes ({} frames) to {}".format(
-            self,
-            self.content_length - self.remaining_content_length, self.content_length,
-            data_frames_sent,
-            self._conn_metadata['ip_address'])
+        logger.debug(
+            "{stream} sending {received}/{expected} data bytes ({frames} frames) to {ip_address}".format(
+                stream=self,
+                received=self.content_length - self.remaining_content_length,
+                expected=self.content_length,
+                frames=data_frames_sent,
+                ip_address=self._conn_metadata['ip_address'])
         )
 
         # End the stream if no more data needs to be send
         if self.remaining_content_length == 0:
             self._conn.end_stream(self.stream_id)
-
-        # Write data to transport -- Empty the outstanding data
-        self._write_to_transport()
 
         # Q. What about the rest of the data?
         # Ans: Remaining Data frames will be sent when we get a WindowUpdate frame
@@ -240,24 +237,21 @@ class Stream:
         self._response['body'].write(data)
         self._response['flow_controlled_size'] += flow_controlled_length
 
+        # We check maxsize here in case the Content-Length header was not received
         if self._download_maxsize and self._response['flow_controlled_size'] > self._download_maxsize:
-            # Clear buffer earlier to avoid keeping data in memory for a long time
-            self._response['body'].truncate(0)
             self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED)
             return
 
-        if self._download_warnsize \
-                and self._response['flow_controlled_size'] > self._download_warnsize \
-                and not self._reached_warnsize:
+        if self._log_warnsize:
             self._reached_warnsize = True
-            warning_msg = ('Received more ({bytes}) bytes than download ',
-                           'warn size ({warnsize}) in request {request}')
+            warning_msg = 'Received more ({bytes}) bytes than download ' \
+                          + 'warn size ({warnsize}) in request {request}'
             warning_args = {
                 'bytes': self._response['flow_controlled_size'],
                 'warnsize': self._download_warnsize,
                 'request': self._request
             }
-            LOGGER.warning(warning_msg, warning_args)
+            logger.warning(warning_msg.format(**warning_args))
 
         # Acknowledge the data received
         self._conn.acknowledge_received_data(
@@ -275,23 +269,27 @@ class Stream:
             self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED)
             return
 
-        if self._download_warnsize and expected_size > self._download_warnsize:
-            warning_msg = ("Expected response size ({size}) larger than ",
-                           "download warn size ({warnsize}) in request {request}.")
+        if self._log_warnsize:
+            self._reached_warnsize = True
+            warning_msg = 'Expected response size ({size}) larger than ' \
+                          + 'download warn size ({warnsize}) in request {request}'
             warning_args = {
-                'size': expected_size, 'warnsize': self._download_warnsize,
+                'size': expected_size,
+                'warnsize': self._download_warnsize,
                 'request': self._request
             }
-            LOGGER.warning(warning_msg, warning_args)
+            logger.warning(warning_msg.format(**warning_args))
 
     def reset_stream(self, reason=StreamCloseReason.RESET):
         """Close this stream by sending a RST_FRAME to the remote peer"""
         if self.stream_closed_local:
             raise StreamClosedError(self.stream_id)
 
+        # Clear buffer earlier to avoid keeping data in memory for a long time
+        self._response['body'].truncate(0)
+
         self.stream_closed_local = True
         self._conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
-        self._write_to_transport()
         self.close(reason)
 
     def _is_data_lost(self) -> bool:
@@ -302,8 +300,11 @@ class Stream:
 
         return expected_size != received_body_size
 
-    def close(self, reason: StreamCloseReason, failure=None):
+    def close(self, reason: StreamCloseReason, error: Exception = None):
         """Based on the reason sent we will handle each case.
+
+        Arguments:
+            reason -- One if StreamCloseReason
         """
         if self.stream_closed_server:
             raise StreamClosedError(self.stream_id)
@@ -311,35 +312,16 @@ class Stream:
         self._cb_close(self.stream_id)
         self.stream_closed_server = True
 
-        # Do nothing if the response deferred was cancelled
         flags = None
         if b'Content-Length' not in self._response['headers']:
-            # Missing Content-Length - PotentialDataLoss
+            # Missing Content-Length - {twisted.web.http.PotentialDataLoss}
             flags = ['partial']
-        elif self._is_data_lost():
-            if self._fail_on_dataloss:
-                self._deferred_response.errback(ResponseFailed([Failure()]))
-                return
-            else:
-                flags = ['dataloss']
 
-        if reason is StreamCloseReason.ENDED:
-            self._fire_response_deferred(flags)
-
-        # Stream was abruptly ended here
-        elif reason is StreamCloseReason.CANCELLED:
-            # Client has cancelled the request. Remove all the data
-            # received and fire the response deferred with no flags set
-            self._response['body'].truncate(0)
-            self._response['headers'].clear()
-            self._fire_response_deferred()
-
-        elif reason in (StreamCloseReason.RESET | StreamCloseReason.CONNECTION_LOST):
-            if failure is None:
-                self._deferred_response.errback(ResponseFailed([Failure()]))
-            else:
-                self._deferred_response.errback(failure)
-        elif reason is StreamCloseReason.MAXSIZE_EXCEEDED:
+        # NOTE: Order of handling the events is important here
+        # As we immediately cancel the request when maxsize is exceeded while
+        # receiving DATA_FRAME's when we have received the headers (not
+        # having Content-Length)
+        if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
             expected_size = int(self._response['headers'].get(b'Content-Length', -1))
             error_msg = ("Cancelling download of {url}: expected response "
                          "size ({size}) larger than download max size ({maxsize}).")
@@ -349,14 +331,34 @@ class Stream:
                 'maxsize': self._download_maxsize
             }
 
-            LOGGER.error(error_msg, error_args)
+            logger.error(error_msg, error_args)
             self._deferred_response.errback(CancelledError(error_msg.format(**error_args)))
 
-    def _fire_response_deferred(self, flags=None):
+        elif reason is StreamCloseReason.ENDED:
+            self._fire_response_deferred(flags)
+
+        # Stream was abruptly ended here
+        elif reason is StreamCloseReason.CANCELLED:
+            # Client has cancelled the request. Remove all the data
+            # received and fire the response deferred with no flags set
+
+            # NOTE: The data is already flushed in Stream.reset_stream() called
+            # immediately when the stream needs to be cancelled
+
+            # There maybe no :status in headers, we make
+            # HTTP Status Code: 499 - Client Closed Request
+            self._response['headers'][':status'] = '499'
+            self._fire_response_deferred()
+
+        elif reason in (StreamCloseReason.RESET, StreamCloseReason.CONNECTION_LOST):
+            self._deferred_response.errback(ResponseFailed([
+                error if error else Failure()
+            ]))
+
+    def _fire_response_deferred(self, flags: List[str] = None):
         """Builds response from the self._response dict
         and fires the response deferred callback with the
         generated response instance"""
-        # TODO: Update Client Side Status Codes here
 
         body = self._response['body'].getvalue()
         response_cls = responsetypes.from_args(
@@ -365,11 +367,7 @@ class Stream:
             body=body
         )
 
-        # If there is no :status in headers
-        # (happens when client called response_deferred.cancel())
-        # HTTP Status Code: 499 - Client Closed Request
-        status = self._response['headers'].get(':status', '499')
-
+        status = self._response['headers'][':status']
         response = response_cls(
             url=self._request.url,
             status=status,
