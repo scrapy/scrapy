@@ -41,7 +41,7 @@ variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
 
 .. _IPython: https://ipython.org/
 .. _IPython installation guide: https://ipython.org/install.html
-.. _bpython: https://www.bpython-interpreter.org/
+.. _bpython: https://bpython-interpreter.org/
 
 Launch the shell
 ================
@@ -142,7 +142,7 @@ Example of shell session
 ========================
 
 Here's an example of a typical shell session where we start by scraping the
-https://scrapy.org page, and then proceed to scrape the https://reddit.com
+https://scrapy.org page, and then proceed to scrape the https://old.reddit.com/
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
 getting an error. We end the session by typing Ctrl-D (in Unix systems) or
 Ctrl-Z in Windows.
@@ -155,6 +155,17 @@ shell works.
 First, we launch the shell::
 
     scrapy shell 'https://scrapy.org' --nolog
+
+.. note::
+
+   Remember to always enclose URLs in quotes when running the Scrapy shell from
+   the command line, otherwise URLs containing arguments (i.e. the ``&`` character)
+   will not work.
+
+   On Windows, use double quotes instead::
+
+       scrapy shell "https://scrapy.org" --nolog
+
 
 Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
@@ -182,7 +193,7 @@ After that, we can start playing with the objects:
 >>> response.xpath('//title/text()').get()
 'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
->>> fetch("https://reddit.com")
+>>> fetch("https://old.reddit.com/")
 
 >>> response.xpath('//title/text()').get()
 'reddit: the front page of the internet'

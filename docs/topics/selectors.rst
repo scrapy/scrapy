@@ -14,7 +14,7 @@ achieve this, such as:
    drawback: it's slow.
 
  * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
-   API based on `ElementTree`_. (lxml is not part of the Python standard
+   API based on :mod:`~xml.etree.ElementTree`. (lxml is not part of the Python standard
    library.)
 
 Scrapy comes with its own mechanism for extracting data. They're called
@@ -35,12 +35,10 @@ defines selectors to associate those styles with specific HTML elements.
     in speed and parsing accuracy to lxml.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://lxml.de/
-.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
-.. _cssselect: https://pypi.python.org/pypi/cssselect/
-.. _XPath: https://www.w3.org/TR/xpath
+.. _lxml: https://lxml.de/
+.. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
-.. _parsel: https://parsel.readthedocs.io/
+.. _parsel: https://parsel.readthedocs.io/en/latest/
 
 Using selectors
 ===============
@@ -255,7 +253,7 @@ that Scrapy (parsel) implements a couple of **non-standard pseudo-elements**:
     They will most probably not work with other libraries like
     `lxml`_ or `PyQuery`_.
 
-.. _PyQuery: https://pypi.python.org/pypi/pyquery
+.. _PyQuery: https://pypi.org/project/pyquery/
 
 Examples:
 
@@ -309,7 +307,7 @@ Examples:
     make much sense: text nodes do not have attributes, and attribute values
     are string values already and do not have children nodes.
 
-.. _CSS Selectors: https://www.w3.org/TR/css3-selectors/#selectors
+.. _CSS Selectors: https://www.w3.org/TR/selectors-3/#selectors
 
 .. _topics-selectors-nesting-selectors:
 
@@ -504,7 +502,7 @@ Another common case would be to extract all direct ``<p>`` children:
 For more details about relative XPaths see the `Location Paths`_ section in the
 XPath specification.
 
-.. _Location Paths: https://www.w3.org/TR/xpath#location-paths
+.. _Location Paths: https://www.w3.org/TR/xpath/all/#location-paths
 
 When querying by class, consider using CSS
 ------------------------------------------
@@ -612,7 +610,7 @@ But using the ``.`` to mean the node, works:
 >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
 ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath/#section-String-Functions
+.. _`XPath string function`: https://www.w3.org/TR/xpath/all/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 
@@ -764,7 +762,7 @@ Set operations
 These can be handy for excluding parts of a document tree before
 extracting text elements for example.
 
-Example extracting microdata (sample content taken from http://schema.org/Product)
+Example extracting microdata (sample content taken from https://schema.org/Product)
 with groups of itemscopes and corresponding itemprops::
 
     >>> doc = u"""
@@ -986,7 +984,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
 
       sel.xpath("//h1")
 
@@ -1013,7 +1011,7 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object::
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   of :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
 
       sel.xpath("//product")
 

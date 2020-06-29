@@ -42,6 +42,7 @@ def gunzip(data):
                 raise
     return b''.join(output_list)
 
+
 _is_gzipped = re.compile(br'^application/(x-)?gzip\b', re.I).search
 _is_octetstream = re.compile(br'^(application|binary)/octet-stream\b', re.I).search
 
@@ -51,8 +52,7 @@ def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""
     ctype = response.headers.get('Content-Type', b'')
     cenc = response.headers.get('Content-Encoding', b'').lower()
-    return (_is_gzipped(ctype) or
-            (_is_octetstream(ctype) and cenc in (b'gzip', b'x-gzip')))
+    return _is_gzipped(ctype) or _is_octetstream(ctype) and cenc in (b'gzip', b'x-gzip')
 
 
 def gzip_magic_number(response):

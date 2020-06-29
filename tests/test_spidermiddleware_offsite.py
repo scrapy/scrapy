@@ -4,7 +4,7 @@ import warnings
 
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
-from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, URLWarning
+from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, URLWarning, PortWarning
 from scrapy.utils.test import get_crawler
 
 
@@ -22,19 +22,24 @@ class TestOffsiteMiddleware(TestCase):
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
 
-        onsite_reqs = [Request('http://scrapytest.org/1'),
-                       Request('http://scrapy.org/1'),
-                       Request('http://sub.scrapy.org/1'),
-                       Request('http://offsite.tld/letmepass', dont_filter=True),
-                       Request('http://scrapy.test.org/')]
-        offsite_reqs = [Request('http://scrapy2.org'),
-                       Request('http://offsite.tld/'),
-                       Request('http://offsite.tld/scrapytest.org'),
-                       Request('http://offsite.tld/rogue.scrapytest.org'),
-                       Request('http://rogue.scrapytest.org.haha.com'),
-                       Request('http://roguescrapytest.org'),
-                       Request('http://test.org/'),
-                       Request('http://notscrapy.test.org/')]
+        onsite_reqs = [
+            Request('http://scrapytest.org/1'),
+            Request('http://scrapy.org/1'),
+            Request('http://sub.scrapy.org/1'),
+            Request('http://offsite.tld/letmepass', dont_filter=True),
+            Request('http://scrapy.test.org/'),
+            Request('http://scrapy.test.org:8000/'),
+        ]
+        offsite_reqs = [
+            Request('http://scrapy2.org'),
+            Request('http://offsite.tld/'),
+            Request('http://offsite.tld/scrapytest.org'),
+            Request('http://offsite.tld/rogue.scrapytest.org'),
+            Request('http://rogue.scrapytest.org.haha.com'),
+            Request('http://roguescrapytest.org'),
+            Request('http://test.org/'),
+            Request('http://notscrapy.test.org/'),
+        ]
         reqs = onsite_reqs + offsite_reqs
 
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
@@ -55,21 +60,21 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
-    def _get_spider(self):
-        return Spider('foo')
+    def _get_spiderargs(self):
+        return dict(name='foo')
 
 
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
-    def _get_spider(self):
-      bad_hostname = urlparse('http:////scrapytest.org').hostname
-      return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
+    def _get_spiderargs(self):
+        bad_hostname = urlparse('http:////scrapytest.org').hostname
+        return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
 
     def test_process_spider_output(self):
-      res = Response('http://scrapytest.org')
-      reqs = [Request('http://scrapytest.org/1')]
-      out = list(self.mw.process_spider_output(res, reqs, self.spider))
-      self.assertEqual(out, reqs)
+        res = Response('http://scrapytest.org')
+        reqs = [Request('http://scrapytest.org/1')]
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEqual(out, reqs)
 
 
 class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
@@ -80,3 +85,13 @@ class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
             warnings.simplefilter("always")
             self.mw.get_host_regex(self.spider)
             assert issubclass(w[-1].category, URLWarning)
+
+
+class TestOffsiteMiddleware6(TestOffsiteMiddleware4):
+
+    def test_get_host_regex(self):
+        self.spider.allowed_domains = ['scrapytest.org:8000', 'scrapy.org', 'scrapy.test.org']
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.mw.get_host_regex(self.spider)
+            assert issubclass(w[-1].category, PortWarning)

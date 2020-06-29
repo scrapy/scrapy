@@ -12,9 +12,15 @@ once the spider has finished crawling all regular (non failed) pages.
 import logging
 
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError,
+    ConnectionDone,
+    ConnectionLost,
+    ConnectionRefusedError,
+    DNSLookupError,
+    TCPTimedOutError,
+    TimeoutError,
+)
 from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import NotConfigured
@@ -25,7 +31,7 @@ from scrapy.utils.python import global_object_name
 logger = logging.getLogger(__name__)
 
 
-class RetryMiddleware(object):
+class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response

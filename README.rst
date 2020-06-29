@@ -40,8 +40,8 @@ including a list of features.
 Requirements
 ============
 
-* Python 3.5+
-* Works on Linux, Windows, Mac OSX, BSD
+* Python 3.5.2+
+* Works on Linux, Windows, macOS, BSD
 
 Install
 =======

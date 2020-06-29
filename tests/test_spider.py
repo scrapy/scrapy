@@ -120,7 +120,9 @@ class XMLFeedSpiderTest(SpiderTest):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
                 xmlns:y="http://www.example.com/schemas/extras/1.0">
-        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated><other value="bar" y:custom="fuu"/></url>
+        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated>
+            <other value="bar" y:custom="fuu"/>
+        </url>
         <url><loc>http://www.example.com/</loc><y:updated>2009-08-16</updated><other value="foo"/></url>
         </urlset>"""
         response = XmlResponse(url='http://example.com/sitemap.xml', body=body)
@@ -602,13 +604,19 @@ class DeprecationTest(unittest.TestCase):
             self.assertEqual(len(list(spider1.start_requests())), 1)
             self.assertEqual(len(w), 0)
 
+            # spider without overridden make_requests_from_url method
+            # should issue a warning when called directly
+            request = spider1.make_requests_from_url("http://www.example.com")
+            self.assertTrue(isinstance(request, Request))
+            self.assertEqual(len(w), 1)
+
             # spider with overridden make_requests_from_url issues a warning,
             # but the method still works
             spider2 = MySpider5()
             requests = list(spider2.start_requests())
             self.assertEqual(len(requests), 1)
             self.assertEqual(requests[0].url, 'http://example.com/foo')
-            self.assertEqual(len(w), 1)
+            self.assertEqual(len(w), 2)
 
 
 class NoParseMethodSpiderTest(unittest.TestCase):

@@ -1,32 +1,37 @@
-import os
 import csv
 import json
-import warnings
-import tempfile
+import os
+import random
 import shutil
 import string
+import tempfile
+import warnings
 from io import BytesIO
+from logging import getLogger
 from pathlib import Path
+from string import ascii_letters, digits
 from unittest import mock
 from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
 
-from zope.interface.verify import verifyObject
-from twisted.trial import unittest
+import lxml.etree
+from testfixtures import LogCapture
 from twisted.internet import defer
-from scrapy.crawler import CrawlerRunner
-from scrapy.settings import Settings
-from tests.mockserver import MockServer
-from w3lib.url import path_to_file_uri
+from twisted.trial import unittest
+from w3lib.url import file_uri_to_path, path_to_file_uri
+from zope.interface import implementer
+from zope.interface.verify import verifyObject
 
 import scrapy
+from scrapy.crawler import CrawlerRunner
 from scrapy.exporters import CsvItemExporter
-from scrapy.extensions.feedexport import (
-    IFeedStorage, FileFeedStorage, FTPFeedStorage,
-    S3FeedStorage, StdoutFeedStorage,
-    BlockingFeedStorage)
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete, get_crawler
+from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, FTPFeedStorage,
+                                          IFeedStorage, S3FeedStorage, StdoutFeedStorage)
+from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
+from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
+
+from tests.mockserver import MockServer
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -371,7 +376,7 @@ class StdoutFeedStorageTest(unittest.TestCase):
         self.assertEqual(out.getvalue(), b"content")
 
 
-class FromCrawlerMixin(object):
+class FromCrawlerMixin:
     init_with_crawler = False
 
     @classmethod
@@ -388,6 +393,46 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
     pass
 
 
+class DummyBlockingFeedStorage(BlockingFeedStorage):
+
+    def __init__(self, uri):
+        self.path = file_uri_to_path(uri)
+
+    def _store_in_thread(self, file):
+        dirname = os.path.dirname(self.path)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
+        with open(self.path, 'ab') as output_file:
+            output_file.write(file.read())
+
+        file.close()
+
+
+class FailingBlockingFeedStorage(DummyBlockingFeedStorage):
+
+    def _store_in_thread(self, file):
+        raise OSError('Cannot store')
+
+
+@implementer(IFeedStorage)
+class LogOnStoreFileStorage:
+    """
+    This storage logs inside `store` method.
+    It can be used to make sure `store` method is invoked.
+    """
+
+    def __init__(self, uri):
+        self.path = file_uri_to_path(uri)
+        self.logger = getLogger()
+
+    def open(self, spider):
+        return tempfile.NamedTemporaryFile(prefix='feed-')
+
+    def store(self, file):
+        self.logger.info('Storage.store is called')
+        file.close()
+
+
 class FeedExportTest(unittest.TestCase):
 
     class MyItem(scrapy.Item):
@@ -395,31 +440,49 @@ class FeedExportTest(unittest.TestCase):
         egg = scrapy.Field()
         baz = scrapy.Field()
 
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def _random_temp_filename(self):
+        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
+        filename = ''.join(chars)
+        return os.path.join(self.temp_dir, filename)
+
     @defer.inlineCallbacks
-    def run_and_export(self, spider_cls, settings=None):
+    def run_and_export(self, spider_cls, settings):
         """ Run spider with specified settings; return exported data. """
-        tmpdir = tempfile.mkdtemp()
-        res_path = os.path.join(tmpdir, 'res')
-        res_uri = urljoin('file:', pathname2url(res_path))
-        defaults = {
-            'FEED_URI': res_uri,
-            'FEED_FORMAT': 'csv',
-            'FEED_PATH': res_path
+
+        FEEDS = settings.get('FEEDS') or {}
+        settings['FEEDS'] = {
+            urljoin('file:', pathname2url(str(file_path))): feed
+            for file_path, feed in FEEDS.items()
         }
-        defaults.update(settings or {})
+
+        content = {}
         try:
             with MockServer() as s:
-                runner = CrawlerRunner(Settings(defaults))
+                runner = CrawlerRunner(Settings(settings))
                 spider_cls.start_urls = [s.url('/')]
                 yield runner.crawl(spider_cls)
 
-            with open(str(defaults['FEED_PATH']), 'rb') as f:
-                content = f.read()
+            for file_path, feed in FEEDS.items():
+                if not os.path.exists(str(file_path)):
+                    continue
+
+                with open(str(file_path), 'rb') as f:
+                    content[feed['format']] = f.read()
 
         finally:
-            shutil.rmtree(tmpdir)
+            for file_path in FEEDS.keys():
+                if not os.path.exists(str(file_path)):
+                    continue
 
-        defer.returnValue(content)
+                os.remove(str(file_path))
+
+        return content
 
     @defer.inlineCallbacks
     def exported_data(self, items, settings):
@@ -434,7 +497,7 @@ class FeedExportTest(unittest.TestCase):
                     yield item
 
         data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
+        return data
 
     @defer.inlineCallbacks
     def exported_no_data(self, settings):
@@ -448,15 +511,19 @@ class FeedExportTest(unittest.TestCase):
                 pass
 
         data = yield self.run_and_export(TestSpider, settings)
-        defer.returnValue(data)
+        return data
 
     @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
         settings = settings or {}
-        settings.update({'FEED_FORMAT': 'csv'})
+        settings.update({
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+        })
         data = yield self.exported_data(items, settings)
 
-        reader = csv.DictReader(to_unicode(data).splitlines())
+        reader = csv.DictReader(to_unicode(data['csv']).splitlines())
         got_rows = list(reader)
         if ordered:
             self.assertEqual(reader.fieldnames, header)
@@ -468,51 +535,87 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({'FEED_FORMAT': 'jl'})
+        settings.update({
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'jl'},
+            },
+        })
         data = yield self.exported_data(items, settings)
-        parsed = [json.loads(to_unicode(line)) for line in data.splitlines()]
+        parsed = [json.loads(to_unicode(line)) for line in data['jl'].splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         self.assertEqual(rows, parsed)
 
     @defer.inlineCallbacks
     def assertExportedXml(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({'FEED_FORMAT': 'xml'})
+        settings.update({
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'xml'},
+            },
+        })
         data = yield self.exported_data(items, settings)
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        import lxml.etree
-        root = lxml.etree.fromstring(data)
+        root = lxml.etree.fromstring(data['xml'])
         got_rows = [{e.tag: e.text for e in it} for it in root.findall('item')]
         self.assertEqual(rows, got_rows)
 
+    @defer.inlineCallbacks
+    def assertExportedMultiple(self, items, rows, settings=None):
+        settings = settings or {}
+        settings.update({
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'json'},
+            },
+        })
+        data = yield self.exported_data(items, settings)
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
+        # XML
+        root = lxml.etree.fromstring(data['xml'])
+        xml_rows = [{e.tag: e.text for e in it} for it in root.findall('item')]
+        self.assertEqual(rows, xml_rows)
+        # JSON
+        json_rows = json.loads(to_unicode(data['json']))
+        self.assertEqual(rows, json_rows)
+
     def _load_until_eof(self, data, load_func):
-        bytes_output = BytesIO(data)
         result = []
-        while True:
-            try:
-                result.append(load_func(bytes_output))
-            except EOFError:
-                break
+        with tempfile.TemporaryFile() as temp:
+            temp.write(data)
+            temp.seek(0)
+            while True:
+                try:
+                    result.append(load_func(temp))
+                except EOFError:
+                    break
         return result
 
     @defer.inlineCallbacks
     def assertExportedPickle(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({'FEED_FORMAT': 'pickle'})
+        settings.update({
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'pickle'},
+            },
+        })
         data = yield self.exported_data(items, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
         import pickle
-        result = self._load_until_eof(data, load_func=pickle.load)
+        result = self._load_until_eof(data['pickle'], load_func=pickle.load)
         self.assertEqual(expected, result)
 
     @defer.inlineCallbacks
     def assertExportedMarshal(self, items, rows, settings=None):
         settings = settings or {}
-        settings.update({'FEED_FORMAT': 'marshal'})
+        settings.update({
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'marshal'},
+            },
+        })
         data = yield self.exported_data(items, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
         import marshal
-        result = self._load_until_eof(data, load_func=marshal.load)
+        result = self._load_until_eof(data['marshal'], load_func=marshal.load)
         self.assertEqual(expected, result)
 
     @defer.inlineCallbacks
@@ -521,6 +624,8 @@ class FeedExportTest(unittest.TestCase):
         yield self.assertExportedJsonLines(items, rows, settings)
         yield self.assertExportedXml(items, rows, settings)
         yield self.assertExportedPickle(items, rows, settings)
+        yield self.assertExportedMarshal(items, rows, settings)
+        yield self.assertExportedMultiple(items, rows, settings)
 
     @defer.inlineCallbacks
     def test_export_items(self):
@@ -538,15 +643,14 @@ class FeedExportTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_export_no_items_not_store_empty(self):
-        formats = ('json',
-                   'jsonlines',
-                   'xml',
-                   'csv',)
-
-        for fmt in formats:
-            settings = {'FEED_FORMAT': fmt}
+        for fmt in ('json', 'jsonlines', 'xml', 'csv'):
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): {'format': fmt},
+                },
+            }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(data, b'')
+            self.assertEqual(data[fmt], b'')
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -558,9 +662,34 @@ class FeedExportTest(unittest.TestCase):
         )
 
         for fmt, expctd in formats:
-            settings = {'FEED_FORMAT': fmt, 'FEED_STORE_EMPTY': True, 'FEED_EXPORT_INDENT': None}
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): {'format': fmt},
+                },
+                'FEED_STORE_EMPTY': True,
+                'FEED_EXPORT_INDENT': None,
+            }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(data, expctd)
+            self.assertEqual(data[fmt], expctd)
+
+    @defer.inlineCallbacks
+    def test_export_no_items_multiple_feeds(self):
+        """ Make sure that `storage.store` is called for every feed. """
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.LogOnStoreFileStorage'},
+            'FEED_STORE_EMPTY': False
+        }
+
+        with LogCapture() as log:
+            yield self.exported_no_data(settings)
+
+        print(log)
+        self.assertEqual(str(log).count('Storage.store is called'), 3)
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
@@ -581,9 +710,9 @@ class FeedExportTest(unittest.TestCase):
         header = self.MyItem.fields.keys()
         rows_csv = [
             {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
-            {'egg': '',      'foo': 'bar2', 'baz': ''},
+            {'egg': '', 'foo': 'bar2', 'baz': ''},
             {'egg': 'spam3', 'foo': 'bar3', 'baz': 'quux3'},
-            {'egg': 'spam4', 'foo': '',     'baz': ''},
+            {'egg': 'spam4', 'foo': '', 'baz': ''},
         ]
         rows_jl = [dict(row) for row in items]
         yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
@@ -598,10 +727,10 @@ class FeedExportTest(unittest.TestCase):
         header = ["foo", "baz", "hello"]
         settings = {'FEED_EXPORT_FIELDS': header}
         rows = [
-            {'foo': 'bar1', 'baz': '',      'hello': ''},
-            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
+            {'foo': 'bar1', 'baz': '', 'hello': ''},
+            {'foo': 'bar2', 'baz': '', 'hello': 'world2'},
             {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
-            {'foo': '',     'baz': '',      'hello': 'world4'},
+            {'foo': '', 'baz': '', 'hello': 'world4'},
         ]
         yield self.assertExported(items, header, rows,
                                   settings=settings, ordered=True)
@@ -654,32 +783,87 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_export_encoding(self):
         items = [dict({'foo': u'Test\xd6'})]
-        header = ['foo']
 
         formats = {
-            'json': u'[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
-            'jsonlines': u'{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
-            'xml': u'<?xml version="1.0" encoding="utf-8"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('utf-8'),
-            'csv': u'foo\r\nTest\xd6\r\n'.encode('utf-8'),
+            'json': '[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
+            'jsonlines': '{"foo": "Test\\u00d6"}\n'.encode('utf-8'),
+            'xml': (
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                '<items><item><foo>Test\xd6</foo></item></items>'
+            ).encode('utf-8'),
+            'csv': 'foo\r\nTest\xd6\r\n'.encode('utf-8'),
         }
 
-        for format, expected in formats.items():
-            settings = {'FEED_FORMAT': format, 'FEED_EXPORT_INDENT': None}
+        for fmt, expected in formats.items():
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): {'format': fmt},
+                },
+                'FEED_EXPORT_INDENT': None,
+            }
             data = yield self.exported_data(items, settings)
-            self.assertEqual(expected, data)
+            self.assertEqual(expected, data[fmt])
 
         formats = {
-            'json': u'[{"foo": "Test\xd6"}]'.encode('latin-1'),
-            'jsonlines': u'{"foo": "Test\xd6"}\n'.encode('latin-1'),
-            'xml': u'<?xml version="1.0" encoding="latin-1"?>\n<items><item><foo>Test\xd6</foo></item></items>'.encode('latin-1'),
-            'csv': u'foo\r\nTest\xd6\r\n'.encode('latin-1'),
+            'json': '[{"foo": "Test\xd6"}]'.encode('latin-1'),
+            'jsonlines': '{"foo": "Test\xd6"}\n'.encode('latin-1'),
+            'xml': (
+                '<?xml version="1.0" encoding="latin-1"?>\n'
+                '<items><item><foo>Test\xd6</foo></item></items>'
+            ).encode('latin-1'),
+            'csv': 'foo\r\nTest\xd6\r\n'.encode('latin-1'),
         }
 
-        settings = {'FEED_EXPORT_INDENT': None, 'FEED_EXPORT_ENCODING': 'latin-1'}
-        for format, expected in formats.items():
-            settings['FEED_FORMAT'] = format
+        for fmt, expected in formats.items():
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): {'format': fmt},
+                },
+                'FEED_EXPORT_INDENT': None,
+                'FEED_EXPORT_ENCODING': 'latin-1',
+            }
             data = yield self.exported_data(items, settings)
-            self.assertEqual(expected, data)
+            self.assertEqual(expected, data[fmt])
+
+    @defer.inlineCallbacks
+    def test_export_multiple_configs(self):
+        items = [dict({'foo': u'FOO', 'bar': u'BAR'})]
+
+        formats = {
+            'json': '[\n{"bar": "BAR"}\n]'.encode('utf-8'),
+            'xml': (
+                '<?xml version="1.0" encoding="latin-1"?>\n'
+                '<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>'
+            ).encode('latin-1'),
+            'csv': 'bar,foo\r\nBAR,FOO\r\n'.encode('utf-8'),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'json',
+                    'indent': 0,
+                    'fields': ['bar'],
+                    'encoding': 'utf-8',
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'indent': 2,
+                    'fields': ['foo'],
+                    'encoding': 'latin-1',
+                },
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'indent': None,
+                    'fields': ['bar', 'foo'],
+                    'encoding': 'utf-8',
+                },
+            },
+        }
+
+        data = yield self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            self.assertEqual(expected, data[fmt])
 
     @defer.inlineCallbacks
     def test_export_indentation(self):
@@ -827,33 +1011,80 @@ class FeedExportTest(unittest.TestCase):
         ]
 
         for row in test_cases:
-            settings = {'FEED_FORMAT': row['format'], 'FEED_EXPORT_INDENT': row['indent']}
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): {
+                        'format': row['format'],
+                        'indent': row['indent'],
+                    },
+                },
+            }
             data = yield self.exported_data(items, settings)
-            print(row['format'], row['indent'])
-            self.assertEqual(row['expected'], data)
+            self.assertEqual(row['expected'], data[row['format']])
 
     @defer.inlineCallbacks
     def test_init_exporters_storages_with_crawler(self):
         settings = {
-            'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.'
-                                      'FromCrawlerCsvItemExporter'},
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.'
-                                      'FromCrawlerFileFeedStorage'},
+            'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.FromCrawlerCsvItemExporter'},
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.FromCrawlerFileFeedStorage'},
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'csv'},
+            },
         }
-        yield self.exported_data({}, settings)
+        yield self.exported_data(items=[], settings=settings)
         self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
 
     @defer.inlineCallbacks
     def test_pathlib_uri(self):
-        tmpdir = tempfile.mkdtemp()
-        feed_uri = Path(tmpdir) / 'res'
+        feed_path = Path(self._random_temp_filename())
         settings = {
-            'FEED_FORMAT': 'csv',
             'FEED_STORE_EMPTY': True,
-            'FEED_URI': feed_uri,
-            'FEED_PATH': feed_uri
+            'FEEDS': {
+                feed_path: {'format': 'csv'}
+            },
         }
         data = yield self.exported_no_data(settings)
-        self.assertEqual(data, b'')
-        shutil.rmtree(tmpdir, ignore_errors=True)
+        self.assertEqual(data['csv'], b'')
+
+    @defer.inlineCallbacks
+    def test_multiple_feeds_success_logs_blocking_feed_storage(self):
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.DummyBlockingFeedStorage'},
+        }
+        items = [
+            {'foo': 'bar1', 'baz': ''},
+            {'foo': 'bar2', 'baz': 'quux'},
+        ]
+        with LogCapture() as log:
+            yield self.exported_data(items, settings)
+
+        print(log)
+        for fmt in ['json', 'xml', 'csv']:
+            self.assertIn('Stored %s feed (2 items)' % fmt, str(log))
+
+    @defer.inlineCallbacks
+    def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+                self._random_temp_filename(): {'format': 'xml'},
+                self._random_temp_filename(): {'format': 'csv'},
+            },
+            'FEED_STORAGES': {'file': 'tests.test_feedexport.FailingBlockingFeedStorage'},
+        }
+        items = [
+            {'foo': 'bar1', 'baz': ''},
+            {'foo': 'bar2', 'baz': 'quux'},
+        ]
+        with LogCapture() as log:
+            yield self.exported_data(items, settings)
+
+        print(log)
+        for fmt in ['json', 'xml', 'csv']:
+            self.assertIn('Error storing %s feed (2 items)' % fmt, str(log))

@@ -30,6 +30,11 @@ setup(
     name='Scrapy',
     version=version,
     url='https://scrapy.org',
+    project_urls = {
+        'Documentation': 'https://docs.scrapy.org/',
+        'Source': 'https://github.com/scrapy/scrapy',
+        'Tracker': 'https://github.com/scrapy/scrapy/issues',
+    },
     description='A high-level Web Crawling and Web Scraping framework',
     long_description=open('README.rst').read(),
     author='Scrapy developers',
@@ -61,7 +66,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.5.2',
     install_requires=[
         'Twisted>=17.9.0',
         'cryptography>=2.0',
@@ -75,6 +80,7 @@ setup(
         'w3lib>=1.17.0',
         'zope.interface>=4.1.3',
         'protego>=0.1.15',
+        'itemadapter>=0.1.0',
     ],
     extras_require=extras_require,
 )

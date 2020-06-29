@@ -5,6 +5,8 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import json
+import warnings
 from contextlib import suppress
 from typing import Generator
 from urllib.parse import urljoin
@@ -14,15 +16,19 @@ from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
+_NONE = object()
+
 
 class TextResponse(Response):
 
     _DEFAULT_ENCODING = 'ascii'
+    _cached_decoded_json = _NONE
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
@@ -61,7 +67,20 @@ class TextResponse(Response):
 
     def body_as_unicode(self):
         """Return body as unicode"""
+        warnings.warn('Response.body_as_unicode() is deprecated, '
+                      'please use Response.text instead.',
+                      ScrapyDeprecationWarning, stacklevel=2)
         return self.text
+
+    def json(self):
+        """
+        .. versionadded:: 2.2
+
+        Deserialize a JSON document to a Python object.
+        """
+        if self._cached_decoded_json is _NONE:
+            self._cached_decoded_json = json.loads(self.text)
+        return self._cached_decoded_json
 
     @property
     def text(self):
@@ -121,7 +140,7 @@ class TextResponse(Response):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None):
+               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
         # type: (...) -> Request
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -157,11 +176,12 @@ class TextResponse(Response):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
     def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding=None, priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None,
+                   dont_filter=False, errback=None, cb_kwargs=None, flags=None,
                    css=None, xpath=None):
         # type: (...) -> Generator[Request, None, None]
         """
@@ -187,9 +207,11 @@ class TextResponse(Response):
         selectors from which links cannot be obtained (for instance, anchor tags without an
         ``href`` attribute)
         """
-        arg_count = len(list(filter(None, (urls, css, xpath))))
-        if arg_count != 1:
-            raise ValueError('Please supply exactly one of the following arguments: urls, css, xpath')
+        arguments = [x for x in (urls, css, xpath) if x is not None]
+        if len(arguments) != 1:
+            raise ValueError(
+                "Please supply exactly one of the following arguments: urls, css, xpath"
+            )
         if not urls:
             if css:
                 urls = self.css(css)
@@ -214,6 +236,7 @@ class TextResponse(Response):
             dont_filter=dont_filter,
             errback=errback,
             cb_kwargs=cb_kwargs,
+            flags=flags,
         )
 
 
