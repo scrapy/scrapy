@@ -88,29 +88,17 @@ item loaders: unless a pre-populated item is passed to the loader, fields
 will be populated incrementally using the loader's :meth:`~ItemLoader.add_xpath`,
 :meth:`~ItemLoader.add_css` and :meth:`~ItemLoader.add_value` methods.
 
-Given the way that item loaders store data internally, one approach
-to overcome this is to define items using the :func:`~dataclasses.field`
-function, with ``list`` as the ``default_factory`` argument::
+One approach to overcome this is to define items using the
+:func:`~dataclasses.field` function, with a ``default`` argument::
 
     from dataclasses import dataclass, field
+    from typing import Optional
 
     @dataclass
     class InventoryItem:
-        name: str = field(default_factory=list)
-        price: float = field(default_factory=list)
-        stock: int = field(default_factory=list)
-
-Note that in order to keep the example simple, the types do not match
-completely. A more accurate but verbose definition would be::
-
-    from dataclasses import dataclass, field
-    from typing import List, Union
-
-    @dataclass
-    class InventoryItem:
-        name: Union[str, List[str]] = field(default_factory=list)
-        price: Union[float, List[float]] = field(default_factory=list)
-        stock: Union[int, List[int]] = field(default_factory=list)
+        name: Optional[str] = field(default=None)
+        price: Optional[float] = field(default=None)
+        stock: Optional[int] = field(default=None)
 
 
 .. _topics-loaders-processors:
