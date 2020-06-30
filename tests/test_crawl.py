@@ -172,28 +172,28 @@ class CrawlTestCase(TestCase):
                 yield from self.start_requests()
 
         settings = {
-                "SPIDER_MIDDLEWARES": {
-                    "scrapy.spidermiddlewares.depth.DepthMiddleware" : 0,
-                    "tests.middlewares.RequestInOrderMiddleware" : 1,
-                    }
-                }
+            "SPIDER_MIDDLEWARES": {
+                "scrapy.spidermiddlewares.depth.DepthMiddleware": 0,
+                "tests.middlewares.RequestInOrderMiddleware": 1,
+            }
+        }
         crawler = CrawlerRunner(settings).create_crawler(EagerSpider)
         """
             number_of_start_requests should be big enough, so scheduling such amount
             of requests takes longer than crawling first of them
         """
         yield crawler.crawl(
-                mockserver=self.mockserver,
-                number_of_start_requests=100,
-                )
+            mockserver=self.mockserver,
+            number_of_start_requests=100,
+        )
         requests_in_order = crawler.spider.requests_in_order_of_scheduling
         depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
         order_of_start_requests = [
-                o for o, d in enumerate(depths_in_order) if d == 0
-                ]
+            o for o, d in enumerate(depths_in_order) if d == 0
+        ]
         order_of_other_requests = [
-                o for o, d in enumerate(depths_in_order) if d != 0
-                ]
+            o for o, d in enumerate(depths_in_order) if d != 0
+        ]
         last_start_request = max(order_of_start_requests)
         first_other_request = min(order_of_other_requests)
         assert last_start_request < first_other_request
@@ -204,28 +204,28 @@ class CrawlTestCase(TestCase):
             lazyness as a negation of eagerness
         """
         settings = {
-                "SPIDER_MIDDLEWARES": {
-                    "scrapy.spidermiddlewares.depth.DepthMiddleware" : 0,
-                    "tests.middlewares.RequestInOrderMiddleware" : 1,
-                    }
-                }
+            "SPIDER_MIDDLEWARES": {
+                "scrapy.spidermiddlewares.depth.DepthMiddleware": 0,
+                "tests.middlewares.RequestInOrderMiddleware": 1,
+            }
+        }
         crawler = CrawlerRunner(settings).create_crawler(YeldingRequestsSpider)
         """
             number_of_start_requests should be big enough, so scheduling such amount
             of requests takes longer than crawling first of them
         """
         yield crawler.crawl(
-                mockserver=self.mockserver,
-                number_of_start_requests=100,
-                )
+            mockserver=self.mockserver,
+            number_of_start_requests=100,
+        )
         requests_in_order = crawler.spider.requests_in_order_of_scheduling
         depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
         order_of_start_requests = [
-                o for o, d in enumerate(depths_in_order) if d == 0
-                ]
+            o for o, d in enumerate(depths_in_order) if d == 0
+        ]
         order_of_other_requests = [
-                o for o, d in enumerate(depths_in_order) if d != 0
-                ]
+            o for o, d in enumerate(depths_in_order) if d != 0
+        ]
         last_start_request = max(order_of_start_requests)
         first_other_request = min(order_of_other_requests)
         assert last_start_request > first_other_request
