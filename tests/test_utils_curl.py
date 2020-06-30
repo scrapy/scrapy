@@ -141,6 +141,31 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_raw(self):
+        curl_command = (
+            "curl 'https://www.example.org/' --data-raw 'excerptLength=200&ena"
+            "bleDidYouMean=true&sortCriteria=ffirstz32xnamez32x201740686%20asc"
+            "ending&queryFunctions=%5B%5D&rankingFunctions=%5B%5D'"
+        )
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": (
+                "excerptLength=200&enableDidYouMean=true&sortCriteria=ffirstz3"
+                "2xnamez32x201740686%20ascending&queryFunctions=%5B%5D&ranking"
+                "Functions=%5B%5D")
+        }
+        self._test_command(curl_command, expected_result)
+
+    def test_explicit_get_with_data(self):
+        curl_command = 'curl httpbin.org/anything -X GET --data asdf'
+        expected_result = {
+            "method": "GET",
+            "url": "http://httpbin.org/anything",
+            "body": "asdf"
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_patch(self):
         curl_command = (
             'curl "https://example.com/api/fake" -u "username:password" -H "Ac'
