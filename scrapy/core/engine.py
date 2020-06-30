@@ -18,6 +18,7 @@ from scrapy.utils.defer import deferred_from_coro, _isasyncgen
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
+from scrapy.spiders import WaitUntilQueueEmpty
 
 logger = logging.getLogger(__name__)
 
@@ -130,16 +131,14 @@ class ExecutionEngine:
             return
         self._waiting_for_request = True
         try:
-            while not self._needs_backout(spider):
-                if not self._next_request_from_scheduler(spider):
-                    break
-
-            if slot.start_requests and not self._needs_backout(spider):
+            while not self._needs_backout(spider) and slot.start_requests:
                 try:
                     if _isasyncgen(slot.start_requests):
                         request = yield deferred_from_coro(slot.start_requests.__anext__())
                     else:
                         request = next(slot.start_requests)
+                    if request == WaitUntilQueueEmpty:
+                        break
                 except (StopIteration, StopAsyncIteration):
                     slot.start_requests = None
                 except Exception:
@@ -148,6 +147,10 @@ class ExecutionEngine:
                                  exc_info=True, extra={'spider': spider})
                 else:
                     self.crawl(request, spider)
+
+            while not self._needs_backout(spider):
+                if not self._next_request_from_scheduler(spider):
+                    break
 
             if self.spider_is_idle(spider) and slot.close_if_idle:
                 self._spider_idle(spider)

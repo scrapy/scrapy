@@ -103,7 +103,7 @@ class Crawler:
         elif inspect.iscoroutinefunction(self.spider.start_requests):
             return deferred_from_coro(self.spider.start_requests())
         else:
-            return iter(self.spider.start_requests())
+            return iter(self.spider.start_requests_with_control())
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)

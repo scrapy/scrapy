@@ -28,8 +28,8 @@ twisted_version = (_txv.major, _txv.minor, _txv.micro)
 
 
 # Check minimum required Python version
-if sys.version_info < (3, 5):
-    print("Scrapy %s requires Python 3.5" % __version__)
+if sys.version_info < (3, 5, 2):
+    print("Scrapy %s requires Python 3.5.2" % __version__)
     sys.exit(1)
 
 
