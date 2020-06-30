@@ -416,7 +416,7 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
 
     def testPayloadDefaultCiphers(self):
         s = "0123456789" * 10
-        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA128-SHA256'})
+        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'ECDHE-RSA-AES256-GCM-SHA384'})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
         d = getPage(self.getURL("payload"), body=s, contextFactory=client_context_factory)
         return self.assertFailure(d, OpenSSL.SSL.Error)
