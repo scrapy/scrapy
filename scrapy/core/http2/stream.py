@@ -8,6 +8,7 @@ from h2.connection import H2Connection
 from h2.errors import ErrorCodes
 from h2.exceptions import StreamClosedError
 from twisted.internet.defer import Deferred, CancelledError
+from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
@@ -17,6 +18,15 @@ from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 
 logger = logging.getLogger(__name__)
+
+
+class InactiveStreamClosed(ConnectionClosed):
+    """Connection was closed without sending request headers
+    of the stream. This happens when a stream is waiting for other
+    streams to close and connection is lost."""
+
+    def __init__(self, request: Request):
+        self.request = request
 
 
 class StreamCloseReason(Enum):
@@ -32,9 +42,12 @@ class StreamCloseReason(Enum):
     # Expected response body size is more than allowed limit
     MAXSIZE_EXCEEDED = 4
 
-    # When the response deferred is cancelled by the client
+    # Response deferred is cancelled by the client
     # (happens when client called response_deferred.cancel())
     CANCELLED = 5
+
+    # Connection lost and the stream was not initiated
+    INACTIVE = 6
 
 
 class Stream:
@@ -108,8 +121,12 @@ class Stream:
         }
 
         def _cancel(_):
-            # Close this stream as gracefully as possible :)
-            self.reset_stream(StreamCloseReason.CANCELLED)
+            # Close this stream as gracefully as possible
+            # Check if the stream has started
+            if self.request_sent:
+                self.reset_stream(StreamCloseReason.CANCELLED)
+            else:
+                self.close(StreamCloseReason.CANCELLED)
 
         self._deferred_response = Deferred(_cancel)
 
@@ -354,6 +371,9 @@ class Stream:
             self._deferred_response.errback(ResponseFailed([
                 error if error else Failure()
             ]))
+
+        elif reason is StreamCloseReason.INACTIVE:
+            self._deferred_response.errback(InactiveStreamClosed(self._request))
 
     def _fire_response_deferred(self, flags: List[str] = None):
         """Builds response from the self._response dict

@@ -38,12 +38,15 @@ class H2ClientProtocol(Protocol):
         # Streams are stored in a dictionary keyed off their stream IDs
         self.streams: Dict[int, Stream] = {}
 
-        # Boolean to keep track the connection is made
-        # If requests are received before connection is made
-        # we keep all requests in a pool and send them as the connection
-        # is made
-        self.is_connection_made = False
+        # If requests are received before connection is made we keep
+        # all requests in a pool and send them as the connection is made
         self._pending_request_stream_pool = deque()
+
+        # Counter to keep track of opened stream. This counter
+        # is used to make sure that not more than MAX_CONCURRENT_STREAMS
+        # streams are opened which leads to ProtocolError
+        # We use simple FIFO policy to handle pending requests
+        self._active_streams = 0
 
         # Save an instance of ProtocolError raised by hyper-h2
         # We pass this instance to the streams ResponseFailed() failure
@@ -54,10 +57,46 @@ class H2ClientProtocol(Protocol):
             'ip_address': None
         }
 
+    @property
+    def is_connected(self):
+        """Boolean to keep track of the connection status.
+        This is used while initiating pending streams to make sure
+        that we initiate stream only during active HTTP/2 Connection
+        """
+        return bool(self.transport.connected)
+
+    @property
+    def allowed_max_concurrent_streams(self) -> int:
+        """We keep total two streams for client (sending data) and
+        server side (receiving data) for a single request. To be safe
+        we choose the minimum. Since this value can change in event
+        RemoteSettingsChanged we make variable a property.
+        """
+        return min(
+            self.conn.local_settings.max_concurrent_streams,
+            self.conn.remote_settings.max_concurrent_streams
+        )
+
+    def _send_pending_requests(self):
+        """Initiate all pending requests from the deque following FIFO
+        We make sure that at any time {allowed_max_concurrent_streams}
+        streams are active.
+        """
+        while (
+            self._pending_request_stream_pool
+            and self._active_streams < self.allowed_max_concurrent_streams
+            and self.is_connected
+        ):
+            self._active_streams += 1
+            stream = self._pending_request_stream_pool.popleft()
+            stream.initiate_request()
+
     def _stream_close_cb(self, stream_id: int):
         """Called when stream is closed completely
         """
-        self.streams.pop(stream_id, None)
+        self.streams.pop(stream_id)
+        self._active_streams -= 1
+        self._send_pending_requests()
 
     def _new_stream(self, request: Request):
         """Instantiates a new Stream object
@@ -75,13 +114,6 @@ class H2ClientProtocol(Protocol):
         self.streams[stream.stream_id] = stream
         return stream
 
-    def _send_pending_requests(self):
-        # TODO: handle MAX_CONCURRENT_STREAMS
-        # Initiate all pending requests
-        while self._pending_request_stream_pool:
-            stream = self._pending_request_stream_pool.popleft()
-            stream.initiate_request()
-
     def _write_to_transport(self):
         """ Write data to the underlying transport connection
         from the HTTP2 connection instance if any
@@ -89,19 +121,12 @@ class H2ClientProtocol(Protocol):
         data = self.conn.data_to_send()
         self.transport.write(data)
 
-        logger.debug("Sent {} bytes to {} via transport".format(len(data), self._metadata['ip_address']))
-
     def request(self, request: Request):
         stream = self._new_stream(request)
         d = stream.get_response()
 
-        # If connection is not yet established then add the
-        # stream to pool or initiate request
-        if self.is_connection_made:
-            stream.initiate_request()
-        else:
-            self._pending_request_stream_pool.append(stream)
-
+        # Add the stream to the request pool
+        self._pending_request_stream_pool.append(stream)
         return d
 
     def connectionMade(self):
@@ -116,7 +141,6 @@ class H2ClientProtocol(Protocol):
 
         self.conn.initiate_connection()
         self._write_to_transport()
-        self.is_connection_made = True
 
     def dataReceived(self, data):
         try:
@@ -144,7 +168,10 @@ class H2ClientProtocol(Protocol):
         # which raises `RuntimeError: dictionary changed size during iteration`
         # Hence, we copy the streams into a list.
         for stream in list(self.streams.values()):
-            stream.close(StreamCloseReason.CONNECTION_LOST, self._protocol_error)
+            if stream.request_sent:
+                stream.close(StreamCloseReason.CONNECTION_LOST, self._protocol_error)
+            else:
+                stream.close(StreamCloseReason.INACTIVE)
 
         self.conn.close_connection()
 
@@ -160,7 +187,6 @@ class H2ClientProtocol(Protocol):
                 triggered by sending data
         """
         for event in events:
-            logger.debug(event)
             if isinstance(event, DataReceived):
                 self.data_received(event)
             elif isinstance(event, ResponseReceived):
@@ -174,7 +200,7 @@ class H2ClientProtocol(Protocol):
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
             else:
-                logger.info("Received unhandled event {}".format(event))
+                logger.debug("Received unhandled event {}".format(event))
 
     # Event handler functions starts here
     def data_received(self, event: DataReceived):
@@ -184,8 +210,8 @@ class H2ClientProtocol(Protocol):
         self.streams[event.stream_id].receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged):
-        # Send off all the pending requests
-        # as now we have established a proper HTTP/2 connection
+        # Send off all the pending requests as now we have
+        # established a proper HTTP/2 connection
         self._send_pending_requests()
 
     def stream_ended(self, event: StreamEnded):
@@ -195,9 +221,8 @@ class H2ClientProtocol(Protocol):
         self.streams[event.stream_id].close(StreamCloseReason.RESET)
 
     def window_updated(self, event: WindowUpdated):
-        stream_id = event.stream_id
-        if stream_id != 0:
-            self.streams[stream_id].receive_window_update()
+        if event.stream_id != 0:
+            self.streams[event.stream_id].receive_window_update()
         else:
             # Send leftover data for all the streams
             for stream in self.streams.values():

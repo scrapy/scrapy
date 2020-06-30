@@ -18,6 +18,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.static import File
 
 from scrapy.core.http2.protocol import H2ClientProtocol
+from scrapy.core.http2.stream import InactiveStreamClosed
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.utils.python import to_bytes, to_unicode
 from tests.mockserver import ssl_context_factory, LeafResource
@@ -174,10 +175,14 @@ class Https2ClientProtocolTestCase(TestCase):
         client_endpoint = SSL4ClientEndpoint(reactor, self.hostname, self.port_number, client_options)
         self.client = yield client_endpoint.connect(h2_client_factory)
 
+        # Increase the total time taken for each tests
+        self.timeout = 180 # default is 120 seconds
+
     @inlineCallbacks
     def tearDown(self):
-        yield self.client.transport.loseConnection()
-        yield self.client.transport.abortConnection()
+        if self.client.is_connected:
+            yield self.client.transport.loseConnection()
+            yield self.client.transport.abortConnection()
         yield self.server.stopListening()
         shutil.rmtree(self.temp_directory)
 
@@ -430,3 +435,45 @@ class Https2ClientProtocolTestCase(TestCase):
         )
 
         yield self._check_log_warnsize(request, warn_pattern, Data.NO_CONTENT_LENGTH)
+
+    def test_max_concurrent_streams(self):
+        """Send 1000 requests to check if we can handle
+        very large number of request
+        """
+
+        def get_deferred():
+            return self._check_GET(
+                Request(self.get_url('/get-data-html-small')),
+                Data.HTML_SMALL,
+                200
+            )
+
+        return self._check_repeat(get_deferred, 1000)
+
+    def test_inactive_stream(self):
+        """Here we send 110 requests considering the MAX_CONCURRENT_STREAMS
+        by default is 100. After sending the first 100 requests we close the
+        connection."""
+        d_list = []
+
+        def assert_inactive_stream(failure):
+            self.assertIsNotNone(failure.check(InactiveStreamClosed))
+
+        # Send 100 request (we do not check the result)
+        for _ in range(100):
+            d = self.client.request(Request(self.get_url('/get-data-html-small')))
+            d.addBoth(lambda _: None)
+            d_list.append(d)
+
+        # Now send 10 extra request and save the response deferred in a list
+        for _ in range(10):
+            d = self.client.request(Request(self.get_url('/get-data-html-small')))
+            d.addCallback(self.fail)
+            d.addErrback(assert_inactive_stream)
+            d_list.append(d)
+
+        # Close the connection now to fire all the extra 10 requests errback
+        # with InactiveStreamClosed
+        self.client.transport.abortConnection()
+
+        return DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
