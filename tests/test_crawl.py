@@ -177,6 +177,13 @@ class CrawlTestCase(TestCase):
         first_other_request = min(order_of_other_requests)
         return last_start_request < first_other_request
 
+    def number_of_start_requests_fro_eagernees_testing(_):
+        """
+            number_of_start_requests should be big enough, so scheduling such
+            amount of requests takes longer than crawling first of them
+        """
+        return 100
+
     @defer.inlineCallbacks
     def test_start_requests_eagerness(self):
         class EagerSpider(YeldingRequestsSpider):
@@ -190,13 +197,9 @@ class CrawlTestCase(TestCase):
             }
         }
         crawler = CrawlerRunner(settings).create_crawler(EagerSpider)
-        """
-            number_of_start_requests should be big enough, so scheduling such amount
-            of requests takes longer than crawling first of them
-        """
         yield crawler.crawl(
             mockserver=self.mockserver,
-            number_of_start_requests=100,
+            number_of_start_requests=self.number_of_start_requests_fro_eagernees_testing(),
         )
         self.assertTrue(
             self.is_eager(crawler.spider.requests_in_order_of_scheduling)
@@ -214,13 +217,9 @@ class CrawlTestCase(TestCase):
             }
         }
         crawler = CrawlerRunner(settings).create_crawler(YeldingRequestsSpider)
-        """
-            number_of_start_requests should be big enough, so scheduling such amount
-            of requests takes longer than crawling first of them
-        """
         yield crawler.crawl(
             mockserver=self.mockserver,
-            number_of_start_requests=100,
+            number_of_start_requests=self.number_of_start_requests_fro_eagernees_testing(),
         )
         self.assertFalse(
             self.is_eager(crawler.spider.requests_in_order_of_scheduling)
