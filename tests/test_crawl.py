@@ -161,13 +161,63 @@ class CrawlTestCase(TestCase):
         self.assertIs(record.exc_info[0], ZeroDivisionError)
 
     @defer.inlineCallbacks
-    def test_start_requests_lazyness(self):
-        settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = CrawlerRunner(settings).create_crawler(BrokenStartRequestsSpider)
+    def test_start_requests_eagerness(self):
+        """
+            All start requests(depth=0) are scheduled before
+            any other requests(depth!=0)
+        """
+        class EagerSpider(BrokenStartRequestsSpider):
+            def start_requests_with_control(self):
+                yield from self.start_requests()
+
+        settings = {
+                "SPIDER_MIDDLEWARES": {
+                    "scrapy.spidermiddlewares.depth.DepthMiddleware" : 0,
+                    "tests.middlewares.RequestInOrderMiddleware" : 1,
+                    }
+                }
+        crawler = CrawlerRunner(settings).create_crawler(EagerSpider)
         yield crawler.crawl(mockserver=self.mockserver)
-        self.assertTrue(
-            crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
-            crawler.spider.seedsseen)
+        requests_in_order = crawler.spider.requests_in_order_of_scheduling
+        depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
+        order_of_start_requests = [
+                o for o, d in enumerate(depths_in_order) if d == 0
+                ]
+        order_of_other_requests = [
+                o for o, d in enumerate(depths_in_order) if d != 0
+                ]
+        last_start_request = max(order_of_start_requests)
+        first_other_request = min(order_of_other_requests)
+        assert last_start_request < first_other_request
+
+    @defer.inlineCallbacks
+    def test_start_requests_lazyness(self):
+        """
+            lazyness as a negation of eagerness
+        """
+        class LazySpider(BrokenStartRequestsSpider):
+            pass
+
+
+        settings = {
+                "SPIDER_MIDDLEWARES": {
+                    "scrapy.spidermiddlewares.depth.DepthMiddleware" : 0,
+                    "tests.middlewares.RequestInOrderMiddleware" : 1,
+                    }
+                }
+        crawler = CrawlerRunner(settings).create_crawler(LazySpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        requests_in_order = crawler.spider.requests_in_order_of_scheduling
+        depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
+        order_of_start_requests = [
+                o for o, d in enumerate(depths_in_order) if d == 0
+                ]
+        order_of_other_requests = [
+                o for o, d in enumerate(depths_in_order) if d != 0
+                ]
+        last_start_request = max(order_of_start_requests)
+        first_other_request = min(order_of_other_requests)
+        assert last_start_request > first_other_request
 
     @defer.inlineCallbacks
     def test_start_requests_dupes(self):
