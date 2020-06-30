@@ -34,7 +34,7 @@ from tests.spiders import (
     FollowAllSpider,
     SimpleSpider,
     SingleRequestSpider,
-    YeldingRequestsSpider,
+    YieldingRequestsSpider,
 )
 
 
@@ -186,7 +186,7 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_start_requests_eagerness(self):
-        class EagerSpider(YeldingRequestsSpider):
+        class EagerSpider(YieldingRequestsSpider):
             def start_requests_with_control(self):
                 yield from self.start_requests()
 
@@ -216,7 +216,7 @@ class CrawlTestCase(TestCase):
                 "tests.middlewares.RequestInOrderMiddleware": 1,
             }
         }
-        crawler = CrawlerRunner(settings).create_crawler(YeldingRequestsSpider)
+        crawler = CrawlerRunner(settings).create_crawler(YieldingRequestsSpider)
         yield crawler.crawl(
             mockserver=self.mockserver,
             number_of_start_requests=self.number_of_start_requests_for_eagernees_testing(),

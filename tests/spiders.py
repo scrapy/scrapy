@@ -177,7 +177,7 @@ class ErrorSpider(FollowAllSpider):
             self.raise_exception()
 
 
-class YeldingRequestsSpider(FollowAllSpider):
+class YieldingRequestsSpider(FollowAllSpider):
     number_of_start_requests = 10
 
     def start_requests(self):
