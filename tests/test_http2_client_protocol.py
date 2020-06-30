@@ -175,9 +175,6 @@ class Https2ClientProtocolTestCase(TestCase):
         client_endpoint = SSL4ClientEndpoint(reactor, self.hostname, self.port_number, client_options)
         self.client = yield client_endpoint.connect(h2_client_factory)
 
-        # Increase the total time taken for each tests
-        self.timeout = 180 # default is 120 seconds
-
     @inlineCallbacks
     def tearDown(self):
         if self.client.is_connected:
@@ -231,21 +228,21 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(self.get_url('/get-data-html-large'))
         return self._check_GET(request, Data.HTML_LARGE, 200)
 
-    def _check_GET_x20(self, *args, **kwargs):
+    def _check_GET_x10(self, *args, **kwargs):
         def get_deferred():
             return self._check_GET(*args, **kwargs)
 
-        return self._check_repeat(get_deferred, 20)
+        return self._check_repeat(get_deferred, 10)
 
-    def test_GET_small_body_x20(self):
-        return self._check_GET_x20(
+    def test_GET_small_body_x10(self):
+        return self._check_GET_x10(
             Request(self.get_url('/get-data-html-small')),
             Data.HTML_SMALL,
             200
         )
 
-    def test_GET_large_body_x20(self):
-        return self._check_GET_x20(
+    def test_GET_large_body_x10(self):
+        return self._check_GET_x10(
             Request(self.get_url('/get-data-html-large')),
             Data.HTML_LARGE,
             200
@@ -309,24 +306,24 @@ class Https2ClientProtocolTestCase(TestCase):
             200
         )
 
-    def _check_POST_json_x20(self, *args, **kwargs):
+    def _check_POST_json_x10(self, *args, **kwargs):
         def get_deferred():
             return self._check_POST_json(*args, **kwargs)
 
-        return self._check_repeat(get_deferred, 20)
+        return self._check_repeat(get_deferred, 10)
 
-    def test_POST_small_json_x20(self):
+    def test_POST_small_json_x10(self):
         request = JsonRequest(url=self.get_url('/post-data-json-small'), method='POST', data=Data.JSON_SMALL)
-        return self._check_POST_json_x20(
+        return self._check_POST_json_x10(
             request,
             Data.JSON_SMALL,
             Data.EXTRA_SMALL,
             200
         )
 
-    def test_POST_large_json_x20(self):
+    def test_POST_large_json_x10(self):
         request = JsonRequest(url=self.get_url('/post-data-json-large'), method='POST', data=Data.JSON_LARGE)
-        return self._check_POST_json_x20(
+        return self._check_POST_json_x10(
             request,
             Data.JSON_LARGE,
             Data.EXTRA_LARGE,

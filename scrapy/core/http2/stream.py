@@ -226,14 +226,6 @@ class Stream:
             self.remaining_content_length = self.remaining_content_length - chunk_size
 
         self.remaining_content_length = max(0, self.remaining_content_length)
-        logger.debug(
-            "{stream} sending {received}/{expected} data bytes ({frames} frames) to {ip_address}".format(
-                stream=self,
-                received=self.content_length - self.remaining_content_length,
-                expected=self.content_length,
-                frames=data_frames_sent,
-                ip_address=self._conn_metadata['ip_address'])
-        )
 
         # End the stream if no more data needs to be send
         if self.remaining_content_length == 0:
