@@ -34,6 +34,7 @@ from tests.spiders import (
     FollowAllSpider,
     SimpleSpider,
     SingleRequestSpider,
+    YeldingRequestsSpider,
 )
 
 
@@ -166,7 +167,7 @@ class CrawlTestCase(TestCase):
             All start requests(depth=0) are scheduled before
             any other requests(depth!=0)
         """
-        class EagerSpider(BrokenStartRequestsSpider):
+        class EagerSpider(YeldingRequestsSpider):
             def start_requests_with_control(self):
                 yield from self.start_requests()
 
@@ -177,7 +178,14 @@ class CrawlTestCase(TestCase):
                     }
                 }
         crawler = CrawlerRunner(settings).create_crawler(EagerSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
+        """
+            number_of_start_requests should be big enough, so scheduling such amount
+            of requests takes longer than crawling first of them
+        """
+        yield crawler.crawl(
+                mockserver=self.mockserver,
+                number_of_start_requests=100,
+                )
         requests_in_order = crawler.spider.requests_in_order_of_scheduling
         depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
         order_of_start_requests = [
@@ -195,18 +203,21 @@ class CrawlTestCase(TestCase):
         """
             lazyness as a negation of eagerness
         """
-        class LazySpider(BrokenStartRequestsSpider):
-            pass
-
-
         settings = {
                 "SPIDER_MIDDLEWARES": {
                     "scrapy.spidermiddlewares.depth.DepthMiddleware" : 0,
                     "tests.middlewares.RequestInOrderMiddleware" : 1,
                     }
                 }
-        crawler = CrawlerRunner(settings).create_crawler(LazySpider)
-        yield crawler.crawl(mockserver=self.mockserver)
+        crawler = CrawlerRunner(settings).create_crawler(YeldingRequestsSpider)
+        """
+            number_of_start_requests should be big enough, so scheduling such amount
+            of requests takes longer than crawling first of them
+        """
+        yield crawler.crawl(
+                mockserver=self.mockserver,
+                number_of_start_requests=100,
+                )
         requests_in_order = crawler.spider.requests_in_order_of_scheduling
         depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
         order_of_start_requests = [
