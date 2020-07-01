@@ -741,7 +741,7 @@ class Http11ProxyTestCase(HttpProxyTestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.body, b'http://example.com')
 
-        http_proxy = self.getURL('').replace('http:', '')
+        http_proxy = self.getURL('').replace('http://', '')
         request = Request('http://example.com', meta={'proxy': http_proxy})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
