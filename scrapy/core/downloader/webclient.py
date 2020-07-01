@@ -1,6 +1,6 @@
+import re
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
-from re import match
 
 from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
@@ -33,7 +33,7 @@ def _parse(url):
     and is ascii-only.
     """
     url = url.strip()
-    if not match(r'^\w+://', url):
+    if not re.match(r'^\w+://', url):
         url = '//' + url
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
