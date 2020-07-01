@@ -48,7 +48,7 @@ matrix:
       dist: bionic
 install:
   - |
-      if [ "$TOXENV" = "pypy3" ]; then
+      if [[ ! -z "$PYPY_VERSION" ]]; then
         export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
         wget "https://bitbucket.org/pypy/pypy/downloads/${PYPY_VERSION}.tar.bz2"
         tar -jxf ${PYPY_VERSION}.tar.bz2
