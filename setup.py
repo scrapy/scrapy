@@ -3,36 +3,21 @@ from pkg_resources import parse_version
 from setuptools import setup, find_packages, __version__ as setuptools_version
 
 
+# The first known release to support environment marker with range operators it
+# is 18.5, see: https://setuptools.readthedocs.io/en/latest/history.html#id235
+min_setuptools_version = '18.5'
+if parse_version(setuptools_version) < parse_version(min_setuptools_version):
+    raise NotImplementedError(
+        'setuptools version {min_setuptools_version}+ is required, but '
+        '{setuptools_version} is installed'.format(
+            min_setuptools_version=min_setuptools_version,
+            setuptools_version=setuptools_version,
+        )
+    )
+
+
 with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
     version = f.read().decode('ascii').strip()
-
-
-def has_environment_marker_platform_impl_support():
-    """Code extracted from 'pytest/setup.py'
-    https://github.com/pytest-dev/pytest/blob/7538680c/setup.py#L31
-
-    The first known release to support environment marker with range operators
-    it is 18.5, see:
-    https://setuptools.readthedocs.io/en/latest/history.html#id235
-    """
-    return parse_version(setuptools_version) >= parse_version('18.5')
-
-
-extras_require = {}
-
-if has_environment_marker_platform_impl_support():
-    extras_require[':platform_python_implementation == "CPython"'] = [
-        'lxml>=3.5.0',
-    ]
-    extras_require[':platform_python_implementation == "PyPy"'] = [
-        # Earlier lxml versions are affected by
-        # https://bitbucket.org/pypy/pypy/issues/2498/cython-on-pypy-3-dict-object-has-no,
-        # which was fixed in Cython 0.26, released on 2017-06-19, and used to
-        # generate the C headers of lxml release tarballs published since then, the
-        # first of which was:
-        'lxml>=4.0.0',
-        'PyPyDispatcher>=2.1.0',
-    ]
 
 
 setup(
@@ -90,5 +75,18 @@ setup(
         'protego>=0.1.15',
         'itemadapter>=0.1.0',
     ],
-    extras_require=extras_require,
+    extras_require={
+        ':platform_python_implementation == "CPython"': [
+            'lxml>=3.5.0',
+        ],
+        ':platform_python_implementation == "PyPy"': [
+            # Earlier lxml versions are affected by
+            # https://bitbucket.org/pypy/pypy/issues/2498/cython-on-pypy-3-dict-object-has-no,
+            # which was fixed in Cython 0.26, released on 2017-06-19, and used to
+            # generate the C headers of lxml release tarballs published since then, the
+            # first of which was:
+            'lxml>=4.0.0',
+            'PyPyDispatcher>=2.1.0',
+        ],
+    },
 )
