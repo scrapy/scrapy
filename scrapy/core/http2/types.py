@@ -14,7 +14,18 @@ class H2ConnectionMetadataDict(TypedDict):
     initialized when connection is successfully made
     """
     certificate: Optional[Certificate]
+
+    # Address of the server we are connected to which
+    # is updated when HTTP/2 connection is  made successfully
     ip_address: Optional[Union[IPv4Address, IPv6Address]]
+
+    # Name of the peer HTTP/2 connection is established
+    hostname: Optional[str]
+
+    port: Optional[int]
+
+    # Both ip_address and hostname are used by the Stream before
+    # initiating the request to verify that the base address
 
 
 class H2ResponseDict(TypedDict):

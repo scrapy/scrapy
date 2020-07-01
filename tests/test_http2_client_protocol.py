@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, DeferredList, CancelledError
-from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint, TCP4ServerEndpoint
+from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.protocol import Factory
 from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certificate
 from twisted.python.failure import Failure
@@ -20,7 +20,7 @@ from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.static import File
 
 from scrapy.core.http2.protocol import H2ClientProtocol
-from scrapy.core.http2.stream import InactiveStreamClosed
+from scrapy.core.http2.stream import InactiveStreamClosed, InvalidHostname
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.utils.python import to_bytes, to_unicode
 from tests.mockserver import ssl_context_factory, LeafResource, Status
@@ -135,7 +135,7 @@ class QueryParams(LeafResource):
         return to_bytes(json.dumps(query_params))
 
 
-def get_client_certificate(key_file, certificate_file):
+def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
     with open(key_file, 'r') as key, open(certificate_file, 'r') as certificate:
         pem = ''.join(key.readlines()) + ''.join(certificate.readlines())
 
@@ -171,19 +171,16 @@ class Https2ClientProtocolTestCase(TestCase):
 
         # Start server for testing
         self.hostname = u'localhost'
-        if self.scheme == 'https':
-            context_factory = ssl_context_factory(self.key_file, self.certificate_file)
-            server_endpoint = SSL4ServerEndpoint(reactor, 0, context_factory, interface=self.hostname)
-        else:
-            server_endpoint = TCP4ServerEndpoint(reactor, 0, interface=self.hostname)
+        context_factory = ssl_context_factory(self.key_file, self.certificate_file)
+        server_endpoint = SSL4ServerEndpoint(reactor, 0, context_factory, interface=self.hostname)
         self.server = yield server_endpoint.listen(self.site)
         self.port_number = self.server.getHost().port
 
         # Connect H2 client with server
-        client_certificate = get_client_certificate(self.key_file, self.certificate_file)
+        self.client_certificate = get_client_certificate(self.key_file, self.certificate_file)
         client_options = optionsForClientTLS(
             hostname=self.hostname,
-            trustRoot=client_certificate,
+            trustRoot=self.client_certificate,
             acceptableProtocols=[b'h2']
         )
         h2_client_factory = Factory.forProtocol(H2ClientProtocol)
@@ -440,8 +437,8 @@ class Https2ClientProtocolTestCase(TestCase):
         yield self._check_log_warnsize(request, warn_pattern, Data.NO_CONTENT_LENGTH)
 
     def test_max_concurrent_streams(self):
-        """Send 1000 requests to check if we can handle
-        very large number of request
+        """Send 500 requests at one to check if we can handle
+        very large number of request.
         """
 
         def get_deferred():
@@ -451,7 +448,7 @@ class Https2ClientProtocolTestCase(TestCase):
                 200
             )
 
-        return self._check_repeat(get_deferred, 1000)
+        return self._check_repeat(get_deferred, 500)
 
     def test_inactive_stream(self):
         """Here we send 110 requests considering the MAX_CONCURRENT_STREAMS
@@ -524,6 +521,10 @@ class Https2ClientProtocolTestCase(TestCase):
         def assert_metadata(response: Response):
             self.assertEqual(response.request, request)
             self.assertIsInstance(response.certificate, Certificate)
+            self.assertIsNotNone(response.certificate.original)
+            self.assertEqual(response.certificate.getIssuer(), self.client_certificate.getIssuer())
+            self.assertTrue(response.certificate.getPublicKey().matches(self.client_certificate.getPublicKey()))
+
             self.assertIsInstance(response.ip_address, IPv4Address)
             self.assertEqual(str(response.ip_address), '127.0.0.1')
 
@@ -532,3 +533,40 @@ class Https2ClientProtocolTestCase(TestCase):
         d.addErrback(self.fail)
 
         return d
+
+    def _check_invalid_netloc(self, url):
+        request = Request(url)
+
+        def assert_invalid_hostname(failure: Failure):
+            self.assertIsNotNone(failure.check(InvalidHostname))
+            error_msg = str(failure.value)
+            self.assertIn('localhost', error_msg)
+            self.assertIn('127.0.0.1', error_msg)
+            self.assertIn(str(request), error_msg)
+
+        d = self.client.request(request)
+        d.addCallback(self.fail)
+        d.addErrback(assert_invalid_hostname)
+        return d
+
+    def test_invalid_hostname(self):
+        return self._check_invalid_netloc('https://notlocalhost.notlocalhostdomain')
+
+    def test_invalid_host_port(self):
+        port = self.port_number + 1
+        return self._check_invalid_netloc(f'https://127.0.0.1:{port}')
+
+    def test_connection_stays_with_invalid_requests(self):
+        d_list = [
+            self.test_invalid_hostname(),
+            self.test_invalid_host_port(),
+            self._check_GET(Request(self.get_url('/get-data-html-small')), Data.HTML_SMALL, 200),
+            self._check_POST_json(
+                JsonRequest(url=self.get_url('/post-data-json-small'), method='POST', data=Data.JSON_SMALL),
+                Data.JSON_SMALL,
+                Data.EXTRA_SMALL,
+                200
+            )
+        ]
+
+        return DeferredList(d_list, fireOnOneErrback=True)

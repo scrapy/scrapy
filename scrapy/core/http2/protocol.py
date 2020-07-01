@@ -2,7 +2,7 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import Union, Dict
+from typing import Dict, Optional
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -26,10 +26,6 @@ class H2ClientProtocol(Protocol):
         config = H2Configuration(client_side=True, header_encoding='utf-8')
         self.conn = H2Connection(config=config)
 
-        # Address of the server we are connected to
-        # these are updated when connection is successfully made
-        self.destination = None
-
         # ID of the next request stream
         # Following the convention made by hyper-h2 each client ID
         # will be odd.
@@ -50,11 +46,13 @@ class H2ClientProtocol(Protocol):
 
         # Save an instance of ProtocolError raised by hyper-h2
         # We pass this instance to the streams ResponseFailed() failure
-        self._protocol_error: Union[None, ProtocolError] = None
+        self._protocol_error: Optional[ProtocolError] = None
 
         self._metadata: H2ConnectionMetadataDict = {
             'certificate': None,
-            'ip_address': None
+            'ip_address': None,
+            'hostname': None,
+            'port': None
         }
 
     @property
@@ -123,7 +121,7 @@ class H2ClientProtocol(Protocol):
 
     def request(self, request: Request):
         if not isinstance(request, Request):
-            raise TypeError(f'Expected type scrapy.http.Request but received {request.__class__.__name__}')
+            raise TypeError(f'Expected scrapy.http.Request, received {request.__class__.__name__}')
 
         stream = self._new_stream(request)
         d = stream.get_response()
@@ -136,9 +134,11 @@ class H2ClientProtocol(Protocol):
         """Called by Twisted when the connection is established. We can start
         sending some data now: we should open with the connection preamble.
         """
-        self.destination = self.transport.getPeer()
-        logger.info(f'Connection made to {self.destination}')
-        self._metadata['ip_address'] = ipaddress.ip_address(self.destination.host)
+        destination = self.transport.getPeer()
+        logger.debug('Connection made to {}'.format(destination))
+        self._metadata['ip_address'] = ipaddress.ip_address(destination.host)
+        self._metadata['port'] = destination.port
+        self._metadata['hostname'] = self.transport.transport.addr[0]
 
         self.conn.initiate_connection()
         self._write_to_transport()
@@ -148,8 +148,6 @@ class H2ClientProtocol(Protocol):
             events = self.conn.receive_data(data)
             self._handle_events(events)
         except ProtocolError as e:
-            # TODO: In case of InvalidBodyLengthError -- terminate only one stream
-
             # Save this error as ultimately the connection will be dropped
             # internally by hyper-h2. Saved error will be passed to all the streams
             # closed with the connection.
@@ -201,7 +199,7 @@ class H2ClientProtocol(Protocol):
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
             else:
-                logger.debug(f'Received unhandled event {event}')
+                logger.debug('Received unhandled event {}'.format(event))
 
     # Event handler functions starts here
     def data_received(self, event: DataReceived):

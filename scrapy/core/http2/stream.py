@@ -29,6 +29,17 @@ class InactiveStreamClosed(ConnectionClosed):
         self.request = request
 
 
+class InvalidHostname(Exception):
+
+    def __init__(self, request: Request, expected_hostname, expected_netloc):
+        self.request = request
+        self.expected_hostname = expected_hostname
+        self.expected_netloc = expected_netloc
+
+    def __str__(self):
+        return f'InvalidHostname: Expected {self.expected_hostname} or {self.expected_netloc} in {self.request}'
+
+
 class StreamCloseReason(Enum):
     # Received a StreamEnded event
     ENDED = 1
@@ -48,6 +59,10 @@ class StreamCloseReason(Enum):
 
     # Connection lost and the stream was not initiated
     INACTIVE = 6
+
+    # The hostname of the request is not same as of connected peer hostname
+    # As a result sending this request will the end the connection
+    INVALID_HOSTNAME = 7
 
 
 class Stream:
@@ -163,6 +178,15 @@ class Stream:
         """
         return self._deferred_response
 
+    def check_request_url(self) -> bool:
+        # Make sure that we are sending the request to the correct URL
+        url = urlparse(self._request.url)
+        return (
+            url.netloc == self._conn_metadata['hostname']
+            or url.netloc == f'{self._conn_metadata["hostname"]}:{self._conn_metadata["port"]}'
+            or url.netloc == f'{self._conn_metadata["ip_address"]}:{self._conn_metadata["port"]}'
+        )
+
     def _get_request_headers(self):
         url = urlparse(self._request.url)
 
@@ -184,10 +208,15 @@ class Stream:
         return headers
 
     def initiate_request(self):
-        headers = self._get_request_headers()
-        self._conn.send_headers(self.stream_id, headers, end_stream=False)
-        self.request_sent = True
-        self.send_data()
+        if self.check_request_url():
+            headers = self._get_request_headers()
+            self._conn.send_headers(self.stream_id, headers, end_stream=False)
+            self.request_sent = True
+            self.send_data()
+        else:
+            # Close this stream calling the response errback
+            # Note that we have not sent any headers
+            self.close(StreamCloseReason.INVALID_HOSTNAME)
 
     def send_data(self):
         """Called immediately after the headers are sent. Here we send all the
@@ -310,6 +339,9 @@ class Stream:
         if self.stream_closed_server:
             raise StreamClosedError(self.stream_id)
 
+        if not isinstance(reason, StreamCloseReason):
+            raise TypeError(f'Expected StreamCloseReason, received {reason.__class__.__name__}')
+
         self._cb_close(self.stream_id)
         self.stream_closed_server = True
 
@@ -353,6 +385,13 @@ class Stream:
         elif reason is StreamCloseReason.INACTIVE:
             self._deferred_response.errback(InactiveStreamClosed(self._request))
 
+        elif reason is StreamCloseReason.INVALID_HOSTNAME:
+            self._deferred_response.errback(InvalidHostname(
+                self._request,
+                self._conn_metadata['hostname'],
+                f'{self._conn_metadata["ip_address"]}:{self._conn_metadata["port"]}'
+            ))
+
     def _fire_response_deferred(self, flags: List[str] = None):
         """Builds response from the self._response dict
         and fires the response deferred callback with the
@@ -365,10 +404,9 @@ class Stream:
             body=body
         )
 
-        status = self._response['headers'][':status']
         response = response_cls(
             url=self._request.url,
-            status=status,
+            status=self._response['headers'][':status'],
             headers=self._response['headers'],
             body=body,
             request=self._request,
