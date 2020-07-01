@@ -347,8 +347,7 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
 
     def test_start_requests_errors(self):
-        self.spider_filename = 'badspider.pyw'
-        log = self.get_log(self.badspider)
+        log = self.get_log(self.badspider, name='badspider.pyw')
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
 
