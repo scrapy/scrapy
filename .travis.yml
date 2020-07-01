@@ -54,7 +54,6 @@ install:
         tar -jxf ${PYPY_VERSION}.tar.bz2
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-        pip install -U cython  # https://bitbucket.org/pypy/compatibility/wiki/lxml
       fi
   - pip install -U tox twine wheel codecov
 
