@@ -7,7 +7,7 @@ import warnings
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -255,7 +255,7 @@ class ScrapyProxyAgent(Agent):
             bindAddress=bindAddress,
             pool=pool,
         )
-        self._proxyURI = URI.fromBytes(urlparse(proxyURI)._replace(scheme=b'http').geturl())
+        self._proxyURI = URI.fromBytes(proxyURI)
 
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
@@ -297,7 +297,7 @@ class ScrapyAgent:
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
-            _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
+            proxyScheme, proxyNetloc, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
@@ -319,9 +319,13 @@ class ScrapyAgent:
                     pool=self._pool,
                 )
             else:
+                proxyScheme = b'http' if not proxyScheme else proxyScheme
+                proxyHost = to_bytes(proxyHost, encoding='ascii')
+                proxyPort = to_bytes(str(proxyPort), encoding='ascii')
+                proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
                 return self._ProxyAgent(
                     reactor=reactor,
-                    proxyURI=to_bytes(proxy, encoding='ascii'),
+                    proxyURI=to_bytes(proxyURI, encoding='ascii'),
                     connectTimeout=timeout,
                     bindAddress=bindaddress,
                     pool=self._pool,
