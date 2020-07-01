@@ -560,13 +560,8 @@ class Https2ClientProtocolTestCase(TestCase):
         d_list = [
             self.test_invalid_hostname(),
             self.test_invalid_host_port(),
-            self._check_GET(Request(self.get_url('/get-data-html-small')), Data.HTML_SMALL, 200),
-            self._check_POST_json(
-                JsonRequest(url=self.get_url('/post-data-json-small'), method='POST', data=Data.JSON_SMALL),
-                Data.JSON_SMALL,
-                Data.EXTRA_SMALL,
-                200
-            )
+            self.test_GET_small_body(),
+            self.test_POST_small_json()
         ]
 
         return DeferredList(d_list, fireOnOneErrback=True)

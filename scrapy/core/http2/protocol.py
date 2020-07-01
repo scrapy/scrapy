@@ -121,7 +121,7 @@ class H2ClientProtocol(Protocol):
 
     def request(self, request: Request):
         if not isinstance(request, Request):
-            raise TypeError(f'Expected scrapy.http.Request, received {request.__class__.__name__}')
+            raise TypeError(f'Expected scrapy.http.Request, received {request.__class__.__qualname__}')
 
         stream = self._new_stream(request)
         d = stream.get_response()

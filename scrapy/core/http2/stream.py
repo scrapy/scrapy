@@ -146,7 +146,7 @@ class Stream:
         self._deferred_response = Deferred(_cancel)
 
     def __str__(self):
-        return f'Stream(id={self.stream_id})'
+        return f'Stream(id={self.stream_id!r})'
 
     __repr__ = __str__
 
@@ -190,11 +190,11 @@ class Stream:
     def _get_request_headers(self):
         url = urlparse(self._request.url)
 
-        # Make sure pseudo-headers comes before all the other headers
         path = url.path
         if url.query:
             path += '?' + url.query
 
+        # Make sure pseudo-headers comes before all the other headers
         headers = [
             (':method', self._request.method),
             (':authority', url.netloc),
@@ -284,8 +284,10 @@ class Stream:
 
         if self._log_warnsize:
             self._reached_warnsize = True
-            warning_msg = f"Received more ({self._response['flow_controlled_size']}) bytes than download " \
-                          + f'warn size ({self._download_warnsize}) in request {self._request}'
+            warning_msg = (
+                f'Received more ({self._response["flow_controlled_size"]}) bytes than download '
+                f'warn size ({self._download_warnsize}) in request {self._request}'
+            )
             logger.warning(warning_msg)
 
         # Acknowledge the data received
@@ -306,8 +308,10 @@ class Stream:
 
         if self._log_warnsize:
             self._reached_warnsize = True
-            warning_msg = f'Expected response size ({expected_size}) larger than ' \
-                          + f'download warn size ({self._download_warnsize}) in request {self._request}'
+            warning_msg = (
+                f'Expected response size ({expected_size}) larger than '
+                f'download warn size ({self._download_warnsize}) in request {self._request}'
+            )
             logger.warning(warning_msg)
 
     def reset_stream(self, reason=StreamCloseReason.RESET):
@@ -340,7 +344,7 @@ class Stream:
             raise StreamClosedError(self.stream_id)
 
         if not isinstance(reason, StreamCloseReason):
-            raise TypeError(f'Expected StreamCloseReason, received {reason.__class__.__name__}')
+            raise TypeError(f'Expected StreamCloseReason, received {reason.__class__.__qualname__}')
 
         self._cb_close(self.stream_id)
         self.stream_closed_server = True
@@ -356,8 +360,10 @@ class Stream:
         # having Content-Length)
         if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
             expected_size = int(self._response['headers'].get(b'Content-Length', -1))
-            error_msg = f'Cancelling download of {self._request.url}: expected response ' \
-                        f'size ({expected_size}) larger than download max size ({self._download_maxsize}).'
+            error_msg = (
+                f'Cancelling download of {self._request.url}: expected response '
+                f'size ({expected_size}) larger than download max size ({self._download_maxsize}).'
+            )
             logger.error(error_msg)
             self._deferred_response.errback(CancelledError(error_msg))
 
