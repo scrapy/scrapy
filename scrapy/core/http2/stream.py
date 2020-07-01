@@ -131,7 +131,7 @@ class Stream:
         self._deferred_response = Deferred(_cancel)
 
     def __str__(self):
-        return "Stream(id={})".format(repr(self.stream_id))
+        return f'Stream(id={self.stream_id})'
 
     __repr__ = __str__
 
@@ -167,13 +167,15 @@ class Stream:
         url = urlparse(self._request.url)
 
         # Make sure pseudo-headers comes before all the other headers
+        path = url.path
+        if url.query:
+            path += '?' + url.query
+
         headers = [
             (':method', self._request.method),
             (':authority', url.netloc),
-
-            # TODO: Check if scheme can be 'http' for HTTP/2 ?
             (':scheme', 'https'),
-            (':path', url.path),
+            (':path', path),
         ]
 
         for name, value in self._request.headers.items():
@@ -253,14 +255,9 @@ class Stream:
 
         if self._log_warnsize:
             self._reached_warnsize = True
-            warning_msg = 'Received more ({bytes}) bytes than download ' \
-                          + 'warn size ({warnsize}) in request {request}'
-            warning_args = {
-                'bytes': self._response['flow_controlled_size'],
-                'warnsize': self._download_warnsize,
-                'request': self._request
-            }
-            logger.warning(warning_msg.format(**warning_args))
+            warning_msg = f"Received more ({self._response['flow_controlled_size']}) bytes than download " \
+                          + f'warn size ({self._download_warnsize}) in request {self._request}'
+            logger.warning(warning_msg)
 
         # Acknowledge the data received
         self._conn.acknowledge_received_data(
@@ -280,14 +277,9 @@ class Stream:
 
         if self._log_warnsize:
             self._reached_warnsize = True
-            warning_msg = 'Expected response size ({size}) larger than ' \
-                          + 'download warn size ({warnsize}) in request {request}'
-            warning_args = {
-                'size': expected_size,
-                'warnsize': self._download_warnsize,
-                'request': self._request
-            }
-            logger.warning(warning_msg.format(**warning_args))
+            warning_msg = f'Expected response size ({expected_size}) larger than ' \
+                          + f'download warn size ({self._download_warnsize}) in request {self._request}'
+            logger.warning(warning_msg)
 
     def reset_stream(self, reason=StreamCloseReason.RESET):
         """Close this stream by sending a RST_FRAME to the remote peer"""
@@ -332,16 +324,10 @@ class Stream:
         # having Content-Length)
         if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
             expected_size = int(self._response['headers'].get(b'Content-Length', -1))
-            error_msg = ("Cancelling download of {url}: expected response "
-                         "size ({size}) larger than download max size ({maxsize}).")
-            error_args = {
-                'url': self._request.url,
-                'size': expected_size,
-                'maxsize': self._download_maxsize
-            }
-
-            logger.error(error_msg, error_args)
-            self._deferred_response.errback(CancelledError(error_msg.format(**error_args)))
+            error_msg = f'Cancelling download of {self._request.url}: expected response ' \
+                        f'size ({expected_size}) larger than download max size ({self._download_maxsize}).'
+            logger.error(error_msg)
+            self._deferred_response.errback(CancelledError(error_msg))
 
         elif reason is StreamCloseReason.ENDED:
             self._fire_response_deferred(flags)

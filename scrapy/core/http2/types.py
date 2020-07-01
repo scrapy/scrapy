@@ -1,6 +1,6 @@
 from io import BytesIO
 from ipaddress import IPv4Address, IPv6Address
-from typing import Union
+from typing import Union, Optional
 
 from twisted.internet.ssl import Certificate
 # for python < 3.8 -- typing.TypedDict is undefined
@@ -13,8 +13,8 @@ class H2ConnectionMetadataDict(TypedDict):
     """Some meta data of this connection
     initialized when connection is successfully made
     """
-    certificate: Union[None, Certificate]
-    ip_address: Union[None, IPv4Address, IPv6Address]
+    certificate: Optional[Certificate]
+    ip_address: Optional[Union[IPv4Address, IPv6Address]]
 
 
 class H2ResponseDict(TypedDict):

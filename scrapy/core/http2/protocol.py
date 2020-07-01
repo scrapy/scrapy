@@ -122,6 +122,9 @@ class H2ClientProtocol(Protocol):
         self.transport.write(data)
 
     def request(self, request: Request):
+        if not isinstance(request, Request):
+            raise TypeError(f'Expected type scrapy.http.Request but received {request.__class__.__name__}')
+
         stream = self._new_stream(request)
         d = stream.get_response()
 
@@ -134,9 +137,7 @@ class H2ClientProtocol(Protocol):
         sending some data now: we should open with the connection preamble.
         """
         self.destination = self.transport.getPeer()
-        logger.info('Connection made to {}'.format(self.destination))
-
-        self._metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
+        logger.info(f'Connection made to {self.destination}')
         self._metadata['ip_address'] = ipaddress.ip_address(self.destination.host)
 
         self.conn.initiate_connection()
@@ -200,7 +201,7 @@ class H2ClientProtocol(Protocol):
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
             else:
-                logger.debug("Received unhandled event {}".format(event))
+                logger.debug(f'Received unhandled event {event}')
 
     # Event handler functions starts here
     def data_received(self, event: DataReceived):
@@ -213,6 +214,9 @@ class H2ClientProtocol(Protocol):
         # Send off all the pending requests as now we have
         # established a proper HTTP/2 connection
         self._send_pending_requests()
+
+        # Update certificate when our HTTP/2 connection is established
+        self._metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
 
     def stream_ended(self, event: StreamEnded):
         self.streams[event.stream_id].close(StreamCloseReason.ENDED)

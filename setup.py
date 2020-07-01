@@ -1,7 +1,7 @@
 from os.path import dirname, join
-
 from pkg_resources import parse_version
 from setuptools import setup, find_packages, __version__ as setuptools_version
+
 
 with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
     version = f.read().decode('ascii').strip()
@@ -25,11 +25,12 @@ if has_environment_marker_platform_impl_support():
         'PyPyDispatcher>=2.1.0',
     ]
 
+
 setup(
     name='Scrapy',
     version=version,
     url='https://scrapy.org',
-    project_urls={
+    project_urls = {
         'Documentation': 'https://docs.scrapy.org/',
         'Source': 'https://github.com/scrapy/scrapy',
         'Tracker': 'https://github.com/scrapy/scrapy/issues',

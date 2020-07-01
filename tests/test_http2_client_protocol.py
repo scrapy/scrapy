@@ -4,13 +4,15 @@ import random
 import re
 import shutil
 import string
+from ipaddress import IPv4Address
+from urllib.parse import urlencode
 
 from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, DeferredList, CancelledError
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint, TCP4ServerEndpoint
 from twisted.internet.protocol import Factory
-from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate
+from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certificate
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 from twisted.web.http import Request as TxRequest
@@ -21,7 +23,7 @@ from scrapy.core.http2.protocol import H2ClientProtocol
 from scrapy.core.http2.stream import InactiveStreamClosed
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.utils.python import to_bytes, to_unicode
-from tests.mockserver import ssl_context_factory, LeafResource
+from tests.mockserver import ssl_context_factory, LeafResource, Status
 
 
 def generate_random_string(size):
@@ -32,10 +34,10 @@ def generate_random_string(size):
 
 
 def make_html_body(val):
-    response = '''<html>
+    response = f'''<html>
 <h1>Hello from HTTP2<h1>
-<p>{}</p>
-</html>'''.format(val)
+<p>{val}</p>
+</html>'''
     return to_bytes(response)
 
 
@@ -122,6 +124,17 @@ class NoContentLengthHeader(LeafResource):
         request.finish()
 
 
+class QueryParams(LeafResource):
+    def render_GET(self, request: TxRequest):
+        request.setHeader('Content-Type', 'application/json')
+
+        query_params = {}
+        for k, v in request.args.items():
+            query_params[to_unicode(k)] = to_unicode(v[0])
+
+        return to_bytes(json.dumps(query_params))
+
+
 def get_client_certificate(key_file, certificate_file):
     with open(key_file, 'r') as key, open(certificate_file, 'r') as certificate:
         pem = ''.join(key.readlines()) + ''.join(certificate.readlines())
@@ -146,6 +159,8 @@ class Https2ClientProtocolTestCase(TestCase):
 
         r.putChild(b'dataloss', Dataloss())
         r.putChild(b'no-content-length-header', NoContentLengthHeader())
+        r.putChild(b'status', Status())
+        r.putChild(b'query-params', QueryParams())
         return r
 
     @inlineCallbacks
@@ -189,7 +204,7 @@ class Https2ClientProtocolTestCase(TestCase):
         :return: Complete url
         """
         assert len(path) > 0 and (path[0] == '/' or path[0] == '&')
-        return "{}://{}:{}{}".format(self.scheme, self.hostname, self.port_number, path)
+        return f'{self.scheme}://{self.hostname}:{self.port_number}{path}'
 
     @staticmethod
     def _check_repeat(get_deferred, count):
@@ -210,7 +225,6 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(response.status, expected_status)
             self.assertEqual(response.body, expected_body)
             self.assertEqual(response.request, request)
-            self.assertEqual(response.url, request.url)
 
             content_length = int(response.headers.get('Content-Length'))
             self.assertEqual(len(response.body), content_length)
@@ -260,7 +274,6 @@ class Https2ClientProtocolTestCase(TestCase):
         def assert_response(response: Response):
             self.assertEqual(response.status, expected_status)
             self.assertEqual(response.request, request)
-            self.assertEqual(response.url, request.url)
 
             content_length = int(response.headers.get('Content-Length'))
             self.assertEqual(len(response.body), content_length)
@@ -336,7 +349,6 @@ class Https2ClientProtocolTestCase(TestCase):
         def assert_response(response: Response):
             self.assertEqual(response.status, 499)
             self.assertEqual(response.request, request)
-            self.assertEqual(response.url, request.url)
 
         d = self.client.request(request)
         d.addCallback(assert_response)
@@ -356,10 +368,6 @@ class Https2ClientProtocolTestCase(TestCase):
         d.addErrback(assert_cancelled_error)
         return d
 
-    # TODO: Test in multiple requests if one request fails due to dataloss
-    #  remaining request do not fail (change expected behaviour)
-    #  Can be done only when hyper-h2 don't terminate connection over
-    #  InvalidBodyLengthError check
     def test_received_dataloss_response(self):
         """In case when value of Header Content-Length != len(Received Data)
         ProtocolError is raised"""
@@ -384,7 +392,6 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.body, Data.NO_CONTENT_LENGTH)
             self.assertEqual(response.request, request)
-            self.assertEqual(response.url, request.url)
             self.assertIn('partial', response.flags)
             self.assertNotIn('Content-Length', response.headers)
 
@@ -404,7 +411,6 @@ class Https2ClientProtocolTestCase(TestCase):
             response = yield self.client.request(request)
             self.assertEqual(response.status, 200)
             self.assertEqual(response.request, request)
-            self.assertEqual(response.url, request.url)
             self.assertEqual(response.body, expected_body)
 
             # Check the warning is raised only once for this request
@@ -417,8 +423,8 @@ class Https2ClientProtocolTestCase(TestCase):
     def test_log_expected_warnsize(self):
         request = Request(url=self.get_url('/get-data-html-large'), meta={'download_warnsize': 1000})
         warn_pattern = re.compile(
-            r'Expected response size \(\d*\) larger than '
-            r'download warn size \(1000\) in request {}'.format(request)
+            rf'Expected response size \(\d*\) larger than '
+            rf'download warn size \(1000\) in request {request}'
         )
 
         yield self._check_log_warnsize(request, warn_pattern, Data.HTML_LARGE)
@@ -427,8 +433,8 @@ class Https2ClientProtocolTestCase(TestCase):
     def test_log_received_warnsize(self):
         request = Request(url=self.get_url('/no-content-length-header'), meta={'download_warnsize': 10})
         warn_pattern = re.compile(
-            r'Received more \(\d*\) bytes than download '
-            r'warn size \(10\) in request {}'.format(request)
+            rf'Received more \(\d*\) bytes than download '
+            rf'warn size \(10\) in request {request}'
         )
 
         yield self._check_log_warnsize(request, warn_pattern, Data.NO_CONTENT_LENGTH)
@@ -474,3 +480,55 @@ class Https2ClientProtocolTestCase(TestCase):
         self.client.transport.abortConnection()
 
         return DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
+
+    def test_invalid_request_type(self):
+        with self.assertRaises(TypeError):
+            self.client.request('https://InvalidDataTypePassed.com')
+
+    def test_query_parameters(self):
+        params = {
+            'a': generate_random_string(20),
+            'b': generate_random_string(20),
+            'c': generate_random_string(20),
+            'd': generate_random_string(20)
+        }
+        request = Request(self.get_url(f'/query-params?{urlencode(params)}'))
+
+        def assert_query_params(response: Response):
+            data = json.loads(to_unicode(response.body))
+            self.assertEqual(data, params)
+
+        d = self.client.request(request)
+        d.addCallback(assert_query_params)
+        d.addErrback(self.fail)
+
+        return d
+
+    def test_status_codes(self):
+        def assert_response_status(response: Response, expected_status: int):
+            self.assertEqual(response.status, expected_status)
+
+        d_list = []
+        for status in [200, 404]:
+            request = Request(self.get_url(f'/status?n={status}'))
+            d = self.client.request(request)
+            d.addCallback(assert_response_status, status)
+            d.addErrback(self.fail)
+            d_list.append(d)
+
+        return DeferredList(d_list, fireOnOneErrback=True)
+
+    def test_response_has_correct_certificate_ip_address(self):
+        request = Request(self.get_url('/status?n=200'))
+
+        def assert_metadata(response: Response):
+            self.assertEqual(response.request, request)
+            self.assertIsInstance(response.certificate, Certificate)
+            self.assertIsInstance(response.ip_address, IPv4Address)
+            self.assertEqual(str(response.ip_address), '127.0.0.1')
+
+        d = self.client.request(request)
+        d.addCallback(assert_metadata)
+        d.addErrback(self.fail)
+
+        return d
