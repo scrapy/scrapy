@@ -1265,7 +1265,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=Settings(settings))
 
     def test_wrong_path(self):
-        """ If path is without %(batch_time)s or %(batch_id)s an exception must be raised """
+        """ If path is without %(batch_time)s and %(batch_id)s an exception must be raised """
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
@@ -1329,7 +1329,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
             ],
             'csv': ['foo,bar\r\nFOO,BAR\r\n'.encode('utf-8'),
                     'foo,bar\r\nFOO1,BAR1\r\n'.encode('utf-8')],
-            'jsonlines': ['{"foo": "FOO", "bar": "BAR"}\n{"foo": "FOO1", "bar": "BAR1"}\n'.encode('utf-8')],
         }
 
         settings = {
@@ -1352,13 +1351,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     'fields': ['foo', 'bar'],
                     'encoding': 'utf-8',
                 },
-                os.path.join(self._random_temp_filename(), 'jsonlines', self._file_mark): {
-                    'format': 'jsonlines',
-                    'indent': None,
-                    'fields': ['foo', 'bar'],
-                    'encoding': 'utf-8',
-                    'batch_item_count': 0,
-                },
             },
             'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
         }
@@ -1369,19 +1361,16 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_batch_item_count_feeds_setting(self):
-        items = [dict({'foo': u'FOO', 'bar': u'BAR'}), dict({'foo': u'FOO1', 'bar': u'BAR1'})]
-
+        items = [dict({'foo': u'FOO'}), dict({'foo': u'FOO1'})]
         formats = {
-            'jsonlines': ['{"foo": "FOO", "bar": "BAR"}\n'.encode('utf-8'),
-                          '{"foo": "FOO1", "bar": "BAR1"}\n'.encode('utf-8')],
+            'json': ['[{"foo": "FOO"}]'.encode('utf-8'),
+                     '[{"foo": "FOO1"}]'.encode('utf-8')],
         }
-
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'jsonlines', self._file_mark): {
-                    'format': 'jsonlines',
+                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {
+                    'format': 'json',
                     'indent': None,
-                    'fields': ['foo', 'bar'],
                     'encoding': 'utf-8',
                     'batch_item_count': 1,
                 },

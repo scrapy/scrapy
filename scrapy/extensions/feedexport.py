@@ -242,7 +242,6 @@ class FeedExporter:
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
-        self.storage_batch_item_count = self.settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
                 raise NotConfigured
@@ -253,7 +252,7 @@ class FeedExporter:
 
     def open_spider(self, spider):
         for uri, feed in self.feeds.items():
-            uri_params = self._get_uri_params(spider, feed['uri_params'], None)
+            uri_params = self._get_uri_params(spider, feed['uri_params'])
             self.slots.append(self._start_new_batch(
                 batch_id=1,
                 uri=uri % uri_params,
@@ -299,7 +298,7 @@ class FeedExporter:
     def _start_new_batch(self, batch_id, uri, feed, spider, uri_template):
         """
         Redirect the output data stream to a new file.
-        Execute multiple times if 'FEED_STORAGE_BATCH_ITEM_COUNT' setting is specified.
+        Execute multiple times if FEED_STORAGE_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified
         :param batch_id: sequence number of current batch
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
@@ -331,14 +330,15 @@ class FeedExporter:
 
     def item_scraped(self, item, spider):
         slots = []
-        for idx, slot in enumerate(self.slots):
+        for slot in self.slots:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
             # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_ITEM_COUNT and close the old one
-            if self.feeds[slot.uri_template].get('batch_item_count', self.storage_batch_item_count) \
-                    and slot.itemcount == self.feeds[slot.uri_template].get('batch_item_count',
-                                                                            self.storage_batch_item_count):
+            if (
+                    self.feeds[slot.uri_template]['batch_item_count']
+                    and slot.itemcount >= self.feeds[slot.uri_template]['batch_item_count']
+            ):
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
@@ -369,15 +369,17 @@ class FeedExporter:
 
     def _settings_are_valid(self, uri):
         """
-        If FEED_STORAGE_BATCH_ITEM_COUNT setting is specified uri has to contain %(batch_time)s or %(batch_id)s
-        to distinguish different files of partial output
+        If FEED_STORAGE_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified uri has to contain
+        %(batch_time)s or %(batch_id)s to distinguish different files of partial output
         """
-        if not self.storage_batch_item_count or '%(batch_time)s' in uri or '%(batch_id)s' in uri:
-            return True
-        logger.error(
-            '%(batch_time)s or %(batch_id)s must be in uri if FEED_STORAGE_BATCH_ITEM_COUNT setting is specified'
-        )
-        return False
+        for uri_template, values in self.feeds.items():
+            if values['batch_item_count'] and not any(s in uri_template for s in ['%(batch_time)s', '%(batch_id)s']):
+                logger.error(
+                    '%(batch_time)s or %(batch_id)s must be in uri({}) if FEED_STORAGE_BATCH_ITEM_COUNT setting '
+                    'or FEEDS.batch_item_count is specified and greater than 0.'.format(uri_template)
+                )
+                return False
+        return True
 
     def _storage_supported(self, uri):
         scheme = urlparse(uri).scheme
@@ -404,7 +406,7 @@ class FeedExporter:
     def _get_storage(self, uri):
         return self._get_instance(self.storages[urlparse(uri).scheme], uri)
 
-    def _get_uri_params(self, spider, uri_params, slot):
+    def _get_uri_params(self, spider, uri_params, slot=None):
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)

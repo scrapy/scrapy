@@ -442,7 +442,7 @@ If assigned an integer number higher than ``0``, Scrapy generates multiple outpu
 storing up to the specified number of items in each output file.
 
 When generating multiple output files, you must use at least one of the following
-placeholders in :setting:`FEED_URI` to indicate how the different output file names are
+placeholders in the feed URI to indicate how the different output file names are
 generated:
 
 * ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
@@ -457,7 +457,7 @@ For instance, if your settings include::
 
 And your :command:`crawl` command line is::
 
-  scrapy crawl spidername -o dirname/%(batch_id)s-filename%(batch_time)s.json
+    scrapy crawl spidername -o dirname/%(batch_id)s-filename%(batch_time)s.json
 
 The command line above can generate a directory tree like::
 
