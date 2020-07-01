@@ -228,10 +228,13 @@ class BadSpider(scrapy.Spider):
         """
 
     @contextmanager
-    def _create_file(self, content):
+    def _create_file(self, content, name=None):
         tmpdir = self.mktemp()
         os.mkdir(tmpdir)
-        fname = abspath(join(tmpdir, self.spider_filename))
+        if name:
+            fname = abspath(join(tmpdir, name))
+        else:
+            fname = abspath(join(tmpdir, self.spider_filename))
         with open(fname, 'w') as f:
             f.write(content)
         try:
@@ -239,12 +242,12 @@ class BadSpider(scrapy.Spider):
         finally:
             rmtree(tmpdir)
 
-    def runspider(self, code, args=()):
-        with self._create_file(code) as fname:
+    def runspider(self, code, name=None, args=()):
+        with self._create_file(code, name) as fname:
             return self.proc('runspider', fname, *args)
 
-    def get_log(self, code, args=()):
-        p, stdout, stderr = self.runspider(code, args=args)
+    def get_log(self, code, name=None, args=()):
+        p, stdout, stderr = self.runspider(code, name, args=args)
         return stderr
 
     def test_runspider(self):
@@ -312,13 +315,11 @@ class MySpider(scrapy.Spider):
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
-        self.spider_filename = 'myspider.txt'
-        log = self.get_log('')
+        log = self.get_log('', name='myspider.txt')
         self.assertIn('Unable to load', log)
 
     def test_start_requests_errors(self):
-        self.spider_filename = "badspider.py"
-        log = self.get_log(self.badspider)
+        log = self.get_log(self.badspider, name='badspider.py')
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
