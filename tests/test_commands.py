@@ -8,6 +8,7 @@ import tempfile
 from contextlib import contextmanager
 from os.path import exists, join, abspath
 from shutil import rmtree, copytree
+from sys import platform
 from tempfile import mkdtemp
 from threading import Timer
 
@@ -204,6 +205,8 @@ class MiscCommandsTest(CommandTest):
 
 class RunSpiderCommandTest(CommandTest):
 
+    spider_filename = 'myspider.py'
+
     debug_log_spider = """
 import scrapy
 
@@ -215,11 +218,20 @@ class MySpider(scrapy.Spider):
         return []
 """
 
+    badspider = """
+import scrapy
+
+class BadSpider(scrapy.Spider):
+    name = "bad"
+    def start_requests(self):
+        raise Exception("oops!")
+        """
+
     @contextmanager
-    def _create_file(self, content, name):
+    def _create_file(self, content):
         tmpdir = self.mktemp()
         os.mkdir(tmpdir)
-        fname = abspath(join(tmpdir, name))
+        fname = abspath(join(tmpdir, self.spider_filename))
         with open(fname, 'w') as f:
             f.write(content)
         try:
@@ -227,12 +239,12 @@ class MySpider(scrapy.Spider):
         finally:
             rmtree(tmpdir)
 
-    def runspider(self, code, name='myspider.py', args=()):
-        with self._create_file(code, name) as fname:
+    def runspider(self, code, args=()):
+        with self._create_file(code) as fname:
             return self.proc('runspider', fname, *args)
 
-    def get_log(self, code, name='myspider.py', args=()):
-        p, stdout, stderr = self.runspider(code, name=name, args=args)
+    def get_log(self, code, args=()):
+        p, stdout, stderr = self.runspider(code, args=args)
         return stderr
 
     def test_runspider(self):
@@ -242,46 +254,21 @@ class MySpider(scrapy.Spider):
         self.assertIn("INFO: Closing spider (finished)", log)
         self.assertIn("INFO: Spider closed (finished)", log)
 
-        if sys.platform == 'win32':
-            log = self.get_log(self.debug_log_spider, name='myspider.pyw')
-            self.assertIn("DEBUG: It Works!", log)
-            self.assertIn("INFO: Spider opened", log)
-            self.assertIn("INFO: Closing spider (finished)", log)
-            self.assertIn("INFO: Spider closed (finished)", log)
-
     def test_run_fail_spider(self):
         proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider))
         ret = proc.returncode
         self.assertNotEqual(ret, 0)
-
-        if sys.platform == 'win32':
-            proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(ExceptionSpider),
-                                        name='myspider.pyw')
-            ret = proc.returncode
-            self.assertNotEqual(ret, 0)
 
     def test_run_good_spider(self):
         proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider))
         ret = proc.returncode
         self.assertEqual(ret, 0)
 
-        if sys.platform == 'win32':
-            proc, _, _ = self.runspider("import scrapy\n" + inspect.getsource(NoRequestsSpider),
-                                        name='myspider.pyw')
-            ret = proc.returncode
-            self.assertEqual(ret, 0)
-
     def test_runspider_log_level(self):
         log = self.get_log(self.debug_log_spider,
                            args=('-s', 'LOG_LEVEL=INFO'))
         self.assertNotIn("DEBUG: It Works!", log)
         self.assertIn("INFO: Spider opened", log)
-
-        if sys.platform == 'win32':
-            log = self.get_log(self.debug_log_spider, name='myspider.pyw',
-                               args=('-s', 'LOG_LEVEL=INFO'))
-            self.assertNotIn("DEBUG: It Works!", log)
-            self.assertIn("INFO: Spider opened", log)
 
     def test_runspider_dnscache_disabled(self):
         # see https://github.com/scrapy/scrapy/issues/2811
@@ -303,11 +290,6 @@ class MySpider(scrapy.Spider):
         self.assertNotIn("DNSLookupError", log)
         self.assertIn("INFO: Spider opened", log)
 
-        if sys.platform == 'win32':
-            log = self.get_log(dnscache_spider, name='myspider,pyw', args=('-s', 'DNSCACHE_ENABLED=False'))
-            self.assertNotIn("DNSLookupError", log)
-            self.assertIn("INFO: Spider opened", log)
-
     def test_runspider_log_short_names(self):
         log1 = self.get_log(self.debug_log_spider,
                             args=('-s', 'LOG_SHORT_NAMES=1'))
@@ -321,54 +303,24 @@ class MySpider(scrapy.Spider):
         self.assertNotIn("[scrapy]", log2)
         self.assertIn("[scrapy.core.engine]", log2)
 
-        if sys.platform == 'win32':
-            log1 = self.get_log(self.debug_log_spider,
-                                name='myspider.pyw',
-                                args=('-s', 'LOG_SHORT_NAMES=1'))
-            self.assertIn("[myspider] DEBUG: It Works!", log1)
-            self.assertIn("[scrapy]", log1)
-            self.assertNotIn("[scrapy.core.engine]", log1)
-
-            log2 = self.get_log(self.debug_log_spider,
-                                name='myspider.pyw',
-                                args=('-s', 'LOG_SHORT_NAMES=0'))
-            self.assertIn("[myspider] DEBUG: It Works!", log2)
-            self.assertNotIn("[scrapy]", log2)
-            self.assertIn("[scrapy.core.engine]", log2)
-
     def test_runspider_no_spider_found(self):
         log = self.get_log("from scrapy.spiders import Spider\n")
         self.assertIn("No spider found in file", log)
-
-        if sys.platform == 'win32':
-            log = self.get_log("from scrapy.spiders import Spider\n", name='myspider.pyw')
-            self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
         _, _, log = self.proc('runspider', 'some_non_existent_file')
         self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
-        log = self.get_log('', name='myspider.txt')
+        self.spider_filename = 'myspider.txt'
+        log = self.get_log('')
         self.assertIn('Unable to load', log)
 
     def test_start_requests_errors(self):
-        badspider = """
-import scrapy
-
-class BadSpider(scrapy.Spider):
-    name = "bad"
-    def start_requests(self):
-        raise Exception("oops!")
-        """
-        log = self.get_log(badspider, name="badspider.py")
+        self.spider_filename = "badspider.py"
+        log = self.get_log(self.badspider)
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
-
-        if sys.platform == 'win32':
-            log = self.get_log(badspider, name="badspider.pyw")
-            self.assertIn("start_requests", log)
-            self.assertIn("badspider.py", log)
 
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
@@ -376,19 +328,28 @@ class BadSpider(scrapy.Spider):
         ])
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-        if sys.platform == 'win32':
-            log = self.get_log(self.debug_log_spider, name='myspider.pyw', args=[
-                '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
-            ])
-            self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
-
     def test_asyncio_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-        if sys.platform == 'win32':
-            log = self.get_log(self.debug_log_spider, name='myspider.pyw', args=[])
-            self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
+
+    spider_filename = 'myspider.pyw'
+
+    def setUp(self):
+        if platform != 'win32':
+            raise unittest.SkipTest(".pyw file extension only supported in Windows")
+        super(WindowsRunSpiderCommandTest, self).setUp()
+
+    def test_runspider_unable_to_load(self):
+        raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
+
+    def test_start_requests_errors(self):
+        self.spider_filename = 'badspider.pyw'
+        log = self.get_log(self.badspider)
+        self.assertIn("start_requests", log)
+        self.assertIn("badspider.pyw", log)
 
 
 class BenchCommandTest(CommandTest):
