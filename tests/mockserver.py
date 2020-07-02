@@ -247,9 +247,8 @@ class MockDNSServer:
     def __enter__(self):
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
                           stdout=PIPE, env=get_testenv())
-        host, port = self.proc.stdout.readline().strip().decode('ascii').split(":")
-        self.host = host
-        self.port = int(port)
+        self.host = '127.0.0.1'
+        self.port = int(self.proc.stdout.readline().strip().decode('ascii').split(":")[1])
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):

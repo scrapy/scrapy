@@ -2,6 +2,7 @@ import inspect
 import json
 import optparse
 import os
+import platform
 import subprocess
 import sys
 import tempfile
@@ -10,6 +11,7 @@ from os.path import exists, join, abspath
 from shutil import rmtree, copytree
 from tempfile import mkdtemp
 from threading import Timer
+from unittest import skipIf
 
 from twisted.trial import unittest
 
@@ -319,6 +321,9 @@ class BadSpider(scrapy.Spider):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
