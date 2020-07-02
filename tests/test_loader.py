@@ -88,9 +88,9 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['name'], [u'Marta'])
 
 
-class InitializationFromItemTest(unittest.TestCase):
+class InitializationTestMixin:
 
-    item_class = NameItem
+    item_class = None
 
     def test_keep_single_value(self):
         """Loaded item should contain values from the initial item"""
