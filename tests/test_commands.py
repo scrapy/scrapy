@@ -339,9 +339,26 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = 'myspider.pyw'
 
     def setUp(self):
-        if platform != 'win32':
-            raise unittest.SkipTest(".pyw file extension only supported in Windows")
         super(WindowsRunSpiderCommandTest, self).setUp()
+
+    if platform != 'win32':
+        def test_run_good_spider(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_dnscache_disabled(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_log_level(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_log_short_names(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_no_spider_found(self):
+            raise unittest.SkipTest("Windows required")
 
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
