@@ -149,7 +149,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
             "FEED_URI_PARAMS": (1, 2, 3, 4),
-            "FEED_STORAGE_BATCH_ITEM_COUNT": 2,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -171,7 +171,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
-            "FEED_STORAGE_BATCH_ITEM_COUNT": 2,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {

@@ -6,6 +6,7 @@ See documentation in docs/topics/feed-exports.rst
 
 import logging
 import os
+import re
 import sys
 import warnings
 from datetime import datetime
@@ -24,6 +25,7 @@ from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
+
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +247,7 @@ class FeedExporter:
         for uri, feed in self.feeds.items():
             if not self._storage_supported(uri):
                 raise NotConfigured
-            if not self._settings_are_valid(uri):
+            if not self._settings_are_valid():
                 raise NotConfigured
             if not self._exporter_supported(feed['format']):
                 raise NotConfigured
@@ -298,7 +300,7 @@ class FeedExporter:
     def _start_new_batch(self, batch_id, uri, feed, spider, uri_template):
         """
         Redirect the output data stream to a new file.
-        Execute multiple times if FEED_STORAGE_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified
+        Execute multiple times if FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified
         :param batch_id: sequence number of current batch
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
@@ -334,10 +336,10 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            # create new slot for each slot with itemcount == FEED_STORAGE_BATCH_ITEM_COUNT and close the old one
+            # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
             if (
-                    self.feeds[slot.uri_template]['batch_item_count']
-                    and slot.itemcount >= self.feeds[slot.uri_template]['batch_item_count']
+                self.feeds[slot.uri_template]['batch_item_count']
+                and slot.itemcount >= self.feeds[slot.uri_template]['batch_item_count']
             ):
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
@@ -367,16 +369,18 @@ class FeedExporter:
             return True
         logger.error("Unknown feed format: %(format)s", {'format': format})
 
-    def _settings_are_valid(self, uri):
+    def _settings_are_valid(self):
         """
-        If FEED_STORAGE_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified uri has to contain
+        If FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified uri has to contain
         %(batch_time)s or %(batch_id)s to distinguish different files of partial output
         """
         for uri_template, values in self.feeds.items():
-            if values['batch_item_count'] and not any(s in uri_template for s in ['%(batch_time)s', '%(batch_id)s']):
+            if values['batch_item_count'] and not re.findall(r'(%\(batch_time\)s|(%\(batch_id\)0\d*d))', uri_template):
                 logger.error(
-                    '%(batch_time)s or %(batch_id)s must be in uri({}) if FEED_STORAGE_BATCH_ITEM_COUNT setting '
-                    'or FEEDS.batch_item_count is specified and greater than 0.'.format(uri_template)
+                    '%(batch_time)s or %(batch_id)0xd must be in uri({}) if FEED_EXPORT_BATCH_ITEM_COUNT setting '
+                    'or FEEDS.batch_item_count is specified and greater than 0. For more info see:'
+                    'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count'
+                    ''.format(uri_template)
                 )
                 return False
         return True

@@ -220,7 +220,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORAGE_FTP_ACTIVE`
  * :setting:`FEED_STORAGE_S3_ACL`
  * :setting:`FEED_EXPORTERS`
- * :setting:`FEED_STORAGE_BATCH_ITEM_COUNT`
+ * :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -272,7 +272,7 @@ as a fallback value if that key is not provided for a specific feed definition.
 * ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
 * ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
 * ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
-* ``batch_item_count``: falls back to :setting:`FEED_STORAGE_BATCH_ITEM_COUNT`
+* ``batch_item_count``: falls back to :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -432,9 +432,9 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
-.. setting:: FEED_STORAGE_BATCH_ITEM_COUNT
+.. setting:: FEED_EXPORT_BATCH_ITEM_COUNT
 
-FEED_STORAGE_BATCH_ITEM_COUNT
+FEED_EXPORT_BATCH_ITEM_COUNT
 -----------------------------
 Default: ``0``
 
@@ -448,16 +448,19 @@ generated:
 * ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
   (e.g. ``2020-03-28T14-45-08.237134``)
 
-* ``%(batch_id)s`` - gets replaced by the batch  sequence number of batch
-  (e.g. ``2`` for the second file)
+* ``%(batch_id)0xd`` - gets replaced by the sequence number of the batch.
+By replacing ``x`` with an integer you set the number of leading zeroes to prevent
+inappropriate sorting like this: [``'1'``, ``'10'``, ``'2'``]. Here are some examples:
+    ``%(batch_id)01d`` for the second batch gets replaced by ``2``
+    ``%(batch_id)05d`` for the third batch gets replaced by ``00003``
 
 For instance, if your settings include::
 
-    FEED_STORAGE_BATCH_ITEM_COUNT=100
+    FEED_EXPORT_BATCH_ITEM_COUNT=100
 
 And your :command:`crawl` command line is::
 
-    scrapy crawl spidername -o dirname/%(batch_id)s-filename%(batch_time)s.json
+    scrapy crawl spidername -o dirname/%(batch_id)d-filename%(batch_time)s.json
 
 The command line above can generate a directory tree like::
 

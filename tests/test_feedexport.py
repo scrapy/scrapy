@@ -1108,7 +1108,7 @@ class FeedExportTest(FeedExportTestBase):
 
 class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
-    _file_mark = '_%(batch_time)s_#%(batch_id)s_'
+    _file_mark = '_%(batch_time)s_#%(batch_id)02d_'
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -1144,7 +1144,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'jl', self._file_mark): {'format': 'jl'},
             },
         })
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         for batch in data['jl']:
@@ -1160,7 +1160,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {'format': 'csv'},
             },
         })
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         data = yield self.exported_data(items, settings)
         for batch in data['csv']:
             got_batch = csv.DictReader(to_unicode(batch).splitlines())
@@ -1176,7 +1176,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
             },
         })
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         for batch in data['xml']:
@@ -1194,7 +1194,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'json', self._file_mark): {'format': 'json'},
             },
         })
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         # XML
@@ -1219,7 +1219,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'pickle', self._file_mark): {'format': 'pickle'},
             },
         })
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         import pickle
@@ -1236,7 +1236,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 os.path.join(self._random_temp_filename(), 'marshal', self._file_mark): {'format': 'marshal'},
             },
         })
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         import marshal
@@ -1259,18 +1259,18 @@ class BatchDeliveriesTest(FeedExportTestBase):
             {'foo': 'bar3', 'baz': 'quux3', 'egg': ''}
         ]
         settings = {
-            'FEED_STORAGE_BATCH_ITEM_COUNT': 2
+            'FEED_EXPORT_BATCH_ITEM_COUNT': 2
         }
         header = self.MyItem.fields.keys()
         yield self.assertExported(items, header, rows, settings=Settings(settings))
 
     def test_wrong_path(self):
-        """ If path is without %(batch_time)s and %(batch_id)s an exception must be raised """
+        """ If path is without %(batch_time)s and %(batch_id)0xd an exception must be raised """
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
             },
-            'FEED_STORAGE_BATCH_ITEM_COUNT': 1
+            'FEED_EXPORT_BATCH_ITEM_COUNT': 1
         }
         crawler = get_crawler(settings_dict=settings)
         self.assertRaises(NotConfigured, FeedExporter, crawler)
@@ -1282,7 +1282,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 'FEEDS': {
                     os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
                 },
-                'FEED_STORAGE_BATCH_ITEM_COUNT': 1
+                'FEED_EXPORT_BATCH_ITEM_COUNT': 1
             }
             data = yield self.exported_no_data(settings)
             data = dict(data)
@@ -1304,7 +1304,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 },
                 'FEED_STORE_EMPTY': True,
                 'FEED_EXPORT_INDENT': None,
-                'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
+                'FEED_EXPORT_BATCH_ITEM_COUNT': 1,
             }
             data = yield self.exported_no_data(settings)
             data = dict(data)
@@ -1352,7 +1352,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     'encoding': 'utf-8',
                 },
             },
-            'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
+            'FEED_EXPORT_BATCH_ITEM_COUNT': 1,
         }
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():
@@ -1398,7 +1398,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     'format': 'json',
                 },
             },
-            'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
+            'FEED_EXPORT_BATCH_ITEM_COUNT': 1,
         }
         data = yield self.exported_data(items, settings)
         self.assertEqual(len(items) + 1, len(data['json']))
@@ -1440,7 +1440,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     'format': 'json',
                 },
             },
-            'FEED_STORAGE_BATCH_ITEM_COUNT': 1,
+            'FEED_EXPORT_BATCH_ITEM_COUNT': 1,
         })
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
@@ -1458,7 +1458,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         s3 = boto3.resource('s3')
         my_bucket = s3.Bucket(s3_test_bucket_name)
-        batch_size = settings.getint('FEED_STORAGE_BATCH_ITEM_COUNT')
+        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
 
         with MockServer() as s:
             runner = CrawlerRunner(Settings(settings))
