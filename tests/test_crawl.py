@@ -9,17 +9,32 @@ from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.ssl import Certificate
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import StopDownload
 from scrapy.http import Request
+from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
-from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
-                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback,
-                           AsyncDefSpider, AsyncDefAsyncioSpider, AsyncDefAsyncioReturnSpider,
-                           AsyncDefAsyncioReqsReturnSpider)
+from tests.spiders import (
+    AsyncDefAsyncioReqsReturnSpider,
+    AsyncDefAsyncioReturnSingleElementSpider,
+    AsyncDefAsyncioReturnSpider,
+    AsyncDefAsyncioSpider,
+    AsyncDefSpider,
+    BrokenStartRequestsSpider,
+    BytesReceivedCallbackSpider,
+    BytesReceivedErrbackSpider,
+    CrawlSpiderWithErrback,
+    DelaySpider,
+    DuplicateStartRequestsSpider,
+    FollowAllSpider,
+    SimpleSpider,
+    SingleRequestSpider,
+)
 
 
 class CrawlTestCase(TestCase):
@@ -350,6 +365,21 @@ with multiples lines
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
 
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_items_single_element(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReturnSingleElementSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        self.assertIn({"foo": 42}, items)
+
     @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @mark.only_asyncio()
     @defer.inlineCallbacks
@@ -457,3 +487,27 @@ with multiples lines
         ip_address = crawler.spider.meta['responses'][0].ip_address
         self.assertIsInstance(ip_address, IPv4Address)
         self.assertEqual(str(ip_address), gethostbyname(expected_netloc))
+
+    @defer.inlineCallbacks
+    def test_stop_download_callback(self):
+        crawler = self.runner.create_crawler(BytesReceivedCallbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("failure"))
+        self.assertIsInstance(crawler.spider.meta["response"], Response)
+        self.assertEqual(crawler.spider.meta["response"].body, crawler.spider.meta.get("bytes_received"))
+        self.assertLess(len(crawler.spider.meta["response"].body), crawler.spider.full_response_length)
+
+    @defer.inlineCallbacks
+    def test_stop_download_errback(self):
+        crawler = self.runner.create_crawler(BytesReceivedErrbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("response"))
+        self.assertIsInstance(crawler.spider.meta["failure"], Failure)
+        self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
+        self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
+        self.assertEqual(
+            crawler.spider.meta["failure"].value.response.body,
+            crawler.spider.meta.get("bytes_received"))
+        self.assertLess(
+            len(crawler.spider.meta["failure"].value.response.body),
+            crawler.spider.full_response_length)

@@ -7,13 +7,12 @@ Item Loaders
 .. module:: scrapy.loader
    :synopsis: Item Loader class
 
-Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
-<topics-items>`. Even though Items can be populated using their own
-dictionary-like API, Item Loaders provide a much more convenient API for
-populating them from a scraping process, by automating some common tasks like
-parsing the raw extracted data before assigning it.
+Item Loaders provide a convenient mechanism for populating scraped :ref:`items
+<topics-items>`. Even though items can be populated directly, Item Loaders provide a
+much more convenient API for populating them from a scraping process, by automating
+some common tasks like parsing the raw extracted data before assigning it.
 
-In other words, :ref:`Items <topics-items>` provide the *container* of
+In other words, :ref:`items <topics-items>` provide the *container* of
 scraped data, while Item Loaders provide the mechanism for *populating* that
 container.
 
@@ -29,10 +28,10 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with a dict-like object (e.g. Item or dict) or without one, in
-which case an Item is automatically instantiated in the Item Loader ``__init__`` method
-using the Item class specified in the :attr:`ItemLoader.default_item_class`
-attribute.
+instantiate it with an :ref:`item object <topics-items>` or without one, in which
+case an :ref:`item object <topics-items>` is automatically created in the
+Item Loader ``__init__`` method using the :ref:`item <topics-items>` class
+specified in the :attr:`ItemLoader.default_item_class` attribute.
 
 Then, you start collecting values into the Item Loader, typically using
 :ref:`Selectors <topics-selectors>`. You can add more than one value to
@@ -81,6 +80,31 @@ called which actually returns the item populated with the data
 previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 :meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
 
+
+.. _topics-loaders-dataclass:
+
+Working with dataclass items
+============================
+
+By default, :ref:`dataclass items <dataclass-items>` require all fields to be
+passed when created. This could be an issue when using dataclass items with
+item loaders: unless a pre-populated item is passed to the loader, fields
+will be populated incrementally using the loader's :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css` and :meth:`~ItemLoader.add_value` methods.
+
+One approach to overcome this is to define items using the
+:func:`~dataclasses.field` function, with a ``default`` argument::
+
+    from dataclasses import dataclass, field
+    from typing import Optional
+
+    @dataclass
+    class InventoryItem:
+        name: Optional[str] = field(default=None)
+        price: Optional[float] = field(default=None)
+        stock: Optional[int] = field(default=None)
+
+
 .. _topics-loaders-processors:
 
 Input and Output processors
@@ -92,7 +116,7 @@ received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
 :meth:`ItemLoader.load_item` method is called to populate and get the populated
-:class:`~scrapy.item.Item` object.  That's when the output processor is
+:ref:`item object <topics-items>`.  That's when the output processor is
 called with the data previously collected (and processed using the input
 processor). The result of the output processor is the final value that gets
 assigned to the item.
@@ -157,12 +181,10 @@ Last, but not least, ``itemloaders`` comes with some :ref:`commonly used
 processors <processors>` built-in for convenience.
 
 
-
 Declaring Item Loaders
 ======================
 
-Item Loaders are declared like Items, by using a class definition syntax. Here
-is an example::
+Item Loaders are declared using a class definition syntax. Here is an example::
 
     from itemloaders.processors import TakeFirst, MapCompose, Join
     from scrapy.loader import ItemLoader

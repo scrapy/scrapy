@@ -138,8 +138,9 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
 
     Raises ``ValueError`` if both ``settings`` and ``crawler`` are ``None``.
 
-    Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
-    extension has not been implemented correctly).
+    .. versionchanged:: 2.2
+       Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
+       extension has not been implemented correctly).
     """
     if settings is None:
         if crawler is None:

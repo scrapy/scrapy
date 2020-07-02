@@ -5,6 +5,8 @@ See documentation in docs/topics/loaders.rst
 """
 import itemloaders
 
+from itemadapter import ItemAdapter
+
 from scrapy.item import Item
 from scrapy.selector import Selector
 
