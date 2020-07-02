@@ -35,38 +35,45 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods['process_request']:
                 response = yield deferred_from_coro(method(request=request, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
-                    raise _InvalidOutput('Middleware %s.process_request must return None, Response or Request, got %s' % \
-                                         (method.__self__.__class__.__name__, response.__class__.__name__))
+                    raise _InvalidOutput(
+                        "Middleware %s.process_request must return None, Response or Request, got %s"
+                        % (method.__self__.__class__.__name__, response.__class__.__name__)
+                    )
                 if response:
-                    defer.returnValue(response)
-            defer.returnValue((yield download_func(request=request, spider=spider)))
+                    return response
+            return (yield download_func(request=request, spider=spider))
 
         @defer.inlineCallbacks
         def process_response(response):
-            assert response is not None, 'Received None in process_response'
-            if isinstance(response, Request):
-                defer.returnValue(response)
+            if response is None:
+                raise TypeError("Received None in process_response")
+            elif isinstance(response, Request):
+                return response
 
             for method in self.methods['process_response']:
                 response = yield deferred_from_coro(method(request=request, response=response, spider=spider))
                 if not isinstance(response, (Response, Request)):
-                    raise _InvalidOutput('Middleware %s.process_response must return Response or Request, got %s' % \
-                                         (method.__self__.__class__.__name__, type(response)))
+                    raise _InvalidOutput(
+                        "Middleware %s.process_response must return Response or Request, got %s"
+                        % (method.__self__.__class__.__name__, type(response))
+                    )
                 if isinstance(response, Request):
-                    defer.returnValue(response)
-            defer.returnValue(response)
+                    return response
+            return response
 
         @defer.inlineCallbacks
-        def process_exception(_failure):
-            exception = _failure.value
+        def process_exception(failure):
+            exception = failure.value
             for method in self.methods['process_exception']:
                 response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
-                    raise _InvalidOutput('Middleware %s.process_exception must return None, Response or Request, got %s' % \
-                                         (method.__self__.__class__.__name__, type(response)))
+                    raise _InvalidOutput(
+                        "Middleware %s.process_exception must return None, Response or Request, got %s"
+                        % (method.__self__.__class__.__name__, type(response))
+                    )
                 if response:
-                    defer.returnValue(response)
-            defer.returnValue(_failure)
+                    return response
+            return failure
 
         deferred = mustbe_deferred(process_request, request)
         deferred.addErrback(process_exception)

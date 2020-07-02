@@ -58,9 +58,9 @@ class ResponseTypes:
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = to_unicode(content_disposition,
-                encoding='latin-1', errors='replace').split(';')[1].split('=')[1]
-            filename = filename.strip('"\'')
+            filename = to_unicode(
+                content_disposition, encoding='latin-1', errors='replace'
+            ).split(';')[1].split('=')[1].strip('"\'')
             return self.from_filename(filename)
         except IndexError:
             return Response
@@ -71,7 +71,7 @@ class ResponseTypes:
         cls = Response
         if b'Content-Type' in headers:
             cls = self.from_content_type(
-                content_type=headers[b'Content-type'],
+                content_type=headers[b'Content-Type'],
                 content_encoding=headers.get(b'Content-Encoding')
             )
         if cls is Response and b'Content-Disposition' in headers:

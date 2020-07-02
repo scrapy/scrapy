@@ -19,18 +19,26 @@ class SelectorTestCase(unittest.TestCase):
         for x in xl:
             assert isinstance(x, Selector)
 
-        self.assertEqual(sel.xpath('//input').getall(),
-                         [x.get() for x in sel.xpath('//input')])
-
-        self.assertEqual([x.get() for x in sel.xpath("//input[@name='a']/@name")],
-                         [u'a'])
-        self.assertEqual([x.get() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
-                         [u'12.0'])
-
-        self.assertEqual(sel.xpath("concat('xpath', 'rules')").getall(),
-                         [u'xpathrules'])
-        self.assertEqual([x.get() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
-                         [u'12'])
+        self.assertEqual(
+            sel.xpath('//input').getall(),
+            [x.get() for x in sel.xpath('//input')]
+        )
+        self.assertEqual(
+            [x.get() for x in sel.xpath("//input[@name='a']/@name")],
+            [u'a']
+        )
+        self.assertEqual(
+            [x.get() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
+            [u'12.0']
+        )
+        self.assertEqual(
+            sel.xpath("concat('xpath', 'rules')").getall(),
+            [u'xpathrules']
+        )
+        self.assertEqual(
+            [x.get() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
+            [u'12']
+        )
 
     def test_root_base_url(self):
         body = b'<html><form action="/path"><input name="a" /></form></html>'
@@ -67,8 +75,7 @@ class SelectorTestCase(unittest.TestCase):
         headers = {'Content-Type': ['text/html; charset=utf-8']}
         response = HtmlResponse(url="http://example.com", headers=headers, body=html_utf8)
         x = Selector(response)
-        self.assertEqual(x.xpath("//span[@id='blank']/text()").getall(),
-                          [u'\xa3'])
+        self.assertEqual(x.xpath("//span[@id='blank']/text()").getall(), [u'\xa3'])
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence

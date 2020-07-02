@@ -73,7 +73,8 @@ class ExecutionEngine:
     @defer.inlineCallbacks
     def start(self):
         """Start the execution engine"""
-        assert not self.running, "Engine already running"
+        if self.running:
+            raise RuntimeError("Engine already running")
         self.start_time = time()
         yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
@@ -82,7 +83,8 @@ class ExecutionEngine:
 
     def stop(self):
         """Stop the execution engine gracefully"""
-        assert self.running, "Engine not running"
+        if not self.running:
+            raise RuntimeError("Engine not running")
         self.running = False
         dfd = self._close_all_spiders()
         return dfd.addBoth(lambda _: self._finish_stopping_engine())
@@ -165,7 +167,11 @@ class ExecutionEngine:
         return d
 
     def _handle_downloader_output(self, response, request, spider):
-        assert isinstance(response, (Request, Response, Failure)), response
+        if not isinstance(response, (Request, Response, Failure)):
+            raise TypeError(
+                "Incorrect type: expected Request, Response or Failure, got %s: %r"
+                % (type(response), response)
+            )
         # downloader middleware can return requests (for example, redirects)
         if isinstance(response, Request):
             self.crawl(response, spider)
@@ -205,17 +211,15 @@ class ExecutionEngine:
         return not bool(self.slot)
 
     def crawl(self, request, spider):
-        assert spider in self.open_spiders, \
-            "Spider %r not opened when crawling: %s" % (spider.name, request)
+        if spider not in self.open_spiders:
+            raise RuntimeError("Spider %r not opened when crawling: %s" % (spider.name, request))
         self.schedule(request, spider)
         self.slot.nextcall.schedule()
 
     def schedule(self, request, spider):
-        self.signals.send_catch_log(signal=signals.request_scheduled,
-                request=request, spider=spider)
+        self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
         if not self.slot.scheduler.enqueue_request(request):
-            self.signals.send_catch_log(signal=signals.request_dropped,
-                                        request=request, spider=spider)
+            self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
 
     def download(self, request, spider):
         d = self._download(request, spider)
@@ -224,22 +228,25 @@ class ExecutionEngine:
 
     def _downloaded(self, response, slot, request, spider):
         slot.remove_request(request)
-        return self.download(response, spider) \
-                if isinstance(response, Request) else response
+        return self.download(response, spider) if isinstance(response, Request) else response
 
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
 
         def _on_success(response):
-            assert isinstance(response, (Response, Request))
+            if not isinstance(response, (Response, Request)):
+                raise TypeError(
+                    "Incorrect type: expected Response or Request, got %s: %r"
+                    % (type(response), response)
+                )
             if isinstance(response, Response):
                 response.request = request  # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-                self.signals.send_catch_log(signal=signals.response_received,
-                    response=response, request=request, spider=spider)
+                self.signals.send_catch_log(signals.response_received,
+                                            response=response, request=request, spider=spider)
             return response
 
         def _on_complete(_):
@@ -253,8 +260,8 @@ class ExecutionEngine:
 
     @defer.inlineCallbacks
     def open_spider(self, spider, start_requests=(), close_if_idle=True):
-        assert self.has_capacity(), "No free spider slot when opening %r" % \
-            spider.name
+        if not self.has_capacity():
+            raise RuntimeError("No free spider slot when opening %r" % spider.name)
         logger.info("Spider opened", extra={'spider': spider})
         nextcall = CallLaterOnce(self._next_request, spider)
         scheduler = self.scheduler_cls.from_crawler(self.crawler)
@@ -277,10 +284,8 @@ class ExecutionEngine:
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
-            spider=spider, dont_log=DontCloseSpider)
-        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
-                for _, x in res):
+        res = self.signals.send_catch_log(signals.spider_idle, spider=spider, dont_log=DontCloseSpider)
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return
 
         if self.spider_is_idle(spider):

@@ -3,6 +3,348 @@
 Release notes
 =============
 
+.. _release-2.2.0:
+
+Scrapy 2.2.0 (2020-06-24)
+-------------------------
+
+Highlights:
+
+* Python 3.5.2+ is required now
+* :ref:`dataclass objects <dataclass-items>` and
+  :ref:`attrs objects <attrs-items>` are now valid :ref:`item types
+  <item-types>`
+* New :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method
+* New :signal:`bytes_received` signal that allows canceling response download
+* :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` fixes
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*   Support for Python 3.5.0 and 3.5.1 has been dropped; Scrapy now refuses to
+    run with a Python version lower than 3.5.2, which introduced
+    :class:`typing.Type` (:issue:`4615`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   :meth:`TextResponse.body_as_unicode
+    <scrapy.http.TextResponse.body_as_unicode>` is now deprecated, use
+    :attr:`TextResponse.text <scrapy.http.TextResponse.text>` instead
+    (:issue:`4546`, :issue:`4555`, :issue:`4579`)
+
+*   :class:`scrapy.item.BaseItem` is now deprecated, use
+    :class:`scrapy.item.Item` instead (:issue:`4534`)
+
+
+New features
+~~~~~~~~~~~~
+
+*   :ref:`dataclass objects <dataclass-items>` and
+    :ref:`attrs objects <attrs-items>` are now valid :ref:`item types
+    <item-types>`, and a new itemadapter_ library makes it easy to
+    write code that :ref:`supports any item type <supporting-item-types>`
+    (:issue:`2749`, :issue:`2807`, :issue:`3761`, :issue:`3881`, :issue:`4642`)
+
+*   A new :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method
+    allows to deserialize JSON responses (:issue:`2444`, :issue:`4460`,
+    :issue:`4574`)
+
+*   A new :signal:`bytes_received` signal allows monitoring response download
+    progress and :ref:`stopping downloads <topics-stop-response-download>`
+    (:issue:`4205`, :issue:`4559`)
+
+*   The dictionaries in the result list of a :ref:`media pipeline
+    <topics-media-pipeline>` now include a new key, ``status``, which indicates
+    if the file was downloaded or, if the file was not downloaded, why it was
+    not downloaded; see :meth:`FilesPipeline.get_media_requests
+    <scrapy.pipelines.files.FilesPipeline.get_media_requests>` for more
+    information (:issue:`2893`, :issue:`4486`)
+
+*   When using :ref:`Google Cloud Storage <media-pipeline-gcs>` for
+    a :ref:`media pipeline <topics-media-pipeline>`, a warning is now logged if
+    the configured credentials do not grant the required permissions
+    (:issue:`4346`, :issue:`4508`)
+
+*   :ref:`Link extractors <topics-link-extractors>` are now serializable,
+    as long as you do not use :ref:`lambdas <lambda>` for parameters; for
+    example, you can now pass link extractors in :attr:`Request.cb_kwargs
+    <scrapy.http.Request.cb_kwargs>` or
+    :attr:`Request.meta <scrapy.http.Request.meta>` when :ref:`persisting
+    scheduled requests <topics-jobs>` (:issue:`4554`)
+
+*   Upgraded the :ref:`pickle protocol <pickle-protocols>` that Scrapy uses
+    from protocol 2 to protocol 4, improving serialization capabilities and
+    performance (:issue:`4135`, :issue:`4541`)
+
+*   :func:`scrapy.utils.misc.create_instance` now raises a :exc:`TypeError`
+    exception if the resulting instance is ``None`` (:issue:`4528`,
+    :issue:`4532`)
+
+.. _itemadapter: https://github.com/scrapy/itemadapter
+
+
+Bug fixes
+~~~~~~~~~
+
+*   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` no longer
+    discards cookies defined in :attr:`Request.headers
+    <scrapy.http.Request.headers>` (:issue:`1992`, :issue:`2400`)
+
+*   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` no longer
+    re-encodes cookies defined as :class:`bytes` in the ``cookies`` parameter
+    of the ``__init__`` method of :class:`~scrapy.http.Request`
+    (:issue:`2400`, :issue:`3575`)
+
+*   When :setting:`FEEDS` defines multiple URIs, :setting:`FEED_STORE_EMPTY` is
+    ``False`` and the crawl yields no items, Scrapy no longer stops feed
+    exports after the first URI (:issue:`4621`, :issue:`4626`)
+
+*   :class:`~scrapy.spiders.Spider` callbacks defined using :doc:`coroutine
+    syntax <topics/coroutines>` no longer need to return an iterable, and may
+    instead return a :class:`~scrapy.http.Request` object, an
+    :ref:`item <topics-items>`, or ``None`` (:issue:`4609`)
+
+*   The :command:`startproject` command now ensures that the generated project
+    folders and files have the right permissions (:issue:`4604`)
+
+*   Fix a :exc:`KeyError` exception being sometimes raised from
+    :class:`scrapy.utils.datatypes.LocalWeakReferencedCache` (:issue:`4597`,
+    :issue:`4599`)
+
+*   When :setting:`FEEDS` defines multiple URIs, log messages about items being
+    stored now contain information from the corresponding feed, instead of
+    always containing information about only one of the feeds (:issue:`4619`,
+    :issue:`4629`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   Added a new section about :ref:`accessing cb_kwargs from errbacks
+    <errback-cb_kwargs>` (:issue:`4598`, :issue:`4634`)
+
+*   Covered chompjs_ in :ref:`topics-parsing-javascript` (:issue:`4556`,
+    :issue:`4562`)
+
+*   Removed from :doc:`topics/coroutines` the warning about the API being
+    experimental (:issue:`4511`, :issue:`4513`)
+
+*   Removed references to unsupported versions of :doc:`Twisted
+    <twisted:index>` (:issue:`4533`)
+
+*   Updated the description of the :ref:`screenshot pipeline example
+    <ScreenshotPipeline>`, which now uses :doc:`coroutine syntax
+    <topics/coroutines>` instead of returning a
+    :class:`~twisted.internet.defer.Deferred` (:issue:`4514`, :issue:`4593`)
+
+*   Removed a misleading import line from the
+    :func:`scrapy.utils.log.configure_logging` code example (:issue:`4510`,
+    :issue:`4587`)
+
+*   The display-on-hover behavior of internal documentation references now also
+    covers links to :ref:`commands <topics-commands>`, :attr:`Request.meta
+    <scrapy.http.Request.meta>` keys, :ref:`settings <topics-settings>` and
+    :ref:`signals <topics-signals>` (:issue:`4495`, :issue:`4563`)
+
+*   It is again possible to download the documentation for offline reading
+    (:issue:`4578`, :issue:`4585`)
+
+*   Removed backslashes preceding ``*args`` and ``**kwargs`` in some function
+    and method signatures (:issue:`4592`, :issue:`4596`)
+
+.. _chompjs: https://github.com/Nykakin/chompjs
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+*   Adjusted the code base further to our :ref:`style guidelines
+    <coding-style>` (:issue:`4237`, :issue:`4525`, :issue:`4538`,
+    :issue:`4539`, :issue:`4540`, :issue:`4542`, :issue:`4543`, :issue:`4544`,
+    :issue:`4545`, :issue:`4557`, :issue:`4558`, :issue:`4566`, :issue:`4568`,
+    :issue:`4572`)
+
+*   Removed remnants of Python 2 support (:issue:`4550`, :issue:`4553`,
+    :issue:`4568`)
+
+*   Improved code sharing between the :command:`crawl` and :command:`runspider`
+    commands (:issue:`4548`, :issue:`4552`)
+
+*   Replaced ``chain(*iterable)`` with ``chain.from_iterable(iterable)``
+    (:issue:`4635`)
+
+*   You may now run the :mod:`asyncio` tests with Tox on any Python version
+    (:issue:`4521`)
+
+*   Updated test requirements to reflect an incompatibility with pytest 5.4 and
+    5.4.1 (:issue:`4588`)
+
+*   Improved :class:`~scrapy.spiderloader.SpiderLoader` test coverage for
+    scenarios involving duplicate spider names (:issue:`4549`, :issue:`4560`)
+
+*   Configured Travis CI to also run the tests with Python 3.5.2
+    (:issue:`4518`, :issue:`4615`)
+
+*   Added a `Pylint <https://www.pylint.org/>`_ job to Travis CI
+    (:issue:`3727`)
+
+*   Added a `Mypy <http://mypy-lang.org/>`_ job to Travis CI (:issue:`4637`)
+
+*   Made use of set literals in tests (:issue:`4573`)
+
+*   Cleaned up the Travis CI configuration (:issue:`4517`, :issue:`4519`,
+    :issue:`4522`, :issue:`4537`)
+
+
+.. _release-2.1.0:
+
+Scrapy 2.1.0 (2020-04-24)
+-------------------------
+
+Highlights:
+
+* New :setting:`FEEDS` setting to export to multiple feeds
+* New :attr:`Response.ip_address <scrapy.http.Response.ip_address>` attribute
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*   :exc:`AssertionError` exceptions triggered by :ref:`assert <assert>`
+    statements have been replaced by new exception types, to support running
+    Python in optimized mode (see :option:`-O`) without changing Scrapy’s
+    behavior in any unexpected ways.
+
+    If you catch an :exc:`AssertionError` exception from Scrapy, update your
+    code to catch the corresponding new exception.
+
+    (:issue:`4440`)
+
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   The ``LOG_UNSERIALIZABLE_REQUESTS`` setting is no longer supported, use
+    :setting:`SCHEDULER_DEBUG` instead (:issue:`4385`)
+
+*   The ``REDIRECT_MAX_METAREFRESH_DELAY`` setting is no longer supported, use
+    :setting:`METAREFRESH_MAXDELAY` instead (:issue:`4385`)
+
+*   The :class:`~scrapy.downloadermiddlewares.chunked.ChunkedTransferMiddleware`
+    middleware has been removed, including the entire
+    :class:`scrapy.downloadermiddlewares.chunked` module; chunked transfers
+    work out of the box (:issue:`4431`)
+
+*   The ``spiders`` property has been removed from
+    :class:`~scrapy.crawler.Crawler`, use :class:`CrawlerRunner.spider_loader
+    <scrapy.crawler.CrawlerRunner.spider_loader>` or instantiate
+    :setting:`SPIDER_LOADER_CLASS` with your settings instead (:issue:`4398`)
+
+*   The ``MultiValueDict``, ``MultiValueDictKeyError``, and ``SiteNode``
+    classes have been removed from :mod:`scrapy.utils.datatypes`
+    (:issue:`4400`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   The ``FEED_FORMAT`` and ``FEED_URI`` settings have been deprecated in
+    favor of the new :setting:`FEEDS` setting (:issue:`1336`, :issue:`3858`,
+    :issue:`4507`)
+
+
+New features
+~~~~~~~~~~~~
+
+*   A new setting, :setting:`FEEDS`, allows configuring multiple output feeds
+    with different settings each (:issue:`1336`, :issue:`3858`, :issue:`4507`)
+
+*   The :command:`crawl` and :command:`runspider` commands now support multiple
+    ``-o`` parameters (:issue:`1336`, :issue:`3858`, :issue:`4507`)
+
+*   The :command:`crawl` and :command:`runspider` commands now support
+    specifying an output format by appending ``:<format>`` to the output file
+    (:issue:`1336`, :issue:`3858`, :issue:`4507`)
+
+*   The new :attr:`Response.ip_address <scrapy.http.Response.ip_address>`
+    attribute gives access to the IP address that originated a response
+    (:issue:`3903`, :issue:`3940`)
+
+*   A warning is now issued when a value in
+    :attr:`~scrapy.spiders.Spider.allowed_domains` includes a port
+    (:issue:`50`, :issue:`3198`, :issue:`4413`)
+
+*   Zsh completion now excludes used option aliases from the completion list
+    (:issue:`4438`)
+
+
+Bug fixes
+~~~~~~~~~
+
+*   :ref:`Request serialization <request-serialization>` no longer breaks for
+    callbacks that are spider attributes which are assigned a function with a
+    different name (:issue:`4500`)
+
+*   ``None`` values in :attr:`~scrapy.spiders.Spider.allowed_domains` no longer
+    cause a :exc:`TypeError` exception (:issue:`4410`)
+
+*   Zsh completion no longer allows options after arguments (:issue:`4438`)
+
+*   zope.interface 5.0.0 and later versions are now supported
+    (:issue:`4447`, :issue:`4448`)
+
+*   :meth:`Spider.make_requests_from_url
+    <scrapy.spiders.Spider.make_requests_from_url>`, deprecated in Scrapy
+    1.4.0, now issues a warning when used (:issue:`4412`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   Improved the documentation about signals that allow their handlers to
+    return a :class:`~twisted.internet.defer.Deferred` (:issue:`4295`,
+    :issue:`4390`)
+
+*   Our PyPI entry now includes links for our documentation, our source code
+    repository and our issue tracker (:issue:`4456`)
+
+*   Covered the `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_
+    service in the documentation (:issue:`4206`, :issue:`4455`)
+
+*   Removed references to the Guppy library, which only works in Python 2
+    (:issue:`4285`, :issue:`4343`)
+
+*   Extended use of InterSphinx to link to Python 3 documentation
+    (:issue:`4444`, :issue:`4445`)
+
+*   Added support for Sphinx 3.0 and later (:issue:`4475`, :issue:`4480`,
+    :issue:`4496`, :issue:`4503`)
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+*   Removed warnings about using old, removed settings (:issue:`4404`)
+
+*   Removed a warning about importing
+    :class:`~twisted.internet.testing.StringTransport` from
+    ``twisted.test.proto_helpers`` in Twisted 19.7.0 or newer (:issue:`4409`)
+
+*   Removed outdated Debian package build files (:issue:`4384`)
+
+*   Removed :class:`object` usage as a base class (:issue:`4430`)
+
+*   Removed code that added support for old versions of Twisted that we no
+    longer support (:issue:`4472`)
+
+*   Fixed code style issues (:issue:`4468`, :issue:`4469`, :issue:`4471`,
+    :issue:`4481`)
+
+*   Removed :func:`twisted.internet.defer.returnValue` calls (:issue:`4443`,
+    :issue:`4446`, :issue:`4489`)
+
+
 .. _release-2.0.1:
 
 Scrapy 2.0.1 (2020-03-18)

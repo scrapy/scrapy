@@ -292,7 +292,7 @@ class TestSpiderMiddleware(TestCase):
         crawler = get_crawler(spider)
         with LogCapture() as log:
             yield crawler.crawl(mockserver=self.mockserver)
-        raise defer.returnValue(log)
+        return log
 
     @defer.inlineCallbacks
     def test_recovery(self):
@@ -385,9 +385,15 @@ class TestSpiderMiddleware(TestCase):
         log4 = yield self.crawl_log(GeneratorOutputChainSpider)
         self.assertIn("'item_scraped_count': 2", str(log4))
         self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: LookupError caught", str(log4))
-        self.assertIn("GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught", str(log4))
-        self.assertNotIn("GeneratorFailMiddleware.process_spider_exception: LookupError caught", str(log4))
-        self.assertNotIn("GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertIn(
+            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught",
+            str(log4))
+        self.assertNotIn(
+            "GeneratorFailMiddleware.process_spider_exception: LookupError caught",
+            str(log4))
+        self.assertNotIn(
+            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught",
+            str(log4))
         item_from_callback = {'processed': [
             'parse-first-item',
             'GeneratorFailMiddleware.process_spider_output',
@@ -414,9 +420,13 @@ class TestSpiderMiddleware(TestCase):
         log5 = yield self.crawl_log(NotGeneratorOutputChainSpider)
         self.assertIn("'item_scraped_count': 1", str(log5))
         self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught", str(log5))
-        self.assertIn("GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught", str(log5))
+        self.assertIn(
+            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught",
+            str(log5))
         self.assertNotIn("GeneratorFailMiddleware.process_spider_exception: ReferenceError caught", str(log5))
-        self.assertNotIn("GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught", str(log5))
+        self.assertNotIn(
+            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught",
+            str(log5))
         item_recovered = {'processed': [
             'NotGeneratorRecoverMiddleware.process_spider_exception',
             'NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
