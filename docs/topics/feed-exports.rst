@@ -448,11 +448,12 @@ generated:
 * ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
   (e.g. ``2020-03-28T14-45-08.237134``)
 
-* ``%(batch_id)0xd`` - gets replaced by the sequence number of the batch.
-By replacing ``x`` with an integer you set the number of leading zeroes to prevent
-inappropriate sorting like this: [``'1'``, ``'10'``, ``'2'``]. Here are some examples:
-    ``%(batch_id)01d`` for the second batch gets replaced by ``2``
-    ``%(batch_id)05d`` for the third batch gets replaced by ``00003``
+* ``%(batch_id)d`` - gets replaced by the sequence number of the batch.
+
+  Use :ref:`printf-style string formatting <python:old-string-formatting>` to
+  alter the number format. For example, to make the batch ID a 5-digit
+  number by introducing leading zeroes as needed, use ``%(batch_id)05d``
+  (e.g. ``3`` becomes ``00003``, ``123`` becomes ``00123``).
 
 For instance, if your settings include::
 

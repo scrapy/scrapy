@@ -1265,7 +1265,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=Settings(settings))
 
     def test_wrong_path(self):
-        """ If path is without %(batch_time)s and %(batch_id)0xd an exception must be raised """
+        """ If path is without %(batch_time)s and %(batch_id) an exception must be raised """
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'xml'},
