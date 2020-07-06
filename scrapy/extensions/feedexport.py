@@ -305,7 +305,7 @@ class FeedExporter:
         :param uri: uri of the new batch to start
         :param feed: dict with parameters of feed
         :param spider: user spider
-        :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)s to create new uri
+        :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri)
         file = storage.open(spider)
@@ -372,13 +372,13 @@ class FeedExporter:
     def _settings_are_valid(self):
         """
         If FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified uri has to contain
-        %(batch_time)s or %(batch_id)s to distinguish different files of partial output
+        %(batch_time)s or %(batch_id)d to distinguish different files of partial output
         """
         for uri_template, values in self.feeds.items():
             if values['batch_item_count'] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
                 logger.error(
-                    '%(batch_time)s or %(batch_id) must be in uri({}) if FEED_EXPORT_BATCH_ITEM_COUNT setting '
-                    'or FEEDS.batch_item_count is specified and greater than 0. For more info see:'
+                    '%(batch_time)s or %(batch_id)d must be in the feed URI ({}) if FEED_EXPORT_BATCH_ITEM_COUNT '
+                    'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '
                     'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count'
                     ''.format(uri_template)
                 )
