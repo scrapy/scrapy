@@ -15,8 +15,7 @@ from tests.mockserver import MockServer, MockDNSServer
 # https://stackoverflow.com/a/32784190
 def createResolver(servers=None, resolvconf=None, hosts=None):
     if hosts is None:
-        hosts = (b'/etc/hosts' if platform.getType() == 'posix'
-                 else r'c:\windows\hosts')
+        hosts = b'/etc/hosts' if platform.getType() == 'posix' else r'c:\windows\hosts'
     theResolver = Resolver(resolvconf, servers)
     hostResolver = hostsModule.Resolver(hosts)
     L = [hostResolver, cache.CacheResolver(), theResolver]
