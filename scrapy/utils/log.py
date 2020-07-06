@@ -52,6 +52,9 @@ DEFAULT_LOGGING = {
         'twisted': {
             'level': 'ERROR',
         },
+        'hpack': {
+            'level': 'ERROR',
+        },
     }
 }
 
