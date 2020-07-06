@@ -18,8 +18,8 @@ def createResolver(servers=None, resolvconf=None, hosts=None):
         hosts = b'/etc/hosts' if platform.getType() == 'posix' else r'c:\windows\hosts'
     theResolver = Resolver(resolvconf, servers)
     hostResolver = hostsModule.Resolver(hosts)
-    L = [hostResolver, cache.CacheResolver(), theResolver]
-    return resolve.ResolverChain(L)
+    chain = [hostResolver, cache.CacheResolver(), theResolver]
+    return resolve.ResolverChain(chain)
 
 
 class LocalhostSpider(Spider):
