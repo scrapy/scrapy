@@ -1,21 +1,26 @@
 import logging
 from enum import Enum
 from io import BytesIO
-from typing import Callable, List
+from typing import List, Optional, Tuple, TYPE_CHECKING
 from urllib.parse import urlparse
 
-from h2.connection import H2Connection
 from h2.errors import ErrorCodes
 from h2.exceptions import StreamClosedError
+from hpack import HeaderTuple
 from twisted.internet.defer import Deferred, CancelledError
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
-from scrapy.core.http2.types import H2ConnectionMetadataDict, H2ResponseDict
+from scrapy.core.http2.types import H2ResponseDict
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
+
+
+if TYPE_CHECKING:
+    from scrapy.core.http2.protocol import H2ClientProtocol
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +36,12 @@ class InactiveStreamClosed(ConnectionClosed):
 
 class InvalidHostname(Exception):
 
-    def __init__(self, request: Request, expected_hostname, expected_netloc):
+    def __init__(self, request: Request, expected_hostname: Optional[str], expected_netloc: Optional[str]) -> None:
         self.request = request
         self.expected_hostname = expected_hostname
         self.expected_netloc = expected_netloc
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'InvalidHostname: Expected {self.expected_hostname} or {self.expected_netloc} in {self.request}'
 
 
@@ -80,28 +85,20 @@ class Stream:
         self,
         stream_id: int,
         request: Request,
-        connection: H2Connection,
-        conn_metadata: H2ConnectionMetadataDict,
-        cb_close: Callable[[int], None],
+        protocol: "H2ClientProtocol",
         download_maxsize: int = 0,
         download_warnsize: int = 0,
         fail_on_data_loss: bool = True
-    ):
+    ) -> None:
         """
         Arguments:
-            stream_id -- For one HTTP/2 connection each stream is
-                uniquely identified by a single integer
-            request -- HTTP request
-            connection -- HTTP/2 connection this stream belongs to.
-            conn_metadata -- Reference to dictionary having metadata of HTTP/2 connection
-            cb_close -- Method called when this stream is closed
-                to notify the TCP connection instance.
+            stream_id -- Unique identifier for the stream within a single HTTP/2 connection
+            request -- The HTTP request associated to the stream
+            protocol -- Parent H2ClientProtocol instance
         """
-        self.stream_id = stream_id
-        self._request = request
-        self._conn = connection
-        self._conn_metadata = conn_metadata
-        self._cb_close = cb_close
+        self.stream_id: int = stream_id
+        self._request: Request = request
+        self._protocol: "H2ClientProtocol" = protocol
 
         self._download_maxsize = self._request.meta.get('download_maxsize', download_maxsize)
         self._download_warnsize = self._request.meta.get('download_warnsize', download_warnsize)
@@ -132,7 +129,7 @@ class Stream:
         self._response: H2ResponseDict = {
             'body': BytesIO(),
             'flow_controlled_size': 0,
-            'headers': Headers({})
+            'headers': Headers({}),
         }
 
         def _cancel(_):
@@ -145,7 +142,7 @@ class Stream:
 
         self._deferred_response = Deferred(_cancel)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Stream(id={self.stream_id!r})'
 
     __repr__ = __str__
@@ -169,12 +166,9 @@ class Stream:
             and not self._reached_warnsize
         )
 
-    def get_response(self):
+    def get_response(self) -> Deferred:
         """Simply return a Deferred which fires when response
         from the asynchronous request is available
-
-        Returns:
-            Deferred -- Calls the callback passing the response
         """
         return self._deferred_response
 
@@ -182,12 +176,12 @@ class Stream:
         # Make sure that we are sending the request to the correct URL
         url = urlparse(self._request.url)
         return (
-            url.netloc == self._conn_metadata['hostname']
-            or url.netloc == f'{self._conn_metadata["hostname"]}:{self._conn_metadata["port"]}'
-            or url.netloc == f'{self._conn_metadata["ip_address"]}:{self._conn_metadata["port"]}'
+            url.netloc == self._protocol.metadata['hostname']
+            or url.netloc == f'{self._protocol.metadata["hostname"]}:{self._protocol.metadata["port"]}'
+            or url.netloc == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["port"]}'
         )
 
-    def _get_request_headers(self):
+    def _get_request_headers(self) -> List[Tuple[str, str]]:
         url = urlparse(self._request.url)
 
         path = url.path
@@ -207,10 +201,10 @@ class Stream:
 
         return headers
 
-    def initiate_request(self):
+    def initiate_request(self) -> None:
         if self.check_request_url():
             headers = self._get_request_headers()
-            self._conn.send_headers(self.stream_id, headers, end_stream=False)
+            self._protocol.conn.send_headers(self.stream_id, headers, end_stream=False)
             self.request_sent = True
             self.send_data()
         else:
@@ -218,7 +212,7 @@ class Stream:
             # Note that we have not sent any headers
             self.close(StreamCloseReason.INVALID_HOSTNAME)
 
-    def send_data(self):
+    def send_data(self) -> None:
         """Called immediately after the headers are sent. Here we send all the
          data as part of the request.
 
@@ -233,10 +227,10 @@ class Stream:
             raise StreamClosedError(self.stream_id)
 
         # Firstly, check what the flow control window is for current stream.
-        window_size = self._conn.local_flow_control_window(stream_id=self.stream_id)
+        window_size = self._protocol.conn.local_flow_control_window(stream_id=self.stream_id)
 
         # Next, check what the maximum frame size is.
-        max_frame_size = self._conn.max_outbound_frame_size
+        max_frame_size = self._protocol.conn.max_outbound_frame_size
 
         # We will send no more than the window size or the remaining file size
         # of data in this call, whichever is smaller.
@@ -249,7 +243,7 @@ class Stream:
             data_chunk_start_id = self.content_length - self.remaining_content_length
             data_chunk = self._request.body[data_chunk_start_id:data_chunk_start_id + chunk_size]
 
-            self._conn.send_data(self.stream_id, data_chunk, end_stream=False)
+            self._protocol.conn.send_data(self.stream_id, data_chunk, end_stream=False)
 
             bytes_to_send_size = bytes_to_send_size - chunk_size
             self.remaining_content_length = self.remaining_content_length - chunk_size
@@ -258,12 +252,12 @@ class Stream:
 
         # End the stream if no more data needs to be send
         if self.remaining_content_length == 0:
-            self._conn.end_stream(self.stream_id)
+            self._protocol.conn.end_stream(self.stream_id)
 
         # Q. What about the rest of the data?
         # Ans: Remaining Data frames will be sent when we get a WindowUpdate frame
 
-    def receive_window_update(self):
+    def receive_window_update(self) -> None:
         """Flow control window size was changed.
         Send data that earlier could not be sent as we were
         blocked behind the flow control.
@@ -271,7 +265,7 @@ class Stream:
         if self.remaining_content_length and not self.stream_closed_server and self.request_sent:
             self.send_data()
 
-    def receive_data(self, data: bytes, flow_controlled_length: int):
+    def receive_data(self, data: bytes, flow_controlled_length: int) -> None:
         self._response['body'].write(data)
         self._response['flow_controlled_size'] += flow_controlled_length
 
@@ -289,12 +283,12 @@ class Stream:
             logger.warning(warning_msg)
 
         # Acknowledge the data received
-        self._conn.acknowledge_received_data(
+        self._protocol.conn.acknowledge_received_data(
             self._response['flow_controlled_size'],
             self.stream_id
         )
 
-    def receive_headers(self, headers):
+    def receive_headers(self, headers: List[HeaderTuple]) -> None:
         for name, value in headers:
             self._response['headers'][name] = value
 
@@ -312,7 +306,7 @@ class Stream:
             )
             logger.warning(warning_msg)
 
-    def reset_stream(self, reason=StreamCloseReason.RESET):
+    def reset_stream(self, reason: StreamCloseReason = StreamCloseReason.RESET) -> None:
         """Close this stream by sending a RST_FRAME to the remote peer"""
         if self.stream_closed_local:
             raise StreamClosedError(self.stream_id)
@@ -321,7 +315,7 @@ class Stream:
         self._response['body'].truncate(0)
 
         self.stream_closed_local = True
-        self._conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
+        self._protocol.conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
         self.close(reason)
 
     def _is_data_lost(self) -> bool:
@@ -332,11 +326,8 @@ class Stream:
 
         return expected_size != received_body_size
 
-    def close(self, reason: StreamCloseReason, error: Exception = None):
+    def close(self, reason: StreamCloseReason, error: Optional[Exception] = None, from_protocol: bool = False) -> None:
         """Based on the reason sent we will handle each case.
-
-        Arguments:
-            reason -- One if StreamCloseReason
         """
         if self.stream_closed_server:
             raise StreamClosedError(self.stream_id)
@@ -344,7 +335,9 @@ class Stream:
         if not isinstance(reason, StreamCloseReason):
             raise TypeError(f'Expected StreamCloseReason, received {reason.__class__.__qualname__}')
 
-        self._cb_close(self.stream_id)
+        if not from_protocol:
+            self._protocol.pop_stream(self.stream_id)
+
         self.stream_closed_server = True
 
         flags = None
@@ -392,11 +385,11 @@ class Stream:
         elif reason is StreamCloseReason.INVALID_HOSTNAME:
             self._deferred_response.errback(InvalidHostname(
                 self._request,
-                self._conn_metadata['hostname'],
-                f'{self._conn_metadata["ip_address"]}:{self._conn_metadata["port"]}'
+                self._protocol.metadata['hostname'],
+                f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["port"]}'
             ))
 
-    def _fire_response_deferred(self, flags: List[str] = None):
+    def _fire_response_deferred(self, flags: Optional[List[str]] = None) -> None:
         """Builds response from the self._response dict
         and fires the response deferred callback with the
         generated response instance"""
@@ -405,7 +398,7 @@ class Stream:
         response_cls = responsetypes.from_args(
             headers=self._response['headers'],
             url=self._request.url,
-            body=body
+            body=body,
         )
 
         response = response_cls(
@@ -415,8 +408,8 @@ class Stream:
             body=body,
             request=self._request,
             flags=flags,
-            certificate=self._conn_metadata['certificate'],
-            ip_address=self._conn_metadata['ip_address']
+            certificate=self._protocol.metadata['certificate'],
+            ip_address=self._protocol.metadata['ip_address'],
         )
 
         self._deferred_response.callback(response)

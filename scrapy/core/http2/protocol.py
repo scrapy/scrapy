@@ -11,32 +11,34 @@ from h2.events import (
     StreamEnded, StreamReset, WindowUpdated
 )
 from h2.exceptions import ProtocolError
+from twisted.internet.defer import Deferred
 from twisted.internet.protocol import connectionDone, Protocol
 from twisted.internet.ssl import Certificate
+from twisted.python.failure import Failure
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.core.http2.types import H2ConnectionMetadataDict
 from scrapy.http import Request
 
+
 logger = logging.getLogger(__name__)
 
 
 class H2ClientProtocol(Protocol):
-    def __init__(self):
+    def __init__(self) -> None:
         config = H2Configuration(client_side=True, header_encoding='utf-8')
         self.conn = H2Connection(config=config)
 
         # ID of the next request stream
-        # Following the convention made by hyper-h2 each client ID
-        # will be odd.
-        self.stream_id_count = itertools.count(start=1, step=2)
+        # Following the convention made by hyper-h2 all IDs will be odd
+        self._stream_id_generator = itertools.count(start=1, step=2)
 
         # Streams are stored in a dictionary keyed off their stream IDs
         self.streams: Dict[int, Stream] = {}
 
         # If requests are received before connection is made we keep
         # all requests in a pool and send them as the connection is made
-        self._pending_request_stream_pool = deque()
+        self._pending_request_stream_pool: deque = deque()
 
         # Counter to keep track of opened stream. This counter
         # is used to make sure that not more than MAX_CONCURRENT_STREAMS
@@ -48,15 +50,15 @@ class H2ClientProtocol(Protocol):
         # We pass this instance to the streams ResponseFailed() failure
         self._protocol_error: Optional[ProtocolError] = None
 
-        self._metadata: H2ConnectionMetadataDict = {
+        self.metadata: H2ConnectionMetadataDict = {
             'certificate': None,
             'ip_address': None,
             'hostname': None,
-            'port': None
+            'port': None,
         }
 
     @property
-    def is_connected(self):
+    def is_connected(self) -> bool:
         """Boolean to keep track of the connection status.
         This is used while initiating pending streams to make sure
         that we initiate stream only during active HTTP/2 Connection
@@ -75,7 +77,7 @@ class H2ClientProtocol(Protocol):
             self.conn.remote_settings.max_concurrent_streams
         )
 
-    def _send_pending_requests(self):
+    def _send_pending_requests(self) -> None:
         """Initiate all pending requests from the deque following FIFO
         We make sure that at any time {allowed_max_concurrent_streams}
         streams are active.
@@ -89,37 +91,33 @@ class H2ClientProtocol(Protocol):
             stream = self._pending_request_stream_pool.popleft()
             stream.initiate_request()
 
-    def _stream_close_cb(self, stream_id: int):
-        """Called when stream is closed completely
+    def pop_stream(self, stream_id: int) -> Stream:
+        """Perform cleanup when a stream is closed
         """
-        self.streams.pop(stream_id)
+        stream = self.streams.pop(stream_id)
         self._active_streams -= 1
         self._send_pending_requests()
+        return stream
 
-    def _new_stream(self, request: Request):
+    def _new_stream(self, request: Request) -> Stream:
         """Instantiates a new Stream object
         """
-        stream_id = next(self.stream_id_count)
-
         stream = Stream(
-            stream_id=stream_id,
+            stream_id=next(self._stream_id_generator),
             request=request,
-            connection=self.conn,
-            conn_metadata=self._metadata,
-            cb_close=self._stream_close_cb
+            protocol=self,
         )
-
         self.streams[stream.stream_id] = stream
         return stream
 
-    def _write_to_transport(self):
+    def _write_to_transport(self) -> None:
         """ Write data to the underlying transport connection
         from the HTTP2 connection instance if any
         """
         data = self.conn.data_to_send()
         self.transport.write(data)
 
-    def request(self, request: Request):
+    def request(self, request: Request) -> Deferred:
         if not isinstance(request, Request):
             raise TypeError(f'Expected scrapy.http.Request, received {request.__class__.__qualname__}')
 
@@ -130,20 +128,20 @@ class H2ClientProtocol(Protocol):
         self._pending_request_stream_pool.append(stream)
         return d
 
-    def connectionMade(self):
+    def connectionMade(self) -> None:
         """Called by Twisted when the connection is established. We can start
         sending some data now: we should open with the connection preamble.
         """
         destination = self.transport.getPeer()
         logger.debug('Connection made to {}'.format(destination))
-        self._metadata['ip_address'] = ipaddress.ip_address(destination.host)
-        self._metadata['port'] = destination.port
-        self._metadata['hostname'] = self.transport.transport.addr[0]
+        self.metadata['ip_address'] = ipaddress.ip_address(destination.host)
+        self.metadata['port'] = destination.port
+        self.metadata['hostname'] = self.transport.transport.addr[0]
 
         self.conn.initiate_connection()
         self._write_to_transport()
 
-    def dataReceived(self, data):
+    def dataReceived(self, data: bytes) -> None:
         try:
             events = self.conn.receive_data(data)
             self._handle_events(events)
@@ -158,32 +156,30 @@ class H2ClientProtocol(Protocol):
         finally:
             self._write_to_transport()
 
-    def connectionLost(self, reason=connectionDone):
+    def connectionLost(self, reason: Failure = connectionDone) -> None:
         """Called by Twisted when the transport connection is lost.
         No need to write anything to transport here.
         """
-        # Pop all streams which were pending and were not yet started
-        # NOTE: Stream.close() pops the element from the streams dictionary
-        # which raises `RuntimeError: dictionary changed size during iteration`
-        # Hence, we copy the streams into a list.
-        for stream in list(self.streams.values()):
+        for stream in self.streams.values():
             if stream.request_sent:
-                stream.close(StreamCloseReason.CONNECTION_LOST, self._protocol_error)
+                stream.close(StreamCloseReason.CONNECTION_LOST, self._protocol_error, from_protocol=True)
             else:
-                stream.close(StreamCloseReason.INACTIVE)
+                stream.close(StreamCloseReason.INACTIVE, from_protocol=True)
 
+        self._active_streams -= len(self.streams)
+        self.streams.clear()
+        self._send_pending_requests()
         self.conn.close_connection()
 
         if not reason.check(connectionDone):
             logger.warning("Connection lost with reason " + str(reason))
 
-    def _handle_events(self, events):
+    def _handle_events(self, events: list) -> None:
         """Private method which acts as a bridge between the events
         received from the HTTP/2 data and IH2EventsHandler
 
         Arguments:
-            events {list} -- A list of events that the remote peer
-                triggered by sending data
+            events -- A list of events that the remote peer triggered by sending data
         """
         for event in events:
             if isinstance(event, DataReceived):
@@ -202,27 +198,29 @@ class H2ClientProtocol(Protocol):
                 logger.debug('Received unhandled event {}'.format(event))
 
     # Event handler functions starts here
-    def data_received(self, event: DataReceived):
+    def data_received(self, event: DataReceived) -> None:
         self.streams[event.stream_id].receive_data(event.data, event.flow_controlled_length)
 
-    def response_received(self, event: ResponseReceived):
+    def response_received(self, event: ResponseReceived) -> None:
         self.streams[event.stream_id].receive_headers(event.headers)
 
-    def settings_acknowledged(self, event: SettingsAcknowledged):
+    def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         # Send off all the pending requests as now we have
         # established a proper HTTP/2 connection
         self._send_pending_requests()
 
         # Update certificate when our HTTP/2 connection is established
-        self._metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
+        self.metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
 
-    def stream_ended(self, event: StreamEnded):
-        self.streams[event.stream_id].close(StreamCloseReason.ENDED)
+    def stream_ended(self, event: StreamEnded) -> None:
+        stream = self.pop_stream(event.stream_id)
+        stream.close(StreamCloseReason.ENDED, from_protocol=True)
 
-    def stream_reset(self, event: StreamReset):
-        self.streams[event.stream_id].close(StreamCloseReason.RESET)
+    def stream_reset(self, event: StreamReset) -> None:
+        stream = self.pop_stream(event.stream_id)
+        stream.close(StreamCloseReason.RESET, from_protocol=True)
 
-    def window_updated(self, event: WindowUpdated):
+    def window_updated(self, event: WindowUpdated) -> None:
         if event.stream_id != 0:
             self.streams[event.stream_id].receive_window_update()
         else:
