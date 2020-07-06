@@ -46,13 +46,13 @@ DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'loggers': {
+        'hpack': {
+            'level': 'ERROR',
+        },
         'scrapy': {
             'level': 'DEBUG',
         },
         'twisted': {
-            'level': 'ERROR',
-        },
-        'hpack': {
             'level': 'ERROR',
         },
     }

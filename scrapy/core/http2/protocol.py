@@ -20,7 +20,6 @@ from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.core.http2.types import H2ConnectionMetadataDict
 from scrapy.http import Request
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +29,8 @@ class H2ClientProtocol(Protocol):
         self.conn = H2Connection(config=config)
 
         # ID of the next request stream
-        # Following the convention made by hyper-h2 all IDs will be odd
+        # Following the convention - 'Streams initiated by a client MUST
+        # use odd-numbered stream identifiers' (RFC 7540)
         self._stream_id_generator = itertools.count(start=1, step=2)
 
         # Streams are stored in a dictionary keyed off their stream IDs
@@ -160,19 +160,24 @@ class H2ClientProtocol(Protocol):
         """Called by Twisted when the transport connection is lost.
         No need to write anything to transport here.
         """
+        errors = []
+        if not reason.check(connectionDone):
+            logger.warning("Connection lost with reason " + str(reason))
+            errors.append(reason)
+
+        if self._protocol_error:
+            errors.append(self._protocol_error)
+
         for stream in self.streams.values():
             if stream.request_sent:
-                stream.close(StreamCloseReason.CONNECTION_LOST, self._protocol_error, from_protocol=True)
+                stream.close(StreamCloseReason.CONNECTION_LOST, errors, from_protocol=True)
             else:
                 stream.close(StreamCloseReason.INACTIVE, from_protocol=True)
 
         self._active_streams -= len(self.streams)
         self.streams.clear()
-        self._send_pending_requests()
+        self._pending_request_stream_pool.clear()
         self.conn.close_connection()
-
-        if not reason.check(connectionDone):
-            logger.warning("Connection lost with reason " + str(reason))
 
     def _handle_events(self, events: list) -> None:
         """Private method which acts as a bridge between the events

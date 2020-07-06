@@ -474,7 +474,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
         # Close the connection now to fire all the extra 10 requests errback
         # with InactiveStreamClosed
-        self.client.transport.abortConnection()
+        self.client.transport.loseConnection()
 
         return DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
 

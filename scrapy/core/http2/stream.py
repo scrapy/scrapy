@@ -17,10 +17,8 @@ from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 
-
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
-
 
 logger = logging.getLogger(__name__)
 
@@ -326,7 +324,12 @@ class Stream:
 
         return expected_size != received_body_size
 
-    def close(self, reason: StreamCloseReason, error: Optional[Exception] = None, from_protocol: bool = False) -> None:
+    def close(
+        self,
+        reason: StreamCloseReason,
+        errors: Optional[List[Exception]] = None,
+        from_protocol: bool = False
+    ) -> None:
         """Based on the reason sent we will handle each case.
         """
         if self.stream_closed_server:
@@ -374,10 +377,13 @@ class Stream:
             self._response['headers'][':status'] = '499'
             self._fire_response_deferred()
 
-        elif reason in (StreamCloseReason.RESET, StreamCloseReason.CONNECTION_LOST):
+        elif reason is StreamCloseReason.RESET:
             self._deferred_response.errback(ResponseFailed([
-                error if error else Failure()
+                Failure(f'Remote peer {self._protocol.metadata["ip_address"]} sent RST_STREAM')
             ]))
+
+        elif reason is StreamCloseReason.CONNECTION_LOST:
+            self._deferred_response.errback(ResponseFailed(errors))
 
         elif reason is StreamCloseReason.INACTIVE:
             self._deferred_response.errback(InactiveStreamClosed(self._request))
@@ -403,7 +409,7 @@ class Stream:
 
         response = response_cls(
             url=self._request.url,
-            status=self._response['headers'][':status'],
+            status=int(self._response['headers'][':status']),
             headers=self._response['headers'],
             body=body,
             request=self._request,
