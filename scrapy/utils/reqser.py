@@ -4,7 +4,6 @@ Helper functions for serializing (and deserializing) requests.
 import inspect
 
 from scrapy.http import Request
-from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 
 
@@ -21,7 +20,7 @@ def request_to_dict(request, spider=None):
     if callable(eb):
         eb = _find_method(spider, eb)
     d = {
-        'url': to_unicode(request.url),  # urls should be safe (safe_string_url)
+        'url': str(request.url),  # urls should be safe (safe_string_url)
         'callback': cb,
         'errback': eb,
         'method': request.method,
@@ -54,7 +53,7 @@ def request_from_dict(d, spider=None):
         eb = _get_method(spider, eb)
     request_cls = load_object(d['_class']) if '_class' in d else Request
     return request_cls(
-        url=to_unicode(d['url']),
+        url=str(d['url']),
         callback=cb,
         errback=eb,
         method=d['method'],

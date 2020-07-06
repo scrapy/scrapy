@@ -8,7 +8,6 @@ import webbrowser
 import tempfile
 
 from twisted.web import http
-from scrapy.utils.python import to_bytes, to_unicode
 from w3lib import html
 
 
@@ -39,7 +38,7 @@ def response_status_message(status):
     """Return status code plus status text descriptive message
     """
     message = http.RESPONSES.get(int(status), "Unknown Status")
-    return '%s %s' % (status, to_unicode(message))
+    return '%s %s' % (status, str(message))
 
 
 def response_httprepr(response):
@@ -47,8 +46,8 @@ def response_httprepr(response):
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
     """
-    s = b"HTTP/1.1 " + to_bytes(str(response.status)) + b" " + \
-        to_bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
+    s = b"HTTP/1.1 " + bytes(str(response.status)) + b" " + \
+        bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
     if response.headers:
         s += response.headers.to_string() + b"\r\n"
     s += b"\r\n"
@@ -66,7 +65,7 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     if isinstance(response, HtmlResponse):
         if b'<base' not in body:
             repl = '<head><base href="%s">' % response.url
-            body = body.replace(b'<head>', to_bytes(repl))
+            body = body.replace(b'<head>', bytes(repl))
         ext = '.html'
     elif isinstance(response, TextResponse):
         ext = '.txt'

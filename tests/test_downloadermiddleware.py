@@ -12,7 +12,6 @@ from scrapy.spiders import Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from scrapy.utils.python import to_bytes
 
 
 class ManagerTestCase(TestCase):
@@ -85,7 +84,7 @@ class DefaultsTest(ManagerTestCase):
         ret = self._download(request=req, response=resp)
         self.assertTrue(isinstance(ret, Request),
                         "Not redirected: {0!r}".format(ret))
-        self.assertEqual(to_bytes(ret.url), resp.headers['Location'],
+        self.assertEqual(bytes(ret.url), resp.headers['Location'],
                          "Not redirected to location header")
 
     def test_200_and_invalid_gzipped_body_must_fail(self):

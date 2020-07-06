@@ -10,7 +10,6 @@ from w3lib.url import safe_url_string
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
-from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 from scrapy.utils.url import strip_url
 
@@ -323,7 +322,7 @@ class RefererMiddleware:
             if isinstance(resp_or_url, Response):
                 policy_header = resp_or_url.headers.get('Referrer-Policy')
                 if policy_header is not None:
-                    policy_name = to_unicode(policy_header.decode('latin1'))
+                    policy_name = policy_header.decode('latin1')
         if policy_name is None:
             return self.default_policy()
 

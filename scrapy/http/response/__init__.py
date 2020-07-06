@@ -69,7 +69,7 @@ class Response(object_ref):
         elif not isinstance(body, bytes):
             raise TypeError(
                 "Response body must be bytes. "
-                "If you want to pass unicode body use TextResponse "
+                "If you want to pass the body as a string use TextResponse "
                 "or HtmlResponse.")
         else:
             self._body = body

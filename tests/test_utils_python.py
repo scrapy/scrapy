@@ -8,7 +8,7 @@ from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, get_func_args, to_bytes, to_unicode,
+    WeakKeyCache, get_func_args, to_bytes,
     without_none_values, MutableChain)
 
 
@@ -33,13 +33,13 @@ class MutableChainTest(unittest.TestCase):
 
 class ToUnicodeTest(unittest.TestCase):
     def test_converting_an_utf8_encoded_string_to_unicode(self):
-        self.assertEqual(to_unicode(b'lel\xc3\xb1e'), u'lel\xf1e')
+        self.assertEqual(to_unicode(b'lel\xc3\xb1e'), 'lel\xf1e')
 
     def test_converting_a_latin_1_encoded_string_to_unicode(self):
-        self.assertEqual(to_unicode(b'lel\xf1e', 'latin-1'), u'lel\xf1e')
+        self.assertEqual(to_unicode(b'lel\xf1e', 'latin-1'), 'lel\xf1e')
 
     def test_converting_a_unicode_to_unicode_should_return_the_same_object(self):
-        self.assertEqual(to_unicode(u'\xf1e\xf1e\xf1e'), u'\xf1e\xf1e\xf1e')
+        self.assertEqual(to_unicode('\xf1e\xf1e\xf1e'), '\xf1e\xf1e\xf1e')
 
     def test_converting_a_strange_object_should_raise_TypeError(self):
         self.assertRaises(TypeError, to_unicode, 423)
@@ -47,16 +47,26 @@ class ToUnicodeTest(unittest.TestCase):
     def test_errors_argument(self):
         self.assertEqual(
             to_unicode(b'a\xedb', 'utf-8', errors='replace'),
-            u'a\ufffdb'
+            'a\ufffdb'
         )
+
+    def test_deprecation_message(self):
+        with catch_warnings(record=True) as warnings:
+            self.assertTrue(
+                any(
+                    warning.message == ('Call to deprecated function '
+                                        'to_unicode. Use str instead.')
+                    for warning in warnings
+                )
+            )
 
 
 class ToBytesTest(unittest.TestCase):
     def test_converting_a_unicode_object_to_an_utf_8_encoded_string(self):
-        self.assertEqual(to_bytes(u'\xa3 49'), b'\xc2\xa3 49')
+        self.assertEqual(to_bytes('\xa3 49'), b'\xc2\xa3 49')
 
     def test_converting_a_unicode_object_to_a_latin_1_encoded_string(self):
-        self.assertEqual(to_bytes(u'\xa3 49', 'latin-1'), b'\xa3 49')
+        self.assertEqual(to_bytes('\xa3 49', 'latin-1'), b'\xa3 49')
 
     def test_converting_a_regular_bytes_to_bytes_should_return_the_same_object(self):
         self.assertEqual(to_bytes(b'lel\xf1e'), b'lel\xf1e')
@@ -66,9 +76,19 @@ class ToBytesTest(unittest.TestCase):
 
     def test_errors_argument(self):
         self.assertEqual(
-            to_bytes(u'a\ufffdb', 'latin-1', errors='replace'),
+            to_bytes('a\ufffdb', 'latin-1', errors='replace'),
             b'a?b'
         )
+
+    def test_deprecation_message(self):
+        with catch_warnings(record=True) as warnings:
+            self.assertTrue(
+                any(
+                    warning.message == ('Call to deprecated function '
+                                        'to_bytes. Use bytes instead.')
+                    for warning in warnings
+                )
+            )
 
 
 class MemoizedMethodTest(unittest.TestCase):
@@ -95,7 +115,7 @@ class BinaryIsTextTest(unittest.TestCase):
         assert binary_is_text(b"hello")
 
     def test_utf_16_strings_contain_null_bytes(self):
-        assert binary_is_text(u"hello".encode('utf-16'))
+        assert binary_is_text("hello".encode('utf-16'))
 
     def test_one_with_encoding(self):
         assert binary_is_text(b"<div>Price \xa3</div>")

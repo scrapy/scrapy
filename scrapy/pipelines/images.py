@@ -17,7 +17,6 @@ from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
-from scrapy.utils.python import to_bytes
 
 
 class NoimagesDrop(DropItem):
@@ -168,9 +167,9 @@ class ImagesPipeline(FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        image_guid = hashlib.sha1(bytes(request.url)).hexdigest()
         return 'full/%s.jpg' % (image_guid)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
-        thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        thumb_guid = hashlib.sha1(bytes(request.url)).hexdigest()
         return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)

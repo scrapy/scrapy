@@ -39,19 +39,19 @@ class HeadersTest(unittest.TestCase):
         assert h.getlist('X-Forwarded-For') is not hlist
 
     def test_encode_utf8(self):
-        h = Headers({u'key': u'\xa3'}, encoding='utf-8')
+        h = Headers({'key': '\xa3'}, encoding='utf-8')
         key, val = dict(h).popitem()
         assert isinstance(key, bytes), key
         assert isinstance(val[0], bytes), val[0]
         self.assertEqual(val[0], b'\xc2\xa3')
 
     def test_encode_latin1(self):
-        h = Headers({u'key': u'\xa3'}, encoding='latin1')
+        h = Headers({'key': '\xa3'}, encoding='latin1')
         key, val = dict(h).popitem()
         self.assertEqual(val[0], b'\xa3')
 
     def test_encode_multiple(self):
-        h = Headers({u'key': [u'\xa3']}, encoding='utf-8')
+        h = Headers({'key': ['\xa3']}, encoding='utf-8')
         key, val = dict(h).popitem()
         self.assertEqual(val[0], b'\xc2\xa3')
 

@@ -9,7 +9,6 @@ from testfixtures import LogCapture
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
 from scrapy.core.scheduler import Scheduler
-from scrapy.utils.python import to_bytes
 from scrapy.utils.job import job_dir
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
@@ -124,7 +123,7 @@ class RFPDupeFilterTest(unittest.TestCase):
 
             def request_fingerprint(self, request):
                 fp = hashlib.sha1()
-                fp.update(to_bytes(request.url.lower()))
+                fp.update(bytes(request.url.lower()))
                 return fp.hexdigest()
 
         case_insensitive_dupefilter = CaseInsensitiveRFPDupeFilter()

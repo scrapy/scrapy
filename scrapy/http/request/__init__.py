@@ -7,7 +7,6 @@ See documentation in docs/topics/request-response.rst
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
-from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
@@ -60,7 +59,7 @@ class Request(object_ref):
 
     def _set_url(self, url):
         if not isinstance(url, str):
-            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+            raise TypeError('Request URL must be a string, got %s:' % type(url).__name__)
 
         s = safe_url_string(url, self.encoding)
         self._url = escape_ajax(s)
@@ -77,7 +76,7 @@ class Request(object_ref):
         if body is None:
             self._body = b''
         else:
-            self._body = to_bytes(body, self.encoding)
+            self._body = bytes(body, self.encoding)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 

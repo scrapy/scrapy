@@ -8,7 +8,7 @@ from io import StringIO
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
+from scrapy.utils.python import binary_is_text
 
 
 class ResponseTypes:
@@ -53,12 +53,12 @@ class ResponseTypes:
         header """
         if content_encoding:
             return Response
-        mimetype = to_unicode(content_type).split(';')[0].strip().lower()
+        mimetype = str(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = to_unicode(
+            filename = str(
                 content_disposition, encoding='latin-1', errors='replace'
             ).split(';')[1].split('=')[1].strip('"\'')
             return self.from_filename(filename)
@@ -92,7 +92,7 @@ class ResponseTypes:
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
-        chunk = to_bytes(chunk)
+        chunk = bytes(chunk)
         if not binary_is_text(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():

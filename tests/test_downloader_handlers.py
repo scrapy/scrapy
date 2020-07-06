@@ -31,7 +31,6 @@ from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
-from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 
 from tests.mockserver import MockServer, ssl_context_factory, Echo
@@ -300,7 +299,7 @@ class HttpTestCase(unittest.TestCase):
     def test_host_header_not_in_request_headers(self):
         def _test(response):
             self.assertEqual(
-                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
+                response.body, bytes('%s:%d' % (self.host, self.portno)))
             self.assertEqual(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -1011,7 +1010,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
     def test_ftp_local_filename(self):
         f, local_fname = tempfile.mkstemp()
-        local_fname = to_bytes(local_fname)
+        local_fname = bytes(local_fname)
         os.close(f)
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
@@ -1110,7 +1109,7 @@ class DataURITestCase(unittest.TestCase):
 
     def test_default_mediatype(self):
         def _test(response):
-            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(response.text, '\u038e\u03a3\u038e')
             self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "iso-8859-7")
 
@@ -1119,7 +1118,7 @@ class DataURITestCase(unittest.TestCase):
 
     def test_text_charset(self):
         def _test(response):
-            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(response.text, '\u038e\u03a3\u038e')
             self.assertEqual(response.body, b'\xbe\xd3\xbe')
             self.assertEqual(response.encoding, "iso-8859-7")
 
@@ -1128,7 +1127,7 @@ class DataURITestCase(unittest.TestCase):
 
     def test_mediatype_parameters(self):
         def _test(response):
-            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(response.text, '\u038e\u03a3\u038e')
             self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "utf-8")
 

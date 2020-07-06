@@ -56,13 +56,13 @@ class LogFormatterTestCase(unittest.TestCase):
 
     def test_dropped(self):
         item = {}
-        exception = Exception(u"\u2018")
+        exception = Exception("\u2018")
         response = Response("http://www.example.com")
         logkws = self.formatter.dropped(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
         assert all(isinstance(x, str) for x in lines)
-        self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
+        self.assertEqual(lines, ["Dropped: \u2018", '{}'])
 
     def test_item_error(self):
         # In practice, the complete traceback is shown by passing the
@@ -72,7 +72,7 @@ class LogFormatterTestCase(unittest.TestCase):
         response = Response("http://www.example.com")
         logkws = self.formatter.item_error(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline, u"Error processing {'key': 'value'}")
+        self.assertEqual(logline, "Error processing {'key': 'value'}")
 
     def test_spider_error(self):
         # In practice, the complete traceback is shown by passing the
@@ -107,20 +107,20 @@ class LogFormatterTestCase(unittest.TestCase):
 
     def test_scraped(self):
         item = CustomItem()
-        item['name'] = u'\xa3'
+        item['name'] = '\xa3'
         response = Response("http://www.example.com")
         logkws = self.formatter.scraped(item, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
         assert all(isinstance(x, str) for x in lines)
-        self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
+        self.assertEqual(lines, ["Scraped from <200 http://www.example.com>", 'name: \xa3'])
 
 
 class LogFormatterSubclass(LogFormatter):
     def crawled(self, request, response, spider):
         kwargs = super(LogFormatterSubclass, self).crawled(request, response, spider)
         CRAWLEDMSG = (
-            u"Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
+            "Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
         )
         log_args = kwargs['args']
         log_args['flags'] = str(request.flags)

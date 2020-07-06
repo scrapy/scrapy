@@ -5,7 +5,7 @@ from io import StringIO
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
-from scrapy.utils.python import re_rsearch, to_unicode
+from scrapy.utils.python import re_rsearch
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,8 @@ def xmliter(obj, nodename):
 
     obj can be:
     - a Response object
-    - a unicode string
-    - a string encoded as utf-8
+    - a string
+    - a string encoded as bytes in utf-8
     """
     nodename_patt = re.escape(nodename)
 
@@ -44,7 +44,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
     selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
     for _, node in iterable:
-        nodetext = etree.tostring(node, encoding='unicode')
+        nodetext = etree.tostring(node, encoding='utf-8')
         node.clear()
         xs = Selector(text=nodetext, type='xml')
         if namespace:
@@ -82,8 +82,8 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     obj can be:
     - a Response object
-    - a unicode string
-    - a string encoded as utf-8
+    - a string
+    - a string encoded as bytes in utf-8
 
     delimiter is the character used to separate fields on the given obj.
 
@@ -96,7 +96,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
 
     def row_to_unicode(row_):
-        return [to_unicode(field, encoding) for field in row_]
+        return [str(field, encoding) for field in row_]
 
     lines = StringIO(_body_or_str(obj, unicode=True))
 

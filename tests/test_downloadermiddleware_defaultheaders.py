@@ -4,7 +4,6 @@ from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from scrapy.utils.python import to_bytes
 
 
 class TestDefaultHeadersMiddleware(TestCase):
@@ -13,7 +12,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         crawler = get_crawler(Spider)
         spider = crawler._create_spider('foo')
         defaults = {
-            to_bytes(k): [to_bytes(v)]
+            bytes(k): [bytes(v)]
             for k, v in crawler.settings.get('DEFAULT_REQUEST_HEADERS').items()
         }
         return defaults, spider, DefaultHeadersMiddleware.from_crawler(crawler)

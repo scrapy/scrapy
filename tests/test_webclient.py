@@ -32,14 +32,13 @@ from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Request, Headers
 from scrapy.settings import Settings
 from scrapy.utils.misc import create_instance
-from scrapy.utils.python import to_bytes, to_unicode
 from tests.mockserver import ssl_context_factory
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""
     def _clientfactory(url, *args, **kwargs):
-        url = to_unicode(url)
+        url = str(url)
         timeout = kwargs.pop('timeout', 0)
         f = client.ScrapyHTTPClientFactory(
             Request(url, *args, **kwargs), timeout=timeout)
@@ -48,7 +47,7 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
 
     from twisted.web.client import _makeGetterFactory
     return _makeGetterFactory(
-        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
+        bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
     ).deferred
 
 
@@ -88,7 +87,7 @@ class ParseUrlTestCase(unittest.TestCase):
 
         for url, test in tests:
             test = tuple(
-                to_bytes(x) if not isinstance(x, int) else x for x in test)
+                bytes(x) if not isinstance(x, int) else x for x in test)
             self.assertEqual(client._parse(url), test, url)
 
 
@@ -220,7 +219,7 @@ class EncodingResource(resource.Resource):
     out_encoding = 'cp1251'
 
     def render(self, request):
-        body = to_unicode(request.content.read())
+        body = str(request.content.read())
         request.setHeader(b'content-encoding', self.out_encoding)
         return body.encode(self.out_encoding)
 
@@ -258,16 +257,16 @@ class WebClientTestCase(unittest.TestCase):
     def testPayload(self):
         s = "0123456789" * 10
         return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s))
+            self.assertEqual, bytes(s))
 
     def testHostHeader(self):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
         return defer.gatherResults([
             getPage(self.getURL("host")).addCallback(
-                self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno)),
+                self.assertEqual, bytes("127.0.0.1:%d" % self.portno)),
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
-                self.assertEqual, to_bytes("www.example.com"))])
+                self.assertEqual, bytes("www.example.com"))])
 
     def test_getPage(self):
         """
@@ -298,7 +297,7 @@ class WebClientTestCase(unittest.TestCase):
         """
         d = getPage(self.getURL("host"), timeout=100)
         d.addCallback(
-            self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno))
+            self.assertEqual, bytes("127.0.0.1:%d" % self.portno))
         return d
 
     def test_timeoutTriggering(self):
@@ -333,7 +332,7 @@ class WebClientTestCase(unittest.TestCase):
         url = self.getURL('file')
         _, _, host, port, _ = client._parse(url)
         factory = client.ScrapyHTTPClientFactory(Request(url))
-        reactor.connectTCP(to_unicode(host), port, factory)
+        reactor.connectTCP(str(host), port, factory)
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)
 
     def _cbFactoryInfo(self, ignoredResult, factory):
@@ -361,10 +360,10 @@ class WebClientTestCase(unittest.TestCase):
             .addCallback(self._check_Encoding, body)
 
     def _check_Encoding(self, response, original_body):
-        content_encoding = to_unicode(response.headers[b'Content-Encoding'])
+        content_encoding = str(response.headers[b'Content-Encoding'])
         self.assertEqual(content_encoding, EncodingResource.out_encoding)
         self.assertEqual(
-            response.body.decode(content_encoding), to_unicode(original_body))
+            response.body.decode(content_encoding), str(original_body))
 
 
 class WebClientSSLTestCase(unittest.TestCase):
@@ -398,7 +397,7 @@ class WebClientSSLTestCase(unittest.TestCase):
     def testPayload(self):
         s = "0123456789" * 10
         return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s))
+            self.assertEqual, bytes(s))
 
 
 class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
@@ -412,7 +411,7 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
         return getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
-        ).addCallback(self.assertEqual, to_bytes(s))
+        ).addCallback(self.assertEqual, bytes(s))
 
     def testPayloadDefaultCiphers(self):
         s = "0123456789" * 10

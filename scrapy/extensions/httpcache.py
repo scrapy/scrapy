@@ -13,7 +13,6 @@ from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
-from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.request import request_fingerprint
 
 
@@ -48,7 +47,7 @@ class RFC2616Policy:
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self._cc_parsed = WeakKeyDictionary()
         self.ignore_response_cache_controls = [
-            to_bytes(cc) for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
+            bytes(cc) for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
         ]
 
     def _parse_cachecontrol(self, r):
@@ -316,7 +315,7 @@ class FilesystemCacheStorage:
             'timestamp': time(),
         }
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
-            f.write(to_bytes(repr(metadata)))
+            f.write(bytes(repr(metadata)))
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
@@ -366,7 +365,7 @@ def parse_cachecontrol(header):
 
 def rfc1123_to_epoch(date_str):
     try:
-        date_str = to_unicode(date_str, encoding='ascii')
+        date_str = str(date_str, encoding='ascii')
         return mktime_tz(parsedate_tz(date_str))
     except Exception:
         return None

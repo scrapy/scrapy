@@ -71,19 +71,19 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_load_item_using_default_loader(self):
         i = TestItem()
-        i['summary'] = u'lala'
+        i['summary'] = 'lala'
         il = ItemLoader(item=i)
-        il.add_value('name', u'marta')
+        il.add_value('name', 'marta')
         item = il.load_item()
         assert item is i
-        self.assertEqual(item['summary'], [u'lala'])
-        self.assertEqual(item['name'], [u'marta'])
+        self.assertEqual(item['summary'], ['lala'])
+        self.assertEqual(item['name'], ['marta'])
 
     def test_load_item_using_custom_loader(self):
         il = TestItemLoader()
-        il.add_value('name', u'marta')
+        il.add_value('name', 'marta')
         item = il.load_item()
-        self.assertEqual(item['name'], [u'Marta'])
+        self.assertEqual(item['name'], ['Marta'])
 
     def test_load_item_ignore_none_field_values(self):
         def validate_sku(value):
@@ -96,23 +96,23 @@ class BasicItemLoaderTest(unittest.TestCase):
             price_out = Compose(TakeFirst(), float)
             sku_out = Compose(TakeFirst(), validate_sku)
 
-        valid_fragment = u'SKU: 1234'
-        invalid_fragment = u'SKU: not available'
+        valid_fragment = 'SKU: 1234'
+        invalid_fragment = 'SKU: not available'
         sku_re = 'SKU: (.+)'
 
         il = MyLoader(item={})
         # Should not return "sku: None".
         il.add_value('sku', [invalid_fragment], re=sku_re)
         # Should not ignore empty values.
-        il.add_value('name', u'')
-        il.add_value('price', [u'0'])
+        il.add_value('name', '')
+        il.add_value('price', ['0'])
         self.assertEqual(il.load_item(), {
-            'name': u'',
+            'name': '',
             'price': 0.0,
         })
 
         il.replace_value('sku', [valid_fragment], re=sku_re)
-        self.assertEqual(il.load_item()['sku'], u'1234')
+        self.assertEqual(il.load_item()['sku'], '1234')
 
     def test_self_referencing_loader(self):
         class MyLoader(ItemLoader):
@@ -137,19 +137,19 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_add_value(self):
         il = TestItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_collected_values('name'), [u'Marta'])
-        self.assertEqual(il.get_output_value('name'), [u'Marta'])
-        il.add_value('name', u'pepe')
-        self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe'])
-        self.assertEqual(il.get_output_value('name'), [u'Marta', u'Pepe'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_collected_values('name'), ['Marta'])
+        self.assertEqual(il.get_output_value('name'), ['Marta'])
+        il.add_value('name', 'pepe')
+        self.assertEqual(il.get_collected_values('name'), ['Marta', 'Pepe'])
+        self.assertEqual(il.get_output_value('name'), ['Marta', 'Pepe'])
 
         # test add object value
         il.add_value('summary', {'key': 1})
         self.assertEqual(il.get_collected_values('summary'), [{'key': 1}])
 
-        il.add_value(None, u'Jim', lambda x: {'name': x})
-        self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
+        il.add_value(None, 'Jim', lambda x: {'name': x})
+        self.assertEqual(il.get_collected_values('name'), ['Marta', 'Pepe', 'Jim'])
 
     def test_add_zero(self):
         il = NameItemLoader()
@@ -158,49 +158,49 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_replace_value(self):
         il = TestItemLoader()
-        il.replace_value('name', u'marta')
-        self.assertEqual(il.get_collected_values('name'), [u'Marta'])
-        self.assertEqual(il.get_output_value('name'), [u'Marta'])
-        il.replace_value('name', u'pepe')
-        self.assertEqual(il.get_collected_values('name'), [u'Pepe'])
-        self.assertEqual(il.get_output_value('name'), [u'Pepe'])
+        il.replace_value('name', 'marta')
+        self.assertEqual(il.get_collected_values('name'), ['Marta'])
+        self.assertEqual(il.get_output_value('name'), ['Marta'])
+        il.replace_value('name', 'pepe')
+        self.assertEqual(il.get_collected_values('name'), ['Pepe'])
+        self.assertEqual(il.get_output_value('name'), ['Pepe'])
 
-        il.replace_value(None, u'Jim', lambda x: {'name': x})
-        self.assertEqual(il.get_collected_values('name'), [u'Jim'])
+        il.replace_value(None, 'Jim', lambda x: {'name': x})
+        self.assertEqual(il.get_collected_values('name'), ['Jim'])
 
     def test_get_value(self):
         il = NameItemLoader()
-        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), str.upper))
-        self.assertEqual([u'foo', u'bar'], il.get_value([u'name:foo', u'name:bar'], re=u'name:(.*)$'))
-        self.assertEqual(u'foo', il.get_value([u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
+        self.assertEqual('FOO', il.get_value(['foo', 'bar'], TakeFirst(), str.upper))
+        self.assertEqual(['foo', 'bar'], il.get_value(['name:foo', 'name:bar'], re='name:(.*)$'))
+        self.assertEqual('foo', il.get_value(['name:foo', 'name:bar'], TakeFirst(), re='name:(.*)$'))
 
-        il.add_value('name', [u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$')
-        self.assertEqual([u'foo'], il.get_collected_values('name'))
-        il.replace_value('name', u'name:bar', re=u'name:(.*)$')
-        self.assertEqual([u'bar'], il.get_collected_values('name'))
+        il.add_value('name', ['name:foo', 'name:bar'], TakeFirst(), re='name:(.*)$')
+        self.assertEqual(['foo'], il.get_collected_values('name'))
+        il.replace_value('name', 'name:bar', re='name:(.*)$')
+        self.assertEqual(['bar'], il.get_collected_values('name'))
 
     def test_iter_on_input_processor_input(self):
         class NameFirstItemLoader(NameItemLoader):
             name_in = TakeFirst()
 
         il = NameFirstItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_collected_values('name'), ['marta'])
         il = NameFirstItemLoader()
-        il.add_value('name', [u'marta', u'jose'])
-        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+        il.add_value('name', ['marta', 'jose'])
+        self.assertEqual(il.get_collected_values('name'), ['marta'])
 
         il = NameFirstItemLoader()
-        il.replace_value('name', u'marta')
-        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+        il.replace_value('name', 'marta')
+        self.assertEqual(il.get_collected_values('name'), ['marta'])
         il = NameFirstItemLoader()
-        il.replace_value('name', [u'marta', u'jose'])
-        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+        il.replace_value('name', ['marta', 'jose'])
+        self.assertEqual(il.get_collected_values('name'), ['marta'])
 
         il = NameFirstItemLoader()
-        il.add_value('name', u'marta')
-        il.add_value('name', [u'jose', u'pedro'])
-        self.assertEqual(il.get_collected_values('name'), [u'marta', u'jose'])
+        il.add_value('name', 'marta')
+        il.add_value('name', ['jose', 'pedro'])
+        self.assertEqual(il.get_collected_values('name'), ['marta', 'jose'])
 
     def test_map_compose_filter(self):
         def filter_world(x):
@@ -215,87 +215,87 @@ class BasicItemLoaderTest(unittest.TestCase):
             name_in = MapCompose(lambda v: v.title(), lambda v: v[:-1])
 
         il = TestItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'Mart'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['Mart'])
         item = il.load_item()
-        self.assertEqual(item['name'], [u'Mart'])
+        self.assertEqual(item['name'], ['Mart'])
 
     def test_default_input_processor(self):
         il = DefaultedItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'mart'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['mart'])
 
     def test_inherited_default_input_processor(self):
         class InheritDefaultedItemLoader(DefaultedItemLoader):
             pass
 
         il = InheritDefaultedItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'mart'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['mart'])
 
     def test_input_processor_inheritance(self):
         class ChildItemLoader(TestItemLoader):
             url_in = MapCompose(lambda v: v.lower())
 
         il = ChildItemLoader()
-        il.add_value('url', u'HTTP://scrapy.ORG')
-        self.assertEqual(il.get_output_value('url'), [u'http://scrapy.org'])
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'Marta'])
+        il.add_value('url', 'HTTP://scrapy.ORG')
+        self.assertEqual(il.get_output_value('url'), ['http://scrapy.org'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['Marta'])
 
         class ChildChildItemLoader(ChildItemLoader):
             url_in = MapCompose(lambda v: v.upper())
             summary_in = MapCompose(lambda v: v)
 
         il = ChildChildItemLoader()
-        il.add_value('url', u'http://scrapy.org')
-        self.assertEqual(il.get_output_value('url'), [u'HTTP://SCRAPY.ORG'])
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'Marta'])
+        il.add_value('url', 'http://scrapy.org')
+        self.assertEqual(il.get_output_value('url'), ['HTTP://SCRAPY.ORG'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['Marta'])
 
     def test_empty_map_compose(self):
         class IdentityDefaultedItemLoader(DefaultedItemLoader):
             name_in = MapCompose()
 
         il = IdentityDefaultedItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'marta'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['marta'])
 
     def test_identity_input_processor(self):
         class IdentityDefaultedItemLoader(DefaultedItemLoader):
             name_in = Identity()
 
         il = IdentityDefaultedItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'marta'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['marta'])
 
     def test_extend_custom_input_processors(self):
         class ChildItemLoader(TestItemLoader):
             name_in = MapCompose(TestItemLoader.name_in, str.swapcase)
 
         il = ChildItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'mARTA'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['mARTA'])
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
             name_in = MapCompose(DefaultedItemLoader.default_input_processor, str.swapcase)
 
         il = ChildDefaultedItemLoader()
-        il.add_value('name', u'marta')
-        self.assertEqual(il.get_output_value('name'), [u'MART'])
+        il.add_value('name', 'marta')
+        self.assertEqual(il.get_output_value('name'), ['MART'])
 
     def test_output_processor_using_function(self):
         il = TestItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), ['Mar', 'Ta'])
 
         class TakeFirstItemLoader(TestItemLoader):
-            name_out = u" ".join
+            name_out = " ".join
 
         il = TakeFirstItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), u'Mar Ta')
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), 'Mar Ta')
 
     def test_output_processor_error(self):
         class TestItemLoader(ItemLoader):
@@ -303,9 +303,9 @@ class BasicItemLoaderTest(unittest.TestCase):
             name_out = MapCompose(float)
 
         il = TestItemLoader()
-        il.add_value('name', [u'$10'])
+        il.add_value('name', ['$10'])
         try:
-            float(u'$10')
+            float('$10')
         except Exception as e:
             expected_exc_str = str(e)
 
@@ -323,53 +323,53 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_output_processor_using_classes(self):
         il = TestItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), ['Mar', 'Ta'])
 
         class TakeFirstItemLoader(TestItemLoader):
             name_out = Join()
 
         il = TakeFirstItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), u'Mar Ta')
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), 'Mar Ta')
 
         class TakeFirstItemLoader(TestItemLoader):
             name_out = Join("<br>")
 
         il = TakeFirstItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), u'Mar<br>Ta')
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), 'Mar<br>Ta')
 
     def test_default_output_processor(self):
         il = TestItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), ['Mar', 'Ta'])
 
         class LalaItemLoader(TestItemLoader):
             default_output_processor = Identity()
 
         il = LalaItemLoader()
-        il.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
+        il.add_value('name', ['mar', 'ta'])
+        self.assertEqual(il.get_output_value('name'), ['Mar', 'Ta'])
 
     def test_loader_context_on_declaration(self):
         class ChildItemLoader(TestItemLoader):
-            url_in = MapCompose(processor_with_args, key=u'val')
+            url_in = MapCompose(processor_with_args, key='val')
 
         il = ChildItemLoader()
-        il.add_value('url', u'text')
+        il.add_value('url', 'text')
         self.assertEqual(il.get_output_value('url'), ['val'])
-        il.replace_value('url', u'text2')
+        il.replace_value('url', 'text2')
         self.assertEqual(il.get_output_value('url'), ['val'])
 
     def test_loader_context_on_instantiation(self):
         class ChildItemLoader(TestItemLoader):
             url_in = MapCompose(processor_with_args)
 
-        il = ChildItemLoader(key=u'val')
-        il.add_value('url', u'text')
+        il = ChildItemLoader(key='val')
+        il.add_value('url', 'text')
         self.assertEqual(il.get_output_value('url'), ['val'])
-        il.replace_value('url', u'text2')
+        il.replace_value('url', 'text2')
         self.assertEqual(il.get_output_value('url'), ['val'])
 
     def test_loader_context_on_assign(self):
@@ -377,10 +377,10 @@ class BasicItemLoaderTest(unittest.TestCase):
             url_in = MapCompose(processor_with_args)
 
         il = ChildItemLoader()
-        il.context['key'] = u'val'
-        il.add_value('url', u'text')
+        il.context['key'] = 'val'
+        il.add_value('url', 'text')
         self.assertEqual(il.get_output_value('url'), ['val'])
-        il.replace_value('url', u'text2')
+        il.replace_value('url', 'text2')
         self.assertEqual(il.get_output_value('url'), ['val'])
 
     def test_item_passed_to_input_processor_functions(self):
@@ -392,24 +392,24 @@ class BasicItemLoaderTest(unittest.TestCase):
 
         it = TestItem(name='marta')
         il = ChildItemLoader(item=it)
-        il.add_value('url', u'text')
+        il.add_value('url', 'text')
         self.assertEqual(il.get_output_value('url'), ['marta'])
-        il.replace_value('url', u'text2')
+        il.replace_value('url', 'text2')
         self.assertEqual(il.get_output_value('url'), ['marta'])
 
     def test_add_value_on_unknown_field(self):
         il = TestItemLoader()
-        self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
+        self.assertRaises(KeyError, il.add_value, 'wrong_field', ['lala', 'lolo'])
 
     def test_compose_processor(self):
         class TestItemLoader(NameItemLoader):
             name_out = Compose(lambda v: v[0], lambda v: v.title(), lambda v: v[:-1])
 
         il = TestItemLoader()
-        il.add_value('name', [u'marta', u'other'])
-        self.assertEqual(il.get_output_value('name'), u'Mart')
+        il.add_value('name', ['marta', 'other'])
+        self.assertEqual(il.get_output_value('name'), 'Mart')
         item = il.load_item()
-        self.assertEqual(item['name'], u'Mart')
+        self.assertEqual(item['name'], 'Mart')
 
     def test_partial_processor(self):
         def join(values, sep=None, loader_context=None, ignored=None):
@@ -426,13 +426,13 @@ class BasicItemLoaderTest(unittest.TestCase):
             summary_out = Compose(partial(join, ignored='foo'))
 
         il = TestItemLoader()
-        il.add_value('name', [u'rabbit', u'hole'])
-        il.add_value('url', [u'rabbit', u'hole'])
-        il.add_value('summary', [u'rabbit', u'hole'])
+        il.add_value('name', ['rabbit', 'hole'])
+        il.add_value('url', ['rabbit', 'hole'])
+        il.add_value('summary', ['rabbit', 'hole'])
         item = il.load_item()
-        self.assertEqual(item['name'], u'rabbit+hole')
-        self.assertEqual(item['url'], u'rabbit.hole')
-        self.assertEqual(item['summary'], u'rabbithole')
+        self.assertEqual(item['name'], 'rabbit+hole')
+        self.assertEqual(item['url'], 'rabbit.hole')
+        self.assertEqual(item['summary'], 'rabbithole')
 
     def test_error_input_processor(self):
         class TestItem(Item):
@@ -444,7 +444,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
         il = TestItemLoader()
         self.assertRaises(ValueError, il.add_value, 'name',
-                          [u'marta', u'other'])
+                          ['marta', 'other'])
 
     def test_error_output_processor(self):
         class TestItem(Item):
@@ -455,7 +455,7 @@ class BasicItemLoaderTest(unittest.TestCase):
             name_out = Compose(Join(), float)
 
         il = TestItemLoader()
-        il.add_value('name', u'marta')
+        il.add_value('name', 'marta')
         with self.assertRaises(ValueError):
             il.load_item()
 
@@ -468,7 +468,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
         il = TestItemLoader()
         self.assertRaises(ValueError, il.add_value, 'name',
-                          [u'marta', u'other'], Compose(float))
+                          ['marta', 'other'], Compose(float))
 
 
 class InitializationTestMixin:
@@ -716,8 +716,8 @@ class ProcessorsTest(unittest.TestCase):
     def test_join(self):
         proc = Join()
         self.assertRaises(TypeError, proc, [None, '', 'hello', 'world'])
-        self.assertEqual(proc(['', 'hello', 'world']), u' hello world')
-        self.assertEqual(proc(['hello', 'world']), u'hello world')
+        self.assertEqual(proc(['', 'hello', 'world']), ' hello world')
+        self.assertEqual(proc(['hello', 'world']), 'hello world')
         self.assertIsInstance(proc(['hello', 'world']), str)
 
     def test_compose(self):
@@ -734,8 +734,8 @@ class ProcessorsTest(unittest.TestCase):
         def filter_world(x):
             return None if x == 'world' else x
         proc = MapCompose(filter_world, str.upper)
-        self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
-                         [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
+        self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']),
+                         ['HELLO', 'THIS', 'IS', 'SCRAPY'])
         proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(None), [])
         proc = MapCompose(filter_world, str.upper)
@@ -770,137 +770,137 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertRaises(RuntimeError, l.get_css, '#name::text')
 
     def test_init_method_with_selector(self):
-        sel = Selector(text=u"<html><body><div>marta</div></body></html>")
+        sel = Selector(text="<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
         self.assertIs(l.selector, sel)
 
         l.add_xpath('name', '//div/text()')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
 
     def test_init_method_with_selector_css(self):
-        sel = Selector(text=u"<html><body><div>marta</div></body></html>")
+        sel = Selector(text="<html><body><div>marta</div></body></html>")
         l = TestItemLoader(selector=sel)
         self.assertIs(l.selector, sel)
 
         l.add_css('name', 'div::text')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
 
     def test_init_method_with_response(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
 
         l.add_xpath('name', '//div/text()')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
 
     def test_init_method_with_response_css(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
 
         l.add_css('name', 'div::text')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
 
         l.add_css('url', 'a::attr(href)')
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['http://www.scrapy.org'])
 
         # combining/accumulating CSS selectors and XPath expressions
         l.add_xpath('name', '//div/text()')
-        self.assertEqual(l.get_output_value('name'), [u'Marta', u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta', 'Marta'])
 
         l.add_xpath('url', '//img/@src')
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org', u'/images/logo.png'])
+        self.assertEqual(l.get_output_value('url'), ['http://www.scrapy.org', '/images/logo.png'])
 
     def test_add_xpath_re(self):
         l = TestItemLoader(response=self.response)
         l.add_xpath('name', '//div/text()', re='ma')
-        self.assertEqual(l.get_output_value('name'), [u'Ma'])
+        self.assertEqual(l.get_output_value('name'), ['Ma'])
 
     def test_replace_xpath(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
         l.add_xpath('name', '//div/text()')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
         l.replace_xpath('name', '//p/text()')
-        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+        self.assertEqual(l.get_output_value('name'), ['Paragraph'])
 
         l.replace_xpath('name', ['//p/text()', '//div/text()'])
-        self.assertEqual(l.get_output_value('name'), [u'Paragraph', 'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Paragraph', 'Marta'])
 
     def test_get_xpath(self):
         l = TestItemLoader(response=self.response)
-        self.assertEqual(l.get_xpath('//p/text()'), [u'paragraph'])
-        self.assertEqual(l.get_xpath('//p/text()', TakeFirst()), u'paragraph')
-        self.assertEqual(l.get_xpath('//p/text()', TakeFirst(), re='pa'), u'pa')
+        self.assertEqual(l.get_xpath('//p/text()'), ['paragraph'])
+        self.assertEqual(l.get_xpath('//p/text()', TakeFirst()), 'paragraph')
+        self.assertEqual(l.get_xpath('//p/text()', TakeFirst(), re='pa'), 'pa')
 
-        self.assertEqual(l.get_xpath(['//p/text()', '//div/text()']), [u'paragraph', 'marta'])
+        self.assertEqual(l.get_xpath(['//p/text()', '//div/text()']), ['paragraph', 'marta'])
 
     def test_replace_xpath_multi_fields(self):
         l = TestItemLoader(response=self.response)
         l.add_xpath(None, '//div/text()', TakeFirst(), lambda x: {'name': x})
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
         l.replace_xpath(None, '//p/text()', TakeFirst(), lambda x: {'name': x})
-        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+        self.assertEqual(l.get_output_value('name'), ['Paragraph'])
 
     def test_replace_xpath_re(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
         l.add_xpath('name', '//div/text()')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
         l.replace_xpath('name', '//div/text()', re='ma')
-        self.assertEqual(l.get_output_value('name'), [u'Ma'])
+        self.assertEqual(l.get_output_value('name'), ['Ma'])
 
     def test_add_css_re(self):
         l = TestItemLoader(response=self.response)
         l.add_css('name', 'div::text', re='ma')
-        self.assertEqual(l.get_output_value('name'), [u'Ma'])
+        self.assertEqual(l.get_output_value('name'), ['Ma'])
 
         l.add_css('url', 'a::attr(href)', re='http://(.+)')
-        self.assertEqual(l.get_output_value('url'), [u'www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['www.scrapy.org'])
 
     def test_replace_css(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
         l.add_css('name', 'div::text')
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
         l.replace_css('name', 'p::text')
-        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+        self.assertEqual(l.get_output_value('name'), ['Paragraph'])
 
         l.replace_css('name', ['p::text', 'div::text'])
-        self.assertEqual(l.get_output_value('name'), [u'Paragraph', 'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Paragraph', 'Marta'])
 
         l.add_css('url', 'a::attr(href)', re='http://(.+)')
-        self.assertEqual(l.get_output_value('url'), [u'www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['www.scrapy.org'])
         l.replace_css('url', 'img::attr(src)')
-        self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
+        self.assertEqual(l.get_output_value('url'), ['/images/logo.png'])
 
     def test_get_css(self):
         l = TestItemLoader(response=self.response)
-        self.assertEqual(l.get_css('p::text'), [u'paragraph'])
-        self.assertEqual(l.get_css('p::text', TakeFirst()), u'paragraph')
-        self.assertEqual(l.get_css('p::text', TakeFirst(), re='pa'), u'pa')
+        self.assertEqual(l.get_css('p::text'), ['paragraph'])
+        self.assertEqual(l.get_css('p::text', TakeFirst()), 'paragraph')
+        self.assertEqual(l.get_css('p::text', TakeFirst(), re='pa'), 'pa')
 
-        self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
+        self.assertEqual(l.get_css(['p::text', 'div::text']), ['paragraph', 'marta'])
         self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
-                         [u'http://www.scrapy.org', u'/images/logo.png'])
+                         ['http://www.scrapy.org', '/images/logo.png'])
 
     def test_replace_css_multi_fields(self):
         l = TestItemLoader(response=self.response)
         l.add_css(None, 'div::text', TakeFirst(), lambda x: {'name': x})
-        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('name'), ['Marta'])
         l.replace_css(None, 'p::text', TakeFirst(), lambda x: {'name': x})
-        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+        self.assertEqual(l.get_output_value('name'), ['Paragraph'])
 
         l.add_css(None, 'a::attr(href)', TakeFirst(), lambda x: {'url': x})
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['http://www.scrapy.org'])
         l.replace_css(None, 'img::attr(src)', TakeFirst(), lambda x: {'url': x})
-        self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
+        self.assertEqual(l.get_output_value('url'), ['/images/logo.png'])
 
     def test_replace_css_re(self):
         l = TestItemLoader(response=self.response)
         self.assertTrue(l.selector)
         l.add_css('url', 'a::attr(href)')
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['http://www.scrapy.org'])
         l.replace_css('url', 'a::attr(href)', re=r'http://www\.(.+)')
-        self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['scrapy.org'])
 
 
 class SubselectorLoaderTest(unittest.TestCase):
@@ -926,9 +926,9 @@ class SubselectorLoaderTest(unittest.TestCase):
         nl.add_css('name_div', '#id')
         nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').getall())
 
-        self.assertEqual(l.get_output_value('name'), [u'marta'])
-        self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
-        self.assertEqual(l.get_output_value('name_value'), [u'marta'])
+        self.assertEqual(l.get_output_value('name'), ['marta'])
+        self.assertEqual(l.get_output_value('name_div'), ['<div id="id">marta</div>'])
+        self.assertEqual(l.get_output_value('name_value'), ['marta'])
 
         self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
         self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
@@ -941,9 +941,9 @@ class SubselectorLoaderTest(unittest.TestCase):
         nl.add_css('name_div', '#id')
         nl.add_value('name_value', nl.selector.xpath('div[@id = "id"]/text()').getall())
 
-        self.assertEqual(l.get_output_value('name'), [u'marta'])
-        self.assertEqual(l.get_output_value('name_div'), [u'<div id="id">marta</div>'])
-        self.assertEqual(l.get_output_value('name_value'), [u'marta'])
+        self.assertEqual(l.get_output_value('name'), ['marta'])
+        self.assertEqual(l.get_output_value('name_div'), ['<div id="id">marta</div>'])
+        self.assertEqual(l.get_output_value('name_value'), ['marta'])
 
         self.assertEqual(l.get_output_value('name'), nl.get_output_value('name'))
         self.assertEqual(l.get_output_value('name_div'), nl.get_output_value('name_div'))
@@ -955,11 +955,11 @@ class SubselectorLoaderTest(unittest.TestCase):
         nl2 = nl1.nested_xpath('a')
 
         l.add_xpath('url', '//footer/a/@href')
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['http://www.scrapy.org'])
         nl1.replace_xpath('url', 'img/@src')
-        self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
+        self.assertEqual(l.get_output_value('url'), ['/images/logo.png'])
         nl2.replace_xpath('url', '@href')
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        self.assertEqual(l.get_output_value('url'), ['http://www.scrapy.org'])
 
     def test_nested_ordering(self):
         l = NestedItemLoader(response=self.response)
@@ -972,10 +972,10 @@ class SubselectorLoaderTest(unittest.TestCase):
         l.add_xpath('url', '//footer/a/@href')
 
         self.assertEqual(l.get_output_value('url'), [
-            u'/images/logo.png',
-            u'http://www.scrapy.org',
-            u'homepage',
-            u'http://www.scrapy.org',
+            '/images/logo.png',
+            'http://www.scrapy.org',
+            'homepage',
+            'http://www.scrapy.org',
         ])
 
     def test_nested_load_item(self):
@@ -993,9 +993,9 @@ class SubselectorLoaderTest(unittest.TestCase):
         assert item is nl1.item
         assert item is nl2.item
 
-        self.assertEqual(item['name'], [u'marta'])
-        self.assertEqual(item['url'], [u'http://www.scrapy.org'])
-        self.assertEqual(item['image'], [u'/images/logo.png'])
+        self.assertEqual(item['name'], ['marta'])
+        self.assertEqual(item['url'], ['http://www.scrapy.org'])
+        self.assertEqual(item['image'], ['/images/logo.png'])
 
 
 class SelectJmesTestCase(unittest.TestCase):

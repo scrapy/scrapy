@@ -1,6 +1,9 @@
+from warnings import warn
+
 from w3lib.http import headers_dict_to_raw
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.datatypes import CaselessDict
-from scrapy.utils.python import to_unicode
 
 
 class Headers(CaselessDict):
@@ -75,14 +78,23 @@ class Headers(CaselessDict):
     def to_string(self):
         return headers_dict_to_raw(self)
 
-    def to_unicode_dict(self):
-        """ Return headers as a CaselessDict with unicode keys
-        and unicode values. Multiple values are joined with ','.
+    def to_str_dict(self):
+        """Return the headers as a :class:`scrapy.utils.datatypes.CaselessDict`
+        object with strings as keys and values.
+
+        Multiple values are joined with ','.
         """
         return CaselessDict(
-            (to_unicode(key, encoding=self.encoding),
-             to_unicode(b','.join(value), encoding=self.encoding))
-            for key, value in self.items())
+            (str(key, encoding=self.encoding),
+             str(b','.join(value), encoding=self.encoding))
+            for key, value in self.items()
+        )
+
+    def to_unicode_dict(self):
+        warn('Headers.to_unicode_dict() is deprecated, use '
+             'Headers.to_str_dict() instead.',
+             ScrapyDeprecationWarning, stacklevel=2)
+        return self.to_str_dict()
 
     def __copy__(self):
         return self.__class__(self)

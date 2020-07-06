@@ -19,7 +19,7 @@ from w3lib.html import strip_html5_whitespace
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.python import memoizemethod_noargs, to_unicode
+from scrapy.utils.python import memoizemethod_noargs
 from scrapy.utils.response import get_base_url
 
 _NONE = object()
@@ -39,7 +39,7 @@ class TextResponse(Response):
 
     def _set_url(self, url):
         if isinstance(url, str):
-            self._url = to_unicode(url, self.encoding)
+            self._url = str(url, self.encoding)
         else:
             super(TextResponse, self)._set_url(url)
 
@@ -47,8 +47,10 @@ class TextResponse(Response):
         self._body = b''  # used by encoding detection
         if isinstance(body, str):
             if self._encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                                type(self).__name__)
+                raise TypeError(
+                    'Cannot convert the body from string to bytes - %s has no '
+                    'encoding' % type(self).__name__
+                )
             self._body = body.encode(self._encoding)
         else:
             super(TextResponse, self)._set_body(body)
@@ -101,11 +103,11 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _headers_encoding(self):
         content_type = self.headers.get(b'Content-Type', b'')
-        return http_content_type_encoding(to_unicode(content_type))
+        return http_content_type_encoding(str(content_type))
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
-            content_type = to_unicode(self.headers.get(b'Content-Type', b''))
+            content_type = str(self.headers.get(b'Content-Type', b''))
             benc, ubody = html_to_unicode(content_type, self.body,
                                           auto_detect_fun=self._auto_detect_fun,
                                           default_encoding=self._DEFAULT_ENCODING)

@@ -82,6 +82,7 @@ def unique(list_, key=lambda x: x):
     return result
 
 
+@deprecated('str')
 def to_unicode(text, encoding=None, errors='strict'):
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
@@ -95,6 +96,7 @@ def to_unicode(text, encoding=None, errors='strict'):
     return text.decode(encoding, errors)
 
 
+@deprecated('bytes')
 def to_bytes(text, encoding=None, errors='strict'):
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
@@ -108,10 +110,10 @@ def to_bytes(text, encoding=None, errors='strict'):
     return text.encode(encoding, errors)
 
 
-@deprecated('to_unicode')
+@deprecated('str')
 def to_native_str(text, encoding=None, errors='strict'):
     """ Return str representation of ``text``. """
-    return to_unicode(text, encoding, errors)
+    return str(text, encoding, errors)
 
 
 def re_rsearch(pattern, text, chunk_size=1024):
@@ -161,7 +163,7 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS = {bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 

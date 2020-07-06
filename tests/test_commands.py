@@ -16,7 +16,6 @@ from twisted.trial import unittest
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import Settings
-from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
 
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
@@ -77,7 +76,7 @@ class ProjectTest(unittest.TestCase):
         finally:
             timer.cancel()
 
-        return p, to_unicode(stdout), to_unicode(stderr)
+        return p, str(stdout), str(stderr)
 
 
 class StartprojectTest(ProjectTest):

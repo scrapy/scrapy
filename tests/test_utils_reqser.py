@@ -22,7 +22,7 @@ class RequestSerializationTest(unittest.TestCase):
             method="POST",
             body=b"some body",
             headers={'content-encoding': 'text/html; charset=latin-1'},
-            cookies={'currency': u'руб'},
+            cookies={'currency': 'руб'},
             encoding='latin-1',
             priority=20,
             meta={'a': 'b'},

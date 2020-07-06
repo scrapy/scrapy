@@ -13,7 +13,7 @@ from textwrap import dedent
 from w3lib.html import replace_entities
 
 from scrapy.utils.datatypes import LocalWeakReferencedCache
-from scrapy.utils.python import flatten, to_unicode
+from scrapy.utils.python import flatten
 from scrapy.item import _BaseItem
 
 
@@ -80,7 +80,7 @@ def walk_modules(path):
 
 
 def extract_regex(regex, text, encoding='utf-8'):
-    """Extract a list of unicode strings from the given text/encoding using the following policies:
+    """Extract a list of strings from the given text/encoding using the following policies:
 
     * if the regex contains a named group called "extract" that will be returned
     * if the regex contains multiple numbered groups, all those will be returned (flattened)
@@ -99,7 +99,7 @@ def extract_regex(regex, text, encoding='utf-8'):
     if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
+        return [replace_entities(str(s, encoding), keep=['lt', 'amp'])
                 for s in strings]
 
 

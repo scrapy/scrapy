@@ -14,7 +14,7 @@ from itemadapter import is_item, ItemAdapter
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import _BaseItem
-from scrapy.utils.python import is_listlike, to_bytes, to_unicode
+from scrapy.utils.python import is_listlike
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
@@ -95,7 +95,7 @@ class JsonLinesItemExporter(BaseItemExporter):
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict) + '\n'
-        self.file.write(to_bytes(data, self.encoding))
+        self.file.write(bytes(data, self.encoding))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -132,7 +132,7 @@ class JsonItemExporter(BaseItemExporter):
             self._beautify_newline()
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict)
-        self.file.write(to_bytes(data, self.encoding))
+        self.file.write(bytes(data, self.encoding))
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -236,7 +236,7 @@ class CsvItemExporter(BaseItemExporter):
     def _build_row(self, values):
         for s in values:
             try:
-                yield to_unicode(s, self.encoding)
+                yield str(s, self.encoding)
             except TypeError:
                 yield s
 
@@ -290,7 +290,7 @@ class PprintItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(to_bytes(pprint.pformat(itemdict) + '\n'))
+        self.file.write(bytes(pprint.pformat(itemdict) + '\n'))
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -324,14 +324,14 @@ class PythonItemExporter(BaseItemExporter):
             return dict(self._serialize_item(value))
         elif is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        encode_func = to_bytes if self.binary else to_unicode
+        encode_func = bytes if self.binary else str
         if isinstance(value, (str, bytes)):
             return encode_func(value, encoding=self.encoding)
         return value
 
     def _serialize_item(self, item):
         for key, value in ItemAdapter(item).items():
-            key = to_bytes(key) if self.binary else key
+            key = bytes(key) if self.binary else key
             yield key, self._serialize_value(value)
 
     def export_item(self, item):

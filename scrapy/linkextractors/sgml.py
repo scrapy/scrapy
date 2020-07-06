@@ -11,7 +11,7 @@ from w3lib.html import strip_html5_whitespace
 from scrapy.link import Link
 from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
-from scrapy.utils.python import unique as unique_list, to_unicode
+from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -55,7 +55,7 @@ class BaseSgmlLinkExtractor(SGMLParser):
             except ValueError:
                 continue
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = to_unicode(link.text, response_encoding, errors='replace').strip()
+            link.text = str(link.text, response_encoding, errors='replace').strip()
             ret.append(link)
 
         return ret
@@ -139,7 +139,7 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
         base_url = None
         if self.restrict_xpaths:
             base_url = get_base_url(response)
-            body = u''.join(f
+            body = ''.join(f
                             for x in self.restrict_xpaths
                             for f in response.xpath(x).getall()
                             ).encode(response.encoding, errors='xmlcharrefreplace')

@@ -28,7 +28,6 @@ from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (BlockingFeedStorage, FileFeedStorage, FTPFeedStorage,
                                           IFeedStorage, S3FeedStorage, StdoutFeedStorage)
 from scrapy.settings import Settings
-from scrapy.utils.python import to_unicode
 from scrapy.utils.test import assert_aws_environ, get_crawler, get_s3_content_and_delete
 
 from tests.mockserver import MockServer
@@ -523,7 +522,7 @@ class FeedExportTest(unittest.TestCase):
         })
         data = yield self.exported_data(items, settings)
 
-        reader = csv.DictReader(to_unicode(data['csv']).splitlines())
+        reader = csv.DictReader(str(data['csv']).splitlines())
         got_rows = list(reader)
         if ordered:
             self.assertEqual(reader.fieldnames, header)
@@ -541,7 +540,7 @@ class FeedExportTest(unittest.TestCase):
             },
         })
         data = yield self.exported_data(items, settings)
-        parsed = [json.loads(to_unicode(line)) for line in data['jl'].splitlines()]
+        parsed = [json.loads(str(line)) for line in data['jl'].splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         self.assertEqual(rows, parsed)
 
@@ -575,7 +574,7 @@ class FeedExportTest(unittest.TestCase):
         xml_rows = [{e.tag: e.text for e in it} for it in root.findall('item')]
         self.assertEqual(rows, xml_rows)
         # JSON
-        json_rows = json.loads(to_unicode(data['json']))
+        json_rows = json.loads(str(data['json']))
         self.assertEqual(rows, json_rows)
 
     def _load_until_eof(self, data, load_func):
@@ -782,7 +781,7 @@ class FeedExportTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_export_encoding(self):
-        items = [dict({'foo': u'Test\xd6'})]
+        items = [dict({'foo': 'Test\xd6'})]
 
         formats = {
             'json': '[{"foo": "Test\\u00d6"}]'.encode('utf-8'),
@@ -827,7 +826,7 @@ class FeedExportTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
-        items = [dict({'foo': u'FOO', 'bar': u'BAR'})]
+        items = [dict({'foo': 'FOO', 'bar': 'BAR'})]
 
         formats = {
             'json': '[\n{"bar": "BAR"}\n]'.encode('utf-8'),

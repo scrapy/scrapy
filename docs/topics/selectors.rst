@@ -64,7 +64,8 @@ more shortcuts: ``response.xpath()`` and ``response.css()``:
 
 Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
-markup as an unicode string (in ``text`` argument).
+markup as a string (in ``text`` argument).
+
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
 it is more convenient to use ``response.css()`` and ``response.xpath()``
@@ -383,7 +384,7 @@ Using selectors with regular expressions
 
 :class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
-``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
+``.css()`` methods, ``.re()`` returns a list of strings. So you
 can't construct nested ``.re()`` calls.
 
 Here's an example used to extract image names from the :ref:`HTML code
@@ -734,7 +735,7 @@ The ``test()`` function, for example, can prove quite useful when XPath's
 Example selecting links in list item with a "class" attribute ending with a digit:
 
 >>> from scrapy import Selector
->>> doc = u"""
+>>> doc = """
 ... <div>
 ...     <ul>
 ...         <li class="item-0"><a href="link1.html">first item</a></li>
@@ -765,7 +766,7 @@ extracting text elements for example.
 Example extracting microdata (sample content taken from https://schema.org/Product)
 with groups of itemscopes and corresponding itemprops::
 
-    >>> doc = u"""
+    >>> doc = """
     ... <div itemscope itemtype="http://schema.org/Product">
     ...   <span itemprop="name">Kenmore White 17" Microwave</span>
     ...   <img src="kenmore-microwave-17in.jpg" alt='Kenmore 17" Microwave' />
@@ -989,7 +990,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel.xpath("//h1")
 
 2. Extract the text of all ``<h1>`` elements from an HTML response body,
-   returning a list of unicode strings::
+   returning a list of strings::
 
       sel.xpath("//h1").getall()         # this includes the h1 tag
       sel.xpath("//h1/text()").getall()  # this excludes the h1 tag

@@ -28,7 +28,6 @@ from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
-from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 
@@ -536,7 +535,7 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        media_guid = hashlib.sha1(bytes(request.url)).hexdigest()
         media_ext = os.path.splitext(request.url)[1]
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise

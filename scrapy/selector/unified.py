@@ -4,7 +4,6 @@ XPath selectors based on lxml
 
 from parsel import Selector as _ParselSelector
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.python import to_bytes
 from scrapy.http import HtmlResponse, XmlResponse
 
 
@@ -20,7 +19,7 @@ def _st(response, st):
 def _response_from_text(text, st):
     rt = XmlResponse if st == 'xml' else HtmlResponse
     return rt(url='about:blank', encoding='utf-8',
-              body=to_bytes(text, 'utf-8'))
+              body=bytes(text, 'utf-8'))
 
 
 class SelectorList(_ParselSelector.selectorlist_cls, object_ref):
@@ -39,7 +38,7 @@ class Selector(_ParselSelector, object_ref):
     :class:`~scrapy.http.XmlResponse` object that will be used for selecting
     and extracting data.
 
-    ``text`` is a unicode string or utf-8 encoded text for cases when a
+    ``text`` is a string or utf-8 encoded text for cases when a
     ``response`` isn't available. Using ``text`` and ``response`` together is
     undefined behavior.
 

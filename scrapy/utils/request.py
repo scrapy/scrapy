@@ -11,7 +11,6 @@ from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes, to_unicode
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
@@ -50,13 +49,13 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
 
     """
     if include_headers:
-        include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
+        include_headers = tuple(bytes(h.lower()) for h in sorted(include_headers))
     cache = _fingerprint_cache.setdefault(request, {})
     cache_key = (include_headers, keep_fragments)
     if cache_key not in cache:
         fp = hashlib.sha1()
-        fp.update(to_bytes(request.method))
-        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
+        fp.update(bytes(request.method))
+        fp.update(bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
         fp.update(request.body or b'')
         if include_headers:
             for hdr in include_headers:
@@ -83,8 +82,8 @@ def request_httprepr(request):
     """
     parsed = urlparse_cached(request)
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
-    s += b"Host: " + to_bytes(parsed.hostname or b'') + b"\r\n"
+    s = bytes(request.method) + b" " + bytes(path) + b" HTTP/1.1\r\n"
+    s += b"Host: " + bytes(parsed.hostname or b'') + b"\r\n"
     if request.headers:
         s += request.headers.to_string() + b"\r\n"
     s += b"\r\n"
@@ -97,4 +96,4 @@ def referer_str(request):
     referrer = request.headers.get('Referer')
     if referrer is None:
         return referrer
-    return to_unicode(referrer, errors='replace')
+    return str(referrer, errors='replace')

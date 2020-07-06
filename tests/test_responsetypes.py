@@ -23,11 +23,11 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             (b'attachment; filename="data.xml"', XmlResponse),
             (b'attachment; filename=data.xml', XmlResponse),
-            (u'attachment;filename=data£.tar.gz'.encode('utf-8'), Response),
-            (u'attachment;filename=dataµ.tar.gz'.encode('latin-1'), Response),
-            (u'attachment;filename=data高.doc'.encode('gbk'), Response),
-            (u'attachment;filename=دورهdata.html'.encode('cp720'), HtmlResponse),
-            (u'attachment;filename=日本語版Wikipedia.xml'.encode('iso2022_jp'), XmlResponse),
+            ('attachment;filename=data£.tar.gz'.encode('utf-8'), Response),
+            ('attachment;filename=dataµ.tar.gz'.encode('latin-1'), Response),
+            ('attachment;filename=data高.doc'.encode('gbk'), Response),
+            ('attachment;filename=دورهdata.html'.encode('cp720'), HtmlResponse),
+            ('attachment;filename=日本語版Wikipedia.xml'.encode('iso2022_jp'), XmlResponse),
 
         ]
         for source, cls in mappings:

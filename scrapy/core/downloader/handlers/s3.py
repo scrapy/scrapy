@@ -93,7 +93,7 @@ class S3DownloadHandler:
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
                 url='%s://s3.amazonaws.com/%s%s' % (scheme, bucket, path),
-                headers=request.headers.to_unicode_dict(),
+                headers=request.headers.to_str_dict(),
                 data=request.body)
             self._signer.add_auth(awsrequest)
             request = request.replace(

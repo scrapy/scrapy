@@ -3,7 +3,6 @@ import unittest
 from urllib.parse import urlparse
 
 from scrapy.http import Response, TextResponse, HtmlResponse
-from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (response_httprepr, open_in_browser,
                                    get_meta_refresh, get_base_url, response_status_message)
 
@@ -34,7 +33,7 @@ class ResponseUtilsTest(unittest.TestCase):
                 path = burl.replace('file://', '')
             with open(path, "rb") as f:
                 bbody = f.read()
-            self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
+            self.assertIn(b'<base href="' + bytes(url) + b'">', bbody)
             return True
         response = HtmlResponse(url, body=body)
         assert open_in_browser(response, _openfunc=browser_open), \

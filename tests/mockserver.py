@@ -17,7 +17,6 @@ from twisted.web.static import File
 from twisted.web.test.test_webclient import PayloadResource
 from twisted.web.util import redirectTo
 
-from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
 from scrapy.utils.test import get_testenv
 
@@ -68,11 +67,11 @@ class Follow(LeafResource):
         s = """<html> <head></head> <body>"""
         args = request.args.copy()
         for nl in nlist:
-            args[b"n"] = [to_bytes(str(nl))]
+            args[b"n"] = [bytes(str(nl))]
             argstr = urlencode(args, doseq=True)
             s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
         s += """</body>"""
-        request.write(to_bytes(s))
+        request.write(bytes(s))
         request.finish()
 
 
@@ -88,7 +87,7 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request, n):
-        request.write(to_bytes("Response delayed for %0.3f seconds\n" % n))
+        request.write(bytes("Response delayed for %0.3f seconds\n" % n))
         request.finish()
 
 
@@ -121,11 +120,11 @@ class Echo(LeafResource):
     def render_GET(self, request):
         output = {
             'headers': dict(
-                (to_unicode(k), [to_unicode(v) for v in vs])
+                (str(k), [str(v) for v in vs])
                 for k, vs in request.requestHeaders.getAllRawHeaders()),
-            'body': to_unicode(request.content.read()),
+            'body': str(request.content.read()),
         }
-        return to_bytes(json.dumps(output))
+        return bytes(json.dumps(output))
     render_POST = render_GET
 
 
@@ -267,7 +266,7 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
         ctx = factory.getContext()
         # disabling TLS1.2+ because it unconditionally enables some strong ciphers
         ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
-        ctx.set_cipher_list(to_bytes(cipher_string))
+        ctx.set_cipher_list(bytes(cipher_string))
     return factory
 
 

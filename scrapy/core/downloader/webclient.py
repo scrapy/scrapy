@@ -7,7 +7,6 @@ from twisted.internet import defer
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
 from scrapy.responsetypes import responsetypes
 
 
@@ -15,11 +14,11 @@ def _parsed_url_args(parsed):
     # Assume parsed is urlparse-d from Request.url,
     # which was passed via safe_url_string and is ascii-only.
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    path = to_bytes(path, encoding="ascii")
-    host = to_bytes(parsed.hostname, encoding="ascii")
+    path = bytes(path, encoding="ascii")
+    host = bytes(parsed.hostname, encoding="ascii")
     port = parsed.port
-    scheme = to_bytes(parsed.scheme, encoding="ascii")
-    netloc = to_bytes(parsed.netloc, encoding="ascii")
+    scheme = bytes(parsed.scheme, encoding="ascii")
+    netloc = bytes(parsed.netloc, encoding="ascii")
     if port is None:
         port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
@@ -107,8 +106,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def __init__(self, request, timeout=180):
         self._url = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
-        self.url = to_bytes(self._url, encoding='ascii')
-        self.method = to_bytes(request.method, encoding='ascii')
+        self.url = bytes(self._url, encoding='ascii')
+        self.method = bytes(request.method, encoding='ascii')
         self.body = request.body or None
         self.headers = Headers(request.headers)
         self.response_headers = None

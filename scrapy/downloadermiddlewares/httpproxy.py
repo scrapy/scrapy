@@ -4,7 +4,6 @@ from urllib.request import getproxies, proxy_bypass, _parse_proxy
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
 
 
 class HttpProxyMiddleware:
@@ -23,7 +22,7 @@ class HttpProxyMiddleware:
         return cls(auth_encoding)
 
     def _basic_auth_header(self, username, password):
-        user_pass = to_bytes(
+        user_pass = bytes(
             '%s:%s' % (unquote(username), unquote(password)),
             encoding=self.auth_encoding)
         return base64.b64encode(user_pass)

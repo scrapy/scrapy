@@ -13,7 +13,6 @@ from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 # move doesn't break old code
 from w3lib.url import *
 from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
-from scrapy.utils.python import to_unicode
 
 
 def url_is_from_any_domain(url, domains):
@@ -40,7 +39,7 @@ def parse_url(url, encoding=None):
     """
     if isinstance(url, ParseResult):
         return url
-    return urlparse(to_unicode(url, encoding))
+    return urlparse(str(url, encoding))
 
 
 def escape_ajax(url):

@@ -189,10 +189,10 @@ Item Loaders are declared using a class definition syntax. Here is an example::
 
         default_output_processor = TakeFirst()
 
-        name_in = MapCompose(unicode.title)
+        name_in = MapCompose(str.title)
         name_out = Join()
 
-        price_in = MapCompose(unicode.strip)
+        price_in = MapCompose(str.strip)
 
         # ...
 
@@ -233,10 +233,10 @@ metadata. Here is an example::
 
 >>> from scrapy.loader import ItemLoader
 >>> il = ItemLoader(item=Product())
->>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
->>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
+>>> il.add_value('name', ['Welcome to my', '<strong>website</strong>'])
+>>> il.add_value('price', ['&euro;', '<span>1000</span>'])
 >>> il.load_item()
-{'name': u'Welcome to my website', 'price': u'1000'}
+{'name': 'Welcome to my website', 'price': '1000'}
 
 The precedence order, for both input and output processors, is as follows:
 
@@ -340,7 +340,7 @@ ItemLoader objects
         Examples:
 
         >>> from scrapy.loader.processors import TakeFirst
-        >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
+        >>> loader.get_value('name: foo', TakeFirst(), str.upper, re='name: (.+)')
         'FOO`
 
     .. method:: add_value(field_name, value, *processors, **kwargs)
@@ -359,11 +359,11 @@ ItemLoader objects
 
         Examples::
 
-            loader.add_value('name', u'Color TV')
-            loader.add_value('colours', [u'white', u'blue'])
-            loader.add_value('length', u'100')
-            loader.add_value('name', u'name: foo', TakeFirst(), re='name: (.+)')
-            loader.add_value(None, {'name': u'foo', 'sex': u'male'})
+            loader.add_value('name', 'Color TV')
+            loader.add_value('colours', ['white', 'blue'])
+            loader.add_value('length', '100')
+            loader.add_value('name', 'name: foo', TakeFirst(), re='name: (.+)')
+            loader.add_value(None, {'name': 'foo', 'sex': 'male'})
 
     .. method:: replace_value(field_name, value, *processors, **kwargs)
 
@@ -372,7 +372,7 @@ ItemLoader objects
     .. method:: get_xpath(xpath, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
-        value, which is used to extract a list of unicode strings from the
+        value, which is used to extract a list of strings from the
         selector associated with this :class:`ItemLoader`.
 
         :param xpath: the XPath to extract data from
@@ -392,7 +392,7 @@ ItemLoader objects
     .. method:: add_xpath(field_name, xpath, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
-        value, which is used to extract a list of unicode strings from the
+        value, which is used to extract a list of strings from the
         selector associated with this :class:`ItemLoader`.
 
         See :meth:`get_xpath` for ``kwargs``.
@@ -415,7 +415,7 @@ ItemLoader objects
     .. method:: get_css(css, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.get_value` but receives a CSS selector
-        instead of a value, which is used to extract a list of unicode strings
+        instead of a value, which is used to extract a list of strings
         from the selector associated with this :class:`ItemLoader`.
 
         :param css: the CSS selector to extract data from
@@ -435,7 +435,7 @@ ItemLoader objects
     .. method:: add_css(field_name, css, *processors, **kwargs)
 
         Similar to :meth:`ItemLoader.add_value` but receives a CSS selector
-        instead of a value, which is used to extract a list of unicode strings
+        instead of a value, which is used to extract a list of strings
         from the selector associated with this :class:`ItemLoader`.
 
         See :meth:`get_css` for ``kwargs``.
@@ -684,13 +684,13 @@ Here is a list of all built-in processors:
     >>> proc(['', 'one', 'two', 'three'])
     'one'
 
-.. class:: Join(separator=u' ')
+.. class:: Join(separator=' ')
 
     Returns the values joined with the separator given in the ``__init__`` method, which
-    defaults to ``u' '``. It doesn't accept Loader contexts.
+    defaults to ``' '``. It doesn't accept Loader contexts.
 
     When using the default separator, this processor is equivalent to the
-    function: ``u' '.join``
+    function: ``' '.join``
 
     Examples:
 
@@ -755,7 +755,7 @@ Here is a list of all built-in processors:
     :class:`MapCompose` processor is typically used as input processor, since
     data is often extracted using the
     :meth:`~scrapy.selector.Selector.extract` method of :ref:`selectors
-    <topics-selectors>`, which returns a list of unicode strings.
+    <topics-selectors>`, which returns a list of strings.
 
     The example below should clarify how it works:
 

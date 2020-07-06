@@ -15,7 +15,6 @@ from io import BytesIO
 from twisted.internet import defer, ssl
 
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import to_bytes
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 def _to_bytes_or_none(text):
     if text is None:
         return None
-    return to_bytes(text)
+    return bytes(text)
 
 
 class MailSender:

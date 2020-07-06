@@ -13,7 +13,6 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes
 
 
 try:
@@ -127,11 +126,11 @@ class DeprecatedImagesPipeline(ImagesPipeline):
         return self.image_key(url)
 
     def image_key(self, url):
-        image_guid = hashlib.sha1(to_bytes(url)).hexdigest()
+        image_guid = hashlib.sha1(bytes(url)).hexdigest()
         return 'empty/%s.jpg' % (image_guid)
 
     def thumb_key(self, url, thumb_id):
-        thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
+        thumb_guid = hashlib.sha1(bytes(url)).hexdigest()
         return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
 
 
