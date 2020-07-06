@@ -42,8 +42,8 @@ def make_html_body(val):
 
 
 class Data:
-    SMALL_SIZE = 1024 * 10  # 10 KB
-    LARGE_SIZE = (1024 ** 2) * 10  # 10 MB
+    SMALL_SIZE = 1024  # 1 KB
+    LARGE_SIZE = 1024 ** 2  # 1 MB
 
     STR_SMALL = generate_random_string(SMALL_SIZE)
     STR_LARGE = generate_random_string(LARGE_SIZE)

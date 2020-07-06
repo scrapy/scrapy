@@ -243,7 +243,6 @@ class Stream:
         bytes_to_send_size = min(window_size, self.remaining_content_length)
 
         # We now need to send a number of data frames.
-        data_frames_sent = 0
         while bytes_to_send_size > 0:
             chunk_size = min(bytes_to_send_size, max_frame_size)
 
@@ -252,7 +251,6 @@ class Stream:
 
             self._conn.send_data(self.stream_id, data_chunk, end_stream=False)
 
-            data_frames_sent += 1
             bytes_to_send_size = bytes_to_send_size - chunk_size
             self.remaining_content_length = self.remaining_content_length - chunk_size
 
