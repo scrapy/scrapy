@@ -1,0 +1,16 @@
+from scrapy.spiders import XMLFeedSpider
+
+
+class $classname(XMLFeedSpider):
+    name = '$name'
+    allowed_domains = ['$domain']
+    start_urls = ['http://$domain/feed.xml']
+    iterator = 'iternodes' # you can change this; see the docs
+    itertag = 'item' # change it accordingly
+
+    def parse_node(self, response, selector):
+        item = {}
+        #item['url'] = selector.select('url').get()
+        #item['name'] = selector.select('name').get()
+        #item['description'] = selector.select('description').get()
+        return item

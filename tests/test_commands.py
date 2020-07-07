@@ -6,7 +6,9 @@ import subprocess
 import sys
 import tempfile
 from contextlib import contextmanager
+from itertools import chain
 from os.path import exists, join, abspath
+from pathlib import Path
 from shutil import rmtree, copytree
 from tempfile import mkdtemp
 from threading import Timer
@@ -15,6 +17,7 @@ from twisted.trial import unittest
 
 import scrapy
 from scrapy.commands import ScrapyCommand
+from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
@@ -119,7 +122,33 @@ class StartprojectTest(ProjectTest):
         self.assertEqual(2, self.call('startproject', self.project_name, project_dir, 'another_params'))
 
 
+def get_permissions_dict(path, renamings=None, ignore=None):
+    renamings = renamings or tuple()
+    permissions_dict = {
+        '.': os.stat(path).st_mode,
+    }
+    for root, dirs, files in os.walk(path):
+        nodes = list(chain(dirs, files))
+        if ignore:
+            ignored_names = ignore(root, nodes)
+            nodes = [node for node in nodes
+                        if node not in ignored_names]
+        for node in nodes:
+            absolute_path = os.path.join(root, node)
+            relative_path = os.path.relpath(absolute_path, path)
+            for search_string, replacement in renamings:
+                relative_path = relative_path.replace(
+                    search_string,
+                    replacement
+                )
+            permissions = os.stat(absolute_path).st_mode
+            permissions_dict[relative_path] = permissions
+    return permissions_dict
+
+
 class StartprojectTemplatesTest(ProjectTest):
+
+    maxDiff = None
 
     def setUp(self):
         super(StartprojectTemplatesTest, self).setUp()
@@ -138,6 +167,141 @@ class StartprojectTemplatesTest(ProjectTest):
                       % self.project_name, out)
         self.assertIn(self.tmpl_proj, out)
         assert exists(join(self.proj_path, 'root_template'))
+
+    def test_startproject_permissions_from_writable(self):
+        """Check that generated files have the right permissions when the
+        template folder has the same permissions as in the project, i.e.
+        everything is writable."""
+        scrapy_path = scrapy.__path__[0]
+        templates_dir = os.path.join(scrapy_path, 'templates', 'project')
+        project_name = 'startproject1'
+        renamings = (
+            ('module', project_name),
+            ('.tmpl', ''),
+        )
+        expected_permissions = get_permissions_dict(
+            templates_dir,
+            renamings,
+            IGNORE,
+        )
+
+        destination = mkdtemp()
+        process = subprocess.Popen(
+            (
+                sys.executable,
+                '-m',
+                'scrapy.cmdline',
+                'startproject',
+                project_name,
+            ),
+            cwd=destination,
+            env=self.env,
+        )
+        process.wait()
+
+        project_dir = os.path.join(destination, project_name)
+        actual_permissions = get_permissions_dict(project_dir)
+
+        self.assertEqual(actual_permissions, expected_permissions)
+
+    def test_startproject_permissions_from_read_only(self):
+        """Check that generated files have the right permissions when the
+        template folder has been made read-only, which is something that some
+        systems do.
+
+        See https://github.com/scrapy/scrapy/pull/4604
+        """
+        scrapy_path = scrapy.__path__[0]
+        templates_dir = os.path.join(scrapy_path, 'templates', 'project')
+        project_name = 'startproject2'
+        renamings = (
+            ('module', project_name),
+            ('.tmpl', ''),
+        )
+        expected_permissions = get_permissions_dict(
+            templates_dir,
+            renamings,
+            IGNORE,
+        )
+
+        tests_path = os.path.dirname(__file__)
+        read_only_templates_dir = os.path.join(
+            tests_path, 'sample_data', 'read_only_templates'
+        )
+        destination = mkdtemp()
+        process = subprocess.Popen(
+            (
+                sys.executable,
+                '-m',
+                'scrapy.cmdline',
+                'startproject',
+                project_name,
+                '--set',
+                'TEMPLATES_DIR={}'.format(read_only_templates_dir),
+            ),
+            cwd=destination,
+            env=self.env,
+        )
+        process.wait()
+
+        project_dir = os.path.join(destination, project_name)
+        actual_permissions = get_permissions_dict(project_dir)
+
+        self.assertEqual(actual_permissions, expected_permissions)
+
+    def test_startproject_permissions_unchanged_in_destination(self):
+        """Check that pre-existing folders and files in the destination folder
+        do not see their permissions modified."""
+        scrapy_path = scrapy.__path__[0]
+        templates_dir = os.path.join(scrapy_path, 'templates', 'project')
+        project_name = 'startproject3'
+        renamings = (
+            ('module', project_name),
+            ('.tmpl', ''),
+        )
+        expected_permissions = get_permissions_dict(
+            templates_dir,
+            renamings,
+            IGNORE,
+        )
+
+        destination = mkdtemp()
+        project_dir = os.path.join(destination, project_name)
+
+        existing_nodes = {
+            oct(permissions)[2:] + extension: permissions
+            for extension in ('', '.d')
+            for permissions in (
+                0o444, 0o555, 0o644, 0o666, 0o755, 0o777,
+            )
+        }
+        os.mkdir(project_dir)
+        project_dir_path = Path(project_dir)
+        for node, permissions in existing_nodes.items():
+            path = project_dir_path / node
+            if node.endswith('.d'):
+                path.mkdir(mode=permissions)
+            else:
+                path.touch(mode=permissions)
+            expected_permissions[node] = path.stat().st_mode
+
+        process = subprocess.Popen(
+            (
+                sys.executable,
+                '-m',
+                'scrapy.cmdline',
+                'startproject',
+                project_name,
+                '.',
+            ),
+            cwd=project_dir,
+            env=self.env,
+        )
+        process.wait()
+
+        actual_permissions = get_permissions_dict(project_dir)
+
+        self.assertEqual(actual_permissions, expected_permissions)
 
 
 class CommandTest(ProjectTest):
