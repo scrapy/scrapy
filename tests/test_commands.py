@@ -147,8 +147,6 @@ def get_permissions_dict(path, renamings=None, ignore=None):
 
 class StartprojectTemplatesTest(ProjectTest):
 
-    maxDiff = None
-
     def setUp(self):
         super(StartprojectTemplatesTest, self).setUp()
         self.tmpl = join(self.temp_path, 'templates')
