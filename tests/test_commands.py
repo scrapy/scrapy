@@ -18,7 +18,7 @@ from twisted.trial import unittest
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.commands.startproject import IGNORE, _make_writable
+from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
