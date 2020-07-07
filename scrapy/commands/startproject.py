@@ -20,7 +20,12 @@ TEMPLATES_TO_RENDER = (
     ('${project_name}', 'middlewares.py.tmpl'),
 )
 
-IGNORE = ignore_patterns('*.pyc', '.svn')
+IGNORE = ignore_patterns('*.pyc', '__pycache__', '.svn')
+
+
+def _make_writable(path):
+    current_permissions = os.stat(path).st_mode
+    os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
 
 
 class Command(ScrapyCommand):
@@ -78,12 +83,10 @@ class Command(ScrapyCommand):
                 self._copytree(srcname, dstname)
             else:
                 copy2(srcname, dstname)
-                current_permissions = os.stat(dstname).st_mode
-                os.chmod(dstname, current_permissions | OWNER_WRITE_PERMISSION)
+                _make_writable(dstname)
 
         copystat(src, dst)
-        current_permissions = os.stat(dst).st_mode
-        os.chmod(dst, current_permissions | OWNER_WRITE_PERMISSION)
+        _make_writable(dst)
 
     def run(self, args, opts):
         if len(args) not in (1, 2):

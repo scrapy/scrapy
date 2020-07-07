@@ -2,6 +2,7 @@ import inspect
 import json
 import optparse
 import os
+from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 import subprocess
 import sys
 import tempfile
@@ -17,7 +18,7 @@ from twisted.trial import unittest
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.commands.startproject import IGNORE
+from scrapy.commands.startproject import IGNORE, _make_writable
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
@@ -170,14 +171,14 @@ class StartprojectTemplatesTest(ProjectTest):
         template folder has the same permissions as in the project, i.e.
         everything is writable."""
         scrapy_path = scrapy.__path__[0]
-        templates_dir = os.path.join(scrapy_path, 'templates', 'project')
+        project_template = os.path.join(scrapy_path, 'templates', 'project')
         project_name = 'startproject1'
         renamings = (
             ('module', project_name),
             ('.tmpl', ''),
         )
         expected_permissions = get_permissions_dict(
-            templates_dir,
+            project_template,
             renamings,
             IGNORE,
         )
@@ -209,22 +210,30 @@ class StartprojectTemplatesTest(ProjectTest):
         See https://github.com/scrapy/scrapy/pull/4604
         """
         scrapy_path = scrapy.__path__[0]
-        templates_dir = os.path.join(scrapy_path, 'templates', 'project')
+        templates_dir = os.path.join(scrapy_path, 'templates')
+        project_template = os.path.join(templates_dir, 'project')
         project_name = 'startproject2'
         renamings = (
             ('module', project_name),
             ('.tmpl', ''),
         )
         expected_permissions = get_permissions_dict(
-            templates_dir,
+            project_template,
             renamings,
             IGNORE,
         )
 
-        tests_path = os.path.dirname(__file__)
-        read_only_templates_dir = os.path.join(
-            tests_path, 'sample_data', 'read_only_templates'
-        )
+        def _make_read_only(path):
+            current_permissions = os.stat(path).st_mode
+            os.chmod(path, current_permissions & ~ANYONE_WRITE_PERMISSION)
+
+        read_only_templates_dir = str(Path(mkdtemp()) / 'templates')
+        copytree(templates_dir, read_only_templates_dir)
+
+        for root, dirs, files in os.walk(read_only_templates_dir):
+            for node in chain(dirs, files):
+                _make_read_only(os.path.join(root, node))
+
         destination = mkdtemp()
         process = subprocess.Popen(
             (
@@ -250,14 +259,14 @@ class StartprojectTemplatesTest(ProjectTest):
         """Check that pre-existing folders and files in the destination folder
         do not see their permissions modified."""
         scrapy_path = scrapy.__path__[0]
-        templates_dir = os.path.join(scrapy_path, 'templates', 'project')
+        project_template = os.path.join(scrapy_path, 'templates', 'project')
         project_name = 'startproject3'
         renamings = (
             ('module', project_name),
             ('.tmpl', ''),
         )
         expected_permissions = get_permissions_dict(
-            templates_dir,
+            project_template,
             renamings,
             IGNORE,
         )
