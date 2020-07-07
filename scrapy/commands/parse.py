@@ -4,17 +4,16 @@ import logging
 from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
 
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import BaseRunSpiderCommand
 from scrapy.http import Request
 from scrapy.utils import display
-from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
 logger = logging.getLogger(__name__)
 
 
-class Command(ScrapyCommand):
+class Command(BaseRunSpiderCommand):
     requires_project = True
 
     spider = None
@@ -30,11 +29,9 @@ class Command(ScrapyCommand):
         return "Parse URL (using its spider) and print the results"
 
     def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+        BaseRunSpiderCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None,
                           help="use this spider without looking for one")
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
-                          help="set spider argument (may be repeated)")
         parser.add_option("--pipelines", action="store_true",
                           help="process items through pipelines")
         parser.add_option("--nolinks", dest="nolinks", action="store_true",
@@ -55,10 +52,6 @@ class Command(ScrapyCommand):
                           help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                           help="print each depth level one by one")
-        parser.add_option("-o", "--output", metavar="FILE", action="append",
-                          help="dump scraped items into FILE (use - for stdout)")
-        parser.add_option("-t", "--output-format", metavar="FORMAT",
-                          help="format to use for dumping items with -o")
 
     @property
     def max_level(self):
@@ -227,20 +220,10 @@ class Command(ScrapyCommand):
         return request
 
     def process_options(self, args, opts):
-        ScrapyCommand.process_options(self, args, opts)
+        BaseRunSpiderCommand.process_options(self, args, opts)
 
-        self.process_spider_arguments(opts)
         self.process_request_meta(opts)
         self.process_request_cb_kwargs(opts)
-
-    def process_spider_arguments(self, opts):
-        try:
-            opts.spargs = arglist_to_dict(opts.spargs)
-        except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
-        if opts.output:
-            feeds = feed_process_params_from_cli(self.settings, opts.output, opts.output_format)
-            self.settings.set('FEEDS', feeds, priority='cmdline')
 
     def process_request_meta(self, opts):
         if opts.meta:
