@@ -17,8 +17,8 @@ class CurlParser(argparse.ArgumentParser):
 curl_parser = CurlParser()
 curl_parser.add_argument('url')
 curl_parser.add_argument('-H', '--header', dest='headers', action='append')
-curl_parser.add_argument('-X', '--request', dest='method', default='get')
-curl_parser.add_argument('-d', '--data', dest='data')
+curl_parser.add_argument('-X', '--request', dest='method')
+curl_parser.add_argument('-d', '--data', '--data-raw', dest='data')
 curl_parser.add_argument('-u', '--user', dest='auth')
 
 
@@ -66,7 +66,9 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
     if not parsed_url.scheme:
         url = 'http://' + url
 
-    result = {'method': parsed_args.method.upper(), 'url': url}
+    method = parsed_args.method or 'GET'
+
+    result = {'method': method.upper(), 'url': url}
 
     headers = []
     cookies = {}
@@ -90,5 +92,9 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
         result['cookies'] = cookies
     if parsed_args.data:
         result['body'] = parsed_args.data
+        if not parsed_args.method:
+            # if the "data" is specified but the "method" is not specified,
+            # the default method is 'POST'
+            result['method'] = 'POST'
 
     return result

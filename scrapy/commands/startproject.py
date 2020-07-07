@@ -1,5 +1,6 @@
 import re
 import os
+import stat
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
@@ -78,6 +79,29 @@ class Command(ScrapyCommand):
             else:
                 copy2(srcname, dstname)
         copystat(src, dst)
+        self._set_rw_permissions(dst)
+
+    def _set_rw_permissions(self, path):
+        """
+        Sets permissions of a directory tree to +rw and +rwx for folders.
+        This is necessary if the start template files come without write
+        permissions.
+        """
+        mode_rw = (stat.S_IRUSR
+                   | stat.S_IWUSR
+                   | stat.S_IRGRP
+                   | stat.S_IROTH)
+
+        mode_x = (stat.S_IXUSR
+                  | stat.S_IXGRP
+                  | stat.S_IXOTH)
+
+        os.chmod(path, mode_rw | mode_x)
+        for root, dirs, files in os.walk(path):
+            for dir in dirs:
+                os.chmod(join(root, dir), mode_rw | mode_x)
+            for file in files:
+                os.chmod(join(root, file), mode_rw)
 
     def run(self, args, opts):
         if len(args) not in (1, 2):

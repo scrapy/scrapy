@@ -15,14 +15,14 @@ matrix:
       python: 3.8
     - env: TOXENV=docs
       python: 3.7  # Keep in sync with .readthedocs.yml
+    - env: TOXENV=typing
+      python: 3.8
 
     - env: TOXENV=pypy3
     - env: TOXENV=pinned
-      python: 3.5.1
-      dist: trusty
+      python: 3.5.2
     - env: TOXENV=asyncio
-      python: 3.5.1  # We use additional code to support 3.5.3 and earlier
-      dist: trusty
+      python: 3.5.2  # We use additional code to support 3.5.3 and earlier
     - env: TOXENV=py
       python: 3.5
     - env: TOXENV=asyncio

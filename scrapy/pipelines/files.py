@@ -10,24 +10,26 @@ import mimetypes
 import os
 import time
 from collections import defaultdict
-from email.utils import parsedate_tz, mktime_tz
+from contextlib import suppress
+from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
 from io import BytesIO
 from urllib.parse import urlparse
 
+from itemadapter import ItemAdapter
 from twisted.internet import defer, threads
 
+from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.http import Request
-from scrapy.utils.misc import md5sum
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
-from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import md5sum
+from scrapy.utils.python import to_bytes
+from scrapy.utils.request import referer_str
 
 
 logger = logging.getLogger(__name__)
@@ -517,7 +519,8 @@ class FilesPipeline(MediaPipeline):
 
     # Overridable Interface
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.files_urls_field, [])]
+        urls = ItemAdapter(item).get(self.files_urls_field, [])
+        return [Request(u) for u in urls]
 
     def file_downloaded(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
@@ -528,8 +531,8 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.files_result_field in item.fields:
-            item[self.files_result_field] = [x for ok, x in results if ok]
+        with suppress(KeyError):
+            ItemAdapter(item)[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):
