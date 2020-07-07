@@ -131,8 +131,7 @@ def get_permissions_dict(path, renamings=None, ignore=None):
         nodes = list(chain(dirs, files))
         if ignore:
             ignored_names = ignore(root, nodes)
-            nodes = [node for node in nodes
-                        if node not in ignored_names]
+            nodes = [node for node in nodes if node not in ignored_names]
         for node in nodes:
             absolute_path = os.path.join(root, node)
             relative_path = os.path.relpath(absolute_path, path)
