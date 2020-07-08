@@ -217,8 +217,8 @@ this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
-    from itemloaders.processors import Join, MapCompose, TakeFirst
     import scrapy
+    from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
     def filter_price(value):
