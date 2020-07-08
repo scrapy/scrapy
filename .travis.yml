@@ -3,6 +3,7 @@ dist: xenial
 branches:
   only:
     - master
+    - http2  # TODO: Remove when merging in master
     - /^\d\.\d+$/
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
@@ -20,13 +21,7 @@ matrix:
 
     - env: TOXENV=pypy3
     - env: TOXENV=pinned
-      python: 3.5.2
-    - env: TOXENV=asyncio
-      python: 3.5.2  # We use additional code to support 3.5.3 and earlier
-    - env: TOXENV=py
-      python: 3.5
-    - env: TOXENV=asyncio
-      python: 3.5  # We use specific code to support >= 3.5.4, < 3.6
+      python: 3.6
     - env: TOXENV=py
       python: 3.6
     - env: TOXENV=py
