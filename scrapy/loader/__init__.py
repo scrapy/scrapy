@@ -11,7 +11,7 @@ from scrapy.selector import Selector
 
 class ItemLoader(itemloaders.ItemLoader):
     """
-    A user-fiendly abstraction to populate data to an :ref:`Item <topics-items>`
+    A user-friendly abstraction to populate an :ref:`item <topics-items>` with data
     by applying :ref:`field processors <topics-loaders-processors>` to scraped data.
     When instantiated with a ``selector`` or a ``response`` it supports
     data extraction from web pages using :ref:`selectors <topics-selectors>`.
