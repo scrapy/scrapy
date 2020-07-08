@@ -177,8 +177,8 @@ The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
 processors to populate the fields.
 
-Last, but not least, ``itemloaders`` comes with some :ref:`commonly used
-processors <processors>` built-in for convenience.
+Last, but not least, itemloaders_ comes with some :ref:`commonly used
+processors <itemloaders:built-in-processors>` built-in for convenience.
 
 
 Declaring Item Loaders
