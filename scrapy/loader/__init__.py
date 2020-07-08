@@ -33,7 +33,8 @@ class ItemLoader(itemloaders.ItemLoader):
 
     If no item is given, one is instantiated automatically using the class in
     :attr:`default_item_class`.
-    The item, selector, response and the remaining keyword arguments are
+
+    The item, selector, response and remaining keyword arguments are
     assigned to the Loader context (accessible through the :attr:`context` attribute).
 
     .. attribute:: item
