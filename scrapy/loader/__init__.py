@@ -19,7 +19,7 @@ class ItemLoader(itemloaders.ItemLoader):
     :param item: The item instance to populate using subsequent calls to
         :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
         or :meth:`~ItemLoader.add_value`.
-    :type item: :class:`~scrapy.item.Item` object
+    :type item: scrapy.item.Item
 
     :param selector: The selector to extract data from, when using the
         :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
