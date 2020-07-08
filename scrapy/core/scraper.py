@@ -4,25 +4,24 @@ extracts information from them"""
 import logging
 from collections import deque
 
-from twisted.python.failure import Failure
+from itemadapter import is_item
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
-from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
-from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
-from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
-from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
-from scrapy.http import Request, Response
-from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.utils.request import referer_str
+from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
+from scrapy.http import Request, Response
+from scrapy.utils.defer import defer_result, defer_succeed, iter_errback, parallel
+from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
+from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
+from scrapy.utils.spider import iterate_spider_output
 
 
 logger = logging.getLogger(__name__)
 
 
-class Slot(object):
+class Slot:
     """Scraper slot (one per running spider)"""
 
     MIN_RESPONSE_SIZE = 1024
@@ -63,7 +62,7 @@ class Slot(object):
         return self.active_size > self.max_active_size
 
 
-class Scraper(object):
+class Scraper:
 
     def __init__(self, crawler):
         self.slot = None
@@ -124,7 +123,11 @@ class Scraper(object):
     def _scrape(self, response, request, spider):
         """Handle the downloaded response or failure through the spider
         callback/errback"""
-        assert isinstance(response, (Response, Failure))
+        if not isinstance(response, (Response, Failure)):
+            raise TypeError(
+                "Incorrect type: expected Response or Failure, got %s: %r"
+                % (type(response), response)
+            )
 
         dfd = self._scrape2(response, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, response, spider)
@@ -158,9 +161,9 @@ class Scraper(object):
         if isinstance(exc, CloseSpider):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
-        logger.error(
-            "Spider error processing %(request)s (referer: %(referer)s)",
-            {'request': request, 'referer': referer_str(request)},
+        logkws = self.logformatter.spider_error(_failure, request, response, spider)
+        logger.log(
+            *logformatter_adapter(logkws),
             exc_info=failure_to_exc_info(_failure),
             extra={'spider': spider}
         )
@@ -188,7 +191,7 @@ class Scraper(object):
         """
         if isinstance(output, Request):
             self.crawler.engine.crawl(request=output, spider=spider)
-        elif isinstance(output, (BaseItem, dict)):
+        elif is_item(output):
             self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, response, spider)
@@ -197,10 +200,11 @@ class Scraper(object):
             pass
         else:
             typename = type(output).__name__
-            logger.error('Spider must return Request, BaseItem, dict or None, '
-                         'got %(typename)r in %(request)s',
-                         {'request': request, 'typename': typename},
-                         extra={'spider': spider})
+            logger.error(
+                'Spider must return request, item, or None, got %(typename)r in %(request)s',
+                {'request': request, 'typename': typename},
+                extra={'spider': spider},
+            )
 
     def _log_download_errors(self, spider_failure, download_failure, request, spider):
         """Log and silence errors that come from the engine (typically download
@@ -208,16 +212,21 @@ class Scraper(object):
         """
         if isinstance(download_failure, Failure) and not download_failure.check(IgnoreRequest):
             if download_failure.frames:
-                logger.error('Error downloading %(request)s',
-                             {'request': request},
-                             exc_info=failure_to_exc_info(download_failure),
-                             extra={'spider': spider})
+                logkws = self.logformatter.download_error(download_failure, request, spider)
+                logger.log(
+                    *logformatter_adapter(logkws),
+                    extra={'spider': spider},
+                    exc_info=failure_to_exc_info(download_failure),
+                )
             else:
                 errmsg = download_failure.getErrorMessage()
                 if errmsg:
-                    logger.error('Error downloading %(request)s: %(errmsg)s',
-                                 {'request': request, 'errmsg': errmsg},
-                                 extra={'spider': spider})
+                    logkws = self.logformatter.download_error(
+                        download_failure, request, spider, errmsg)
+                    logger.log(
+                        *logformatter_adapter(logkws),
+                        extra={'spider': spider},
+                    )
 
         if spider_failure is not download_failure:
             return spider_failure
@@ -236,7 +245,7 @@ class Scraper(object):
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
             else:
-                logkws = self.logformatter.error(item, ex, response, spider)
+                logkws = self.logformatter.item_error(item, ex, response, spider)
                 logger.log(*logformatter_adapter(logkws), extra={'spider': spider},
                            exc_info=failure_to_exc_info(output))
                 return self.signals.send_catch_log_deferred(

@@ -26,9 +26,7 @@ do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``.
 
 The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
-Python `import search path`_.
-
-.. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
+Python :ref:`import search path <tut-searchpath>`.
 
 .. _populating-settings:
 
@@ -124,7 +122,7 @@ Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
 extensions, middlewares and item pipelines::
 
-    class MyExtension(object):
+    class MyExtension:
         def __init__(self, log_is_enabled=False):
             if log_is_enabled:
                 print("log is enabled!")
@@ -159,27 +157,6 @@ The scope, where available, shows where the setting is being used, if it's tied
 to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
-
-.. setting:: ASYNCIO_REACTOR
-
-ASYNCIO_REACTOR
----------------
-
-Default: ``False``
-
-Whether to install and require the Twisted reactor that uses the asyncio loop.
-
-When this option is set to ``True``, Scrapy will require
-:class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`. It will
-install this reactor if no reactor is installed yet, such as when using the
-``scrapy`` script or :class:`~scrapy.crawler.CrawlerProcess`. If you are using
-:class:`~scrapy.crawler.CrawlerRunner`, you need to install the correct reactor
-manually. If a different reactor is installed outside Scrapy, it will raise an
-exception.
-
-The default value for this option is currently ``False`` to maintain backward
-compatibility and avoid possible problems caused by using a different Twisted
-reactor.
 
 .. setting:: AWS_ACCESS_KEY_ID
 
@@ -259,8 +236,8 @@ CONCURRENT_ITEMS
 
 Default: ``100``
 
-Maximum number of concurrent items (per response) to process in parallel in the
-Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
+Maximum number of concurrent items (per response) to process in parallel in
+:ref:`item pipelines <topics-item-pipeline>`.
 
 .. setting:: CONCURRENT_REQUESTS
 
@@ -269,7 +246,7 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
@@ -279,7 +256,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN
 
 Default: ``8``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
 
 See also: :ref:`topics-autothrottle` and its
@@ -293,7 +270,7 @@ CONCURRENT_REQUESTS_PER_IP
 
 Default: ``0``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single IP. If non-zero, the
 :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
 used instead. In other words, concurrency limits will be applied per IP, not
@@ -402,6 +379,8 @@ DNS in-memory cache size.
 DNS_RESOLVER
 ------------
 
+.. versionadded:: 2.0
+
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
 The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
@@ -441,10 +420,9 @@ connections (for ``HTTP10DownloadHandler``).
 .. note::
 
     HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
-    unless you use Twisted<11.1, or if you really want to use HTTP/1.0
-    and override :setting:`DOWNLOAD_HANDLERS_BASE` for ``http(s)`` scheme
-    accordingly, i.e. to
-    ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    unless you really want to use HTTP/1.0 and override
+    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
+    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -468,7 +446,6 @@ or even enable client-side authentication (and various other things).
     Scrapy also has another context factory class that you can set,
     ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
     which uses the platform's certificates to validate remote endpoints.
-    **This is only available if you use Twisted>=14.0.**
 
 If you do use a custom ContextFactory, make sure its ``__init__`` method
 accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
@@ -492,7 +469,7 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -515,10 +492,6 @@ This setting must be one of these string values:
 - ``'TLSv1.2'``: forces TLS version 1.2
 - ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
-.. note::
-
-    We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
-    or above (Twisted>=14.0 if you can).
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -681,8 +654,6 @@ If you want to disable it set to 0.
     spider attribute and per-request using :reqmeta:`download_maxsize`
     Request.meta key.
 
-    This feature needs Twisted >= 11.1.
-
 .. setting:: DOWNLOAD_WARNSIZE
 
 DOWNLOAD_WARNSIZE
@@ -699,8 +670,6 @@ If you want to disable it set to 0.
     This size can be set per spider using :attr:`download_warnsize`
     spider attribute and per-request using :reqmeta:`download_warnsize`
     Request.meta key.
-
-    This feature needs Twisted >= 11.1.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -918,10 +887,9 @@ LOG_FORMAT
 
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
-String for formatting log messages. Refer to the `Python logging documentation`_ for the whole list of available
-placeholders.
-
-.. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
+String for formatting log messages. Refer to the
+:ref:`Python logging documentation <logrecord-attributes>` for the qwhole
+list of available placeholders.
 
 .. setting:: LOG_DATEFORMAT
 
@@ -931,10 +899,9 @@ LOG_DATEFORMAT
 Default: ``'%Y-%m-%d %H:%M:%S'``
 
 String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
-in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the whole list of available
-directives.
-
-.. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+in :setting:`LOG_FORMAT`. Refer to the
+:ref:`Python datetime documentation <strftime-strptime-behavior>` for the
+whole list of available directives.
 
 .. setting:: LOG_FORMATTER
 
@@ -1135,17 +1102,6 @@ multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
 
-.. setting:: REDIRECT_MAX_TIMES
-
-REDIRECT_MAX_TIMES
-------------------
-
-Default: ``20``
-
-Defines the maximum times a request can be redirected. After this maximum the
-request's response is returned as is. We used Firefox default value for the
-same task.
-
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
@@ -1279,6 +1235,9 @@ does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
+
+.. versionadded:: 2.0
+
 Default: ``5_000_000``
 
 Soft limit (in bytes) for response data being processed.
@@ -1438,17 +1397,6 @@ Default: ``True``
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
 
-.. setting:: TELNETCONSOLE_PORT
-
-TELNETCONSOLE_PORT
-------------------
-
-Default: ``[6023, 6073]``
-
-The port range to use for the telnet console. If set to ``None`` or ``0``, a
-dynamically assigned port is used. For more info see
-:ref:`topics-telnetconsole`.
-
 .. setting:: TEMPLATES_DIR
 
 TEMPLATES_DIR
@@ -1462,6 +1410,101 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR
+
+TWISTED_REACTOR
+---------------
+
+.. versionadded:: 2.0
+
+Default: ``None``
+
+Import path of a given :mod:`~twisted.internet.reactor`.
+
+Scrapy will install this reactor if no other reactor is installed yet, such as
+when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class.
+
+If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+need to install the correct reactor manually. You can do that using
+:func:`~scrapy.utils.reactor.install_reactor`:
+
+.. autofunction:: scrapy.utils.reactor.install_reactor
+
+If a reactor is already installed,
+:func:`~scrapy.utils.reactor.install_reactor` has no effect.
+
+:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
+:exc:`Exception` if the installed reactor does not match the
+:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:mod:`~twisted.internet.reactor` imports in project files and imported
+third-party libraries will make Scrapy raise :exc:`Exception` when
+it checks which reactor is installed.
+
+In order to use the reactor installed by Scrapy::
+
+    import scrapy
+    from twisted.internet import reactor
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+which raises :exc:`Exception`, becomes::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            from twisted.internet import reactor
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
+means that Scrapy will not attempt to install any specific reactor, and the
+default reactor defined by Twisted for the current platform will be used. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
+
+For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT

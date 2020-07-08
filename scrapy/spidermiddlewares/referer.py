@@ -28,7 +28,7 @@ POLICY_UNSAFE_URL = "unsafe-url"
 POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 
-class ReferrerPolicy(object):
+class ReferrerPolicy:
 
     NOREFERRER_SCHEMES = LOCAL_SCHEMES
 
@@ -163,9 +163,10 @@ class StrictOriginPolicy(ReferrerPolicy):
     name = POLICY_STRICT_ORIGIN
 
     def referrer(self, response_url, request_url):
-        if ((self.tls_protected(response_url) and
-             self.potentially_trustworthy(request_url))
-            or not self.tls_protected(response_url)):
+        if (
+            self.tls_protected(response_url) and self.potentially_trustworthy(request_url)
+            or not self.tls_protected(response_url)
+        ):
             return self.origin_referrer(response_url)
 
 
@@ -213,9 +214,10 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
         origin = self.origin(response_url)
         if origin == self.origin(request_url):
             return self.stripped_referrer(response_url)
-        elif ((self.tls_protected(response_url) and
-               self.potentially_trustworthy(request_url))
-              or not self.tls_protected(response_url)):
+        elif (
+            self.tls_protected(response_url) and self.potentially_trustworthy(request_url)
+            or not self.tls_protected(response_url)
+        ):
             return self.origin_referrer(response_url)
 
 
@@ -284,7 +286,7 @@ def _load_policy_class(policy, warning_only=False):
                 return None
 
 
-class RefererMiddleware(object):
+class RefererMiddleware:
 
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy

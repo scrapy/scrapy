@@ -7,6 +7,8 @@ from urllib.parse import urlencode
 
 from twisted.internet import defer
 
+from scrapy import signals
+from scrapy.exceptions import StopDownload
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
@@ -117,6 +119,35 @@ class AsyncDefAsyncioReturnSpider(SimpleSpider):
         return [{'id': 1}, {'id': 2}]
 
 
+class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
+
+    name = "asyncdef_asyncio_return_single_element"
+
+    async def parse(self, response):
+        await asyncio.sleep(0.1)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d" % status)
+        return {"foo": 42}
+
+
+class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
+
+    name = 'asyncdef_asyncio_reqs_return'
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        req_id = response.meta.get('req_id', 0)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info("Got response %d, req_id %d" % (status, req_id))
+        if req_id > 0:
+            return
+        reqs = []
+        for i in range(1, 3):
+            req = Request(self.start_urls[0], dont_filter=True, meta={'req_id': i})
+            reqs.append(req)
+        return reqs
+
+
 class ItemSpider(FollowAllSpider):
 
     name = 'item'
@@ -166,8 +197,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
             if self.fail_yielding:
                 2 / 0
 
-        assert self.seedsseen, \
-                'All start requests consumed before any download happened'
+        assert self.seedsseen, 'All start requests consumed before any download happened'
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get('seed'))
@@ -250,3 +280,36 @@ class CrawlSpiderWithErrback(MockServerSpider, CrawlSpider):
 
     def errback(self, failure):
         self.logger.info('[errback] status %i', failure.value.response.status)
+
+
+class BytesReceivedCallbackSpider(MetaSpider):
+
+    full_response_length = 2**18
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.bytes_received, signals.bytes_received)
+        return spider
+
+    def start_requests(self):
+        body = b"a" * self.full_response_length
+        url = self.mockserver.url("/alpayload")
+        yield Request(url, method="POST", body=body, errback=self.errback)
+
+    def parse(self, response):
+        self.meta["response"] = response
+
+    def errback(self, failure):
+        self.meta["failure"] = failure
+
+    def bytes_received(self, data, request, spider):
+        self.meta["bytes_received"] = data
+        raise StopDownload(fail=False)
+
+
+class BytesReceivedErrbackSpider(BytesReceivedCallbackSpider):
+
+    def bytes_received(self, data, request, spider):
+        self.meta["bytes_received"] = data
+        raise StopDownload(fail=True)

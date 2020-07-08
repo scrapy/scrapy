@@ -1,8 +1,7 @@
+import pickle
 import re
 import unittest
 from warnings import catch_warnings
-
-import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, XmlResponse
@@ -16,7 +15,6 @@ from tests import get_testdata
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
         extractor_cls = None
-        escapes_whitespace = False
 
         def setUp(self):
             body = get_testdata('link_extractor', 'linkextractor.html')
@@ -30,10 +28,7 @@ class Base:
 
         def test_extract_all_links(self):
             lx = self.extractor_cls()
-            if self.escapes_whitespace:
-                page4_url = 'http://example.com/page%204.html'
-            else:
-                page4_url = 'http://example.com/page 4.html'
+            page4_url = 'http://example.com/page%204.html'
 
             self.assertEqual([link for link in lx.extract_links(self.response)], [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -177,9 +172,9 @@ class Base:
             self.assertEqual(lx.matches(url1), False)
             self.assertEqual(lx.matches(url2), True)
 
-            lx = self.extractor_cls(allow=('blah1',), deny=('blah2',),
-                                   allow_domains=('blah1.com',),
-                                   deny_domains=('blah2.com',))
+            lx = self.extractor_cls(allow=['blah1'], deny=['blah2'],
+                                    allow_domains=['blah1.com'],
+                                    deny_domains=['blah2.com'])
             self.assertEqual(lx.matches('http://blah1.com/blah1'), True)
             self.assertEqual(lx.matches('http://blah1.com/blah2'), False)
             self.assertEqual(lx.matches('http://blah2.com/blah1'), False)
@@ -214,7 +209,7 @@ class Base:
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='iso8859-15')
             links = self.extractor_cls(restrict_xpaths='//p').extract_links(response)
             self.assertEqual(links,
-                             [Link(url='http://example.org/%E2%99%A5/you?c=%E2%82%AC', text=u'text')])
+                             [Link(url='http://example.org/%E2%99%A5/you?c=%A4', text=u'text')])
 
         def test_restrict_xpaths_concat_in_handle_data(self):
             """html entities cause SGMLParser to call handle_data hook twice"""
@@ -285,8 +280,8 @@ class Base:
         def test_process_value(self):
             """Test restrict_xpaths with encodings"""
             html = b"""
-            <a href="javascript:goToPage('../other/page.html','photo','width=600,height=540,scrollbars'); return false">Link text</a>
-            <a href="/about.html">About us</a>
+<a href="javascript:goToPage('../other/page.html','photo','width=600,height=540,scrollbars'); return false">Text</a>
+<a href="/about.html">About us</a>
             """
             response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
 
@@ -297,7 +292,7 @@ class Base:
 
             lx = self.extractor_cls(process_value=process_value)
             self.assertEqual(lx.extract_links(response),
-                             [Link(url='http://example.org/other/page.html', text='Link text')])
+                             [Link(url='http://example.org/other/page.html', text='Text')])
 
         def test_base_url_with_restrict_xpaths(self):
             html = b"""<html><head><title>Page title<title><base href="http://otherdomain.com/base/" />
@@ -310,10 +305,7 @@ class Base:
 
         def test_attrs(self):
             lx = self.extractor_cls(attrs="href")
-            if self.escapes_whitespace:
-                page4_url = 'http://example.com/page%204.html'
-            else:
-                page4_url = 'http://example.com/page 4.html'
+            page4_url = 'http://example.com/page%204.html'
 
             self.assertEqual(lx.extract_links(self.response), [
                 Link(url='http://example.com/sample1.html', text=u''),
@@ -341,7 +333,10 @@ class Base:
             self.assertEqual(lx.extract_links(self.response), [])
 
         def test_tags(self):
-            html = b"""<html><area href="sample1.html"></area><a href="sample2.html">sample 2</a><img src="sample2.jpg"/></html>"""
+            html = (
+                b'<html><area href="sample1.html"></area>'
+                b'<a href="sample2.html">sample 2</a><img src="sample2.jpg"/></html>'
+            )
             response = HtmlResponse("http://example.com/index.html", body=html)
 
             lx = self.extractor_cls(tags=None)
@@ -422,24 +417,34 @@ class Base:
             response = HtmlResponse("http://example.com/index.xhtml", body=xhtml)
 
             lx = self.extractor_cls()
-            self.assertEqual(lx.extract_links(response),
-                             [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
-                              Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
-                              Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
-                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
-                              Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True)]
-                            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
+                    Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
+                    Link(url='http://example.com/nofollow.html', text=u'Dont follow this one',
+                         fragment='', nofollow=True),
+                    Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not',
+                         fragment='', nofollow=False),
+                    Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True),
+                ]
+            )
 
             response = XmlResponse("http://example.com/index.xhtml", body=xhtml)
 
             lx = self.extractor_cls()
-            self.assertEqual(lx.extract_links(response),
-                             [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
-                              Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
-                              Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
-                              Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False),
-                              Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True)]
-                            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
+                    Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
+                    Link(url='http://example.com/nofollow.html', text=u'Dont follow this one',
+                         fragment='', nofollow=True),
+                    Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not',
+                         fragment='', nofollow=False),
+                    Link(url='http://google.com/something', text=u'External link not to follow', nofollow=True),
+                ]
+            )
 
         def test_link_wrong_href(self):
             html = b"""
@@ -464,6 +469,10 @@ class Base:
             self.assertEqual(lx.extract_links(response), [
                 Link(url='ftp://www.external.com/', text=u'An Item', fragment='', nofollow=False),
             ])
+
+        def test_pickle_extractor(self):
+            lx = self.extractor_cls()
+            self.assertIsInstance(pickle.loads(pickle.dumps(lx)), self.extractor_cls)
 
 
 class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
@@ -506,7 +515,6 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             Link(url='http://example.org/item2.html', text=u'Pic of a dog', nofollow=False),
         ])
 
-    @pytest.mark.xfail
     def test_restrict_xpaths_with_html_entities(self):
         super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
 

@@ -1,24 +1,35 @@
-import io
 import hashlib
+import io
 import random
-from tempfile import mkdtemp
 from shutil import rmtree
+from tempfile import mkdtemp
+from unittest import skipIf
 
+import attr
+from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
+from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
+from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
+
 
 skip = False
 try:
     from PIL import Image
-except ImportError as e:
+except ImportError:
     skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
-    encoders = set(('jpeg_encoder', 'jpeg_decoder'))
+    encoders = {'jpeg_encoder', 'jpeg_decoder'}
     if not encoders.issubset(set(Image.core.__dict__)):
         skip = 'Missing JPEG encoders'
 
@@ -41,22 +52,29 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
-        self.assertEqual(file_path(Request("https://dev.mydeco.com/mydeco.gif")),
-                         'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-        self.assertEqual(file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg")),
-                         'full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg')
-        self.assertEqual(file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")),
-                         'full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg')
-        self.assertEqual(file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
-                         'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
-        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
-                         'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg')
-        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
-                         'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
-        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                                   response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                                   info=object()),
-                         'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+        self.assertEqual(
+            file_path(Request("https://dev.mydeco.com/mydeco.gif")),
+            'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+        self.assertEqual(
+            file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg")),
+            'full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg')
+        self.assertEqual(
+            file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")),
+            'full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg')
+        self.assertEqual(
+            file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
+            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
+        self.assertEqual(
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
+            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg')
+        self.assertEqual(
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+        self.assertEqual(
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
+                      response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                      info=object()),
+            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
 
     def test_thumbnail_name(self):
         thumb_path = self.pipeline.thumb_path
@@ -117,43 +135,89 @@ class DeprecatedImagesPipeline(ImagesPipeline):
         return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
 
 
-class ImagesPipelineTestCaseFields(unittest.TestCase):
+class ImagesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
-        class TestItem(Item):
-            name = Field()
-            image_urls = Field()
-            images = Field()
-
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/images/1.jpg'
-            item = cls({'name': 'item1', 'image_urls': [url]})
-            pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['images'], [results[0][1]])
+        url = 'http://www.example.com/images/1.jpg'
+        item = self.item_class(name='item1', image_urls=[url])
+        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        images = ItemAdapter(item).get("images")
+        self.assertEqual(images, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
-        class TestItem(Item):
-            name = Field()
-            image = Field()
-            stored_image = Field()
+        url = 'http://www.example.com/images/1.jpg'
+        item = self.item_class(name='item1', custom_image_urls=[url])
+        pipeline = ImagesPipeline.from_settings(Settings({
+            'IMAGES_STORE': 's3://example/images/',
+            'IMAGES_URLS_FIELD': 'custom_image_urls',
+            'IMAGES_RESULT_FIELD': 'custom_images'
+        }))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        custom_images = ItemAdapter(item).get("custom_images")
+        self.assertEqual(custom_images, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/images/1.jpg'
-            item = cls({'name': 'item1', 'image': [url]})
-            pipeline = ImagesPipeline.from_settings(Settings({
-                'IMAGES_STORE': 's3://example/images/',
-                'IMAGES_URLS_FIELD': 'image',
-                'IMAGES_RESULT_FIELD': 'stored_image'
-            }))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['stored_image'], [results[0][1]])
+
+class ImagesPipelineTestCaseFieldsDict(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = dict
+
+
+class ImagesPipelineTestItem(Item):
+    name = Field()
+    # default fields
+    image_urls = Field()
+    images = Field()
+    # overridden fields
+    custom_image_urls = Field()
+    custom_images = Field()
+
+
+class ImagesPipelineTestCaseFieldsItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestItem
+
+
+@skipIf(not make_dataclass, "dataclasses module is not available")
+class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "FilesPipelineTestDataClass",
+                [
+                    ("name", str),
+                    # default fields
+                    ("image_urls", list, dataclass_field(default_factory=list)),
+                    ("images", list, dataclass_field(default_factory=list)),
+                    # overridden fields
+                    ("custom_image_urls", list, dataclass_field(default_factory=list)),
+                    ("custom_images", list, dataclass_field(default_factory=list)),
+                ],
+            )
+
+
+@attr.s
+class ImagesPipelineTestAttrsItem:
+    name = attr.ib(default="")
+    # default fields
+    image_urls = attr.ib(default=lambda: [])
+    images = attr.ib(default=lambda: [])
+    # overridden fields
+    custom_image_urls = attr.ib(default=lambda: [])
+    custom_images = attr.ib(default=lambda: [])
+
+
+class ImagesPipelineTestCaseFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestAttrsItem
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
@@ -176,7 +240,6 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         IMAGES_URLS_FIELD='image_urls',
         IMAGES_RESULT_FIELD='images'
     )
-
 
     def setUp(self):
         self.tempdir = mkdtemp()

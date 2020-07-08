@@ -142,7 +142,7 @@ a use case:
 
 Say you want to find the ``Next`` button on the page. Type ``Next`` into the 
 search bar on the top right of the `Inspector`. You should get two results. 
-The first is a ``li`` tag with the ``class="text"``, the second the text 
+The first is a ``li`` tag with the ``class="next"``, the second the text 
 of an ``a`` tag. Right click on the ``a`` tag and select ``Scroll into View``.
 If you hover over the tag, you'll see the button highlighted. From here
 we could easily create a :ref:`Link Extractor <topics-link-extractors>` to 
@@ -291,6 +291,9 @@ request::
 Alternatively, if you want to know the arguments needed to recreate that
 request you can use the :func:`scrapy.utils.curl.curl_to_request_kwargs`
 function to get a dictionary with the equivalent arguments.
+
+Note that to translate a cURL command into a Scrapy request,
+you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
 
 As you can see, with a few inspections in the `Network`-tool we
 were able to easily replicate the dynamic requests of the scrolling 

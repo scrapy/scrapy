@@ -1,20 +1,44 @@
 import inspect
+import json
+import optparse
 import os
-import sys
 import subprocess
+import sys
 import tempfile
+from contextlib import contextmanager
 from os.path import exists, join, abspath
 from shutil import rmtree, copytree
 from tempfile import mkdtemp
-from contextlib import contextmanager
 from threading import Timer
 
 from twisted.trial import unittest
 
 import scrapy
+from scrapy.commands import ScrapyCommand
+from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
+
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+
+
+class CommandSettings(unittest.TestCase):
+
+    def setUp(self):
+        self.command = ScrapyCommand()
+        self.command.settings = Settings()
+        self.parser = optparse.OptionParser(
+            formatter=optparse.TitledHelpFormatter(),
+            conflict_handler='resolve',
+        )
+        self.command.add_options(self.parser)
+
+    def test_settings_json_string(self):
+        feeds_json = '{"data.json": {"format": "json"}, "data.xml": {"format": "xml"}}'
+        opts, args = self.parser.parse_args(args=['-s', 'FEEDS={}'.format(feeds_json), 'spider.py'])
+        self.command.process_options(args, opts)
+        self.assertIsInstance(self.command.settings['FEEDS'], scrapy.settings.BaseSettings)
+        self.assertEqual(dict(self.command.settings['FEEDS']), json.loads(feeds_json))
 
 
 class ProjectTest(unittest.TestCase):
@@ -34,7 +58,7 @@ class ProjectTest(unittest.TestCase):
         with tempfile.TemporaryFile() as out:
             args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
             return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
-                env=self.env, **kwargs)
+                                   env=self.env, **kwargs)
 
     def proc(self, *new_args, **popen_kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
@@ -296,18 +320,20 @@ class BadSpider(scrapy.Spider):
         self.assertIn("badspider.py", log)
 
     def test_asyncio_enabled_true(self):
-        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_REACTOR=True'])
-        self.assertIn("DEBUG: Asyncio reactor is installed", log)
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+        ])
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     def test_asyncio_enabled_false(self):
-        log = self.get_log(self.debug_log_spider, args=['-s', 'ASYNCIO_REACTOR=False'])
-        self.assertNotIn("DEBUG: Asyncio reactor is installed", log)
+        log = self.get_log(self.debug_log_spider, args=[])
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
 
 class BenchCommandTest(CommandTest):
 
     def test_run(self):
         _, _, log = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
-                           '-s', 'CLOSESPIDER_TIMEOUT=0.01')
+                              '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)

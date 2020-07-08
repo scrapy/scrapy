@@ -9,6 +9,7 @@ from scrapy.utils.defer import mustbe_deferred, process_chain, \
 class MustbeDeferredTest(unittest.TestCase):
     def test_success_function(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             return steps
@@ -20,6 +21,7 @@ class MustbeDeferredTest(unittest.TestCase):
 
     def test_unfired_deferred(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             dfd = defer.Deferred()
@@ -62,7 +64,7 @@ class DeferUtilsTest(unittest.TestCase):
         gotexc = False
         try:
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
-        except TypeError as e:
+        except TypeError:
             gotexc = True
         self.assertTrue(gotexc)
 
@@ -102,7 +104,7 @@ class IterErrbackTest(unittest.TestCase):
         def iterbad():
             for x in range(10):
                 if x == 5:
-                    a = 1/0
+                    1 / 0
                 yield x
 
         errors = []

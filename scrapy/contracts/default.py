@@ -1,10 +1,10 @@
 import json
 
-from scrapy.item import BaseItem
-from scrapy.http import Request
-from scrapy.exceptions import ContractFail
+from itemadapter import is_item, ItemAdapter
 
 from scrapy.contracts import Contract
+from scrapy.exceptions import ContractFail
+from scrapy.http import Request
 
 
 # contracts
@@ -48,19 +48,23 @@ class ReturnsContract(Contract):
     """
 
     name = 'returns'
-    objects = {
-        'request': Request,
-        'requests': Request,
-        'item': (BaseItem, dict),
-        'items': (BaseItem, dict),
+    object_type_verifiers = {
+        'request': lambda x: isinstance(x, Request),
+        'requests': lambda x: isinstance(x, Request),
+        'item': is_item,
+        'items': is_item,
     }
 
     def __init__(self, *args, **kwargs):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
-        assert len(self.args) in [1, 2, 3]
+        if len(self.args) not in [1, 2, 3]:
+            raise ValueError(
+                "Incorrect argument quantity: expected 1, 2 or 3, got %i"
+                % len(self.args)
+            )
         self.obj_name = self.args[0] or None
-        self.obj_type = self.objects[self.obj_name]
+        self.obj_type_verifier = self.object_type_verifiers[self.obj_name]
 
         try:
             self.min_bound = int(self.args[1])
@@ -75,7 +79,7 @@ class ReturnsContract(Contract):
     def post_process(self, output):
         occurrences = 0
         for x in output:
-            if isinstance(x, self.obj_type):
+            if self.obj_type_verifier(x):
                 occurrences += 1
 
         assertion = (self.min_bound <= occurrences <= self.max_bound)
@@ -99,8 +103,8 @@ class ScrapesContract(Contract):
 
     def post_process(self, output):
         for x in output:
-            if isinstance(x, (BaseItem, dict)):
-                missing = [arg for arg in self.args if arg not in x]
+            if is_item(x):
+                missing = [arg for arg in self.args if arg not in ItemAdapter(x)]
                 if missing:
-                    raise ContractFail(
-                        "Missing fields: %s" % ", ".join(missing))
+                    missing_str = ", ".join(missing)
+                    raise ContractFail("Missing fields: %s" % missing_str)

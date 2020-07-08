@@ -1,12 +1,22 @@
 from functools import partial
 import unittest
 
+import attr
+from itemadapter import ItemAdapter
+
 from scrapy.http import HtmlResponse
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
 from scrapy.selector import Selector
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
 
 
 # test items
@@ -26,6 +36,11 @@ class TestNestedItem(Item):
 
     url = Field()
     image = Field()
+
+
+@attr.s
+class AttrsNameItem:
+    name = attr.ib(default="")
 
 
 # test item loaders
@@ -456,7 +471,7 @@ class BasicItemLoaderTest(unittest.TestCase):
                           [u'marta', u'other'], Compose(float))
 
 
-class InitializationTestMixin(object):
+class InitializationTestMixin:
 
     item_class = None
 
@@ -466,7 +481,7 @@ class InitializationTestMixin(object):
         il = ItemLoader(item=input_item)
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo']})
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {'name': ['foo']})
 
     def test_keep_list(self):
         """Loaded item should contain values from the initial item"""
@@ -474,7 +489,7 @@ class InitializationTestMixin(object):
         il = ItemLoader(item=input_item)
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {'name': ['foo', 'bar']})
 
     def test_add_value_singlevalue_singlevalue(self):
         """Values added after initialization should be appended"""
@@ -483,7 +498,7 @@ class InitializationTestMixin(object):
         il.add_value('name', 'bar')
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar']})
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {'name': ['foo', 'bar']})
 
     def test_add_value_singlevalue_list(self):
         """Values added after initialization should be appended"""
@@ -492,7 +507,7 @@ class InitializationTestMixin(object):
         il.add_value('name', ['item', 'loader'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'item', 'loader']})
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {'name': ['foo', 'item', 'loader']})
 
     def test_add_value_list_singlevalue(self):
         """Values added after initialization should be appended"""
@@ -501,7 +516,7 @@ class InitializationTestMixin(object):
         il.add_value('name', 'qwerty')
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'qwerty']})
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {'name': ['foo', 'bar', 'qwerty']})
 
     def test_add_value_list_list(self):
         """Values added after initialization should be appended"""
@@ -510,7 +525,7 @@ class InitializationTestMixin(object):
         il.add_value('name', ['item', 'loader'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(dict(loaded_item), {'name': ['foo', 'bar', 'item', 'loader']})
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {'name': ['foo', 'bar', 'item', 'loader']})
 
     def test_get_output_value_singlevalue(self):
         """Getting output value must not remove value from item"""
@@ -519,7 +534,7 @@ class InitializationTestMixin(object):
         self.assertEqual(il.get_output_value('name'), ['foo'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(loaded_item, dict({'name': ['foo']}))
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), dict({'name': ['foo']}))
 
     def test_get_output_value_list(self):
         """Getting output value must not remove value from item"""
@@ -528,7 +543,7 @@ class InitializationTestMixin(object):
         self.assertEqual(il.get_output_value('name'), ['foo', 'bar'])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(loaded_item, dict({'name': ['foo', 'bar']}))
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), dict({'name': ['foo', 'bar']}))
 
     def test_values_single(self):
         """Values from initial item must be added to loader._values"""
@@ -549,6 +564,22 @@ class InitializationFromDictTest(InitializationTestMixin, unittest.TestCase):
 
 class InitializationFromItemTest(InitializationTestMixin, unittest.TestCase):
     item_class = NameItem
+
+
+class InitializationFromAttrsItemTest(InitializationTestMixin, unittest.TestCase):
+    item_class = AttrsNameItem
+
+
+@unittest.skipIf(not make_dataclass, "dataclasses module is not available")
+class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "TestDataClass",
+                [("name", list, dataclass_field(default_factory=list))],
+            )
 
 
 class BaseNoInputReprocessingLoader(ItemLoader):
@@ -601,7 +632,7 @@ class NoInputReprocessingItemLoader(BaseNoInputReprocessingLoader):
 
 class NoInputReprocessingFromItemTest(unittest.TestCase):
     """
-    Loaders initialized from loaded items must not reprocess fields (BaseItem instances)
+    Loaders initialized from loaded items must not reprocess fields (Item instances)
     """
     def test_avoid_reprocessing_with_initial_values_single(self):
         il = NoInputReprocessingItemLoader(item=NoInputReprocessingItem(title='foo'))

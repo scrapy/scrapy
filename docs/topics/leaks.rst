@@ -4,7 +4,7 @@
 Debugging memory leaks
 ======================
 
-In Scrapy, objects such as Requests, Responses and Items have a finite
+In Scrapy, objects such as requests, responses and items have a finite
 lifetime: they are created, used for a while, and finally destroyed.
 
 From all those objects, the Request is probably the one with the longest
@@ -17,8 +17,8 @@ what is known as a "memory leak".
 
 To help debugging memory leaks, Scrapy provides a built-in mechanism for
 tracking objects references called :ref:`trackref <topics-leaks-trackrefs>`,
-and you can also use a third-party library called :ref:`Guppy
-<topics-leaks-guppy>` for more advanced memory debugging (see below for more
+and you can also use a third-party library called :ref:`muppy
+<topics-leaks-muppy>` for more advanced memory debugging (see below for more
 info). Both mechanisms must be used from the :ref:`Telnet Console
 <topics-telnetconsole>`.
 
@@ -61,8 +61,8 @@ Debugging memory leaks with ``trackref``
 ========================================
 
 :mod:`trackref` is a module provided by Scrapy to debug the most common cases of
-memory leaks. It basically tracks the references to all live Requests,
-Responses, Item and Selector objects.
+memory leaks. It basically tracks the references to all live Request,
+Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
@@ -170,7 +170,7 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
 .. class:: object_ref
 
-    Inherit from this class (instead of object) if you want to track live
+    Inherit from this class if you want to track live
     instances with the ``trackref`` module.
 
 .. function:: print_live_refs(class_name, ignore=NoneType)
@@ -193,73 +193,18 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
     ``None`` if none is found. Use :func:`print_live_refs` first to get a list
     of all tracked live objects per class name.
 
-.. _topics-leaks-guppy:
-
-Debugging memory leaks with Guppy
-=================================
-
-``trackref`` provides a very convenient mechanism for tracking down memory
-leaks, but it only keeps track of the objects that are more likely to cause
-memory leaks (Requests, Responses, Items, and Selectors). However, there are
-other cases where the memory leaks could come from other (more or less obscure)
-objects. If this is your case, and you can't find your leaks using ``trackref``,
-you still have another resource: the `Guppy library`_.
-If you're using Python3, see :ref:`topics-leaks-muppy`.
-
-.. _Guppy library: https://pypi.python.org/pypi/guppy
-
-If you use ``pip``, you can install Guppy with the following command::
-
-    pip install guppy
-
-The telnet console also comes with a built-in shortcut (``hpy``) for accessing
-Guppy heap objects. Here's an example to view all Python objects available in
-the heap using Guppy:
-
->>> x = hpy.heap()
->>> x.bytype
-Partition of a set of 297033 objects. Total size = 52587824 bytes.
- Index  Count   %     Size   % Cumulative  % Type
-     0  22307   8 16423880  31  16423880  31 dict
-     1 122285  41 12441544  24  28865424  55 str
-     2  68346  23  5966696  11  34832120  66 tuple
-     3    227   0  5836528  11  40668648  77 unicode
-     4   2461   1  2222272   4  42890920  82 type
-     5  16870   6  2024400   4  44915320  85 function
-     6  13949   5  1673880   3  46589200  89 types.CodeType
-     7  13422   5  1653104   3  48242304  92 list
-     8   3735   1  1173680   2  49415984  94 _sre.SRE_Pattern
-     9   1209   0   456936   1  49872920  95 scrapy.http.headers.Headers
-<1676 more rows. Type e.g. '_.more' to view.>
-
-You can see that most space is used by dicts. Then, if you want to see from
-which attribute those dicts are referenced, you could do:
-
->>> x.bytype[0].byvia
-Partition of a set of 22307 objects. Total size = 16423880 bytes.
- Index  Count   %     Size   % Cumulative  % Referred Via:
-     0  10982  49  9416336  57   9416336  57 '.__dict__'
-     1   1820   8  2681504  16  12097840  74 '.__dict__', '.func_globals'
-     2   3097  14  1122904   7  13220744  80
-     3    990   4   277200   2  13497944  82 "['cookies']"
-     4    987   4   276360   2  13774304  84 "['cache']"
-     5    985   4   275800   2  14050104  86 "['meta']"
-     6    897   4   251160   2  14301264  87 '[2]'
-     7      1   0   196888   1  14498152  88 "['moduleDict']", "['modules']"
-     8    672   3   188160   1  14686312  89 "['cb_kwargs']"
-     9     27   0   155016   1  14841328  90 '[1]'
-<333 more rows. Type e.g. '_.more' to view.>
-
-As you can see, the Guppy module is very powerful but also requires some deep
-knowledge about Python internals. For more info about Guppy, refer to the
-`Guppy documentation`_.
-
-.. _Guppy documentation: http://guppy-pe.sourceforge.net/
-
 .. _topics-leaks-muppy:
 
 Debugging memory leaks with muppy
 =================================
+
+``trackref`` provides a very convenient mechanism for tracking down memory
+leaks, but it only keeps track of the objects that are more likely to cause
+memory leaks. However, there are other cases where the memory leaks could come
+from other (more or less obscure) objects. If this is your case, and you can't
+find your leaks using ``trackref``, you still have another resource: the muppy
+library.
+
 You can use muppy from `Pympler`_.
 
 .. _Pympler: https://pypi.org/project/Pympler/
@@ -311,9 +256,9 @@ though neither Scrapy nor your project are leaking memory. This is due to a
 (not so well) known problem of Python, which may not return released memory to
 the operating system in some cases. For more information on this issue see:
 
-* `Python Memory Management <http://www.evanjones.ca/python-memory.html>`_
-* `Python Memory Management Part 2 <http://www.evanjones.ca/python-memory-part2.html>`_
-* `Python Memory Management Part 3 <http://www.evanjones.ca/python-memory-part3.html>`_
+* `Python Memory Management <https://www.evanjones.ca/python-memory.html>`_
+* `Python Memory Management Part 2 <https://www.evanjones.ca/python-memory-part2.html>`_
+* `Python Memory Management Part 3 <https://www.evanjones.ca/python-memory-part3.html>`_
 
 The improvements proposed by Evan Jones, which are detailed in `this paper`_,
 got merged in Python 2.5, but this only reduces the problem, it doesn't fix it
@@ -327,7 +272,7 @@ completely. To quote the paper:
     to move to a compacting garbage collector, which is able to move objects in
     memory. This would require significant changes to the Python interpreter.*
 
-.. _this paper: http://www.evanjones.ca/memoryallocator/
+.. _this paper: https://www.evanjones.ca/memoryallocator/
 
 To keep memory consumption reasonable you can split the job into several
 smaller jobs or enable :ref:`persistent job queue <topics-jobs>`

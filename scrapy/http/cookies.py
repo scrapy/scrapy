@@ -5,7 +5,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 
-class CookieJar(object):
+class CookieJar:
     def __init__(self, policy=None, check_expired_frequency=10000):
         self.policy = policy or DefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
@@ -100,7 +100,7 @@ def potential_domain_matches(domain):
     return matches + ['.' + d for d in matches]
 
 
-class _DummyLock(object):
+class _DummyLock:
     def acquire(self):
         pass
 
@@ -108,7 +108,7 @@ class _DummyLock(object):
         pass
 
 
-class WrappedRequest(object):
+class WrappedRequest:
     """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
 
     see http://docs.python.org/library/urllib2.html#urllib2.Request
@@ -178,7 +178,7 @@ class WrappedRequest(object):
         self.request.headers.appendlist(name, value)
 
 
-class WrappedResponse(object):
+class WrappedResponse:
 
     def __init__(self, response):
         self.response = response

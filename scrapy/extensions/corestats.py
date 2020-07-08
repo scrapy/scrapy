@@ -6,7 +6,7 @@ from datetime import datetime
 from scrapy import signals
 
 
-class CoreStats(object):
+class CoreStats:
 
     def __init__(self, stats):
         self.stats = stats
