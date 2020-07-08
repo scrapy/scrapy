@@ -23,7 +23,7 @@ class CheckSpider(scrapy.Spider):
 
     def parse(self, response, **cb_kwargs):
         \"\"\"
-        @url http://www.amazon.com/s?field-keywords=selfish+gene
+        @url http://example.com
         {1}
         \"\"\"
         {2}
@@ -32,6 +32,7 @@ class CheckSpider(scrapy.Spider):
     def _test_contract(self, contracts='', parse_def='pass'):
         self._write_contract(contracts, parse_def)
         p, out, err = self.proc('check')
+        self.assertNotIn('F', out)
         self.assertIn('OK', err)
         self.assertEqual(p.returncode, 0)
 
