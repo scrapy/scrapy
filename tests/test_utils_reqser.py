@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
-from scrapy.utils.reqser import request_to_dict, request_from_dict, _is_private_method, _mangle_private_name
+from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
 class RequestSerializationTest(unittest.TestCase):
@@ -15,7 +15,8 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r)
 
     def test_all_attributes(self):
-        r = Request("http://www.example.com",
+        r = Request(
+            url="http://www.example.com",
             callback=self.spider.parse_item,
             errback=self.spider.handle_error,
             method="POST",
@@ -69,6 +70,26 @@ class RequestSerializationTest(unittest.TestCase):
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
+    def test_reference_callback_serialization(self):
+        r = Request("http://www.example.com",
+                    callback=self.spider.parse_item_reference,
+                    errback=self.spider.handle_error_reference)
+        self._assert_serializes_ok(r, spider=self.spider)
+        request_dict = request_to_dict(r, self.spider)
+        self.assertEqual(request_dict['callback'], 'parse_item_reference')
+        self.assertEqual(request_dict['errback'], 'handle_error_reference')
+
+    def test_private_reference_callback_serialization(self):
+        r = Request("http://www.example.com",
+                    callback=self.spider._TestSpider__parse_item_reference,
+                    errback=self.spider._TestSpider__handle_error_reference)
+        self._assert_serializes_ok(r, spider=self.spider)
+        request_dict = request_to_dict(r, self.spider)
+        self.assertEqual(request_dict['callback'],
+                         '_TestSpider__parse_item_reference')
+        self.assertEqual(request_dict['errback'],
+                         '_TestSpider__handle_error_reference')
+
     def test_private_callback_serialization(self):
         r = Request("http://www.example.com",
                     callback=self.spider._TestSpider__parse_item_private,
@@ -81,41 +102,6 @@ class RequestSerializationTest(unittest.TestCase):
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
-    def test_private_callback_name_matching(self):
-        self.assertTrue(_is_private_method('__a'))
-        self.assertTrue(_is_private_method('__a_'))
-        self.assertTrue(_is_private_method('__a_a'))
-        self.assertTrue(_is_private_method('__a_a_'))
-        self.assertTrue(_is_private_method('__a__a'))
-        self.assertTrue(_is_private_method('__a__a_'))
-        self.assertTrue(_is_private_method('__a___a'))
-        self.assertTrue(_is_private_method('__a___a_'))
-        self.assertTrue(_is_private_method('___a'))
-        self.assertTrue(_is_private_method('___a_'))
-        self.assertTrue(_is_private_method('___a_a'))
-        self.assertTrue(_is_private_method('___a_a_'))
-        self.assertTrue(_is_private_method('____a_a_'))
-
-        self.assertFalse(_is_private_method('_a'))
-        self.assertFalse(_is_private_method('_a_'))
-        self.assertFalse(_is_private_method('__a__'))
-        self.assertFalse(_is_private_method('__'))
-        self.assertFalse(_is_private_method('___'))
-        self.assertFalse(_is_private_method('____'))
-
-    def _assert_mangles_to(self, obj, name):
-        func = getattr(obj, name)
-        self.assertEqual(
-            _mangle_private_name(obj, func, func.__name__),
-            name
-        )
-
-    def test_private_name_mangling(self):
-        self._assert_mangles_to(
-            self.spider, '_TestSpider__parse_item_private')
-        self._assert_mangles_to(
-            self.spider, '_TestSpiderMixin__mixin_callback')
-
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
         self.assertRaises(ValueError, request_to_dict, r)
@@ -125,14 +111,49 @@ class RequestSerializationTest(unittest.TestCase):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
         self.assertRaises(ValueError, request_to_dict, r)
 
+    def test_unserializable_callback3(self):
+        """Parser method is removed or replaced dynamically."""
 
-class TestSpiderMixin(object):
+        class MySpider(Spider):
+
+            name = 'my_spider'
+
+            def parse(self, response):
+                pass
+
+        spider = MySpider()
+        r = Request("http://www.example.com", callback=spider.parse)
+        setattr(spider, 'parse', None)
+        self.assertRaises(ValueError, request_to_dict, r, spider=spider)
+
+
+class TestSpiderMixin:
     def __mixin_callback(self, response):
         pass
 
 
+def parse_item(response):
+    pass
+
+
+def handle_error(failure):
+    pass
+
+
+def private_parse_item(response):
+    pass
+
+
+def private_handle_error(failure):
+    pass
+
+
 class TestSpider(Spider, TestSpiderMixin):
     name = 'test'
+    parse_item_reference = parse_item
+    handle_error_reference = handle_error
+    __parse_item_reference = private_parse_item
+    __handle_error_reference = private_handle_error
 
     def parse_item(self, response):
         pass

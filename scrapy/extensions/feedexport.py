@@ -44,7 +44,7 @@ class IFeedStorage(Interface):
 
 
 @implementer(IFeedStorage)
-class BlockingFeedStorage(object):
+class BlockingFeedStorage:
 
     def open(self, spider):
         path = spider.crawler.settings['FEED_TEMPDIR']
@@ -61,7 +61,7 @@ class BlockingFeedStorage(object):
 
 
 @implementer(IFeedStorage)
-class StdoutFeedStorage(object):
+class StdoutFeedStorage:
 
     def __init__(self, uri, _stdout=None):
         if not _stdout:
@@ -76,7 +76,7 @@ class StdoutFeedStorage(object):
 
 
 @implementer(IFeedStorage)
-class FileFeedStorage(object):
+class FileFeedStorage:
 
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)
@@ -179,7 +179,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         )
 
 
-class _FeedSlot(object):
+class _FeedSlot:
     def __init__(self, file, exporter, storage, uri, format, store_empty):
         self.file = file
         self.exporter = exporter
@@ -203,7 +203,7 @@ class _FeedSlot(object):
             self._exporting = False
 
 
-class FeedExporter(object):
+class FeedExporter:
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -270,18 +270,29 @@ class FeedExporter(object):
             if not slot.itemcount and not slot.store_empty:
                 # We need to call slot.storage.store nonetheless to get the file
                 # properly closed.
-                return defer.maybeDeferred(slot.storage.store, slot.file)
+                d = defer.maybeDeferred(slot.storage.store, slot.file)
+                deferred_list.append(d)
+                continue
             slot.finish_exporting()
             logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
             log_args = {'format': slot.format,
                         'itemcount': slot.itemcount,
                         'uri': slot.uri}
             d = defer.maybeDeferred(slot.storage.store, slot.file)
-            d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
-                                                extra={'spider': spider}))
-            d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
-                                                exc_info=failure_to_exc_info(f),
-                                                extra={'spider': spider}))
+
+            # Use `largs=log_args` to copy log_args into function's scope
+            # instead of using `log_args` from the outer scope
+            d.addCallback(
+                lambda _, largs=log_args: logger.info(
+                    logfmt % "Stored", largs, extra={'spider': spider}
+                )
+            )
+            d.addErrback(
+                lambda f, largs=log_args: logger.error(
+                    logfmt % "Error storing", largs,
+                    exc_info=failure_to_exc_info(f), extra={'spider': spider}
+                )
+            )
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 

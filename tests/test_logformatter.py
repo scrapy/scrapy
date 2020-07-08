@@ -34,15 +34,15 @@ class LogFormatterTestCase(unittest.TestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
-            "Crawled (200) <GET http://www.example.com> (referer: None)")
+        self.assertEqual(logline, "Crawled (200) <GET http://www.example.com> (referer: None)")
 
     def test_crawled_without_referer(self):
         req = Request("http://www.example.com", headers={'referer': 'http://example.com'})
         res = Response("http://www.example.com", flags=['cached'])
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
+        self.assertEqual(
+            logline,
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
     def test_flags_in_request(self):
@@ -50,8 +50,9 @@ class LogFormatterTestCase(unittest.TestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
-        "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
+        self.assertEqual(
+            logline,
+            "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)")
 
     def test_dropped(self):
         item = {}
@@ -140,7 +141,8 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
+        self.assertEqual(
+            logline,
             "Crawled (200) <GET http://www.example.com> (referer: None) []")
 
     def test_crawled_without_referer(self):
@@ -148,7 +150,8 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline,
+        self.assertEqual(
+            logline,
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
     def test_flags_in_request(self):
@@ -156,7 +159,9 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws['msg'] % logkws['args']
-        self.assertEqual(logline, "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']")
+        self.assertEqual(
+            logline,
+            "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']")
 
 
 class SkipMessagesLogFormatter(LogFormatter):
@@ -170,7 +175,7 @@ class SkipMessagesLogFormatter(LogFormatter):
         return None
 
 
-class DropSomeItemsPipeline(object):
+class DropSomeItemsPipeline:
     drop = True
 
     def process_item(self, item, spider):

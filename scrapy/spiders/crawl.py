@@ -34,7 +34,7 @@ def _get_method(method, spider):
 _default_link_extractor = LinkExtractor()
 
 
-class Rule(object):
+class Rule:
 
     def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None,
                  process_links=None, process_request=None, errback=None):
@@ -54,8 +54,12 @@ class Rule(object):
         self.process_request = _get_method(self.process_request, spider)
         self.process_request_argcount = len(get_func_args(self.process_request))
         if self.process_request_argcount == 1:
-            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
-            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Rule.process_request should accept two arguments "
+                "(request, response), accepting only one is deprecated",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     def _process_request(self, request, response):
         """

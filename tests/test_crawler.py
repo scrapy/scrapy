@@ -33,21 +33,6 @@ class CrawlerTestCase(BaseCrawlerTest):
     def setUp(self):
         self.crawler = Crawler(DefaultSpider, Settings())
 
-    def test_deprecated_attribute_spiders(self):
-        with warnings.catch_warnings(record=True) as w:
-            spiders = self.crawler.spiders
-            self.assertEqual(len(w), 1)
-            self.assertIn("Crawler.spiders", str(w[0].message))
-            sl_cls = load_object(self.crawler.settings['SPIDER_LOADER_CLASS'])
-            self.assertIsInstance(spiders, sl_cls)
-
-            self.crawler.spiders
-            is_one_warning = len(w) == 1
-            if not is_one_warning:
-                for warning in w:
-                    print(warning)
-            self.assertTrue(is_one_warning, "Warn deprecated access only once")
-
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
@@ -102,7 +87,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         class MySpider(scrapy.Spider):
             name = 'spider'
 
-        crawler = Crawler(MySpider, {})
+        Crawler(MySpider, {})
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
@@ -141,7 +126,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
 
 
-class SpiderLoaderWithWrongInterface(object):
+class SpiderLoaderWithWrongInterface:
 
     def unneeded_method(self):
         pass
@@ -255,13 +240,13 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
-            runner = CrawlerRunner(settings={
+            CrawlerRunner(settings={
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             })
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                runner = CrawlerRunner(settings={
+                CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 })
 
@@ -289,9 +274,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
             self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
 
 
-class CrawlerProcessSubprocess(unittest.TestCase):
-    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
-
+class ScriptRunnerMixin:
     def run_script(self, script_name):
         script_path = os.path.join(self.script_dir, script_name)
         args = (sys.executable, script_path)
@@ -299,6 +282,10 @@ class CrawlerProcessSubprocess(unittest.TestCase):
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         return stderr.decode('utf-8')
+
+
+class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
+    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
 
     def test_simple(self):
         log = self.run_script('simple.py')
@@ -318,20 +305,15 @@ class CrawlerProcessSubprocess(unittest.TestCase):
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.", log)
         self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
+        self.assertIn(
+            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
+            log)
 
     def test_ipv6_alternative_name_resolver(self):
         log = self.run_script('alternative_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertTrue(any([
-            "twisted.internet.error.ConnectionRefusedError" in log,
-            "twisted.internet.error.ConnectError" in log,
-        ]))
-        self.assertTrue(any([
-            "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
-            "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
-        ]))
+        self.assertNotIn("twisted.internet.error.DNSLookupError", log)
 
     def test_reactor_select(self):
         log = self.run_script("twisted_reactor_select.py")
@@ -347,3 +329,14 @@ class CrawlerProcessSubprocess(unittest.TestCase):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+
+class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
+    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerRunner')
+
+    def test_response_ip_address(self):
+        log = self.run_script("ip_address.py")
+        self.assertIn("INFO: Spider closed (finished)", log)
+        self.assertIn("INFO: Host: not.a.real.domain", log)
+        self.assertIn("INFO: Type: <class 'ipaddress.IPv4Address'>", log)
+        self.assertIn("INFO: IP address: 127.0.0.1", log)

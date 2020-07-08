@@ -152,6 +152,7 @@ def memoizemethod_noargs(method):
     weak reference to its object
     """
     cache = weakref.WeakKeyDictionary()
+
     @wraps(method)
     def new_method(self, *args, **kwargs):
         if self not in cache:
@@ -223,7 +224,7 @@ def get_spec(func):
     >>> get_spec(re.match)
     (['pattern', 'string'], {'flags': 0})
 
-    >>> class Test(object):
+    >>> class Test:
     ...     def __call__(self, val):
     ...         pass
     ...     def method(self, val, flags=0):
@@ -272,7 +273,7 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache(object):
+class WeakKeyCache:
 
     def __init__(self, default_factory):
         self.default_factory = default_factory
@@ -333,10 +334,10 @@ class MutableChain:
     """
 
     def __init__(self, *args):
-        self.data = chain(*args)
+        self.data = chain.from_iterable(args)
 
     def extend(self, *iterables):
-        self.data = chain(self.data, *iterables)
+        self.data = chain(self.data, chain.from_iterable(iterables))
 
     def __iter__(self):
         return self

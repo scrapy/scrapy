@@ -1,11 +1,11 @@
 import json
 import logging
 
+from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
-from scrapy.item import BaseItem
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
@@ -33,29 +33,29 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None,
-            help="use this spider without looking for one")
+                          help="use this spider without looking for one")
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
-            help="set spider argument (may be repeated)")
+                          help="set spider argument (may be repeated)")
         parser.add_option("--pipelines", action="store_true",
-            help="process items through pipelines")
+                          help="process items through pipelines")
         parser.add_option("--nolinks", dest="nolinks", action="store_true",
-            help="don't show links to follow (extracted requests)")
+                          help="don't show links to follow (extracted requests)")
         parser.add_option("--noitems", dest="noitems", action="store_true",
-            help="don't show scraped items")
+                          help="don't show scraped items")
         parser.add_option("--nocolour", dest="nocolour", action="store_true",
-            help="avoid using pygments to colorize the output")
+                          help="avoid using pygments to colorize the output")
         parser.add_option("-r", "--rules", dest="rules", action="store_true",
-            help="use CrawlSpider rules to discover the callback")
+                          help="use CrawlSpider rules to discover the callback")
         parser.add_option("-c", "--callback", dest="callback",
-            help="use this callback for parsing, instead looking for a callback")
+                          help="use this callback for parsing, instead looking for a callback")
         parser.add_option("-m", "--meta", dest="meta",
-            help="inject extra meta into the Request, it must be a valid raw json string")
+                          help="inject extra meta into the Request, it must be a valid raw json string")
         parser.add_option("--cbkwargs", dest="cbkwargs",
-            help="inject extra callback kwargs into the Request, it must be a valid raw json string")
+                          help="inject extra callback kwargs into the Request, it must be a valid raw json string")
         parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
-            help="maximum depth for parsing requests [default: %default]")
+                          help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
-            help="print each depth level one by one")
+                          help="print each depth level one by one")
 
     @property
     def max_level(self):
@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
             items = self.items.get(lvl, [])
 
         print("# Scraped Items ", "-" * 60)
-        display.pprint([dict(x) for x in items], colorize=colour)
+        display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
         if lvl is None:
@@ -117,7 +117,7 @@ class Command(ScrapyCommand):
         items, requests = [], []
 
         for x in iterate_spider_output(callback(response, **cb_kwargs)):
-            if isinstance(x, (BaseItem, dict)):
+            if is_item(x):
                 items.append(x)
             elif isinstance(x, Request):
                 requests.append(x)
@@ -146,9 +146,8 @@ class Command(ScrapyCommand):
             if not self.spidercls:
                 logger.error('Unable to find spider for: %(url)s', {'url': url})
 
-        # Request requires callback argument as callable or None, not string
-        request = Request(url, None)
-        _start_requests = lambda s: [self.prepare_request(s, request, opts)]
+        def _start_requests(spider):
+            yield self.prepare_request(spider, Request(url), opts)
         self.spidercls.start_requests = _start_requests
 
     def start_parsing(self, url, opts):

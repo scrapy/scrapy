@@ -11,7 +11,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 logger = logging.getLogger(__name__)
 
 
-class BaseRedirectMiddleware(object):
+class BaseRedirectMiddleware:
 
     enabled_setting = 'REDIRECT_ENABLED'
 
@@ -60,11 +60,14 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     Handle redirection of requests based on response status
     and meta-refresh html tag.
     """
+
     def process_response(self, request, response, spider):
-        if (request.meta.get('dont_redirect', False) or
-                response.status in getattr(spider, 'handle_httpstatus_list', []) or
-                response.status in request.meta.get('handle_httpstatus_list', []) or
-                request.meta.get('handle_httpstatus_all', False)):
+        if (
+            request.meta.get('dont_redirect', False)
+            or response.status in getattr(spider, 'handle_httpstatus_list', [])
+            or response.status in request.meta.get('handle_httpstatus_list', [])
+            or request.meta.get('handle_httpstatus_all', False)
+        ):
             return response
 
         allowed_status = (301, 302, 303, 307, 308)

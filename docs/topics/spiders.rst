@@ -23,8 +23,8 @@ For spiders, the scraping cycle goes through something like this:
    :attr:`~scrapy.spiders.Spider.parse` method as callback function for the
    Requests.
 
-2. In the callback function, you parse the response (web page) and return either
-   dicts with extracted data, :class:`~scrapy.item.Item` objects,
+2. In the callback function, you parse the response (web page) and return
+   :ref:`item objects <topics-items>`,
    :class:`~scrapy.http.Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
@@ -121,7 +121,7 @@ scrapy.Spider
       send log messages through it as described on
       :ref:`topics-logging-from-spiders`.
 
-   .. method:: from_crawler(crawler, \*args, \**kwargs)
+   .. method:: from_crawler(crawler, *args, **kwargs)
 
        This is the class method used by Scrapy to create your spiders.
 
@@ -179,8 +179,8 @@ scrapy.Spider
        the same requirements as the :class:`Spider` class.
 
        This method, as well as any other Request callback, must return an
-       iterable of :class:`~scrapy.http.Request` and/or
-       dicts or :class:`~scrapy.item.Item` objects.
+       iterable of :class:`~scrapy.http.Request` and/or :ref:`item objects
+       <topics-items>`.
 
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
@@ -234,7 +234,7 @@ Return multiple Requests and items from a single callback::
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
-to give data more structure you can use :ref:`topics-items`::
+to give data more structure you can use :class:`~scrapy.item.Item` objects::
 
     import scrapy
     from myproject.items import MyItem
@@ -298,9 +298,7 @@ Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
-using something like
-`ast.literal_eval <https://docs.python.org/3/library/ast.html#ast.literal_eval>`_
-or `json.loads <https://docs.python.org/3/library/json.html#json.loads>`_
+using something like :func:`ast.literal_eval` or :func:`json.loads`
 and then set it as an attribute.
 Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
@@ -366,10 +364,9 @@ CrawlSpider
 
       This method is called for each response produced for the URLs in
       the spider's ``start_urls`` attribute. It allows to parse
-      the initial responses and must return either an item
-      (:class:`scrapy.item.Item` or :class:`dict`),
-      a :class:`~scrapy.http.Request`,
-      or an iterable containing any of them.
+      the initial responses and must return either an
+      :ref:`item object <topics-items>`, a :class:`~scrapy.http.Request`
+      object, or an iterable containing any of them.
 
 Crawling rules
 ~~~~~~~~~~~~~~
@@ -387,7 +384,7 @@ Crawling rules
    object with that name will be used) to be called for each link extracted with
    the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
    as its first argument and must return either a single instance or an iterable of
-   :class:`~scrapy.item.Item`, ``dict`` and/or :class:`~scrapy.http.Request` objects
+   :ref:`item objects <topics-items>` and/or :class:`~scrapy.http.Request` objects
    (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
    object will contain the text of the link that produced the :class:`~scrapy.http.Request`
    in its ``meta`` dictionary (under the ``link_text`` key)
@@ -540,7 +537,7 @@ XMLFeedSpider
         (``itertag``).  Receives the response and an
         :class:`~scrapy.selector.Selector` for each node.  Overriding this
         method is mandatory. Otherwise, you spider won't work.  This method
-        must return either a :class:`~scrapy.item.Item` object, a
+        must return an :ref:`item object <topics-items>`, a
         :class:`~scrapy.http.Request` object, or an iterable containing any of
         them.
 
@@ -550,7 +547,7 @@ XMLFeedSpider
         spider, and it's intended to perform any last time processing required
         before returning the results to the framework core, for example setting the
         item IDs. It receives a list of results and the response which originated
-        those results. It must return a list of results (Items or Requests).
+        those results. It must return a list of results (items or requests).
 
 
 .. warning:: Because of its internal implementation, you must explicitly set

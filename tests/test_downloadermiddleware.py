@@ -106,7 +106,7 @@ class ResponseFromProcessRequestTest(ManagerTestCase):
     def test_download_func_not_called(self):
         resp = Response('http://example.com/index.html')
 
-        class ResponseMiddleware(object):
+        class ResponseMiddleware:
             def process_request(self, request, spider):
                 return resp
 

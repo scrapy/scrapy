@@ -6,6 +6,8 @@ See documentation in docs/topics/loaders.rst
 from collections import defaultdict
 from contextlib import suppress
 
+from itemadapter import ItemAdapter
+
 from scrapy.item import Item
 from scrapy.loader.common import wrap_loader_context
 from scrapy.loader.processors import Identity
@@ -25,7 +27,7 @@ def unbound_method(method):
     return method
 
 
-class ItemLoader(object):
+class ItemLoader:
 
     default_item_class = Item
     default_input_processor = Identity()
@@ -44,7 +46,7 @@ class ItemLoader(object):
         self._local_item = context['item'] = item
         self._local_values = defaultdict(list)
         # values from initial item
-        for field_name, value in item.items():
+        for field_name, value in ItemAdapter(item).items():
             self._values[field_name] += arg_to_iter(value)
 
     @property
@@ -127,13 +129,12 @@ class ItemLoader(object):
         return value
 
     def load_item(self):
-        item = self.item
+        adapter = ItemAdapter(self.item)
         for field_name in tuple(self._values):
             value = self.get_output_value(field_name)
             if value is not None:
-                item[field_name] = value
-
-        return item
+                adapter[field_name] = value
+        return adapter.item
 
     def get_output_value(self, field_name):
         proc = self.get_output_processor(field_name)
@@ -174,11 +175,8 @@ class ItemLoader(object):
                                     value, type(e).__name__, str(e)))
 
     def _get_item_field_attr(self, field_name, key, default=None):
-        if isinstance(self.item, Item):
-            value = self.item.fields[field_name].get(key, default)
-        else:
-            value = default
-        return value
+        field_meta = ItemAdapter(self.item).get_field_meta(field_name)
+        return field_meta.get(key, default)
 
     def _check_selector_method(self):
         if self.selector is None:
