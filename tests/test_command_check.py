@@ -14,20 +14,20 @@ class CheckCommandTest(CommandTest):
 
     def _write_contract(self, contracts, parse_def):
         with open(self.spider, 'w') as file:
-            file.write(f"""
+            file.write("""
 import scrapy
 
 class CheckSpider(scrapy.Spider):
-    name = '{self.spider_name}'
+    name = '{0}'
     start_urls = ['http://example.com']
 
     def parse(self, response, **cb_kwargs):
         \"\"\"
         @url http://www.amazon.com/s?field-keywords=selfish+gene
-        {contracts}
+        {1}
         \"\"\"
-        {parse_def}
-            """)
+        {2}
+            """.format(self.spider_name, contracts, parse_def))
 
     def _test_contract(self, contracts='', parse_def='pass'):
         self._write_contract(contracts, parse_def)
