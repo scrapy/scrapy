@@ -3,6 +3,7 @@ from ipaddress import IPv4Address, IPv6Address
 from typing import Union, Optional
 
 from twisted.internet.ssl import Certificate
+from twisted.web.client import URI
 # for python < 3.8 -- typing.TypedDict is undefined
 from typing_extensions import TypedDict
 
@@ -19,13 +20,15 @@ class H2ConnectionMetadataDict(TypedDict):
     # is updated when HTTP/2 connection is  made successfully
     ip_address: Optional[Union[IPv4Address, IPv6Address]]
 
-    # Name of the peer HTTP/2 connection is established
-    hostname: Optional[str]
+    # URI of the peer HTTP/2 connection is made
+    uri: URI
 
-    port: Optional[int]
-
-    # Both ip_address and hostname are used by the Stream before
+    # Both ip_address and uri are used by the Stream before
     # initiating the request to verify that the base address
+
+    # Variables taken from Project Settings
+    default_download_maxsize: int
+    default_download_warnsize: int
 
 
 class H2ResponseDict(TypedDict):

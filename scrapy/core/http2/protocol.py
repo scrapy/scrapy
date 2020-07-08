@@ -2,29 +2,38 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
 from h2.events import (
-    DataReceived, ResponseReceived, SettingsAcknowledged,
+    Event, DataReceived, ResponseReceived, SettingsAcknowledged,
     StreamEnded, StreamReset, WindowUpdated
 )
 from h2.exceptions import ProtocolError
 from twisted.internet.defer import Deferred
-from twisted.internet.protocol import connectionDone, Protocol
+from twisted.internet.protocol import connectionDone, Factory, Protocol
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
+from twisted.web.client import URI
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.core.http2.types import H2ConnectionMetadataDict
 from scrapy.http import Request
+from scrapy.settings import Settings
 
 logger = logging.getLogger(__name__)
 
 
 class H2ClientProtocol(Protocol):
-    def __init__(self) -> None:
+    def __init__(self, uri: URI, settings: Settings) -> None:
+        """
+        Arguments:
+            uri -- URI of the base url to which HTTP/2 Connection will be made.
+                uri is used to verify that incoming client requests have correct
+                base URL.
+            settings -- Scrapy project settings
+        """
         config = H2Configuration(client_side=True, header_encoding='utf-8')
         self.conn = H2Connection(config=config)
 
@@ -53,8 +62,9 @@ class H2ClientProtocol(Protocol):
         self.metadata: H2ConnectionMetadataDict = {
             'certificate': None,
             'ip_address': None,
-            'hostname': None,
-            'port': None,
+            'uri': uri,
+            'default_download_maxsize': settings.getint('DOWNLOAD_MAXSIZE'),
+            'default_download_warnsize': settings.getint('DOWNLOAD_WARNSIZE'),
         }
 
     @property
@@ -135,8 +145,6 @@ class H2ClientProtocol(Protocol):
         destination = self.transport.getPeer()
         logger.debug('Connection made to {}'.format(destination))
         self.metadata['ip_address'] = ipaddress.ip_address(destination.host)
-        self.metadata['port'] = destination.port
-        self.metadata['hostname'] = self.transport.transport.addr[0]
 
         self.conn.initiate_connection()
         self._write_to_transport()
@@ -179,7 +187,7 @@ class H2ClientProtocol(Protocol):
         self._pending_request_stream_pool.clear()
         self.conn.close_connection()
 
-    def _handle_events(self, events: list) -> None:
+    def _handle_events(self, events: List[Event]) -> None:
         """Private method which acts as a bridge between the events
         received from the HTTP/2 data and IH2EventsHandler
 
@@ -232,3 +240,12 @@ class H2ClientProtocol(Protocol):
             # Send leftover data for all the streams
             for stream in self.streams.values():
                 stream.receive_window_update()
+
+
+class H2ClientFactory(Factory):
+    def __init__(self, uri: URI, settings: Settings) -> None:
+        self.uri = uri
+        self.settings = settings
+
+    def buildProtocol(self, addr) -> H2ClientProtocol:
+        return H2ClientProtocol(self.uri, self.settings)

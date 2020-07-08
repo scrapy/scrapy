@@ -16,6 +16,7 @@ from scrapy.core.http2.types import H2ResponseDict
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
@@ -34,7 +35,7 @@ class InactiveStreamClosed(ConnectionClosed):
 
 class InvalidHostname(Exception):
 
-    def __init__(self, request: Request, expected_hostname: Optional[str], expected_netloc: Optional[str]) -> None:
+    def __init__(self, request: Request, expected_hostname: str, expected_netloc: str) -> None:
         self.request = request
         self.expected_hostname = expected_hostname
         self.expected_netloc = expected_netloc
@@ -83,10 +84,7 @@ class Stream:
         self,
         stream_id: int,
         request: Request,
-        protocol: "H2ClientProtocol",
-        download_maxsize: int = 0,
-        download_warnsize: int = 0,
-        fail_on_data_loss: bool = True
+        protocol: "H2ClientProtocol"
     ) -> None:
         """
         Arguments:
@@ -98,9 +96,14 @@ class Stream:
         self._request: Request = request
         self._protocol: "H2ClientProtocol" = protocol
 
-        self._download_maxsize = self._request.meta.get('download_maxsize', download_maxsize)
-        self._download_warnsize = self._request.meta.get('download_warnsize', download_warnsize)
-        self._fail_on_dataloss = self._request.meta.get('download_fail_on_dataloss', fail_on_data_loss)
+        self._download_maxsize = self._request.meta.get(
+            'download_maxsize',
+            self._protocol.metadata['default_download_maxsize']
+        )
+        self._download_warnsize = self._request.meta.get(
+            'download_warnsize',
+            self._protocol.metadata['default_download_warnsize']
+        )
 
         self.request_start_time = None
 
@@ -174,9 +177,9 @@ class Stream:
         # Make sure that we are sending the request to the correct URL
         url = urlparse(self._request.url)
         return (
-            url.netloc == self._protocol.metadata['hostname']
-            or url.netloc == f'{self._protocol.metadata["hostname"]}:{self._protocol.metadata["port"]}'
-            or url.netloc == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["port"]}'
+            url.netloc == to_unicode(self._protocol.metadata['uri'].host)
+            or url.netloc == to_unicode(self._protocol.metadata['uri'].netloc)
+            or url.netloc == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
         )
 
     def _get_request_headers(self) -> List[Tuple[str, str]]:
@@ -391,8 +394,8 @@ class Stream:
         elif reason is StreamCloseReason.INVALID_HOSTNAME:
             self._deferred_response.errback(InvalidHostname(
                 self._request,
-                self._protocol.metadata['hostname'],
-                f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["port"]}'
+                to_unicode(self._protocol.metadata['uri'].host),
+                f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
             ))
 
     def _fire_response_deferred(self, flags: Optional[List[str]] = None) -> None:
