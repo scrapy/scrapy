@@ -22,8 +22,8 @@ class ItemLoader(itemloaders.ItemLoader):
     :type item: scrapy.item.Item
 
     :param selector: The selector to extract data from, when using the
-        :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
-        (resp. :meth:`replace_css`) method.
+        :meth:`add_xpath`, :meth:`add_css`, :meth:`replace_xpath`, or
+        :meth:`replace_css` method.
     :type selector: :class:`~scrapy.selector.Selector` object
 
     :param response: The response used to construct the selector using the
@@ -50,8 +50,8 @@ class ItemLoader(itemloaders.ItemLoader):
 
     .. attribute:: default_item_class
 
-        An Item class (or factory), used to instantiate items when not given in
-        the ``__init__`` method.
+        An :ref:`item <topics-items>` class (or factory), used to instantiate
+        items when not given in the ``__init__`` method.
 
     .. attribute:: default_input_processor
 
