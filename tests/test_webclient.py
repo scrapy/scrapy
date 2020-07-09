@@ -356,9 +356,8 @@ class WebClientTestCase(unittest.TestCase):
         """ Test that non-standart body encoding matches
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
-        return getPage(
-            self.getURL('encoding'), body=body, response_transform=lambda r: r)\
-            .addCallback(self._check_Encoding, body)
+        dfd = getPage(self.getURL('encoding'), body=body, response_transform=lambda r: r)
+        return dfd.addCallback(self._check_Encoding, body)
 
     def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b'Content-Encoding'])

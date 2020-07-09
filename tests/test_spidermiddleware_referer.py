@@ -6,16 +6,28 @@ from scrapy.http import Response, Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
-from scrapy.spidermiddlewares.referer import RefererMiddleware, \
-    POLICY_NO_REFERRER, POLICY_NO_REFERRER_WHEN_DOWNGRADE, \
-    POLICY_SAME_ORIGIN, POLICY_ORIGIN, POLICY_ORIGIN_WHEN_CROSS_ORIGIN, \
-    POLICY_SCRAPY_DEFAULT, POLICY_UNSAFE_URL, \
-    POLICY_STRICT_ORIGIN, POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, \
-    DefaultReferrerPolicy, \
-    NoReferrerPolicy, NoReferrerWhenDowngradePolicy, \
-    OriginWhenCrossOriginPolicy, OriginPolicy, \
-    StrictOriginWhenCrossOriginPolicy, StrictOriginPolicy, \
-    SameOriginPolicy, UnsafeUrlPolicy, ReferrerPolicy
+from scrapy.spidermiddlewares.referer import (
+    DefaultReferrerPolicy,
+    NoReferrerPolicy,
+    NoReferrerWhenDowngradePolicy,
+    OriginPolicy,
+    OriginWhenCrossOriginPolicy,
+    POLICY_NO_REFERRER,
+    POLICY_NO_REFERRER_WHEN_DOWNGRADE,
+    POLICY_ORIGIN,
+    POLICY_ORIGIN_WHEN_CROSS_ORIGIN,
+    POLICY_SAME_ORIGIN,
+    POLICY_SCRAPY_DEFAULT,
+    POLICY_STRICT_ORIGIN,
+    POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+    POLICY_UNSAFE_URL,
+    RefererMiddleware,
+    ReferrerPolicy,
+    SameOriginPolicy,
+    StrictOriginPolicy,
+    StrictOriginWhenCrossOriginPolicy,
+    UnsafeUrlPolicy,
+)
 
 
 class TestRefererMiddleware(TestCase):
