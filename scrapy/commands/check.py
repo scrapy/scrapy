@@ -85,7 +85,7 @@ class Command(ScrapyCommand):
                     continue
                 print(spider)
                 for method in sorted(methods):
-                    print('  * %s' % method)
+                    print(F'  * {method}')
         else:
             start = time.time()
             self.crawler_process.start()
