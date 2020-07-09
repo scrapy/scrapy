@@ -19,7 +19,7 @@ class ProcessResponseMiddleware:
         return response.replace(request=Request(OVERRIDEN_URL))
 
 
-class RaiseExceptionMiddleware:
+class RaiseExceptionRequestMiddleware:
     def process_request(self, request, spider):
         1 / 0
         return request
@@ -40,6 +40,19 @@ class CatchExceptionDoNotOverrideRequestMiddleware:
             url="http://localhost/",
             body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
         )
+
+
+class AlternativeCallbacksSpider(SingleRequestSpider):
+    name = "alternative_callbacks_spider"
+
+    def alt_callback(self, response):
+        self.logger.info("alt_callback was invoked")
+
+
+class AlternativeCallbacksMiddleware:
+    def process_response(self, request, response, spider):
+        new_request = request.replace(url=OVERRIDEN_URL, callback=spider.alt_callback)
+        return response.replace(request=new_request)
 
 
 class CrawlTestCase(TestCase):
@@ -75,7 +88,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionMiddleware": 590,
+                __name__ + ".RaiseExceptionRequestMiddleware": 590,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -132,7 +145,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionMiddleware": 590,
+                __name__ + ".RaiseExceptionRequestMiddleware": 590,
                 __name__ + ".CatchExceptionOverrideRequestMiddleware": 595,
             },
         })
@@ -153,7 +166,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionMiddleware": 590,
+                __name__ + ".RaiseExceptionRequestMiddleware": 590,
                 __name__ + ".CatchExceptionDoNotOverrideRequestMiddleware": 595,
             },
         })
@@ -162,3 +175,24 @@ class CrawlTestCase(TestCase):
         response = crawler.spider.meta["responses"][0]
         self.assertEqual(response.body, b"Caught ZeroDivisionError")
         self.assertEqual(response.request.url, url)
+
+    @defer.inlineCallbacks
+    def test_downloader_middleware_alternative_callback(self):
+        """
+        Downloader middleware which returns a response with a
+        specific 'request' attribute, with an alternative callback
+        """
+        runner = CrawlerRunner(settings={
+            "DOWNLOADER_MIDDLEWARES": {
+                __name__ + ".AlternativeCallbacksMiddleware": 595,
+            }
+        })
+        crawler = runner.create_crawler(AlternativeCallbacksSpider)
+
+        with LogCapture() as log:
+            url = self.mockserver.url("/status?n=200")
+            yield crawler.crawl(seed=url, mockserver=self.mockserver)
+
+        log.check_present(
+            ("alternative_callbacks_spider", "INFO", "alt_callback was invoked"),
+        )
