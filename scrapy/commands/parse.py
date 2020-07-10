@@ -100,7 +100,7 @@ class Command(ScrapyCommand):
 
         if opts.verbose:
             for level in range(1, self.max_level + 1):
-                print('\n>>> DEPTH LEVEL: %s <<<' % level)
+                print('\n>>> DEPTH LEVEL: {level} <<<')
                 if not opts.noitems:
                     self.print_items(level, colour)
                 if not opts.nolinks:

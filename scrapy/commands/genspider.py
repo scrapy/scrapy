@@ -73,8 +73,8 @@ class Command(ScrapyCommand):
         else:
             # if spider already exists and not --force then halt
             if not opts.force:
-                print("Spider %r already exists in module:" % name)
-                print("  %s" % spidercls.__module__)
+                print("Spider {name} already exists in module:")
+                print("  {spidercls.__module__}")
                 return
         template_file = self._find_template(opts.template)
         if template_file:
