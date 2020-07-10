@@ -21,8 +21,8 @@ for extending and overriding different field parsing rules, either by spider,
 or by source format (HTML, XML, etc) without becoming a nightmare to maintain.
 
 .. note:: Item Loaders are an extension of the itemloaders_ library that make it
-    easier to work with Scrapy by adding support for :ref:`items <topics-items>`
-    and :ref:`responses <topics-request-response>`.
+    easier to work with Scrapy by adding support for
+    :ref:`responses <topics-request-response>`.
 
 Using Item Loaders to populate items
 ====================================
