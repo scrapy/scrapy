@@ -1,9 +1,10 @@
 import unittest
 from unittest import mock
 
+from scrapy.exceptions import NotConfigured
 from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
                              SETTINGS_PRIORITIES, get_settings_priority)
-from . import default_settings
+from tests import default_settings
 
 
 class SettingsGlobalFuncsTest(unittest.TestCase):
@@ -145,7 +146,7 @@ class BaseSettingsTest(unittest.TestCase):
 
         self.settings.attributes = {}
         self.settings.setmodule(
-            'tests.test_settings.default_settings', 10)
+            'tests.default_settings', 10)
 
         self.assertCountEqual(self.settings.attributes.keys(),
                               ctrl_attributes.keys())
@@ -223,47 +224,88 @@ class BaseSettingsTest(unittest.TestCase):
             'TEST_STR': 'value',
             'TEST_DICT1': {'key1': 'val1', 'ke2': 3},
             'TEST_DICT2': '{"key1": "val1", "ke2": 3}',
+            'TEST_CONFIGURED': False,
+            'TEST_CONFIGURED2': None,
         }
         settings = self.settings
         settings.attributes = {key: SettingsAttribute(value, 0) for key, value
                                in test_configuration.items()}
 
         self.assertTrue(settings.getbool('TEST_ENABLED1'))
+        self.assertTrue(settings.getbool('TEST_ENABLED1', required=True))
         self.assertTrue(settings.getbool('TEST_ENABLED2'))
+        self.assertTrue(settings.getbool('TEST_ENABLED2', required=True))
         self.assertTrue(settings.getbool('TEST_ENABLED3'))
         self.assertTrue(settings.getbool('TEST_ENABLED4'))
+        self.assertTrue(settings.getbool('TEST_ENABLED4', required=True))
         self.assertTrue(settings.getbool('TEST_ENABLED5'))
+        self.assertTrue(settings.getbool('TEST_ENABLED5', required=True))
         self.assertFalse(settings.getbool('TEST_ENABLEDx'))
+        self.assertRaises(NotConfigured, settings.getbool, 'TEST_ENABLEDx', required=True)
         self.assertTrue(settings.getbool('TEST_ENABLEDx', True))
+        self.assertTrue(settings.getbool('TEST_ENABLEDx', True, required=True))
         self.assertFalse(settings.getbool('TEST_DISABLED1'))
+        self.assertFalse(settings.getbool('TEST_DISABLED1', required=True))
         self.assertFalse(settings.getbool('TEST_DISABLED2'))
+        self.assertFalse(settings.getbool('TEST_DISABLED2', required=True))
         self.assertFalse(settings.getbool('TEST_DISABLED3'))
+        self.assertFalse(settings.getbool('TEST_DISABLED3', required=True))
         self.assertFalse(settings.getbool('TEST_DISABLED4'))
+        self.assertFalse(settings.getbool('TEST_DISABLED4', required=True))
         self.assertFalse(settings.getbool('TEST_DISABLED5'))
+        self.assertFalse(settings.getbool('TEST_DISABLED5', required=True))
         self.assertEqual(settings.getint('TEST_INT1'), 123)
+        self.assertEqual(settings.getint('TEST_INT1', required=True), 123)
         self.assertEqual(settings.getint('TEST_INT2'), 123)
+        self.assertEqual(settings.getint('TEST_INT2', required=True), 123)
         self.assertEqual(settings.getint('TEST_INTx'), 0)
+        self.assertRaises(NotConfigured, settings.getint, 'TEST_INTx', required=True)
         self.assertEqual(settings.getint('TEST_INTx', 45), 45)
+        self.assertEqual(settings.getint('TEST_INTx', 45, required=True), 45)
         self.assertEqual(settings.getfloat('TEST_FLOAT1'), 123.45)
+        self.assertEqual(settings.getfloat('TEST_FLOAT1', required=True), 123.45)
         self.assertEqual(settings.getfloat('TEST_FLOAT2'), 123.45)
+        self.assertEqual(settings.getfloat('TEST_FLOAT2', required=True), 123.45)
         self.assertEqual(settings.getfloat('TEST_FLOATx'), 0.0)
+        self.assertRaises(NotConfigured, settings.getfloat, 'TEST_FLOATx', required=True)
         self.assertEqual(settings.getfloat('TEST_FLOATx', 55.0), 55.0)
+        self.assertEqual(settings.getfloat('TEST_FLOATx', 55.0, required=True), 55.0)
         self.assertEqual(settings.getlist('TEST_LIST1'), ['one', 'two'])
+        self.assertEqual(settings.getlist('TEST_LIST1', required=True), ['one', 'two'])
         self.assertEqual(settings.getlist('TEST_LIST2'), ['one', 'two'])
+        self.assertEqual(settings.getlist('TEST_LIST2', required=True), ['one', 'two'])
         self.assertEqual(settings.getlist('TEST_LISTx'), [])
+        self.assertRaises(NotConfigured, settings.getlist, 'TEST_LISTx', required=True)
         self.assertEqual(settings.getlist('TEST_LISTx', ['default']), ['default'])
+        self.assertEqual(settings.getlist('TEST_LISTx', ['default'], required=True), ['default'])
         self.assertEqual(settings['TEST_STR'], 'value')
         self.assertEqual(settings.get('TEST_STR'), 'value')
+        self.assertEqual(settings.get('TEST_STR', required=True), 'value')
         self.assertEqual(settings['TEST_STRx'], None)
         self.assertEqual(settings.get('TEST_STRx'), None)
+        self.assertRaises(NotConfigured, settings.get, 'TEST_STRx', required=True)
         self.assertEqual(settings.get('TEST_STRx', 'default'), 'default')
+        self.assertEqual(settings.get('TEST_STRx', 'default', required=True), 'default')
         self.assertEqual(settings.getdict('TEST_DICT1'), {'key1': 'val1', 'ke2': 3})
+        self.assertEqual(settings.getdict('TEST_DICT1', required=True), {'key1': 'val1', 'ke2': 3})
         self.assertEqual(settings.getdict('TEST_DICT2'), {'key1': 'val1', 'ke2': 3})
-        self.assertEqual(settings.getdict('TEST_DICT3'), {})
-        self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
+        self.assertEqual(settings.getdict('TEST_DICT2', required=True), {'key1': 'val1', 'ke2': 3})
+        self.assertEqual(settings.getdict('TEST_DICTx'), {})
+        self.assertRaises(NotConfigured, settings.getdict, 'TEST_DICTx', required=True)
+        self.assertEqual(settings.getdict('TEST_DICTx', {'key1': 5}), {'key1': 5})
+        self.assertEqual(settings.getdict('TEST_DICTx', {'key1': 5}, required=True), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
+        self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1', required=True)
         self.assertRaises(ValueError, settings.getbool, 'TEST_ENABLED_WRONG')
+        self.assertRaises(ValueError, settings.getdict, 'TEST_ENABLED_WRONG', required=True)
         self.assertRaises(ValueError, settings.getbool, 'TEST_DISABLED_WRONG')
+        self.assertRaises(ValueError, settings.getdict, 'TEST_DISABLED_WRONG', required=True)
+        self.assertEqual(settings.get('TEST_CONFIGURED', required=True), False)
+        self.assertRaises(NotConfigured, settings.get, 'NOT_CONFIGURED', required=True)
+        self.assertEqual(settings.get('TEST_CONFIGURED2'), None)
+        self.assertEqual(settings.get('TEST_CONFIGURED2', required=True), None)
+        self.assertEqual(settings.getlist('TEST_CONFIGURED2'), [])
+        self.assertEqual(settings.getdict('TEST_CONFIGURED2'), {})
 
     def test_getpriority(self):
         settings = BaseSettings({'key': 'value'}, priority=99)

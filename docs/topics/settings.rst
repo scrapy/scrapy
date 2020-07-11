@@ -135,7 +135,8 @@ extensions, middlewares and item pipelines::
 The settings object can be used like a dict (e.g.,
 ``settings['LOG_ENABLED']``), but it's usually preferred to extract the setting
 in the format you need it to avoid type errors, using one of the methods
-provided by the :class:`~scrapy.settings.Settings` API.
+provided by the :class:`~scrapy.settings.Settings` API. Those methods also
+allow to check whether or not a setting has been defined.
 
 Rationale for setting names
 ===========================

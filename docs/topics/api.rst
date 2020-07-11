@@ -151,6 +151,7 @@ Settings API
 .. autoclass:: BaseSettings
    :members:
 
+
 .. _topics-api-spiderloader:
 
 SpiderLoader API
@@ -199,6 +200,11 @@ SpiderLoader API
 
        :param request: queried request
        :type request: :class:`~scrapy.http.Request` instance
+
+       :param required: if ``True`` and it returns ``None`` will raise a
+            :class:`~scrapy.exceptions.NotConfigured` exception
+       :type required: boolean
+
 
 .. _topics-api-signals:
 

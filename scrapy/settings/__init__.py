@@ -4,6 +4,7 @@ from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
+from scrapy.exceptions import NotConfigured
 from scrapy.settings import default_settings
 
 
@@ -14,6 +15,9 @@ SETTINGS_PRIORITIES = {
     'spider': 30,
     'cmdline': 40,
 }
+
+
+_NOT_SET = object()
 
 
 def get_settings_priority(priority):
@@ -93,7 +97,12 @@ class BaseSettings(MutableMapping):
     def __contains__(self, name):
         return name in self.attributes
 
-    def get(self, name, default=None):
+    def _get_default(self, value, default, required):
+        if not required and value is _NOT_SET:
+            return default
+        return value
+
+    def get(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value without affecting its original type.
 
@@ -102,10 +111,18 @@ class BaseSettings(MutableMapping):
 
         :param default: the value to return if no setting is found
         :type default: any
-        """
-        return self[name] if self[name] is not None else default
 
-    def getbool(self, name, default=False):
+        :param required: if ``True`` and `default` is not specified, it will
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
+        :type required: boolean
+        """
+        value = default if name not in self.attributes else self[name]
+        if required and value is _NOT_SET:
+            raise NotConfigured
+        return None if value is _NOT_SET else value
+
+    def getbool(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a boolean.
 
@@ -120,8 +137,14 @@ class BaseSettings(MutableMapping):
 
         :param default: the value to return if no setting is found
         :type default: any
+
+        :param required: if ``True`` and `default` is not specified, it will
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
+        :type required: boolean
         """
-        got = self.get(name, default)
+        default = self._get_default(default, False, required=required)
+        got = self.get(name, default, required=required)
         try:
             return bool(int(got))
         except ValueError:
@@ -133,7 +156,7 @@ class BaseSettings(MutableMapping):
                              "are 0/1, True/False, '0'/'1', "
                              "'True'/'False' and 'true'/'false'")
 
-    def getint(self, name, default=0):
+    def getint(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as an int.
 
@@ -142,10 +165,16 @@ class BaseSettings(MutableMapping):
 
         :param default: the value to return if no setting is found
         :type default: any
-        """
-        return int(self.get(name, default))
 
-    def getfloat(self, name, default=0.0):
+        :param required: if ``True`` and `default` is not specified, it will
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
+        :type required: boolean
+        """
+        default = self._get_default(default, 0, required=required)
+        return int(self.get(name, default, required=required))
+
+    def getfloat(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a float.
 
@@ -154,10 +183,16 @@ class BaseSettings(MutableMapping):
 
         :param default: the value to return if no setting is found
         :type default: any
-        """
-        return float(self.get(name, default))
 
-    def getlist(self, name, default=None):
+        :param required: if ``True`` and `default` is not specified, it will
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
+        :type required: boolean
+        """
+        default = self._get_default(default, 0.0, required=required)
+        return float(self.get(name, default, required=required))
+
+    def getlist(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a list. If the setting original type is a list, a
         copy of it will be returned. If it's a string it will be split by ",".
@@ -170,13 +205,21 @@ class BaseSettings(MutableMapping):
 
         :param default: the value to return if no setting is found
         :type default: any
+
+        :param required: if ``True`` and `default` is not specified, it will
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
+        :type required: boolean
         """
-        value = self.get(name, default or [])
+        default = self._get_default(default, [], required=required)
+        value = self.get(name, default, required=required)
+        if value is None:
+            return []
         if isinstance(value, str):
             value = value.split(',')
         return list(value)
 
-    def getdict(self, name, default=None):
+    def getdict(self, name, default=_NOT_SET, *, required=False):
         """
         Get a setting value as a dictionary. If the setting original type is a
         dictionary, a copy of it will be returned. If it is a string it will be
@@ -191,8 +234,16 @@ class BaseSettings(MutableMapping):
 
         :param default: the value to return if no setting is found
         :type default: any
+
+        :param required: if ``True`` and `default` is not specified, it will
+            raise an :class:`~scrapy.exceptions.NotConfigured` exception if the
+            specified setting has not been defined
+        :type required: boolean
         """
-        value = self.get(name, default or {})
+        default = self._get_default(default, {}, required=required)
+        value = self.get(name, default, required=required)
+        if value is None:
+            return {}
         if isinstance(value, str):
             value = json.loads(value)
         return dict(value)
