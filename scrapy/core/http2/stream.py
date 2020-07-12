@@ -16,7 +16,6 @@ from scrapy.core.http2.types import H2ResponseDict
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
@@ -177,8 +176,8 @@ class Stream:
         # Make sure that we are sending the request to the correct URL
         url = urlparse(self._request.url)
         return (
-            url.netloc == to_unicode(self._protocol.metadata['uri'].host)
-            or url.netloc == to_unicode(self._protocol.metadata['uri'].netloc)
+            url.netloc == str(self._protocol.metadata['uri'].host, 'utf-8')
+            or url.netloc == str(self._protocol.metadata['uri'].netloc, 'utf-8')
             or url.netloc == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
         )
 
@@ -394,7 +393,7 @@ class Stream:
         elif reason is StreamCloseReason.INVALID_HOSTNAME:
             self._deferred_response.errback(InvalidHostname(
                 self._request,
-                to_unicode(self._protocol.metadata['uri'].host),
+                str(self._protocol.metadata['uri'].host, 'utf-8'),
                 f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
             ))
 

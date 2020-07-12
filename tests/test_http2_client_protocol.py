@@ -23,7 +23,6 @@ from scrapy.core.http2.protocol import H2ClientFactory
 from scrapy.core.http2.stream import InactiveStreamClosed, InvalidHostname
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes, to_unicode
 from tests.mockserver import ssl_context_factory, LeafResource, Status
 
 
@@ -39,7 +38,7 @@ def make_html_body(val):
 <h1>Hello from HTTP2<h1>
 <p>{val}</p>
 </html>'''
-    return to_bytes(response)
+    return bytes(response, 'utf-8')
 
 
 class Data:
@@ -83,10 +82,11 @@ class PostDataJsonMixin:
             'extra-data': extra_data
         }
         for k, v in request.requestHeaders.getAllRawHeaders():
-            response['request-headers'][to_unicode(k)] = to_unicode(v[0])
+            response['request-headers'][str(k, 'utf-8')] = str(v[0], 'utf-8')
 
-        response_bytes = to_bytes(json.dumps(response))
-        request.setHeader('Content-Type', 'application/json')
+        response_bytes = bytes(json.dumps(response), 'utf-8')
+        request.setHeader('Content-Type', 'application/json; charset=UTF-8')
+        request.setHeader('Content-Encoding', 'UTF-8')
         return response_bytes
 
 
@@ -127,13 +127,14 @@ class NoContentLengthHeader(LeafResource):
 
 class QueryParams(LeafResource):
     def render_GET(self, request: TxRequest):
-        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Content-Type', 'application/json; charset=UTF-8')
+        request.setHeader('Content-Encoding', 'UTF-8')
 
         query_params = {}
         for k, v in request.args.items():
-            query_params[to_unicode(k)] = to_unicode(v[0])
+            query_params[str(k, 'utf-8')] = str(v[0], 'utf-8')
 
-        return to_bytes(json.dumps(query_params))
+        return bytes(json.dumps(query_params), 'utf-8')
 
 
 def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
@@ -184,7 +185,7 @@ class Https2ClientProtocolTestCase(TestCase):
             trustRoot=self.client_certificate,
             acceptableProtocols=[b'h2']
         )
-        uri = URI.fromBytes(to_bytes(self.get_url('/')))
+        uri = URI.fromBytes(bytes(self.get_url('/'), 'utf-8'))
         h2_client_factory = H2ClientFactory(uri, Settings())
         client_endpoint = SSL4ClientEndpoint(reactor, self.hostname, self.port_number, client_options)
         self.client = yield client_endpoint.connect(h2_client_factory)
@@ -278,7 +279,8 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(len(response.body), content_length)
 
             # Parse the body
-            body = json.loads(to_unicode(response.body))
+            content_encoding = str(response.headers[b'Content-Encoding'], 'utf-8')
+            body = json.loads(str(response.body, content_encoding))
             self.assertIn('request-body', body)
             self.assertIn('extra-data', body)
             self.assertIn('request-headers', body)
@@ -292,9 +294,9 @@ class Https2ClientProtocolTestCase(TestCase):
             # Check if headers were sent successfully
             request_headers = body['request-headers']
             for k, v in request.headers.items():
-                k_str = to_unicode(k)
+                k_str = str(k, 'utf-8')
                 self.assertIn(k_str, request_headers)
-                self.assertEqual(request_headers[k_str], to_unicode(v[0]))
+                self.assertEqual(request_headers[k_str], str(v[0], 'utf-8'))
 
         d.addCallback(assert_response)
         d.addErrback(self.fail)
@@ -494,7 +496,8 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(self.get_url(f'/query-params?{urlencode(params)}'))
 
         def assert_query_params(response: Response):
-            data = json.loads(to_unicode(response.body))
+            content_encoding = str(response.headers[b'Content-Encoding'], 'utf-8')
+            data = json.loads(str(response.body, content_encoding))
             self.assertEqual(data, params)
 
         d = self.client.request(request)
