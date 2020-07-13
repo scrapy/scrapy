@@ -46,7 +46,6 @@ class ItemLoader(itemloaders.ItemLoader):
     .. attribute:: context
 
         The currently active :ref:`Context <loaders-context>` of this Item Loader.
-        Refer to <loaders-context> for more information about the Loader Context.
 
     .. attribute:: default_item_class
 
