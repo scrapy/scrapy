@@ -1,7 +1,7 @@
 import re
 import os
 import string
-from importlib import import_module
+from importlib.util import find_spec
 from os.path import join, exists, abspath
 from shutil import ignore_patterns, move, copy2, copystat
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
@@ -43,10 +43,10 @@ class Command(ScrapyCommand):
     def _is_valid_name(self, project_name):
         def _module_exists(module_name):
             try:
-                import_module(module_name)
-                return True
-            except ImportError:
+                spec = find_spec(module_name)
+            except ModuleNotFoundError:
                 return False
+            return spec is not None and spec.loader is not None
 
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
             print('Error: Project names must begin with a letter and contain'
