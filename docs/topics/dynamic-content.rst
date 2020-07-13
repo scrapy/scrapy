@@ -206,7 +206,7 @@ data from it:
     >>> import lxml.etree
     >>> from parsel import Selector
     >>> javascript = response.css('script::text').get()
-    >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='utf-8')
+    >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
     >>> selector = Selector(text=xml)
     >>> selector.css('var[name="data"]').get()
     '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
