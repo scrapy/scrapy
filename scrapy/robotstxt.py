@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
     try:
         if to_native_str_type:
-            robotstxt_body = str(robotstxt_body)
+            robotstxt_body = str(robotstxt_body, 'utf-8')
         else:
             robotstxt_body = robotstxt_body.decode('utf-8')
     except UnicodeDecodeError:
@@ -68,8 +68,8 @@ class PythonRobotParser(RobotParser):
         return o
 
     def allowed(self, url, user_agent):
-        user_agent = str(user_agent)
-        url = str(url)
+        user_agent = str(user_agent, 'utf-8')
+        url = str(url, 'utf-8')
         return self.rp.can_fetch(user_agent, url)
 
 
@@ -104,8 +104,8 @@ class RerpRobotParser(RobotParser):
         return o
 
     def allowed(self, url, user_agent):
-        user_agent = str(user_agent)
-        url = str(url)
+        user_agent = str(user_agent, 'utf-8')
+        url = str(url, 'utf-8')
         return self.rp.is_allowed(user_agent, url)
 
 
@@ -123,6 +123,6 @@ class ProtegoRobotParser(RobotParser):
         return o
 
     def allowed(self, url, user_agent):
-        user_agent = str(user_agent)
-        url = str(url)
+        user_agent = str(user_agent, 'utf-8')
+        url = str(url, 'utf-8')
         return self.rp.can_fetch(url, user_agent)

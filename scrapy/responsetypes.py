@@ -53,7 +53,7 @@ class ResponseTypes:
         header """
         if content_encoding:
             return Response
-        mimetype = str(content_type).split(';')[0].strip().lower()
+        mimetype = str(content_type, 'utf-8').split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
@@ -92,7 +92,7 @@ class ResponseTypes:
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
-        chunk = bytes(chunk)
+        chunk = bytes(chunk, 'utf-8')
         if not binary_is_text(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():

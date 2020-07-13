@@ -9,7 +9,7 @@ from tests.test_commands import CommandTest
 def _textmode(bstr):
     """Normalize input the same as writing to a file
     and reading from it in text mode"""
-    return str(bstr).replace(os.linesep, '\n')
+    return str(bstr, 'utf-8').replace(os.linesep, '\n')
 
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):

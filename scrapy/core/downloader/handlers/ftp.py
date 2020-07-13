@@ -105,7 +105,7 @@ class FTPDownloadHandler:
         protocol.close()
         body = protocol.filename or protocol.body.read()
         headers = {"local filename": protocol.filename or '', "size": protocol.size}
-        return respcls(url=request.url, status=200, body=bytes(body), headers=headers)
+        return respcls(url=request.url, status=200, body=bytes(body, 'utf-8'), headers=headers)
 
     def _failed(self, result, request):
         message = result.getErrorMessage()
@@ -114,5 +114,5 @@ class FTPDownloadHandler:
             if m:
                 ftpcode = m.group()
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(url=request.url, status=httpcode, body=bytes(message))
+                return Response(url=request.url, status=httpcode, body=bytes(message, 'utf-8'))
         raise result.type(result.value)

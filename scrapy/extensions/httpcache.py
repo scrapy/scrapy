@@ -47,7 +47,7 @@ class RFC2616Policy:
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self._cc_parsed = WeakKeyDictionary()
         self.ignore_response_cache_controls = [
-            bytes(cc) for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
+            bytes(cc, 'utf-8') for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
         ]
 
     def _parse_cachecontrol(self, r):
@@ -315,7 +315,7 @@ class FilesystemCacheStorage:
             'timestamp': time(),
         }
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
-            f.write(bytes(repr(metadata)))
+            f.write(bytes(repr(metadata), 'utf-8'))
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:

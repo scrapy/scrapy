@@ -38,7 +38,7 @@ def response_status_message(status):
     """Return status code plus status text descriptive message
     """
     message = http.RESPONSES.get(int(status), "Unknown Status")
-    return '%s %s' % (status, str(message))
+    return '%s %s' % (status, str(message, 'utf-8'))
 
 
 def response_httprepr(response):
@@ -65,7 +65,7 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     if isinstance(response, HtmlResponse):
         if b'<base' not in body:
             repl = '<head><base href="%s">' % response.url
-            body = body.replace(b'<head>', bytes(repl))
+            body = body.replace(b'<head>', bytes(repl, 'utf-8'))
         ext = '.html'
     elif isinstance(response, TextResponse):
         ext = '.txt'

@@ -49,7 +49,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
 
     """
     if include_headers:
-        include_headers = tuple(bytes(h.lower()) for h in sorted(include_headers))
+        include_headers = tuple(bytes(h.lower(), 'utf-8') for h in sorted(include_headers))
     cache = _fingerprint_cache.setdefault(request, {})
     cache_key = (include_headers, keep_fragments)
     if cache_key not in cache:
@@ -82,8 +82,8 @@ def request_httprepr(request):
     """
     parsed = urlparse_cached(request)
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    s = bytes(request.method) + b" " + bytes(path) + b" HTTP/1.1\r\n"
-    s += b"Host: " + bytes(parsed.hostname or b'') + b"\r\n"
+    s = bytes(request.method) + b" " + bytes(path, 'utf-8') + b" HTTP/1.1\r\n"
+    s += b"Host: " + bytes(parsed.hostname or b'', 'utf-8') + b"\r\n"
     if request.headers:
         s += request.headers.to_string() + b"\r\n"
     s += b"\r\n"
@@ -96,4 +96,4 @@ def referer_str(request):
     referrer = request.headers.get('Referer')
     if referrer is None:
         return referrer
-    return str(referrer, errors='replace')
+    return str(referrer, 'utf-8', errors='replace')

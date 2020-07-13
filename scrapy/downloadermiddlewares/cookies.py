@@ -50,7 +50,7 @@ class CookiesMiddleware:
 
     def _debug_cookie(self, request, spider):
         if self.debug:
-            cl = [str(c, errors='replace')
+            cl = [str(c, 'utf-8', errors='replace')
                   for c in request.headers.getlist('Cookie')]
             if cl:
                 cookies = "\n".join("Cookie: {}\n".format(c) for c in cl)
@@ -59,7 +59,7 @@ class CookiesMiddleware:
 
     def _debug_set_cookie(self, response, spider):
         if self.debug:
-            cl = [str(c, errors='replace')
+            cl = [str(c, 'utf-8', errors='replace')
                   for c in response.headers.getlist('Set-Cookie')]
             if cl:
                 cookies = "\n".join("Set-Cookie: {}\n".format(c) for c in cl)

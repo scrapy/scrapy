@@ -8,7 +8,7 @@ SSL_OP_NO_TLSv1_3 = getattr(pyOpenSSLutil.lib, 'SSL_OP_NO_TLSv1_3', 0)
 
 
 def ffi_buf_to_string(buf):
-    return str(pyOpenSSLutil.ffi.string(buf))
+    return str(pyOpenSSLutil.ffi.string(buf), 'utf-8')
 
 
 def x509name_to_string(x509name):

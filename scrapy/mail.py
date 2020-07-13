@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def _to_bytes_or_none(text):
     if text is None:
         return None
-    return bytes(text)
+    return bytes(text, 'utf-8')
 
 
 class MailSender:

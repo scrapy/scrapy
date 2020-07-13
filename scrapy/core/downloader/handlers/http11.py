@@ -187,12 +187,12 @@ def tunnel_request_data(host, port, proxy_auth_header=None):
     r"""
     Return binary content of a CONNECT request.
 
-    >>> s(tunnel_request_data("example.com", 8080))
-    'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
-    >>> s(tunnel_request_data("example.com", 8080, b"123"))
-    'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
-    >>> s(tunnel_request_data(b"example.com", "8090"))
-    'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
+    >>> tunnel_request_data("example.com", 8080)
+    b'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\n\r\n'
+    >>> tunnel_request_data("example.com", 8080, b"123")
+    b'CONNECT example.com:8080 HTTP/1.1\r\nHost: example.com:8080\r\nProxy-Authorization: 123\r\n\r\n'
+    >>> tunnel_request_data(b"example.com", "8090")
+    b'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
     """
     host_value = bytes(host, encoding='ascii') + b':' + bytes(str(port))
     tunnel_req = b'CONNECT ' + host_value + b' HTTP/1.1\r\n'
@@ -297,7 +297,7 @@ class ScrapyAgent:
         if proxy:
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
-            proxyHost = str(proxyHost)
+            proxyHost = str(proxyHost, 'utf-8')
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
                 warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "

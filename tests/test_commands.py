@@ -67,7 +67,7 @@ class ProjectTest(unittest.TestCase):
 
         def kill_proc():
             p.kill()
-            assert False, 'Command took too much time to complete'
+            assert False, 'Command took too mcipher_stringuch time to complete'
 
         timer = Timer(15, kill_proc)
         try:
@@ -76,7 +76,7 @@ class ProjectTest(unittest.TestCase):
         finally:
             timer.cancel()
 
-        return p, str(stdout), str(stderr)
+        return p, str(stdout, 'utf-8'), str(stderr, 'utf-8')
 
 
 class StartprojectTest(ProjectTest):

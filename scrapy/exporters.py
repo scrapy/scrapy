@@ -290,7 +290,7 @@ class PprintItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(bytes(pprint.pformat(itemdict) + '\n'))
+        self.file.write(bytes(pprint.pformat(itemdict) + '\n', 'utf-8'))
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -331,7 +331,7 @@ class PythonItemExporter(BaseItemExporter):
 
     def _serialize_item(self, item):
         for key, value in ItemAdapter(item).items():
-            key = bytes(key) if self.binary else key
+            key = bytes(key, self.encoding) if self.binary else key
             yield key, self._serialize_value(value)
 
     def export_item(self, item):

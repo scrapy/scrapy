@@ -24,7 +24,7 @@ class HTTP10DownloadHandler:
 
     def _connect(self, factory):
         from twisted.internet import reactor
-        host, port = str(factory.host), factory.port
+        host, port = str(factory.host, 'utf-8'), factory.port
         if factory.scheme == b'https':
             client_context_factory = create_instance(
                 objcls=self.ClientContextFactory,

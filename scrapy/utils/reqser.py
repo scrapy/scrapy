@@ -20,7 +20,7 @@ def request_to_dict(request, spider=None):
     if callable(eb):
         eb = _find_method(spider, eb)
     d = {
-        'url': str(request.url),  # urls should be safe (safe_string_url)
+        'url': str(request.url, 'utf-8'),  # urls should be safe (safe_string_url)
         'callback': cb,
         'errback': eb,
         'method': request.method,
@@ -53,7 +53,7 @@ def request_from_dict(d, spider=None):
         eb = _get_method(spider, eb)
     request_cls = load_object(d['_class']) if '_class' in d else Request
     return request_cls(
-        url=str(d['url']),
+        url=str(d['url'], 'utf-8'),
         callback=cb,
         errback=eb,
         method=d['method'],
