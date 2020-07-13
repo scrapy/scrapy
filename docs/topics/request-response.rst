@@ -56,7 +56,7 @@ Request objects
       ``body`` is not given, an empty bytes object is stored. Regardless of the
       type of this argument, the final value stored will be a bytes object
       (never a string or ``None``).
-    :type body: bytes
+    :type body: bytes or str
 
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
