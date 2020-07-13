@@ -3,8 +3,8 @@ These tests are kept as references from the ones that were ported to a itemloade
 Once we remove the references from scrapy, we can remove these tests.
 """
 
-from functools import partial
 import unittest
+from functools import partial
 
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
