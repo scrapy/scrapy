@@ -4,18 +4,16 @@ import logging
 from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
 
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import BaseRunSpiderCommand
 from scrapy.http import Request
 from scrapy.utils import display
-from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
 logger = logging.getLogger(__name__)
 
 
-class Command(ScrapyCommand):
-
+class Command(BaseRunSpiderCommand):
     requires_project = True
 
     spider = None
@@ -31,11 +29,9 @@ class Command(ScrapyCommand):
         return "Parse URL (using its spider) and print the results"
 
     def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+        BaseRunSpiderCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None,
                           help="use this spider without looking for one")
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
-                          help="set spider argument (may be repeated)")
         parser.add_option("--pipelines", action="store_true",
                           help="process items through pipelines")
         parser.add_option("--nolinks", dest="nolinks", action="store_true",
@@ -200,12 +196,15 @@ class Command(ScrapyCommand):
             self.add_items(depth, items)
             self.add_requests(depth, requests)
 
+            scraped_data = items if opts.output else []
             if depth < opts.depth:
                 for req in requests:
                     req.meta['_depth'] = depth + 1
                     req.meta['_callback'] = req.callback
                     req.callback = callback
-                return requests
+                scraped_data += requests
+
+            return scraped_data
 
         # update request meta if any extra meta was passed through the --meta/-m opts.
         if opts.meta:
@@ -221,17 +220,10 @@ class Command(ScrapyCommand):
         return request
 
     def process_options(self, args, opts):
-        ScrapyCommand.process_options(self, args, opts)
+        BaseRunSpiderCommand.process_options(self, args, opts)
 
-        self.process_spider_arguments(opts)
         self.process_request_meta(opts)
         self.process_request_cb_kwargs(opts)
-
-    def process_spider_arguments(self, opts):
-        try:
-            opts.spargs = arglist_to_dict(opts.spargs)
-        except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
 
     def process_request_meta(self, opts):
         if opts.meta:

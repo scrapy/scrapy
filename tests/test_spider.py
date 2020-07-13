@@ -11,8 +11,14 @@ from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.spiders.init import InitSpider
-from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
-    CSVFeedSpider, SitemapSpider
+from scrapy.spiders import (
+    CSVFeedSpider,
+    CrawlSpider,
+    Rule,
+    SitemapSpider,
+    Spider,
+    XMLFeedSpider,
+)
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.test import get_crawler

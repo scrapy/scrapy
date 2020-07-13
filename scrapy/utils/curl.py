@@ -9,8 +9,7 @@ from w3lib.http import basic_auth_header
 
 class CurlParser(argparse.ArgumentParser):
     def error(self, message):
-        error_msg = \
-            'There was an error parsing the curl command: {}'.format(message)
+        error_msg = 'There was an error parsing the curl command: {}'.format(message)
         raise ValueError(error_msg)
 
 

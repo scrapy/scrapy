@@ -29,8 +29,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         self._test_command(curl_command, expected_result)
 
     def test_get_basic_auth(self):
-        curl_command = 'curl "https://api.test.com/" -u ' \
-                       '"some_username:some_password"'
+        curl_command = 'curl "https://api.test.com/" -u "some_username:some_password"'
         expected_result = {
             "method": "GET",
             "url": "https://api.test.com/",
@@ -212,8 +211,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         with warnings.catch_warnings():  # avoid warning when executing tests
             warnings.simplefilter('ignore')
             curl_command = 'curl --bar --baz http://www.example.com'
-            expected_result = \
-                {"method": "GET", "url": "http://www.example.com"}
+            expected_result = {"method": "GET", "url": "http://www.example.com"}
             self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
         # case 2: ignore_unknown_options=False (raise exception):
