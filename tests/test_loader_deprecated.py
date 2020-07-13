@@ -14,6 +14,7 @@ from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.loader.common import wrap_loader_context
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.misc import extract_regex
 
 
 # test items
@@ -701,6 +702,14 @@ def test_deprecated_wrap_loader_context():
 
     with warnings.catch_warnings(record=True) as w:
         wrap_loader_context(function, context=dict())
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, ScrapyDeprecationWarning)
+
+
+def test_deprecated_extract_regex():
+    with warnings.catch_warnings(record=True) as w:
+        extract_regex(r'\w+', 'this is a test')
 
         assert len(w) == 1
         assert issubclass(w[0].category, ScrapyDeprecationWarning)
