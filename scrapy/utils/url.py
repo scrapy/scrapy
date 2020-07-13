@@ -121,14 +121,14 @@ def _is_windows_path(string):
     )
 
 
-def _is_path(string):
+def _is_filesystem_path(string):
     return _is_posix_path(string) or _is_windows_path(string)
 
 
 def guess_scheme(url):
     """Add an URL scheme if missing: file:// for filepath-like input or
     http:// otherwise."""
-    if _is_path(url):
+    if _is_filesystem_path(url):
         return any_to_uri(url)
     return add_http_if_no_scheme(url)
 

@@ -4,7 +4,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.url import (
     add_http_if_no_scheme,
     guess_scheme,
-    _is_path,
+    _is_filesystem_path,
     strip_url,
     url_is_from_any_domain,
     url_is_from_spider,
@@ -460,7 +460,7 @@ class IsPathTestCase(unittest.TestCase):
 
             (r"https://example.com", False),
         ):
-            self.assertEqual(_is_path(input_value), output_value, input_value)
+            self.assertEqual(_is_filesystem_path(input_value), output_value, input_value)
 
 
 if __name__ == "__main__":
