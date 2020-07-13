@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, DeferredList, CancelledError
+from twisted.internet.defer import CancelledError, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certificate
 from twisted.python.failure import Failure

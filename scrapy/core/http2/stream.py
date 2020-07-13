@@ -44,7 +44,7 @@ class InvalidHostname(Exception):
 
 
 class StreamCloseReason(Enum):
-    # Received a StreamEnded event
+    # Received a StreamEnded event from the remote
     ENDED = 1
 
     # Received a StreamReset event -- ended abruptly
@@ -329,7 +329,7 @@ class Stream:
     def close(
         self,
         reason: StreamCloseReason,
-        errors: Optional[List[Exception]] = None,
+        errors: Optional[List[BaseException]] = None,
         from_protocol: bool = False
     ) -> None:
         """Based on the reason sent we will handle each case.

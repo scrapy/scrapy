@@ -12,10 +12,12 @@ from h2.events import (
 )
 from h2.exceptions import ProtocolError
 from twisted.internet.defer import Deferred
+from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
 from twisted.internet.protocol import connectionDone, Factory, Protocol
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 from twisted.web.client import URI
+from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.core.http2.types import H2ConnectionMetadataDict
@@ -25,15 +27,29 @@ from scrapy.settings import Settings
 logger = logging.getLogger(__name__)
 
 
+class InvalidNegotiatedProtocol(ProtocolError):
+
+    def __init__(self, negotiated_protocol: str) -> None:
+        self.negotiated_protocol = negotiated_protocol
+
+    def __str__(self) -> str:
+        return f'InvalidHostname: Expected h2 as negotiated protocol, received {self.negotiated_protocol}'
+
+
+@implementer(IHandshakeListener)
 class H2ClientProtocol(Protocol):
-    def __init__(self, uri: URI, settings: Settings) -> None:
+    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
         """
         Arguments:
             uri -- URI of the base url to which HTTP/2 Connection will be made.
                 uri is used to verify that incoming client requests have correct
                 base URL.
             settings -- Scrapy project settings
+            conn_lost_deferred -- Deferred fires with the reason: Failure to notify
+                that connection was lost
         """
+        self._conn_lost_deferred = conn_lost_deferred
+
         config = H2Configuration(client_side=True, header_encoding='utf-8')
         self.conn = H2Connection(config=config)
 
@@ -55,9 +71,9 @@ class H2ClientProtocol(Protocol):
         # We use simple FIFO policy to handle pending requests
         self._active_streams = 0
 
-        # Save an instance of ProtocolError raised by hyper-h2
-        # We pass this instance to the streams ResponseFailed() failure
-        self._protocol_error: Optional[ProtocolError] = None
+        # Save an instance of errors raised which lead to losing the connection
+        # We pass these instances to the streams ResponseFailed() failure
+        self._conn_lost_errors: List[BaseException] = []
 
         self.metadata: H2ConnectionMetadataDict = {
             'certificate': None,
@@ -136,6 +152,12 @@ class H2ClientProtocol(Protocol):
 
         # Add the stream to the request pool
         self._pending_request_stream_pool.append(stream)
+
+        # If we are connection and receive a request
+        # There is a good chance that the connection was IDLE
+        # Hence, we need to initiate pending requests
+        if self.is_connected:
+            self._send_pending_requests()
         return d
 
     def connectionMade(self) -> None:
@@ -149,6 +171,19 @@ class H2ClientProtocol(Protocol):
         self.conn.initiate_connection()
         self._write_to_transport()
 
+    def _lose_connection_with_error(self, errors: List[BaseException]):
+        """Helper function to lose the connection with the error sent as a
+        reason"""
+        self._conn_lost_errors += errors
+        self.transport.loseConnection()
+
+    def handshakeCompleted(self):
+        """We close the connection with InvalidNegotiatedProtocol exception
+        when the connection was not made via h2 protocol"""
+        negotiated_protocol = str(self.transport.negotiatedProtocol, 'utf-8')
+        if negotiated_protocol != 'h2':
+            self._lose_connection_with_error([InvalidNegotiatedProtocol(negotiated_protocol)])
+
     def dataReceived(self, data: bytes) -> None:
         try:
             events = self.conn.receive_data(data)
@@ -157,10 +192,7 @@ class H2ClientProtocol(Protocol):
             # Save this error as ultimately the connection will be dropped
             # internally by hyper-h2. Saved error will be passed to all the streams
             # closed with the connection.
-            self._protocol_error = e
-
-            # We lose the transport connection here
-            self.transport.loseConnection()
+            self._lose_connection_with_error([e])
         finally:
             self._write_to_transport()
 
@@ -168,17 +200,17 @@ class H2ClientProtocol(Protocol):
         """Called by Twisted when the transport connection is lost.
         No need to write anything to transport here.
         """
-        errors = []
+        # Notify the connection pool instance such that no new requests are
+        # sent over current connection
         if not reason.check(connectionDone):
-            logger.warning("Connection lost with reason " + str(reason))
-            errors.append(reason)
+            self._conn_lost_errors.append(reason)
 
-        if self._protocol_error:
-            errors.append(self._protocol_error)
+        if self._conn_lost_deferred:
+            self._conn_lost_deferred.callback(self._conn_lost_errors)
 
         for stream in self.streams.values():
             if stream.request_sent:
-                stream.close(StreamCloseReason.CONNECTION_LOST, errors, from_protocol=True)
+                stream.close(StreamCloseReason.CONNECTION_LOST, self._conn_lost_errors, from_protocol=True)
             else:
                 stream.close(StreamCloseReason.INACTIVE, from_protocol=True)
 
@@ -242,10 +274,15 @@ class H2ClientProtocol(Protocol):
                 stream.receive_window_update()
 
 
+@implementer(IProtocolNegotiationFactory)
 class H2ClientFactory(Factory):
-    def __init__(self, uri: URI, settings: Settings) -> None:
+    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
         self.uri = uri
         self.settings = settings
+        self.conn_lost_deferred = conn_lost_deferred
 
     def buildProtocol(self, addr) -> H2ClientProtocol:
-        return H2ClientProtocol(self.uri, self.settings)
+        return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
+
+    def acceptableProtocols(self) -> List[bytes]:
+        return [b'h2']
