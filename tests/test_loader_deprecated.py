@@ -3,9 +3,9 @@ These tests are kept as references from the ones that were ported to a itemloade
 Once we remove the references from scrapy, we can remove these tests.
 """
 
-from functools import partial
 import unittest
 import warnings
+from functools import partial
 
 from itemloaders.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
