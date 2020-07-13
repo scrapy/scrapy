@@ -6,10 +6,11 @@ Once we remove the references from scrapy, we can remove these tests.
 from functools import partial
 import unittest
 
+from itemloaders.processors import (Compose, Identity, Join,
+                                      MapCompose, SelectJmes, TakeFirst)
+
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
-from scrapy.loader.processors import (Compose, Identity, Join,
-                                      MapCompose, SelectJmes, TakeFirst)
 
 
 # test items
