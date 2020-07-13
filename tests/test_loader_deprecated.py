@@ -5,12 +5,15 @@ Once we remove the references from scrapy, we can remove these tests.
 
 from functools import partial
 import unittest
+import warnings
 
 from itemloaders.processors import (Compose, Identity, Join,
                                       MapCompose, SelectJmes, TakeFirst)
 
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
+from scrapy.loader.common import wrap_loader_context
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 
 
 # test items
@@ -690,6 +693,17 @@ class FunctionProcessorTestCase(unittest.TestCase):
             dict(lo.load_item()),
             {'foo': ['BAR', 'ASDF', 'QWERTY']}
         )
+
+
+def test_deprecated_wrap_loader_context():
+    def function(*args):
+        return None
+
+    with warnings.catch_warnings(record=True) as w:
+        wrap_loader_context(function, context=dict())
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, ScrapyDeprecationWarning)
 
 
 if __name__ == "__main__":
