@@ -8,7 +8,7 @@ import warnings
 from functools import partial
 
 from itemloaders.processors import (Compose, Identity, Join,
-                                      MapCompose, SelectJmes, TakeFirst)
+                                    MapCompose, SelectJmes, TakeFirst)
 
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
