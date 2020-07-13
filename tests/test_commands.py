@@ -66,9 +66,14 @@ class ProjectTest(unittest.TestCase):
 
     def proc(self, *new_args, **popen_kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        p = subprocess.Popen(args, cwd=self.cwd, env=self.env,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             **popen_kwargs)
+        p = subprocess.Popen(
+            args,
+            cwd=popen_kwargs.pop('cwd', self.cwd),
+            env=self.env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **popen_kwargs,
+        )
 
         def kill_proc():
             p.kill()
@@ -104,6 +109,32 @@ class StartprojectTest(ProjectTest):
     def test_startproject_with_project_dir(self):
         project_dir = mkdtemp()
         self.assertEqual(0, self.call('startproject', self.project_name, project_dir))
+
+        assert exists(join(abspath(project_dir), 'scrapy.cfg'))
+        assert exists(join(abspath(project_dir), 'testproject'))
+        assert exists(join(join(abspath(project_dir), self.project_name), '__init__.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'items.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'pipelines.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'settings.py'))
+        assert exists(join(join(abspath(project_dir), self.project_name), 'spiders', '__init__.py'))
+
+        self.assertEqual(0, self.call('startproject', self.project_name, project_dir + '2'))
+
+        self.assertEqual(1, self.call('startproject', self.project_name, project_dir))
+        self.assertEqual(1, self.call('startproject', self.project_name + '2', project_dir))
+        self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
+        self.assertEqual(1, self.call('startproject', 'sys'))
+        self.assertEqual(2, self.call('startproject'))
+        self.assertEqual(2, self.call('startproject', self.project_name, project_dir, 'another_params'))
+
+    def test_existing_project_dir(self):
+        project_dir = mkdtemp()
+        os.mkdir(os.path.join(project_dir, self.project_name))
+
+        p, out, err = self.proc('startproject', self.project_name, cwd=project_dir)
+        print(out)
+        print(err, file=sys.stderr)
+        self.assertEqual(p.returncode, 0)
 
         assert exists(join(abspath(project_dir), 'scrapy.cfg'))
         assert exists(join(abspath(project_dir), 'testproject'))
