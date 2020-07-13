@@ -83,26 +83,54 @@ def add_http_if_no_scheme(url):
     return url
 
 
+def _is_posix_path(string):
+    return bool(
+        re.match(
+            r'''
+            ^                   # start with...
+            (
+                \.              # ...a single dot,
+                (
+                    \. | [^/\.]+  # optionally followed by
+                )?                # either a second dot or some characters
+                |
+                ~   # $HOME
+            )?      # optional match of ".", ".." or ".blabla"
+            /       # at least one "/" for a file path,
+            .       # and something after the "/"
+            ''',
+            string,
+            flags=re.VERBOSE,
+        )
+    )
+
+
+def _is_windows_path(string):
+    return bool(
+        re.match(
+            r'''
+            ^
+            (
+                [a-z]:\\
+                | \\\\
+            )
+            ''',
+            string,
+            flags=re.IGNORECASE | re.VERBOSE,
+        )
+    )
+
+
+def _is_path(string):
+    return _is_posix_path(string) or _is_windows_path(string)
+
+
 def guess_scheme(url):
     """Add an URL scheme if missing: file:// for filepath-like input or
     http:// otherwise."""
-    # POSIX path
-    if re.match(r'''^                   # start with...
-                    (
-                        \.              # ...a single dot,
-                        (
-                            \. | [^/\.]+  # optionally followed by
-                        )?                # either a second dot or some characters
-                    )?      # optional match of ".", ".." or ".blabla"
-                    /       # at least one "/" for a file path,
-                    .       # and something after the "/"
-                    ''', url, flags=re.VERBOSE):
+    if _is_path(url):
         return any_to_uri(url)
-    # Windows drive-letter path
-    elif re.match(r'''^[a-z]:\\''', url, flags=re.IGNORECASE):
-        return any_to_uri(url)
-    else:
-        return add_http_if_no_scheme(url)
+    return add_http_if_no_scheme(url)
 
 
 def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=False, strip_fragment=True):
