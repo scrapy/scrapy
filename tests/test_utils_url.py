@@ -213,8 +213,7 @@ def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
         assert url.startswith(args[1]), \
-            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
-                args[0], url, args[1])
+            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (args[0], url, args[1])
     return do_expected
 
 

@@ -156,8 +156,7 @@ Disallow: /forum/active/
 
     def test_sitemap_blanklines(self):
         """Assert we can deal with starting blank lines before <xml> tag"""
-        s = Sitemap(b"""\
-
+        s = Sitemap(b"""
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 

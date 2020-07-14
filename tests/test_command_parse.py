@@ -1,5 +1,5 @@
 import os
-from os.path import join, abspath
+from os.path import join, abspath, isfile, exists
 from twisted.internet import defer
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
@@ -218,3 +218,24 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         )
         self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
+
+    @defer.inlineCallbacks
+    def test_output_flag(self):
+        """Checks if a file was created successfully having
+        correct format containing correct data in it.
+        """
+        file_name = 'data.json'
+        file_path = join(self.proj_path, file_name)
+        yield self.execute([
+            '--spider', self.spider_name,
+            '-c', 'parse',
+            '-o', file_name,
+            self.url('/html')
+        ])
+
+        self.assertTrue(exists(file_path))
+        self.assertTrue(isfile(file_path))
+
+        content = '[\n{},\n{"foo": "bar"}\n]'
+        with open(file_path, 'r') as f:
+            self.assertEqual(f.read(), content)
