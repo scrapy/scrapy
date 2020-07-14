@@ -50,6 +50,7 @@ class H2DownloadHandler:
 
         def print_result(result):
             print(result)
+            return result
 
         d.addCallback(print_result)
         return d

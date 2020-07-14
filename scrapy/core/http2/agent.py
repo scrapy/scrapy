@@ -1,15 +1,19 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from twisted.internet import defer
+from twisted.internet._sslverify import _setAcceptableProtocols, ClientTLSOptions
 from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
-from twisted.internet.endpoints import SSL4ClientEndpoint, optionsForClientTLS
-from twisted.web.client import URI, BrowserLikePolicyForHTTPS
+from twisted.internet.endpoints import SSL4ClientEndpoint
+from twisted.python.failure import Failure
+from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
+from twisted.web.iweb import IPolicyForHTTPS
+from zope.interface import implementer
+from zope.interface.verify import verifyObject
 
 from scrapy.core.http2.protocol import H2ClientProtocol, H2ClientFactory
 from scrapy.http.request import Request
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes, to_unicode
 
 
 class H2ConnectionPool:
@@ -26,39 +30,51 @@ class H2ConnectionPool:
         return self._new_connection(key, uri, endpoint)
 
     def _new_connection(self, key: Tuple, uri: URI, endpoint: SSL4ClientEndpoint) -> Deferred:
-        factory = H2ClientFactory(uri, self.settings)
+        conn_lost_deferred = Deferred()
+        conn_lost_deferred.addCallback(self._remove_connection, key)
+
+        factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
         d = endpoint.connect(factory)
-
-        def put_connection(conn: H2ClientProtocol) -> H2ClientProtocol:
-            self._connections[key] = conn
-            return conn
-
-        d.addCallback(put_connection)
+        d.addCallback(self.put_connection, key)
         return d
 
-    def _remove_connection(self, key) -> None:
-        conn = self._connections.pop(key)
-        conn.loseConnection()
+    def put_connection(self, conn: H2ClientProtocol, key: Tuple) -> H2ClientProtocol:
+        self._connections[key] = conn
+        return conn
+
+    def _remove_connection(self, reason: Failure, key: Tuple) -> None:
+        self._connections.pop(key)
+
+
+@implementer(IPolicyForHTTPS)
+class H2WrappedContextFactory:
+    def __init__(self, context_factory) -> None:
+        verifyObject(IPolicyForHTTPS, context_factory)
+        self._wrapped_context_factory = context_factory
+
+    def creatorForNetloc(self, hostname, port) -> ClientTLSOptions:
+        options = self._wrapped_context_factory.creatorForNetloc(hostname, port)
+        _setAcceptableProtocols(options._ctx, [b'h2'])
+        return options
 
 
 class H2Agent:
     def __init__(
         self, reactor: ReactorBase, pool: H2ConnectionPool,
-        context_factory=BrowserLikePolicyForHTTPS()
+        context_factory=BrowserLikePolicyForHTTPS(),
+        connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
     ) -> None:
         self._reactor = reactor
         self._pool = pool
-        self._context_factory = context_factory
+        self._context_factory = H2WrappedContextFactory(context_factory)
+        self._endpoint_factory = _StandardEndpointFactory(
+            self._reactor, self._context_factory,
+            connect_timeout, bind_address
+        )
 
     def request(self, request: Request) -> Deferred:
-        uri = URI.fromBytes(to_bytes(request.url, encoding='ascii'))
-        # options = optionsForClientTLS(hostname=to_unicode(uri.host), acceptableProtocols=[b'h2'])
-        # Hacky fix: Use options instead of self._context_factory to make endpoint work for HTTP/2
-        endpoint = SSL4ClientEndpoint(self._reactor, to_unicode(uri.host), uri.port, self._context_factory)
+        uri = URI.fromBytes(bytes(request.url, encoding='utf-8'))
+        endpoint = self._endpoint_factory.endpointForURI(uri)
         d = self._pool.get_connection(uri, endpoint)
-
-        def cb_connected(conn: H2ClientProtocol):
-            return conn.request(request)
-
-        d.addCallback(cb_connected)
+        d.addCallback(lambda conn: conn.request(request))
         return d
