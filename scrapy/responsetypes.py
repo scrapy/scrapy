@@ -53,14 +53,16 @@ class ResponseTypes:
         header """
         if content_encoding:
             return Response
-        mimetype = str(content_type, 'utf-8').split(';')[0].strip().lower()
+        if isinstance(content_type, bytes):
+            content_type = content_type.decode()
+        mimetype = content_type.split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
+        if isinstance(content_disposition, bytes):
+            content_disposition = content_disposition.decode('latin-1', errors='replace')
         try:
-            filename = str(
-                content_disposition, encoding='latin-1', errors='replace'
-            ).split(';')[1].split('=')[1].strip('"\'')
+            filename = content_disposition.split(';')[1].split('=')[1].strip('"\'')
             return self.from_filename(filename)
         except IndexError:
             return Response
@@ -92,7 +94,8 @@ class ResponseTypes:
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
         chunk = body[:5000]
-        chunk = bytes(chunk, 'utf-8')
+        if isinstance(chunk, str):
+            chunk = chunk.encode()
         if not binary_is_text(chunk):
             return self.from_mimetype('application/octet-stream')
         elif b"<html>" in chunk.lower():

@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 def _to_bytes_or_none(text):
     if text is None:
         return None
-    return bytes(text, 'utf-8')
+    if isinstance(text, bytes):
+        return text
+    if isinstance(text, str):
+        return text.encode()
+    raise TypeError('Expected None, a bytes object or an str object, got %s'
+                    % type(text).__name__)
 
 
 class MailSender:

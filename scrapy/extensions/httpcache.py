@@ -47,7 +47,8 @@ class RFC2616Policy:
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self._cc_parsed = WeakKeyDictionary()
         self.ignore_response_cache_controls = [
-            bytes(cc, 'utf-8') for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
+            cc if isinstance(cc, bytes) else cc.encode()
+            for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
         ]
 
     def _parse_cachecontrol(self, r):
@@ -315,7 +316,7 @@ class FilesystemCacheStorage:
             'timestamp': time(),
         }
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
-            f.write(bytes(repr(metadata), 'utf-8'))
+            f.write(repr(metadata).encode())
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
@@ -365,7 +366,8 @@ def parse_cachecontrol(header):
 
 def rfc1123_to_epoch(date_str):
     try:
-        date_str = str(date_str, encoding='ascii')
+        if isinstance(date_str, bytes):
+            date_str = date_str.decode('ascii')
         return mktime_tz(parsedate_tz(date_str))
     except Exception:
         return None

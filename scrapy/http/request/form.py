@@ -68,7 +68,10 @@ def _get_form_url(form, url):
 
 
 def _urlencode(seq, enc):
-    values = [(bytes(k, enc), bytes(v, enc))
+    def encode(value):
+        return value if isinstance(value, bytes) else value.encode(enc)
+
+    values = [(encode(k), encode(v))
               for k, vs in seq
               for v in (vs if is_listlike(vs) else [vs])]
     return urlencode(values, doseq=1)

@@ -75,8 +75,13 @@ class Request(object_ref):
     def _set_body(self, body):
         if body is None:
             self._body = b''
+        elif isinstance(body, str):
+            self._body = body.encode(self.encoding)
+        elif isinstance(body, bytes):
+            self._body = body
         else:
-            self._body = bytes(body, self.encoding)
+            raise TypeError('Request body must be None, a bytes object or a '
+                            'str object, got %s' % type(body).__name__)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 

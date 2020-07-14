@@ -85,8 +85,8 @@ class Headers(CaselessDict):
         Multiple values are joined with ','.
         """
         return CaselessDict(
-            (str(key, encoding=self.encoding),
-             str(b','.join(value), encoding=self.encoding))
+            (key.decode(self.encoding),
+             b','.join(value).decode(self.encoding))
             for key, value in self.items()
         )
 

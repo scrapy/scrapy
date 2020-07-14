@@ -194,7 +194,9 @@ def tunnel_request_data(host, port, proxy_auth_header=None):
     >>> tunnel_request_data(b"example.com", "8090")
     b'CONNECT example.com:8090 HTTP/1.1\r\nHost: example.com:8090\r\n\r\n'
     """
-    host_value = bytes(host, encoding='ascii') + b':' + bytes(str(port))
+    if isinstance(host, str):
+        host = host.encode('ascii')
+    host_value = host + b':' + str(port).encode()
     tunnel_req = b'CONNECT ' + host_value + b' HTTP/1.1\r\n'
     tunnel_req += b'Host: ' + host_value + b'\r\n'
     if proxy_auth_header:
@@ -297,7 +299,8 @@ class ScrapyAgent:
         if proxy:
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
-            proxyHost = str(proxyHost, 'utf-8')
+            if isinstance(proxyHost, bytes):
+                proxyHost = proxyHost.decode()
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
                 warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
@@ -317,9 +320,11 @@ class ScrapyAgent:
                     pool=self._pool,
                 )
             else:
+                if isinstance(proxy, str):
+                    proxy = proxy.encode('ascii')
                 return self._ProxyAgent(
                     reactor=reactor,
-                    proxyURI=bytes(proxy, encoding='ascii'),
+                    proxyURI=proxy,
                     connectTimeout=timeout,
                     bindAddress=bindaddress,
                     pool=self._pool,
@@ -340,7 +345,7 @@ class ScrapyAgent:
 
         # request details
         url = urldefrag(request.url)[0]
-        method = bytes(request.method)
+        method = request.method.encode()
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader(b'Proxy-Authorization')
@@ -349,7 +354,7 @@ class ScrapyAgent:
         else:
             bodyproducer = None
         start_time = time()
-        d = agent.request(method, bytes(url, encoding='ascii'), headers, bodyproducer)
+        d = agent.request(method, url.encode('ascii'), headers, bodyproducer)
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed

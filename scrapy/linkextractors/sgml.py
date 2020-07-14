@@ -55,7 +55,12 @@ class BaseSgmlLinkExtractor(SGMLParser):
             except ValueError:
                 continue
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = str(link.text, response_encoding, errors='replace').strip()
+            if isinstance(link.text, bytes):
+                link.text = link.text.decode(response_encoding, errors='replace')
+            elif not isinstance(link.text, str):
+                raise TypeError('Link.text must by a bytes object or an str '
+                                'object, got %s' % type(link.text).__name__)
+            link.text = link.text.strip()
             ret.append(link)
 
         return ret

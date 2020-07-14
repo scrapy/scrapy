@@ -95,7 +95,7 @@ class JsonLinesItemExporter(BaseItemExporter):
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict) + '\n'
-        self.file.write(bytes(data, self.encoding))
+        self.file.write(data.encode(self.encoding))
 
 
 class JsonItemExporter(BaseItemExporter):
@@ -132,7 +132,7 @@ class JsonItemExporter(BaseItemExporter):
             self._beautify_newline()
         itemdict = dict(self._get_serialized_fields(item))
         data = self.encoder.encode(itemdict)
-        self.file.write(bytes(data, self.encoding))
+        self.file.write(data.encode(self.encoding))
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -235,9 +235,9 @@ class CsvItemExporter(BaseItemExporter):
 
     def _build_row(self, values):
         for s in values:
-            try:
-                yield str(s, self.encoding)
-            except TypeError:
+            if isinstance(s, bytes):
+                yield s.decode(self.encoding)
+            else:
                 yield s
 
     def _write_headers_and_set_fields_to_export(self, item):
@@ -290,7 +290,7 @@ class PprintItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
-        self.file.write(bytes(pprint.pformat(itemdict) + '\n', 'utf-8'))
+        self.file.write((pprint.pformat(itemdict) + '\n').encode())
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -324,15 +324,15 @@ class PythonItemExporter(BaseItemExporter):
             return dict(self._serialize_item(value))
         elif is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        encode_func = bytes if self.binary else str
-        if isinstance(value, (str, bytes)):
-            return encode_func(value, encoding=self.encoding)
+        elif isinstance(value, str) and self.binary:
+            return value.encode(self.encoding)
+        elif isinstance(value, bytes) and not self.binary:
+            return value.decode(self.encoding)
         return value
 
     def _serialize_item(self, item):
         for key, value in ItemAdapter(item).items():
-            key = bytes(key, self.encoding) if self.binary else key
-            yield key, self._serialize_value(value)
+            yield self._serialize_value(key), self._serialize_value(value)
 
     def export_item(self, item):
         result = dict(self._get_serialized_fields(item))

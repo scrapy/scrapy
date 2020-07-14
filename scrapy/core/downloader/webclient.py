@@ -14,11 +14,11 @@ def _parsed_url_args(parsed):
     # Assume parsed is urlparse-d from Request.url,
     # which was passed via safe_url_string and is ascii-only.
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    path = bytes(path, encoding="ascii")
-    host = bytes(parsed.hostname, encoding="ascii")
+    path = path if isinstance(path, bytes) else path.encode('ascii')
+    host = parsed.hostname if isinstance(parsed.hostname, bytes) else parsed.hostname.encode('ascii')
     port = parsed.port
-    scheme = bytes(parsed.scheme, encoding="ascii")
-    netloc = bytes(parsed.netloc, encoding="ascii")
+    scheme = parsed.scheme if isinstance(parsed.scheme, bytes) else parsed.scheme.encode('ascii')
+    netloc = parsed.netloc if isinstance(parsed.netloc, bytes) else parsed.netloc.encode('ascii')
     if port is None:
         port = 443 if scheme == b'https' else 80
     return scheme, netloc, host, port, path
@@ -106,8 +106,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def __init__(self, request, timeout=180):
         self._url = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
-        self.url = bytes(self._url, encoding='ascii')
-        self.method = bytes(request.method, encoding='ascii')
+        self.url = self._url.encode('ascii')
+        self.method = request.method.encode('ascii')
         self.body = request.body or None
         self.headers = Headers(request.headers)
         self.response_headers = None

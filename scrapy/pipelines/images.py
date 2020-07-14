@@ -167,9 +167,9 @@ class ImagesPipeline(FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        image_guid = hashlib.sha1(bytes(request.url, 'utf-8')).hexdigest()
+        image_guid = hashlib.sha1(request.url.encode()).hexdigest()
         return 'full/%s.jpg' % (image_guid)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
-        thumb_guid = hashlib.sha1(bytes(request.url, 'utf-8')).hexdigest()
+        thumb_guid = hashlib.sha1(request.url.encode()).hexdigest()
         return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)

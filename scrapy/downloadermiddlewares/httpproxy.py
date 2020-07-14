@@ -22,9 +22,8 @@ class HttpProxyMiddleware:
         return cls(auth_encoding)
 
     def _basic_auth_header(self, username, password):
-        user_pass = bytes(
-            '%s:%s' % (unquote(username), unquote(password)),
-            encoding=self.auth_encoding)
+        username, password = unquote(username), unquote(password)
+        user_pass = ('%s:%s' % (username, password)).encode(self.auth_encoding)
         return base64.b64encode(user_pass)
 
     def _get_proxy(self, url, orig_type):
