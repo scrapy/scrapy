@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
-from twisted.internet.defer import CancelledError, DeferredList, inlineCallbacks
+from twisted.internet.defer import CancelledError, Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certificate
 from twisted.python.failure import Failure
@@ -174,6 +174,7 @@ class Https2ClientProtocolTestCase(TestCase):
         # Start server for testing
         self.hostname = u'localhost'
         context_factory = ssl_context_factory(self.key_file, self.certificate_file)
+
         server_endpoint = SSL4ServerEndpoint(reactor, 0, context_factory, interface=self.hostname)
         self.server = yield server_endpoint.listen(self.site)
         self.port_number = self.server.getHost().port
@@ -186,17 +187,20 @@ class Https2ClientProtocolTestCase(TestCase):
             acceptableProtocols=[b'h2']
         )
         uri = URI.fromBytes(bytes(self.get_url('/'), 'utf-8'))
-        h2_client_factory = H2ClientFactory(uri, Settings())
+
+        self.conn_closed_deferred = Deferred()
+        h2_client_factory = H2ClientFactory(uri, Settings(), self.conn_closed_deferred)
         client_endpoint = SSL4ClientEndpoint(reactor, self.hostname, self.port_number, client_options)
         self.client = yield client_endpoint.connect(h2_client_factory)
 
     @inlineCallbacks
     def tearDown(self):
-        if self.client.is_connected:
+        if self.client.connected:
             yield self.client.transport.loseConnection()
             yield self.client.transport.abortConnection()
         yield self.server.stopListening()
         shutil.rmtree(self.temp_directory)
+        self.conn_closed_deferred = None
 
     def get_url(self, path):
         """

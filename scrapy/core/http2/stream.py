@@ -134,7 +134,8 @@ class Stream:
 
         def _cancel(_):
             # Close this stream as gracefully as possible
-            # Check if the stream has started
+            # If the associated request is initiated we reset this stream
+            # else we directly call close() method
             if self.request_sent:
                 self.reset_stream(StreamCloseReason.CANCELLED)
             else:

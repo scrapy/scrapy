@@ -6,15 +6,18 @@ from typing import Dict, List, Optional
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
+from h2.errors import ErrorCodes
 from h2.events import (
     Event, DataReceived, ResponseReceived, SettingsAcknowledged,
     StreamEnded, StreamReset, WindowUpdated
 )
 from h2.exceptions import ProtocolError
 from twisted.internet.defer import Deferred
+from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
 from twisted.internet.protocol import connectionDone, Factory, Protocol
 from twisted.internet.ssl import Certificate
+from twisted.protocols.policies import TimeoutMixin
 from twisted.python.failure import Failure
 from twisted.web.client import URI
 from zope.interface import implementer
@@ -37,7 +40,9 @@ class InvalidNegotiatedProtocol(ProtocolError):
 
 
 @implementer(IHandshakeListener)
-class H2ClientProtocol(Protocol):
+class H2ClientProtocol(Protocol, TimeoutMixin):
+    IDLE_TIMEOUT = 240
+
     def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
         """
         Arguments:
@@ -71,6 +76,10 @@ class H2ClientProtocol(Protocol):
         # We use simple FIFO policy to handle pending requests
         self._active_streams = 0
 
+        # Flag to keep track if settings were acknowledged by the remote
+        # This ensures that we have established a HTTP/2 connection
+        self._settings_acknowledged = False
+
         # Save an instance of errors raised which lead to losing the connection
         # We pass these instances to the streams ResponseFailed() failure
         self._conn_lost_errors: List[BaseException] = []
@@ -84,12 +93,12 @@ class H2ClientProtocol(Protocol):
         }
 
     @property
-    def is_connected(self) -> bool:
+    def h2_connected(self) -> bool:
         """Boolean to keep track of the connection status.
         This is used while initiating pending streams to make sure
         that we initiate stream only during active HTTP/2 Connection
         """
-        return bool(self.transport.connected)
+        return bool(self.transport.connected) and self._settings_acknowledged
 
     @property
     def allowed_max_concurrent_streams(self) -> int:
@@ -111,7 +120,7 @@ class H2ClientProtocol(Protocol):
         while (
             self._pending_request_stream_pool
             and self._active_streams < self.allowed_max_concurrent_streams
-            and self.is_connected
+            and self.h2_connected
         ):
             self._active_streams += 1
             stream = self._pending_request_stream_pool.popleft()
@@ -140,6 +149,9 @@ class H2ClientProtocol(Protocol):
         """ Write data to the underlying transport connection
         from the HTTP2 connection instance if any
         """
+        # Reset the idle timeout as connection is still actively sending data
+        self.resetTimeout()
+
         data = self.conn.data_to_send()
         self.transport.write(data)
 
@@ -153,21 +165,23 @@ class H2ClientProtocol(Protocol):
         # Add the stream to the request pool
         self._pending_request_stream_pool.append(stream)
 
-        # If we are connection and receive a request
-        # There is a good chance that the connection was IDLE
-        # Hence, we need to initiate pending requests
-        if self.is_connected:
-            self._send_pending_requests()
+        # If we receive a request when connection is idle
+        # We need to initiate pending requests
+        self._send_pending_requests()
         return d
 
     def connectionMade(self) -> None:
         """Called by Twisted when the connection is established. We can start
         sending some data now: we should open with the connection preamble.
         """
+        # Initialize the timeout
+        self.setTimeout(self.IDLE_TIMEOUT)
+
         destination = self.transport.getPeer()
         logger.debug('Connection made to {}'.format(destination))
         self.metadata['ip_address'] = ipaddress.ip_address(destination.host)
 
+        # Initiate H2 Connection
         self.conn.initiate_connection()
         self._write_to_transport()
 
@@ -185,6 +199,9 @@ class H2ClientProtocol(Protocol):
             self._lose_connection_with_error([InvalidNegotiatedProtocol(negotiated_protocol)])
 
     def dataReceived(self, data: bytes) -> None:
+        # Reset the idle timeout as connection is still actively receiving data
+        self.resetTimeout()
+
         try:
             events = self.conn.receive_data(data)
             self._handle_events(events)
@@ -196,10 +213,33 @@ class H2ClientProtocol(Protocol):
         finally:
             self._write_to_transport()
 
+    def timeoutConnection(self):
+        """Called when the connection times out.
+        We lose the connection with TimeoutError"""
+
+        # Check whether there are open streams. If there are, we're going to
+        # want to use the error code PROTOCOL_ERROR. If there aren't, use
+        # NO_ERROR.
+        if (
+            self.conn.open_outbound_streams > 0
+            or self.conn.open_inbound_streams > 0
+            or self._active_streams > 0
+        ):
+            error_code = ErrorCodes.PROTOCOL_ERROR
+        else:
+            error_code = ErrorCodes.NO_ERROR
+        self.conn.close_connection(error_code=error_code)
+        self._write_to_transport()
+
+        self._lose_connection_with_error([TimeoutError("Hello")])
+
     def connectionLost(self, reason: Failure = connectionDone) -> None:
         """Called by Twisted when the transport connection is lost.
         No need to write anything to transport here.
         """
+        # Cancel the timeout if not done yet
+        self.setTimeout(None)
+
         # Notify the connection pool instance such that no new requests are
         # sent over current connection
         if not reason.check(connectionDone):
@@ -250,6 +290,8 @@ class H2ClientProtocol(Protocol):
         self.streams[event.stream_id].receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
+        self._settings_acknowledged = True
+
         # Send off all the pending requests as now we have
         # established a proper HTTP/2 connection
         self._send_pending_requests()
