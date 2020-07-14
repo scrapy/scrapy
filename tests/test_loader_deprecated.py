@@ -696,23 +696,24 @@ class FunctionProcessorTestCase(unittest.TestCase):
         )
 
 
-def test_deprecated_wrap_loader_context():
-    def function(*args):
-        return None
+class DeprecatedUtilityFunctionsTestCase(unittest.TestCase):
 
-    with warnings.catch_warnings(record=True) as w:
-        wrap_loader_context(function, context=dict())
+    def test_deprecated_wrap_loader_context(self):
+        def function(*args):
+            return None
 
-        assert len(w) == 1
-        assert issubclass(w[0].category, ScrapyDeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            wrap_loader_context(function, context=dict())
 
+            assert len(w) == 1
+            assert issubclass(w[0].category, ScrapyDeprecationWarning)
 
-def test_deprecated_extract_regex():
-    with warnings.catch_warnings(record=True) as w:
-        extract_regex(r'\w+', 'this is a test')
+    def test_deprecated_extract_regex(self):
+        with warnings.catch_warnings(record=True) as w:
+            extract_regex(r'\w+', 'this is a test')
 
-        assert len(w) == 1
-        assert issubclass(w[0].category, ScrapyDeprecationWarning)
+            assert len(w) == 1
+            assert issubclass(w[0].category, ScrapyDeprecationWarning)
 
 
 if __name__ == "__main__":
