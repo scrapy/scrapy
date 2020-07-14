@@ -862,8 +862,10 @@ TextResponse objects
        .. note::
 
             ``str(response.body)`` is not a correct way to convert the response
-            body into a string: you would be using the system default encoding
-            (typically ``ascii``) instead of the response encoding.
+            body into a string:
+
+            >>> str(b'body')
+            "b'body'"
 
 
     .. attribute:: TextResponse.encoding

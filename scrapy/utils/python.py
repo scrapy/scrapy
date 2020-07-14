@@ -163,7 +163,7 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS = {chr(i).encode() for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
 _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 
