@@ -2,16 +2,18 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import Dict, List, Optional
+from ipaddress import IPv4Address, IPv6Address
+from typing import Dict, List, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
 from h2.errors import ErrorCodes
 from h2.events import (
-    Event, DataReceived, ResponseReceived, SettingsAcknowledged,
-    StreamEnded, StreamReset, WindowUpdated
+    Event, ConnectionTerminated, DataReceived, ResponseReceived,
+    SettingsAcknowledged, StreamEnded, StreamReset, UnknownFrameReceived,
+    WindowUpdated
 )
-from h2.exceptions import ProtocolError
+from h2.exceptions import H2Error, ProtocolError
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
@@ -30,13 +32,22 @@ from scrapy.settings import Settings
 logger = logging.getLogger(__name__)
 
 
-class InvalidNegotiatedProtocol(ProtocolError):
+class InvalidNegotiatedProtocol(H2Error):
 
     def __init__(self, negotiated_protocol: str) -> None:
         self.negotiated_protocol = negotiated_protocol
 
     def __str__(self) -> str:
         return f'InvalidHostname: Expected h2 as negotiated protocol, received {self.negotiated_protocol}'
+
+
+class RemoteTerminatedConnection(H2Error):
+    def __init__(self, remote_ip_address: Optional[Union[IPv4Address, IPv6Address]], event: ConnectionTerminated):
+        self.remote_ip_address = remote_ip_address
+        self.terminate_event = event
+
+    def __str__(self) -> str:
+        return f'RemoteTerminatedConnection: Received GOAWAY frame from {self.remote_ip_address}'
 
 
 @implementer(IHandshakeListener)
@@ -194,8 +205,12 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def handshakeCompleted(self):
         """We close the connection with InvalidNegotiatedProtocol exception
         when the connection was not made via h2 protocol"""
-        negotiated_protocol = str(self.transport.negotiatedProtocol, 'utf-8')
+        negotiated_protocol = self.transport.negotiatedProtocol
+        if type(negotiated_protocol) is bytes:
+            negotiated_protocol = str(self.transport.negotiatedProtocol, 'utf-8')
         if negotiated_protocol != 'h2':
+            # Here we have not initiated the connection yet
+            # So, no need to send a GOAWAY frame to the remote
             self._lose_connection_with_error([InvalidNegotiatedProtocol(negotiated_protocol)])
 
     def dataReceived(self, data: bytes) -> None:
@@ -231,7 +246,9 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.conn.close_connection(error_code=error_code)
         self._write_to_transport()
 
-        self._lose_connection_with_error([TimeoutError("Hello")])
+        self._lose_connection_with_error([
+            TimeoutError(f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s")
+        ])
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:
         """Called by Twisted when the transport connection is lost.
@@ -267,7 +284,9 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             events -- A list of events that the remote peer triggered by sending data
         """
         for event in events:
-            if isinstance(event, DataReceived):
+            if isinstance(event, ConnectionTerminated):
+                self.connection_terminated(event)
+            elif isinstance(event, DataReceived):
                 self.data_received(event)
             elif isinstance(event, ResponseReceived):
                 self.response_received(event)
@@ -279,10 +298,15 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
                 self.window_updated(event)
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
-            else:
-                logger.debug('Received unhandled event {}'.format(event))
+            elif isinstance(event, UnknownFrameReceived):
+                logger.debug(f'UnknownFrameReceived: frame={event.frame}')
 
     # Event handler functions starts here
+    def connection_terminated(self, event: ConnectionTerminated) -> None:
+        self._lose_connection_with_error([
+            RemoteTerminatedConnection(self.metadata['ip_address'], event)
+        ])
+
     def data_received(self, event: DataReceived) -> None:
         self.streams[event.stream_id].receive_data(event.data, event.flow_controlled_length)
 
