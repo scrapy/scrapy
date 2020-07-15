@@ -1,11 +1,11 @@
-from typing import Dict, Tuple, Optional
+from collections import deque
+from typing import Deque, Dict, List, Tuple, Optional
 
 from twisted.internet import defer
 from twisted.internet._sslverify import _setAcceptableProtocols, ClientTLSOptions
 from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
-from twisted.internet.endpoints import SSL4ClientEndpoint
-from twisted.python.failure import Failure
+from twisted.internet.endpoints import HostnameEndpoint
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface import implementer
@@ -20,30 +20,69 @@ class H2ConnectionPool:
     def __init__(self, reactor: ReactorBase, settings: Settings) -> None:
         self._reactor = reactor
         self.settings = settings
+
+        # Store a dictionary which is used to get the respective
+        # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
         self._connections: Dict[Tuple, H2ClientProtocol] = {}
 
-    def get_connection(self, uri: URI, endpoint: SSL4ClientEndpoint) -> Deferred:
+        # Save all requests that arrive before the connection is established
+        self._pending_requests: Dict[Tuple, Deque[Deferred]] = {}
+
+    def get_connection(self, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
         key = (uri.scheme, uri.host, uri.port)
+        if key in self._pending_requests:
+            # Received a request while connecting to remote
+            # Create a deferred which will fire with the H2ClientProtocol
+            # instance
+            d = Deferred()
+            self._pending_requests[key].append(d)
+            return d
+
+        # Check if we already have a connection to the remote
         conn = self._connections.get(key, None)
         if conn:
+            # Return this connection instance wrapped inside a deferred
             return defer.succeed(conn)
+
+        # No connection is established for the given URI
         return self._new_connection(key, uri, endpoint)
 
-    def _new_connection(self, key: Tuple, uri: URI, endpoint: SSL4ClientEndpoint) -> Deferred:
+    def _new_connection(self, key: Tuple, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
+        self._pending_requests[key] = deque()
+
         conn_lost_deferred = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
         factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
-        d = endpoint.connect(factory)
-        d.addCallback(self.put_connection, key)
+        conn_d = endpoint.connect(factory)
+        conn_d.addCallback(self.put_connection, key)
+
+        d = Deferred()
+        self._pending_requests[key].append(d)
         return d
 
     def put_connection(self, conn: H2ClientProtocol, key: Tuple) -> H2ClientProtocol:
         self._connections[key] = conn
+
+        # Now as we have established a proper HTTP/2 connection
+        # we fire all the deferred's with the connection instance
+        pending_requests = self._pending_requests.pop(key)
+        while pending_requests:
+            d = pending_requests.popleft()
+            d.callback(conn)
+
+        del pending_requests
+
         return conn
 
-    def _remove_connection(self, reason: Failure, key: Tuple) -> None:
+    def _remove_connection(self, errors: List[BaseException], key: Tuple) -> None:
         self._connections.pop(key)
+
+        # Call the errback of all the pending requests for this connection
+        pending_requests = self._pending_requests.pop(key, None)
+        while pending_requests:
+            d = pending_requests.popleft()
+            d.errback(errors)
 
 
 @implementer(IPolicyForHTTPS)
