@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import re
 import sys
 from subprocess import Popen, PIPE
@@ -59,6 +60,8 @@ def _wrong_credentials(proxy_url):
 
 @skipIf(sys.version_info < (3, 5, 4),
         "requires mitmproxy < 3.0.0, which these tests do not support")
+@skipIf(platform.system() == 'Windows' and sys.version_info < (3, 7),
+        "mitmproxy does not support Windows when running Python < 3.7")
 class ProxyConnectTestCase(TestCase):
 
     def setUp(self):

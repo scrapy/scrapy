@@ -7,7 +7,7 @@ from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
 
 
-FOOBAR_NL = u"foo\nbar"
+FOOBAR_NL = "foo{}bar".format(os.linesep)
 
 
 class XmliterTestCase(unittest.TestCase):

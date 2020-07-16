@@ -455,9 +455,15 @@ class FeedExportTest(unittest.TestCase):
     def run_and_export(self, spider_cls, settings):
         """ Run spider with specified settings; return exported data. """
 
+        def path_to_url(path):
+            return urljoin('file:', pathname2url(str(path)))
+
+        def printf_escape(string):
+            return string.replace('%', '%%')
+
         FEEDS = settings.get('FEEDS') or {}
         settings['FEEDS'] = {
-            urljoin('file:', pathname2url(str(file_path))): feed
+            printf_escape(path_to_url(file_path)): feed
             for file_path, feed in FEEDS.items()
         }
 
