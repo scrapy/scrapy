@@ -461,7 +461,7 @@ For instance, if your settings include::
 
 And your :command:`crawl` command line is::
 
-    scrapy crawl spidername -o dirname/%(batch_id)d-filename%(batch_time)s.json
+    scrapy crawl spidername -o 'dirname/%(batch_id)d-filename%(batch_time)s.json'
 
 The command line above can generate a directory tree like::
 
