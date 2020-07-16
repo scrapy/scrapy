@@ -26,6 +26,8 @@ class Command(BaseRunSpiderCommand):
         else:
             self.crawler_process.start()
 
-            if self.crawler_process.bootstrap_failed or \
-                    (hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception):
+            if (
+                self.crawler_process.bootstrap_failed
+                or hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception
+            ):
                 self.exitcode = 1

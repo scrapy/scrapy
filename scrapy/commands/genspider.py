@@ -121,6 +121,7 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self):
-        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
-            join(scrapy.__path__[0], 'templates')
-        return join(_templates_base_dir, 'spiders')
+        return join(
+            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
+            'spiders'
+        )

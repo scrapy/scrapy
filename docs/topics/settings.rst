@@ -469,7 +469,7 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 

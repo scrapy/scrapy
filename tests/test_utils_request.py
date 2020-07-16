@@ -1,7 +1,11 @@
 import unittest
 from scrapy.http import Request
-from scrapy.utils.request import request_fingerprint, _fingerprint_cache, \
-    request_authenticate, request_httprepr
+from scrapy.utils.request import (
+    _fingerprint_cache,
+    request_authenticate,
+    request_fingerprint,
+    request_httprepr,
+)
 
 
 class UtilsRequestTest(unittest.TestCase):
