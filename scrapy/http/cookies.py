@@ -186,9 +186,6 @@ class WrappedResponse:
     def info(self):
         return self
 
-    # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
         return [to_unicode(v, errors='replace')
                 for v in self.response.headers.getlist(name)]
-    # python2 cookiejars calls getheaders
-    getheaders = get_all
