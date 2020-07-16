@@ -47,13 +47,17 @@ def response_httprepr(response):
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
     """
-    s = b"HTTP/1.1 " + to_bytes(str(response.status)) + b" " + \
-        to_bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
+    values = [
+        b"HTTP/1.1 ",
+        to_bytes(str(response.status)),
+        b" ",
+        to_bytes(http.RESPONSES.get(response.status, b'')),
+        b"\r\n",
+    ]
     if response.headers:
-        s += response.headers.to_string() + b"\r\n"
-    s += b"\r\n"
-    s += response.body
-    return s
+        values.extend([response.headers.to_string(), b"\r\n"])
+    values.extend([b"\r\n", response.body])
+    return b"".join(values)
 
 
 def open_in_browser(response, _openfunc=webbrowser.open):
