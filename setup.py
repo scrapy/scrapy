@@ -18,12 +18,39 @@ def has_environment_marker_platform_impl_support():
     return parse_version(setuptools_version) >= parse_version('18.5')
 
 
+install_requires = [
+    'Twisted>=17.9.0',
+    'cryptography>=2.0',
+    'cssselect>=0.9.1',
+    'itemloaders>=1.0.1',
+    'lxml>=3.5.0',
+    'parsel>=1.5.0',
+    'PyDispatcher>=2.0.5',
+    'pyOpenSSL>=16.2.0',
+    'queuelib>=1.4.2',
+    'service_identity>=16.0.0',
+    'w3lib>=1.17.0',
+    'zope.interface>=4.1.3',
+    'protego>=0.1.15',
+    'itemadapter>=0.1.0',
+]
 extras_require = {}
 
 if has_environment_marker_platform_impl_support():
+    extras_require[':platform_python_implementation == "CPython"'] = [
+        'lxml>=3.5.0',
+    ]
     extras_require[':platform_python_implementation == "PyPy"'] = [
+        # Earlier lxml versions are affected by
+        # https://bitbucket.org/pypy/pypy/issues/2498/cython-on-pypy-3-dict-object-has-no,
+        # which was fixed in Cython 0.26, released on 2017-06-19, and used to
+        # generate the C headers of lxml release tarballs published since then, the
+        # first of which was:
+        'lxml>=4.0.0',
         'PyPyDispatcher>=2.1.0',
     ]
+else:
+    install_requires.append('lxml>=3.5.0')
 
 
 setup(
@@ -67,21 +94,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     python_requires='>=3.5.2',
-    install_requires=[
-        'Twisted>=17.9.0',
-        'cryptography>=2.0',
-        'cssselect>=0.9.1',
-        'itemloaders>=1.0.1',
-        'lxml>=3.5.0',
-        'parsel>=1.5.0',
-        'PyDispatcher>=2.0.5',
-        'pyOpenSSL>=16.2.0',
-        'queuelib>=1.4.2',
-        'service_identity>=16.0.0',
-        'w3lib>=1.17.0',
-        'zope.interface>=4.1.3',
-        'protego>=0.1.15',
-        'itemadapter>=0.1.0',
-    ],
+    install_requires=install_requires,
     extras_require=extras_require,
 )
