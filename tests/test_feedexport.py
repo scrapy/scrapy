@@ -1204,6 +1204,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
             for path, feed in FEEDS.items():
                 dir_name = os.path.dirname(path)
+                if not os.path.exists(str(dir_name)):
+                    continue
                 for file in sorted(os.listdir(dir_name)):
                     with open(os.path.join(dir_name, file), 'rb') as f:
                         data = f.read()
