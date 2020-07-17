@@ -4,6 +4,7 @@ import operator
 import platform
 import unittest
 from itertools import count
+from sys import version_info
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
@@ -73,7 +74,7 @@ class ToBytesTest(unittest.TestCase):
 
 class MemoizedMethodTest(unittest.TestCase):
     def test_memoizemethod_noargs(self):
-        class A(object):
+        class A:
 
             @memoizemethod_noargs
             def cached(self):
@@ -102,7 +103,6 @@ class BinaryIsTextTest(unittest.TestCase):
 
     def test_real_binary_bytes(self):
         assert not binary_is_text(b"\x02\xa3")
-
 
 
 class UtilsPythonTestCase(unittest.TestCase):
@@ -146,7 +146,9 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         get_z = operator.itemgetter('z')
         get_meta = operator.attrgetter('meta')
-        compare_z = lambda obj: get_z(get_meta(obj))
+
+        def compare_z(obj):
+            return get_z(get_meta(obj))
 
         self.assertTrue(equal_attributes(a, b, [compare_z, 'x']))
         # fail z equality
@@ -154,7 +156,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object): pass
+        class _Weakme:
+            pass
+
         _values = count()
         wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()
@@ -175,14 +179,14 @@ class UtilsPythonTestCase(unittest.TestCase):
         def f2(a, b=None, c=None):
             pass
 
-        class A(object):
+        class A:
             def __init__(self, a, b, c):
                 pass
 
             def method(self, a, b, c):
                 pass
 
-        class Callable(object):
+        class Callable:
 
             def __call__(self, a, b, c):
                 pass
@@ -211,10 +215,12 @@ class UtilsPythonTestCase(unittest.TestCase):
         else:
             self.assertEqual(
                 get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
-
+            if version_info < (3, 6):
+                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
+            else:
+                self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
@@ -222,6 +228,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(
             without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
             {'one': 1, 'three': 3, 'four': 4})
+
 
 if __name__ == "__main__":
     unittest.main()

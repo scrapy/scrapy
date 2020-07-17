@@ -24,14 +24,14 @@ class Request(object_ref):
         self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
-        assert isinstance(priority, int), "Request priority not an integer: %r" % priority
+        if not isinstance(priority, int):
+            raise TypeError("Request priority not an integer: %r" % priority)
         self.priority = priority
 
         if callback is not None and not callable(callback):
             raise TypeError('callback must be a callable, got %s' % type(callback).__name__)
         if errback is not None and not callable(errback):
             raise TypeError('errback must be a callable, got %s' % type(errback).__name__)
-        assert callback or not errback, "Cannot use errback without a callback"
         self.callback = callback
         self.errback = errback
 
@@ -129,6 +129,9 @@ class Request(object_ref):
                      or
                      :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
                      may modify the :class:`~scrapy.http.Request` object.
+
+        To translate a cURL command into a Scrapy request,
+        you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
 
        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)

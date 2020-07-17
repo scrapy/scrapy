@@ -28,6 +28,7 @@ def _embed_ipython_shell(namespace={}, banner=''):
 def _embed_bpython_shell(namespace={}, banner=''):
     """Start a bpython shell"""
     import bpython
+
     @wraps(_embed_bpython_shell)
     def wrapper(namespace=namespace, banner=''):
         bpython.embed(locals_=namespace, banner=banner)
@@ -37,6 +38,7 @@ def _embed_bpython_shell(namespace={}, banner=''):
 def _embed_ptpython_shell(namespace={}, banner=''):
     """Start a ptpython shell"""
     import ptpython.repl
+
     @wraps(_embed_ptpython_shell)
     def wrapper(namespace=namespace, banner=''):
         print(banner)
@@ -54,6 +56,7 @@ def _embed_standard_shell(namespace={}, banner=''):
     else:
         import rlcompleter  # noqa: F401
         readline.parse_and_bind("tab:complete")
+
     @wraps(_embed_standard_shell)
     def wrapper(namespace=namespace, banner=''):
         code.interact(banner=banner, local=namespace)

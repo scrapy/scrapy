@@ -78,6 +78,12 @@ class Spider(object_ref):
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
+        warnings.warn(
+            "Spider.make_requests_from_url method is deprecated: "
+            "it will be removed and not be called by the default "
+            "Spider.start_requests method in future Scrapy releases. "
+            "Please override Spider.start_requests method instead."
+        )
         return Request(url, dont_filter=True)
 
     def parse(self, response):
@@ -104,6 +110,6 @@ class Spider(object_ref):
 
 
 # Top-level imports
-from scrapy.spiders.crawl import CrawlSpider, Rule  # noqa: F401
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider  # noqa: F401
-from scrapy.spiders.sitemap import SitemapSpider  # noqa: F401
+from scrapy.spiders.crawl import CrawlSpider, Rule
+from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.spiders.sitemap import SitemapSpider

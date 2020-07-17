@@ -17,10 +17,12 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
     except UnicodeDecodeError:
         # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
         # Switch to 'allow all' state.
-        logger.warning("Failure while parsing robots.txt. "
-                       "File either contains garbage or is in an encoding other than UTF-8, treating it as an empty file.",
-                       exc_info=sys.exc_info(),
-                       extra={'spider': spider})
+        logger.warning(
+            "Failure while parsing robots.txt. File either contains garbage or "
+            "is in an encoding other than UTF-8, treating it as an empty file.",
+            exc_info=sys.exc_info(),
+            extra={'spider': spider},
+        )
         robotstxt_body = ''
     return robotstxt_body
 

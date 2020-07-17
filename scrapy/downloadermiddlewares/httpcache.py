@@ -17,7 +17,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.utils.misc import load_object
 
 
-class HttpCacheMiddleware(object):
+class HttpCacheMiddleware:
 
     DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,

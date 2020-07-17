@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
 import unittest
+from unittest import mock
+from warnings import catch_warnings
 
 from w3lib.encoding import resolve_encoding
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
@@ -25,7 +27,11 @@ class BaseResponseTest(unittest.TestCase):
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b''), self.response_class))
         self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'body'), self.response_class))
         # test presence of all optional parameters
-        self.assertTrue(isinstance(self.response_class('http://example.com/', body=b'', headers={}, status=200), self.response_class))
+        self.assertTrue(
+            isinstance(
+                self.response_class('http://example.com/', body=b'', headers={}, status=200), self.response_class
+            )
+        )
 
         r = self.response_class("http://www.example.com")
         assert isinstance(r.url, str)
@@ -71,6 +77,22 @@ class BaseResponseTest(unittest.TestCase):
         req.meta['foo'] = 'bar'
         r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
         assert r1.meta is req.meta
+
+    def test_copy_cb_kwargs(self):
+        req = Request("http://www.example.com")
+        req.cb_kwargs['foo'] = 'bar'
+        r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
+        assert r1.cb_kwargs is req.cb_kwargs
+
+    def test_unavailable_meta(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with self.assertRaisesRegex(AttributeError, r'Response\.meta not available'):
+            r1.meta
+
+    def test_unavailable_cb_kwargs(self):
+        r1 = self.response_class("http://www.example.com", body=b"Some body")
+        with self.assertRaisesRegex(AttributeError, r'Response\.cb_kwargs not available'):
+            r1.cb_kwargs
 
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
@@ -141,6 +163,8 @@ class BaseResponseTest(unittest.TestCase):
             r.css('body')
             r.xpath('//body')
 
+    # Response.follow
+
     def test_follow_url_absolute(self):
         self._assert_followed_url('http://foo.example.com',
                                   'http://foo.example.com')
@@ -164,6 +188,92 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
                                   'http://example.com/foo%20')
+
+    def test_follow_flags(self):
+        res = self.response_class('http://example.com/')
+        fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
+        self.assertEqual(fol.flags, ['cached', 'allowed'])
+
+    # Response.follow_all
+
+    def test_follow_all_absolute(self):
+        url_list = ['http://example.org', 'http://www.example.org',
+                    'http://example.com', 'http://www.example.com']
+        self._assert_followed_all_urls(url_list, url_list)
+
+    def test_follow_all_relative(self):
+        relative = ['foo', 'bar', 'foo/bar', 'bar/foo']
+        absolute = [
+            'http://example.com/foo',
+            'http://example.com/bar',
+            'http://example.com/foo/bar',
+            'http://example.com/bar/foo',
+        ]
+        self._assert_followed_all_urls(relative, absolute)
+
+    def test_follow_all_links(self):
+        absolute = [
+            'http://example.com/foo',
+            'http://example.com/bar',
+            'http://example.com/foo/bar',
+            'http://example.com/bar/foo',
+        ]
+        links = map(Link, absolute)
+        self._assert_followed_all_urls(links, absolute)
+
+    def test_follow_all_empty(self):
+        r = self.response_class("http://example.com")
+        self.assertEqual([], list(r.follow_all([])))
+
+    def test_follow_all_invalid(self):
+        r = self.response_class("http://example.com")
+        if self.response_class == Response:
+            with self.assertRaises(TypeError):
+                list(r.follow_all(urls=None))
+            with self.assertRaises(TypeError):
+                list(r.follow_all(urls=12345))
+            with self.assertRaises(ValueError):
+                list(r.follow_all(urls=[None]))
+        else:
+            with self.assertRaises(ValueError):
+                list(r.follow_all(urls=None))
+            with self.assertRaises(TypeError):
+                list(r.follow_all(urls=12345))
+            with self.assertRaises(ValueError):
+                list(r.follow_all(urls=[None]))
+
+    def test_follow_all_whitespace(self):
+        relative = ['foo ', 'bar ', 'foo/bar ', 'bar/foo ']
+        absolute = [
+            'http://example.com/foo%20',
+            'http://example.com/bar%20',
+            'http://example.com/foo/bar%20',
+            'http://example.com/bar/foo%20',
+        ]
+        self._assert_followed_all_urls(relative, absolute)
+
+    def test_follow_all_whitespace_links(self):
+        absolute = [
+            'http://example.com/foo ',
+            'http://example.com/bar ',
+            'http://example.com/foo/bar ',
+            'http://example.com/bar/foo ',
+        ]
+        links = map(Link, absolute)
+        expected = [u.replace(' ', '%20') for u in absolute]
+        self._assert_followed_all_urls(links, expected)
+
+    def test_follow_all_flags(self):
+        re = self.response_class('http://www.example.com/')
+        urls = [
+            'http://www.example.com/',
+            'http://www.example.com/2',
+            'http://www.example.com/foo',
+        ]
+        fol = re.follow_all(urls, flags=['cached', 'allowed'])
+        for req in fol:
+            self.assertEqual(req.flags, ['cached', 'allowed'])
+
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
             response = self._links_response()
@@ -171,8 +281,21 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(req.url, target_url)
         return req
 
+    def _assert_followed_all_urls(self, follow_obj, target_urls, response=None):
+        if response is None:
+            response = self._links_response()
+        followed = response.follow_all(follow_obj)
+        for req, target in zip(followed, target_urls):
+            self.assertEqual(req.url, target)
+            yield req
+
     def _links_response(self):
-        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        body = get_testdata('link_extractor', 'linkextractor.html')
+        resp = self.response_class('http://example.com/index', body=body)
+        return resp
+
+    def _links_response_no_href(self):
+        body = get_testdata('link_extractor', 'linkextractor_no_href.html')
         resp = self.response_class('http://example.com/index', body=body)
         return resp
 
@@ -206,13 +329,16 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='latin-1')
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
-        resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=utf-8"]})
+        resp = self.response_class(u"http://www.example.com/price/\xa3",
+                                   headers={"Content-type": ["text/html; charset=utf-8"]})
         self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
-        resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=iso-8859-1"]})
+        resp = self.response_class(u"http://www.example.com/price/\xa3",
+                                   headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
 
     def test_unicode_body(self):
-        unicode_string = u'\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442'
+        unicode_string = ('\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 '
+                          '\u0442\u0435\u043a\u0441\u0442')
         self.assertRaises(TypeError, self.response_class, 'http://www.example.com', body=u'unicode body')
 
         original_string = unicode_string.encode('cp1251')
@@ -227,13 +353,18 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r1.text, unicode_string)
 
     def test_encoding(self):
-        r1 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body=b"\xc2\xa3")
+        r1 = self.response_class("http://www.example.com", body=b"\xc2\xa3",
+                                 headers={"Content-type": ["text/html; charset=utf-8"]})
         r2 = self.response_class("http://www.example.com", encoding='utf-8', body=u"\xa3")
-        r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body=b"\xa3")
+        r3 = self.response_class("http://www.example.com", body=b"\xa3",
+                                 headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         r4 = self.response_class("http://www.example.com", body=b"\xa2\xa3")
-        r5 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=None"]}, body=b"\xc2\xa3")
-        r6 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=gb2312"]}, body=b"\xa8D")
-        r7 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=gbk"]}, body=b"\xa8D")
+        r5 = self.response_class("http://www.example.com", body=b"\xc2\xa3",
+                                 headers={"Content-type": ["text/html; charset=None"]})
+        r6 = self.response_class("http://www.example.com", body=b"\xa8D",
+                                 headers={"Content-type": ["text/html; charset=gb2312"]})
+        r7 = self.response_class("http://www.example.com", body=b"\xa8D",
+                                 headers={"Content-type": ["text/html; charset=gbk"]})
 
         self.assertEqual(r1._headers_encoding(), "utf-8")
         self.assertEqual(r2._headers_encoding(), None)
@@ -321,8 +452,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'<span>value</span>' in r.text, repr(r.text)
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
-        #r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
-        #assert u'\ufffd' in r.text, repr(r.text)
+        # r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
+        # assert u'\ufffd' in r.text, repr(r.text)
 
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
@@ -368,8 +499,10 @@ class TextResponseTest(BaseResponseTest):
             response.xpath("normalize-space(//p[@class=\"content\"])").getall(),
         )
         self.assertEqual(
-            response.xpath("//title[count(following::p[@class=$pclass])=$pcount]/text()",
-                pclass="content", pcount=1).getall(),
+            response.xpath(
+                "//title[count(following::p[@class=$pclass])=$pcount]/text()",
+                pclass="content", pcount=1,
+            ).getall(),
             response.xpath("//title[count(following::p[@class=\"content\"])=1]/text()").getall(),
         )
 
@@ -449,12 +582,14 @@ class TextResponseTest(BaseResponseTest):
             'http://example.com',
             body=b'''<html><body><a href=" foo\n">click me</a></body></html>'''
         )
-        self._assert_followed_url(resp.css('a')[0],
-                                 'http://example.com/foo',
-                                  response=resp)
-        self._assert_followed_url(resp.css('a::attr(href)')[0],
-                                 'http://example.com/foo',
-                                  response=resp)
+        self._assert_followed_url(
+            resp.css('a')[0],
+            'http://example.com/foo',
+            response=resp)
+        self._assert_followed_url(
+            resp.css('a::attr(href)')[0],
+            'http://example.com/foo',
+            response=resp)
 
     def test_follow_encoding(self):
         resp1 = self.response_class(
@@ -481,6 +616,96 @@ class TextResponseTest(BaseResponseTest):
         )
         self.assertEqual(req.encoding, 'cp1251')
 
+    def test_follow_flags(self):
+        res = self.response_class('http://example.com/')
+        fol = res.follow('http://example.com/', flags=['cached', 'allowed'])
+        self.assertEqual(fol.flags, ['cached', 'allowed'])
+
+    def test_follow_all_flags(self):
+        re = self.response_class('http://www.example.com/')
+        urls = [
+            'http://www.example.com/',
+            'http://www.example.com/2',
+            'http://www.example.com/foo',
+        ]
+        fol = re.follow_all(urls, flags=['cached', 'allowed'])
+        for req in fol:
+            self.assertEqual(req.flags, ['cached', 'allowed'])
+
+    def test_follow_all_css(self):
+        expected = [
+            'http://example.com/sample3.html',
+            'http://example.com/innertag.html',
+        ]
+        response = self._links_response()
+        extracted = [r.url for r in response.follow_all(css='a[href*="example.com"]')]
+        self.assertEqual(expected, extracted)
+
+    def test_follow_all_css_skip_invalid(self):
+        expected = [
+            'http://example.com/page/1/',
+            'http://example.com/page/3/',
+            'http://example.com/page/4/',
+        ]
+        response = self._links_response_no_href()
+        extracted1 = [r.url for r in response.follow_all(css='.pagination a')]
+        self.assertEqual(expected, extracted1)
+        extracted2 = [r.url for r in response.follow_all(response.css('.pagination a'))]
+        self.assertEqual(expected, extracted2)
+
+    def test_follow_all_xpath(self):
+        expected = [
+            'http://example.com/sample3.html',
+            'http://example.com/innertag.html',
+        ]
+        response = self._links_response()
+        extracted = response.follow_all(xpath='//a[contains(@href, "example.com")]')
+        self.assertEqual(expected, [r.url for r in extracted])
+
+    def test_follow_all_xpath_skip_invalid(self):
+        expected = [
+            'http://example.com/page/1/',
+            'http://example.com/page/3/',
+            'http://example.com/page/4/',
+        ]
+        response = self._links_response_no_href()
+        extracted1 = [r.url for r in response.follow_all(xpath='//div[@id="pagination"]/a')]
+        self.assertEqual(expected, extracted1)
+        extracted2 = [r.url for r in response.follow_all(response.xpath('//div[@id="pagination"]/a'))]
+        self.assertEqual(expected, extracted2)
+
+    def test_follow_all_too_many_arguments(self):
+        response = self._links_response()
+        with self.assertRaises(ValueError):
+            response.follow_all(css='a[href*="example.com"]', xpath='//a[contains(@href, "example.com")]')
+
+    def test_body_as_unicode_deprecation_warning(self):
+        with catch_warnings(record=True) as warnings:
+            r1 = self.response_class("http://www.example.com", body=u'Hello', encoding='utf-8')
+            self.assertEqual(r1.body_as_unicode(), u'Hello')
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+
+    def test_json_response(self):
+        json_body = b"""{"ip": "109.187.217.200"}"""
+        json_response = self.response_class("http://www.example.com", body=json_body)
+        self.assertEqual(json_response.json(), {'ip': '109.187.217.200'})
+
+        text_body = b"""<html><body>text</body></html>"""
+        text_response = self.response_class("http://www.example.com", body=text_body)
+        with self.assertRaises(ValueError):
+            text_response.json()
+
+    def test_cache_json_response(self):
+        json_valid_bodies = [b"""{"ip": "109.187.217.200"}""", b"""null"""]
+        for json_body in json_valid_bodies:
+            json_response = self.response_class("http://www.example.com", body=json_body)
+
+            with mock.patch('json.loads') as mock_json:
+                for _ in range(2):
+                    json_response.json()
+                mock_json.assert_called_once_with(json_body.decode())
+
 
 class HtmlResponseTest(TextResponseTest):
 
@@ -505,7 +730,8 @@ class HtmlResponseTest(TextResponseTest):
         body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         </head><body>Price: \xa3100</body></html>'
         """
-        r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body=body)
+        r3 = self.response_class("http://www.example.com", body=body,
+                                 headers={"Content-type": ["text/html; charset=iso-8859-1"]})
         self._assert_response_values(r3, 'iso-8859-1', body)
 
         # make sure replace() preserves the encoding of the original response

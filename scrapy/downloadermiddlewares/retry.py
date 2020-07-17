@@ -12,9 +12,15 @@ once the spider has finished crawling all regular (non failed) pages.
 import logging
 
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError,
+    ConnectionDone,
+    ConnectionLost,
+    ConnectionRefusedError,
+    DNSLookupError,
+    TCPTimedOutError,
+    TimeoutError,
+)
 from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import NotConfigured
@@ -25,7 +31,7 @@ from scrapy.utils.python import global_object_name
 logger = logging.getLogger(__name__)
 
 
-class RetryMiddleware(object):
+class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
@@ -54,8 +60,10 @@ class RetryMiddleware(object):
         return response
 
     def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
-                and not request.meta.get('dont_retry', False):
+        if (
+            isinstance(exception, self.EXCEPTIONS_TO_RETRY)
+            and not request.meta.get('dont_retry', False)
+        ):
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):
@@ -84,6 +92,6 @@ class RetryMiddleware(object):
             return retryreq
         else:
             stats.inc_value('retry/max_reached')
-            logger.debug("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
+            logger.error("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
                          {'request': request, 'retries': retries, 'reason': reason},
                          extra={'spider': spider})
