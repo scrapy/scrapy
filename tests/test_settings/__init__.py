@@ -86,8 +86,7 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_set_calls_settings_attributes_methods_on_update(self):
         attr = SettingsAttribute('value', 10)
-        with mock.patch.object(attr, '__setattr__') as mock_setattr, \
-                mock.patch.object(attr, 'set') as mock_set:
+        with mock.patch.object(attr, '__setattr__') as mock_setattr, mock.patch.object(attr, 'set') as mock_set:
 
             self.settings.attributes = {'TEST_OPTION': attr}
 
