@@ -194,6 +194,27 @@ You can also define a custom ACL for exported feeds using this setting:
 
  * :setting:`FEED_STORAGE_S3_ACL`
 
+.. _topics-feed-storage-gcs:
+
+Google Cloud Storage (GCS)
+--------------------------
+
+The feeds are stored on `Google Cloud Storage`_.
+
+ * URI scheme: ``gs``
+ * Example URIs:
+
+   * ``gs://mybucket/path/to/export.csv``
+
+ * Required external libraries: `google-cloud-storage <https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python>`_.
+
+For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
+
+You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
+
+ * :setting:`FEED_STORAGE_GCS_ACL`
+ * :setting:`GCS_PROJECT_ID`
+
 .. _topics-feed-storage-stdout:
 
 Standard output
@@ -429,3 +450,4 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+.. _Google Cloud Storage: https://cloud.google.com/storage/

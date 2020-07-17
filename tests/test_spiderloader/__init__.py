@@ -20,13 +20,20 @@ from scrapy.crawler import CrawlerRunner
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
+def _copytree(source, target):
+    try:
+        shutil.copytree(source, target)
+    except shutil.Error:
+        pass
+
+
 class SpiderLoaderTest(unittest.TestCase):
 
     def setUp(self):
         orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
         self.tmpdir = tempfile.mkdtemp()
         self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
-        shutil.copytree(orig_spiders_dir, self.spiders_dir)
+        _copytree(orig_spiders_dir, self.spiders_dir)
         sys.path.append(self.tmpdir)
         settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
         self.spider_loader = SpiderLoader.from_settings(settings)
@@ -124,7 +131,7 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
         self.tmpdir = self.mktemp()
         os.mkdir(self.tmpdir)
         self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
-        shutil.copytree(orig_spiders_dir, self.spiders_dir)
+        _copytree(orig_spiders_dir, self.spiders_dir)
         sys.path.append(self.tmpdir)
         self.settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
 
@@ -134,8 +141,8 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 
     def test_dupename_warning(self):
         # copy 1 spider module so as to have duplicate spider name
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider3.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider3dupe.py'))
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider3.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider3dupe.py'))
 
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)
@@ -156,10 +163,10 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
     def test_multiple_dupename_warning(self):
         # copy 2 spider modules so as to have duplicate spider name
         # This should issue 2 warning, 1 for each duplicate spider name
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider1.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider1dupe.py'))
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx/spider2.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx/spider2dupe.py'))
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider1.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider1dupe.py'))
+        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider2.py'),
+                        os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider2dupe.py'))
 
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)

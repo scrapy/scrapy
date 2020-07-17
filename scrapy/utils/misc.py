@@ -15,6 +15,7 @@ from w3lib.html import replace_entities
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import _BaseItem
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 
 
 _ITERABLE_SINGLE_VALUES = dict, _BaseItem, str, bytes
@@ -86,6 +87,11 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex contains multiple numbered groups, all those will be returned (flattened)
     * if the regex doesn't contain any group the entire regex matching is returned
     """
+    warnings.warn(
+        "scrapy.utils.misc.extract_regex has moved to parsel.utils.extract_regex.",
+        ScrapyDeprecationWarning,
+        stacklevel=2
+    )
 
     if isinstance(regex, str):
         regex = re.compile(regex, re.UNICODE)
