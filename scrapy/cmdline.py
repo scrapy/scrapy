@@ -12,7 +12,6 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
-from scrapy.settings.deprecated import check_deprecated_settings
 
 
 def _iter_command_classes(module_name):
@@ -20,10 +19,12 @@ def _iter_command_classes(module_name):
     # scrapy.utils.spider.iter_spider_classes
     for module in walk_modules(module_name):
         for obj in vars(module).values():
-            if inspect.isclass(obj) and \
-                    issubclass(obj, ScrapyCommand) and \
-                    obj.__module__ == module.__name__ and \
-                    not obj == ScrapyCommand:
+            if (
+                inspect.isclass(obj)
+                and issubclass(obj, ScrapyCommand)
+                and obj.__module__ == module.__name__
+                and not obj == ScrapyCommand
+            ):
                 yield obj
 
 
@@ -118,7 +119,6 @@ def execute(argv=None, settings=None):
             pass
         else:
             settings['EDITOR'] = editor
-    check_deprecated_settings(settings)
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
@@ -167,6 +167,7 @@ if __name__ == '__main__':
     try:
         execute()
     finally:
-        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect()
-        # on exit: http://doc.pypy.org/en/latest/cpython_differences.html?highlight=gc.collect#differences-related-to-garbage-collection-strategies
+        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect() on exit:
+        # http://doc.pypy.org/en/latest/cpython_differences.html
+        # ?highlight=gc.collect#differences-related-to-garbage-collection-strategies
         garbage_collect()

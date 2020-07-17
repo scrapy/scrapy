@@ -9,7 +9,7 @@ from scrapy.utils.defer import process_parallel, process_chain, process_chain_bo
 logger = logging.getLogger(__name__)
 
 
-class MiddlewareManager(object):
+class MiddlewareManager:
     """Base class for implementing middleware managers"""
 
     component_name = 'foo middleware'

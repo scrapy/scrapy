@@ -86,8 +86,7 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_set_calls_settings_attributes_methods_on_update(self):
         attr = SettingsAttribute('value', 10)
-        with mock.patch.object(attr, '__setattr__') as mock_setattr, \
-                mock.patch.object(attr, 'set') as mock_set:
+        with mock.patch.object(attr, '__setattr__') as mock_setattr, mock.patch.object(attr, 'set') as mock_set:
 
             self.settings.attributes = {'TEST_OPTION': attr}
 
@@ -314,13 +313,17 @@ class BaseSettingsTest(unittest.TestCase):
                           'TEST_BASE': BaseSettings({1: 1, 2: 2}, 'project'),
                           'TEST': BaseSettings({1: 10, 3: 30}, 'default'),
                           'HASNOBASE': BaseSettings({3: 3000}, 'default')})
-        self.assertDictEqual(s.copy_to_dict(),
-                            {'HASNOBASE': {3: 3000},
-                             'TEST': {1: 10, 3: 30},
-                             'TEST_BASE': {1: 1, 2: 2},
-                             'TEST_BOOLEAN': False,
-                             'TEST_LIST': [1, 2],
-                             'TEST_STRING': 'a string'})
+        self.assertDictEqual(
+            s.copy_to_dict(),
+            {
+                'HASNOBASE': {3: 3000},
+                'TEST': {1: 10, 3: 30},
+                'TEST_BASE': {1: 1, 2: 2},
+                'TEST_LIST': [1, 2],
+                'TEST_BOOLEAN': False,
+                'TEST_STRING': 'a string',
+            }
+        )
 
     def test_freeze(self):
         self.settings.freeze()

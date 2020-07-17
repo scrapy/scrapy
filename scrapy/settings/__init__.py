@@ -28,7 +28,7 @@ def get_settings_priority(priority):
         return priority
 
 
-class SettingsAttribute(object):
+class SettingsAttribute:
 
     """Class for storing data related to settings attributes.
 
@@ -52,8 +52,7 @@ class SettingsAttribute(object):
             self.priority = priority
 
     def __str__(self):
-        return "<SettingsAttribute value={self.value!r} " \
-               "priority={self.priority}>".format(self=self)
+        return "<SettingsAttribute value={self.value!r} priority={self.priority}>".format(self=self)
 
     __repr__ = __str__
 

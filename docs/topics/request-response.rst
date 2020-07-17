@@ -31,10 +31,12 @@ Request objects
     a :class:`Response`.
 
     :param url: the URL of this request
+
+        If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: string
 
     :param callback: the function that will be called with the response of this
-       request (once its downloaded) as its first parameter. For more information
+       request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
        :meth:`~scrapy.spiders.Spider.parse` method will be used.
@@ -125,6 +127,10 @@ Request objects
        :exc:`~twisted.python.failure.Failure` as first parameter.
        For more information,
        see :ref:`topics-request-response-ref-errbacks` below.
+
+       .. versionchanged:: 2.0
+          The *callback* parameter is no longer required when the *errback*
+          parameter is specified.
     :type errback: callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -168,9 +174,9 @@ Request objects
         See :ref:`topics-request-meta` for a list of special meta keys
         recognized by Scrapy.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.meta`` attribute.
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.meta`` attribute.
 
     .. attribute:: Request.cb_kwargs
 
@@ -179,11 +185,13 @@ Request objects
         for new Requests, which means by default callbacks only get a :class:`Response`
         object as argument.
 
-        This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
-        spider, from the ``response.cb_kwargs`` attribute.
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
-    .. _shallow copied: https://docs.python.org/2/library/copy.html
+        In case of a failure to process the request, this dict can be accessed as
+        ``failure.request.cb_kwargs`` in the request's errback. For more information,
+        see :ref:`errback-cb_kwargs`.
 
     .. method:: Request.copy()
 
@@ -308,6 +316,31 @@ errors if needed::
                 request = failure.request
                 self.logger.error('TimeoutError on %s', request.url)
 
+.. _errback-cb_kwargs:
+
+Accessing additional data in errback functions
+----------------------------------------------
+
+In case of a failure to process the request, you may be interested in
+accessing arguments to the callback functions so you can process further
+based on the arguments in the errback. The following example shows how to
+achieve this by using ``Failure.request.cb_kwargs``::
+
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 errback=self.errback_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        yield request
+
+    def parse_page2(self, response, main_url):
+        pass
+
+    def errback_page2(self, failure):
+        yield dict(
+            main_url=failure.request.cb_kwargs['main_url'],
+        )
+
 .. _topics-request-meta:
 
 Request.meta special keys
@@ -381,6 +414,51 @@ The meta key is used set retry times per request. When initialized, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
 
+
+.. _topics-stop-response-download:
+
+Stopping the download of a Response
+===================================
+
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
+:class:`~scrapy.signals.bytes_received` signal handler will stop the
+download of a given response. See the following example::
+
+    import scrapy
+
+
+    class StopSpider(scrapy.Spider):
+        name = "stop"
+        start_urls = ["https://docs.scrapy.org/en/latest/"]
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            spider = super().from_crawler(crawler)
+            crawler.signals.connect(spider.on_bytes_received, signal=scrapy.signals.bytes_received)
+            return spider
+
+        def parse(self, response):
+            # 'last_chars' show that the full response was not downloaded
+            yield {"len": len(response.text), "last_chars": response.text[-40:]}
+
+        def on_bytes_received(self, data, request, spider):
+            raise scrapy.exceptions.StopDownload(fail=False)
+
+which produces the following output::
+
+    2020-05-19 17:26:12 [scrapy.core.engine] INFO: Spider opened
+    2020-05-19 17:26:12 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
+    2020-05-19 17:26:13 [scrapy.core.downloader.handlers.http11] DEBUG: Download stopped for <GET https://docs.scrapy.org/en/latest/> from signal handler StopSpider.on_bytes_received
+    2020-05-19 17:26:13 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://docs.scrapy.org/en/latest/> (referer: None) ['download_stopped']
+    2020-05-19 17:26:13 [scrapy.core.scraper] DEBUG: Scraped from <200 https://docs.scrapy.org/en/latest/>
+    {'len': 279, 'last_chars': 'dth, initial-scale=1.0">\n  \n  <title>Scr'}
+    2020-05-19 17:26:13 [scrapy.core.engine] INFO: Closing spider (finished)
+
+By default, resulting responses are handled by their corresponding errbacks. To
+call their callback instead, like in this example, pass ``fail=False`` to the
+:exc:`~scrapy.exceptions.StopDownload` exception.
+
+
 .. _topics-request-response-ref-request-subclasses:
 
 Request subclasses
@@ -396,7 +474,7 @@ The FormRequest class extends the base :class:`Request` with functionality for
 dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
 fields with form data from :class:`Response` objects.
 
-.. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
+.. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
 .. class:: FormRequest(url, [formdata, ...])
 
@@ -560,11 +638,9 @@ dealing with JSON requests.
       set to ``'POST'`` automatically.
    :type data: JSON serializable object
 
-   :param dumps_kwargs: Parameters that will be passed to underlying `json.dumps`_ method which is used to serialize
+   :param dumps_kwargs: Parameters that will be passed to underlying :func:`json.dumps` method which is used to serialize
        data into JSON format.
    :type dumps_kwargs: dict
-
-.. _json.dumps: https://docs.python.org/3/library/json.html#json.dumps
 
 JsonRequest usage example
 -------------------------
@@ -609,7 +685,16 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: :class:`Request` object
+    :type request: scrapy.http.Request
+
+    :param certificate: an object representing the server's SSL certificate.
+    :type certificate: twisted.internet.ssl.Certificate
+
+    :param ip_address: The IP address of the server from which the Response originated.
+    :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
+
+    .. versionadded:: 2.1.0
+       The ``ip_address`` parameter.
 
     .. attribute:: Response.url
 
@@ -664,7 +749,7 @@ Response objects
     .. attribute:: Response.meta
 
         A shortcut to the :attr:`Request.meta` attribute of the
-        :attr:`Response.request` object (ie. ``self.request.meta``).
+        :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
@@ -672,12 +757,43 @@ Response objects
 
         .. seealso:: :attr:`Request.meta` attribute
 
+    .. attribute:: Response.cb_kwargs
+
+        .. versionadded:: 2.0
+
+        A shortcut to the :attr:`Request.cb_kwargs` attribute of the
+        :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
+
+        Unlike the :attr:`Response.request` attribute, the
+        :attr:`Response.cb_kwargs` attribute is propagated along redirects and
+        retries, so you will get the original :attr:`Request.cb_kwargs` sent
+        from your spider.
+
+        .. seealso:: :attr:`Request.cb_kwargs` attribute
+
     .. attribute:: Response.flags
 
         A list that contains flags for this response. Flags are labels used for
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
+
+    .. attribute:: Response.certificate
+
+        A :class:`twisted.internet.ssl.Certificate` object representing
+        the server's SSL certificate.
+
+        Only populated for ``https`` responses, ``None`` otherwise.
+
+    .. attribute:: Response.ip_address
+
+        .. versionadded:: 2.1.0
+
+        The IP address of the server from which the Response originated.
+
+        This attribute is currently only populated by the HTTP 1.1 download
+        handler, i.e. for ``http(s)`` responses. For other handlers,
+        :attr:`ip_address` is always ``None``.
 
     .. method:: Response.copy()
 
@@ -694,17 +810,15 @@ Response objects
         Constructs an absolute url by combining the Response's :attr:`url` with
         a possible relative url.
 
-        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
+        This is a wrapper over :func:`~urllib.parse.urljoin`, it's merely an alias for
         making this call::
 
-            urlparse.urljoin(response.url, url)
+            urllib.parse.urljoin(response.url, url)
 
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
 
-
-.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
 
 .. _topics-request-response-ref-response-subclasses:
 
@@ -760,7 +874,7 @@ TextResponse objects
        1. the encoding passed in the ``__init__`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
-          encoding is not valid (ie. unknown), it is ignored and the next
+          encoding is not valid (i.e. unknown), it is ignored and the next
           resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class
@@ -794,10 +908,10 @@ TextResponse objects
 
     .. automethod:: TextResponse.follow_all
 
-    .. method:: TextResponse.body_as_unicode()
+    .. automethod:: TextResponse.json()
 
-        The same as :attr:`text`, but available as a method. This method is
-        kept for backward compatibility; please prefer ``response.text``.
+        Returns a Python object from deserialized JSON document.
+        The result is cached after the first call.
 
 
 HtmlResponse objects

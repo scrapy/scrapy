@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import OpenSSL
 import OpenSSL._util as pyOpenSSLutil
 

@@ -45,18 +45,23 @@ IGNORED_EXTENSIONS = [
 
 
 _re_type = type(re.compile("", 0))
-_matches = lambda url, regexs: any(r.search(url) for r in regexs)
-_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
 
 
-class FilteringLinkExtractor(object):
+def _matches(url, regexs):
+    return any(r.search(url) for r in regexs)
+
+
+def _is_valid_url(url):
+    return url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
+
+
+class FilteringLinkExtractor:
 
     _csstranslator = HTMLTranslator()
 
     def __new__(cls, *args, **kwargs):
         from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
-        if (issubclass(cls, FilteringLinkExtractor) and
-                not issubclass(cls, LxmlLinkExtractor)):
+        if issubclass(cls, FilteringLinkExtractor) and not issubclass(cls, LxmlLinkExtractor):
             warn('scrapy.linkextractors.FilteringLinkExtractor is deprecated, '
                  'please use scrapy.linkextractors.LinkExtractor instead',
                  ScrapyDeprecationWarning, stacklevel=2)
@@ -128,4 +133,4 @@ class FilteringLinkExtractor(object):
 
 
 # Top-level imports
-from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor  # noqa: F401
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor
