@@ -3,6 +3,16 @@
 Release notes
 =============
 
+.. _release-2.2.1:
+
+Scrapy 2.2.1 (2020-07-17)
+-------------------------
+
+*   The :command:`startproject` command no longer makes unintended changes to
+    the permissions of files in the destination folder, such as removing
+    execution permissions (:issue:`4662`, :issue:`4666`)
+
+
 .. _release-2.2.0:
 
 Scrapy 2.2.0 (2020-06-24)
