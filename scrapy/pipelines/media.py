@@ -77,11 +77,11 @@ class MediaPipeline:
     def process_item(self, item, spider):
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
-        dlist = [self._process_request(r, info) for r in requests]
+        dlist = [self._process_request(r, info, item) for r in requests]
         dfd = DeferredList(dlist, consumeErrors=1)
         return dfd.addCallback(self.item_completed, item, info)
 
-    def _process_request(self, request, info):
+    def _process_request(self, request, info, item):
         fp = request_fingerprint(request)
         cb = request.callback or (lambda _: _)
         eb = request.errback
@@ -102,8 +102,8 @@ class MediaPipeline:
 
         # Download request checking media_to_download hook output first
         info.downloading.add(fp)
-        dfd = mustbe_deferred(self.media_to_download, request, info)
-        dfd.addCallback(self._check_media_to_download, request, info)
+        dfd = mustbe_deferred(self.media_to_download, request, info, item)
+        dfd.addCallback(self._check_media_to_download, request, info, item)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
         dfd.addErrback(lambda f: logger.error(
             f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
@@ -116,20 +116,20 @@ class MediaPipeline:
         else:
             request.meta['handle_httpstatus_all'] = True
 
-    def _check_media_to_download(self, result, request, info):
+    def _check_media_to_download(self, result, request, info, item):
         if result is not None:
             return result
         if self.download_func:
             # this ugly code was left only to support tests. TODO: remove
             dfd = mustbe_deferred(self.download_func, request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info),
+                callback=self.media_downloaded, callbackArgs=(request, info, item),
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
             self._modify_media_request(request)
             dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info),
+                callback=self.media_downloaded, callbackArgs=(request, info, item),
                 errback=self.media_failed, errbackArgs=(request, info))
         return dfd
 
@@ -171,7 +171,7 @@ class MediaPipeline:
             defer_result(result).chainDeferred(wad)
 
     # Overridable Interface
-    def media_to_download(self, request, info):
+    def media_to_download(self, request, info, item=None):
         """Check request before starting download"""
         pass
 
@@ -179,7 +179,7 @@ class MediaPipeline:
         """Returns the media requests to download"""
         pass
 
-    def media_downloaded(self, response, request, info):
+    def media_downloaded(self, response, request, info, item=None):
         """Handler for success downloads"""
         return response
 

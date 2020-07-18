@@ -39,7 +39,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def test_default_media_to_download(self):
         request = Request('http://url')
-        assert self.pipe.media_to_download(request, self.info) is None
+        item = dict(name='name')
+        assert self.pipe.media_to_download(request, self.info, item) is None
 
     def test_default_get_media_requests(self):
         item = dict(name='name')
@@ -48,7 +49,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
     def test_default_media_downloaded(self):
         request = Request('http://url')
         response = Response('http://url', body=b'')
-        assert self.pipe.media_downloaded(response, request, self.info) is response
+        item = dict(name='name')
+        assert self.pipe.media_downloaded(response, request, self.info, item) is response
 
     def test_default_media_failed(self):
         request = Request('http://url')
@@ -169,17 +171,17 @@ class MockedMediaPipeline(MediaPipeline):
         self._mockcalled.append('download')
         return super(MockedMediaPipeline, self).download(request, info)
 
-    def media_to_download(self, request, info):
+    def media_to_download(self, request, info, item):
         self._mockcalled.append('media_to_download')
         if 'result' in request.meta:
             return request.meta.get('result')
-        return super(MockedMediaPipeline, self).media_to_download(request, info)
+        return super(MockedMediaPipeline, self).media_to_download(request, info, item)
 
     def get_media_requests(self, item, info):
         self._mockcalled.append('get_media_requests')
         return item.get('requests')
 
-    def media_downloaded(self, response, request, info):
+    def media_downloaded(self, response, request, info, item):
         self._mockcalled.append('media_downloaded')
         return super(MockedMediaPipeline, self).media_downloaded(response, request, info)
 
