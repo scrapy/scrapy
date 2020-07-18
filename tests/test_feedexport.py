@@ -1190,9 +1190,14 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def run_and_export(self, spider_cls, settings):
         """ Run spider with specified settings; return exported data. """
 
+        def build_url(path):
+            if path[0] != '/':
+                path = '/' + path
+            return urljoin('file:', path)
+
         FEEDS = settings.get('FEEDS') or {}
         settings['FEEDS'] = {
-            urljoin('file:', file_path): feed
+            build_url(file_path): feed
             for file_path, feed in FEEDS.items()
         }
         content = defaultdict(list)
@@ -1204,8 +1209,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
             for path, feed in FEEDS.items():
                 dir_name = os.path.dirname(path)
-                if not os.path.exists(str(dir_name)):
-                    continue
                 for file in sorted(os.listdir(dir_name)):
                     with open(os.path.join(dir_name, file), 'rb') as f:
                         data = f.read()
