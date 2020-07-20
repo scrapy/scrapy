@@ -29,7 +29,7 @@ class FormRequest(Request):
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
-            if self.method == 'POST':
+            if self.method == 'POST' or self.method == 'PUT':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
