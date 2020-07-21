@@ -5,7 +5,6 @@ import random
 import shutil
 import string
 import tempfile
-import warnings
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
