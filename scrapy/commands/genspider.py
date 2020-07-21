@@ -107,9 +107,15 @@ class Command(ScrapyCommand):
             print("in module:\n  %s.%s" % (spiders_module.__name__, module))
 
     def _find_template(self, template):
-        template_file = join(self.templates_dir, '%s.tmpl' % template)
-        if exists(template_file):
-            return template_file
+        if not '.tmpl' in template:
+            template = '%s.tmpl' % template
+        if exists(template):
+            return template
+
+        global_template = join(self.templates_dir, template)
+        if exists(global_template):
+            return global_template
+
         print("Unable to find template: %s\n" % template)
         print('Use "scrapy genspider --list" to see all available templates.')
 
