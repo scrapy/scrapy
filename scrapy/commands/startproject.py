@@ -1,10 +1,10 @@
 import re
 import os
-import stat
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
 from shutil import ignore_patterns, move, copy2, copystat
+from stat import S_IWUSR as OWNER_WRITE_PERMISSION
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -20,7 +20,12 @@ TEMPLATES_TO_RENDER = (
     ('${project_name}', 'middlewares.py.tmpl'),
 )
 
-IGNORE = ignore_patterns('*.pyc', '.svn')
+IGNORE = ignore_patterns('*.pyc', '__pycache__', '.svn')
+
+
+def _make_writable(path):
+    current_permissions = os.stat(path).st_mode
+    os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
 
 
 class Command(ScrapyCommand):
@@ -78,30 +83,10 @@ class Command(ScrapyCommand):
                 self._copytree(srcname, dstname)
             else:
                 copy2(srcname, dstname)
+                _make_writable(dstname)
+
         copystat(src, dst)
-        self._set_rw_permissions(dst)
-
-    def _set_rw_permissions(self, path):
-        """
-        Sets permissions of a directory tree to +rw and +rwx for folders.
-        This is necessary if the start template files come without write
-        permissions.
-        """
-        mode_rw = (stat.S_IRUSR
-                   | stat.S_IWUSR
-                   | stat.S_IRGRP
-                   | stat.S_IROTH)
-
-        mode_x = (stat.S_IXUSR
-                  | stat.S_IXGRP
-                  | stat.S_IXOTH)
-
-        os.chmod(path, mode_rw | mode_x)
-        for root, dirs, files in os.walk(path):
-            for dir in dirs:
-                os.chmod(join(root, dir), mode_rw | mode_x)
-            for file in files:
-                os.chmod(join(root, file), mode_rw)
+        _make_writable(dst)
 
     def run(self, args, opts):
         if len(args) not in (1, 2):
@@ -137,6 +122,7 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self):
-        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
-            join(scrapy.__path__[0], 'templates')
-        return join(_templates_base_dir, 'project')
+        return join(
+            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
+            'project'
+        )

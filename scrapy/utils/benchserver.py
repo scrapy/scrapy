@@ -28,8 +28,7 @@ class Root(Resource):
 
 
 def _getarg(request, name, default=None, type=str):
-    return type(request.args[name][0]) \
-        if name in request.args else default
+    return type(request.args[name][0]) if name in request.args else default
 
 
 if __name__ == '__main__':
