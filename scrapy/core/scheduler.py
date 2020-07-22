@@ -6,6 +6,7 @@ from os.path import join, exists
 
 from queuelib import PriorityQueue
 
+from scrapy.exceptions import TransientError
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
@@ -129,6 +130,10 @@ class Scheduler:
                 self.logunser = False
             self.stats.inc_value('scheduler/unserializable',
                                  spider=self.spider)
+            return
+        except TransientError as e:
+            msg = "Unable to push request to queue: %s"
+            logger.warning(msg, e, exc_info=True, extra={'spider': self.spider})
             return
         else:
             return True
