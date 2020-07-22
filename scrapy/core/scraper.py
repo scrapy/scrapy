@@ -149,7 +149,7 @@ class Scraper:
         if getattr(result, "request", None) is None:
             result.request = request
         dfd = defer_result(result)
-        callback = result.request.callback or spider.parse
+        callback = result.request.callback or spider._parse
         warn_on_generator_with_return_value(spider, callback)
         warn_on_generator_with_return_value(spider, result.request.errback)
         dfd.addCallbacks(callback=callback,

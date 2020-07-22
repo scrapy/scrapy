@@ -2,10 +2,10 @@
 This module contains some assorted functions used in tests
 """
 
-from __future__ import absolute_import
-from posixpath import split
 import asyncio
 import os
+from posixpath import split
+from unittest import mock
 
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
@@ -126,3 +126,19 @@ def get_from_asyncio_queue(value):
     getter = q.get()
     q.put_nowait(value)
     return getter
+
+
+def mock_google_cloud_storage():
+    """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
+    classes and set their proper return values.
+    """
+    from google.cloud.storage import Client, Bucket, Blob
+    client_mock = mock.create_autospec(Client)
+
+    bucket_mock = mock.create_autospec(Bucket)
+    client_mock.get_bucket.return_value = bucket_mock
+
+    blob_mock = mock.create_autospec(Blob)
+    bucket_mock.blob.return_value = blob_mock
+
+    return (client_mock, bucket_mock, blob_mock)

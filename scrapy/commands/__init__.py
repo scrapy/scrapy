@@ -108,7 +108,7 @@ class ScrapyCommand:
 
 class BaseRunSpiderCommand(ScrapyCommand):
     """
-    Common class used to share functionality between the crawl and runspider commands
+    Common class used to share functionality between the crawl, parse and runspider commands
     """
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

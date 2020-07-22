@@ -141,10 +141,12 @@ class ExecutionEngine:
 
     def _needs_backout(self, spider):
         slot = self.slot
-        return not self.running \
-            or slot.closing \
-            or self.downloader.needs_backout() \
+        return (
+            not self.running
+            or slot.closing
+            or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
+        )
 
     def _next_request_from_scheduler(self, spider):
         slot = self.slot

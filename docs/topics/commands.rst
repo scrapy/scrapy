@@ -468,7 +468,7 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
@@ -490,6 +490,8 @@ Supported options:
   recursively (default: 1)
 
 * ``--verbose`` or ``-v``: display information for each depth level
+
+* ``--output`` or ``-o``: dump scraped items to a file
 
 .. skip: start
 

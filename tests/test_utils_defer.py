@@ -2,8 +2,13 @@ from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.defer import mustbe_deferred, process_chain, \
-    process_chain_both, process_parallel, iter_errback
+from scrapy.utils.defer import (
+    iter_errback,
+    mustbe_deferred,
+    process_chain,
+    process_chain_both,
+    process_parallel,
+)
 
 
 class MustbeDeferredTest(unittest.TestCase):
