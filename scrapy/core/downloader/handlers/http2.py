@@ -1,10 +1,19 @@
 import warnings
+from time import time
+from typing import Optional, Tuple
+from urllib.parse import urldefrag
 
-from scrapy.core.downloader.tls import openssl_methods
+from twisted.internet.base import ReactorBase
+from twisted.internet.error import TimeoutError
+from twisted.web.client import URI
+
+from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.webclient import _parse
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
-from scrapy.http.request import Request
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import Request, Response
 from scrapy.settings import Settings
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.spiders import Spider
 
 
 class H2DownloadHandler:
@@ -13,44 +22,128 @@ class H2DownloadHandler:
 
         from twisted.internet import reactor
         self._pool = H2ConnectionPool(reactor, settings)
-
-        self._ssl_method = openssl_methods[settings.get('DOWNLOADER_CLIENT_TLS_METHOD')]
-        self._context_factory_cls = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
-        # try method-aware context factory
-        try:
-            self._context_factory = create_instance(
-                objcls=self._context_factory_cls,
-                settings=settings,
-                crawler=crawler,
-                method=self._ssl_method,
-            )
-        except TypeError:
-            # use context factory defaults
-            self._context_factory = create_instance(
-                objcls=self._context_factory_cls,
-                settings=settings,
-                crawler=crawler,
-            )
-            msg = """
-         '%s' does not accept `method` argument (type OpenSSL.SSL method,\
-         e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
-         Please upgrade your context factory class to handle them or ignore them.""" % (
-                settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
-            warnings.warn(msg)
+        self._context_factory = load_context_factory_from_settings(settings, crawler)
+        self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
+        self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
+        self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request, spider):
+    def download_request(self, request: Request, spider: Spider):
+        agent = ScrapyH2Agent(
+            context_factory=self._context_factory,
+            pool=self._pool,
+            maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
+            warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
+            crawler=self._crawler
+        )
+        return agent.download_request(request, spider)
+
+    def close(self) -> None:
+        self._pool.close_connections()
+
+
+class ScrapyProxyH2Agent(H2Agent):
+    def __init__(
+        self, reactor: ReactorBase,
+        proxy_uri: URI, pool: H2ConnectionPool,
+        connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
+    ) -> None:
+        super(ScrapyProxyH2Agent, self).__init__(
+            reactor=reactor,
+            pool=pool,
+            connect_timeout=connect_timeout,
+            bind_address=bind_address
+        )
+        self._proxy_uri = proxy_uri
+
+    @staticmethod
+    def get_key(uri: URI) -> Tuple:
+        return "http-proxy", uri.host, uri.port
+
+
+class ScrapyH2Agent:
+    _Agent = H2Agent
+    _ProxyAgent = ScrapyProxyH2Agent
+
+    def __init__(
+        self, context_factory,
+        connect_timeout=10,
+        bind_address: Optional[bytes] = None, pool: H2ConnectionPool = None,
+        maxsize: int = 0, warnsize: int = 0,
+        crawler=None
+    ) -> None:
+        self._context_factory = context_factory
+        self._connect_timeout = connect_timeout
+        self._bind_address = bind_address
+        self._pool = pool
+        self._maxsize = maxsize
+        self._warnsize = warnsize
+        self._crawler = crawler
+
+    def _get_agent(self, request: Request, timeout: Optional[float]) -> H2Agent:
         from twisted.internet import reactor
+        bind_address = request.meta.get('bindaddress') or self._bind_address
+        proxy = request.meta.get('proxy')
+        if proxy:
+            _, _, proxy_host, proxy_port, proxy_params = _parse(proxy)
+            scheme = _parse(request.url)[0]
+            proxy_host = str(proxy_host, 'utf-8')
+            omit_connect_timeout = b'noconnect' in proxy_params
+            if omit_connect_timeout:
+                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
+                              "If you use Crawlera, it doesn't require this mode anymore, "
+                              "so you should update scrapy-crawlera to 1.3.0+ "
+                              "and remove '?noconnect' from the Crawlera URL.",
+                              ScrapyDeprecationWarning)
 
-        agent = H2Agent(reactor, self._pool, self._context_factory)
-        d = agent.request(request)
+            if scheme == b'https' and not omit_connect_timeout:
+                proxy_auth = request.headers.get(b'Proxy-Authorization', None)
+                proxy_conf = (proxy_host, proxy_port, proxy_auth)
 
-        def print_result(result):
-            print(result)
-            return result
+                # TODO: Return TunnelingAgent instance
+            else:
+                return self._ProxyAgent(
+                    reactor=reactor,
+                    proxy_uri=URI.fromBytes(bytes(proxy, encoding='ascii')),
+                    connect_timeout=timeout,
+                    bind_address=bind_address,
+                    pool=self._pool
+                )
 
-        d.addCallback(print_result)
+        return self._Agent(
+            reactor=reactor,
+            context_factory=self._context_factory,
+            connect_timeout=timeout,
+            bind_address=bind_address,
+            pool=self._pool
+        )
+
+    def download_request(self, request: Request, spider: Spider):
+        from twisted.internet import reactor
+        timeout = request.meta.get('download_timeout') or self._connect_timeout
+        agent = self._get_agent(request, timeout)
+
+        start_time = time()
+        d = agent.request(request, spider)
+        d.addCallback(self._cb_latency, request, start_time)
+
+        timeout_cl = reactor.callLater(timeout, d.cancel)
+        d.addBoth(self._cb_timeout, request, timeout, timeout_cl)
         return d
+
+    @staticmethod
+    def _cb_latency(response: Response, request: Request, start_time: float):
+        request.meta['download_latency'] = time() - start_time
+        return response
+
+    @staticmethod
+    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl):
+        if timeout_cl.active():
+            timeout_cl.cancel()
+            return response
+
+        url = urldefrag(request.url)[0]
+        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")

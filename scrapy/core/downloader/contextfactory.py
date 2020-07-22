@@ -1,8 +1,12 @@
 from OpenSSL import SSL
+import warnings
+
 from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust, AcceptableCiphers
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
+from scrapy.core.downloader.tls import openssl_methods
+from scrapy.utils.misc import create_instance, load_object
 
 from scrapy.core.downloader.tls import ScrapyClientTLSOptions, DEFAULT_CIPHERS
 
@@ -92,3 +96,31 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
             trustRoot=platformTrust(),
             extraCertificateOptions={'method': self._ssl_method},
         )
+
+
+def load_context_factory_from_settings(settings, crawler):
+    ssl_method = openssl_methods[settings.get('DOWNLOADER_CLIENT_TLS_METHOD')]
+    context_factory_cls = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+    # try method-aware context factory
+    try:
+        context_factory = create_instance(
+            objcls=context_factory_cls,
+            settings=settings,
+            crawler=crawler,
+            method=ssl_method,
+        )
+    except TypeError:
+        # use context factory defaults
+        context_factory = create_instance(
+            objcls=context_factory_cls,
+            settings=settings,
+            crawler=crawler,
+        )
+        msg = """
+            '%s' does not accept `method` argument (type OpenSSL.SSL method,\
+            e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
+            Please upgrade your context factory class to handle them or ignore them.""" % (
+            settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
+        warnings.warn(msg)
+
+    return context_factory

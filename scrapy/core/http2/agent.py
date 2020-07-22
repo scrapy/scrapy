@@ -6,7 +6,9 @@ from twisted.internet._sslverify import _setAcceptableProtocols, ClientTLSOption
 from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
 from twisted.internet.endpoints import HostnameEndpoint
+from twisted.python.failure import Failure
 from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
+from twisted.web.error import SchemeNotSupported
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface import implementer
 from zope.interface.verify import verifyObject
@@ -14,6 +16,7 @@ from zope.interface.verify import verifyObject
 from scrapy.core.http2.protocol import H2ClientProtocol, H2ClientFactory
 from scrapy.http.request import Request
 from scrapy.settings import Settings
+from scrapy.spiders import Spider
 
 
 class H2ConnectionPool:
@@ -28,8 +31,7 @@ class H2ConnectionPool:
         # Save all requests that arrive before the connection is established
         self._pending_requests: Dict[Tuple, Deque[Deferred]] = {}
 
-    def get_connection(self, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
-        key = (uri.scheme, uri.host, uri.port)
+    def get_connection(self, key: Tuple, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
         if key in self._pending_requests:
             # Received a request while connecting to remote
             # Create a deferred which will fire with the H2ClientProtocol
@@ -84,6 +86,15 @@ class H2ConnectionPool:
             d = pending_requests.popleft()
             d.errback(errors)
 
+    def close_connections(self) -> None:
+        """Close all the HTTP/2 connections and remove them from pool
+
+        Returns:
+            Deferred that fires when all connections have been closed
+        """
+        for conn in self._connections.values():
+            conn.transport.loseConnection()
+
 
 @implementer(IPolicyForHTTPS)
 class H2WrappedContextFactory:
@@ -111,9 +122,21 @@ class H2Agent:
             connect_timeout, bind_address
         )
 
-    def request(self, request: Request) -> Deferred:
+    def _get_endpoint(self, uri: URI):
+        return self._endpoint_factory.endpointForURI(uri)
+
+    @staticmethod
+    def get_key(uri: URI) -> Tuple:
+        return uri.scheme, uri.host, uri.port
+
+    def request(self, request: Request, spider: Spider) -> Deferred:
         uri = URI.fromBytes(bytes(request.url, encoding='utf-8'))
-        endpoint = self._endpoint_factory.endpointForURI(uri)
-        d = self._pool.get_connection(uri, endpoint)
-        d.addCallback(lambda conn: conn.request(request))
+        try:
+            endpoint = self._get_endpoint(uri)
+        except SchemeNotSupported:
+            return defer.fail(Failure())
+
+        key = self.get_key(uri)
+        d = self._pool.get_connection(key, uri, endpoint)
+        d.addCallback(lambda conn: conn.request(request, spider))
         return d
