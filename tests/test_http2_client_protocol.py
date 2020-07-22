@@ -23,6 +23,7 @@ from scrapy.core.http2.protocol import H2ClientFactory
 from scrapy.core.http2.stream import InactiveStreamClosed, InvalidHostname
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.settings import Settings
+from scrapy.spiders import Spider
 from tests.mockserver import ssl_context_factory, LeafResource, Status
 
 
@@ -39,6 +40,14 @@ def make_html_body(val):
 <p>{val}</p>
 </html>'''
     return bytes(response, 'utf-8')
+
+
+class DummySpider(Spider):
+    name = 'dummy'
+    start_urls = []
+
+    def parse(self, response):
+        print(response)
 
 
 class Data:
@@ -210,6 +219,9 @@ class Https2ClientProtocolTestCase(TestCase):
         assert len(path) > 0 and (path[0] == '/' or path[0] == '&')
         return f'{self.scheme}://{self.hostname}:{self.port_number}{path}'
 
+    def make_request(self, request: Request) -> Deferred:
+        return self.client.request(request, DummySpider())
+
     @staticmethod
     def _check_repeat(get_deferred, count):
         d_list = []
@@ -233,7 +245,7 @@ class Https2ClientProtocolTestCase(TestCase):
             content_length = int(response.headers.get('Content-Length'))
             self.assertEqual(len(response.body), content_length)
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(check_response)
         d.addErrback(self.fail)
         return d
@@ -273,7 +285,7 @@ class Https2ClientProtocolTestCase(TestCase):
         expected_extra_data,
         expected_status: int
     ):
-        d = self.client.request(request)
+        d = self.make_request(request)
 
         def assert_response(response: Response):
             self.assertEqual(response.status, expected_status)
@@ -355,7 +367,7 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(response.status, 499)
             self.assertEqual(response.request, request)
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(assert_response)
         d.addErrback(self.fail)
         d.cancel()
@@ -367,8 +379,13 @@ class Https2ClientProtocolTestCase(TestCase):
 
         def assert_cancelled_error(failure):
             self.assertIsInstance(failure.value, CancelledError)
+            error_pattern = re.compile(
+                rf'Cancelling download of {request.url}: received response '
+                rf'size \(\d*\) larger than download max size \(1000\)'
+            )
+            self.assertEqual(len(re.findall(error_pattern, str(failure.value))), 1)
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(self.fail)
         d.addErrback(assert_cancelled_error)
         return d
@@ -385,7 +402,7 @@ class Https2ClientProtocolTestCase(TestCase):
                 for error in failure.value.reasons
             ))
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(self.fail)
         d.addErrback(assert_failure)
         return d
@@ -397,10 +414,9 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.body, Data.NO_CONTENT_LENGTH)
             self.assertEqual(response.request, request)
-            self.assertIn('partial', response.flags)
             self.assertNotIn('Content-Length', response.headers)
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(assert_content_length)
         d.addErrback(self.fail)
         return d
@@ -413,7 +429,7 @@ class Https2ClientProtocolTestCase(TestCase):
         expected_body
     ):
         with self.assertLogs('scrapy.core.http2.stream', level='WARNING') as cm:
-            response = yield self.client.request(request)
+            response = yield self.make_request(request)
             self.assertEqual(response.status, 200)
             self.assertEqual(response.request, request)
             self.assertEqual(response.body, expected_body)
@@ -469,13 +485,13 @@ class Https2ClientProtocolTestCase(TestCase):
 
         # Send 100 request (we do not check the result)
         for _ in range(100):
-            d = self.client.request(Request(self.get_url('/get-data-html-small')))
+            d = self.make_request(Request(self.get_url('/get-data-html-small')))
             d.addBoth(lambda _: None)
             d_list.append(d)
 
         # Now send 10 extra request and save the response deferred in a list
         for _ in range(10):
-            d = self.client.request(Request(self.get_url('/get-data-html-small')))
+            d = self.make_request(Request(self.get_url('/get-data-html-small')))
             d.addCallback(self.fail)
             d.addErrback(assert_inactive_stream)
             d_list.append(d)
@@ -488,7 +504,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
     def test_invalid_request_type(self):
         with self.assertRaises(TypeError):
-            self.client.request('https://InvalidDataTypePassed.com')
+            self.make_request('https://InvalidDataTypePassed.com')
 
     def test_query_parameters(self):
         params = {
@@ -504,7 +520,7 @@ class Https2ClientProtocolTestCase(TestCase):
             data = json.loads(str(response.body, content_encoding))
             self.assertEqual(data, params)
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(assert_query_params)
         d.addErrback(self.fail)
 
@@ -517,7 +533,7 @@ class Https2ClientProtocolTestCase(TestCase):
         d_list = []
         for status in [200, 404]:
             request = Request(self.get_url(f'/status?n={status}'))
-            d = self.client.request(request)
+            d = self.make_request(request)
             d.addCallback(assert_response_status, status)
             d.addErrback(self.fail)
             d_list.append(d)
@@ -537,7 +553,7 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertIsInstance(response.ip_address, IPv4Address)
             self.assertEqual(str(response.ip_address), '127.0.0.1')
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(assert_metadata)
         d.addErrback(self.fail)
 
@@ -553,7 +569,7 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertIn('127.0.0.1', error_msg)
             self.assertIn(str(request), error_msg)
 
-        d = self.client.request(request)
+        d = self.make_request(request)
         d.addCallback(self.fail)
         d.addErrback(assert_invalid_hostname)
         return d

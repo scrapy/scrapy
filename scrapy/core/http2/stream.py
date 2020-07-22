@@ -83,7 +83,9 @@ class Stream:
         self,
         stream_id: int,
         request: Request,
-        protocol: "H2ClientProtocol"
+        protocol: "H2ClientProtocol",
+        download_maxsize: int = 0,
+        download_warnsize: int = 0
     ) -> None:
         """
         Arguments:
@@ -95,14 +97,8 @@ class Stream:
         self._request: Request = request
         self._protocol: "H2ClientProtocol" = protocol
 
-        self._download_maxsize = self._request.meta.get(
-            'download_maxsize',
-            self._protocol.metadata['default_download_maxsize']
-        )
-        self._download_warnsize = self._request.meta.get(
-            'download_warnsize',
-            self._protocol.metadata['default_download_warnsize']
-        )
+        self._download_maxsize = self._request.meta.get('download_maxsize', download_maxsize)
+        self._download_warnsize = self._request.meta.get('download_warnsize', download_warnsize)
 
         self.request_start_time = None
 
@@ -346,26 +342,28 @@ class Stream:
 
         self.stream_closed_server = True
 
-        flags = None
-        if b'Content-Length' not in self._response['headers']:
-            # Missing Content-Length - {twisted.web.http.PotentialDataLoss}
-            flags = ['partial']
+        # We do not check for Content-Length or Transfer-Encoding in response headers
+        # and add `partial` flag as in HTTP/1.1 as 'A request or response that includes
+        # a payload body can include a content-length header field' (RFC 7540 - Section 8.1.2.6)
 
         # NOTE: Order of handling the events is important here
         # As we immediately cancel the request when maxsize is exceeded while
         # receiving DATA_FRAME's when we have received the headers (not
         # having Content-Length)
         if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
-            expected_size = int(self._response['headers'].get(b'Content-Length', -1))
+            expected_size = int(self._response['headers'].get(
+                b'Content-Length',
+                self._response['flow_controlled_size'])
+            )
             error_msg = (
-                f'Cancelling download of {self._request.url}: expected response '
-                f'size ({expected_size}) larger than download max size ({self._download_maxsize}).'
+                f'Cancelling download of {self._request.url}: received response '
+                f'size ({expected_size}) larger than download max size ({self._download_maxsize})'
             )
             logger.error(error_msg)
             self._deferred_response.errback(CancelledError(error_msg))
 
         elif reason is StreamCloseReason.ENDED:
-            self._fire_response_deferred(flags)
+            self._fire_response_deferred()
 
         # Stream was abruptly ended here
         elif reason is StreamCloseReason.CANCELLED:
@@ -398,7 +396,7 @@ class Stream:
                 f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
             ))
 
-    def _fire_response_deferred(self, flags: Optional[List[str]] = None) -> None:
+    def _fire_response_deferred(self) -> None:
         """Builds response from the self._response dict
         and fires the response deferred callback with the
         generated response instance"""
@@ -416,7 +414,6 @@ class Stream:
             headers=self._response['headers'],
             body=body,
             request=self._request,
-            flags=flags,
             certificate=self._protocol.metadata['certificate'],
             ip_address=self._protocol.metadata['ip_address'],
         )

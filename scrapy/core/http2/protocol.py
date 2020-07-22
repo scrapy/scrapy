@@ -28,6 +28,7 @@ from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.core.http2.types import H2ConnectionMetadataDict
 from scrapy.http import Request
 from scrapy.settings import Settings
+from scrapy.spiders import Spider
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         # ID of the next request stream
         # Following the convention - 'Streams initiated by a client MUST
-        # use odd-numbered stream identifiers' (RFC 7540)
+        # use odd-numbered stream identifiers' (RFC 7540 - Section 5.1.1)
         self._stream_id_generator = itertools.count(start=1, step=2)
 
         # Streams are stored in a dictionary keyed off their stream IDs
@@ -136,6 +137,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             self._active_streams += 1
             stream = self._pending_request_stream_pool.popleft()
             stream.initiate_request()
+            self._write_to_transport()
 
     def pop_stream(self, stream_id: int) -> Stream:
         """Perform cleanup when a stream is closed
@@ -145,13 +147,15 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._send_pending_requests()
         return stream
 
-    def _new_stream(self, request: Request) -> Stream:
+    def _new_stream(self, request: Request, spider: Spider) -> Stream:
         """Instantiates a new Stream object
         """
         stream = Stream(
             stream_id=next(self._stream_id_generator),
             request=request,
             protocol=self,
+            download_maxsize=getattr(spider, 'download_maxsize', self.metadata['default_download_maxsize']),
+            download_warnsize=getattr(spider, 'download_warnsize', self.metadata['default_download_warnsize']),
         )
         self.streams[stream.stream_id] = stream
         return stream
@@ -166,11 +170,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         data = self.conn.data_to_send()
         self.transport.write(data)
 
-    def request(self, request: Request) -> Deferred:
+    def request(self, request: Request, spider: Spider) -> Deferred:
         if not isinstance(request, Request):
             raise TypeError(f'Expected scrapy.http.Request, received {request.__class__.__qualname__}')
 
-        stream = self._new_stream(request)
+        stream = self._new_stream(request, spider)
         d = stream.get_response()
 
         # Add the stream to the request pool
