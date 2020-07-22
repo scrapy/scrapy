@@ -18,8 +18,9 @@ from twisted.web.client import URI
 from twisted.web.http import Request as TxRequest
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.static import File
+from twisted.internet.error import TimeoutError
 
-from scrapy.core.http2.protocol import H2ClientFactory
+from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 from scrapy.core.http2.stream import InactiveStreamClosed, InvalidHostname
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.settings import Settings
@@ -134,6 +135,11 @@ class NoContentLengthHeader(LeafResource):
         request.finish()
 
 
+class TimeoutResponse(LeafResource):
+    def render_GET(self, request: TxRequest):
+        return NOT_DONE_YET
+
+
 class QueryParams(LeafResource):
     def render_GET(self, request: TxRequest):
         request.setHeader('Content-Type', 'application/json; charset=UTF-8')
@@ -172,6 +178,7 @@ class Https2ClientProtocolTestCase(TestCase):
         r.putChild(b'no-content-length-header', NoContentLengthHeader())
         r.putChild(b'status', Status())
         r.putChild(b'query-params', QueryParams())
+        r.putChild(b'timeout', TimeoutResponse())
         return r
 
     @inlineCallbacks
@@ -590,3 +597,22 @@ class Https2ClientProtocolTestCase(TestCase):
         ]
 
         return DeferredList(d_list, fireOnOneErrback=True)
+
+    def test_connection_timeout(self):
+        request = Request(self.get_url('/timeout'))
+        d = self.make_request(request)
+
+        # Update the timer to 1s to test connection timeout
+        self.client.setTimeout(1)
+
+        def assert_timeout_error(failure: Failure):
+            for err in failure.value.reasons:
+                if isinstance(err, TimeoutError):
+                    self.assertIn(f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s", str(err))
+                    break
+            else:
+                self.fail()
+
+        d.addCallback(self.fail)
+        d.addErrback(assert_timeout_error)
+        return d
