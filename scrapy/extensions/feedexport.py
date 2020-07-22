@@ -153,6 +153,32 @@ class S3FeedStorage(BlockingFeedStorage):
             key.close()
 
 
+class GCSFeedStorage(BlockingFeedStorage):
+
+    def __init__(self, uri, project_id, acl):
+        self.project_id = project_id
+        self.acl = acl
+        u = urlparse(uri)
+        self.bucket_name = u.hostname
+        self.blob_name = u.path[1:]  # remove first "/"
+
+    @classmethod
+    def from_crawler(cls, crawler, uri):
+        return cls(
+            uri,
+            crawler.settings['GCS_PROJECT_ID'],
+            crawler.settings['FEED_STORAGE_GCS_ACL'] or None
+        )
+
+    def _store_in_thread(self, file):
+        file.seek(0)
+        from google.cloud.storage import Client
+        client = Client(project=self.project_id)
+        bucket = client.get_bucket(self.bucket_name)
+        blob = bucket.blob(self.blob_name)
+        blob.upload_from_file(file, predefined_acl=self.acl)
+
+
 class FTPFeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, use_active_mode=False):
@@ -279,11 +305,20 @@ class FeedExporter:
                         'itemcount': slot.itemcount,
                         'uri': slot.uri}
             d = defer.maybeDeferred(slot.storage.store, slot.file)
-            d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
-                                                extra={'spider': spider}))
-            d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
-                                                exc_info=failure_to_exc_info(f),
-                                                extra={'spider': spider}))
+
+            # Use `largs=log_args` to copy log_args into function's scope
+            # instead of using `log_args` from the outer scope
+            d.addCallback(
+                lambda _, largs=log_args: logger.info(
+                    logfmt % "Stored", largs, extra={'spider': spider}
+                )
+            )
+            d.addErrback(
+                lambda f, largs=log_args: logger.error(
+                    logfmt % "Error storing", largs,
+                    exc_info=failure_to_exc_info(f), extra={'spider': spider}
+                )
+            )
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
