@@ -29,6 +29,10 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
     class SerializableQueue(queue_class):
 
+        def __init__(self, path, settings=None, *args, **kwargs):
+            self.settings = settings
+            super(SerializableQueue, self).__init__(path, *args, **kwargs)
+
         def push(self, obj):
             s = serialize(obj)
             super(SerializableQueue, self).push(s)
@@ -47,7 +51,7 @@ def _scrapy_serialization_queue(queue_class):
 
         def __init__(self, crawler, key):
             self.spider = crawler.spider
-            super(ScrapyRequestQueue, self).__init__(key)
+            super(ScrapyRequestQueue, self).__init__(key, crawler.settings)
 
         @classmethod
         def from_crawler(cls, crawler, key, *args, **kwargs):
