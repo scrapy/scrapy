@@ -1,7 +1,7 @@
+import collections
 import shutil
 import tempfile
 import unittest
-import collections
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -43,15 +43,15 @@ class MockDownloader:
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls, jobdir):
-
+    def __init__(self, priority_queue_cls, jobdir, disk_queue_cls, settings={}):
         settings = dict(
             SCHEDULER_DEBUG=False,
-            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
+            SCHEDULER_DISK_QUEUE=disk_queue_cls,
             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
+            **settings,
         )
         super(MockCrawler, self).__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -60,9 +60,13 @@ class MockCrawler(Crawler):
 class SchedulerHandler:
     priority_queue_cls = None
     jobdir = None
+    disk_queue_cls = 'scrapy.squeues.PickleLifoDiskQueue'
+    settings = {}
 
     def create_scheduler(self):
-        self.mock_crawler = MockCrawler(self.priority_queue_cls, self.jobdir)
+        self.mock_crawler = MockCrawler(
+            self.priority_queue_cls, self.jobdir, self.disk_queue_cls, self.settings
+        )
         self.scheduler = Scheduler.from_crawler(self.mock_crawler)
         self.spider = Spider(name='spider')
         self.scheduler.open(self.spider)
