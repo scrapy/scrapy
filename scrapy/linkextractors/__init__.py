@@ -133,4 +133,4 @@ class FilteringLinkExtractor:
 
 
 # Top-level imports
-from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor  # noqa: F401
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor as LinkExtractor

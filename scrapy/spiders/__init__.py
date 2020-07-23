@@ -102,7 +102,10 @@ class Spider(object_ref):
         )
         return Request(url, dont_filter=True)
 
-    def parse(self, response):
+    def _parse(self, response, **kwargs):
+        return self.parse(response, **kwargs)
+
+    def parse(self, response, **kwargs):
         raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
 
     @classmethod
@@ -126,6 +129,6 @@ class Spider(object_ref):
 
 
 # Top-level imports
-from scrapy.spiders.crawl import CrawlSpider, Rule  # noqa: F401
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider  # noqa: F401
-from scrapy.spiders.sitemap import SitemapSpider  # noqa: F401
+from scrapy.spiders.crawl import CrawlSpider, Rule
+from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.spiders.sitemap import SitemapSpider

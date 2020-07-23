@@ -151,8 +151,8 @@ item_scraped
 
     This signal supports returning deferreds from its handlers.
 
-    :param item: the item scraped
-    :type item: dict or :class:`~scrapy.item.Item` object
+    :param item: the scraped item
+    :type item: :ref:`item object <item-types>`
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -172,7 +172,7 @@ item_dropped
     This signal supports returning deferreds from its handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
-    :type item: dict or :class:`~scrapy.item.Item` object
+    :type item: :ref:`item object <item-types>`
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spiders.Spider` object
@@ -196,8 +196,8 @@ item_error
 
     This signal supports returning deferreds from its handlers.
 
-    :param item: the item dropped from the :ref:`topics-item-pipeline`
-    :type item: dict or :class:`~scrapy.item.Item` object
+    :param item: the item that caused the error in the :ref:`topics-item-pipeline`
+    :type item: :ref:`item object <item-types>`
 
     :param response: the response being processed when the exception was raised
     :type response: :class:`~scrapy.http.Response` object
@@ -373,6 +373,8 @@ request_left_downloader
 bytes_received
 ~~~~~~~~~~~~~~
 
+.. versionadded:: 2.2
+
 .. signal:: bytes_received
 .. function:: bytes_received(data, request, spider)
 
@@ -385,13 +387,18 @@ bytes_received
     This signal does not support returning deferreds from its handlers.
 
     :param data: the data received by the download handler
-    :type spider: :class:`bytes` object
+    :type data: :class:`bytes` object
 
-    :param request: the request that generated the response
+    :param request: the request that generated the download
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.spiders.Spider` object
+
+.. note:: Handlers of this signal can stop the download of a response while it
+    is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`
+    exception. Please refer to the :ref:`topics-stop-response-download` topic
+    for additional information and examples.
 
 Response signals
 ----------------

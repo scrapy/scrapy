@@ -32,7 +32,7 @@ class XMLFeedSpider(Spider):
         processing required before returning the results to the framework core,
         for example setting the item GUIDs. It receives a list of results and
         the response which originated that results. It must return a list of
-        results (Items or Requests).
+        results (items or requests).
         """
         return results
 
@@ -62,7 +62,7 @@ class XMLFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
+    def _parse(self, response, **kwargs):
         if not hasattr(self, 'parse_node'):
             raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
 
@@ -130,7 +130,7 @@ class CSVFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
+    def _parse(self, response, **kwargs):
         if not hasattr(self, 'parse_row'):
             raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
         response = self.adapt_response(response)

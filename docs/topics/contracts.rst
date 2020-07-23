@@ -78,7 +78,7 @@ override three methods:
 
 .. module:: scrapy.contracts
 
-.. class:: Contract(method, \*args)
+.. class:: Contract(method, *args)
 
     :param method: callback function to which the contract is associated
     :type method: function
