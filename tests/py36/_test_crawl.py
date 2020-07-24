@@ -1,7 +1,7 @@
 import asyncio
 
 from scrapy import Request
-from tests.spiders import SimpleSpider
+from tests.spiders import SimpleSpider, YieldingRequestsSpider
 
 
 class AsyncDefAsyncioGenSpider(SimpleSpider):
@@ -55,3 +55,9 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
     async def parse2(self, response):
         await asyncio.sleep(0.1)
         yield {'index2': response.meta['index']}
+
+
+class EagerAsyncGenSpider(YieldingRequestsSpider):
+    async def start_requests(self):
+        for r in super().start_requests():
+            yield r

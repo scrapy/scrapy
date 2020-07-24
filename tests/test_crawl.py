@@ -186,18 +186,14 @@ class CrawlTestCase(TestCase):
         return 100
 
     @defer.inlineCallbacks
-    def test_start_requests_eagerness(self):
-        class EagerSpider(YieldingRequestsSpider):
-            def start_requests_with_control(self):
-                yield from self.start_requests()
-
+    def _test_start_requests_eagerness(self, spider_cls):
         settings = {
             "SPIDER_MIDDLEWARES": {
                 "scrapy.spidermiddlewares.depth.DepthMiddleware": 0,
                 "tests.middlewares.RequestInOrderMiddleware": 1,
             }
         }
-        crawler = CrawlerRunner(settings).create_crawler(EagerSpider)
+        crawler = CrawlerRunner(settings).create_crawler(spider_cls)
         yield crawler.crawl(
             mockserver=self.mockserver,
             number_of_start_requests=self.number_of_start_requests_for_eagernees_testing(),
@@ -205,6 +201,20 @@ class CrawlTestCase(TestCase):
         self.assertTrue(
             self.is_eager(crawler.spider.requests_in_order_of_scheduling)
         )
+
+    @defer.inlineCallbacks
+    def test_start_requests_eagerness_asyncdef(self):
+        class EagerAsyncDefSpider(YieldingRequestsSpider):
+            async def start_requests(self):
+                return list(super().start_requests())
+
+        yield self._test_start_requests_eagerness(EagerAsyncDefSpider)
+
+    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
+    @defer.inlineCallbacks
+    def test_start_requests_eagerness_asyncgen(self):
+        from tests.py36._test_crawl import EagerAsyncGenSpider
+        yield self._test_start_requests_eagerness(EagerAsyncGenSpider)
 
     @defer.inlineCallbacks
     def test_start_requests_lazyness(self):

@@ -18,14 +18,13 @@ from scrapy.utils.defer import deferred_from_coro, _isasyncgen
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
-from scrapy.spiders import WaitUntilQueueEmpty
 
 logger = logging.getLogger(__name__)
 
 
 class Slot:
 
-    def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
+    def __init__(self, start_requests, close_if_idle, nextcall, scheduler, new_queue_behavior=False):
         self.closing = False
         self.inprogress = set()  # requests in progress
         if _isasyncgen(start_requests):
@@ -33,6 +32,7 @@ class Slot:
         else:
             self.start_requests = iter(start_requests)
         self.close_if_idle = close_if_idle
+        self.new_queue_behavior = new_queue_behavior
         self.nextcall = nextcall
         self.scheduler = scheduler
         self.heartbeat = task.LoopingCall(nextcall.schedule)
@@ -118,6 +118,27 @@ class ExecutionEngine:
         """Resume the execution engine"""
         self.paused = False
 
+    def _send_reqs_to_downloader(self, spider):
+        while not self._needs_backout(spider):
+            if not self._next_request_from_scheduler(spider):
+                break
+
+    @defer.inlineCallbacks
+    def _schedule_next_req(self, spider, slot):
+        try:
+            if _isasyncgen(slot.start_requests):
+                request = yield deferred_from_coro(slot.start_requests.__anext__())
+            else:
+                request = next(slot.start_requests)
+        except (StopIteration, StopAsyncIteration):
+            slot.start_requests = None
+        except Exception:
+            slot.start_requests = None
+            logger.error('Error while obtaining start requests',
+                         exc_info=True, extra={'spider': spider})
+        else:
+            self.crawl(request, spider)
+
     @defer.inlineCallbacks
     def _next_request(self, spider):
         slot = self.slot
@@ -131,26 +152,14 @@ class ExecutionEngine:
             return
         self._waiting_for_request = True
         try:
-            while not self._needs_backout(spider) and slot.start_requests:
-                try:
-                    if _isasyncgen(slot.start_requests):
-                        request = yield deferred_from_coro(slot.start_requests.__anext__())
-                    else:
-                        request = next(slot.start_requests)
-                    if request == WaitUntilQueueEmpty:
-                        break
-                except (StopIteration, StopAsyncIteration):
-                    slot.start_requests = None
-                except Exception:
-                    slot.start_requests = None
-                    logger.error('Error while obtaining start requests',
-                                 exc_info=True, extra={'spider': spider})
-                else:
-                    self.crawl(request, spider)
-
-            while not self._needs_backout(spider):
-                if not self._next_request_from_scheduler(spider):
-                    break
+            if slot.new_queue_behavior:
+                while not self._needs_backout(spider) and slot.start_requests:
+                    yield self._schedule_next_req(spider, slot)
+                self._send_reqs_to_downloader(spider)
+            else:
+                self._send_reqs_to_downloader(spider)
+                if not self._needs_backout(spider) and slot.start_requests:
+                    yield self._schedule_next_req(spider, slot)
 
             if self.spider_is_idle(spider) and slot.close_if_idle:
                 self._spider_idle(spider)
@@ -279,14 +288,14 @@ class ExecutionEngine:
         return dwld
 
     @defer.inlineCallbacks
-    def open_spider(self, spider, start_requests=(), close_if_idle=True):
+    def open_spider(self, spider, start_requests=(), close_if_idle=True, new_queue_behavior=False):
         if not self.has_capacity():
             raise RuntimeError("No free spider slot when opening %r" % spider.name)
         logger.info("Spider opened", extra={'spider': spider})
         nextcall = CallLaterOnce(self._next_request, spider)
         scheduler = self.scheduler_cls.from_crawler(self.crawler)
         start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
-        slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
+        slot = Slot(start_requests, close_if_idle, nextcall, scheduler, new_queue_behavior)
         self.slot = slot
         self.spider = spider
         yield scheduler.open(spider)
