@@ -6,7 +6,7 @@ from os.path import join, exists
 
 from queuelib import PriorityQueue
 
-from scrapy.exceptions import TransientError
+from scrapy.exceptions import SerializationError, TransientError
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
@@ -120,7 +120,7 @@ class Scheduler:
             return
         try:
             self.dqs.push(request)
-        except ValueError as e:  # non serializable request
+        except SerializationError as e:  # non serializable request
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
                        " %(reason)s - no more unserializable requests will be"

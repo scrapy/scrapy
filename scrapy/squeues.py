@@ -8,6 +8,7 @@ import pickle
 
 from queuelib import queue
 
+from scrapy.exceptions import SerializationError
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
@@ -89,7 +90,7 @@ def _pickle_serialize(obj):
     # Both pickle.PicklingError and AttributeError can be raised by pickle.dump(s)
     # TypeError is raised from parsel.Selector
     except (pickle.PicklingError, AttributeError, TypeError) as e:
-        raise ValueError(str(e)) from e
+        raise SerializationError(str(e)) from e
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(

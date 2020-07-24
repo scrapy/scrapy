@@ -42,13 +42,14 @@ the following interface:
       serialized with, for example, :meth:`pickle.dumps`.
 
       The scheduler will fall back to the memory queue (for this particular
-      request) in case of a :exc:`TransientError` or a :exc:`ValueError`. In
-      case of any other exception the crawling process is halted.
+      request) in case of a :exc:`TransientError` or a
+      :exc:`SerializationError`. In case of any other exception the crawling
+      process is halted.
 
       :raises TransientError: If pushing to the queue failed due to a
           temporary error (e.g. the connection was dropped).
-      :raises ValueError: If pushing to the queue failed because the request
-          could not be serialized.
+      :raises SerializationError: If pushing to the queue failed because the
+          request could not be serialized.
 
    .. method:: pop(self)
 

@@ -27,6 +27,11 @@ class TransientError(Exception):
     pass
 
 
+class SerializationError(ValueError):
+    """Indicates an error with the serialization, usually of a request."""
+    pass
+
+
 # HTTP and crawling
 
 
