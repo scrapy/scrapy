@@ -147,8 +147,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
     .. method:: process_start_requests(start_requests, spider)
 
         .. versionadded:: 0.15
-        .. versionchanged:: 2.2
-           Since 2.2 this can take and return an :term:`python:asynchronous
+        .. versionchanged:: 2.3
+           Since 2.3 this can take and return an :term:`python:asynchronous
            iterable`.
 
         This method is called with the start requests of the spider, and works
