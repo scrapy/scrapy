@@ -7,7 +7,7 @@ from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
 
 
-FOOBAR_NL = u"foo\nbar"
+FOOBAR_NL = "foo{}bar".format(os.linesep)
 
 
 class XmliterTestCase(unittest.TestCase):
@@ -15,18 +15,20 @@ class XmliterTestCase(unittest.TestCase):
     xmliter = staticmethod(xmliter)
 
     def test_xmliter(self):
-        body = b"""<?xml version="1.0" encoding="UTF-8"?>\
+        body = b"""
+            <?xml version="1.0" encoding="UTF-8"?>
             <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                      xsi:noNamespaceSchemaLocation="someschmea.xsd">\
-              <product id="001">\
-                <type>Type 1</type>\
-                <name>Name 1</name>\
-              </product>\
-              <product id="002">\
-                <type>Type 2</type>\
-                <name>Name 2</name>\
-              </product>\
-            </products>"""
+                      xsi:noNamespaceSchemaLocation="someschmea.xsd">
+              <product id="001">
+                <type>Type 1</type>
+                <name>Name 1</name>
+              </product>
+              <product id="002">
+                <type>Type 2</type>
+                <name>Name 2</name>
+              </product>
+            </products>
+        """
 
         response = XmlResponse(url="http://example.com", body=body)
         attrs = []
@@ -115,7 +117,7 @@ class XmliterTestCase(unittest.TestCase):
                          [[u'one'], [u'two']])
 
     def test_xmliter_namespaces(self):
-        body = b"""\
+        body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
                 <channel>
@@ -185,7 +187,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
     xmliter = staticmethod(xmliter_lxml)
 
     def test_xmliter_iterate_namespace(self):
-        body = b"""\
+        body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns="http://base.google.com/ns/1.0">
                 <channel>
@@ -214,7 +216,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
         self.assertEqual(node.xpath('text()').getall(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
     def test_xmliter_namespaces_prefix(self):
-        body = b"""\
+        body = b"""
         <?xml version="1.0" encoding="UTF-8"?>
         <root>
             <h:table xmlns:h="http://www.w3.org/TR/html4/">

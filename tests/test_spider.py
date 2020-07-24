@@ -11,8 +11,14 @@ from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.spiders.init import InitSpider
-from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
-    CSVFeedSpider, SitemapSpider
+from scrapy.spiders import (
+    CSVFeedSpider,
+    CrawlSpider,
+    Rule,
+    SitemapSpider,
+    Spider,
+    XMLFeedSpider,
+)
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.test import get_crawler
@@ -144,7 +150,7 @@ class XMLFeedSpiderTest(SpiderTest):
 
         for iterator in ('iternodes', 'xml'):
             spider = _XMLSpider('example', iterator=iterator)
-            output = list(spider.parse(response))
+            output = list(spider._parse(response))
             self.assertEqual(len(output), 2, iterator)
             self.assertEqual(output, [
                 {'loc': [u'http://www.example.com/Special-Offers.html'],
