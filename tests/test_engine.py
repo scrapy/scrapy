@@ -37,6 +37,7 @@ from scrapy.utils.test import get_crawler
 from tests import get_testdata, tests_datadir
 
 
+
 class TestItem(Item):
     name = Field()
     url = Field()
@@ -116,6 +117,12 @@ class ItemZeroDivisionErrorSpider(TestSpider):
         }
     }
 
+class ErrorInStartRequestsSpider(TestSpider):
+    def start_requests(self):
+        yield self._raise_error()
+    
+    def _raise_error(self):
+        raise Exception("Error raised from start_requests method")
 
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
@@ -401,7 +408,16 @@ class EngineTest(unittest.TestCase):
         yield e.close()
         self.assertFalse(e.running)
         self.assertEqual(len(e.open_spiders), 0)
-
+    
+    @defer.inlineCallbacks
+    def test_crawler_with_error_in_start_requests(self):
+         self.run = CrawlerRun(ErrorInStartRequestsSpider)
+         yield self.run.run()
+         print(type(self.run.crawler.stats.get_stats()['finish_reason']))
+         # Check both as the latter one is produced for Python < 3.7
+         # https://bugs.python.org/issue30399 
+         self.assertIn(self.run.crawler.stats.get_stats()['finish_reason'], 
+         ["Exception('Error raised from start_requests method')", "Exception('Error raised from start_requests method',)"])
 
 class StopDownloadEngineTest(EngineTest):
 

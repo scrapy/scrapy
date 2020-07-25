@@ -114,6 +114,7 @@ class ExecutionEngine:
 
     def _next_request(self, spider):
         slot = self.slot
+        reason = "finished"
         if not slot:
             return
 
@@ -129,15 +130,16 @@ class ExecutionEngine:
                 request = next(slot.start_requests)
             except StopIteration:
                 slot.start_requests = None
-            except Exception:
+            except Exception as exception:
                 slot.start_requests = None
                 logger.error('Error while obtaining start requests',
                              exc_info=True, extra={'spider': spider})
+                reason = repr(exception)
             else:
                 self.crawl(request, spider)
 
         if self.spider_is_idle(spider) and slot.close_if_idle:
-            self._spider_idle(spider)
+            self._spider_idle(spider, reason)
 
     def _needs_backout(self, spider):
         slot = self.slot
@@ -278,7 +280,7 @@ class ExecutionEngine:
         slot.nextcall.schedule()
         slot.heartbeat.start(5)
 
-    def _spider_idle(self, spider):
+    def _spider_idle(self, spider, reason='finished'):
         """Called when a spider gets idle. This function is called when there
         are no remaining pages to download or schedule. It can be called
         multiple times. If some extension raises a DontCloseSpider exception
@@ -291,7 +293,7 @@ class ExecutionEngine:
             return
 
         if self.spider_is_idle(spider):
-            self.close_spider(spider, reason='finished')
+            self.close_spider(spider, reason)
 
     def close_spider(self, spider, reason='cancelled'):
         """Close (cancel) spider and clear all its outstanding requests"""
