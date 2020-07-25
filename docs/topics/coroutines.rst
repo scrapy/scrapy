@@ -58,7 +58,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 Asynchronous start_requests and spider middlewares
 ==================================================
 
-.. versionadded:: 2.2
+.. versionadded:: 2.3
 
 The :meth:`~scrapy.spiders.Spider.start_requests` spider method can be an
 asynchronous generator::
