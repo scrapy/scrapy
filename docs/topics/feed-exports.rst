@@ -453,6 +453,7 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 
 FEED_EXPORT_BATCH_ITEM_COUNT
 -----------------------------
+
 Default: ``0``
 
 If assigned an integer number higher than ``0``, Scrapy generates multiple output files
@@ -474,7 +475,7 @@ generated:
 
 For instance, if your settings include::
 
-    FEED_EXPORT_BATCH_ITEM_COUNT=100
+    FEED_EXPORT_BATCH_ITEM_COUNT = 100
 
 And your :command:`crawl` command line is::
 
