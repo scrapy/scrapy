@@ -229,7 +229,7 @@ Extending Scrapy
    topics/api
    topics/signals
    topics/exporters
-   topics/queues
+   topics/request-queues
 
 
 :doc:`topics/architecture`
@@ -253,8 +253,8 @@ Extending Scrapy
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
 
-:doc:`topics/queues`
-    Store requests in an external queue.
+:doc:`topics/request-queues`
+    Customizing the queuing of requests.
 
 
 All the rest

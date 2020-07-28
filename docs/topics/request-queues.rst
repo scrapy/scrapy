@@ -1,8 +1,8 @@
-.. _topics-queues:
+.. _topics-request-queues:
 
-======
-Queues
-======
+==============
+Request Queues
+==============
 
 Scrapy uses queues to schedule requests. By default, a memory-based queue is
 used but if :ref:`crawls should be paused and resumed <topics-jobs>` or more
