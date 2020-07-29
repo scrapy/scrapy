@@ -273,18 +273,6 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache:
-
-    def __init__(self, default_factory):
-        self.default_factory = default_factory
-        self._weakdict = weakref.WeakKeyDictionary()
-
-    def __getitem__(self, key):
-        if key not in self._weakdict:
-            self._weakdict[key] = self.default_factory(key)
-        return self._weakdict[key]
-
-
 @deprecated
 def retry_on_eintr(function, *args, **kw):
     """Run a function and retry it while getting EINTR errors"""
