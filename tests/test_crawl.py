@@ -29,6 +29,7 @@ from tests.spiders import (
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithErrback,
+    CrawlSpiderWithParseMethod,
     DelaySpider,
     DuplicateStartRequestsSpider,
     FollowAllSpider,
@@ -321,6 +322,28 @@ with multiples lines
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
 
+
+class CrawlSpiderTestCase(TestCase):
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+        self.runner = CrawlerRunner()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_crawlspider_with_parse(self):
+        self.runner.crawl(CrawlSpiderWithParseMethod, mockserver=self.mockserver)
+
+        with LogCapture() as log:
+            yield self.runner.join()
+
+        self.assertIn("[parse] status 200 (foo: None)", str(log))
+        self.assertIn("[parse] status 201 (foo: None)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
+
     @defer.inlineCallbacks
     def test_crawlspider_with_errback(self):
         self.runner.crawl(CrawlSpiderWithErrback, mockserver=self.mockserver)
@@ -328,10 +351,12 @@ with multiples lines
         with LogCapture() as log:
             yield self.runner.join()
 
-        self.assertIn("[callback] status 200", str(log))
-        self.assertIn("[callback] status 201", str(log))
+        self.assertIn("[parse] status 200 (foo: None)", str(log))
+        self.assertIn("[parse] status 201 (foo: None)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
+        self.assertIn("[errback] status 501", str(log))
 
     @defer.inlineCallbacks
     def test_async_def_parse(self):

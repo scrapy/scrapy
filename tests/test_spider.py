@@ -150,7 +150,7 @@ class XMLFeedSpiderTest(SpiderTest):
 
         for iterator in ('iternodes', 'xml'):
             spider = _XMLSpider('example', iterator=iterator)
-            output = list(spider.parse(response))
+            output = list(spider._parse(response))
             self.assertEqual(len(output), 2, iterator)
             self.assertEqual(output, [
                 {'loc': [u'http://www.example.com/Special-Offers.html'],
