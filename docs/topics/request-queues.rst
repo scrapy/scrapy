@@ -33,19 +33,31 @@ downloads are dequeued first.
 Downstream Queues
 =================
 
-By default, the scheduler uses a memory-based queue as a downstream queue but if
-:ref:`crawls should be paused and resumed <topics-jobs>` or more requests than
-fit in memory are scheduled, using an external queue (disk queue) is necessary.
-The setting :setting:`SCHEDULER_DISK_QUEUE` determines the type of disk queue
-that will be used by the scheduler. It is
-``'scrapy.squeues.PickleLifoDiskQueue'`` by default. To enable the use of disk
-queues, the :setting:`JOBDIR` setting has to be defined (see also
-:ref:`jobs-job-directory`).
+Scrapy differentiates between two types of downstream queues: memory queues and
+disk queues. If the :setting:`JOBDIR` setting is defined, a disk queue is used.
+If it is not defined, a memory queue is used (this is the default).
+
+Memory queue
+------------
+
+Memory queues do not require additional configuration or additional storage and
+are therefore used by default. The default for :setting:`SCHEDULER_MEMORY_QUEUE`
+is ``'scrapy.squeues.LifoMemoryQueue'``.
+
+Disk queue
+----------
+
+Disk queues allow :ref:`crawls to be paused and resumed <topics-jobs>` and more
+requests than fit in memory can be scheduled. The default for
+:setting:`SCHEDULER_DISK_QUEUE` is ``'scrapy.squeues.PickleLifoDiskQueue'``.
+
+Disk queues serialize requests, e.g. using :meth:`pickle.serialize`. If
+serialization fails, the scheduler falls back to a memory queue.
 
 .. note::
 
-    If :setting:`JOBDIR` is undefined, the scheduler uses a memory-based queue
-    regardless of how :setting:`SCHEDULER_DISK_QUEUE` is configured.
+    :setting:`JOBDIR` has to be set so that the scheduler uses the disk queue
+    configured by :setting:`SCHEDULER_DISK_QUEUE`.
 
 Interface
 ---------
