@@ -85,7 +85,7 @@ class Stream:
         request: Request,
         protocol: "H2ClientProtocol",
         download_maxsize: int = 0,
-        download_warnsize: int = 0
+        download_warnsize: int = 0,
     ) -> None:
         """
         Arguments:

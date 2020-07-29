@@ -97,14 +97,15 @@ class H2ConnectionPool:
 
 
 @implementer(IPolicyForHTTPS)
-class H2WrappedContextFactory:
-    def __init__(self, context_factory) -> None:
+class AcceptableProtocolsContextFactory:
+    def __init__(self, context_factory, acceptable_protocols: List[bytes]) -> None:
         verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory = context_factory
+        self._acceptable_protocols = acceptable_protocols
 
     def creatorForNetloc(self, hostname, port) -> ClientTLSOptions:
         options = self._wrapped_context_factory.creatorForNetloc(hostname, port)
-        _setAcceptableProtocols(options._ctx, [b'h2'])
+        _setAcceptableProtocols(options._ctx, self._acceptable_protocols)
         return options
 
 
@@ -116,7 +117,7 @@ class H2Agent:
     ) -> None:
         self._reactor = reactor
         self._pool = pool
-        self._context_factory = H2WrappedContextFactory(context_factory)
+        self._context_factory = AcceptableProtocolsContextFactory(context_factory, acceptable_protocols=[b'h2'])
         self._endpoint_factory = _StandardEndpointFactory(
             self._reactor, self._context_factory,
             connect_timeout, bind_address

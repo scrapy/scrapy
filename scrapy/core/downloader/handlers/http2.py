@@ -3,8 +3,8 @@ from time import time
 from typing import Optional, Tuple
 from urllib.parse import urldefrag
 
-from twisted.internet.defer import Deferred
 from twisted.internet.base import ReactorBase
+from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.web.client import URI
 
