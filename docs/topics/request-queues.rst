@@ -33,9 +33,10 @@ downloads are dequeued first.
 Downstream Queues
 =================
 
-Scrapy differentiates between two types of downstream queues: memory queues and
-disk queues. If the :setting:`JOBDIR` setting is defined, a disk queue is used.
-If it is not defined, a memory queue is used (this is the default).
+Scrapy differentiates between two types of downstream queues (the data
+structures that hold the actual data): memory queues and disk queues. If the
+:setting:`JOBDIR` setting is defined, a disk queue is used.  If it is not
+defined, a memory queue is used (this is the default).
 
 Memory queue
 ------------
@@ -105,8 +106,10 @@ the following interface:
 
    .. method:: pop(self)
 
-      Pops a request from the queue. In case of a temporary problem, ``None``
-      is returned.
+      Pops a request from the queue.
+
+      In case of a temporary problem, ``None`` is returned. In all other cases,
+      an exception is raised.
 
       The helper function :meth:`~scrapy.utils.reqser.request_from_dict` can
       be used to convert the deserialized dict back to a request.
@@ -117,7 +120,8 @@ the following interface:
 
       .. note::
          In case of a temporary error, the method must not raise an exception
-         but return ``None`` instead.
+         but return ``None`` instead. If an exception is raised, the crawling
+         process is halted.
 
    .. method:: close(self)
 
