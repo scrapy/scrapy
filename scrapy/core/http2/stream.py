@@ -189,12 +189,15 @@ class Stream:
         headers = [
             (':method', self._request.method),
             (':authority', url.netloc),
-            (':scheme', 'https'),
+            (':scheme', self._protocol.metadata['uri'].scheme),
             (':path', path),
         ]
 
         for name, value in self._request.headers.items():
-            headers.append((name, value[0]))
+            headers.append((str(name, 'utf-8'), str(value[0], 'utf-8')))
+
+        if b'Content-Length' not in self._request.headers.keys():
+            headers.append(('Content-Length', str(len(self._request.body))))
 
         return headers
 
@@ -337,6 +340,10 @@ class Stream:
         if not isinstance(reason, StreamCloseReason):
             raise TypeError(f'Expected StreamCloseReason, received {reason.__class__.__qualname__}')
 
+        # Have default value of errors as an empty list as
+        # some cases can add a list of exceptions
+        errors = errors or []
+
         if not from_protocol:
             self._protocol.pop_stream(self.stream_id)
 
@@ -387,7 +394,8 @@ class Stream:
             self._deferred_response.errback(ResponseFailed(errors))
 
         elif reason is StreamCloseReason.INACTIVE:
-            self._deferred_response.errback(InactiveStreamClosed(self._request))
+            errors.insert(0, InactiveStreamClosed(self._request))
+            self._deferred_response.errback(ResponseFailed(errors))
 
         elif reason is StreamCloseReason.INVALID_HOSTNAME:
             self._deferred_response.errback(InvalidHostname(

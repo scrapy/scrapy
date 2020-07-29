@@ -11,14 +11,14 @@ from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
 from twisted.internet.defer import CancelledError, Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
+from twisted.internet.error import TimeoutError
 from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certificate
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
-from twisted.web.client import URI
+from twisted.web.client import ResponseFailed, URI
 from twisted.web.http import Request as TxRequest
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.static import File
-from twisted.internet.error import TimeoutError
 
 from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 from scrapy.core.http2.stream import InactiveStreamClosed, InvalidHostname
@@ -152,6 +152,19 @@ class QueryParams(LeafResource):
         return bytes(json.dumps(query_params), 'utf-8')
 
 
+class RequestHeaders(LeafResource):
+    """Sends all the headers received as a response"""
+
+    def render_GET(self, request: TxRequest):
+        request.setHeader('Content-Type', 'application/json; charset=UTF-8')
+        request.setHeader('Content-Encoding', 'UTF-8')
+        headers = {}
+        for k, v in request.requestHeaders.getAllRawHeaders():
+            headers[str(k, 'utf-8')] = str(v[0], 'utf-8')
+
+        return bytes(json.dumps(headers), 'utf-8')
+
+
 def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
     with open(key_file, 'r') as key, open(certificate_file, 'r') as certificate:
         pem = ''.join(key.readlines()) + ''.join(certificate.readlines())
@@ -179,6 +192,7 @@ class Https2ClientProtocolTestCase(TestCase):
         r.putChild(b'status', Status())
         r.putChild(b'query-params', QueryParams())
         r.putChild(b'timeout', TimeoutResponse())
+        r.putChild(b'request-headers', RequestHeaders())
         return r
 
     @inlineCallbacks
@@ -488,7 +502,11 @@ class Https2ClientProtocolTestCase(TestCase):
         d_list = []
 
         def assert_inactive_stream(failure):
-            self.assertIsNotNone(failure.check(InactiveStreamClosed))
+            self.assertIsNotNone(failure.check(ResponseFailed))
+            self.assertTrue(any(
+                isinstance(e, InactiveStreamClosed)
+                for e in failure.value.reasons
+            ))
 
         # Send 100 request (we do not check the result)
         for _ in range(100):
@@ -615,4 +633,26 @@ class Https2ClientProtocolTestCase(TestCase):
 
         d.addCallback(self.fail)
         d.addErrback(assert_timeout_error)
+        return d
+
+    def test_request_headers_received(self):
+        request = Request(self.get_url('/request-headers'), headers={
+            'header-1': 'header value 1',
+            'header-2': 'header value 2'
+        })
+        d = self.make_request(request)
+
+        def assert_request_headers(response: Response):
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.request, request)
+
+            response_headers = json.loads(str(response.body, 'utf-8'))
+            self.assertIsInstance(response_headers, dict)
+            for k, v in request.headers.items():
+                k, v = str(k, 'utf-8'), str(v[0], 'utf-8')
+                self.assertIn(k, response_headers)
+                self.assertEqual(v, response_headers[k])
+
+        d.addErrback(self.fail)
+        d.addCallback(assert_request_headers)
         return d

@@ -93,7 +93,7 @@ class H2ConnectionPool:
             Deferred that fires when all connections have been closed
         """
         for conn in self._connections.values():
-            conn.transport.loseConnection()
+            conn.transport.abortConnection()
 
 
 @implementer(IPolicyForHTTPS)

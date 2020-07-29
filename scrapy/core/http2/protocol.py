@@ -13,7 +13,7 @@ from h2.events import (
     SettingsAcknowledged, StreamEnded, StreamReset, UnknownFrameReceived,
     WindowUpdated
 )
-from h2.exceptions import H2Error, ProtocolError
+from h2.exceptions import H2Error
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
@@ -39,7 +39,7 @@ class InvalidNegotiatedProtocol(H2Error):
         self.negotiated_protocol = negotiated_protocol
 
     def __str__(self) -> str:
-        return f'InvalidHostname: Expected h2 as negotiated protocol, received {self.negotiated_protocol}'
+        return f'InvalidHostname: Expected h2 as negotiated protocol, received {self.negotiated_protocol!r}'
 
 
 class RemoteTerminatedConnection(H2Error):
@@ -48,7 +48,15 @@ class RemoteTerminatedConnection(H2Error):
         self.terminate_event = event
 
     def __str__(self) -> str:
-        return f'RemoteTerminatedConnection: Received GOAWAY frame from {self.remote_ip_address}'
+        return f'RemoteTerminatedConnection: Received GOAWAY frame from {self.remote_ip_address!r}'
+
+
+class MethodNotAllowed405(H2Error):
+    def __init__(self, remote_ip_address: Optional[Union[IPv4Address, IPv6Address]]):
+        self.remote_ip_address = remote_ip_address
+
+    def __str__(self) -> str:
+        return f"MethodNotAllowed405: Received 'HTTP/2.0 405 Method Not Allowed' from {self.remote_ip_address!r}"
 
 
 @implementer(IHandshakeListener)
@@ -217,14 +225,25 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             # So, no need to send a GOAWAY frame to the remote
             self._lose_connection_with_error([InvalidNegotiatedProtocol(negotiated_protocol)])
 
+    def _check_received_data(self, data: bytes) -> None:
+        """Checks for edge cases where the connection to remote fails
+        without raising an appropriate H2Error
+
+        Arguments:
+            data -- Data received from the remote
+        """
+        if data.startswith(b'HTTP/2.0 405 Method Not Allowed'):
+            raise MethodNotAllowed405(self.metadata['ip_address'])
+
     def dataReceived(self, data: bytes) -> None:
         # Reset the idle timeout as connection is still actively receiving data
         self.resetTimeout()
 
         try:
+            self._check_received_data(data)
             events = self.conn.receive_data(data)
             self._handle_events(events)
-        except ProtocolError as e:
+        except H2Error as e:
             # Save this error as ultimately the connection will be dropped
             # internally by hyper-h2. Saved error will be passed to all the streams
             # closed with the connection.
@@ -271,9 +290,10 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         for stream in self.streams.values():
             if stream.request_sent:
-                stream.close(StreamCloseReason.CONNECTION_LOST, self._conn_lost_errors, from_protocol=True)
+                close_reason = StreamCloseReason.CONNECTION_LOST
             else:
-                stream.close(StreamCloseReason.INACTIVE, from_protocol=True)
+                close_reason = StreamCloseReason.INACTIVE
+            stream.close(close_reason, self._conn_lost_errors, from_protocol=True)
 
         self._active_streams -= len(self.streams)
         self.streams.clear()

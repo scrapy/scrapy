@@ -3,6 +3,7 @@ from time import time
 from typing import Optional, Tuple
 from urllib.parse import urldefrag
 
+from twisted.internet.defer import Deferred
 from twisted.internet.base import ReactorBase
 from twisted.internet.error import TimeoutError
 from twisted.web.client import URI
@@ -23,9 +24,6 @@ class H2DownloadHandler:
         from twisted.internet import reactor
         self._pool = H2ConnectionPool(reactor, settings)
         self._context_factory = load_context_factory_from_settings(settings, crawler)
-        self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
-        self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
-        self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -35,8 +33,6 @@ class H2DownloadHandler:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
-            maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
-            warnsize=getattr(spider, 'download_warnsize', self._default_warnsize),
             crawler=self._crawler
         )
         return agent.download_request(request, spider)
@@ -72,15 +68,12 @@ class ScrapyH2Agent:
         self, context_factory,
         connect_timeout=10,
         bind_address: Optional[bytes] = None, pool: H2ConnectionPool = None,
-        maxsize: int = 0, warnsize: int = 0,
         crawler=None
     ) -> None:
         self._context_factory = context_factory
         self._connect_timeout = connect_timeout
         self._bind_address = bind_address
         self._pool = pool
-        self._maxsize = maxsize
-        self._warnsize = warnsize
         self._crawler = crawler
 
     def _get_agent(self, request: Request, timeout: Optional[float]) -> H2Agent:
@@ -121,7 +114,7 @@ class ScrapyH2Agent:
             pool=self._pool
         )
 
-    def download_request(self, request: Request, spider: Spider):
+    def download_request(self, request: Request, spider: Spider) -> Deferred:
         from twisted.internet import reactor
         timeout = request.meta.get('download_timeout') or self._connect_timeout
         agent = self._get_agent(request, timeout)
@@ -135,12 +128,12 @@ class ScrapyH2Agent:
         return d
 
     @staticmethod
-    def _cb_latency(response: Response, request: Request, start_time: float):
+    def _cb_latency(response: Response, request: Request, start_time: float) -> Response:
         request.meta['download_latency'] = time() - start_time
         return response
 
     @staticmethod
-    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl):
+    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl) -> Response:
         if timeout_cl.active():
             timeout_cl.cancel()
             return response
