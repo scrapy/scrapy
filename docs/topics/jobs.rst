@@ -17,6 +17,8 @@ facilities:
 * an extension that keeps some spider state (key/value pairs) persistent
   between batches
 
+.. _jobs-job-directory:
+
 Job directory
 =============
 

@@ -4,11 +4,51 @@
 Request Queues
 ==============
 
-Scrapy uses queues to schedule requests. By default, a memory-based queue is
-used but if :ref:`crawls should be paused and resumed <topics-jobs>` or more
-requests than fit in memory are scheduled, using an external queue (disk
-queue) is necessary. The setting :setting:`SCHEDULER_DISK_QUEUE` determines
-the type of disk queue that will be used by the scheduler.
+Scrapy uses queues to store requests and to decide what request to schedule
+next. The scheduler does not use a specific queue implementation (called
+*downstream queue*) directly but instead the downstream queue is wrapped by a
+priority queue.
+
+Priority Queues
+===============
+
+Priority queues make sure that requests with the highest priority are scheduled
+first. For this purpose, a priority queue uses multiple downstream queues---one
+for each priority. The setting :setting:`SCHEDULER_PRIORITY_QUEUE` determines
+the type of priority queue that will be used by the scheduler.
+
+Scrapy comes with two priority queue implementations:
+
+  * ``'scrapy.pqueues.ScrapyPriorityQueue'``
+  * ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
+
+The default priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'`` and works
+best during single-domain crawls (see also
+:ref:`broad-crawls-scheduler-priority-queue`). For crawling multiple different
+domains in parallel the recommended priority queue is
+``'scrapy.pqueues.DownloaderAwarePriorityQueue'``. This priority queue takes
+downloader activity into account: Domains with the least amount of active
+downloads are dequeued first.
+
+Downstream Queues
+=================
+
+By default, the scheduler uses a memory-based queue as a downstream queue but if
+:ref:`crawls should be paused and resumed <topics-jobs>` or more requests than
+fit in memory are scheduled, using an external queue (disk queue) is necessary.
+The setting :setting:`SCHEDULER_DISK_QUEUE` determines the type of disk queue
+that will be used by the scheduler. It is
+``'scrapy.squeues.PickleLifoDiskQueue'`` by default. To enable the use of disk
+queues, the :setting:`JOBDIR` setting has to be defined (see also
+:ref:`jobs-job-directory`).
+
+.. note::
+
+    If :setting:`JOBDIR` is undefined, the scheduler uses a memory-based queue
+    regardless of how :setting:`SCHEDULER_DISK_QUEUE` is configured.
+
+Interface
+---------
 
 If you want to use your own disk queue implementation, it has to conform to
 the following interface:
