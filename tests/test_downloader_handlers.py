@@ -23,8 +23,8 @@ from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
+from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
@@ -33,7 +33,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
-
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
@@ -131,6 +130,7 @@ class ContentLengthHeaderResource(resource.Resource):
     A testing resource which renders itself as the value of the Content-Length
     header from the request.
     """
+
     def render(self, request):
         return request.requestHeaders.getRawHeaders(b"content-length")[0]
 
@@ -142,6 +142,7 @@ class ChunkedResource(resource.Resource):
             request.write(b"chunked ")
             request.write(b"content\n")
             request.finish()
+
         reactor.callLater(0, response)
         return server.NOT_DONE_YET
 
@@ -155,6 +156,7 @@ class BrokenChunkedResource(resource.Resource):
             # Disable terminating chunk on finish.
             request.chunked = False
             closeConnection(request)
+
         reactor.callLater(0, response)
         return server.NOT_DONE_YET
 
@@ -186,6 +188,7 @@ class EmptyContentTypeHeaderResource(resource.Resource):
     A testing resource which renders itself as the value of request body
     without content-type header in response.
     """
+
     def render(self, request):
         request.setHeader("content-type", "")
         return request.content.read()
@@ -197,12 +200,12 @@ class LargeChunkedFileResource(resource.Resource):
             for i in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
+
         reactor.callLater(0, response)
         return server.NOT_DONE_YET
 
 
 class HttpTestCase(unittest.TestCase):
-
     scheme = 'http'
     download_handler_cls = HTTPDownloadHandler
 
@@ -230,10 +233,12 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.host = 'localhost'
+        self.host = u'localhost'
         if self.scheme == 'https':
+            # Using WrappingFactory do not enable HTTP/2 failing all the
+            # tests with H2DownloadHandler
             self.port = reactor.listenSSL(
-                0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile),
+                0, self.site, ssl_context_factory(self.keyfile, self.certfile),
                 interface=self.host)
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
@@ -330,6 +335,7 @@ class HttpTestCase(unittest.TestCase):
         https://github.com/kennethreitz/requests/issues/405
         https://bugs.python.org/issue14721
         """
+
         def _test(response):
             self.assertEqual(response.body, b'0')
 
@@ -514,8 +520,49 @@ class Https11TestCase(Http11TestCase):
             yield download_handler.close()
 
 
+class Https2TestCase(Https11TestCase):
+    scheme = 'https'
+    download_handler_cls = H2DownloadHandler
+    HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
+
+    def test_download_broken_content_cause_data_loss(self, url='broken'):
+        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_broken_chunked_content_cause_data_loss(self):
+        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_broken_content_allow_data_loss(self, url='broken'):
+        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_broken_chunked_content_allow_data_loss(self):
+        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
+        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
+        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+
 class Https11WrongHostnameTestCase(Http11TestCase):
     scheme = 'https'
+
+    # above tests use a server certificate for "localhost",
+    # client connection to "localhost" too.
+    # here we test that even if the server certificate is for another domain,
+    # "www.example.com" in this case,
+    # the tests still pass
+    keyfile = 'keys/example-com.key.pem'
+    certfile = 'keys/example-com.cert.pem'
+
+
+class Https2WrongHostnameTestCase(Https2TestCase):
+    tls_log_message = (
+        'SSL connection certificate: issuer "/C=XW/ST=XW/L=The '
+        'Internet/O=Scrapy/CN=www.example.com/emailAddress=test@example.com", '
+        'subject "/C=XW/ST=XW/L=The '
+        'Internet/O=Scrapy/CN=www.example.com/emailAddress=test@example.com"'
+    )
 
     # above tests use a server certificate for "localhost",
     # client connection to "localhost" too.
@@ -531,6 +578,14 @@ class Https11InvalidDNSId(Https11TestCase):
 
     def setUp(self):
         super(Https11InvalidDNSId, self).setUp()
+        self.host = '127.0.0.1'
+
+
+class Https2InvalidDNSId(Https2TestCase):
+    """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
+
+    def setUp(self):
+        super(Https2InvalidDNSId, self).setUp()
         self.host = '127.0.0.1'
 
 
@@ -552,6 +607,24 @@ class Https11InvalidDNSPattern(Https11TestCase):
         super(Https11InvalidDNSPattern, self).setUp()
 
 
+class Https2InvalidDNSPattern(Https2TestCase):
+    """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
+
+    keyfile = 'keys/localhost.ip.key'
+    certfile = 'keys/localhost.ip.crt'
+
+    def setUp(self):
+        try:
+            from service_identity.exceptions import CertificateError  # noqa: F401
+        except ImportError:
+            raise unittest.SkipTest("cryptography lib is too old")
+        self.tls_log_message = (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
+            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
+        )
+        super(Https2InvalidDNSPattern, self).setUp()
+
+
 class Https11CustomCiphers(unittest.TestCase):
     scheme = 'https'
     download_handler_cls = HTTP11DownloadHandler
@@ -565,10 +638,9 @@ class Https11CustomCiphers(unittest.TestCase):
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         self.site = server.Site(r, timeout=None)
-        self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
         self.port = reactor.listenSSL(
-            0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
+            0, self.site, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
             interface=self.host)
         self.portno = self.port.getHost().port
         crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
@@ -591,6 +663,11 @@ class Https11CustomCiphers(unittest.TestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEqual, b"0123456789")
         return d
+
+
+class Https2CustomCiphers(Https11CustomCiphers):
+    scheme = 'https'
+    download_handler_cls = H2DownloadHandler
 
 
 class Http11MockServerTestCase(unittest.TestCase):
@@ -642,6 +719,10 @@ class Http11MockServerTestCase(unittest.TestCase):
         self.assertTrue(failure is None)
         reason = crawler.spider.meta['close_reason']
         self.assertTrue(reason, 'finished')
+
+
+class Http2MockServerTestCase(Http11MockServerTestCase):
+    """HTTP 2.0 test case with MockServer"""
 
 
 class UriResource(resource.Resource):
@@ -732,6 +813,11 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         d = self.download_request(request, Spider('foo'))
         timeout = yield self.assertFailure(d, error.TimeoutError)
         self.assertIn(domain, timeout.osError)
+
+
+# TODO:
+class Http2ProxyTestCase(Http11ProxyTestCase):
+    download_handler_cls = H2DownloadHandler
 
 
 class HttpDownloadHandlerMock:
@@ -931,7 +1017,6 @@ class S3TestCase(unittest.TestCase):
 
 
 class BaseFTPTestCase(unittest.TestCase):
-
     username = "scrapy"
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
@@ -969,6 +1054,7 @@ class BaseFTPTestCase(unittest.TestCase):
         def _clean(data):
             self.download_handler.client.transport.loseConnection()
             return data
+
         deferred.addCallback(_clean)
         if callback:
             deferred.addCallback(callback)
@@ -985,6 +1071,7 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, b'I have the power!')
             self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
+
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
@@ -998,6 +1085,7 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, b'Moooooooooo power!')
             self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'18']})
+
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
@@ -1007,6 +1095,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.status, 404)
+
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
@@ -1027,6 +1116,7 @@ class BaseFTPTestCase(unittest.TestCase):
             with open(local_fname, "rb") as f:
                 self.assertEqual(f.read(), b"I have the power!")
             os.remove(local_fname)
+
         return self._add_test_callbacks(d, _test)
 
 
@@ -1043,11 +1133,11 @@ class FTPTestCase(BaseFTPTestCase):
 
         def _test(r):
             self.assertEqual(r.type, ConnectionLost)
+
         return self._add_test_callbacks(d, errback=_test)
 
 
 class AnonymousFTPTestCase(BaseFTPTestCase):
-
     username = "anonymous"
     req_meta = {}
 
