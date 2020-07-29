@@ -47,8 +47,8 @@ is ``'scrapy.squeues.LifoMemoryQueue'``.
 Disk queue
 ----------
 
-Disk queues allow :ref:`crawls to be paused and resumed <topics-jobs>` and more
-requests than fit in memory can be scheduled. The default for
+With disk queues it is possible to :ref:`pause and resume crawls <topics-jobs>`
+and schedule more requests than fit in memory. The default for
 :setting:`SCHEDULER_DISK_QUEUE` is ``'scrapy.squeues.PickleLifoDiskQueue'``.
 
 Disk queues serialize requests, e.g. using :meth:`pickle.serialize`. If
