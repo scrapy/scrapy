@@ -93,7 +93,7 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://site.local/disallowed", "*"))
 
     def test_unicode_url_and_useragent(self):
-        robotstxt_robotstxt_body = u"""
+        robotstxt_robotstxt_body = """
         User-Agent: *
         Disallow: /admin/
         Disallow: /static/
@@ -107,11 +107,11 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://site.local/", "*"))
         self.assertFalse(rp.allowed("https://site.local/admin/", "*"))
         self.assertFalse(rp.allowed("https://site.local/static/", "*"))
-        self.assertTrue(rp.allowed("https://site.local/admin/", u"UnicödeBöt"))
+        self.assertTrue(rp.allowed("https://site.local/admin/", "UnicödeBöt"))
         self.assertFalse(rp.allowed("https://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:", "*"))
-        self.assertFalse(rp.allowed(u"https://site.local/wiki/Käyttäjä:", "*"))
+        self.assertFalse(rp.allowed("https://site.local/wiki/Käyttäjä:", "*"))
         self.assertTrue(rp.allowed("https://site.local/some/randome/page.html", "*"))
-        self.assertFalse(rp.allowed("https://site.local/some/randome/page.html", u"UnicödeBöt"))
+        self.assertFalse(rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt"))
 
 
 class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
