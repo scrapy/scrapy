@@ -184,7 +184,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
     def test_latin1_location(self):
         req = Request('http://scrapytest.org/first')
-        latin1_location = u'/ação'.encode('latin1')  # HTTP historically supports latin1
+        latin1_location = '/ação'.encode('latin1')  # HTTP historically supports latin1
         resp = Response('http://scrapytest.org/first', headers={'Location': latin1_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = 'http://scrapytest.org/a%E7%E3o'
@@ -192,7 +192,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
     def test_utf8_location(self):
         req = Request('http://scrapytest.org/first')
-        utf8_location = u'/ação'.encode('utf-8')  # header using UTF-8 encoding
+        utf8_location = '/ação'.encode('utf-8')  # header using UTF-8 encoding
         resp = Response('http://scrapytest.org/first', headers={'Location': utf8_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
@@ -207,7 +207,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url='http://example.org/newpage'):
-        html = u"""<html><head><meta http-equiv="refresh" content="{0};url={1}"/></head></html>"""
+        html = """<html><head><meta http-equiv="refresh" content="{0};url={1}"/></head></html>"""
         return html.format(interval, url).encode('utf-8')
 
     def test_priority_adjust(self):
