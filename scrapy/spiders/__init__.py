@@ -14,7 +14,6 @@ from scrapy.utils.deprecate import method_is_overridden
 
 
 class Spider(object_ref):
-
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
