@@ -439,7 +439,7 @@ class Settings(BaseSettings):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
-        super(Settings, self).__init__()
+        super().__init__()
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities

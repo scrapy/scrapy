@@ -189,7 +189,7 @@ class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
         skip = "Rerp parser is not installed"
 
     def setUp(self):
-        super(RobotsTxtMiddlewareWithRerpTest, self).setUp()
+        super().setUp()
         self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.RerpRobotParser')
 
 
@@ -198,5 +198,5 @@ class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
         skip = "Reppy parser is not installed"
 
     def setUp(self):
-        super(RobotsTxtMiddlewareWithReppyTest, self).setUp()
+        super().setUp()
         self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.ReppyRobotParser')

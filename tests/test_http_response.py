@@ -305,7 +305,7 @@ class TextResponseTest(BaseResponseTest):
     response_class = TextResponse
 
     def test_replace(self):
-        super(TextResponseTest, self).test_replace()
+        super().test_replace()
         r1 = self.response_class("http://www.example.com", body="hello", encoding="cp852")
         r2 = r1.replace(url="http://www.example.com/other")
         r3 = r1.replace(url="http://www.example.com/other", encoding="latin1")

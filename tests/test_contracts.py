@@ -378,7 +378,7 @@ class ContractsManagerTest(unittest.TestCase):
             name = 'test_same_url'
 
             def __init__(self, *args, **kwargs):
-                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
                 self.visited = 0
 
             def start_requests(s):

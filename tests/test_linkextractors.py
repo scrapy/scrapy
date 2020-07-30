@@ -516,7 +516,7 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
         ])
 
     def test_restrict_xpaths_with_html_entities(self):
-        super(LxmlLinkExtractorTestCase, self).test_restrict_xpaths_with_html_entities()
+        super().test_restrict_xpaths_with_html_entities()
 
     def test_filteringlinkextractor_deprecation_warning(self):
         """Make sure the FilteringLinkExtractor deprecation warning is not

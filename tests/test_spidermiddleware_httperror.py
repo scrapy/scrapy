@@ -19,7 +19,7 @@ class _HttpErrorSpider(MockServerSpider):
     bypass_status_codes = set()
 
     def __init__(self, *args, **kwargs):
-        super(_HttpErrorSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.start_urls = [
             self.mockserver.url("/status?n=200"),
             self.mockserver.url("/status?n=404"),

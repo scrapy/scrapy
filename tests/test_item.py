@@ -312,7 +312,7 @@ class ItemMetaClassCellRegression(unittest.TestCase):
                 # requirement. When not done properly raises an error:
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
-                super(MyItem, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
 
 
 class DictItemTest(unittest.TestCase):

@@ -126,7 +126,7 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             strip=strip,
             canonicalized=canonicalize
         )
-        super(LxmlLinkExtractor, self).__init__(
+        super().__init__(
             link_extractor=lx,
             allow=allow,
             deny=deny,

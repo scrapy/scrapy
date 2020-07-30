@@ -530,7 +530,7 @@ class Https11InvalidDNSId(Https11TestCase):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     def setUp(self):
-        super(Https11InvalidDNSId, self).setUp()
+        super().setUp()
         self.host = '127.0.0.1'
 
 
@@ -549,7 +549,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
             'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
             'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
         )
-        super(Https11InvalidDNSPattern, self).setUp()
+        super().setUp()
 
 
 class Https11CustomCiphers(unittest.TestCase):

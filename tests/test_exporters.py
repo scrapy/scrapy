@@ -514,7 +514,7 @@ class CustomItemExporterTest(unittest.TestCase):
                 if name == 'age':
                     return str(int(value) + 1)
                 else:
-                    return super(CustomItemExporter, self).serialize_field(field, name, value)
+                    return super().serialize_field(field, name, value)
 
         i = TestItem(name=u'John', age='22')
         ie = CustomItemExporter()

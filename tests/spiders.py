@@ -19,7 +19,7 @@ from scrapy.utils.test import get_from_asyncio_queue
 
 class MockServerSpider(Spider):
     def __init__(self, mockserver=None, *args, **kwargs):
-        super(MockServerSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.mockserver = mockserver
 
 
@@ -28,7 +28,7 @@ class MetaSpider(MockServerSpider):
     name = 'meta'
 
     def __init__(self, *args, **kwargs):
-        super(MetaSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.meta = {}
 
     def closed(self, reason):
@@ -41,7 +41,7 @@ class FollowAllSpider(MetaSpider):
     link_extractor = LinkExtractor()
 
     def __init__(self, total=10, show=20, order="rand", maxlatency=0.0, *args, **kwargs):
-        super(FollowAllSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
@@ -60,7 +60,7 @@ class DelaySpider(MetaSpider):
     name = 'delay'
 
     def __init__(self, n=1, b=0, *args, **kwargs):
-        super(DelaySpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.n = n
         self.b = b
         self.t1 = self.t2 = self.t2_err = 0
@@ -82,7 +82,7 @@ class SimpleSpider(MetaSpider):
     name = 'simple'
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
-        super(SimpleSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.start_urls = [url]
 
     def parse(self, response):
@@ -153,7 +153,7 @@ class ItemSpider(FollowAllSpider):
     name = 'item'
 
     def parse(self, response):
-        for request in super(ItemSpider, self).parse(response):
+        for request in super().parse(response):
             yield request
             yield Item()
             yield {}
@@ -172,7 +172,7 @@ class ErrorSpider(FollowAllSpider):
         raise self.exception_cls('Expected exception')
 
     def parse(self, response):
-        for request in super(ErrorSpider, self).parse(response):
+        for request in super().parse(response):
             yield request
             self.raise_exception()
 
@@ -183,7 +183,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
     fail_yielding = False
 
     def __init__(self, *a, **kw):
-        super(BrokenStartRequestsSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         self.seedsseen = []
 
     def start_requests(self):
@@ -201,7 +201,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get('seed'))
-        for req in super(BrokenStartRequestsSpider, self).parse(response):
+        for req in super().parse(response):
             yield req
 
 
@@ -243,7 +243,7 @@ class DuplicateStartRequestsSpider(MockServerSpider):
                 yield Request(url, dont_filter=self.dont_filter)
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
-        super(DuplicateStartRequestsSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.visited = 0
 
     def parse(self, response):
