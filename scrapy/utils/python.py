@@ -127,6 +127,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
     def _chunk_iter():
         offset = len(text)
         while True:
@@ -158,6 +159,7 @@ def memoizemethod_noargs(method):
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
+
     return new_method
 
 
@@ -271,6 +273,19 @@ def equal_attributes(obj1, obj2, attributes):
             return False
     # all attributes equal
     return True
+
+
+@deprecated
+class WeakKeyCache:
+
+    def __init__(self, default_factory):
+        self.default_factory = default_factory
+        self._weakdict = weakref.WeakKeyDictionary()
+
+    def __getitem__(self, key):
+        if key not in self._weakdict:
+            self._weakdict[key] = self.default_factory(key)
+        return self._weakdict[key]
 
 
 @deprecated
