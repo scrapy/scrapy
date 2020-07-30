@@ -312,16 +312,18 @@ class HttpTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_host_header_seted_in_request_headers(self):
-        def _test(response):
-            self.assertEqual(response.body, b'example.com')
-            self.assertEqual(request.headers.get('Host'), b'example.com')
+        host = self.host + ':' + str(self.portno)
 
-        request = Request(self.getURL('host'), headers={'Host': 'example.com'})
+        def _test(response):
+            self.assertEqual(response.body, bytes(host, 'utf-8'))
+            self.assertEqual(request.headers.get('Host'), bytes(host, 'utf-8'))
+
+        request = Request(self.getURL('host'), headers={'Host': host})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEqual, b'example.com')
+        d.addCallback(self.assertEqual, b'localhost')
         return d
 
     def test_content_length_zero_bodyless_post_request_headers(self):
@@ -339,7 +341,7 @@ class HttpTestCase(unittest.TestCase):
         def _test(response):
             self.assertEqual(response.body, b'0')
 
-        request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
+        request = Request(self.getURL('contentlength'), method='POST')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_content_length_zero_bodyless_post_only_one(self):
@@ -524,6 +526,25 @@ class Https2TestCase(Https11TestCase):
     scheme = 'https'
     download_handler_cls = H2DownloadHandler
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_very_large_file(self):
+        with mock.patch('scrapy.core.http2.stream.logger') as logger:
+            request = Request(self.getURL('largechunkedfile'))
+
+            def check(logger):
+                logger.error.assert_called_once_with(mock.ANY)
+
+            d = self.download_request(request, Spider('foo', download_maxsize=1500))
+            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+            # As the error message is logged in the dataReceived callback, we
+            # have to give a bit of time to the reactor to process the queue
+            # after closing the connection.
+            d = defer.Deferred()
+            d.addCallback(check)
+            reactor.callLater(.1, d.callback, logger)
+            yield d
 
     def test_download_broken_content_cause_data_loss(self, url='broken'):
         raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
