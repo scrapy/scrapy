@@ -110,7 +110,7 @@ class Crawler:
     def is_start_requests_async(start_requests_function):
         if hasattr(inspect, 'isasyncgenfunction') and inspect.isasyncgenfunction(start_requests_function):
             return True
-        elif inspect.iscoroutinefunction(start_requests_function):
+        if inspect.iscoroutinefunction(start_requests_function):
             return True
         return False
 
