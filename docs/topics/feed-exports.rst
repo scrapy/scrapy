@@ -100,6 +100,7 @@ The storages backends supported out of the box are:
  * :ref:`topics-feed-storage-fs`
  * :ref:`topics-feed-storage-ftp`
  * :ref:`topics-feed-storage-s3` (requires botocore_)
+ * :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
  * :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
@@ -199,6 +200,8 @@ You can also define a custom ACL for exported feeds using this setting:
 Google Cloud Storage (GCS)
 --------------------------
 
+.. versionadded:: 2.3
+
 The feeds are stored on `Google Cloud Storage`_.
 
  * URI scheme: ``gs``
@@ -206,7 +209,7 @@ The feeds are stored on `Google Cloud Storage`_.
 
    * ``gs://mybucket/path/to/export.csv``
 
- * Required external libraries: `google-cloud-storage <https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python>`_.
+ * Required external libraries: `google-cloud-storage`_.
 
 For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
 
@@ -214,6 +217,8 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 
  * :setting:`FEED_STORAGE_GCS_ACL`
  * :setting:`GCS_PROJECT_ID`
+
+.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
 .. _topics-feed-storage-stdout:
 

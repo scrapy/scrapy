@@ -289,8 +289,10 @@ request::
         "://quotes.toscrape.com/scroll' -H 'Cache-Control: max-age=0'")
 
 Alternatively, if you want to know the arguments needed to recreate that
-request you can use the :func:`scrapy.utils.curl.curl_to_request_kwargs`
-function to get a dictionary with the equivalent arguments.
+request you can use the :func:`~scrapy.utils.curl.curl_to_request_kwargs`
+function to get a dictionary with the equivalent arguments:
+
+.. autofunction:: scrapy.utils.curl.curl_to_request_kwargs
 
 Note that to translate a cURL command into a Scrapy request,
 you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
