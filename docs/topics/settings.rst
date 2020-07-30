@@ -620,6 +620,13 @@ handler (without replacement), place this in your ``settings.py``::
         'ftp': None,
     }
 
+The default https handler uses HTTP/1.x, to use HTTP/2.0 update :setting:`DOWNLOAD_HANDLERS`
+as::
+
+    DOWNLOAD_HANDLERS = {
+        'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+    }
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -696,6 +703,14 @@ Optionally, this can be set per-request basis by using the
   broken responses considering they may contain partial or incomplete content.
   If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+
+.. warning::
+
+    This is ignored when :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
+    is set as ``https`` download handler in :setting:`DOWNLOAD_HANDLERS`. In
+    case of data loss error the connection may be corrupted affecting other streams,
+    hence all streams return with the ``ResponseFailed([InvalidBodyLengthError])``
+    failure.
 
 .. setting:: DUPEFILTER_CLASS
 
