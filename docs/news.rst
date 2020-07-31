@@ -20,7 +20,7 @@ Highlights:
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
-*   Removed the following classes and its parent modules from
+*   Removed the following classes and their parent modules from
     ``scrapy.linkextractors``:
 
     *   ``htmlparser.HtmlParserLinkExtractor``
