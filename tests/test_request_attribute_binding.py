@@ -45,13 +45,17 @@ class CatchExceptionDoNotOverrideRequestMiddleware:
 class AlternativeCallbacksSpider(SingleRequestSpider):
     name = "alternative_callbacks_spider"
 
-    def alt_callback(self, response):
-        self.logger.info("alt_callback was invoked")
+    def alt_callback(self, response, foo=None):
+        self.logger.info("alt_callback was invoked with foo=%s", foo)
 
 
 class AlternativeCallbacksMiddleware:
     def process_response(self, request, response, spider):
-        new_request = request.replace(url=OVERRIDEN_URL, callback=spider.alt_callback)
+        new_request = request.replace(
+            url=OVERRIDEN_URL,
+            callback=spider.alt_callback,
+            cb_kwargs={"foo": "bar"},
+        )
         return response.replace(request=new_request)
 
 
@@ -194,5 +198,5 @@ class CrawlTestCase(TestCase):
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
 
         log.check_present(
-            ("alternative_callbacks_spider", "INFO", "alt_callback was invoked"),
+            ("alternative_callbacks_spider", "INFO", "alt_callback was invoked with foo=bar"),
         )
