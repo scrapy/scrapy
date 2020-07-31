@@ -237,10 +237,10 @@ metadata. Here is an example::
 
 >>> from scrapy.loader import ItemLoader
 >>> il = ItemLoader(item=Product())
->>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
->>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
+>>> il.add_value('name', ['Welcome to my', '<strong>website</strong>'])
+>>> il.add_value('price', ['&euro;', '<span>1000</span>'])
 >>> il.load_item()
-{'name': u'Welcome to my website', 'price': u'1000'}
+{'name': 'Welcome to my website', 'price': '1000'}
 
 The precedence order, for both input and output processors, is as follows:
 

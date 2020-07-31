@@ -153,13 +153,13 @@ class XMLFeedSpiderTest(SpiderTest):
             output = list(spider._parse(response))
             self.assertEqual(len(output), 2, iterator)
             self.assertEqual(output, [
-                {'loc': [u'http://www.example.com/Special-Offers.html'],
-                 'updated': [u'2009-08-16'],
-                 'custom': [u'fuu'],
-                 'other': [u'bar']},
+                {'loc': ['http://www.example.com/Special-Offers.html'],
+                 'updated': ['2009-08-16'],
+                 'custom': ['fuu'],
+                 'other': ['bar']},
                 {'loc': [],
-                 'updated': [u'2009-08-16'],
-                 'other': [u'foo'],
+                 'updated': ['2009-08-16'],
+                 'other': ['foo'],
                  'custom': []},
             ], iterator)
 

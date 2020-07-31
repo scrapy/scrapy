@@ -44,7 +44,7 @@ class LogFormatter:
                 def dropped(self, item, exception, response, spider):
                     return {
                         'level': logging.INFO, # lowering the level from logging.WARNING
-                        'msg': u"Dropped: %(exception)s" + os.linesep + "%(item)s",
+                        'msg': "Dropped: %(exception)s" + os.linesep + "%(item)s",
                         'args': {
                             'exception': exception,
                             'item': item,

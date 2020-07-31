@@ -60,8 +60,8 @@ class RequestTest(unittest.TestCase):
         self.assertFalse(p.headers is r.headers)
 
         # headers must not be unicode
-        h = Headers({'key1': u'val1', u'key2': 'val2'})
-        h[u'newkey'] = u'newval'
+        h = Headers({'key1': 'val1', 'key2': 'val2'})
+        h['newkey'] = 'newval'
         for k, v in h.items():
             self.assertIsInstance(k, bytes)
             for s in v:
@@ -89,30 +89,30 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
 
     def test_url_encoding(self):
-        r = self.request_class(url=u"http://www.scrapy.org/price/£")
+        r = self.request_class(url="http://www.scrapy.org/price/£")
         self.assertEqual(r.url, "http://www.scrapy.org/price/%C2%A3")
 
     def test_url_encoding_other(self):
         # encoding affects only query part of URI, not path
         # path part should always be UTF-8 encoded before percent-escaping
-        r = self.request_class(url=u"http://www.scrapy.org/price/£", encoding="utf-8")
+        r = self.request_class(url="http://www.scrapy.org/price/£", encoding="utf-8")
         self.assertEqual(r.url, "http://www.scrapy.org/price/%C2%A3")
 
-        r = self.request_class(url=u"http://www.scrapy.org/price/£", encoding="latin1")
+        r = self.request_class(url="http://www.scrapy.org/price/£", encoding="latin1")
         self.assertEqual(r.url, "http://www.scrapy.org/price/%C2%A3")
 
     def test_url_encoding_query(self):
-        r1 = self.request_class(url=u"http://www.scrapy.org/price/£?unit=µ")
+        r1 = self.request_class(url="http://www.scrapy.org/price/£?unit=µ")
         self.assertEqual(r1.url, "http://www.scrapy.org/price/%C2%A3?unit=%C2%B5")
 
         # should be same as above
-        r2 = self.request_class(url=u"http://www.scrapy.org/price/£?unit=µ", encoding="utf-8")
+        r2 = self.request_class(url="http://www.scrapy.org/price/£?unit=µ", encoding="utf-8")
         self.assertEqual(r2.url, "http://www.scrapy.org/price/%C2%A3?unit=%C2%B5")
 
     def test_url_encoding_query_latin1(self):
         # encoding is used for encoding query-string before percent-escaping;
         # path is still UTF-8 encoded before percent-escaping
-        r3 = self.request_class(url=u"http://www.scrapy.org/price/µ?currency=£", encoding="latin1")
+        r3 = self.request_class(url="http://www.scrapy.org/price/µ?currency=£", encoding="latin1")
         self.assertEqual(r3.url, "http://www.scrapy.org/price/%C2%B5?currency=%A3")
 
     def test_url_encoding_nonutf8_untouched(self):
@@ -131,16 +131,16 @@ class RequestTest(unittest.TestCase):
         # characters.  Otherwise, in the future the IRI will be mapped to
         # "http://www.example.org/r%C3%A9sum%C3%A9.html", which is a different
         # URI from "http://www.example.org/r%E9sum%E9.html".
-        r1 = self.request_class(url=u"http://www.scrapy.org/price/%a3")
+        r1 = self.request_class(url="http://www.scrapy.org/price/%a3")
         self.assertEqual(r1.url, "http://www.scrapy.org/price/%a3")
 
-        r2 = self.request_class(url=u"http://www.scrapy.org/r%C3%A9sum%C3%A9/%a3")
+        r2 = self.request_class(url="http://www.scrapy.org/r%C3%A9sum%C3%A9/%a3")
         self.assertEqual(r2.url, "http://www.scrapy.org/r%C3%A9sum%C3%A9/%a3")
 
-        r3 = self.request_class(url=u"http://www.scrapy.org/résumé/%a3")
+        r3 = self.request_class(url="http://www.scrapy.org/résumé/%a3")
         self.assertEqual(r3.url, "http://www.scrapy.org/r%C3%A9sum%C3%A9/%a3")
 
-        r4 = self.request_class(url=u"http://www.example.org/r%E9sum%E9.html")
+        r4 = self.request_class(url="http://www.example.org/r%E9sum%E9.html")
         self.assertEqual(r4.url, "http://www.example.org/r%E9sum%E9.html")
 
     def test_body(self):
@@ -151,11 +151,11 @@ class RequestTest(unittest.TestCase):
         assert isinstance(r2.body, bytes)
         self.assertEqual(r2.encoding, 'utf-8')  # default encoding
 
-        r3 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
+        r3 = self.request_class(url="http://www.example.com/", body="Price: \xa3100", encoding='utf-8')
         assert isinstance(r3.body, bytes)
         self.assertEqual(r3.body, b"Price: \xc2\xa3100")
 
-        r4 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='latin1')
+        r4 = self.request_class(url="http://www.example.com/", body="Price: \xa3100", encoding='latin1')
         assert isinstance(r4.body, bytes)
         self.assertEqual(r4.body, b"Price: \xa3100")
 
@@ -164,7 +164,7 @@ class RequestTest(unittest.TestCase):
         r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
         self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
         # unicode url
-        r = self.request_class(url=u"http://www.example.com/ajax.html#!key=value")
+        r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
         self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
 
     def test_copy(self):
@@ -236,7 +236,7 @@ class RequestTest(unittest.TestCase):
         assert r4.dont_filter is False
 
     def test_method_always_str(self):
-        r = self.request_class("http://www.example.com", method=u"POST")
+        r = self.request_class("http://www.example.com", method="POST")
         assert isinstance(r.method, str)
 
     def test_immutable_attributes(self):
@@ -381,7 +381,7 @@ class FormRequestTest(RequestTest):
 
     def test_default_encoding_textual_data(self):
         # using default encoding (utf-8)
-        data = {u'µ one': u'two', u'price': u'£ 100'}
+        data = {'µ one': 'two', 'price': '£ 100'}
         r2 = self.request_class("http://www.example.com", formdata=data)
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
@@ -390,7 +390,7 @@ class FormRequestTest(RequestTest):
 
     def test_default_encoding_mixed_data(self):
         # using default encoding (utf-8)
-        data = {u'\u00b5one': b'two', b'price\xc2\xa3': u'\u00a3 100'}
+        data = {'\u00b5one': b'two', b'price\xc2\xa3': '\u00a3 100'}
         r2 = self.request_class("http://www.example.com", formdata=data)
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
@@ -406,14 +406,14 @@ class FormRequestTest(RequestTest):
         self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
 
     def test_custom_encoding_textual_data(self):
-        data = {'price': u'£ 100'}
+        data = {'price': '£ 100'}
         r3 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r3.encoding, 'latin1')
         self.assertEqual(r3.body, b'price=%A3+100')
 
     def test_multi_key_values(self):
         # using multiples values for a single key
-        data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
+        data = {'price': '\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = self.request_class("http://www.example.com", formdata=data)
         self.assertQueryEqual(r3.body, b'colours=red&colours=blue&colours=green&price=%C2%A3+100')
 
@@ -450,10 +450,10 @@ class FormRequestTest(RequestTest):
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
         self.assertEqual(req.url, "http://www.example.com/this/post.php")
         fs = _qs(req, to_unicode=True)
-        self.assertEqual(set(fs[u'test £']), {u'val1', u'val2'})
-        self.assertEqual(set(fs[u'one']), {u'two', u'three'})
-        self.assertEqual(fs[u'test2'], [u'xxx µ'])
-        self.assertEqual(fs[u'six'], [u'seven'])
+        self.assertEqual(set(fs['test £']), {'val1', 'val2'})
+        self.assertEqual(set(fs['one']), {'two', 'three'})
+        self.assertEqual(fs['test2'], ['xxx µ'])
+        self.assertEqual(fs['six'], ['seven'])
 
     def test_from_response_post_nonascii_bytes_latin1(self):
         response = _buildresponse(
@@ -471,14 +471,14 @@ class FormRequestTest(RequestTest):
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
         self.assertEqual(req.url, "http://www.example.com/this/post.php")
         fs = _qs(req, to_unicode=True, encoding='latin1')
-        self.assertEqual(set(fs[u'test £']), {u'val1', u'val2'})
-        self.assertEqual(set(fs[u'one']), {u'two', u'three'})
-        self.assertEqual(fs[u'test2'], [u'xxx µ'])
-        self.assertEqual(fs[u'six'], [u'seven'])
+        self.assertEqual(set(fs['test £']), {'val1', 'val2'})
+        self.assertEqual(set(fs['one']), {'two', 'three'})
+        self.assertEqual(fs['test2'], ['xxx µ'])
+        self.assertEqual(fs['six'], ['seven'])
 
     def test_from_response_post_nonascii_unicode(self):
         response = _buildresponse(
-            u"""<form action="post.php" method="POST">
+            """<form action="post.php" method="POST">
             <input type="hidden" name="test £" value="val1">
             <input type="hidden" name="test £" value="val2">
             <input type="hidden" name="test2" value="xxx µ">
@@ -490,10 +490,10 @@ class FormRequestTest(RequestTest):
         self.assertEqual(req.headers[b'Content-type'], b'application/x-www-form-urlencoded')
         self.assertEqual(req.url, "http://www.example.com/this/post.php")
         fs = _qs(req, to_unicode=True)
-        self.assertEqual(set(fs[u'test £']), {u'val1', u'val2'})
-        self.assertEqual(set(fs[u'one']), {u'two', u'three'})
-        self.assertEqual(fs[u'test2'], [u'xxx µ'])
-        self.assertEqual(fs[u'six'], [u'seven'])
+        self.assertEqual(set(fs['test £']), {'val1', 'val2'})
+        self.assertEqual(set(fs['one']), {'two', 'three'})
+        self.assertEqual(fs['test2'], ['xxx µ'])
+        self.assertEqual(fs['six'], ['seven'])
 
     def test_from_response_duplicate_form_key(self):
         response = _buildresponse(
@@ -685,7 +685,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="two" value="clicked2">
             </form>""")
         req = self.request_class.from_response(
-            response, clickdata={u'name': u'clickable', u'value': u'clicked2'}
+            response, clickdata={'name': 'clickable', 'value': 'clicked2'}
         )
         fs = _qs(req)
         self.assertEqual(fs[b'clickable'], [b'clicked2'])
@@ -694,21 +694,21 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_unicode_clickdata(self):
         response = _buildresponse(
-            u"""<form action="get.php" method="GET">
+            """<form action="get.php" method="GET">
             <input type="submit" name="price in \u00a3" value="\u00a3 1000">
             <input type="submit" name="price in \u20ac" value="\u20ac 2000">
             <input type="hidden" name="poundsign" value="\u00a3">
             <input type="hidden" name="eurosign" value="\u20ac">
             </form>""")
         req = self.request_class.from_response(
-            response, clickdata={u'name': u'price in \u00a3'}
+            response, clickdata={'name': 'price in \u00a3'}
         )
         fs = _qs(req, to_unicode=True)
-        self.assertTrue(fs[u'price in \u00a3'])
+        self.assertTrue(fs['price in \u00a3'])
 
     def test_from_response_unicode_clickdata_latin1(self):
         response = _buildresponse(
-            u"""<form action="get.php" method="GET">
+            """<form action="get.php" method="GET">
             <input type="submit" name="price in \u00a3" value="\u00a3 1000">
             <input type="submit" name="price in \u00a5" value="\u00a5 2000">
             <input type="hidden" name="poundsign" value="\u00a3">
@@ -716,10 +716,10 @@ class FormRequestTest(RequestTest):
             </form>""",
             encoding='latin1')
         req = self.request_class.from_response(
-            response, clickdata={u'name': u'price in \u00a5'}
+            response, clickdata={'name': 'price in \u00a5'}
         )
         fs = _qs(req, to_unicode=True, encoding='latin1')
-        self.assertTrue(fs[u'price in \u00a5'])
+        self.assertTrue(fs['price in \u00a5'])
 
     def test_from_response_multiple_forms_clickdata(self):
         response = _buildresponse(
@@ -733,7 +733,7 @@ class FormRequestTest(RequestTest):
             </form>
             """)
         req = self.request_class.from_response(
-            response, formname='form2', clickdata={u'name': u'clickable'}
+            response, formname='form2', clickdata={'name': 'clickable'}
         )
         fs = _qs(req)
         self.assertEqual(fs[b'clickable'], [b'clicked2'])
@@ -1072,11 +1072,11 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_unicode_xpath(self):
         response = _buildresponse(b'<form name="\xd1\x8a"></form>')
-        r = self.request_class.from_response(response, formxpath=u"//form[@name='\u044a']")
+        r = self.request_class.from_response(response, formxpath="//form[@name='\u044a']")
         fs = _qs(r)
         self.assertEqual(fs, {})
 
-        xpath = u"//form[@name='\u03b1']"
+        xpath = "//form[@name='\u03b1']"
         self.assertRaisesRegex(ValueError, re.escape(xpath),
                                self.request_class.from_response,
                                response, formxpath=xpath)
@@ -1246,13 +1246,13 @@ class XmlRpcRequestTest(RequestTest):
         self._test_request(params=('value',))
         self._test_request(params=('username', 'password'), methodname='login')
         self._test_request(params=('response', ), methodresponse='login')
-        self._test_request(params=(u'pas£',), encoding='utf-8')
+        self._test_request(params=('pas£',), encoding='utf-8')
         self._test_request(params=(None,), allow_none=1)
         self.assertRaises(TypeError, self._test_request)
         self.assertRaises(TypeError, self._test_request, params=(None,))
 
     def test_latin1(self):
-        self._test_request(params=(u'pas£',), encoding='latin1')
+        self._test_request(params=('pas£',), encoding='latin1')
 
 
 class JsonRequestTest(RequestTest):
