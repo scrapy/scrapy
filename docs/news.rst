@@ -106,6 +106,8 @@ Quality assurance
 
 *   Removed cookie-handling code specific to Python 2 (:issue:`4682`)
 
+*   Stopped using Python 2 unicode literal syntax (:issue:`4704`)
+
 *   Stopped using a backlash for line continuation (:issue:`4673`)
 
 *   Removed unneeded entries from the MyPy exception list (:issue:`4690`)
