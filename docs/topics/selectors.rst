@@ -734,7 +734,7 @@ The ``test()`` function, for example, can prove quite useful when XPath's
 Example selecting links in list item with a "class" attribute ending with a digit:
 
 >>> from scrapy import Selector
->>> doc = u"""
+>>> doc = """
 ... <div>
 ...     <ul>
 ...         <li class="item-0"><a href="link1.html">first item</a></li>
@@ -765,7 +765,7 @@ extracting text elements for example.
 Example extracting microdata (sample content taken from https://schema.org/Product)
 with groups of itemscopes and corresponding itemprops::
 
-    >>> doc = u"""
+    >>> doc = """
     ... <div itemscope itemtype="http://schema.org/Product">
     ...   <span itemprop="name">Kenmore White 17" Microwave</span>
     ...   <img src="kenmore-microwave-17in.jpg" alt='Kenmore 17" Microwave' />

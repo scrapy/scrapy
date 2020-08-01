@@ -277,33 +277,33 @@ class CookiesMiddlewareTest(TestCase):
 
     def test_request_cookies_encoding(self):
         # 1) UTF8-encoded bytes
-        req1 = Request('http://example.org', cookies={'a': u'á'.encode('utf8')})
+        req1 = Request('http://example.org', cookies={'a': 'á'.encode('utf8')})
         assert self.mw.process_request(req1, self.spider) is None
         self.assertCookieValEqual(req1.headers['Cookie'], b'a=\xc3\xa1')
 
         # 2) Non UTF8-encoded bytes
-        req2 = Request('http://example.org', cookies={'a': u'á'.encode('latin1')})
+        req2 = Request('http://example.org', cookies={'a': 'á'.encode('latin1')})
         assert self.mw.process_request(req2, self.spider) is None
         self.assertCookieValEqual(req2.headers['Cookie'], b'a=\xc3\xa1')
 
-        # 3) Unicode string
-        req3 = Request('http://example.org', cookies={'a': u'á'})
+        # 3) String
+        req3 = Request('http://example.org', cookies={'a': 'á'})
         assert self.mw.process_request(req3, self.spider) is None
         self.assertCookieValEqual(req3.headers['Cookie'], b'a=\xc3\xa1')
 
     def test_request_headers_cookie_encoding(self):
         # 1) UTF8-encoded bytes
-        req1 = Request('http://example.org', headers={'Cookie': u'a=á'.encode('utf8')})
+        req1 = Request('http://example.org', headers={'Cookie': 'a=á'.encode('utf8')})
         assert self.mw.process_request(req1, self.spider) is None
         self.assertCookieValEqual(req1.headers['Cookie'], b'a=\xc3\xa1')
 
         # 2) Non UTF8-encoded bytes
-        req2 = Request('http://example.org', headers={'Cookie': u'a=á'.encode('latin1')})
+        req2 = Request('http://example.org', headers={'Cookie': 'a=á'.encode('latin1')})
         assert self.mw.process_request(req2, self.spider) is None
         self.assertCookieValEqual(req2.headers['Cookie'], b'a=\xc3\xa1')
 
-        # 3) Unicode string
-        req3 = Request('http://example.org', headers={'Cookie': u'a=á'})
+        # 3) String
+        req3 = Request('http://example.org', headers={'Cookie': 'a=á'})
         assert self.mw.process_request(req3, self.spider) is None
         self.assertCookieValEqual(req3.headers['Cookie'], b'a=\xc3\xa1')
 
