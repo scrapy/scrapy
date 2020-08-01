@@ -174,6 +174,18 @@ class FilesPipelineTestCase(unittest.TestCase):
         request = Request("http://example.com")
         self.assertEqual(file_path(request, item=item), 'full/path-to-store-file')
 
+    def test_file_path_backwards_compatibility(self):
+        """
+        Test file_path method without `item` parameter in its signature
+        """
+        class CustomFilesPipeline(FilesPipeline):
+            def file_path(self, request, response=None, info=None):
+                return 'full/%s' % 'path'
+
+        file_path = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_path
+        request = Request("http://example.com")
+        self.assertEqual(file_path(request), 'full/path')
+
 
 class FilesPipelineTestCaseFieldsMixin:
 
