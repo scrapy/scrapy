@@ -13,8 +13,10 @@ from collections import defaultdict
 from contextlib import suppress
 from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
+from inspect import signature
 from io import BytesIO
 from urllib.parse import urlparse
+from warnings import warn
 
 from itemadapter import ItemAdapter
 from twisted.internet import defer, threads
@@ -25,6 +27,7 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
@@ -357,6 +360,15 @@ class FilesPipeline(MediaPipeline):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
+        # Check if file_path used by user is deprecated
+        file_path_sig = signature(self.file_path)
+        try:
+            file_path_sig.parameters['item']
+        except KeyError:
+            warn('file_path(self, request, response=None, info=None) is deprecated, '
+                 'please use file_path(self, request, response=None, info=None, item=None)',
+                 ScrapyDeprecationWarning, stacklevel=2)
+
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
         resolve = functools.partial(self._key_for_pipe,
@@ -436,7 +448,7 @@ class FilesPipeline(MediaPipeline):
             checksum = result.get('checksum', None)
             return {'url': request.url, 'path': path, 'checksum': checksum, 'status': 'uptodate'}
 
-        path = self.file_path(request, info=info, item=item)
+        path = self._file_path(request, info=info, item=item)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(
@@ -492,7 +504,7 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats(info.spider, status)
 
         try:
-            path = self.file_path(request, response=response, info=info, item=item)
+            path = self._file_path(request, response=response, info=info, item=item)
             checksum = self.file_downloaded(response, request, info, item)
         except FileException as exc:
             logger.warning(
@@ -523,7 +535,7 @@ class FilesPipeline(MediaPipeline):
         return [Request(u) for u in urls]
 
     def file_downloaded(self, response, request, info, item):
-        path = self.file_path(request, response=response, info=info, item=item)
+        path = self._file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
         checksum = md5sum(buf)
         buf.seek(0)

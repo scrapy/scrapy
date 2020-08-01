@@ -110,6 +110,14 @@ class MediaPipeline:
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
+    def _file_path(self, *args, **kwargs):
+        """Wrapper for file_path method to allow backwards compatibility"""
+        try:
+            return self.file_path(*args, **kwargs)
+        except TypeError:
+            kwargs.pop('item', None)
+            return self.file_path(*args, **kwargs)
+
     def _modify_media_request(self, request):
         if self.handle_httpstatus_list:
             request.meta['handle_httpstatus_list'] = self.handle_httpstatus_list

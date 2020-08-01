@@ -6,7 +6,9 @@ See documentation in topics/media-pipeline.rst
 import functools
 import hashlib
 from contextlib import suppress
+from inspect import signature
 from io import BytesIO
+from warnings import warn
 
 from itemadapter import ItemAdapter
 from PIL import Image
@@ -16,6 +18,7 @@ from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 
@@ -50,6 +53,15 @@ class ImagesPipeline(FilesPipeline):
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
+
+        # Check if file_path used by user is deprecated
+        file_path_sig = signature(self.file_path)
+        try:
+            file_path_sig.parameters['item']
+        except KeyError:
+            warn('file_path(self, request, response=None, info=None) is deprecated, '
+                 'please use file_path(self, request, response=None, info=None, item=None)',
+                 ScrapyDeprecationWarning, stacklevel=2)
 
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name="ImagesPipeline",
@@ -121,7 +133,7 @@ class ImagesPipeline(FilesPipeline):
         return checksum
 
     def get_images(self, response, request, info, item):
-        path = self.file_path(request, response=response, info=info, item=item)
+        path = self._file_path(request, response=response, info=info, item=item)
         orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
