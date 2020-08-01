@@ -376,6 +376,8 @@ class MiscCommandsTest(CommandTest):
 
 class RunSpiderCommandTest(CommandTest):
 
+    spider_filename = 'myspider.py'
+
     debug_log_spider = """
 import scrapy
 
@@ -387,11 +389,23 @@ class MySpider(scrapy.Spider):
         return []
 """
 
+    badspider = """
+import scrapy
+
+class BadSpider(scrapy.Spider):
+    name = "bad"
+    def start_requests(self):
+        raise Exception("oops!")
+        """
+
     @contextmanager
-    def _create_file(self, content, name):
+    def _create_file(self, content, name=None):
         tmpdir = self.mktemp()
         os.mkdir(tmpdir)
-        fname = abspath(join(tmpdir, name))
+        if name:
+            fname = abspath(join(tmpdir, name))
+        else:
+            fname = abspath(join(tmpdir, self.spider_filename))
         with open(fname, 'w') as f:
             f.write(content)
         try:
@@ -399,12 +413,12 @@ class MySpider(scrapy.Spider):
         finally:
             rmtree(tmpdir)
 
-    def runspider(self, code, name='myspider.py', args=()):
+    def runspider(self, code, name=None, args=()):
         with self._create_file(code, name) as fname:
             return self.proc('runspider', fname, *args)
 
-    def get_log(self, code, name='myspider.py', args=()):
-        p, stdout, stderr = self.runspider(code, name=name, args=args)
+    def get_log(self, code, name=None, args=()):
+        p, stdout, stderr = self.runspider(code, name, args=args)
         return stderr
 
     def test_runspider(self):
@@ -436,7 +450,7 @@ class MySpider(scrapy.Spider):
         # which is intended,
         # but this should not be because of DNS lookup error
         # assumption: localhost will resolve in all cases (true?)
-        log = self.get_log("""
+        dnscache_spider = """
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -445,23 +459,20 @@ class MySpider(scrapy.Spider):
 
     def parse(self, response):
         return {'test': 'value'}
-""",
-                           args=('-s', 'DNSCACHE_ENABLED=False'))
-        print(log)
+"""
+        log = self.get_log(dnscache_spider, args=('-s', 'DNSCACHE_ENABLED=False'))
         self.assertNotIn("DNSLookupError", log)
         self.assertIn("INFO: Spider opened", log)
 
     def test_runspider_log_short_names(self):
         log1 = self.get_log(self.debug_log_spider,
                             args=('-s', 'LOG_SHORT_NAMES=1'))
-        print(log1)
         self.assertIn("[myspider] DEBUG: It Works!", log1)
         self.assertIn("[scrapy]", log1)
         self.assertNotIn("[scrapy.core.engine]", log1)
 
         log2 = self.get_log(self.debug_log_spider,
                             args=('-s', 'LOG_SHORT_NAMES=0'))
-        print(log2)
         self.assertIn("[myspider] DEBUG: It Works!", log2)
         self.assertNotIn("[scrapy]", log2)
         self.assertIn("[scrapy.core.engine]", log2)
@@ -479,15 +490,7 @@ class MySpider(scrapy.Spider):
         self.assertIn('Unable to load', log)
 
     def test_start_requests_errors(self):
-        log = self.get_log("""
-import scrapy
-
-class BadSpider(scrapy.Spider):
-    name = "bad"
-    def start_requests(self):
-        raise Exception("oops!")
-        """, name="badspider.py")
-        print(log)
+        log = self.get_log(self.badspider, name='badspider.py')
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
@@ -503,6 +506,41 @@ class BadSpider(scrapy.Spider):
     def test_asyncio_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+
+class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
+
+    spider_filename = 'myspider.pyw'
+
+    def setUp(self):
+        super(WindowsRunSpiderCommandTest, self).setUp()
+
+    if platform.system() != 'Windows':
+        def test_run_good_spider(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_dnscache_disabled(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_log_level(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_log_short_names(self):
+            raise unittest.SkipTest("Windows required")
+
+        def test_runspider_no_spider_found(self):
+            raise unittest.SkipTest("Windows required")
+
+    def test_runspider_unable_to_load(self):
+        raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
+
+    def test_start_requests_errors(self):
+        log = self.get_log(self.badspider, name='badspider.pyw')
+        self.assertIn("start_requests", log)
+        self.assertIn("badspider.pyw", log)
 
 
 class BenchCommandTest(CommandTest):
