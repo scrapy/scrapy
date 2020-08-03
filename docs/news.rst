@@ -48,8 +48,20 @@ New features
     :issue:`3608`)
 
 *   The new :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting allows to deliver
-    output items in batches, split in separate files (:issue:`4250`,
-    :issue:`4434`)
+    output items in batches of up to the specified number of items.
+
+    Some storage backeds (S3, FTP, and now GCS) do not receive items as the are
+    scraped. Instead, Scrapy writes items into a temporary local file, and only
+    once all the file contents have been written (i.e. at the end of the crawl)
+    is that file uploaded to the feed URI.
+
+    You can now use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output
+    items in multiple files with the specified maximum item count per file.
+    That way, as soon as a file reaches the maximum item count, that file is
+    delivered to the feed URI, allowing item delivery to start way before the
+    end of the crawl.
+
+    (:issue:`4250`, :issue:`4434`)
 
 *   The :command:`parse` command now allows specifying an output file
     (:issue:`4317`, :issue:`4377`)
