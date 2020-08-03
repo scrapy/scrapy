@@ -16,16 +16,11 @@ Highlights:
 *   The new :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting allows to deliver
     output items in batches of up to the specified number of items.
 
-    Some storage backeds (S3, FTP, and now GCS) do not receive items as the are
-    scraped. Instead, Scrapy writes items into a temporary local file, and only
-    once all the file contents have been written (i.e. at the end of the crawl)
-    is that file uploaded to the feed URI.
-
-    You can now use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output
-    items in multiple files with the specified maximum item count per file.
-    That way, as soon as a file reaches the maximum item count, that file is
-    delivered to the feed URI, allowing item delivery to start way before the
-    end of the crawl.
+    It also serves as a workaround for :ref:`delayed file delivery
+    <delayed-file-delivery>`, which causes Scrapy to only start item delivery
+    to some storage backends (:ref:`S3 <topics-feed-storage-s3>`, :ref:`FTP
+    <topics-feed-storage-ftp>`, and now :ref:`GCS <topics-feed-storage-gcs>`)
+    after the crawl has finished.
 
 *   The base implementation of :ref:`item loaders <topics-loaders>` has been
     moved into a separate library, :doc:`itemloaders <itemloaders:index>`,

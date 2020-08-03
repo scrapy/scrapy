@@ -170,6 +170,9 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
+This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
 .. _topics-feed-storage-s3:
 
 S3
@@ -195,6 +198,9 @@ You can also define a custom ACL for exported feeds using this setting:
 
  * :setting:`FEED_STORAGE_S3_ACL`
 
+This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
 .. _topics-feed-storage-gcs:
 
 Google Cloud Storage (GCS)
@@ -218,7 +224,10 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
  * :setting:`FEED_STORAGE_GCS_ACL`
  * :setting:`GCS_PROJECT_ID`
 
+This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
 .. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+
 
 .. _topics-feed-storage-stdout:
 
@@ -230,6 +239,26 @@ The feeds are written to the standard output of the Scrapy process.
  * URI scheme: ``stdout``
  * Example URI: ``stdout:``
  * Required external libraries: none
+
+
+.. _delayed-file-delivery:
+
+Delayed file delivery
+---------------------
+
+As indicated above, some of the described storage backeds use delayed file
+delivery.
+
+These storage backeds do not receive items as they are scraped. Instead, Scrapy
+writes items into a temporary local file, and only once all the file contents
+have been written (i.e. at the end of the crawl) is that file uploaded to the
+feed URI.
+
+If you want item delivery to start earlier when using one of these storage
+backends, use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output items
+in multiple files, with the specified maximum item count per file. That way, as
+soon as a file reaches the maximum item count, that file is delivered to the
+feed URI, allowing item delivery to start way before the end of the crawl.
 
 
 Settings
