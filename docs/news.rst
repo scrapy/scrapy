@@ -79,7 +79,8 @@ Bug fixes
 ~~~~~~~~~
 
 *   Fixed the :ref:`CSV exporting <topics-feed-format-csv>` of
-    :ref:`dataclass items <dataclass-items>` (:issue:`4667`, :issue:`4668`)
+    :ref:`dataclass items <dataclass-items>` and :ref:`attr.s items
+    <attrs-items>` (:issue:`4667`, :issue:`4668`)
 
 *   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now set the request
