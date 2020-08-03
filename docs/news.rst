@@ -10,12 +10,26 @@ Scrapy 2.3.0 (2020-0?-??)
 
 Highlights:
 
-* :ref:`Feed exports <topics-feed-exports>` support :ref:`Google Cloud
-  Storage <topics-feed-storage-gcs>`
-* New :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting for batch deliveries
-* The base implementation of :ref:`item loaders <topics-loaders>` has been
-  moved into :doc:`itemloaders <itemloaders:index>`
+*   :ref:`Feed exports <topics-feed-exports>` now support :ref:`Google Cloud
+    Storage <topics-feed-storage-gcs>` as a storage backend
 
+*   The new :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting allows to deliver
+    output items in batches of up to the specified number of items.
+
+    Some storage backeds (S3, FTP, and now GCS) do not receive items as the are
+    scraped. Instead, Scrapy writes items into a temporary local file, and only
+    once all the file contents have been written (i.e. at the end of the crawl)
+    is that file uploaded to the feed URI.
+
+    You can now use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output
+    items in multiple files with the specified maximum item count per file.
+    That way, as soon as a file reaches the maximum item count, that file is
+    delivered to the feed URI, allowing item delivery to start way before the
+    end of the crawl.
+
+*   The base implementation of :ref:`item loaders <topics-loaders>` has been
+    moved into a separate library, :doc:`itemloaders <itemloaders:index>`,
+    allowing usage from outside Scrapy and a separate release schedule
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
@@ -43,24 +57,10 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
-*   :ref:`Feed exports <topics-feed-exports>` now support :ref:`Google Cloud
-    Storage <topics-feed-storage-gcs>` as a storage backend (:issue:`685`,
-    :issue:`3608`)
+*   :ref:`Feed exports <topics-feed-exports>` support :ref:`Google Cloud
+    Storage <topics-feed-storage-gcs>` (:issue:`685`, :issue:`3608`)
 
-*   The new :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting allows to deliver
-    output items in batches of up to the specified number of items.
-
-    Some storage backeds (S3, FTP, and now GCS) do not receive items as the are
-    scraped. Instead, Scrapy writes items into a temporary local file, and only
-    once all the file contents have been written (i.e. at the end of the crawl)
-    is that file uploaded to the feed URI.
-
-    You can now use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output
-    items in multiple files with the specified maximum item count per file.
-    That way, as soon as a file reaches the maximum item count, that file is
-    delivered to the feed URI, allowing item delivery to start way before the
-    end of the crawl.
-
+*   New :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting for batch deliveries
     (:issue:`4250`, :issue:`4434`)
 
 *   The :command:`parse` command now allows specifying an output file
@@ -107,9 +107,8 @@ Quality assurance
 ~~~~~~~~~~~~~~~~~
 
 *   The base implementation of :ref:`item loaders <topics-loaders>` has been
-    moved into a separate library, :doc:`itemloaders <itemloaders:index>`,
-    allowing usage from outside Scrapy and a separate release schedule
-    (:issue:`4005`, :issue:`4516`)
+    moved into :doc:`itemloaders <itemloaders:index>` (:issue:`4005`,
+    :issue:`4516`)
 
 *   Fixed a silenced error in some scheduler tests (:issue:`4644`,
     :issue:`4645`)
