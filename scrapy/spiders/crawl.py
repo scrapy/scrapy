@@ -75,7 +75,7 @@ class CrawlSpider(Spider):
     rules = ()
 
     def __init__(self, *a, **kw):
-        super(CrawlSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         self._compile_rules()
 
     def _parse(self, response, **kwargs):
@@ -145,6 +145,6 @@ class CrawlSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(CrawlSpider, cls).from_crawler(crawler, *args, **kwargs)
+        spider = super().from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
         return spider

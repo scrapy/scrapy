@@ -1265,7 +1265,7 @@ class JsonRequestTest(RequestTest):
 
     def setUp(self):
         warnings.simplefilter("always")
-        super(JsonRequestTest, self).setUp()
+        super().setUp()
 
     def test_data(self):
         r1 = self.request_class(url="http://www.example.com/")
@@ -1419,7 +1419,7 @@ class JsonRequestTest(RequestTest):
 
     def tearDown(self):
         warnings.resetwarnings()
-        super(JsonRequestTest, self).tearDown()
+        super().tearDown()
 
 
 if __name__ == "__main__":

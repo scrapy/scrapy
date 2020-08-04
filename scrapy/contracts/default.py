@@ -56,7 +56,7 @@ class ReturnsContract(Contract):
     }
 
     def __init__(self, *args, **kwargs):
-        super(ReturnsContract, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if len(self.args) not in [1, 2, 3]:
             raise ValueError(

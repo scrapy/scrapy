@@ -301,7 +301,7 @@ class PythonItemExporter(BaseItemExporter):
 
     def _configure(self, options, dont_fail=False):
         self.binary = options.pop('binary', True)
-        super(PythonItemExporter, self)._configure(options, dont_fail)
+        super()._configure(options, dont_fail)
         if self.binary:
             warnings.warn(
                 "PythonItemExporter will drop support for binary export in the future",

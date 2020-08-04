@@ -250,7 +250,7 @@ class TestOutputProcessorItem(unittest.TestCase):
             temp = Field()
 
             def __init__(self, *args, **kwargs):
-                super(TempItem, self).__init__(self, *args, **kwargs)
+                super().__init__(self, *args, **kwargs)
                 self.setdefault('temp', 0.3)
 
         class TempLoader(ItemLoader):

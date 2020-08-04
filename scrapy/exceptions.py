@@ -37,7 +37,7 @@ class CloseSpider(Exception):
     """Raise this from callbacks to request the spider to be closed"""
 
     def __init__(self, reason='cancelled'):
-        super(CloseSpider, self).__init__()
+        super().__init__()
         self.reason = reason
 
 
@@ -74,7 +74,7 @@ class UsageError(Exception):
 
     def __init__(self, *a, **kw):
         self.print_help = kw.pop('print_help', True)
-        super(UsageError, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
 
 
 class ScrapyDeprecationWarning(Warning):

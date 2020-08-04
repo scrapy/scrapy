@@ -24,7 +24,7 @@ class FormRequest(Request):
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
-        super(FormRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata

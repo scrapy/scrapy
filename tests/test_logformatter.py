@@ -118,7 +118,7 @@ class LogFormatterTestCase(unittest.TestCase):
 
 class LogFormatterSubclass(LogFormatter):
     def crawled(self, request, response, spider):
-        kwargs = super(LogFormatterSubclass, self).crawled(request, response, spider)
+        kwargs = super().crawled(request, response, spider)
         CRAWLEDMSG = (
             "Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
         )

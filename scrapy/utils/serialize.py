@@ -33,7 +33,7 @@ class ScrapyJSONEncoder(json.JSONEncoder):
         elif isinstance(o, Response):
             return "<%s %s %s>" % (type(o).__name__, o.status, o.url)
         else:
-            return super(ScrapyJSONEncoder, self).default(o)
+            return super().default(o)
 
 
 class ScrapyJSONDecoder(json.JSONDecoder):
