@@ -18,9 +18,9 @@ Highlights:
 
     It also serves as a workaround for :ref:`delayed file delivery
     <delayed-file-delivery>`, which causes Scrapy to only start item delivery
-    to some storage backends (:ref:`S3 <topics-feed-storage-s3>`, :ref:`FTP
-    <topics-feed-storage-ftp>`, and now :ref:`GCS <topics-feed-storage-gcs>`)
-    after the crawl has finished.
+    after the crawl has finished when using certain storage backends
+    (:ref:`S3 <topics-feed-storage-s3>`, :ref:`FTP <topics-feed-storage-ftp>`,
+    and now :ref:`GCS <topics-feed-storage-gcs>`).
 
 *   The base implementation of :ref:`item loaders <topics-loaders>` has been
     moved into a separate library, :doc:`itemloaders <itemloaders:index>`,
