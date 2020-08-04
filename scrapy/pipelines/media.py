@@ -1,12 +1,15 @@
 import functools
+from inspect import signature
 import logging
 from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
+from warnings import warn
 
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.log import failure_to_exc_info
@@ -37,6 +40,15 @@ class MediaPipeline:
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
         self._handle_statuses(self.allow_redirects)
+
+        # Check if file_path implemented by user in child class is deprecated
+        file_path_sig = signature(self.file_path)
+        self._file_path_expects_item = True
+        if 'item' not in file_path_sig.parameters:
+            warn('file_path(self, request, response=None, info=None) is deprecated, '
+                 'please use file_path(self, request, response=None, info=None, item=None)',
+                 ScrapyDeprecationWarning, stacklevel=2)
+            self._file_path_expects_item = False
 
     def _handle_statuses(self, allow_redirects):
         self.handle_httpstatus_list = None
@@ -112,9 +124,9 @@ class MediaPipeline:
 
     def _file_path(self, *args, **kwargs):
         """Wrapper for file_path method to allow backwards compatibility"""
-        try:
+        if self._file_path_expects_item:
             return self.file_path(*args, **kwargs)
-        except TypeError:
+        else:
             kwargs.pop('item', None)
             return self.file_path(*args, **kwargs)
 
@@ -207,3 +219,7 @@ class MediaPipeline:
                         extra={'spider': info.spider}
                     )
         return item
+
+    def file_path(self, request, response=None, info=None, item=None):
+        """Returns the path where downloaded media should be stored"""
+        pass

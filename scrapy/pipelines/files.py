@@ -13,10 +13,8 @@ from collections import defaultdict
 from contextlib import suppress
 from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
-from inspect import signature
 from io import BytesIO
 from urllib.parse import urlparse
-from warnings import warn
 
 from itemadapter import ItemAdapter
 from twisted.internet import defer, threads
@@ -27,7 +25,6 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
@@ -359,15 +356,6 @@ class FilesPipeline(MediaPipeline):
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-
-        # Check if file_path used by user is deprecated
-        file_path_sig = signature(self.file_path)
-        try:
-            file_path_sig.parameters['item']
-        except KeyError:
-            warn('file_path(self, request, response=None, info=None) is deprecated, '
-                 'please use file_path(self, request, response=None, info=None, item=None)',
-                 ScrapyDeprecationWarning, stacklevel=2)
 
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
