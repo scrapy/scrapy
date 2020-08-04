@@ -193,10 +193,10 @@ Item Loaders are declared using a class definition syntax. Here is an example::
 
         default_output_processor = TakeFirst()
 
-        name_in = MapCompose(unicode.title)
+        name_in = MapCompose(str.title)
         name_out = Join()
 
-        price_in = MapCompose(unicode.strip)
+        price_in = MapCompose(str.strip)
 
         # ...
 
