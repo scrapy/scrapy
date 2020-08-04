@@ -246,13 +246,13 @@ The feeds are written to the standard output of the Scrapy process.
 Delayed file delivery
 ---------------------
 
-As indicated above, some of the described storage backeds use delayed file
+As indicated above, some of the described storage backends use delayed file
 delivery.
 
-These storage backeds do not receive items as they are scraped. Instead, Scrapy
-writes items into a temporary local file, and only once all the file contents
-have been written (i.e. at the end of the crawl) is that file uploaded to the
-feed URI.
+These storage backends do not upload items to the feed URI as those items are
+scraped. Instead, Scrapy writes items into a temporary local file, and only
+once all the file contents have been written (i.e. at the end of the crawl) is
+that file uploaded to the feed URI.
 
 If you want item delivery to start earlier when using one of these storage
 backends, use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output items
