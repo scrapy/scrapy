@@ -23,6 +23,7 @@ from scrapy.pipelines.files import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.test import (
     assert_aws_environ,
     assert_gcs_environ,
@@ -185,6 +186,13 @@ class FilesPipelineTestCase(unittest.TestCase):
         file_path = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_path
         request = Request("http://example.com")
         self.assertEqual(file_path(request), 'full/path')
+        warning = self.flushWarnings([FilesPipeline.__init__])
+        message = (
+            'file_path(self, request, response=None, info=None) is deprecated, '
+            'please use file_path(self, request, response=None, info=None, item=None)'
+        )
+        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
+        self.assertEqual(message, warning[0]['message'])
 
 
 class FilesPipelineTestCaseFieldsMixin:
