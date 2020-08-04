@@ -35,6 +35,7 @@ from tests.spiders import (
     FollowAllSpider,
     SimpleSpider,
     SingleRequestSpider,
+    YieldingRequestsSpider,
 )
 
 
@@ -161,14 +162,69 @@ class CrawlTestCase(TestCase):
         self.assertIsNotNone(record.exc_info)
         self.assertIs(record.exc_info[0], ZeroDivisionError)
 
+    def is_eager(_, requests_in_order):
+        """
+            All start requests(depth=0) are scheduled before
+            any other requests(depth!=0)
+        """
+        depths_in_order = [r.meta.get('depth', 0) for r in requests_in_order]
+        order_of_start_requests = [
+            o for o, d in enumerate(depths_in_order) if d == 0
+        ]
+        order_of_other_requests = [
+            o for o, d in enumerate(depths_in_order) if d != 0
+        ]
+        last_start_request = max(order_of_start_requests)
+        first_other_request = min(order_of_other_requests)
+        return last_start_request < first_other_request
+
+    def number_of_start_requests_for_eagernees_testing(_):
+        """
+            number_of_start_requests should be big enough, so scheduling such
+            amount of requests takes longer than crawling first of them
+        """
+        return 100
+
+    @defer.inlineCallbacks
+    def test_start_requests_eagerness(self):
+        class EagerSpider(YieldingRequestsSpider):
+            def start_requests_with_control(self):
+                yield from self.start_requests()
+
+        settings = {
+            "SPIDER_MIDDLEWARES": {
+                "scrapy.spidermiddlewares.depth.DepthMiddleware": 0,
+                "tests.middlewares.RequestInOrderMiddleware": 1,
+            }
+        }
+        crawler = CrawlerRunner(settings).create_crawler(EagerSpider)
+        yield crawler.crawl(
+            mockserver=self.mockserver,
+            number_of_start_requests=self.number_of_start_requests_for_eagernees_testing(),
+        )
+        self.assertTrue(
+            self.is_eager(crawler.spider.requests_in_order_of_scheduling)
+        )
+
     @defer.inlineCallbacks
     def test_start_requests_lazyness(self):
-        settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = CrawlerRunner(settings).create_crawler(BrokenStartRequestsSpider)
-        yield crawler.crawl(mockserver=self.mockserver)
-        self.assertTrue(
-            crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
-            crawler.spider.seedsseen)
+        """
+            lazyness as a negation of eagerness
+        """
+        settings = {
+            "SPIDER_MIDDLEWARES": {
+                "scrapy.spidermiddlewares.depth.DepthMiddleware": 0,
+                "tests.middlewares.RequestInOrderMiddleware": 1,
+            }
+        }
+        crawler = CrawlerRunner(settings).create_crawler(YieldingRequestsSpider)
+        yield crawler.crawl(
+            mockserver=self.mockserver,
+            number_of_start_requests=self.number_of_start_requests_for_eagernees_testing(),
+        )
+        self.assertFalse(
+            self.is_eager(crawler.spider.requests_in_order_of_scheduling)
+        )
 
     @defer.inlineCallbacks
     def test_start_requests_dupes(self):

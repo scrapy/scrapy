@@ -11,9 +11,14 @@ from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.python import iflatten
+
+
+WaitUntilQueueEmpty = object()
 
 
 class Spider(object_ref):
+
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
@@ -75,6 +80,11 @@ class Spider(object_ref):
         else:
             for url in self.start_urls:
                 yield Request(url, dont_filter=True)
+
+    def start_requests_with_control(self):
+        sig = WaitUntilQueueEmpty
+        gen_ = ((r, sig) if r != sig else (r,) for r in self.start_requests())
+        return iflatten(gen_)
 
     def make_requests_from_url(self, url):
         """ This method is deprecated. """
