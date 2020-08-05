@@ -12,7 +12,7 @@ from scrapy import signals
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.defer import defer_result, defer_succeed, iter_errback, parallel
+from scrapy.utils.defer import defer_fail, defer_succeed, iter_errback, parallel
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
@@ -146,15 +146,19 @@ class Scraper:
                 self._log_download_errors, request_result, request, spider)
 
     def call_spider(self, result, request, spider):
-        if getattr(result, "request", None) is None:
+        if isinstance(result, Response):
+            if getattr(result, "request", None) is None:
+                result.request = request
+            callback = result.request.callback or spider._parse
+            warn_on_generator_with_return_value(spider, callback)
+            dfd = defer_succeed(result)
+            dfd.addCallback(callback, **result.request.cb_kwargs)
+        else:
+            assert isinstance(result, Failure)
             result.request = request
-        dfd = defer_result(result)
-        callback = result.request.callback or spider._parse
-        warn_on_generator_with_return_value(spider, callback)
-        warn_on_generator_with_return_value(spider, result.request.errback)
-        dfd.addCallbacks(callback=callback,
-                         errback=result.request.errback,
-                         callbackKeywords=result.request.cb_kwargs)
+            warn_on_generator_with_return_value(spider, request.errback)
+            dfd = defer_fail(result)
+            dfd.addErrback(request.errback)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, response, spider):
