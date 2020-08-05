@@ -436,7 +436,7 @@ class FilesPipeline(MediaPipeline):
             checksum = result.get('checksum', None)
             return {'url': request.url, 'path': path, 'checksum': checksum, 'status': 'uptodate'}
 
-        path = self._file_path(request, info=info, item=item)
+        path = self.file_path(request, info=info, item=item)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(
@@ -492,7 +492,7 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats(info.spider, status)
 
         try:
-            path = self._file_path(request, response=response, info=info, item=item)
+            path = self.file_path(request, response=response, info=info, item=item)
             checksum = self.file_downloaded(response, request, info, item)
         except FileException as exc:
             logger.warning(
@@ -522,8 +522,8 @@ class FilesPipeline(MediaPipeline):
         urls = ItemAdapter(item).get(self.files_urls_field, [])
         return [Request(u) for u in urls]
 
-    def file_downloaded(self, response, request, info, item):
-        path = self._file_path(request, response=response, info=info, item=item)
+    def file_downloaded(self, response, request, info, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
         checksum = md5sum(buf)
         buf.seek(0)

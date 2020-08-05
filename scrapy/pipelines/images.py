@@ -104,10 +104,10 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
-    def file_downloaded(self, response, request, info, item):
+    def file_downloaded(self, response, request, info, item=None):
         return self.image_downloaded(response, request, info, item)
 
-    def image_downloaded(self, response, request, info, item):
+    def image_downloaded(self, response, request, info, item=None):
         checksum = None
         for path, image, buf in self.get_images(response, request, info, item):
             if checksum is None:
@@ -120,8 +120,8 @@ class ImagesPipeline(FilesPipeline):
                 headers={'Content-Type': 'image/jpeg'})
         return checksum
 
-    def get_images(self, response, request, info, item):
-        path = self._file_path(request, response=response, info=info, item=item)
+    def get_images(self, response, request, info, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
