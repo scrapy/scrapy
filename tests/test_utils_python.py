@@ -1,14 +1,17 @@
 import functools
+import gc
 import operator
 import platform
 import unittest
+from itertools import count
 from sys import version_info
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
-    get_func_args, to_bytes, to_unicode,
+    WeakKeyCache, get_func_args, to_bytes, to_unicode,
     without_none_values, MutableChain)
+
 
 __doctests__ = ['scrapy.utils.python']
 
@@ -151,6 +154,23 @@ class UtilsPythonTestCase(unittest.TestCase):
         # fail z equality
         a.meta['z'] = 2
         self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
+
+    def test_weakkeycache(self):
+        class _Weakme:
+            pass
+
+        _values = count()
+        wk = WeakKeyCache(lambda k: next(_values))
+        k = _Weakme()
+        v = wk[k]
+        self.assertEqual(v, wk[k])
+        self.assertNotEqual(v, wk[_Weakme()])
+        self.assertEqual(v, wk[k])
+        del k
+        for _ in range(100):
+            if wk._weakdict:
+                gc.collect()
+        self.assertFalse(len(wk._weakdict))
 
     def test_get_func_args(self):
         def f1(a, b, c):

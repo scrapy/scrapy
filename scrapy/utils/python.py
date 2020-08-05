@@ -7,10 +7,12 @@ import inspect
 import re
 import sys
 import weakref
+import warnings
 from functools import partial, wraps
 from itertools import chain
 
 from scrapy.utils.decorators import deprecated
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 def flatten(x):
@@ -275,10 +277,10 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-@deprecated
 class WeakKeyCache:
 
     def __init__(self, default_factory):
+        warnings.warn("Call to deprecated Class WeakKeyCache", category=ScrapyDeprecationWarning, stacklevel=2)
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
 
