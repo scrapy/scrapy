@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred, inlineCallbacks
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException
@@ -333,6 +334,44 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(
             self.pipe._mockcalled,
             ['get_media_requests', 'media_to_download', 'item_completed'])
+
+    def test_media_to_download_backwards_compatibility(self):
+        class CustomMediaPipeline(MediaPipeline):
+            def media_to_download(self, request, info):
+                return 'media_to_download called'
+
+        media_to_download = CustomMediaPipeline(
+            download_func=_mocked_download_func,
+            settings=Settings(self.settings)
+        ).media_to_download
+        request, info = Request("http://example.com"), dict()
+        self.assertEqual(media_to_download(request, info), 'media_to_download called')
+        warning = self.flushWarnings([MediaPipeline._compatible])
+        message = (
+            'media_to_download(self, request, info) is deprecated, '
+            'please use media_to_download(self, request, info, item=None)'
+        )
+        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
+        self.assertEqual(message, warning[0]['message'])
+
+    def test_media_downloaded_backwards_compatibility(self):
+        class CustomMediaPipeline(MediaPipeline):
+            def media_downloaded(self, response, request, info):
+                return 'media_downloaded called'
+
+        media_downloaded = CustomMediaPipeline(
+            download_func=_mocked_download_func,
+            settings=Settings(self.settings)
+        ).media_downloaded
+        response, request, info = dict(), Request("http://example.com"), dict()
+        self.assertEqual(media_downloaded(response, request, info), 'media_downloaded called')
+        warning = self.flushWarnings([MediaPipeline._compatible])
+        message = (
+            'media_downloaded(self, response, request, info) is deprecated, '
+            'please use media_downloaded(self, response, request, info, item=None)'
+        )
+        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
+        self.assertEqual(message, warning[0]['message'])
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
