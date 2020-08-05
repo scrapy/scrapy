@@ -6,13 +6,13 @@ import gc
 import inspect
 import re
 import sys
-import weakref
 import warnings
+import weakref
 from functools import partial, wraps
 from itertools import chain
 
-from scrapy.utils.decorators import deprecated
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.decorators import deprecated
 
 
 def flatten(x):
@@ -280,7 +280,7 @@ def equal_attributes(obj1, obj2, attributes):
 class WeakKeyCache:
 
     def __init__(self, default_factory):
-        warnings.warn("Call to deprecated Class WeakKeyCache", category=ScrapyDeprecationWarning, stacklevel=2)
+        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
 
