@@ -6,10 +6,12 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from functools import partial, wraps
 from itertools import chain
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.decorators import deprecated
 
 
@@ -127,6 +129,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
     def _chunk_iter():
         offset = len(text)
         while True:
@@ -158,6 +161,7 @@ def memoizemethod_noargs(method):
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
+
     return new_method
 
 
@@ -276,6 +280,7 @@ def equal_attributes(obj1, obj2, attributes):
 class WeakKeyCache:
 
     def __init__(self, default_factory):
+        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
 
