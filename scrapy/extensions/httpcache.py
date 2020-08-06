@@ -245,7 +245,7 @@ class DbmCacheStorage:
         return response
 
     def store_response(self, spider, request, response):
-        key = self._fingerprinter.fingerprint(request)
+        key = self._fingerprinter.fingerprint(request).hex()
         data = {
             'status': response.status,
             'url': response.url,
@@ -256,7 +256,7 @@ class DbmCacheStorage:
         self.db['%s_time' % key] = str(time())
 
     def _read_data(self, spider, request):
-        key = self._fingerprinter.fingerprint(request)
+        key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = '%s_time' % key
         if tkey not in db:
@@ -329,7 +329,7 @@ class FilesystemCacheStorage:
             f.write(request.body)
 
     def _get_request_path(self, spider, request):
-        key = self._fingerprinter.fingerprint(request)
+        key = self._fingerprinter.fingerprint(request).hex()
         return os.path.join(self.cachedir, spider.name, key[0:2], key)
 
     def _read_meta(self, spider, request):

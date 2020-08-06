@@ -125,7 +125,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             def fingerprint(self, request):
                 fp = hashlib.sha1()
                 fp.update(to_bytes(request.url.lower()))
-                return fp.hexdigest()
+                return fp.digest()
 
         case_insensitive_dupefilter = RFPDupeFilter(fingerprinter=RequestFingerprinter())
         case_insensitive_dupefilter.open()

@@ -393,10 +393,9 @@ A request fingerprinter is a class that must implement the following method:
 
 .. method:: fingerprint(self, request)
 
-   Return a :class:`str` that uniquely identifies *request*.
+   Return a :class:`bytes` object that uniquely identifies *request*.
 
-   The returned :class:`str` must be a valid filename. The hexadecimal
-   representation of a hash is recommended.
+   See also :ref:`request-fingerprint-restrictions`.
 
    :param request: request to fingerprint
    :type request: scrapy.http.Request
@@ -425,12 +424,11 @@ Additionally, it may also implement the following methods:
 
 The ``fingerprint`` method of the default request fingerprinter,
 :class:`scrapy.utils.request.RequestFingerprinter`, uses
-:func:`scrapy.utils.request.request_fingerprint` with its default parameters.
-For some common use cases you can use
-:func:`~scrapy.utils.request.request_fingerprint` as well in your
-``fingerprint`` method implementation:
+:func:`scrapy.utils.request.fingerprint` with its default parameters. For some
+common use cases you can use :func:`~scrapy.utils.request.fingerprint` as well
+in your ``fingerprint`` method implementation:
 
-.. autofunction:: scrapy.utils.request.request_fingerprint
+.. autofunction:: scrapy.utils.request.fingerprint
 
 For example, to take the value of a request header named ``X-ID`` into
 account::
@@ -439,18 +437,17 @@ account::
     REQUEST_FINGERPRINTER_CLASS = 'my_project.utils.RequestFingerprinter'
 
     # my_project/utils.py
-    from scrapy.utils.request import request_fingerprint
+    from scrapy.utils.request import fingerprint
 
     class RequestFingerprinter:
 
         def fingerprint(self, request):
-            return request_fingerprint(request, include_headers=['X-ID'])
+            return fingerprint(request, include_headers=['X-ID'])
 
 You can also write your own fingerprinting logic from scratch.
 
-However, if you do not use :func:`~scrapy.utils.request.request_fingerprint`,
-make sure you use :class:`~weakref.WeakKeyDictionary` to cache request
-fingerprints:
+However, if you do not use :func:`~scrapy.utils.request.fingerprint`, make sure
+you use :class:`~weakref.WeakKeyDictionary` to cache request fingerprints:
 
 -   Caching saves CPU by ensuring that fingerprints are calculated only once
     per request, and not once per Scrapy component that needs the fingerprint
@@ -474,23 +471,66 @@ URL canonicalization::
             if request not in self.cache:
                 fp = sha1()
                 fp.update(to_bytes(request.url))
-                self.cache[request] = fp.hexdigest()
+                self.cache[request] = fp.digest()
             return self.cache[request]
 
 If you need to be able to override the request fingerprinting for arbitrary
 requests from your spider callbacks, you may implement a request fingerprinter
 that reads fingerprints from :attr:`request.meta <scrapy.http.Request.meta>`
 when available, and then falls back to
-:func:`~scrapy.utils.request.request_fingerprint`. For example::
+:func:`~scrapy.utils.request.fingerprint`. For example::
 
-    from scrapy.utils.request import request_fingerprint
+    from scrapy.utils.request import fingerprint
 
     class RequestFingerprinter:
 
         def fingerprint(self, request):
             if 'fingerprint' in request.meta:
                 return request.meta['fingerprint']
-            return request_fingerprint(request)
+            return fingerprint(request)
+
+
+.. _request-fingerprint-restrictions:
+
+Request fingerprint restrictions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Scrapy components that use request fingerprints may impose additional
+restrictions on the format of the fingerprints that your :ref:`request
+fingerprinter <custom-request-fingerprinter>` generates.
+
+The following built-in Scrapy components have such restrictions:
+
+-   :class:`scrapy.extensions.httpcache.FilesystemCacheStorage` (default
+    value of :setting:`HTTPCACHE_STORAGE`)
+
+    Request fingerprints must be at least 1 byte long.
+
+    Path and filename length limits of the file system of
+    :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
+    the following directory structure is created:
+
+    -   :attr:`Spider.name <scrapy.spiders.Spider.name>`
+
+        -   first byte of a request fingerprint as hexadecimal
+
+            -   fingerprint as hexadecimal
+
+                -   filenames up to 16 characters long
+
+    For example, if a request fingerprint is made of 20 bytes (default),
+    :setting:`HTTPCACHE_DIR` is ``'/home/user/project/.scrapy/httpcache'``,
+    and the name of your spider is ``'my_spider'`` your file system must
+    support a file path like::
+
+        /home/user/project/.scrapy/httpcache/my_spider/01/0123456789abcdef0123456789abcdef01234567/response_headers
+
+-   :class:`scrapy.extensions.httpcache.DbmCacheStorage`
+
+    The underlying DBM implementation must support keys as long as twice
+    the number of bytes of a request fingerprint, plus 5. For example,
+    if a request fingerprint is made of 20 bytes (default),
+    45-character-long keys must be supported.
 
 
 .. _topics-request-meta:
