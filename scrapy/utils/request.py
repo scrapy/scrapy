@@ -26,7 +26,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
     The request fingerprint is a hash that uniquely identifies the resource the
     request points to. For example, take the following two urls:
 
-    http://www.example.com/query?id=111&cat=222_fingerprint_cache
+    http://www.example.com/query?id=111&cat=222
     http://www.example.com/query?cat=222&id=111
 
     Even though those are two different URLs both point to the same resource
@@ -80,7 +80,7 @@ def fingerprint(request, include_headers=None, keep_fragments=False):
     The request fingerprint is a hash that uniquely identifies the resource the
     request points to. For example, take the following two urls:
 
-    http://www.example.com/query?id=111&cat=222_fingerprint_cache
+    http://www.example.com/query?id=111&cat=222
     http://www.example.com/query?cat=222&id=111
 
     Even though those are two different URLs both point to the same resource
