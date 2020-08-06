@@ -350,9 +350,9 @@ Request fingerprints
 
 There are some aspects of scraping, such as filtering out duplicate requests
 (see :setting:`DUPEFILTER_CLASS`) or caching responses (see
-:class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`), where you
-need the ability to generate a short, unique identifier from a
-:class:`~scrapy.http.Request` object: a request fingerprint.
+:setting:`HTTPCACHE_POLICY`), where you need the ability to generate a short,
+unique identifier from a :class:`~scrapy.http.Request` object: a request
+fingerprint.
 
 You often do not need to worry about request fingerprints, the default request
 fingerprinter works for most projects.
