@@ -6,6 +6,8 @@ from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 from warnings import warn
 
+from itemadapter import is_item
+
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
@@ -119,9 +121,6 @@ class MediaPipeline:
 
     def _make_compatible(self):
         """Make overridable methods of MediaPipeline and subclasses backwards compatible"""
-        # methods = [self.file_path, self.media_to_download, self.media_downloaded]
-        # self.file_downloaded, self.image_downloaded, self.get_images
-
         methods = [
             "file_path", "media_to_download", "media_downloaded",
             "file_downloaded", "image_downloaded", "get_images"
@@ -130,7 +129,7 @@ class MediaPipeline:
         for method_name in methods:
             method = getattr(self, method_name, None)
             if callable(method):
-                method = self._compatible(method)
+                setattr(self, method_name, self._compatible(method))
 
     def _compatible(self, func):
         """Wrapper for overridable methods to allow backwards compatibility"""
@@ -141,9 +140,11 @@ class MediaPipeline:
         def wrapper(*args, **kwargs):
             if self._expects_item[func.__name__]:
                 return func(*args, **kwargs)
-            else:
+            elif 'item' in kwargs:
                 kwargs.pop('item', None)
-                return func(*args, **kwargs)
+            elif is_item(args[-1]):
+                args = args[:-1]
+            return func(*args, **kwargs)
 
         return wrapper
 
