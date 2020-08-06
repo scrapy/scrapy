@@ -120,30 +120,26 @@ class Scraper:
             response, request, deferred = slot.next_response_request_deferred()
             self._scrape(response, request, spider).chainDeferred(deferred)
 
-    def _scrape(self, response, request, spider):
-        """Handle the downloaded response or failure through the spider
-        callback/errback"""
-        if not isinstance(response, (Response, Failure)):
-            raise TypeError(
-                "Incorrect type: expected Response or Failure, got %s: %r"
-                % (type(response), response)
-            )
-
-        dfd = self._scrape2(response, request, spider)  # returns spider's processed output
-        dfd.addErrback(self.handle_spider_error, request, response, spider)
-        dfd.addCallback(self.handle_spider_output, request, response, spider)
+    def _scrape(self, result, request, spider):
+        """
+        Handle the downloaded response or failure through the spider callback/errback
+        """
+        if not isinstance(result, (Response, Failure)):
+            raise TypeError("Incorrect type: expected Response or Failure, got %s: %r" % (type(result), result))
+        dfd = self._scrape2(result, request, spider)  # returns spider's processed output
+        dfd.addErrback(self.handle_spider_error, request, result, spider)
+        dfd.addCallback(self.handle_spider_output, request, result, spider)
         return dfd
 
-    def _scrape2(self, request_result, request, spider):
-        """Handle the different cases of request's result been a Response or a
-        Failure"""
-        if not isinstance(request_result, Failure):
-            return self.spidermw.scrape_response(
-                self.call_spider, request_result, request, spider)
-        else:
-            dfd = self.call_spider(request_result, request, spider)
-            return dfd.addErrback(
-                self._log_download_errors, request_result, request, spider)
+    def _scrape2(self, result, request, spider):
+        """
+        Handle the different cases of request's result been a Response or a Failure
+        """
+        if isinstance(result, Response):
+            return self.spidermw.scrape_response(self.call_spider, result, request, spider)
+        else:  # result is a Failure
+            dfd = self.call_spider(result, request, spider)
+            return dfd.addErrback(self._log_download_errors, result, request, spider)
 
     def call_spider(self, result, request, spider):
         if isinstance(result, Response):
@@ -153,8 +149,7 @@ class Scraper:
             warn_on_generator_with_return_value(spider, callback)
             dfd = defer_succeed(result)
             dfd.addCallback(callback, **result.request.cb_kwargs)
-        else:
-            assert isinstance(result, Failure)
+        else:  # result is a Failure
             result.request = request
             warn_on_generator_with_return_value(spider, request.errback)
             dfd = defer_fail(result)
