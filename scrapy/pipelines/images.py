@@ -105,11 +105,11 @@ class ImagesPipeline(FilesPipeline):
         return cls(store_uri, settings=settings)
 
     def file_downloaded(self, response, request, info, item=None):
-        return self.image_downloaded(response, request, info, item)
+        return self.image_downloaded(response, request, info, item=item)
 
     def image_downloaded(self, response, request, info, item=None):
         checksum = None
-        for path, image, buf in self.get_images(response, request, info, item):
+        for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
