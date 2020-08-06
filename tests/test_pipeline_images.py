@@ -12,9 +12,7 @@ from twisted.trial import unittest
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
-from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.python import to_bytes
 
 
@@ -122,38 +120,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         converted, _ = self.pipeline.convert_image(im)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-    def test_image_downloaded_backwards_compatibility(self):
-        class CustomImagesPipeline(ImagesPipeline):
-            def image_downloaded(self, response, request, info):
-                return 'checksum of file'
-
-        image_downloaded = CustomImagesPipeline(self.tempdir, download_func=_mocked_download_func).image_downloaded
-        response, request, info = dict(), Request("http://example.com"), dict()
-        self.assertEqual(image_downloaded(response, request, info), 'checksum of file')
-        warning = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            'image_downloaded(self, response, request, info) is deprecated, '
-            'please use image_downloaded(self, response, request, info, item=None)'
-        )
-        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
-        self.assertEqual(message, warning[0]['message'])
-
-    def test_get_images_backwards_compatibility(self):
-        class CustomImagesPipeline(ImagesPipeline):
-            def get_images(self, response, request, info):
-                return 'checksum of file'
-
-        get_images = CustomImagesPipeline(self.tempdir, download_func=_mocked_download_func).get_images
-        response, request, info = dict(), Request("http://example.com"), dict()
-        self.assertEqual(get_images(response, request, info), 'checksum of file')
-        warning = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            'get_images(self, response, request, info) is deprecated, '
-            'please use get_images(self, response, request, info, item=None)'
-        )
-        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
-        self.assertEqual(message, warning[0]['message'])
 
 
 class DeprecatedImagesPipeline(ImagesPipeline):

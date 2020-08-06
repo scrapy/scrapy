@@ -21,10 +21,8 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
-from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.test import (
     assert_aws_environ,
     assert_gcs_environ,
@@ -175,44 +173,6 @@ class FilesPipelineTestCase(unittest.TestCase):
         item = dict(path='path-to-store-file')
         request = Request("http://example.com")
         self.assertEqual(file_path(request, item=item), 'full/path-to-store-file')
-
-    def test_file_path_backwards_compatibility(self):
-        """
-        Test file_path method without `item` parameter in its signature
-        """
-        class CustomFilesPipeline(FilesPipeline):
-            def file_path(self, request, response=None, info=None):
-                return 'full/%s' % 'path'
-
-        file_path = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_path
-        request = Request("http://example.com")
-        self.assertEqual(file_path(request), 'full/path')
-        warning = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            'file_path(self, request, response=None, info=None) is deprecated, '
-            'please use file_path(self, request, response=None, info=None, item=None)'
-        )
-        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
-        self.assertEqual(message, warning[0]['message'])
-
-    def test_file_downloaded_backwards_compatibility(self):
-        """
-        Test file_downloaded method without `item` parameter in its signature
-        """
-        class CustomFilesPipeline(FilesPipeline):
-            def file_downloaded(self, response, request, info):
-                return 'checksum of file'
-
-        file_downloaded = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_downloaded
-        response, request, info = dict(), Request("http://example.com"), dict()
-        self.assertEqual(file_downloaded(response, request, info), 'checksum of file')
-        warning = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            'file_downloaded(self, response, request, info) is deprecated, '
-            'please use file_downloaded(self, response, request, info, item=None)'
-        )
-        self.assertEqual(ScrapyDeprecationWarning, warning[0]['category'])
-        self.assertEqual(message, warning[0]['message'])
 
 
 class FilesPipelineTestCaseFieldsMixin:
