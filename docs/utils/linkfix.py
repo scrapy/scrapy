@@ -29,7 +29,7 @@ def main():
     try:
         with open("build/linkcheck/output.txt") as out:
             output_lines = out.readlines()
-    except IOError:
+    except OSError:
         print("linkcheck output not found; please run linkcheck first.")
         exit(1)
 

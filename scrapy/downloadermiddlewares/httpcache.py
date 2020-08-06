@@ -22,7 +22,7 @@ class HttpCacheMiddleware:
     DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError)
+                           OSError)
 
     def __init__(self, settings, stats):
         if not settings.getbool('HTTPCACHE_ENABLED'):

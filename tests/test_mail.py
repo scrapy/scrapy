@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import unittest
 from io import BytesIO
 from email.charset import Charset

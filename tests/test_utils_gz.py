@@ -24,7 +24,7 @@ class GunzipTest(unittest.TestCase):
 
     def test_gunzip_no_gzip_file_raises(self):
         with open(join(SAMPLEDIR, 'feed-sample1.xml'), 'rb') as f:
-            self.assertRaises(IOError, gunzip, f.read())
+            self.assertRaises(OSError, gunzip, f.read())
 
     def test_gunzip_truncated_short(self):
         with open(join(SAMPLEDIR, 'truncated-crc-error-short.gz'), 'rb') as f:

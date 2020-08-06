@@ -18,7 +18,7 @@ class ItemPipelineManager(MiddlewareManager):
         return build_component_list(settings.getwithbase('ITEM_PIPELINES'))
 
     def _add_middleware(self, pipe):
-        super(ItemPipelineManager, self)._add_middleware(pipe)
+        super()._add_middleware(pipe)
         if hasattr(pipe, 'process_item'):
             self.methods['process_item'].append(deferred_f_from_coro_f(pipe.process_item))
 

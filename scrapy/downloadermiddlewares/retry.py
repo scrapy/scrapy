@@ -33,12 +33,12 @@ logger = logging.getLogger(__name__)
 
 class RetryMiddleware:
 
-    # IOError is raised by the HttpCompression middleware when trying to
+    # OSError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
     EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
-                           IOError, TunnelError)
+                           OSError, TunnelError)
 
     def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
