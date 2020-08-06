@@ -42,10 +42,7 @@ class Command(ScrapyCommand):
 
     def _is_valid_name(self, project_name):
         def _module_exists(module_name):
-            try:
-                spec = find_spec(module_name)
-            except ModuleNotFoundError:
-                return False
+            spec = find_spec(module_name)
             return spec is not None and spec.loader is not None
 
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
