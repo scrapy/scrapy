@@ -93,7 +93,7 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://site.local/disallowed", "*"))
 
     def test_unicode_url_and_useragent(self):
-        robotstxt_robotstxt_body = u"""
+        robotstxt_robotstxt_body = """
         User-Agent: *
         Disallow: /admin/
         Disallow: /static/
@@ -107,17 +107,17 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://site.local/", "*"))
         self.assertFalse(rp.allowed("https://site.local/admin/", "*"))
         self.assertFalse(rp.allowed("https://site.local/static/", "*"))
-        self.assertTrue(rp.allowed("https://site.local/admin/", u"UnicödeBöt"))
+        self.assertTrue(rp.allowed("https://site.local/admin/", "UnicödeBöt"))
         self.assertFalse(rp.allowed("https://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:", "*"))
-        self.assertFalse(rp.allowed(u"https://site.local/wiki/Käyttäjä:", "*"))
+        self.assertFalse(rp.allowed("https://site.local/wiki/Käyttäjä:", "*"))
         self.assertTrue(rp.allowed("https://site.local/some/randome/page.html", "*"))
-        self.assertFalse(rp.allowed("https://site.local/some/randome/page.html", u"UnicödeBöt"))
+        self.assertFalse(rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt"))
 
 
 class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
     def setUp(self):
         from scrapy.robotstxt import PythonRobotParser
-        super(PythonRobotParserTest, self)._setUp(PythonRobotParser)
+        super()._setUp(PythonRobotParser)
 
     def test_length_based_precedence(self):
         raise unittest.SkipTest("RobotFileParser does not support length based directives precedence.")
@@ -132,7 +132,7 @@ class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def setUp(self):
         from scrapy.robotstxt import ReppyRobotParser
-        super(ReppyRobotParserTest, self)._setUp(ReppyRobotParser)
+        super()._setUp(ReppyRobotParser)
 
     def test_order_based_precedence(self):
         raise unittest.SkipTest("Reppy does not support order based directives precedence.")
@@ -144,7 +144,7 @@ class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def setUp(self):
         from scrapy.robotstxt import RerpRobotParser
-        super(RerpRobotParserTest, self)._setUp(RerpRobotParser)
+        super()._setUp(RerpRobotParser)
 
     def test_length_based_precedence(self):
         raise unittest.SkipTest("Rerp does not support length based directives precedence.")
@@ -156,7 +156,7 @@ class ProtegoRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def setUp(self):
         from scrapy.robotstxt import ProtegoRobotParser
-        super(ProtegoRobotParserTest, self)._setUp(ProtegoRobotParser)
+        super()._setUp(ProtegoRobotParser)
 
     def test_order_based_precedence(self):
         raise unittest.SkipTest("Protego does not support order based directives precedence.")

@@ -20,7 +20,7 @@ def _with_mkdir(queue_class):
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
 
-            super(DirectoriesCreated, self).__init__(path, *args, **kwargs)
+            super().__init__(path, *args, **kwargs)
 
     return DirectoriesCreated
 
@@ -31,10 +31,10 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
         def push(self, obj):
             s = serialize(obj)
-            super(SerializableQueue, self).push(s)
+            super().push(s)
 
         def pop(self):
-            s = super(SerializableQueue, self).pop()
+            s = super().pop()
             if s:
                 return deserialize(s)
 
@@ -47,7 +47,7 @@ def _scrapy_serialization_queue(queue_class):
 
         def __init__(self, crawler, key):
             self.spider = crawler.spider
-            super(ScrapyRequestQueue, self).__init__(key)
+            super().__init__(key)
 
         @classmethod
         def from_crawler(cls, crawler, key, *args, **kwargs):
@@ -55,10 +55,10 @@ def _scrapy_serialization_queue(queue_class):
 
         def push(self, request):
             request = request_to_dict(request, self.spider)
-            return super(ScrapyRequestQueue, self).push(request)
+            return super().push(request)
 
         def pop(self):
-            request = super(ScrapyRequestQueue, self).pop()
+            request = super().pop()
 
             if not request:
                 return None

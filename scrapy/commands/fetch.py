@@ -19,8 +19,10 @@ class Command(ScrapyCommand):
         return "Fetch a URL using the Scrapy downloader"
 
     def long_desc(self):
-        return "Fetch a URL using the Scrapy downloader and print its content " \
-            "to stdout. You may want to use --nolog to disable logging"
+        return (
+            "Fetch a URL using the Scrapy downloader and print its content"
+            " to stdout. You may want to use --nolog to disable logging"
+        )
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

@@ -3,6 +3,139 @@
 Release notes
 =============
 
+.. _release-2.3.0:
+
+Scrapy 2.3.0 (2020-08-04)
+-------------------------
+
+Highlights:
+
+*   :ref:`Feed exports <topics-feed-exports>` now support :ref:`Google Cloud
+    Storage <topics-feed-storage-gcs>` as a storage backend
+
+*   The new :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting allows to deliver
+    output items in batches of up to the specified number of items.
+
+    It also serves as a workaround for :ref:`delayed file delivery
+    <delayed-file-delivery>`, which causes Scrapy to only start item delivery
+    after the crawl has finished when using certain storage backends
+    (:ref:`S3 <topics-feed-storage-s3>`, :ref:`FTP <topics-feed-storage-ftp>`,
+    and now :ref:`GCS <topics-feed-storage-gcs>`).
+
+*   The base implementation of :ref:`item loaders <topics-loaders>` has been
+    moved into a separate library, :doc:`itemloaders <itemloaders:index>`,
+    allowing usage from outside Scrapy and a separate release schedule
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   Removed the following classes and their parent modules from
+    ``scrapy.linkextractors``:
+
+    *   ``htmlparser.HtmlParserLinkExtractor``
+    *   ``regex.RegexLinkExtractor``
+    *   ``sgml.BaseSgmlLinkExtractor``
+    *   ``sgml.SgmlLinkExtractor``
+
+    Use
+    :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    instead (:issue:`4356`, :issue:`4679`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   The ``scrapy.utils.python.retry_on_eintr`` function is now deprecated
+    (:issue:`4683`)
+
+
+New features
+~~~~~~~~~~~~
+
+*   :ref:`Feed exports <topics-feed-exports>` support :ref:`Google Cloud
+    Storage <topics-feed-storage-gcs>` (:issue:`685`, :issue:`3608`)
+
+*   New :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` setting for batch deliveries
+    (:issue:`4250`, :issue:`4434`)
+
+*   The :command:`parse` command now allows specifying an output file
+    (:issue:`4317`, :issue:`4377`)
+
+*   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
+    :func:`~scrapy.utils.curl.curl_to_request_kwargs` now also support
+    ``--data-raw`` (:issue:`4612`)
+
+*   A ``parse`` callback may now be used in built-in spider subclasses, such
+    as :class:`~scrapy.spiders.CrawlSpider` (:issue:`712`, :issue:`732`,
+    :issue:`781`, :issue:`4254` )
+
+
+Bug fixes
+~~~~~~~~~
+
+*   Fixed the :ref:`CSV exporting <topics-feed-format-csv>` of
+    :ref:`dataclass items <dataclass-items>` and :ref:`attr.s items
+    <attrs-items>` (:issue:`4667`, :issue:`4668`)
+
+*   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
+    :func:`~scrapy.utils.curl.curl_to_request_kwargs` now set the request
+    method to ``POST`` when a request body is specified and no request method
+    is specified (:issue:`4612`)
+
+*   The processing of ANSI escape sequences in enabled in Windows 10.0.14393
+    and later, where it is required for colored output (:issue:`4393`,
+    :issue:`4403`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   Updated the `OpenSSL cipher list format`_ link in the documentation about
+    the :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` setting (:issue:`4653`)
+
+*   Simplified the code example in :ref:`topics-loaders-dataclass`
+    (:issue:`4652`)
+
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+*   The base implementation of :ref:`item loaders <topics-loaders>` has been
+    moved into :doc:`itemloaders <itemloaders:index>` (:issue:`4005`,
+    :issue:`4516`)
+
+*   Fixed a silenced error in some scheduler tests (:issue:`4644`,
+    :issue:`4645`)
+
+*   Renewed the localhost certificate used for SSL tests (:issue:`4650`)
+
+*   Removed cookie-handling code specific to Python 2 (:issue:`4682`)
+
+*   Stopped using Python 2 unicode literal syntax (:issue:`4704`)
+
+*   Stopped using a backlash for line continuation (:issue:`4673`)
+
+*   Removed unneeded entries from the MyPy exception list (:issue:`4690`)
+
+*   Automated tests now pass on Windows as part of our continuous integration
+    system (:issue:`4458`)
+
+*   Automated tests now pass on the latest PyPy version for supported Python
+    versions in our continuous integration system (:issue:`4504`)
+
+
+.. _release-2.2.1:
+
+Scrapy 2.2.1 (2020-07-17)
+-------------------------
+
+*   The :command:`startproject` command no longer makes unintended changes to
+    the permissions of files in the destination folder, such as removing
+    execution permissions (:issue:`4662`, :issue:`4666`)
+
+
 .. _release-2.2.0:
 
 Scrapy 2.2.0 (2020-06-24)

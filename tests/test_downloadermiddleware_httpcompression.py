@@ -5,8 +5,7 @@ from gzip import GzipFile
 
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
-from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, \
-    ACCEPTED_ENCODINGS
+from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, ACCEPTED_ENCODINGS
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from tests import tests_datadir

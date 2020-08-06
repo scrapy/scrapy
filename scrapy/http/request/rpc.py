@@ -31,5 +31,5 @@ class XmlRpcRequest(Request):
         if encoding is not None:
             kwargs['encoding'] = encoding
 
-        super(XmlRpcRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.headers.setdefault('Content-Type', 'text/xml')

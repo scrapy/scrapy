@@ -101,11 +101,13 @@ def get_config(use_closest=True):
 
 
 def get_sources(use_closest=True):
-    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or \
-        os.path.expanduser('~/.config')
-    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
-               xdg_config_home + '/scrapy.cfg',
-               os.path.expanduser('~/.scrapy.cfg')]
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
+    sources = [
+        '/etc/scrapy.cfg',
+        r'c:\scrapy\scrapy.cfg',
+        xdg_config_home + '/scrapy.cfg',
+        os.path.expanduser('~/.scrapy.cfg'),
+    ]
     if use_closest:
         sources.append(closest_scrapy_cfg())
     return sources
@@ -113,6 +115,7 @@ def get_sources(use_closest=True):
 
 def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
+    out.setdefault("batch_item_count", settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT'))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))

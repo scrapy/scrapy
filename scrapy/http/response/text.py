@@ -35,13 +35,13 @@ class TextResponse(Response):
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
-        super(TextResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _set_url(self, url):
         if isinstance(url, str):
             self._url = to_unicode(url, self.encoding)
         else:
-            super(TextResponse, self)._set_url(url)
+            super()._set_url(url)
 
     def _set_body(self, body):
         self._body = b''  # used by encoding detection
@@ -51,7 +51,7 @@ class TextResponse(Response):
                                 type(self).__name__)
             self._body = body.encode(self._encoding)
         else:
-            super(TextResponse, self)._set_body(body)
+            super()._set_body(body)
 
     def replace(self, *args, **kwargs):
         kwargs.setdefault('encoding', self.encoding)
@@ -62,8 +62,11 @@ class TextResponse(Response):
         return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
-        return self._encoding or self._headers_encoding() \
+        return (
+            self._encoding
+            or self._headers_encoding()
             or self._body_declared_encoding()
+        )
 
     def body_as_unicode(self):
         """Return body as unicode"""
@@ -163,7 +166,7 @@ class TextResponse(Response):
         elif isinstance(url, parsel.SelectorList):
             raise ValueError("SelectorList is not supported")
         encoding = self.encoding if encoding is None else encoding
-        return super(TextResponse, self).follow(
+        return super().follow(
             url=url,
             callback=callback,
             method=method,
@@ -223,7 +226,7 @@ class TextResponse(Response):
             for sel in selectors:
                 with suppress(_InvalidSelector):
                     urls.append(_url_from_selector(sel))
-        return super(TextResponse, self).follow_all(
+        return super().follow_all(
             urls=urls,
             callback=callback,
             method=method,
