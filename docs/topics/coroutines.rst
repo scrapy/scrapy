@@ -116,6 +116,31 @@ iterables and choose one at run time::
                 return self._normal_process_start_requests(start_requests, spider)
 
 
+.. _async-start_requests-queue:
+
+Queue behavior with asynchronous start_requests
+===============================================
+
+.. versionadded:: 2.x
+
+By default the requests produced by
+:meth:`~scrapy.spiders.Spider.start_requests` don't follow the usual request
+priorities: they are only scheduled while the downloader queue is empty. In
+practice this often means that after some initial requests are scheduled (the
+number depends on the spider concurrency settings), only the requests produced
+by callbacks are scheduled. This behavior is inconvenient, confusing and
+requires workarounds (such as calling ``self.crawler.engine.schedule(request)``
+directly), but changing it would be backwards-incompatible.
+
+A better behavior, which should treat requests from
+:meth:`~scrapy.spiders.Spider.start_requests` in the same way as other
+requests, is enabled when :meth:`~scrapy.spiders.Spider.start_requests` is an
+async function (declared using ``async def``). It doesn't need to contain
+``await`` for this to work, so if you want the new queue behavior, you can just
+change ``def`` to ``async def``. Note though, that using ``yield`` statements
+inside an async function makes it an async generator which are only supported
+since Python 3.6.
+
 Usage
 =====
 
