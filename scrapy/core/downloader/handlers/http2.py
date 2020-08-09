@@ -6,7 +6,7 @@ from urllib.parse import urldefrag
 from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
-from twisted.web.client import URI
+from twisted.web.client import URI, BrowserLikePolicyForHTTPS
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
@@ -45,19 +45,24 @@ class ScrapyProxyH2Agent(H2Agent):
     def __init__(
         self, reactor: ReactorBase,
         proxy_uri: URI, pool: H2ConnectionPool,
+        context_factory=BrowserLikePolicyForHTTPS(),
         connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
     ) -> None:
         super(ScrapyProxyH2Agent, self).__init__(
             reactor=reactor,
             pool=pool,
+            context_factory=context_factory,
             connect_timeout=connect_timeout,
             bind_address=bind_address
         )
         self._proxy_uri = proxy_uri
 
-    @staticmethod
-    def get_key(uri: URI) -> Tuple:
-        return "http-proxy", uri.host, uri.port
+    def get_endpoint(self, uri: URI):
+        return self.endpoint_factory.endpointForURI(self._proxy_uri)
+
+    def get_key(self, uri: URI) -> Tuple:
+        """We use the proxy uri instead of uri obtained from request url"""
+        return "http-proxy", self._proxy_uri.host, self._proxy_uri.port
 
 
 class ScrapyH2Agent:
@@ -100,6 +105,7 @@ class ScrapyH2Agent:
             else:
                 return self._ProxyAgent(
                     reactor=reactor,
+                    context_factory=self._context_factory,
                     proxy_uri=URI.fromBytes(bytes(proxy, encoding='ascii')),
                     connect_timeout=timeout,
                     bind_address=bind_address,

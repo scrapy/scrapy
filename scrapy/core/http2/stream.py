@@ -185,13 +185,31 @@ class Stream:
         if url.query:
             path += '?' + url.query
 
+        # This pseudo-header field MUST NOT be empty for "http" or "https"
+        # URIs; "http" or "https" URIs that do not contain a path component
+        # MUST include a value of '/'. The exception to this rule is an
+        # OPTIONS request for an "http" or "https" URI that does not include
+        # a path component; these MUST include a ":path" pseudo-header field
+        # with a value of '*' (refer RFC 7540 - Section 8.1.2.3)
+        if not path:
+            if self._request.method == 'OPTIONS':
+                path = path or '*'
+            else:
+                path = path or '/'
+
         # Make sure pseudo-headers comes before all the other headers
         headers = [
             (':method', self._request.method),
             (':authority', url.netloc),
-            (':scheme', self._protocol.metadata['uri'].scheme),
-            (':path', path),
         ]
+
+        # The ":scheme" and ":path" pseudo-header fields MUST
+        # be omitted for CONNECT method (refer RFC 7540 - Section 8.3)
+        if self._request.method != 'CONNECT':
+            headers += [
+                (':scheme', self._protocol.metadata['uri'].scheme),
+                (':path', path),
+            ]
 
         for name, value in self._request.headers.items():
             headers.append((str(name, 'utf-8'), str(value[0], 'utf-8')))

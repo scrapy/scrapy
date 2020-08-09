@@ -786,7 +786,10 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'http://example.com')
+            self.assertTrue(
+                response.body == b'http://example.com'  # HTTP/1.x
+                or response.body == b'/'  # HTTP/2
+            )
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
@@ -796,10 +799,13 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'https://example.com')
+            self.assertTrue(
+                response.body == b'http://example.com'  # HTTP/1.x
+                or response.body == b'/'  # HTTP/2
+            )
 
         http_proxy = '%s?noconnect' % self.getURL('')
-        request = Request('https://example.com', meta={'proxy': http_proxy})
+        request = Request('http://example.com', meta={'proxy': http_proxy})
         with self.assertWarnsRegex(ScrapyDeprecationWarning,
                                    r'Using HTTPS proxies in the noconnect mode is deprecated'):
             return self.download_request(request, Spider('foo')).addCallback(_test)
@@ -836,9 +842,29 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         self.assertIn(domain, timeout.osError)
 
 
-# TODO:
-class Http2ProxyTestCase(Http11ProxyTestCase):
+class Https2ProxyTestCase(Http11ProxyTestCase):
+    # only used for HTTPS tests
+    keyfile = 'keys/localhost.key'
+    certfile = 'keys/localhost.crt'
+
+    scheme = 'https'
+    host = u'127.0.0.1'
+
     download_handler_cls = H2DownloadHandler
+
+    def setUp(self):
+        site = server.Site(UriResource(), timeout=None)
+        self.port = reactor.listenSSL(
+            0, site,
+            ssl_context_factory(self.keyfile, self.certfile),
+            interface=self.host
+        )
+        self.portno = self.port.getHost().port
+        self.download_handler = create_instance(self.download_handler_cls, None, get_crawler())
+        self.download_request = self.download_handler.download_request
+
+    def getURL(self, path):
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
 
 class HttpDownloadHandlerMock:
