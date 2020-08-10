@@ -171,7 +171,7 @@ class MockedMediaPipeline(MediaPipeline):
         self._mockcalled.append('download')
         return super(MockedMediaPipeline, self).download(request, info)
 
-    def media_to_download(self, request, info, item=None):
+    def media_to_download(self, request, info, *, item=None):
         self._mockcalled.append('media_to_download')
         if 'result' in request.meta:
             return request.meta.get('result')
@@ -181,7 +181,7 @@ class MockedMediaPipeline(MediaPipeline):
         self._mockcalled.append('get_media_requests')
         return item.get('requests')
 
-    def media_downloaded(self, response, request, info, item=None):
+    def media_downloaded(self, response, request, info, *, item=None):
         self._mockcalled.append('media_downloaded')
         return super(MockedMediaPipeline, self).media_downloaded(response, request, info)
 
@@ -399,7 +399,7 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
         warnings = self.flushWarnings([MediaPipeline._compatible])
         message = (
             'media_to_download(self, request, info) is deprecated, '
-            'please use media_to_download(self, request, info, item=None)'
+            'please use media_to_download(self, request, info, *, item=None)'
         )
         self._assert_method_called_with_warnings('media_to_download', message, warnings)
 
@@ -409,7 +409,7 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
         warnings = self.flushWarnings([MediaPipeline._compatible])
         message = (
             'media_downloaded(self, response, request, info) is deprecated, '
-            'please use media_downloaded(self, response, request, info, item=None)'
+            'please use media_downloaded(self, response, request, info, *, item=None)'
         )
         self._assert_method_called_with_warnings('media_downloaded', message, warnings)
 
@@ -419,7 +419,7 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
         warnings = self.flushWarnings([MediaPipeline._compatible])
         message = (
             'file_downloaded(self, response, request, info) is deprecated, '
-            'please use file_downloaded(self, response, request, info, item=None)'
+            'please use file_downloaded(self, response, request, info, *, item=None)'
         )
         self._assert_method_called_with_warnings('file_downloaded', message, warnings)
 
@@ -429,7 +429,7 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
         warnings = self.flushWarnings([MediaPipeline._compatible])
         message = (
             'file_path(self, request, response=None, info=None) is deprecated, '
-            'please use file_path(self, request, response=None, info=None, item=None)'
+            'please use file_path(self, request, response=None, info=None, *, item=None)'
         )
         self._assert_method_called_with_warnings('file_path', message, warnings)
 
@@ -439,7 +439,7 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
         warnings = self.flushWarnings([MediaPipeline._compatible])
         message = (
             'get_images(self, response, request, info) is deprecated, '
-            'please use get_images(self, response, request, info, item=None)'
+            'please use get_images(self, response, request, info, *, item=None)'
         )
         self._assert_method_called_with_warnings('get_images', message, warnings)
 
@@ -449,7 +449,7 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
         warnings = self.flushWarnings([MediaPipeline._compatible])
         message = (
             'image_downloaded(self, response, request, info) is deprecated, '
-            'please use image_downloaded(self, response, request, info, item=None)'
+            'please use image_downloaded(self, response, request, info, *, item=None)'
         )
         self._assert_method_called_with_warnings('image_downloaded', message, warnings)
 
