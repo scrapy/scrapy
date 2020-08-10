@@ -315,8 +315,8 @@ class HttpTestCase(unittest.TestCase):
         host = self.host + ':' + str(self.portno)
 
         def _test(response):
-            self.assertEqual(response.body, bytes(host, 'utf-8'))
-            self.assertEqual(request.headers.get('Host'), bytes(host, 'utf-8'))
+            self.assertEqual(response.body, to_bytes(host))
+            self.assertEqual(request.headers.get('Host'), to_bytes(host))
 
         request = Request(self.getURL('host'), headers={'Host': host})
         return self.download_request(request, Spider('foo')).addCallback(_test)
@@ -764,6 +764,7 @@ class UriResource(resource.Resource):
 
 class HttpProxyTestCase(unittest.TestCase):
     download_handler_cls = HTTPDownloadHandler
+    expected_http_proxy_request_body = b'http://example.com'
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
@@ -786,10 +787,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.url, request.url)
-            self.assertTrue(
-                response.body == b'http://example.com'  # HTTP/1.x
-                or response.body == b'/'  # HTTP/2
-            )
+            self.assertEqual(response.body, self.expected_http_proxy_request_body)
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
@@ -799,13 +797,10 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.url, request.url)
-            self.assertTrue(
-                response.body == b'http://example.com'  # HTTP/1.x
-                or response.body == b'/'  # HTTP/2
-            )
+            self.assertEqual(response.body, b'https://example.com')
 
         http_proxy = '%s?noconnect' % self.getURL('')
-        request = Request('http://example.com', meta={'proxy': http_proxy})
+        request = Request('https://example.com', meta={'proxy': http_proxy})
         with self.assertWarnsRegex(ScrapyDeprecationWarning,
                                    r'Using HTTPS proxies in the noconnect mode is deprecated'):
             return self.download_request(request, Spider('foo')).addCallback(_test)
@@ -851,6 +846,7 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     host = u'127.0.0.1'
 
     download_handler_cls = H2DownloadHandler
+    expected_http_proxy_request_body = b'/'
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
@@ -865,6 +861,21 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
 
     def getURL(self, path):
         return f"{self.scheme}://{self.host}:{self.portno}/{path}"
+
+    def test_download_with_proxy_https_noconnect(self):
+        def _test(response):
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.body, b'/')
+
+        http_proxy = '%s?noconnect' % self.getURL('')
+        request = Request('https://example.com', meta={'proxy': http_proxy})
+        with self.assertWarnsRegex(
+            Warning,
+            r'Using HTTPS proxies in the noconnect mode is not supported by the '
+            r'downloader handler.'
+        ):
+            return self.download_request(request, Spider('foo')).addCallback(_test)
 
 
 class HttpDownloadHandlerMock:

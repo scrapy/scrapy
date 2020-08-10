@@ -192,10 +192,7 @@ class Stream:
         # a path component; these MUST include a ":path" pseudo-header field
         # with a value of '*' (refer RFC 7540 - Section 8.1.2.3)
         if not path:
-            if self._request.method == 'OPTIONS':
-                path = path or '*'
-            else:
-                path = path or '/'
+            path = '*' if self._request.method == 'OPTIONS' else '/'
 
         # Make sure pseudo-headers comes before all the other headers
         headers = [

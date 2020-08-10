@@ -620,8 +620,8 @@ handler (without replacement), place this in your ``settings.py``::
         'ftp': None,
     }
 
-The default https handler uses HTTP/1.x, to use HTTP/2.0 update :setting:`DOWNLOAD_HANDLERS`
-as::
+The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
+:setting:`DOWNLOAD_HANDLERS` as follows::
 
     DOWNLOAD_HANDLERS = {
         'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
@@ -706,11 +706,12 @@ Optionally, this can be set per-request basis by using the
 
 .. warning::
 
-    This is ignored when :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    is set as ``https`` download handler in :setting:`DOWNLOAD_HANDLERS`. In
-    case of data loss error the connection may be corrupted affecting other streams,
-    hence all streams return with the ``ResponseFailed([InvalidBodyLengthError])``
-    failure.
+    This setting is ignored by the
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
+    download handler (see :setting:`DOWNLOAD_HANDLERS`). In case of a data loss
+    error, the corresponding HTTP/2 connection may be corrupted, affecting other
+    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
+    failure is always raised for every request that was using that connection.
 
 .. setting:: DUPEFILTER_CLASS
 
