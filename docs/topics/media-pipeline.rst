@@ -412,7 +412,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
 .. class:: FilesPipeline
 
-   .. method:: file_path(self, request, response=None, info=None, item=None)
+   .. method:: file_path(self, request, response=None, info=None, *, item=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
@@ -437,7 +437,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
         class MyFilesPipeline(FilesPipeline):
 
-            def file_path(self, request, response=None, info=None, item=None):
+            def file_path(self, request, response=None, info=None, *, item=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
@@ -548,7 +548,7 @@ See here the methods that you can override in your custom Images Pipeline:
     The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
     customizing the field names and adding custom behavior for images.
 
-   .. method:: file_path(self, request, response=None, info=None, item=None)
+   .. method:: file_path(self, request, response=None, info=None, *, item=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
@@ -573,7 +573,7 @@ See here the methods that you can override in your custom Images Pipeline:
 
         class MyImagesPipeline(ImagesPipeline):
 
-            def file_path(self, request, response=None, info=None, item=None):
+            def file_path(self, request, response=None, info=None, *, item=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
