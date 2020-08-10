@@ -6,8 +6,6 @@ from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 from warnings import warn
 
-from itemadapter import is_item
-
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
@@ -111,8 +109,8 @@ class MediaPipeline:
 
         # Download request checking media_to_download hook output first
         info.downloading.add(fp)
-        dfd = mustbe_deferred(self.media_to_download, request, info, item)
-        dfd.addCallback(self._check_media_to_download, request, info, item)
+        dfd = mustbe_deferred(self.media_to_download, request, info, item=item)
+        dfd.addCallback(self._check_media_to_download, request, info, item=item)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
         dfd.addErrback(lambda f: logger.error(
             f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
@@ -140,10 +138,8 @@ class MediaPipeline:
         def wrapper(*args, **kwargs):
             if self._expects_item[func.__name__]:
                 return func(*args, **kwargs)
-            elif 'item' in kwargs:
-                kwargs.pop('item', None)
-            elif is_item(args[-1]):
-                args = args[:-1]
+
+            kwargs.pop('item', None)
             return func(*args, **kwargs)
 
         return wrapper
@@ -154,7 +150,7 @@ class MediaPipeline:
 
         if 'item' not in sig.parameters:
             old_params = str(sig)[1:-1]
-            new_params = old_params + ", item=None"
+            new_params = old_params + ", *, item=None"
             warn('%s(self, %s) is deprecated, '
                  'please use %s(self, %s)'
                  % (func.__name__, old_params, func.__name__, new_params),
@@ -174,13 +170,13 @@ class MediaPipeline:
             # this ugly code was left only to support tests. TODO: remove
             dfd = mustbe_deferred(self.download_func, request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info, item),
+                callback=self.media_downloaded, callbackArgs=(request, info), callbackKeywords={'item': item},
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
             self._modify_media_request(request)
             dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info, item),
+                callback=self.media_downloaded, callbackArgs=(request, info), callbackKeywords={'item': item},
                 errback=self.media_failed, errbackArgs=(request, info))
         return dfd
 
@@ -222,7 +218,7 @@ class MediaPipeline:
             defer_result(result).chainDeferred(wad)
 
     # Overridable Interface
-    def media_to_download(self, request, info, item=None):
+    def media_to_download(self, request, info, *, item=None):
         """Check request before starting download"""
         pass
 
@@ -230,7 +226,7 @@ class MediaPipeline:
         """Returns the media requests to download"""
         pass
 
-    def media_downloaded(self, response, request, info, item=None):
+    def media_downloaded(self, response, request, info, *, item=None):
         """Handler for success downloads"""
         return response
 
@@ -251,6 +247,6 @@ class MediaPipeline:
                     )
         return item
 
-    def file_path(self, request, response=None, info=None, item=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         """Returns the path where downloaded media should be stored"""
         pass
