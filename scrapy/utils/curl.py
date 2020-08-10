@@ -39,7 +39,8 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
 
     :param str curl_command: string containing the curl command
     :param bool ignore_unknown_options: If true, only a warning is emitted when
-    cURL options are unknown. Otherwise raises an error. (default: True)
+                                        cURL options are unknown. Otherwise
+                                        raises an error. (default: True)
     :return: dictionary of Request kwargs
     """
 

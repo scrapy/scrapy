@@ -7,12 +7,12 @@ class SiteTest:
 
     def setUp(self):
         from twisted.internet import reactor
-        super(SiteTest, self).setUp()
+        super().setUp()
         self.site = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
         self.baseurl = "http://localhost:%d/" % self.site.getHost().port
 
     def tearDown(self):
-        super(SiteTest, self).tearDown()
+        super().tearDown()
         self.site.stopListening()
 
     def url(self, path):

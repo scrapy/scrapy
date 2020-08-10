@@ -45,8 +45,7 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
-        super(ImagesPipeline, self).__init__(store_uri, settings=settings,
-                                             download_func=download_func)
+        super().__init__(store_uri, settings=settings, download_func=download_func)
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)

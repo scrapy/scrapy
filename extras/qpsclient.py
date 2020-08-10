@@ -27,7 +27,7 @@ class QPSSpider(Spider):
     slots = 1
 
     def __init__(self, *a, **kw):
-        super(QPSSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         if self.qps is not None:
             self.qps = float(self.qps)
             self.download_delay = 1 / self.qps
