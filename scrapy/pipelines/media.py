@@ -131,8 +131,7 @@ class MediaPipeline:
 
     def _compatible(self, func):
         """Wrapper for overridable methods to allow backwards compatibility"""
-        if func.__name__ not in self._expects_item:
-            self._check_signature(func)
+        self._check_signature(func)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
