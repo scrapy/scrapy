@@ -2,9 +2,10 @@ import functools
 from inspect import signature
 import logging
 from collections import defaultdict
+from warnings import warn
+
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
-from warnings import warn
 
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
