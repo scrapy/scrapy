@@ -201,10 +201,12 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 .. _s3.scality: https://s3.scality.com/
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
+
+.. _media-pipeline-gcs:
+
 Google Cloud Storage
 ---------------------
 
-.. setting:: GCS_PROJECT_ID
 .. setting:: FILES_STORE_GCS_ACL
 .. setting:: IMAGES_STORE_GCS_ACL
 
@@ -475,7 +477,11 @@ See here the methods that you can override in your custom Files Pipeline:
 
         * ``checksum`` - a `MD5 hash`_ of the image contents
 
-        * ``status`` - the file status indication. It can be one of the following:
+        * ``status`` - the file status indication.
+
+          .. versionadded:: 2.2
+
+          It can be one of the following:
 
           * ``downloaded`` - file was downloaded.
           * ``uptodate`` - file was not downloaded, as it was downloaded recently,

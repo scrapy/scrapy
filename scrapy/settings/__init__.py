@@ -53,8 +53,7 @@ class SettingsAttribute:
             self.priority = priority
 
     def __str__(self):
-        return "<SettingsAttribute value={self.value!r} " \
-               "priority={self.priority}>".format(self=self)
+        return "<SettingsAttribute value={self.value!r} priority={self.priority}>".format(self=self)
 
     __repr__ = __str__
 
@@ -84,7 +83,8 @@ class BaseSettings(MutableMapping):
     def __init__(self, values=None, priority='project'):
         self.frozen = False
         self.attributes = {}
-        self.update(values, priority)
+        if values:
+            self.update(values, priority)
 
     def __getitem__(self, opt_name):
         if opt_name not in self:
@@ -473,7 +473,7 @@ class Settings(BaseSettings):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
-        super(Settings, self).__init__()
+        super().__init__()
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities

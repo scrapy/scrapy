@@ -47,7 +47,7 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
     """
 
     def __init__(self, hostname, ctx, verbose_logging=False):
-        super(ScrapyClientTLSOptions, self).__init__(hostname, ctx)
+        super().__init__(hostname, ctx)
         self.verbose_logging = verbose_logging
 
     def _identityVerifyingInfoCallback(self, connection, where, ret):
