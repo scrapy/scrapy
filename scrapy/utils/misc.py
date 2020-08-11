@@ -191,6 +191,7 @@ class GeneratorNodeVisitor(ast.NodeVisitor):
     def __init__(self):
         self.read_func_header = False
         self.includes_return_statement = False
+        self.return_statement_lineno = None
 
     def visit_FunctionDef(self, node):
         if not self.read_func_header:
@@ -202,6 +203,7 @@ class GeneratorNodeVisitor(ast.NodeVisitor):
     def visit_Return(self, node):
         if not GeneratorNodeVisitor._returns_none(node):
             self.includes_return_statement = True
+            self.return_statement_lineno = node.lineno
 
     @staticmethod
     def _returns_none(return_node):
