@@ -19,12 +19,12 @@ class _HttpErrorSpider(MockServerSpider):
     bypass_status_codes = set()
 
     def __init__(self, *args, **kwargs):
-        super(_HttpErrorSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.start_urls = [
-           self.mockserver.url("/status?n=200"),
-           self.mockserver.url("/status?n=404"),
-           self.mockserver.url("/status?n=402"),
-           self.mockserver.url("/status?n=500"),
+            self.mockserver.url("/status?n=200"),
+            self.mockserver.url("/status?n=404"),
+            self.mockserver.url("/status?n=402"),
+            self.mockserver.url("/status?n=500"),
         ]
         self.failed = set()
         self.skipped = set()
@@ -68,29 +68,23 @@ class TestHttpErrorMiddleware(TestCase):
         self.res200, self.res404 = _responses(self.req, [200, 404])
 
     def test_process_spider_input(self):
-        self.assertEqual(None,
-                self.mw.process_spider_input(self.res200, self.spider))
-        self.assertRaises(HttpError,
-                self.mw.process_spider_input, self.res404, self.spider)
+        self.assertIsNone(self.mw.process_spider_input(self.res200, self.spider))
+        self.assertRaises(HttpError, self.mw.process_spider_input, self.res404, self.spider)
 
     def test_process_spider_exception(self):
-        self.assertEqual([],
-                self.mw.process_spider_exception(self.res404,
-                        HttpError(self.res404), self.spider))
-        self.assertEqual(None,
-                self.mw.process_spider_exception(self.res404,
-                        Exception(), self.spider))
+        self.assertEqual(
+            [],
+            self.mw.process_spider_exception(self.res404, HttpError(self.res404), self.spider))
+        self.assertIsNone(self.mw.process_spider_exception(self.res404, Exception(), self.spider))
 
     def test_handle_httpstatus_list(self):
         res = self.res404.copy()
         res.request = Request('http://scrapytest.org',
                               meta={'handle_httpstatus_list': [404]})
-        self.assertEqual(None,
-            self.mw.process_spider_input(res, self.spider))
+        self.assertIsNone(self.mw.process_spider_input(res, self.spider))
 
         self.spider.handle_httpstatus_list = [404]
-        self.assertEqual(None,
-            self.mw.process_spider_input(self.res404, self.spider))
+        self.assertIsNone(self.mw.process_spider_input(self.res404, self.spider))
 
 
 class TestHttpErrorMiddlewareSettings(TestCase):
@@ -103,32 +97,24 @@ class TestHttpErrorMiddlewareSettings(TestCase):
         self.res200, self.res404, self.res402 = _responses(self.req, [200, 404, 402])
 
     def test_process_spider_input(self):
-        self.assertEqual(None,
-                self.mw.process_spider_input(self.res200, self.spider))
-        self.assertRaises(HttpError,
-                self.mw.process_spider_input, self.res404, self.spider)
-        self.assertEqual(None,
-                self.mw.process_spider_input(self.res402, self.spider))
+        self.assertIsNone(self.mw.process_spider_input(self.res200, self.spider))
+        self.assertRaises(HttpError, self.mw.process_spider_input, self.res404, self.spider)
+        self.assertIsNone(self.mw.process_spider_input(self.res402, self.spider))
 
     def test_meta_overrides_settings(self):
-        request = Request('http://scrapytest.org',
-                              meta={'handle_httpstatus_list': [404]})
+        request = Request('http://scrapytest.org', meta={'handle_httpstatus_list': [404]})
         res404 = self.res404.copy()
         res404.request = request
         res402 = self.res402.copy()
         res402.request = request
 
-        self.assertEqual(None,
-            self.mw.process_spider_input(res404, self.spider))
-        self.assertRaises(HttpError,
-                self.mw.process_spider_input, res402, self.spider)
+        self.assertIsNone(self.mw.process_spider_input(res404, self.spider))
+        self.assertRaises(HttpError, self.mw.process_spider_input, res402, self.spider)
 
     def test_spider_override_settings(self):
         self.spider.handle_httpstatus_list = [404]
-        self.assertEqual(None,
-            self.mw.process_spider_input(self.res404, self.spider))
-        self.assertRaises(HttpError,
-                self.mw.process_spider_input, self.res402, self.spider)
+        self.assertIsNone(self.mw.process_spider_input(self.res404, self.spider))
+        self.assertRaises(HttpError, self.mw.process_spider_input, self.res402, self.spider)
 
 
 class TestHttpErrorMiddlewareHandleAll(TestCase):
@@ -140,23 +126,18 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
         self.res200, self.res404, self.res402 = _responses(self.req, [200, 404, 402])
 
     def test_process_spider_input(self):
-        self.assertEqual(None,
-                self.mw.process_spider_input(self.res200, self.spider))
-        self.assertEqual(None,
-                self.mw.process_spider_input(self.res404, self.spider))
+        self.assertIsNone(self.mw.process_spider_input(self.res200, self.spider))
+        self.assertIsNone(self.mw.process_spider_input(self.res404, self.spider))
 
     def test_meta_overrides_settings(self):
-        request = Request('http://scrapytest.org',
-                              meta={'handle_httpstatus_list': [404]})
+        request = Request('http://scrapytest.org', meta={'handle_httpstatus_list': [404]})
         res404 = self.res404.copy()
         res404.request = request
         res402 = self.res402.copy()
         res402.request = request
 
-        self.assertEqual(None,
-            self.mw.process_spider_input(res404, self.spider))
-        self.assertRaises(HttpError,
-                self.mw.process_spider_input, res402, self.spider)
+        self.assertIsNone(self.mw.process_spider_input(res404, self.spider))
+        self.assertRaises(HttpError, self.mw.process_spider_input, res402, self.spider)
 
 
 class TestHttpErrorMiddlewareIntegrational(TrialTestCase):

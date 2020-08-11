@@ -9,17 +9,33 @@ from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.ssl import Certificate
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import StopDownload
 from scrapy.http import Request
+from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
-from tests.spiders import (FollowAllSpider, DelaySpider, SimpleSpider, BrokenStartRequestsSpider,
-                           SingleRequestSpider, DuplicateStartRequestsSpider, CrawlSpiderWithErrback,
-                           AsyncDefSpider, AsyncDefAsyncioSpider, AsyncDefAsyncioReturnSpider,
-                           AsyncDefAsyncioReqsReturnSpider)
+from tests.spiders import (
+    AsyncDefAsyncioReqsReturnSpider,
+    AsyncDefAsyncioReturnSingleElementSpider,
+    AsyncDefAsyncioReturnSpider,
+    AsyncDefAsyncioSpider,
+    AsyncDefSpider,
+    BrokenStartRequestsSpider,
+    BytesReceivedCallbackSpider,
+    BytesReceivedErrbackSpider,
+    CrawlSpiderWithErrback,
+    CrawlSpiderWithParseMethod,
+    DelaySpider,
+    DuplicateStartRequestsSpider,
+    FollowAllSpider,
+    SimpleSpider,
+    SingleRequestSpider,
+)
 
 
 class CrawlTestCase(TestCase):
@@ -104,44 +120,44 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_retry_503(self):
         crawler = self.runner.create_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=503"), mockserver=self.mockserver)
-        self._assert_retried(l)
+        self._assert_retried(log)
 
     @defer.inlineCallbacks
     def test_retry_conn_failed(self):
         crawler = self.runner.create_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl("http://localhost:65432/status?n=503", mockserver=self.mockserver)
-        self._assert_retried(l)
+        self._assert_retried(log)
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
         crawler = self.runner.create_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             # try to fetch the homepage of a non-existent domain
             yield crawler.crawl("http://dns.resolution.invalid./", mockserver=self.mockserver)
-        self._assert_retried(l)
+        self._assert_retried(log)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
-        with LogCapture('scrapy', level=logging.ERROR) as l:
+        with LogCapture('scrapy', level=logging.ERROR) as log:
             crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
             yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
 
-        self.assertEqual(len(l.records), 1)
-        record = l.records[0]
+        self.assertEqual(len(log.records), 1)
+        record = log.records[0]
         self.assertIsNotNone(record.exc_info)
         self.assertIs(record.exc_info[0], ZeroDivisionError)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_yielding(self):
-        with LogCapture('scrapy', level=logging.ERROR) as l:
+        with LogCapture('scrapy', level=logging.ERROR) as log:
             crawler = self.runner.create_crawler(BrokenStartRequestsSpider)
             yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
 
-        self.assertEqual(len(l.records), 1)
-        record = l.records[0]
+        self.assertEqual(len(log.records), 1)
+        record = log.records[0]
         self.assertIsNotNone(record.exc_info)
         self.assertIs(record.exc_info[0], ZeroDivisionError)
 
@@ -187,25 +203,25 @@ foo body
 with multiples lines
 '''})
         crawler = self.runner.create_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/raw?{0}".format(query)), mockserver=self.mockserver)
-        self.assertEqual(str(l).count("Got response 200"), 1)
+        self.assertEqual(str(log).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
     def test_retry_conn_lost(self):
         # connection lost after receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/drop?abort=0"), mockserver=self.mockserver)
-        self._assert_retried(l)
+        self._assert_retried(log)
 
     @defer.inlineCallbacks
     def test_retry_conn_aborted(self):
         # connection lost before receiving data
         crawler = self.runner.create_crawler(SimpleSpider)
-        with LogCapture() as l:
+        with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/drop?abort=1"), mockserver=self.mockserver)
-        self._assert_retried(l)
+        self._assert_retried(log)
 
     def _assert_retried(self, log):
         self.assertEqual(str(log).count("Retrying"), 2)
@@ -306,6 +322,28 @@ with multiples lines
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
 
+
+class CrawlSpiderTestCase(TestCase):
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+        self.runner = CrawlerRunner()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_crawlspider_with_parse(self):
+        self.runner.crawl(CrawlSpiderWithParseMethod, mockserver=self.mockserver)
+
+        with LogCapture() as log:
+            yield self.runner.join()
+
+        self.assertIn("[parse] status 200 (foo: None)", str(log))
+        self.assertIn("[parse] status 201 (foo: None)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
+
     @defer.inlineCallbacks
     def test_crawlspider_with_errback(self):
         self.runner.crawl(CrawlSpiderWithErrback, mockserver=self.mockserver)
@@ -313,10 +351,12 @@ with multiples lines
         with LogCapture() as log:
             yield self.runner.join()
 
-        self.assertIn("[callback] status 200", str(log))
-        self.assertIn("[callback] status 201", str(log))
+        self.assertIn("[parse] status 200 (foo: None)", str(log))
+        self.assertIn("[parse] status 201 (foo: None)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
+        self.assertIn("[errback] status 501", str(log))
 
     @defer.inlineCallbacks
     def test_async_def_parse(self):
@@ -349,6 +389,21 @@ with multiples lines
         self.assertIn("Got response 200", str(log))
         self.assertIn({'id': 1}, items)
         self.assertIn({'id': 2}, items)
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_items_single_element(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
+        crawler = self.runner.create_crawler(AsyncDefAsyncioReturnSingleElementSpider)
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with LogCapture() as log:
+            yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
+        self.assertIn("Got response 200", str(log))
+        self.assertIn({"foo": 42}, items)
 
     @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @mark.only_asyncio()
@@ -457,3 +512,27 @@ with multiples lines
         ip_address = crawler.spider.meta['responses'][0].ip_address
         self.assertIsInstance(ip_address, IPv4Address)
         self.assertEqual(str(ip_address), gethostbyname(expected_netloc))
+
+    @defer.inlineCallbacks
+    def test_stop_download_callback(self):
+        crawler = self.runner.create_crawler(BytesReceivedCallbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("failure"))
+        self.assertIsInstance(crawler.spider.meta["response"], Response)
+        self.assertEqual(crawler.spider.meta["response"].body, crawler.spider.meta.get("bytes_received"))
+        self.assertLess(len(crawler.spider.meta["response"].body), crawler.spider.full_response_length)
+
+    @defer.inlineCallbacks
+    def test_stop_download_errback(self):
+        crawler = self.runner.create_crawler(BytesReceivedErrbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("response"))
+        self.assertIsInstance(crawler.spider.meta["failure"], Failure)
+        self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
+        self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
+        self.assertEqual(
+            crawler.spider.meta["failure"].value.response.body,
+            crawler.spider.meta.get("bytes_received"))
+        self.assertLess(
+            len(crawler.spider.meta["failure"].value.response.body),
+            crawler.spider.full_response_length)

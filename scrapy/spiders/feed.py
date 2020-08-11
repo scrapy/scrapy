@@ -31,7 +31,7 @@ class XMLFeedSpider(Spider):
         processing required before returning the results to the framework core,
         for example setting the item GUIDs. It receives a list of results and
         the response which originated that results. It must return a list of
-        results (Items or Requests).
+        results (items or requests).
         """
         return results
 
@@ -52,7 +52,7 @@ class XMLFeedSpider(Spider):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an Selector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a BaseItem, a Request, or a list
+        This method must return either an item, a request, or a list
         containing any of them.
         """
 
@@ -61,7 +61,7 @@ class XMLFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
+    def _parse(self, response, **kwargs):
         if not hasattr(self, 'parse_node'):
             raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
 
@@ -128,7 +128,7 @@ class CSVFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
+    def _parse(self, response, **kwargs):
         if not hasattr(self, 'parse_row'):
             raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
         response = self.adapt_response(response)

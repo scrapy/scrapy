@@ -19,7 +19,7 @@ def _isiterable(possible_iterator):
 
 
 def _fname(f):
-    return "%s.%s".format(
+    return "{}.{}".format(
         f.__self__.__class__.__name__,
         f.__func__.__name__
     )
@@ -34,7 +34,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return build_component_list(settings.getwithbase('SPIDER_MIDDLEWARES'))
 
     def _add_middleware(self, mw):
-        super(SpiderMiddlewareManager, self)._add_middleware(mw)
+        super()._add_middleware(mw)
         if hasattr(mw, 'process_spider_input'):
             self.methods['process_spider_input'].append(mw.process_spider_input)
         if hasattr(mw, 'process_start_requests'):

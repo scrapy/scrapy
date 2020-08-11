@@ -36,15 +36,15 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
-            help="List available templates")
+                          help="List available templates")
         parser.add_option("-e", "--edit", dest="edit", action="store_true",
-            help="Edit spider after creating it")
+                          help="Edit spider after creating it")
         parser.add_option("-d", "--dump", dest="dump", metavar="TEMPLATE",
-            help="Dump template to standard output")
+                          help="Dump template to standard output")
         parser.add_option("-t", "--template", dest="template", default="basic",
-            help="Uses a custom template.")
+                          help="Uses a custom template.")
         parser.add_option("--force", dest="force", action="store_true",
-            help="If the spider already exists, overwrite it with the template")
+                          help="If the spider already exists, overwrite it with the template")
 
     def run(self, args, opts):
         if opts.list:
@@ -121,6 +121,7 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self):
-        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
-            join(scrapy.__path__[0], 'templates')
-        return join(_templates_base_dir, 'spiders')
+        return join(
+            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
+            'spiders'
+        )

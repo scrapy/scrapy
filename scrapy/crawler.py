@@ -277,7 +277,7 @@ class CrawlerProcess(CrawlerRunner):
     """
 
     def __init__(self, settings=None, install_root_handler=True):
-        super(CrawlerProcess, self).__init__(settings)
+        super().__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)

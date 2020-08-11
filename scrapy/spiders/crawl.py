@@ -54,8 +54,12 @@ class Rule:
         self.process_request = _get_method(self.process_request, spider)
         self.process_request_argcount = len(get_func_args(self.process_request))
         if self.process_request_argcount == 1:
-            msg = 'Rule.process_request should accept two arguments (request, response), accepting only one is deprecated'
-            warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
+            warnings.warn(
+                "Rule.process_request should accept two arguments "
+                "(request, response), accepting only one is deprecated",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     def _process_request(self, request, response):
         """
@@ -71,13 +75,18 @@ class CrawlSpider(Spider):
     rules = ()
 
     def __init__(self, *a, **kw):
-        super(CrawlSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         self._compile_rules()
 
-    def parse(self, response):
-        return self._parse_response(response, self.parse_start_url, cb_kwargs={}, follow=True)
+    def _parse(self, response, **kwargs):
+        return self._parse_response(
+            response=response,
+            callback=self.parse_start_url,
+            cb_kwargs=kwargs,
+            follow=True,
+        )
 
-    def parse_start_url(self, response):
+    def parse_start_url(self, response, **kwargs):
         return []
 
     def process_results(self, response, results):
@@ -136,6 +145,6 @@ class CrawlSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = super(CrawlSpider, cls).from_crawler(crawler, *args, **kwargs)
+        spider = super().from_crawler(crawler, *args, **kwargs)
         spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
         return spider

@@ -5,17 +5,19 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+from contextlib import suppress
 from io import BytesIO
 
+from itemadapter import ItemAdapter
 from PIL import Image
 
+from scrapy.exceptions import DropItem
+from scrapy.http import Request
+from scrapy.pipelines.files import FileException, FilesPipeline
+# TODO: from scrapy.pipelines.media import MediaPipeline
+from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
-from scrapy.http import Request
-from scrapy.settings import Settings
-from scrapy.exceptions import DropItem
-# TODO: from scrapy.pipelines.media import MediaPipeline
-from scrapy.pipelines.files import FileException, FilesPipeline
 
 
 class NoimagesDrop(DropItem):
@@ -43,8 +45,7 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
-        super(ImagesPipeline, self).__init__(store_uri, settings=settings,
-                                             download_func=download_func)
+        super().__init__(store_uri, settings=settings, download_func=download_func)
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -157,11 +158,12 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.images_urls_field, [])]
+        urls = ItemAdapter(item).get(self.images_urls_field, [])
+        return [Request(u) for u in urls]
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.images_result_field in item.fields:
-            item[self.images_result_field] = [x for ok, x in results if ok]
+        with suppress(KeyError):
+            ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
         return item
 
     def file_path(self, request, response=None, info=None):

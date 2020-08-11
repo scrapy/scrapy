@@ -63,21 +63,21 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         fail = Failure(Exception())
         results = [(True, 1), (False, fail)]
 
-        with LogCapture() as l:
+        with LogCapture() as log:
             new_item = self.pipe.item_completed(results, item, self.info)
 
         assert new_item is item
-        assert len(l.records) == 1
-        record = l.records[0]
+        assert len(log.records) == 1
+        record = log.records[0]
         assert record.levelname == 'ERROR'
         self.assertTupleEqual(record.exc_info, failure_to_exc_info(fail))
 
         # disable failure logging and check again
         self.pipe.LOG_FAILED_RESULTS = False
-        with LogCapture() as l:
+        with LogCapture() as log:
             new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
-        assert len(l.records) == 0
+        assert len(log.records) == 0
 
     @inlineCallbacks
     def test_default_process_item(self):
@@ -162,18 +162,18 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 class MockedMediaPipeline(MediaPipeline):
 
     def __init__(self, *args, **kwargs):
-        super(MockedMediaPipeline, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._mockcalled = []
 
     def download(self, request, info):
         self._mockcalled.append('download')
-        return super(MockedMediaPipeline, self).download(request, info)
+        return super().download(request, info)
 
     def media_to_download(self, request, info):
         self._mockcalled.append('media_to_download')
         if 'result' in request.meta:
             return request.meta.get('result')
-        return super(MockedMediaPipeline, self).media_to_download(request, info)
+        return super().media_to_download(request, info)
 
     def get_media_requests(self, item, info):
         self._mockcalled.append('get_media_requests')
@@ -181,15 +181,15 @@ class MockedMediaPipeline(MediaPipeline):
 
     def media_downloaded(self, response, request, info):
         self._mockcalled.append('media_downloaded')
-        return super(MockedMediaPipeline, self).media_downloaded(response, request, info)
+        return super().media_downloaded(response, request, info)
 
     def media_failed(self, failure, request, info):
         self._mockcalled.append('media_failed')
-        return super(MockedMediaPipeline, self).media_failed(failure, request, info)
+        return super().media_failed(failure, request, info)
 
     def item_completed(self, results, item, info):
         self._mockcalled.append('item_completed')
-        item = super(MockedMediaPipeline, self).item_completed(results, item, info)
+        item = super().item_completed(results, item, info)
         item['results'] = results
         return item
 
@@ -214,9 +214,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
-        self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download',
-                    'media_downloaded', 'request_callback', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'media_downloaded', 'request_callback', 'item_completed'])
 
     @inlineCallbacks
     def test_result_failure(self):
@@ -227,9 +227,9 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])
-        self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download',
-                    'media_failed', 'request_errback', 'item_completed'])
+        self.assertEqual(
+            self.pipe._mockcalled,
+            ['get_media_requests', 'media_to_download', 'media_failed', 'request_errback', 'item_completed'])
 
     @inlineCallbacks
     def test_mix_of_success_and_failure(self):

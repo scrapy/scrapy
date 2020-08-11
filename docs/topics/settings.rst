@@ -236,8 +236,8 @@ CONCURRENT_ITEMS
 
 Default: ``100``
 
-Maximum number of concurrent items (per response) to process in parallel in the
-Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
+Maximum number of concurrent items (per response) to process in parallel in
+:ref:`item pipelines <topics-item-pipeline>`.
 
 .. setting:: CONCURRENT_REQUESTS
 
@@ -420,10 +420,9 @@ connections (for ``HTTP10DownloadHandler``).
 .. note::
 
     HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
-    unless you use Twisted<11.1, or if you really want to use HTTP/1.0
-    and override :setting:`DOWNLOAD_HANDLERS_BASE` for ``http(s)`` scheme
-    accordingly, i.e. to
-    ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    unless you really want to use HTTP/1.0 and override
+    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
+    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -447,7 +446,6 @@ or even enable client-side authentication (and various other things).
     Scrapy also has another context factory class that you can set,
     ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
     which uses the platform's certificates to validate remote endpoints.
-    **This is only available if you use Twisted>=14.0.**
 
 If you do use a custom ContextFactory, make sure its ``__init__`` method
 accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
@@ -471,7 +469,7 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -494,10 +492,6 @@ This setting must be one of these string values:
 - ``'TLSv1.2'``: forces TLS version 1.2
 - ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
-.. note::
-
-    We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
-    or above (Twisted>=14.0 if you can).
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -660,8 +654,6 @@ If you want to disable it set to 0.
     spider attribute and per-request using :reqmeta:`download_maxsize`
     Request.meta key.
 
-    This feature needs Twisted >= 11.1.
-
 .. setting:: DOWNLOAD_WARNSIZE
 
 DOWNLOAD_WARNSIZE
@@ -678,8 +670,6 @@ If you want to disable it set to 0.
     This size can be set per spider using :attr:`download_warnsize`
     spider attribute and per-request using :reqmeta:`download_warnsize`
     Request.meta key.
-
-    This feature needs Twisted >= 11.1.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -796,6 +786,14 @@ The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
+.. setting:: FEED_STORAGE_GCS_ACL
+
+FEED_STORAGE_GCS_ACL
+--------------------
+
+The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -834,6 +832,15 @@ Default: ``"anonymous"``
 
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
+
+.. setting:: GCS_PROJECT_ID
+
+GCS_PROJECT_ID
+-----------------
+
+Default: ``None``
+
+The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
 .. setting:: ITEM_PIPELINES
 
@@ -1554,3 +1561,4 @@ case to see how to enable and use them.
 .. _Amazon web services: https://aws.amazon.com/
 .. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
 .. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
+.. _Google Cloud Storage: https://cloud.google.com/storage/
