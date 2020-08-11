@@ -1,7 +1,7 @@
 import functools
-from inspect import signature
 import logging
 from collections import defaultdict
+from inspect import signature
 from warnings import warn
 
 from twisted.internet.defer import Deferred, DeferredList
