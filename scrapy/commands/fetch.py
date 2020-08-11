@@ -19,16 +19,18 @@ class Command(ScrapyCommand):
         return "Fetch a URL using the Scrapy downloader"
 
     def long_desc(self):
-        return "Fetch a URL using the Scrapy downloader and print its content " \
-            "to stdout. You may want to use --nolog to disable logging"
+        return (
+            "Fetch a URL using the Scrapy downloader and print its content"
+            " to stdout. You may want to use --nolog to disable logging"
+        )
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true",
                           help="print response HTTP headers instead of body")
-        parser.add_option("--no-redirect", dest="no_redirect", action="store_true",
-                          default=False, help="do not handle HTTP 3xx status codes and print response as-is")
+        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", default=False,
+                          help="do not handle HTTP 3xx status codes and print response as-is")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
@@ -49,8 +51,8 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
-        cb = lambda x: self._print_response(x, opts)
-        request = Request(args[0], callback=cb, dont_filter=True)
+        request = Request(args[0], callback=self._print_response,
+                          cb_kwargs={"opts": opts}, dont_filter=True)
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
         if not opts.no_redirect:

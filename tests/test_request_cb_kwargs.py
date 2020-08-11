@@ -8,7 +8,7 @@ from tests.spiders import MockServerSpider
 from tests.mockserver import MockServer
 
 
-class InjectArgumentsDownloaderMiddleware(object):
+class InjectArgumentsDownloaderMiddleware:
     """
     Make sure downloader middlewares are able to update the keyword arguments
     """
@@ -23,7 +23,7 @@ class InjectArgumentsDownloaderMiddleware(object):
         return response
 
 
-class InjectArgumentsSpiderMiddleware(object):
+class InjectArgumentsSpiderMiddleware:
     """
     Make sure spider middlewares are able to update the keyword arguments
     """
@@ -158,6 +158,12 @@ class CallbackKeywordArgumentsTestCase(TestCase):
                 if key in line.getMessage():
                     exceptions[key] = line
         self.assertEqual(exceptions['takes_less'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_less'].exc_info[1]), "parse_takes_less() got an unexpected keyword argument 'number'")
+        self.assertEqual(
+            str(exceptions['takes_less'].exc_info[1]),
+            "parse_takes_less() got an unexpected keyword argument 'number'"
+        )
         self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_more'].exc_info[1]), "parse_takes_more() missing 1 required positional argument: 'other'")
+        self.assertEqual(
+            str(exceptions['takes_more'].exc_info[1]),
+            "parse_takes_more() missing 1 required positional argument: 'other'"
+        )
