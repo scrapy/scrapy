@@ -51,12 +51,12 @@ Request objects
        given, the dict passed in this parameter will be shallow copied.
     :type meta: dict
 
-    :param body: the request body. If a ``unicode`` is passed, then it's encoded to
-      ``str`` using the ``encoding`` passed (which defaults to ``utf-8``). If
-      ``body`` is not given, an empty string is stored. Regardless of the
-      type of this argument, the final value stored will be a ``str`` (never
-      ``unicode`` or ``None``).
-    :type body: str or unicode
+    :param body: the request body. If a string is passed, then it's encoded as
+      bytes using the ``encoding`` passed (which defaults to ``utf-8``). If
+      ``body`` is not given, an empty bytes object is stored. Regardless of the
+      type of this argument, the final value stored will be a bytes object
+      (never a string or ``None``).
+    :type body: bytes or str
 
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
@@ -106,7 +106,7 @@ Request objects
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the
-       body to ``str`` (if given as ``unicode``).
+       body to bytes (if given as a string).
     :type encoding: string
 
     :param priority: the priority of this request (defaults to ``0``).
@@ -721,7 +721,7 @@ Response objects
     .. attribute:: Response.body
 
         The body of this Response. Keep in mind that Response.body
-        is always a bytes object. If you want the unicode version use
+        is always a bytes object. If you want the string version use
         :attr:`TextResponse.text` (only available in :class:`TextResponse`
         and subclasses).
 
@@ -842,9 +842,9 @@ TextResponse objects
     is the same as for the :class:`Response` class and is not documented here.
 
     :param encoding: is a string which contains the encoding to use for this
-       response. If you create a :class:`TextResponse` object with a unicode
+       response. If you create a :class:`TextResponse` object with a string as
        body, it will be encoded using this encoding (remember the body attribute
-       is always a string). If ``encoding`` is ``None`` (default value), the
+       is always a bytes object). If ``encoding`` is ``None`` (default value), the
        encoding will be looked up in the response headers and body instead.
     :type encoding: string
 
@@ -853,7 +853,7 @@ TextResponse objects
 
     .. attribute:: TextResponse.text
 
-       Response body, as unicode.
+       Response body, as a string.
 
        The same as ``response.body.decode(response.encoding)``, but the
        result is cached after the first call, so you can access
@@ -861,9 +861,11 @@ TextResponse objects
 
        .. note::
 
-            ``unicode(response.body)`` is not a correct way to convert response
-            body to unicode: you would be using the system default encoding
-            (typically ``ascii``) instead of the response encoding.
+            ``str(response.body)`` is not a correct way to convert the response
+            body into a string:
+
+            >>> str(b'body')
+            "b'body'"
 
 
     .. attribute:: TextResponse.encoding

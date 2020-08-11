@@ -162,18 +162,18 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 class MockedMediaPipeline(MediaPipeline):
 
     def __init__(self, *args, **kwargs):
-        super(MockedMediaPipeline, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._mockcalled = []
 
     def download(self, request, info):
         self._mockcalled.append('download')
-        return super(MockedMediaPipeline, self).download(request, info)
+        return super().download(request, info)
 
     def media_to_download(self, request, info):
         self._mockcalled.append('media_to_download')
         if 'result' in request.meta:
             return request.meta.get('result')
-        return super(MockedMediaPipeline, self).media_to_download(request, info)
+        return super().media_to_download(request, info)
 
     def get_media_requests(self, item, info):
         self._mockcalled.append('get_media_requests')
@@ -181,15 +181,15 @@ class MockedMediaPipeline(MediaPipeline):
 
     def media_downloaded(self, response, request, info):
         self._mockcalled.append('media_downloaded')
-        return super(MockedMediaPipeline, self).media_downloaded(response, request, info)
+        return super().media_downloaded(response, request, info)
 
     def media_failed(self, failure, request, info):
         self._mockcalled.append('media_failed')
-        return super(MockedMediaPipeline, self).media_failed(failure, request, info)
+        return super().media_failed(failure, request, info)
 
     def item_completed(self, results, item, info):
         self._mockcalled.append('item_completed')
-        item = super(MockedMediaPipeline, self).item_completed(results, item, info)
+        item = super().item_completed(results, item, info)
         item['results'] = results
         return item
 

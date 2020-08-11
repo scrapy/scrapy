@@ -493,6 +493,8 @@ Supported options:
 
 * ``--output`` or ``-o``: dump scraped items to a file
 
+  .. versionadded:: 2.3
+
 .. skip: start
 
 Usage example::

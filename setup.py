@@ -23,7 +23,6 @@ install_requires = [
     'cryptography>=2.0',
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
-    'lxml>=3.5.0',
     'parsel>=1.5.0',
     'PyDispatcher>=2.0.5',
     'pyOpenSSL>=16.2.0',

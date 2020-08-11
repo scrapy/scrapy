@@ -17,7 +17,7 @@ class CachingThreadedResolver(ThreadedResolver):
     """
 
     def __init__(self, reactor, cache_size, timeout):
-        super(CachingThreadedResolver, self).__init__(reactor)
+        super().__init__(reactor)
         dnscache.limit = cache_size
         self.timeout = timeout
 
@@ -40,7 +40,7 @@ class CachingThreadedResolver(ThreadedResolver):
         # so the input argument above is simply overridden
         # to enforce Scrapy's DNS_TIMEOUT setting's value
         timeout = (self.timeout,)
-        d = super(CachingThreadedResolver, self).getHostByName(name, timeout)
+        d = super().getHostByName(name, timeout)
         if dnscache.limit:
             d.addCallback(self._cache_result, name)
         return d
@@ -80,16 +80,16 @@ class CachingHostnameResolver:
         class CachingResolutionReceiver(resolutionReceiver):
 
             def resolutionBegan(self, resolution):
-                super(CachingResolutionReceiver, self).resolutionBegan(resolution)
+                super().resolutionBegan(resolution)
                 self.resolution = resolution
                 self.resolved = False
 
             def addressResolved(self, address):
-                super(CachingResolutionReceiver, self).addressResolved(address)
+                super().addressResolved(address)
                 self.resolved = True
 
             def resolutionComplete(self):
-                super(CachingResolutionReceiver, self).resolutionComplete()
+                super().resolutionComplete()
                 if self.resolved:
                     dnscache[hostName] = self.resolution
 

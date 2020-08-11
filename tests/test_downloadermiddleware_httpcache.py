@@ -134,7 +134,7 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 
     def _get_settings(self, **new_settings):
         new_settings.setdefault('HTTPCACHE_DBM_MODULE', self.dbm_module)
-        return super(DbmStorageWithCustomDbmModuleTest, self)._get_settings(**new_settings)
+        return super()._get_settings(**new_settings)
 
     def test_custom_dbm_module_loaded(self):
         # make sure our dbm module has been loaded
@@ -151,7 +151,7 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
 
     def _get_settings(self, **new_settings):
         new_settings.setdefault('HTTPCACHE_GZIP', True)
-        return super(FilesystemStorageTest, self)._get_settings(**new_settings)
+        return super()._get_settings(**new_settings)
 
 
 class DummyPolicyTest(_BaseTest):
