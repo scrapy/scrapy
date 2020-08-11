@@ -1,8 +1,7 @@
 # Tests requirements
 attrs
 dataclasses; python_version == '3.6'
-mitmproxy; python_version >= '3.6'
-mitmproxy<4.0.0; python_version < '3.6'
+mitmproxy >=4, <5  # The latest version does not support some pinned dependencies
 # https://github.com/pytest-dev/pytest-twisted/issues/93
 pytest != 5.4, != 5.4.1
 pytest-azurepipelines
