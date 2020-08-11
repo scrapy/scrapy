@@ -57,7 +57,7 @@ def create_deprecated_class(
         warned_on_subclass = False
 
         def __new__(metacls, name, bases, clsdict_):
-            cls = super(DeprecatedClass, metacls).__new__(metacls, name, bases, clsdict_)
+            cls = super().__new__(metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
@@ -73,7 +73,7 @@ def create_deprecated_class(
                 if warn_once:
                     msg += ' (warning only on first subclass, there may be others)'
                 warnings.warn(msg, warn_category, stacklevel=2)
-            super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
+            super().__init__(name, bases, clsdict_)
 
         # see https://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
         # and https://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
@@ -88,7 +88,7 @@ def create_deprecated_class(
                 # is the deprecated class itself - subclasses of the
                 # deprecated class should not use custom `__subclasscheck__`
                 # method.
-                return super(DeprecatedClass, cls).__subclasscheck__(sub)
+                return super().__subclasscheck__(sub)
 
             if not inspect.isclass(sub):
                 raise TypeError("issubclass() arg 1 must be a class")
@@ -102,7 +102,7 @@ def create_deprecated_class(
                 msg = instance_warn_message.format(cls=_clspath(cls, old_class_path),
                                                    new=_clspath(new_class, new_class_path))
                 warnings.warn(msg, warn_category, stacklevel=2)
-            return super(DeprecatedClass, cls).__call__(*args, **kwargs)
+            return super().__call__(*args, **kwargs)
 
     deprecated_cls = DeprecatedClass(name, (new_class,), clsdict or {})
 

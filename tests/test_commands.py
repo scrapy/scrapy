@@ -2,7 +2,7 @@ import inspect
 import json
 import optparse
 import os
-from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
+import platform
 import subprocess
 import sys
 import tempfile
@@ -11,8 +11,10 @@ from itertools import chain
 from os.path import exists, join, abspath
 from pathlib import Path
 from shutil import rmtree, copytree
+from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import mkdtemp
 from threading import Timer
+from unittest import skipIf
 
 from twisted.trial import unittest
 
@@ -149,7 +151,7 @@ def get_permissions_dict(path, renamings=None, ignore=None):
 class StartprojectTemplatesTest(ProjectTest):
 
     def setUp(self):
-        super(StartprojectTemplatesTest, self).setUp()
+        super().setUp()
         self.tmpl = join(self.temp_path, 'templates')
         self.tmpl_proj = join(self.tmpl, 'project')
 
@@ -313,7 +315,7 @@ class StartprojectTemplatesTest(ProjectTest):
 class CommandTest(ProjectTest):
 
     def setUp(self):
-        super(CommandTest, self).setUp()
+        super().setUp()
         self.call('startproject', self.project_name)
         self.cwd = join(self.temp_path, self.project_name)
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
@@ -489,6 +491,9 @@ class BadSpider(scrapy.Spider):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'

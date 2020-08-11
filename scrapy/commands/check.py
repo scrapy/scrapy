@@ -78,19 +78,19 @@ class Command(ScrapyCommand):
                 elif tested_methods:
                     self.crawler_process.crawl(spidercls)
 
-        # start checks
-        if opts.list:
-            for spider, methods in sorted(contract_reqs.items()):
-                if not methods and not opts.verbose:
-                    continue
-                print(spider)
-                for method in sorted(methods):
-                    print('  * %s' % method)
-        else:
-            start = time.time()
-            self.crawler_process.start()
-            stop = time.time()
+            # start checks
+            if opts.list:
+                for spider, methods in sorted(contract_reqs.items()):
+                    if not methods and not opts.verbose:
+                        continue
+                    print(spider)
+                    for method in sorted(methods):
+                        print('  * %s' % method)
+            else:
+                start = time.time()
+                self.crawler_process.start()
+                stop = time.time()
 
-            result.printErrors()
-            result.printSummary(start, stop)
-            self.exitcode = int(not result.wasSuccessful())
+                result.printErrors()
+                result.printSummary(start, stop)
+                self.exitcode = int(not result.wasSuccessful())

@@ -17,7 +17,7 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     command = 'parse'
 
     def setUp(self):
-        super(ParseCommandTest, self).setUp()
+        super().setUp()
         self.spider_name = 'parse_spider'
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
         with open(fname, 'w') as f:

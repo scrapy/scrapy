@@ -376,7 +376,7 @@ class FilesPipeline(MediaPipeline):
             resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
         )
 
-        super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
+        super().__init__(download_func=download_func, settings=settings)
 
     @classmethod
     def from_settings(cls, settings):

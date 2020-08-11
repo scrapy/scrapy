@@ -4,6 +4,7 @@ import operator
 import platform
 import unittest
 from itertools import count
+from sys import version_info
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
@@ -33,13 +34,13 @@ class MutableChainTest(unittest.TestCase):
 
 class ToUnicodeTest(unittest.TestCase):
     def test_converting_an_utf8_encoded_string_to_unicode(self):
-        self.assertEqual(to_unicode(b'lel\xc3\xb1e'), u'lel\xf1e')
+        self.assertEqual(to_unicode(b'lel\xc3\xb1e'), 'lel\xf1e')
 
     def test_converting_a_latin_1_encoded_string_to_unicode(self):
-        self.assertEqual(to_unicode(b'lel\xf1e', 'latin-1'), u'lel\xf1e')
+        self.assertEqual(to_unicode(b'lel\xf1e', 'latin-1'), 'lel\xf1e')
 
     def test_converting_a_unicode_to_unicode_should_return_the_same_object(self):
-        self.assertEqual(to_unicode(u'\xf1e\xf1e\xf1e'), u'\xf1e\xf1e\xf1e')
+        self.assertEqual(to_unicode('\xf1e\xf1e\xf1e'), '\xf1e\xf1e\xf1e')
 
     def test_converting_a_strange_object_should_raise_TypeError(self):
         self.assertRaises(TypeError, to_unicode, 423)
@@ -47,16 +48,16 @@ class ToUnicodeTest(unittest.TestCase):
     def test_errors_argument(self):
         self.assertEqual(
             to_unicode(b'a\xedb', 'utf-8', errors='replace'),
-            u'a\ufffdb'
+            'a\ufffdb'
         )
 
 
 class ToBytesTest(unittest.TestCase):
     def test_converting_a_unicode_object_to_an_utf_8_encoded_string(self):
-        self.assertEqual(to_bytes(u'\xa3 49'), b'\xc2\xa3 49')
+        self.assertEqual(to_bytes('\xa3 49'), b'\xc2\xa3 49')
 
     def test_converting_a_unicode_object_to_a_latin_1_encoded_string(self):
-        self.assertEqual(to_bytes(u'\xa3 49', 'latin-1'), b'\xa3 49')
+        self.assertEqual(to_bytes('\xa3 49', 'latin-1'), b'\xa3 49')
 
     def test_converting_a_regular_bytes_to_bytes_should_return_the_same_object(self):
         self.assertEqual(to_bytes(b'lel\xf1e'), b'lel\xf1e')
@@ -66,7 +67,7 @@ class ToBytesTest(unittest.TestCase):
 
     def test_errors_argument(self):
         self.assertEqual(
-            to_bytes(u'a\ufffdb', 'latin-1', errors='replace'),
+            to_bytes('a\ufffdb', 'latin-1', errors='replace'),
             b'a?b'
         )
 
@@ -95,7 +96,7 @@ class BinaryIsTextTest(unittest.TestCase):
         assert binary_is_text(b"hello")
 
     def test_utf_16_strings_contain_null_bytes(self):
-        assert binary_is_text(u"hello".encode('utf-16'))
+        assert binary_is_text("hello".encode('utf-16'))
 
     def test_one_with_encoding(self):
         assert binary_is_text(b"<div>Price \xa3</div>")
@@ -214,9 +215,12 @@ class UtilsPythonTestCase(unittest.TestCase):
         else:
             self.assertEqual(
                 get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
+            if version_info < (3, 6):
+                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
+            else:
+                self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])

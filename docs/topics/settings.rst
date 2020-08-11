@@ -786,6 +786,14 @@ The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
+.. setting:: FEED_STORAGE_GCS_ACL
+
+FEED_STORAGE_GCS_ACL
+--------------------
+
+The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -824,6 +832,15 @@ Default: ``"anonymous"``
 
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
+
+.. setting:: GCS_PROJECT_ID
+
+GCS_PROJECT_ID
+-----------------
+
+Default: ``None``
+
+The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
 .. setting:: ITEM_PIPELINES
 
@@ -1544,3 +1561,4 @@ case to see how to enable and use them.
 .. _Amazon web services: https://aws.amazon.com/
 .. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
 .. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
+.. _Google Cloud Storage: https://cloud.google.com/storage/
