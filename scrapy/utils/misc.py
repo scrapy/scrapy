@@ -184,6 +184,31 @@ def set_environ(**kwargs):
                 os.environ[k] = v
 
 
+class GeneratorNodeVisitor(ast.NodeVisitor):
+    """Visits all AST nodes of a generator, but ignores functions defined inside the generator.
+    If the generator code includes a return statement then sets includes_return_statement to True.
+    """
+    def __init__(self):
+        self.read_func_header = False
+        self.includes_return_statement = False
+
+    def visit_FunctionDef(self, node):
+        if not self.read_func_header:
+            # Visit the first FunctionDef and ignore all nested definitions
+            # because they are not part of the examined generator
+            self.read_func_header = True
+            ast.NodeVisitor.generic_visit(self, node)
+
+    def visit_Return(self, node):
+        if not GeneratorNodeVisitor._returns_none(node):
+            self.includes_return_statement = True
+
+    @staticmethod
+    def _returns_none(return_node):
+        value = return_node.value
+        return value is None or isinstance(value, ast.NameConstant) and value.value is None
+
+
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
@@ -195,16 +220,13 @@ def is_generator_with_return_value(callable):
     if callable in _generator_callbacks_cache:
         return _generator_callbacks_cache[callable]
 
-    def returns_none(return_node):
-        value = return_node.value
-        return value is None or isinstance(value, ast.NameConstant) and value.value is None
-
     if inspect.isgeneratorfunction(callable):
         tree = ast.parse(dedent(inspect.getsource(callable)))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Return) and not returns_none(node):
-                _generator_callbacks_cache[callable] = True
-                return _generator_callbacks_cache[callable]
+        ast_visitor = GeneratorNodeVisitor()
+        ast_visitor.visit(tree)
+        if ast_visitor.includes_return_statement:
+            _generator_callbacks_cache[callable] = True
+            return _generator_callbacks_cache[callable]
 
     _generator_callbacks_cache[callable] = False
     return _generator_callbacks_cache[callable]
