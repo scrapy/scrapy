@@ -447,7 +447,7 @@ class FeedExporter:
                 return False
         return True
 
-    def _storage_supported(self, feed_options):
+    def _storage_supported(self, uri, feed_options):
         scheme = urlparse(uri).scheme
         if scheme in self.storages:
             try:
