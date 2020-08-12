@@ -51,6 +51,7 @@ def resolve(domain, info):
     linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
     branch = _github_branch()
 
+    file_path = file_path.replace('\\', '/')
     return "https://github.com/scrapy/scrapy/blob/%s/scrapy/%s%s" % (
         branch, file_path, linespec)
 
