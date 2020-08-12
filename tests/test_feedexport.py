@@ -535,7 +535,7 @@ class FromCrawlerMixin:
     @classmethod
     def from_crawler(cls, crawler, *args, feed_options=None, **kwargs):
         cls.init_with_crawler = True
-        return cls(*args, feed_options=feed_options, **kwargs)
+        return cls(*args, **kwargs)
 
 
 class FromCrawlerCsvItemExporter(CsvItemExporter, FromCrawlerMixin):
@@ -543,7 +543,11 @@ class FromCrawlerCsvItemExporter(CsvItemExporter, FromCrawlerMixin):
 
 
 class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
-    pass
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, feed_options=None, **kwargs):
+        cls.init_with_crawler = True
+        return cls(*args, feed_options=feed_options, **kwargs)
 
 
 class DummyBlockingFeedStorage(BlockingFeedStorage):
