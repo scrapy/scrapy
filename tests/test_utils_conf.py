@@ -149,6 +149,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
             "FEED_URI_PARAMS": (1, 2, 3, 4),
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -157,6 +158,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "indent": 42,
             "store_empty": True,
             "uri_params": (1, 2, 3, 4),
+            "batch_item_count": 2,
         })
 
     def test_feed_complete_default_values_from_settings_non_empty(self):
@@ -169,6 +171,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -177,6 +180,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "indent": 42,
             "store_empty": True,
             "uri_params": None,
+            "batch_item_count": 2,
         })
 
 

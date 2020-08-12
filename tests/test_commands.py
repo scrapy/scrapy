@@ -151,7 +151,7 @@ def get_permissions_dict(path, renamings=None, ignore=None):
 class StartprojectTemplatesTest(ProjectTest):
 
     def setUp(self):
-        super(StartprojectTemplatesTest, self).setUp()
+        super().setUp()
         self.tmpl = join(self.temp_path, 'templates')
         self.tmpl_proj = join(self.tmpl, 'project')
 
@@ -315,7 +315,7 @@ class StartprojectTemplatesTest(ProjectTest):
 class CommandTest(ProjectTest):
 
     def setUp(self):
-        super(CommandTest, self).setUp()
+        super().setUp()
         self.call('startproject', self.project_name)
         self.cwd = join(self.temp_path, self.project_name)
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name

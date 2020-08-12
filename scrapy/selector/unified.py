@@ -79,4 +79,4 @@ class Selector(_ParselSelector, object_ref):
             kwargs.setdefault('base_url', response.url)
 
         self.response = response
-        super(Selector, self).__init__(text=text, type=st, root=root, **kwargs)
+        super().__init__(text=text, type=st, root=root, **kwargs)
