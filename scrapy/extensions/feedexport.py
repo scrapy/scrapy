@@ -408,7 +408,7 @@ class FeedExporter:
                 slots.append(self._start_new_batch(
                     batch_id=slot.batch_id + 1,
                     uri=slot.uri_template % uri_params,
-                    feed=self.feeds[slot.uri_template],
+                    feed_options=self.feeds[slot.uri_template],
                     spider=spider,
                     uri_template=slot.uri_template,
                 ))
