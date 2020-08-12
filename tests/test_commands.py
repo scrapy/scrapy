@@ -297,7 +297,7 @@ class StartprojectTemplatesTest(ProjectTest):
                 path.mkdir(mode=permissions)
             else:
                 path.touch(mode=permissions)
-            expected_permissions[node] = path.stat().st_mode
+            expected_permissions[node] = oct(path.stat().st_mode)
 
         process = subprocess.Popen(
             (
