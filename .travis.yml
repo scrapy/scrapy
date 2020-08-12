@@ -22,7 +22,7 @@ matrix:
       python: 3.5.2
     - env: TOXENV=asyncio-pinned
       python: 3.5.2  # We use additional code to support 3.5.3 and earlier
-    - env: TOXENV=pypy3-pinned PYPY_VERSION=3-v5.10.1
+    - env: TOXENV=pypy3-pinned PYPY_VERSION=3-v6.0.0
 
     - env: TOXENV=py
       python: 3.5
