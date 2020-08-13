@@ -129,7 +129,8 @@ class Command(ScrapyCommand):
             print("Spider %r already exists in module:" % name)
             print("  %s" % spidercls.__module__)
             return True
-        # if spider same filename exists
+
+        # a file with the same name exists in the target directory
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
         spiders_dir = dirname(spiders_module.__file__)
         spiders_dir_abs = abspath(spiders_dir)
