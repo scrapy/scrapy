@@ -59,6 +59,8 @@ Default Username and Password can be overridden by the settings
 You need the telnet program which comes installed by default in Windows, and
 most Linux distros.
 
+.. _telnet-variables:
+
 Available variables in the telnet console
 =========================================
 
