@@ -46,6 +46,9 @@ matrix:
     - env: TOXENV=asyncio
       python: 3.8
       dist: bionic
+    - env: TOXENV=py PYTHONOPTIMIZE=2
+      python: 3.8
+      dist: bionic
 install:
   - |
       if [[ ! -z "$PYPY_VERSION" ]]; then
