@@ -95,6 +95,10 @@ scrapy.Spider
       configuration when running this spider. It must be defined as a class
       attribute since the settings are updated before instantiation.
 
+      If you wish to update, not replace, dictionary-like settings (e.g.
+      :setting:`SPIDER_MIDDLEWARES`), you can prefix their name with
+      ``update:``. See: :ref:`topics-settings-update-dicts`.
+
       For a list of available built-in settings see:
       :ref:`topics-settings-ref`.
 

@@ -79,6 +79,8 @@ class BaseSettings(MutableMapping):
     highest priority will be retrieved.
     """
 
+    MAGIC_PREFIXES = ("update:", )
+
     def __init__(self, values=None, priority='project'):
         self.frozen = False
         self.attributes = {}
@@ -236,13 +238,23 @@ class BaseSettings(MutableMapping):
     def __setitem__(self, name, value):
         self.set(name, value)
 
+    def _split_prefix(self, name):
+        prefix = None
+        try:
+            if name.startswith(self.MAGIC_PREFIXES):
+                prefix, name = name.split(":", 1)
+        except AttributeError:
+            # No magic prefixes or non-string setting name
+            pass
+        return prefix, name
+
     def set(self, name, value, priority='project'):
         """
         Store a key/value attribute with a given priority.
 
-        Settings should be populated *before* configuring the Crawler object
-        (through the :meth:`~scrapy.crawler.Crawler.configure` method),
-        otherwise they won't have any effect.
+        For dictionary-like settings, you can prefix ``name`` with ``update:``
+        if you wish to update, not replace, the dictionary. See:
+        :ref:`topics-settings-update-dicts`.
 
         :param name: the setting name
         :type name: str
@@ -256,13 +268,21 @@ class BaseSettings(MutableMapping):
         """
         self._assert_mutability()
         priority = get_settings_priority(priority)
-        if name not in self:
-            if isinstance(value, SettingsAttribute):
-                self.attributes[name] = value
+        prefix, name = self._split_prefix(name)
+        if prefix == 'update':
+            if isinstance(self[name], BaseSettings):
+                self[name].update(value, priority)
             else:
-                self.attributes[name] = SettingsAttribute(value, priority)
+                # Ignore priority
+                self[name].update(value)
         else:
-            self.attributes[name].set(value, priority)
+            if name not in self:
+                if isinstance(value, SettingsAttribute):
+                    self.attributes[name] = value
+                else:
+                    self.attributes[name] = SettingsAttribute(value, priority)
+            else:
+                self.attributes[name].set(value, priority)
 
     def setdict(self, values, priority='project'):
         self.update(values, priority)

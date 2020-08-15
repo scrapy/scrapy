@@ -97,6 +97,20 @@ class BaseSettingsTest(unittest.TestCase):
                 mock_set.reset_mock()
                 mock_setattr.reset_mock()
 
+    def test_set_with_update_prefix(self):
+        self.settings['MYDICT'] = {'one': 1}
+        self.settings['update:MYDICT'] = {'two': 2}
+        self.assertEqual(self.settings['MYDICT'], {'one': 1, 'two': 2})
+        self.settings['MYDICT'] = {'three': 3}
+        self.assertEqual(self.settings['MYDICT'], {'three': 3})
+
+        self.settings['MYDICT'] = BaseSettings({'one': 1}, priority=0)
+        self.settings['MYDICT'].set('two', 2, priority=20)
+        self.settings['update:MYDICT'] = BaseSettings({'one': 10, 'two': 20},
+                                                      priority=10)
+        six.assertCountEqual(self, self.settings['MYDICT'],
+                             {'one': 10, 'two': 2})
+
     def test_setitem(self):
         settings = BaseSettings()
         settings.set('key', 'a', 'default')
