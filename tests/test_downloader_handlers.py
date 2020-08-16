@@ -23,7 +23,6 @@ from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
-from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Headers, Request
@@ -315,8 +314,8 @@ class HttpTestCase(unittest.TestCase):
         host = self.host + ':' + str(self.portno)
 
         def _test(response):
-            self.assertEqual(response.body, to_bytes(host))
-            self.assertEqual(request.headers.get('Host'), to_bytes(host))
+            self.assertEqual(response.body, host.encode())
+            self.assertEqual(request.headers.get('Host'), host.encode())
 
         request = Request(self.getURL('host'), headers={'Host': host})
         return self.download_request(request, Spider('foo')).addCallback(_test)
@@ -522,68 +521,8 @@ class Https11TestCase(Http11TestCase):
             yield download_handler.close()
 
 
-class Https2TestCase(Https11TestCase):
-    scheme = 'https'
-    download_handler_cls = H2DownloadHandler
-    HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
-
-    @defer.inlineCallbacks
-    def test_download_with_maxsize_very_large_file(self):
-        with mock.patch('scrapy.core.http2.stream.logger') as logger:
-            request = Request(self.getURL('largechunkedfile'))
-
-            def check(logger):
-                logger.error.assert_called_once_with(mock.ANY)
-
-            d = self.download_request(request, Spider('foo', download_maxsize=1500))
-            yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
-
-            # As the error message is logged in the dataReceived callback, we
-            # have to give a bit of time to the reactor to process the queue
-            # after closing the connection.
-            d = defer.Deferred()
-            d.addCallback(check)
-            reactor.callLater(.1, d.callback, logger)
-            yield d
-
-    def test_download_broken_content_cause_data_loss(self, url='broken'):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_cause_data_loss(self):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_content_allow_data_loss(self, url='broken'):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_allow_data_loss(self):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_content_allow_data_loss_via_setting(self, url='broken'):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
-
-
 class Https11WrongHostnameTestCase(Http11TestCase):
     scheme = 'https'
-
-    # above tests use a server certificate for "localhost",
-    # client connection to "localhost" too.
-    # here we test that even if the server certificate is for another domain,
-    # "www.example.com" in this case,
-    # the tests still pass
-    keyfile = 'keys/example-com.key.pem'
-    certfile = 'keys/example-com.cert.pem'
-
-
-class Https2WrongHostnameTestCase(Https2TestCase):
-    tls_log_message = (
-        'SSL connection certificate: issuer "/C=XW/ST=XW/L=The '
-        'Internet/O=Scrapy/CN=www.example.com/emailAddress=test@example.com", '
-        'subject "/C=XW/ST=XW/L=The '
-        'Internet/O=Scrapy/CN=www.example.com/emailAddress=test@example.com"'
-    )
 
     # above tests use a server certificate for "localhost",
     # client connection to "localhost" too.
@@ -599,14 +538,6 @@ class Https11InvalidDNSId(Https11TestCase):
 
     def setUp(self):
         super(Https11InvalidDNSId, self).setUp()
-        self.host = '127.0.0.1'
-
-
-class Https2InvalidDNSId(Https2TestCase):
-    """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
-
-    def setUp(self):
-        super(Https2InvalidDNSId, self).setUp()
         self.host = '127.0.0.1'
 
 
@@ -626,24 +557,6 @@ class Https11InvalidDNSPattern(Https11TestCase):
             'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
         )
         super(Https11InvalidDNSPattern, self).setUp()
-
-
-class Https2InvalidDNSPattern(Https2TestCase):
-    """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
-
-    keyfile = 'keys/localhost.ip.key'
-    certfile = 'keys/localhost.ip.crt'
-
-    def setUp(self):
-        try:
-            from service_identity.exceptions import CertificateError  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("cryptography lib is too old")
-        self.tls_log_message = (
-            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
-            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
-        )
-        super(Https2InvalidDNSPattern, self).setUp()
 
 
 class Https11CustomCiphers(unittest.TestCase):
@@ -684,11 +597,6 @@ class Https11CustomCiphers(unittest.TestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEqual, b"0123456789")
         return d
-
-
-class Https2CustomCiphers(Https11CustomCiphers):
-    scheme = 'https'
-    download_handler_cls = H2DownloadHandler
 
 
 class Http11MockServerTestCase(unittest.TestCase):
@@ -740,10 +648,6 @@ class Http11MockServerTestCase(unittest.TestCase):
         self.assertTrue(failure is None)
         reason = crawler.spider.meta['close_reason']
         self.assertTrue(reason, 'finished')
-
-
-class Http2MockServerTestCase(Http11MockServerTestCase):
-    """HTTP 2.0 test case with MockServer"""
 
 
 class UriResource(resource.Resource):
@@ -835,47 +739,6 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         d = self.download_request(request, Spider('foo'))
         timeout = yield self.assertFailure(d, error.TimeoutError)
         self.assertIn(domain, timeout.osError)
-
-
-class Https2ProxyTestCase(Http11ProxyTestCase):
-    # only used for HTTPS tests
-    keyfile = 'keys/localhost.key'
-    certfile = 'keys/localhost.crt'
-
-    scheme = 'https'
-    host = u'127.0.0.1'
-
-    download_handler_cls = H2DownloadHandler
-    expected_http_proxy_request_body = b'/'
-
-    def setUp(self):
-        site = server.Site(UriResource(), timeout=None)
-        self.port = reactor.listenSSL(
-            0, site,
-            ssl_context_factory(self.keyfile, self.certfile),
-            interface=self.host
-        )
-        self.portno = self.port.getHost().port
-        self.download_handler = create_instance(self.download_handler_cls, None, get_crawler())
-        self.download_request = self.download_handler.download_request
-
-    def getURL(self, path):
-        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
-
-    def test_download_with_proxy_https_noconnect(self):
-        def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'/')
-
-        http_proxy = '%s?noconnect' % self.getURL('')
-        request = Request('https://example.com', meta={'proxy': http_proxy})
-        with self.assertWarnsRegex(
-            Warning,
-            r'Using HTTPS proxies in the noconnect mode is not supported by the '
-            r'downloader handler.'
-        ):
-            return self.download_request(request, Spider('foo')).addCallback(_test)
 
 
 class HttpDownloadHandlerMock:
