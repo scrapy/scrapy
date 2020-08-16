@@ -108,6 +108,11 @@ Well-written patches should:
 
       tox -e docs-coverage
 
+* if you are removing deprecated code, first make sure that at least 1 year
+  (12 months) has passed since the release that introduced the deprecation.
+  See :ref:`deprecation-policy`.
+
+
 .. _submitting-patches:
 
 Submitting patches

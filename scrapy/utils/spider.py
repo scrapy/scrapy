@@ -34,10 +34,12 @@ def iter_spider_classes(module):
     from scrapy.spiders import Spider
 
     for obj in vars(module).values():
-        if inspect.isclass(obj) and \
-           issubclass(obj, Spider) and \
-           obj.__module__ == module.__name__ and \
-           getattr(obj, 'name', None):
+        if (
+            inspect.isclass(obj)
+            and issubclass(obj, Spider)
+            and obj.__module__ == module.__name__
+            and getattr(obj, 'name', None)
+        ):
             yield obj
 
 

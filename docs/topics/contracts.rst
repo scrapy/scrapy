@@ -81,7 +81,7 @@ override three methods:
 .. class:: Contract(method, *args)
 
     :param method: callback function to which the contract is associated
-    :type method: function
+    :type method: collections.abc.Callable
 
     :param args: list of arguments passed into the docstring (whitespace
         separated)

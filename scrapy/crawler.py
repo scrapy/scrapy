@@ -277,7 +277,7 @@ class CrawlerProcess(CrawlerRunner):
     """
 
     def __init__(self, settings=None, install_root_handler=True):
-        super(CrawlerProcess, self).__init__(settings)
+        super().__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
@@ -307,7 +307,7 @@ class CrawlerProcess(CrawlerRunner):
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
 
-        :param boolean stop_after_crawl: stop or not the reactor when all
+        :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
         """
         from twisted.internet import reactor

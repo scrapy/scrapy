@@ -166,8 +166,7 @@ BaseItemExporter
       By default, this method looks for a serializer :ref:`declared in the item
       field <topics-exporters-serializers>` and returns the result of applying
       that serializer to the value. If no serializer is found, it returns the
-      value unchanged except for ``unicode`` values which are encoded to
-      ``str`` using the encoding declared in the :attr:`encoding` attribute.
+      value unchanged.
 
       :param field: the field being serialized. If the source :ref:`item object
           <item-types>` does not define field metadata, *field* is an empty
@@ -217,10 +216,7 @@ BaseItemExporter
 
    .. attribute:: encoding
 
-      The encoding that will be used to encode unicode values. This only
-      affects unicode values (which are always serialized to str using this
-      encoding). Other value types are passed unchanged to the specific
-      serialization library.
+      The output character encoding.
 
    .. attribute:: indent
 
@@ -309,7 +305,7 @@ CsvItemExporter
    :param include_headers_line: If enabled, makes the exporter output a header
       line with the field names taken from
       :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
-   :type include_headers_line: boolean
+   :type include_headers_line: bool
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.

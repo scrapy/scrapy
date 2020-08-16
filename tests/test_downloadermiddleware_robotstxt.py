@@ -30,7 +30,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def _get_successful_crawler(self):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
-        ROBOTS = u"""
+        ROBOTS = """
 User-Agent: *
 Disallow: /admin/
 Disallow: /static/
@@ -56,7 +56,7 @@ Disallow: /some/randome/page.html
             self.assertIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertIgnored(Request('http://site.local/static/'), middleware),
             self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware),
-            self.assertIgnored(Request(u'http://site.local/wiki/Käyttäjä:'), middleware)
+            self.assertIgnored(Request('http://site.local/wiki/Käyttäjä:'), middleware)
         ], fireOnOneErrback=True)
 
     def test_robotstxt_ready_parser(self):
@@ -189,7 +189,7 @@ class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
         skip = "Rerp parser is not installed"
 
     def setUp(self):
-        super(RobotsTxtMiddlewareWithRerpTest, self).setUp()
+        super().setUp()
         self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.RerpRobotParser')
 
 
@@ -198,5 +198,5 @@ class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
         skip = "Reppy parser is not installed"
 
     def setUp(self):
-        super(RobotsTxtMiddlewareWithReppyTest, self).setUp()
+        super().setUp()
         self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.ReppyRobotParser')

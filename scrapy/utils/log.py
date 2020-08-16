@@ -179,7 +179,7 @@ class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
 
     def __init__(self, crawler, *args, **kwargs):
-        super(LogCounterHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.crawler = crawler
 
     def emit(self, record):

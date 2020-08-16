@@ -23,7 +23,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     """
 
     def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
-        super(ScrapyClientContextFactory, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._ssl_method = method
         self.tls_verbose_logging = tls_verbose_logging
         if tls_ciphers:
@@ -48,7 +48,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         #   (https://github.com/scrapy/scrapy/issues/1429#issuecomment-131782133)
         #
         # * getattr() for `_ssl_method` attribute for context factories
-        #   not calling super(..., self).__init__
+        #   not calling super().__init__
         return CertificateOptions(
             verify=False,
             method=getattr(self, 'method', getattr(self, '_ssl_method', None)),

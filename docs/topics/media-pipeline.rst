@@ -207,7 +207,6 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 Google Cloud Storage
 ---------------------
 
-.. setting:: GCS_PROJECT_ID
 .. setting:: FILES_STORE_GCS_ACL
 .. setting:: IMAGES_STORE_GCS_ACL
 
@@ -413,15 +412,16 @@ See here the methods that you can override in your custom Files Pipeline:
 
 .. class:: FilesPipeline
 
-   .. method:: file_path(self, request, response=None, info=None)
+   .. method:: file_path(self, request, response=None, info=None, *, item=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
       :class:`response <scrapy.http.Response>`.
 
       In addition to ``response``, this method receives the original
-      :class:`request <scrapy.Request>` and
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+      :class:`request <scrapy.Request>`,
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`item <scrapy.item.Item>`
 
       You can override this method to customize the download path of each file.
 
@@ -437,9 +437,12 @@ See here the methods that you can override in your custom Files Pipeline:
 
         class MyFilesPipeline(FilesPipeline):
 
-            def file_path(self, request, response=None, info=None):
+            def file_path(self, request, response=None, info=None, *, item=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
+      Similarly, you can use the ``item`` to determine the file path based on some item 
+      property.
+      
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
@@ -545,15 +548,16 @@ See here the methods that you can override in your custom Images Pipeline:
     The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
     customizing the field names and adding custom behavior for images.
 
-   .. method:: file_path(self, request, response=None, info=None)
+   .. method:: file_path(self, request, response=None, info=None, *, item=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
       :class:`response <scrapy.http.Response>`.
 
       In addition to ``response``, this method receives the original
-      :class:`request <scrapy.Request>` and
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+      :class:`request <scrapy.Request>`,
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`item <scrapy.item.Item>`
 
       You can override this method to customize the download path of each file.
 
@@ -569,9 +573,12 @@ See here the methods that you can override in your custom Images Pipeline:
 
         class MyImagesPipeline(ImagesPipeline):
 
-            def file_path(self, request, response=None, info=None):
+            def file_path(self, request, response=None, info=None, *, item=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
+      Similarly, you can use the ``item`` to determine the file path based on some item 
+      property.
+      
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
