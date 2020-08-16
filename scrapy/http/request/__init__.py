@@ -4,6 +4,8 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+from urllib.parse import urlencode
+
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
@@ -18,11 +20,12 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None, cb_kwargs=None):
+                 dont_filter=False, errback=None, flags=None, cb_kwargs=None, params=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
         self._set_url(url)
+        self._set_params(params)
         self._set_body(body)
         if not isinstance(priority, int):
             raise TypeError("Request priority not an integer: %r" % priority)
@@ -54,6 +57,22 @@ class Request(object_ref):
         if self._meta is None:
             self._meta = {}
         return self._meta
+
+    def _get_params(self):
+        return self._params
+
+    def _set_params(self, params):
+        if params is None:
+            self._params = None
+            return
+        if isinstance(params, dict):
+            qs = urlencode(params, doseq=True)
+            self._set_url(self.url + ('&' if '?' in self.url else '?') + qs)
+            self._params = qs
+        else:
+            raise TypeError('Params must be dict, got {}'.format(type(params)))
+
+    params = property(_get_params, obsolete_setter(_set_params, 'params'))
 
     def _get_url(self):
         return self._url
