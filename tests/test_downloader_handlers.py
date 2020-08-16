@@ -287,7 +287,7 @@ class HttpTestCase(unittest.TestCase):
     def test_timeout_download_from_spider_nodata_rcvd(self):
         # client connects but no data is received
         spider = Spider('foo')
-        meta = {'download_timeout': 0.2}
+        meta = {'download_timeout': 0.5}
         request = Request(self.getURL('wait'), meta=meta)
         d = self.download_request(request, spider)
         yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
@@ -296,7 +296,7 @@ class HttpTestCase(unittest.TestCase):
     def test_timeout_download_from_spider_server_hangs(self):
         # client connects, server send headers and some body bytes but hangs
         spider = Spider('foo')
-        meta = {'download_timeout': 0.2}
+        meta = {'download_timeout': 0.5}
         request = Request(self.getURL('hang-after-headers'), meta=meta)
         d = self.download_request(request, spider)
         yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
