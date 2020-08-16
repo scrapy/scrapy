@@ -3,7 +3,7 @@ dist: xenial
 branches:
   only:
     - master
-    - http2  # Remove once merged into master
+    - http2  # ToDo: Remove once merged into master
     - /^\d\.\d+$/
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
