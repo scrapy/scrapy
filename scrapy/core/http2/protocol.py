@@ -323,7 +323,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
             elif isinstance(event, UnknownFrameReceived):
-                logger.debug(f'UnknownFrameReceived: frame={event.frame}')
+                logger.debug('UnknownFrameReceived: frame={}'.format(event.frame))
 
     # Event handler functions starts here
     def connection_terminated(self, event: ConnectionTerminated) -> None:

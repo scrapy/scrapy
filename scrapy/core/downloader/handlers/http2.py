@@ -71,8 +71,8 @@ class ScrapyH2Agent:
 
     def __init__(
         self, context_factory,
-        connect_timeout=10,
-        bind_address: Optional[bytes] = None, pool: H2ConnectionPool = None,
+        pool: H2ConnectionPool,
+        connect_timeout=10, bind_address: Optional[bytes] = None,
         crawler=None
     ) -> None:
         self._context_factory = context_factory
