@@ -1,8 +1,9 @@
 # Tests requirements
 attrs
 dataclasses; python_version == '3.6'
-mitmproxy; python_version >= '3.6'
-mitmproxy<4.0.0; python_version < '3.6'
+mitmproxy; python_version >= '3.7'
+mitmproxy >= 4, < 5; python_version >= '3.6' and python_version < '3.7'
+mitmproxy < 4; python_version < '3.6'
 # https://github.com/pytest-dev/pytest-twisted/issues/93
 pytest != 5.4, != 5.4.1
 pytest-azurepipelines
