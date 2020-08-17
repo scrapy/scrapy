@@ -1,8 +1,10 @@
 import logging
 import os
+import platform
 import subprocess
 import sys
 import warnings
+from unittest import skipIf
 
 from pytest import raises, mark
 from testfixtures import LogCapture
@@ -87,7 +89,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         class MySpider(scrapy.Spider):
             name = 'spider'
 
-        crawler = Crawler(MySpider, {})
+        Crawler(MySpider, {})
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
@@ -240,17 +242,20 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
-            runner = CrawlerRunner(settings={
+            CrawlerRunner(settings={
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             })
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                runner = CrawlerRunner(settings={
+                CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 })
 
     @defer.inlineCallbacks
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_crawler_process_asyncio_enabled_true(self):
         with LogCapture(level=logging.DEBUG) as log:
             if self.reactor_pytest == 'asyncio':
@@ -292,11 +297,17 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn('Spider closed (finished)', log)
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_asyncio_enabled_no_reactor(self):
         log = self.run_script('asyncio_enabled_no_reactor.py')
         self.assertIn('Spider closed (finished)', log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_asyncio_enabled_reactor(self):
         log = self.run_script('asyncio_enabled_reactor.py')
         self.assertIn('Spider closed (finished)', log)
@@ -305,31 +316,30 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.", log)
         self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
+        self.assertIn(
+            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
+            log)
 
     def test_ipv6_alternative_name_resolver(self):
         log = self.run_script('alternative_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertTrue(any([
-            "twisted.internet.error.ConnectionRefusedError" in log,
-            "twisted.internet.error.ConnectError" in log,
-        ]))
-        self.assertTrue(any([
-            "'downloader/exception_type_count/twisted.internet.error.ConnectionRefusedError': 1," in log,
-            "'downloader/exception_type_count/twisted.internet.error.ConnectError': 1," in log,
-        ]))
+        self.assertNotIn("twisted.internet.error.DNSLookupError", log)
 
     def test_reactor_select(self):
         log = self.run_script("twisted_reactor_select.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
 
+    @mark.skipif(platform.system() == 'Windows', reason="PollReactor is not supported on Windows")
     def test_reactor_poll(self):
         log = self.run_script("twisted_reactor_poll.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.pollreactor.PollReactor", log)
 
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)

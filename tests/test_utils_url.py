@@ -1,9 +1,14 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 from scrapy.spiders import Spider
-from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme, strip_url)
+from scrapy.utils.url import (
+    add_http_if_no_scheme,
+    guess_scheme,
+    _is_filesystem_path,
+    strip_url,
+    url_is_from_any_domain,
+    url_is_from_spider,
+)
 
 
 __doctests__ = ['scrapy.utils.url']
@@ -28,7 +33,10 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_any_domain(url, ['192.169.0.15:8080']))
         self.assertFalse(url_is_from_any_domain(url, ['192.169.0.15']))
 
-        url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
+        url = (
+            'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20'
+            'javascript:%20document.orderform_2581_1190810811.submit%28%29'
+        )
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
         self.assertFalse(url_is_from_any_domain(url + '.testdomain.com', ['testdomain.com']))
 
@@ -56,7 +64,7 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', spider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', spider))
 
-        spider = Spider(name='example.com', allowed_domains=set(('example.com', 'example.net')))
+        spider = Spider(name='example.com', allowed_domains={'example.com', 'example.net'})
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
 
         spider = Spider(name='example.com', allowed_domains=('example.com', 'example.net'))
@@ -77,108 +85,124 @@ class UrlUtilsTest(unittest.TestCase):
 class AddHttpIfNoScheme(unittest.TestCase):
 
     def test_add_scheme(self):
-        self.assertEqual(add_http_if_no_scheme('www.example.com'),
-                                               'http://www.example.com')
+        self.assertEqual(add_http_if_no_scheme('www.example.com'), 'http://www.example.com')
 
     def test_without_subdomain(self):
-        self.assertEqual(add_http_if_no_scheme('example.com'),
-                                               'http://example.com')
+        self.assertEqual(add_http_if_no_scheme('example.com'), 'http://example.com')
 
     def test_path(self):
-        self.assertEqual(add_http_if_no_scheme('www.example.com/some/page.html'),
-                                               'http://www.example.com/some/page.html')
+        self.assertEqual(
+            add_http_if_no_scheme('www.example.com/some/page.html'),
+            'http://www.example.com/some/page.html')
 
     def test_port(self):
-        self.assertEqual(add_http_if_no_scheme('www.example.com:80'),
-                                               'http://www.example.com:80')
+        self.assertEqual(
+            add_http_if_no_scheme('www.example.com:80'),
+            'http://www.example.com:80')
 
     def test_fragment(self):
-        self.assertEqual(add_http_if_no_scheme('www.example.com/some/page#frag'),
-                                               'http://www.example.com/some/page#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('www.example.com/some/page#frag'),
+            'http://www.example.com/some/page#frag')
 
     def test_query(self):
-        self.assertEqual(add_http_if_no_scheme('www.example.com/do?a=1&b=2&c=3'),
-                                               'http://www.example.com/do?a=1&b=2&c=3')
+        self.assertEqual(
+            add_http_if_no_scheme('www.example.com/do?a=1&b=2&c=3'),
+            'http://www.example.com/do?a=1&b=2&c=3')
 
     def test_username_password(self):
-        self.assertEqual(add_http_if_no_scheme('username:password@www.example.com'),
-                                               'http://username:password@www.example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('username:password@www.example.com'),
+            'http://username:password@www.example.com')
 
     def test_complete_url(self):
-        self.assertEqual(add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
-                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+            'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
 
     def test_preserve_http(self):
-        self.assertEqual(add_http_if_no_scheme('http://www.example.com'),
-                                               'http://www.example.com')
+        self.assertEqual(add_http_if_no_scheme('http://www.example.com'), 'http://www.example.com')
 
     def test_preserve_http_without_subdomain(self):
-        self.assertEqual(add_http_if_no_scheme('http://example.com'),
-                                               'http://example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('http://example.com'),
+            'http://example.com')
 
     def test_preserve_http_path(self):
-        self.assertEqual(add_http_if_no_scheme('http://www.example.com/some/page.html'),
-                                               'http://www.example.com/some/page.html')
+        self.assertEqual(
+            add_http_if_no_scheme('http://www.example.com/some/page.html'),
+            'http://www.example.com/some/page.html')
 
     def test_preserve_http_port(self):
-        self.assertEqual(add_http_if_no_scheme('http://www.example.com:80'),
-                                               'http://www.example.com:80')
+        self.assertEqual(
+            add_http_if_no_scheme('http://www.example.com:80'),
+            'http://www.example.com:80')
 
     def test_preserve_http_fragment(self):
-        self.assertEqual(add_http_if_no_scheme('http://www.example.com/some/page#frag'),
-                                               'http://www.example.com/some/page#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('http://www.example.com/some/page#frag'),
+            'http://www.example.com/some/page#frag')
 
     def test_preserve_http_query(self):
-        self.assertEqual(add_http_if_no_scheme('http://www.example.com/do?a=1&b=2&c=3'),
-                                               'http://www.example.com/do?a=1&b=2&c=3')
+        self.assertEqual(
+            add_http_if_no_scheme('http://www.example.com/do?a=1&b=2&c=3'),
+            'http://www.example.com/do?a=1&b=2&c=3')
 
     def test_preserve_http_username_password(self):
-        self.assertEqual(add_http_if_no_scheme('http://username:password@www.example.com'),
-                                               'http://username:password@www.example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('http://username:password@www.example.com'),
+            'http://username:password@www.example.com')
 
     def test_preserve_http_complete_url(self):
-        self.assertEqual(add_http_if_no_scheme('http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
-                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+            'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
 
     def test_protocol_relative(self):
-        self.assertEqual(add_http_if_no_scheme('//www.example.com'),
-                                               'http://www.example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('//www.example.com'), 'http://www.example.com')
 
     def test_protocol_relative_without_subdomain(self):
-        self.assertEqual(add_http_if_no_scheme('//example.com'),
-                                               'http://example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('//example.com'), 'http://example.com')
 
     def test_protocol_relative_path(self):
-        self.assertEqual(add_http_if_no_scheme('//www.example.com/some/page.html'),
-                                               'http://www.example.com/some/page.html')
+        self.assertEqual(
+            add_http_if_no_scheme('//www.example.com/some/page.html'),
+            'http://www.example.com/some/page.html')
 
     def test_protocol_relative_port(self):
-        self.assertEqual(add_http_if_no_scheme('//www.example.com:80'),
-                                               'http://www.example.com:80')
+        self.assertEqual(
+            add_http_if_no_scheme('//www.example.com:80'),
+            'http://www.example.com:80')
 
     def test_protocol_relative_fragment(self):
-        self.assertEqual(add_http_if_no_scheme('//www.example.com/some/page#frag'),
-                                               'http://www.example.com/some/page#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('//www.example.com/some/page#frag'),
+            'http://www.example.com/some/page#frag')
 
     def test_protocol_relative_query(self):
-        self.assertEqual(add_http_if_no_scheme('//www.example.com/do?a=1&b=2&c=3'),
-                                               'http://www.example.com/do?a=1&b=2&c=3')
+        self.assertEqual(
+            add_http_if_no_scheme('//www.example.com/do?a=1&b=2&c=3'),
+            'http://www.example.com/do?a=1&b=2&c=3')
 
     def test_protocol_relative_username_password(self):
-        self.assertEqual(add_http_if_no_scheme('//username:password@www.example.com'),
-                                               'http://username:password@www.example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('//username:password@www.example.com'),
+            'http://username:password@www.example.com')
 
     def test_protocol_relative_complete_url(self):
-        self.assertEqual(add_http_if_no_scheme('//username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
-                                               'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
+        self.assertEqual(
+            add_http_if_no_scheme('//username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag'),
+            'http://username:password@www.example.com:80/some/page/do?a=1&b=2&c=3#frag')
 
     def test_preserve_https(self):
-        self.assertEqual(add_http_if_no_scheme('https://www.example.com'),
-                                               'https://www.example.com')
+        self.assertEqual(
+            add_http_if_no_scheme('https://www.example.com'),
+            'https://www.example.com')
 
     def test_preserve_ftp(self):
-        self.assertEqual(add_http_if_no_scheme('ftp://www.example.com'),
-                                               'ftp://www.example.com')
+        self.assertEqual(add_http_if_no_scheme('ftp://www.example.com'), 'ftp://www.example.com')
 
 
 class GuessSchemeTest(unittest.TestCase):
@@ -189,8 +213,7 @@ def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
         assert url.startswith(args[1]), \
-            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
-                args[0], url, args[1])
+            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (args[0], url, args[1])
     return do_expected
 
 
@@ -202,41 +225,49 @@ def create_skipped_scheme_t(args):
     return do_expected
 
 
-for k, args in enumerate([
-            ('/index', 'file://'),
-            ('/index.html', 'file://'),
-            ('./index.html', 'file://'),
-            ('../index.html', 'file://'),
-            ('../../index.html', 'file://'),
-            ('./data/index.html', 'file://'),
-            ('.hidden/data/index.html', 'file://'),
-            ('/home/user/www/index.html', 'file://'),
-            ('//home/user/www/index.html', 'file://'),
-            ('file:///home/user/www/index.html', 'file://'),
+for k, args in enumerate(
+    [
+        ('/index', 'file://'),
+        ('/index.html', 'file://'),
+        ('./index.html', 'file://'),
+        ('../index.html', 'file://'),
+        ('../../index.html', 'file://'),
+        ('./data/index.html', 'file://'),
+        ('.hidden/data/index.html', 'file://'),
+        ('/home/user/www/index.html', 'file://'),
+        ('//home/user/www/index.html', 'file://'),
+        ('file:///home/user/www/index.html', 'file://'),
 
-            ('index.html', 'http://'),
-            ('example.com', 'http://'),
-            ('www.example.com', 'http://'),
-            ('www.example.com/index.html', 'http://'),
-            ('http://example.com', 'http://'),
-            ('http://example.com/index.html', 'http://'),
-            ('localhost', 'http://'),
-            ('localhost/index.html', 'http://'),
+        ('index.html', 'http://'),
+        ('example.com', 'http://'),
+        ('www.example.com', 'http://'),
+        ('www.example.com/index.html', 'http://'),
+        ('http://example.com', 'http://'),
+        ('http://example.com/index.html', 'http://'),
+        ('localhost', 'http://'),
+        ('localhost/index.html', 'http://'),
 
-            # some corner cases (default to http://)
-            ('/', 'http://'),
-            ('.../test', 'http://'),
-
-        ], start=1):
+        # some corner cases (default to http://)
+        ('/', 'http://'),
+        ('.../test', 'http://'),
+    ],
+    start=1,
+):
     t_method = create_guess_scheme_t(args)
     t_method.__name__ = 'test_uri_%03d' % k
     setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
-for k, args in enumerate([
-            (r'C:\absolute\path\to\a\file.html', 'file://',
-             'Windows filepath are not supported for scrapy shell'),
-        ], start=1):
+for k, args in enumerate(
+    [
+        (
+            r'C:\absolute\path\to\a\file.html',
+            'file://',
+            'Windows filepath are not supported for scrapy shell',
+        ),
+    ],
+    start=1,
+):
     t_method = create_skipped_scheme_t(args)
     t_method.__name__ = 'test_uri_skipped_%03d' % k
     setattr(GuessSchemeTest, t_method.__name__, t_method)
@@ -272,7 +303,7 @@ class StripUrl(unittest.TestCase):
             ('http://www.example.com',
              True,
              'http://www.example.com/'),
-            ]:
+        ]:
             self.assertEqual(strip_url(input_url, origin_only=origin), output_url)
 
     def test_credentials(self):
@@ -285,7 +316,7 @@ class StripUrl(unittest.TestCase):
 
             ('ftp://username:password@www.example.com/index.html?somekey=somevalue#section',
              'ftp://www.example.com/index.html?somekey=somevalue'),
-            ]:
+        ]:
             self.assertEqual(strip_url(i, strip_credentials=True), o)
 
     def test_credentials_encoded_delims(self):
@@ -304,7 +335,7 @@ class StripUrl(unittest.TestCase):
             # password: "user@domain.com"
             ('ftp://me:user%40domain.com@www.example.com/index.html?somekey=somevalue#section',
              'ftp://www.example.com/index.html?somekey=somevalue'),
-            ]:
+        ]:
             self.assertEqual(strip_url(i, strip_credentials=True), o)
 
     def test_default_ports_creds_off(self):
@@ -332,7 +363,7 @@ class StripUrl(unittest.TestCase):
 
             ('ftp://username:password@www.example.com:221/file.txt',
              'ftp://www.example.com:221/file.txt'),
-            ]:
+        ]:
             self.assertEqual(strip_url(i), o)
 
     def test_default_ports(self):
@@ -360,7 +391,7 @@ class StripUrl(unittest.TestCase):
 
             ('ftp://username:password@www.example.com:221/file.txt',
              'ftp://username:password@www.example.com:221/file.txt'),
-            ]:
+        ]:
             self.assertEqual(strip_url(i, strip_default_port=True, strip_credentials=False), o)
 
     def test_default_ports_keep(self):
@@ -388,7 +419,7 @@ class StripUrl(unittest.TestCase):
 
             ('ftp://username:password@www.example.com:221/file.txt',
              'ftp://username:password@www.example.com:221/file.txt'),
-            ]:
+        ]:
             self.assertEqual(strip_url(i, strip_default_port=False, strip_credentials=False), o)
 
     def test_origin_only(self):
@@ -404,8 +435,31 @@ class StripUrl(unittest.TestCase):
 
             ('https://username:password@www.example.com:443/index.html',
              'https://www.example.com/'),
-            ]:
+        ]:
             self.assertEqual(strip_url(i, origin_only=True), o)
+
+
+class IsPathTestCase(unittest.TestCase):
+
+    def test_path(self):
+        for input_value, output_value in (
+            # https://en.wikipedia.org/wiki/Path_(computing)#Representations_of_paths_by_operating_system_and_shell
+            # Unix-like OS, Microsoft Windows / cmd.exe
+            ("/home/user/docs/Letter.txt", True),
+            ("./inthisdir", True),
+            ("../../greatgrandparent", True),
+            ("~/.rcinfo", True),
+            (r"C:\user\docs\Letter.txt", True),
+            ("/user/docs/Letter.txt", True),
+            (r"C:\Letter.txt", True),
+            (r"\\Server01\user\docs\Letter.txt", True),
+            (r"\\?\UNC\Server01\user\docs\Letter.txt", True),
+            (r"\\?\C:\user\docs\Letter.txt", True),
+            (r"C:\user\docs\somefile.ext:alternate_stream_name", True),
+
+            (r"https://example.com", False),
+        ):
+            self.assertEqual(_is_filesystem_path(input_value), output_value, input_value)
 
 
 if __name__ == "__main__":

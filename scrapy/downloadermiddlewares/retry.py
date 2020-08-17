@@ -12,9 +12,15 @@ once the spider has finished crawling all regular (non failed) pages.
 import logging
 
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError,
+    ConnectionDone,
+    ConnectionLost,
+    ConnectionRefusedError,
+    DNSLookupError,
+    TCPTimedOutError,
+    TimeoutError,
+)
 from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import NotConfigured
@@ -54,8 +60,10 @@ class RetryMiddleware:
         return response
 
     def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
-                and not request.meta.get('dont_retry', False):
+        if (
+            isinstance(exception, self.EXCEPTIONS_TO_RETRY)
+            and not request.meta.get('dont_retry', False)
+        ):
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):

@@ -18,6 +18,14 @@ except ImportError:
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
+from twisted.web.test.test_webclient import (
+    ForeverTakingResource,
+    ErrorResource,
+    NoLengthResource,
+    HostHeaderResource,
+    PayloadResource,
+    BrokenDownloadResource,
+)
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
@@ -39,8 +47,9 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
         return f
 
     from twisted.web.client import _makeGetterFactory
-    return _makeGetterFactory(to_bytes(url), _clientfactory,
-        contextFactory=contextFactory, *args, **kwargs).deferred
+    return _makeGetterFactory(
+        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
+    ).deferred
 
 
 class ParseUrlTestCase(unittest.TestCase):
@@ -53,29 +62,29 @@ class ParseUrlTestCase(unittest.TestCase):
     def testParse(self):
         lip = '127.0.0.1'
         tests = (
-    ("http://127.0.0.1?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/foo?c=v&c2=v2#frag", ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
-    ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/foo?c=v&c2=v2')),
+            ("http://127.0.0.1?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
+            ("http://127.0.0.1/?c=v&c2=v2#fragment", ('http', lip, lip, 80, '/?c=v&c2=v2')),
+            ("http://127.0.0.1/foo?c=v&c2=v2#frag", ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
+            ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+            ("http://127.0.0.1:100/?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/?c=v&c2=v2')),
+            ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip + ':100', lip, 100, '/foo?c=v&c2=v2')),
 
-    ("http://127.0.0.1", ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/", ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/foo", ('http', lip, lip, 80, '/foo')),
-    ("http://127.0.0.1?param=value", ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1:12345/foo", ('http', lip + ':12345', lip, 12345, '/foo')),
-    ("http://spam:12345/foo", ('http', 'spam:12345', 'spam', 12345, '/foo')),
-    ("http://spam.test.org/foo", ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
+            ("http://127.0.0.1", ('http', lip, lip, 80, '/')),
+            ("http://127.0.0.1/", ('http', lip, lip, 80, '/')),
+            ("http://127.0.0.1/foo", ('http', lip, lip, 80, '/foo')),
+            ("http://127.0.0.1?param=value", ('http', lip, lip, 80, '/?param=value')),
+            ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
+            ("http://127.0.0.1:12345/foo", ('http', lip + ':12345', lip, 12345, '/foo')),
+            ("http://spam:12345/foo", ('http', 'spam:12345', 'spam', 12345, '/foo')),
+            ("http://spam.test.org/foo", ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
 
-    ("https://127.0.0.1/foo", ('https', lip, lip, 443, '/foo')),
-    ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
-    ("https://127.0.0.1:12345/", ('https', lip + ':12345', lip, 12345, '/')),
+            ("https://127.0.0.1/foo", ('https', lip, lip, 443, '/foo')),
+            ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
+            ("https://127.0.0.1:12345/", ('https', lip + ':12345', lip, 12345, '/')),
 
-    ("http://scrapytest.org/foo ", ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
-    ("http://egg:7890 ", ('http', 'egg:7890', 'egg', 7890, '/')),
-    )
+            ("http://scrapytest.org/foo ", ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
+            ("http://egg:7890 ", ('http', 'egg:7890', 'egg', 7890, '/')),
+        )
 
         for url, test in tests:
             test = tuple(
@@ -97,7 +106,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 'Content-Length': '12981',
                 'Useful': 'value'}))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Content-Length: 9\r\n"
             b"Useful: value\r\n"
@@ -110,7 +120,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request('http://foo/bar'))
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"\r\n")
@@ -122,7 +133,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             body='name=value',
             headers={'Content-Type': 'application/x-www-form-urlencoded'}))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"POST /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"Connection: close\r\n"
@@ -137,7 +149,8 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             url='http://foo/bar'
         ))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"POST /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"Content-Length: 0\r\n"
@@ -149,9 +162,11 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers={
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                }))
+            },
+        ))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"X-Meta-Multivalued: value1\r\n"
@@ -165,9 +180,11 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers=Headers({
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                })))
+            }),
+        ))
 
-        self._test(factory,
+        self._test(
+            factory,
             b"GET /bar HTTP/1.0\r\n"
             b"Host: foo\r\n"
             b"X-Meta-Multivalued: value1\r\n"
@@ -196,13 +213,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol.dataReceived(b"Hello: World\n")
         protocol.dataReceived(b"Foo: Bar\n")
         protocol.dataReceived(b"\n")
-        self.assertEqual(protocol.headers,
-            Headers({'Hello': ['World'], 'Foo': ['Bar']}))
-
-
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        ErrorResource, NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+        self.assertEqual(protocol.headers, Headers({'Hello': ['World'], 'Foo': ['Bar']}))
 
 
 class EncodingResource(resource.Resource):
@@ -335,18 +346,18 @@ class WebClientTestCase(unittest.TestCase):
         return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
 
     def _cbRedirect(self, pageData):
-        self.assertEqual(pageData,
-                b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
-                b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
-                b'<a href="/file">click here</a>\n    </body>\n</html>\n')
+        self.assertEqual(
+            pageData,
+            b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
+            b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
+            b'<a href="/file">click here</a>\n    </body>\n</html>\n')
 
     def test_encoding(self):
         """ Test that non-standart body encoding matches
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
-        return getPage(
-            self.getURL('encoding'), body=body, response_transform=lambda r: r)\
-            .addCallback(self._check_Encoding, body)
+        dfd = getPage(self.getURL('encoding'), body=body, response_transform=lambda r: r)
+        return dfd.addCallback(self._check_Encoding, body)
 
     def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b'Content-Encoding'])
@@ -398,10 +409,13 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         s = "0123456789" * 10
         settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': self.custom_ciphers})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
-        return getPage(self.getURL("payload"), body=s,
-                       contextFactory=client_context_factory).addCallback(self.assertEqual, to_bytes(s))
+        return getPage(
+            self.getURL("payload"), body=s, contextFactory=client_context_factory
+        ).addCallback(self.assertEqual, to_bytes(s))
 
-    def testPayloadDefaultCiphers(self):
+    def testPayloadDisabledCipher(self):
         s = "0123456789" * 10
-        d = getPage(self.getURL("payload"), body=s, contextFactory=ScrapyClientContextFactory())
+        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'ECDHE-RSA-AES256-GCM-SHA384'})
+        client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
+        d = getPage(self.getURL("payload"), body=s, contextFactory=client_context_factory)
         return self.assertFailure(d, OpenSSL.SSL.Error)

@@ -232,7 +232,8 @@ class ContractsManagerTest(unittest.TestCase):
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request)
         self.assertEqual(len(contracts), 2)
-        self.assertEqual(frozenset(type(x) for x in contracts),
+        self.assertEqual(
+            frozenset(type(x) for x in contracts),
             frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
@@ -377,7 +378,7 @@ class ContractsManagerTest(unittest.TestCase):
             name = 'test_same_url'
 
             def __init__(self, *args, **kwargs):
-                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
                 self.visited = 0
 
             def start_requests(s):

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import unittest
 from scrapy.responsetypes import responsetypes
 
@@ -24,11 +23,11 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             (b'attachment; filename="data.xml"', XmlResponse),
             (b'attachment; filename=data.xml', XmlResponse),
-            (u'attachment;filename=data£.tar.gz'.encode('utf-8'), Response),
-            (u'attachment;filename=dataµ.tar.gz'.encode('latin-1'), Response),
-            (u'attachment;filename=data高.doc'.encode('gbk'), Response),
-            (u'attachment;filename=دورهdata.html'.encode('cp720'), HtmlResponse),
-            (u'attachment;filename=日本語版Wikipedia.xml'.encode('iso2022_jp'), XmlResponse),
+            ('attachment;filename=data£.tar.gz'.encode('utf-8'), Response),
+            ('attachment;filename=dataµ.tar.gz'.encode('latin-1'), Response),
+            ('attachment;filename=data高.doc'.encode('gbk'), Response),
+            ('attachment;filename=دورهdata.html'.encode('cp720'), HtmlResponse),
+            ('attachment;filename=日本語版Wikipedia.xml'.encode('iso2022_jp'), XmlResponse),
 
         ]
         for source, cls in mappings:
@@ -64,8 +63,9 @@ class ResponseTypesTest(unittest.TestCase):
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
-            ({'Content-Type': ['application/octet-stream'], 'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
             ({'Content-Type': ['text/html; charset=utf-8'], 'Content-Encoding': ['gzip']}, Response),
+            ({'Content-Type': ['application/octet-stream'],
+              'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
         ]
         for source, cls in mappings:
             source = Headers(source)
@@ -77,8 +77,10 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             # headers takes precedence over url
-            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}), 'url': 'http://www.example.com/item/'}, HtmlResponse),
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}), 'url': 'http://www.example.com/page/'}, Response),
+            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
+              'url': 'http://www.example.com/item/'}, HtmlResponse),
+            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
+              'url': 'http://www.example.com/page/'}, Response),
 
 
         ]

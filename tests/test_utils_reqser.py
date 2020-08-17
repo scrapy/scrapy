@@ -15,13 +15,14 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r)
 
     def test_all_attributes(self):
-        r = Request("http://www.example.com",
+        r = Request(
+            url="http://www.example.com",
             callback=self.spider.parse_item,
             errback=self.spider.handle_error,
             method="POST",
             body=b"some body",
             headers={'content-encoding': 'text/html; charset=latin-1'},
-            cookies={'currency': u'руб'},
+            cookies={'currency': 'руб'},
             encoding='latin-1',
             priority=20,
             meta={'a': 'b'},
