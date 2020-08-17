@@ -573,7 +573,10 @@ class BadSpider(scrapy.Spider):
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
-            '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor', '-s', 'ASYNCIO_EVENT_LOOP=uvloop.Loop'
+            '-s',
+            'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor',
+            '-s',
+            'ASYNCIO_EVENT_LOOP=uvloop.Loop',
         ])
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
