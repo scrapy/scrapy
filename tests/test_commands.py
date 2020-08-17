@@ -8,7 +8,7 @@ import sys
 import tempfile
 from contextlib import contextmanager
 from itertools import chain
-from os.path import exists, join, abspath
+from os.path import exists, join, abspath, getmtime
 from pathlib import Path
 from shutil import rmtree, copytree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
@@ -337,8 +337,11 @@ class GenspiderCommandTest(CommandTest):
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn("Created spider %r using template %r in module" % (spname, tplname), out)
         self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
+        modify_time_before = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn("Spider %r already exists in module" % spname, out)
+        modify_time_after = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
+        self.assertEqual(modify_time_after, modify_time_before)
 
     def test_template_basic(self):
         self.test_template('basic')
@@ -360,12 +363,74 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(2, self.call('genspider', self.project_name))
         assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
+    def test_same_filename_as_existing_spider(self, force=False):
+        file_name = 'example'
+        file_path = join(self.proj_mod_path, 'spiders', '%s.py' % file_name)
+        self.assertEqual(0, self.call('genspider', file_name, 'example.com'))
+        assert exists(file_path)
+
+        # change name of spider but not its file name
+        with open(file_path, 'r+') as spider_file:
+            file_data = spider_file.read()
+            file_data = file_data.replace("name = \'example\'", "name = \'renamed\'")
+            spider_file.seek(0)
+            spider_file.write(file_data)
+            spider_file.truncate()
+        modify_time_before = getmtime(file_path)
+        file_contents_before = file_data
+
+        if force:
+            p, out, err = self.proc('genspider', '--force', file_name, 'example.com')
+            self.assertIn("Created spider %r using template \'basic\' in module" % file_name, out)
+            modify_time_after = getmtime(file_path)
+            self.assertNotEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertNotEqual(file_contents_after, file_contents_before)
+        else:
+            p, out, err = self.proc('genspider', file_name, 'example.com')
+            self.assertIn("%s already exists" % (file_path), out)
+            modify_time_after = getmtime(file_path)
+            self.assertEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertEqual(file_contents_after, file_contents_before)
+
+    def test_same_filename_as_existing_spider_force(self):
+        self.test_same_filename_as_existing_spider(force=True)
+
 
 class GenspiderStandaloneCommandTest(ProjectTest):
 
     def test_generate_standalone_spider(self):
         self.call('genspider', 'example', 'example.com')
         assert exists(join(self.temp_path, 'example.py'))
+
+    def test_same_name_as_existing_file(self, force=False):
+        file_name = 'example'
+        file_path = join(self.temp_path, file_name + '.py')
+        p, out, err = self.proc('genspider', file_name, 'example.com')
+        self.assertIn("Created spider %r using template \'basic\' " % file_name, out)
+        assert exists(file_path)
+        modify_time_before = getmtime(file_path)
+        file_contents_before = open(file_path, 'r').read()
+
+        if force:
+            # use different template to ensure contents were changed
+            p, out, err = self.proc('genspider', '--force', '-t', 'crawl', file_name, 'example.com')
+            self.assertIn("Created spider %r using template \'crawl\' " % file_name, out)
+            modify_time_after = getmtime(file_path)
+            self.assertNotEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertNotEqual(file_contents_after, file_contents_before)
+        else:
+            p, out, err = self.proc('genspider', file_name, 'example.com')
+            self.assertIn("%s already exists" % join(self.temp_path, file_name + ".py"), out)
+            modify_time_after = getmtime(file_path)
+            self.assertEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertEqual(file_contents_after, file_contents_before)
+
+    def test_same_name_as_existing_file_force(self):
+        self.test_same_name_as_existing_file(force=True)
 
 
 class MiscCommandsTest(CommandTest):
