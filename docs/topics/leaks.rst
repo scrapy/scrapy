@@ -179,7 +179,7 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
     :param ignore: if given, all objects from the specified class (or tuple of
         classes) will be ignored.
-    :type ignore: class or classes tuple
+    :type ignore: type or tuple
 
 .. function:: get_oldest(class_name)
 
