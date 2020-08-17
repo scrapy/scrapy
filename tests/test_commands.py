@@ -571,6 +571,7 @@ class BadSpider(scrapy.Spider):
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system == 'Windows', reason='uvloop does not support Windows')
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s',
