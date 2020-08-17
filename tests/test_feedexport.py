@@ -5,7 +5,6 @@ import random
 import shutil
 import string
 import tempfile
-import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from io import BytesIO
@@ -182,15 +181,11 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 class S3FeedStorageTest(unittest.TestCase):
 
-    @mock.patch('scrapy.utils.project.get_project_settings',
-                new=mock.MagicMock(return_value={'AWS_ACCESS_KEY_ID': 'conf_key',
-                                                 'AWS_SECRET_ACCESS_KEY': 'conf_secret'}),
-                create=True)
     def test_parse_credentials(self):
         try:
-            import boto  # noqa: F401
+            import botocore  # noqa: F401
         except ImportError:
-            raise unittest.SkipTest("S3FeedStorage requires boto")
+            raise unittest.SkipTest("S3FeedStorage requires botocore")
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
                            'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
         crawler = get_crawler(settings_dict=aws_credentials)
@@ -211,12 +206,6 @@ class S3FeedStorageTest(unittest.TestCase):
                                 aws_credentials['AWS_SECRET_ACCESS_KEY'])
         self.assertEqual(storage.access_key, 'uri_key')
         self.assertEqual(storage.secret_key, 'uri_secret')
-        # Backward compatibility for initialising without settings
-        with warnings.catch_warnings(record=True) as w:
-            storage = S3FeedStorage('s3://mybucket/export.csv')
-            self.assertEqual(storage.access_key, 'conf_key')
-            self.assertEqual(storage.secret_key, 'conf_secret')
-            self.assertTrue('without AWS keys' in str(w[-1].message))
 
     @defer.inlineCallbacks
     def test_store(self):
