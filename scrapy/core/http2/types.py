@@ -31,6 +31,29 @@ class H2ConnectionMetadataDict(TypedDict):
     default_download_warnsize: int
 
 
+class H2StreamMetadataDict(TypedDict):
+    """Metadata of an HTTP/2 connection stream
+    initialized when stream is instantiated
+    """
+
+    request_content_length: int
+
+    # Flag to keep track whether the stream has initiated the request
+    request_sent: bool
+
+    # Flag to track whether we have logged about exceeding download warnsize
+    reached_warnsize: bool
+
+    # Each time we send a data frame, we will decrease value by the amount send.
+    remaining_content_length: int
+
+    # Flag to keep track whether we have closed this stream
+    stream_closed_local: bool
+
+    # Flag to keep track whether the server has closed the stream
+    stream_closed_server: bool
+
+
 class H2ResponseDict(TypedDict):
     # Data received frame by frame from the server is appended
     # and passed to the response Deferred when completely received.

@@ -289,7 +289,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             self._conn_lost_deferred.callback(self._conn_lost_errors)
 
         for stream in self.streams.values():
-            if stream.request_sent:
+            if stream.metadata['request_sent']:
                 close_reason = StreamCloseReason.CONNECTION_LOST
             else:
                 close_reason = StreamCloseReason.INACTIVE

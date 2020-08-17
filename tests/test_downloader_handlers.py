@@ -232,7 +232,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.host = u'localhost'
+        self.host = 'localhost'
         if self.scheme == 'https':
             # Using WrappingFactory do not enable HTTP/2 failing all the
             # tests with H2DownloadHandler
