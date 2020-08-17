@@ -362,7 +362,7 @@ class FilesPipeline(MediaPipeline):
         resolve = functools.partial(self._key_for_pipe,
                                     base_class_name=cls_name,
                                     settings=settings)
-        self.expires = settings.getint(
+        self.expires = settings.getfloat(
             resolve('FILES_EXPIRES'), self.EXPIRES
         )
         if not hasattr(self, "FILES_URLS_FIELD"):
