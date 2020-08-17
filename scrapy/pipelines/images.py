@@ -103,12 +103,12 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
-    def file_downloaded(self, response, request, info):
-        return self.image_downloaded(response, request, info)
+    def file_downloaded(self, response, request, info, *, item=None):
+        return self.image_downloaded(response, request, info, item=item)
 
-    def image_downloaded(self, response, request, info):
+    def image_downloaded(self, response, request, info, *, item=None):
         checksum = None
-        for path, image, buf in self.get_images(response, request, info):
+        for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
@@ -119,8 +119,8 @@ class ImagesPipeline(FilesPipeline):
                 headers={'Content-Type': 'image/jpeg'})
         return checksum
 
-    def get_images(self, response, request, info):
-        path = self.file_path(request, response=response, info=info)
+    def get_images(self, response, request, info, *, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
@@ -166,7 +166,7 @@ class ImagesPipeline(FilesPipeline):
             ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
         return item
 
-    def file_path(self, request, response=None, info=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return 'full/%s.jpg' % (image_guid)
 
