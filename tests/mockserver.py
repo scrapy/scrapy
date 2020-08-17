@@ -3,7 +3,10 @@ import json
 import os
 import random
 import sys
+from pathlib import Path
+from shutil import rmtree
 from subprocess import Popen, PIPE
+from tempfile import mkdtemp
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
@@ -254,6 +257,29 @@ class MockDNSServer:
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
         self.proc.communicate()
+
+
+class MockFTPServer:
+    """Creates an FTP server on port 2121 with a default passwordless user
+    (anonymous) and a temporary root path that you can read from the
+    :attr:`path` attribute."""
+
+    def __enter__(self):
+        self.path = Path(mkdtemp())
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
+                          stderr=PIPE, env=get_testenv())
+        for line in self.proc.stderr:
+            if b'starting FTP server' in line:
+                break
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        rmtree(str(self.path))
+        self.proc.kill()
+        self.proc.communicate()
+
+    def url(self, path):
+        return 'ftp://127.0.0.1:2121/' + path
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):

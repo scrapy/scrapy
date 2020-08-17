@@ -74,6 +74,7 @@ class ProjectTest(unittest.TestCase):
 
         def kill_proc():
             p.kill()
+            p.communicate()
             assert False, 'Command took too much time to complete'
 
         timer = Timer(15, kill_proc)
@@ -569,6 +570,55 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    def test_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        return []
+"""
+        args = ['-o', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}", log)
+
+    def test_overwrite_output(self):
+        spider_code = """
+import json
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug(
+            'FEEDS: {}'.format(
+                json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
+            )
+        )
+        return []
+"""
+        args = ['-O', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+
+    def test_output_and_overwrite_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        return []
+"""
+        args = ['-o', 'example1.json', '-O', 'example2.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
+
 
 class BenchCommandTest(CommandTest):
 
@@ -577,3 +627,79 @@ class BenchCommandTest(CommandTest):
                               '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
+
+
+class CrawlCommandTest(CommandTest):
+
+    def crawl(self, code, args=()):
+        fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
+        with open(fname, 'w') as f:
+            f.write(code)
+        return self.proc('crawl', 'myspider', *args)
+
+    def get_log(self, code, args=()):
+        _, _, stderr = self.crawl(code, args=args)
+        return stderr
+
+    def test_no_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('It works!')
+        return []
+"""
+        log = self.get_log(spider_code)
+        self.assertIn("[myspider] DEBUG: It works!", log)
+
+    def test_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        return []
+"""
+        args = ['-o', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}", log)
+
+    def test_overwrite_output(self):
+        spider_code = """
+import json
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug(
+            'FEEDS: {}'.format(
+                json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
+            )
+        )
+        return []
+"""
+        args = ['-O', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+
+    def test_output_and_overwrite_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        return []
+"""
+        args = ['-o', 'example1.json', '-O', 'example2.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
