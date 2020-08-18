@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from h2.errors import ErrorCodes
-from h2.exceptions import H2Error, StreamClosedError, ProtocolError
+from h2.exceptions import H2Error, ProtocolError, StreamClosedError
 from hpack import HeaderTuple
 from twisted.internet.defer import Deferred, CancelledError
 from twisted.internet.error import ConnectionClosed
