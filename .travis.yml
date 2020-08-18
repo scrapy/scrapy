@@ -46,7 +46,7 @@ matrix:
     - env: TOXENV=asyncio
       python: 3.8
       dist: bionic
-    - env: TOXENV=py PYTHONOPTIMIZE=2
+    - env: TOXENV=py PYTHONOPTIMIZE=1
       python: 3.8
       dist: bionic
 install:
