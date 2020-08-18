@@ -118,6 +118,22 @@ Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 
   conda install -c conda-forge scrapy
 
+To install Scrapy on Windows using pip :-
+
+1. Install latest version of `Python`_ (Do not forget to tick [Add Python to PATH] checkbox during installation)
+
+2. Install or upgrade pip::
+
+   python -m pip install --upgrade pip
+
+3. Create Venv (Virtual Environment) by using::
+
+   python3 -m venv [env name]
+
+4. Download `Microsoft Visual C++ 14.0`_
+
+5.
+
 
 .. _intro-install-ubuntu:
 
@@ -271,4 +287,5 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: https://docs.anaconda.com/anaconda/
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+.. _Microsoft Visual C++ 14.0 : https://visualstudio.microsoft.com/visual-cpp-build-tools/
 .. _conda-forge: https://conda-forge.org/
