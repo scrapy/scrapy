@@ -128,7 +128,7 @@ To install Scrapy on Windows using pip :-
 
 3. Create Venv (Virtual Environment) by using::
 
-   python3 -m venv [env name]
+   python -m venv [env name]
 
 4. Download `Microsoft Visual C++ 14.0`_
 
