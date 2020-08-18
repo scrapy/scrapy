@@ -343,7 +343,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def __init__(self, *args, **kwargs):
-        super(MockedMediaPipelineDeprecatedMethods, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._mockcalled = []
 
     def get_media_requests(self, item, info):
@@ -358,19 +358,19 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def media_to_download(self, request, info):
         self._mockcalled.append('media_to_download')
-        return super(MockedMediaPipelineDeprecatedMethods, self).media_to_download(request, info)
+        return super().media_to_download(request, info)
 
     def media_downloaded(self, response, request, info):
         self._mockcalled.append('media_downloaded')
-        return super(MockedMediaPipelineDeprecatedMethods, self).media_downloaded(response, request, info)
+        return super().media_downloaded(response, request, info)
 
     def file_downloaded(self, response, request, info):
         self._mockcalled.append('file_downloaded')
-        return super(MockedMediaPipelineDeprecatedMethods, self).file_downloaded(response, request, info)
+        return super().file_downloaded(response, request, info)
 
     def file_path(self, request, response=None, info=None):
         self._mockcalled.append('file_path')
-        return super(MockedMediaPipelineDeprecatedMethods, self).file_path(request, response, info)
+        return super().file_path(request, response, info)
 
     def get_images(self, response, request, info):
         self._mockcalled.append('get_images')
@@ -378,13 +378,16 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def image_downloaded(self, response, request, info):
         self._mockcalled.append('image_downloaded')
-        return super(MockedMediaPipelineDeprecatedMethods, self).image_downloaded(response, request, info)
+        return super().image_downloaded(response, request, info)
 
 
 class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.pipe = MockedMediaPipelineDeprecatedMethods(store_uri='store-uri', download_func=_mocked_download_func)
+        settings_dict = {'IMAGES_STORE': 'store-uri'}
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipe = MockedMediaPipelineDeprecatedMethods.from_crawler(crawler)
+        self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(None)
         self.item = dict(image_urls=['http://picsum.photos/id/1014/200/300'], images=[])
 
