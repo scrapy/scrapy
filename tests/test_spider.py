@@ -412,6 +412,11 @@ class SitemapSpiderTest(SpiderTest):
     g.close()
     GZBODY = f.getvalue()
 
+    def test_parse_sitemap(self):
+        r = Response(url="http://www.example.com", body=b"")        
+        with LogCapture() as lc:            
+            spider.log('Ignoring invalid sitemap', 'WARNING')
+
     def assertSitemapBody(self, response, body):
         spider = self.spider_class("example.com")
         self.assertEqual(spider._get_sitemap_body(response), body)
