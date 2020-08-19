@@ -1,5 +1,5 @@
-import logging
 import inspect
+import logging
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
@@ -18,7 +18,11 @@ def iterate_spider_output(result):
         d = deferred_from_coro(collect_asyncgen(result))
         d.addCallback(iterate_spider_output)
         return d
-    return arg_to_iter(deferred_from_coro(result))
+    elif inspect.iscoroutine(result):
+        d = deferred_from_coro(result)
+        d.addCallback(iterate_spider_output)
+        return d
+    return arg_to_iter(result)
 
 
 def iter_spider_classes(module):
@@ -30,10 +34,12 @@ def iter_spider_classes(module):
     from scrapy.spiders import Spider
 
     for obj in vars(module).values():
-        if inspect.isclass(obj) and \
-           issubclass(obj, Spider) and \
-           obj.__module__ == module.__name__ and \
-           getattr(obj, 'name', None):
+        if (
+            inspect.isclass(obj)
+            and issubclass(obj, Spider)
+            and obj.__module__ == module.__name__
+            and getattr(obj, 'name', None)
+        ):
             yield obj
 
 

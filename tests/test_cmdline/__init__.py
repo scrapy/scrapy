@@ -59,7 +59,7 @@ class CmdlineTest(unittest.TestCase):
                                     'EXTENSIONS=' + json.dumps(EXTENSIONS))
         # XXX: There's gotta be a smarter way to do this...
         self.assertNotIn("...", settingsstr)
-        for char in ("'", "<", ">", 'u"'):
+        for char in ("'", "<", ">"):
             settingsstr = settingsstr.replace(char, '"')
         settingsdict = json.loads(settingsstr)
         self.assertCountEqual(settingsdict.keys(), EXTENSIONS.keys())

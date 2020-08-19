@@ -7,10 +7,6 @@ Coroutines
 Scrapy has :ref:`partial support <coroutine-support>` for the
 :ref:`coroutine syntax <async>`.
 
-.. warning:: :mod:`asyncio` support in Scrapy is experimental. Future Scrapy
-             versions may introduce related API and behavior changes without a
-             deprecation period or warning.
-
 .. _coroutine-support:
 
 Supported callables
@@ -57,27 +53,34 @@ There are several use cases for coroutines in Scrapy. Code that would
 return Deferreds when written for previous Scrapy versions, such as downloader
 middlewares and signal handlers, can be rewritten to be shorter and cleaner::
 
+    from itemadapter import ItemAdapter
+
     class DbPipeline:
         def _update_item(self, data, item):
-            item['field'] = data
+            adapter = ItemAdapter(item)
+            adapter['field'] = data
             return item
 
         def process_item(self, item, spider):
-            dfd = db.get_some_data(item['id'])
+            adapter = ItemAdapter(item)
+            dfd = db.get_some_data(adapter['id'])
             dfd.addCallback(self._update_item, item)
             return dfd
 
 becomes::
 
+    from itemadapter import ItemAdapter
+
     class DbPipeline:
         async def process_item(self, item, spider):
-            item['field'] = await db.get_some_data(item['id'])
+            adapter = ItemAdapter(item)
+            adapter['field'] = await db.get_some_data(adapter['id'])
             return item
 
 Coroutines may be used to call asynchronous code. This includes other
 coroutines, functions that return Deferreds and functions that return
-`awaitable objects`_ such as :class:`~asyncio.Future`. This means you can use
-many useful Python libraries providing such code::
+:term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
+This means you can use many useful Python libraries providing such code::
 
     class MySpider(Spider):
         # ...
@@ -107,4 +110,3 @@ Common use cases for asynchronous code include:
   :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
-.. _awaitable objects: https://docs.python.org/3/glossary.html#term-awaitable

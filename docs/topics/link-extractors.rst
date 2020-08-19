@@ -46,13 +46,13 @@ LxmlLinkExtractor
     :param allow: a single regular expression (or list of regular expressions)
         that the (absolute) urls must match in order to be extracted. If not
         given (or empty), it will match all links.
-    :type allow: a regular expression (or list of)
+    :type allow: str or list
 
     :param deny: a single regular expression (or list of regular expressions)
         that the (absolute) urls must match in order to be excluded (i.e. not
         extracted). It has precedence over the ``allow`` parameter. If not
         given (or empty) it won't exclude any links.
-    :type deny: a regular expression (or list of)
+    :type deny: str or list
 
     :param allow_domains: a single value or a list of string containing
         domains which will be considered for extracting the links
@@ -88,7 +88,7 @@ LxmlLinkExtractor
         that the link's text must match in order to be extracted. If not
         given (or empty), it will match all links. If a list of regular expressions is
         given, the link will be extracted if it matches at least one.
-    :type restrict_text: a regular expression (or list of)
+    :type restrict_text: str or list
 
     :param tags: a tag or a list of tags to consider when extracting links.
         Defaults to ``('a', 'area')``.
@@ -106,11 +106,11 @@ LxmlLinkExtractor
         different for requests with canonicalized and raw URLs. If you're
         using LinkExtractor to follow links it is more robust to
         keep the default ``canonicalize=False``.
-    :type canonicalize: boolean
+    :type canonicalize: bool
 
     :param unique: whether duplicate filtering should be applied to extracted
         links.
-    :type unique: boolean
+    :type unique: bool
 
     :param process_value: a function which receives each value extracted from
         the tag and attributes scanned and can modify the value and return a
@@ -132,7 +132,7 @@ LxmlLinkExtractor
                 if m:
                     return m.group(1)
 
-    :type process_value: callable
+    :type process_value: collections.abc.Callable
 
     :param strip: whether to strip whitespaces from extracted attributes.
         According to HTML5 standard, leading and trailing whitespaces
@@ -141,7 +141,7 @@ LxmlLinkExtractor
         elements, etc., so LinkExtractor strips space chars by default.
         Set ``strip=False`` to turn it off (e.g. if you're extracting urls
         from elements or attributes which allow leading/trailing whitespaces).
-    :type strip: boolean
+    :type strip: bool
 
     .. automethod:: extract_links
 

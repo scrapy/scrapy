@@ -10,24 +10,26 @@ import mimetypes
 import os
 import time
 from collections import defaultdict
-from email.utils import parsedate_tz, mktime_tz
+from contextlib import suppress
+from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
 from io import BytesIO
 from urllib.parse import urlparse
 
+from itemadapter import ItemAdapter
 from twisted.internet import defer, threads
 
+from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.http import Request
-from scrapy.utils.misc import md5sum
-from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
-from scrapy.utils.request import referer_str
 from scrapy.utils.boto import is_botocore
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import md5sum
+from scrapy.utils.python import to_bytes
+from scrapy.utils.request import referer_str
 
 
 logger = logging.getLogger(__name__)
@@ -83,8 +85,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in
-                        # FilesPipeline.from_settings.
+    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
@@ -106,7 +107,8 @@ class S3FilesStore:
         else:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
-        assert uri.startswith('s3://')
+        if not uri.startswith("s3://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
@@ -229,6 +231,20 @@ class GCSFilesStore:
         bucket, prefix = uri[5:].split('/', 1)
         self.bucket = client.bucket(bucket)
         self.prefix = prefix
+        permissions = self.bucket.test_iam_permissions(
+            ['storage.objects.get', 'storage.objects.create']
+        )
+        if 'storage.objects.get' not in permissions:
+            logger.warning(
+                "No 'storage.objects.get' permission for GSC bucket %(bucket)s. "
+                "Checking if files are up to date will be impossible. Files will be downloaded every time.",
+                {'bucket': bucket}
+            )
+        if 'storage.objects.create' not in permissions:
+            logger.error(
+                "No 'storage.objects.create' permission for GSC bucket %(bucket)s. Saving files will be impossible!",
+                {'bucket': bucket}
+            )
 
     def stat_file(self, path, info):
         def _onsuccess(blob):
@@ -266,7 +282,8 @@ class FTPFilesStore:
     USE_ACTIVE_MODE = None
 
     def __init__(self, uri):
-        assert uri.startswith('ftp://')
+        if not uri.startswith("ftp://"):
+            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
         u = urlparse(uri)
         self.port = u.port
         self.host = u.hostname
@@ -359,7 +376,7 @@ class FilesPipeline(MediaPipeline):
             resolve('FILES_RESULT_FIELD'), self.FILES_RESULT_FIELD
         )
 
-        super(FilesPipeline, self).__init__(download_func=download_func, settings=settings)
+        super().__init__(download_func=download_func, settings=settings)
 
     @classmethod
     def from_settings(cls, settings):
@@ -392,7 +409,7 @@ class FilesPipeline(MediaPipeline):
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 
-    def media_to_download(self, request, info):
+    def media_to_download(self, request, info, *, item=None):
         def _onsuccess(result):
             if not result:
                 return  # returning None force download
@@ -417,9 +434,9 @@ class FilesPipeline(MediaPipeline):
             self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
-            return {'url': request.url, 'path': path, 'checksum': checksum}
+            return {'url': request.url, 'path': path, 'checksum': checksum, 'status': 'uptodate'}
 
-        path = self.file_path(request, info=info)
+        path = self.file_path(request, info=info, item=item)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(
@@ -443,7 +460,7 @@ class FilesPipeline(MediaPipeline):
 
         raise FileException
 
-    def media_downloaded(self, response, request, info):
+    def media_downloaded(self, response, request, info, *, item=None):
         referer = referer_str(request)
 
         if response.status != 200:
@@ -475,8 +492,8 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats(info.spider, status)
 
         try:
-            path = self.file_path(request, response=response, info=info)
-            checksum = self.file_downloaded(response, request, info)
+            path = self.file_path(request, response=response, info=info, item=item)
+            checksum = self.file_downloaded(response, request, info, item=item)
         except FileException as exc:
             logger.warning(
                 'File (error): Error processing file from %(request)s '
@@ -494,7 +511,7 @@ class FilesPipeline(MediaPipeline):
             )
             raise FileException(str(exc))
 
-        return {'url': request.url, 'path': path, 'checksum': checksum}
+        return {'url': request.url, 'path': path, 'checksum': checksum, 'status': status}
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
@@ -502,10 +519,11 @@ class FilesPipeline(MediaPipeline):
 
     # Overridable Interface
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.files_urls_field, [])]
+        urls = ItemAdapter(item).get(self.files_urls_field, [])
+        return [Request(u) for u in urls]
 
-    def file_downloaded(self, response, request, info):
-        path = self.file_path(request, response=response, info=info)
+    def file_downloaded(self, response, request, info, *, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
         checksum = md5sum(buf)
         buf.seek(0)
@@ -513,11 +531,11 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.files_result_field in item.fields:
-            item[self.files_result_field] = [x for ok, x in results if ok]
+        with suppress(KeyError):
+            ItemAdapter(item)[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
-    def file_path(self, request, response=None, info=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         media_ext = os.path.splitext(request.url)[1]
         # Handles empty and wild extensions by trying to guess the

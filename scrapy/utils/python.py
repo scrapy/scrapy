@@ -6,10 +6,12 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from functools import partial, wraps
 from itertools import chain
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.decorators import deprecated
 
 
@@ -127,6 +129,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
     def _chunk_iter():
         offset = len(text)
         while True:
@@ -152,11 +155,13 @@ def memoizemethod_noargs(method):
     weak reference to its object
     """
     cache = weakref.WeakKeyDictionary()
+
     @wraps(method)
     def new_method(self, *args, **kwargs):
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
+
     return new_method
 
 
@@ -193,7 +198,8 @@ def _getargspec_py23(func):
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
-        func_args, _, _, _ = _getargspec_py23(func)
+        spec = inspect.getfullargspec(func)
+        func_args = spec.args + spec.kwonlyargs
     elif inspect.isclass(func):
         return get_func_args(func.__init__, True)
     elif inspect.ismethod(func):
@@ -275,6 +281,7 @@ def equal_attributes(obj1, obj2, attributes):
 class WeakKeyCache:
 
     def __init__(self, default_factory):
+        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
 
@@ -284,6 +291,7 @@ class WeakKeyCache:
         return self._weakdict[key]
 
 
+@deprecated
 def retry_on_eintr(function, *args, **kw):
     """Run a function and retry it while getting EINTR errors"""
     while True:
@@ -333,10 +341,10 @@ class MutableChain:
     """
 
     def __init__(self, *args):
-        self.data = chain(*args)
+        self.data = chain.from_iterable(args)
 
     def extend(self, *iterables):
-        self.data = chain(self.data, *iterables)
+        self.data = chain(self.data, chain.from_iterable(iterables))
 
     def __iter__(self):
         return self

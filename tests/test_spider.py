@@ -11,8 +11,14 @@ from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.spiders.init import InitSpider
-from scrapy.spiders import Spider, CrawlSpider, Rule, XMLFeedSpider, \
-    CSVFeedSpider, SitemapSpider
+from scrapy.spiders import (
+    CSVFeedSpider,
+    CrawlSpider,
+    Rule,
+    SitemapSpider,
+    Spider,
+    XMLFeedSpider,
+)
 from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.test import get_crawler
@@ -120,7 +126,9 @@ class XMLFeedSpiderTest(SpiderTest):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
                 xmlns:y="http://www.example.com/schemas/extras/1.0">
-        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated><other value="bar" y:custom="fuu"/></url>
+        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated>
+            <other value="bar" y:custom="fuu"/>
+        </url>
         <url><loc>http://www.example.com/</loc><y:updated>2009-08-16</updated><other value="foo"/></url>
         </urlset>"""
         response = XmlResponse(url='http://example.com/sitemap.xml', body=body)
@@ -142,16 +150,16 @@ class XMLFeedSpiderTest(SpiderTest):
 
         for iterator in ('iternodes', 'xml'):
             spider = _XMLSpider('example', iterator=iterator)
-            output = list(spider.parse(response))
+            output = list(spider._parse(response))
             self.assertEqual(len(output), 2, iterator)
             self.assertEqual(output, [
-                {'loc': [u'http://www.example.com/Special-Offers.html'],
-                 'updated': [u'2009-08-16'],
-                 'custom': [u'fuu'],
-                 'other': [u'bar']},
+                {'loc': ['http://www.example.com/Special-Offers.html'],
+                 'updated': ['2009-08-16'],
+                 'custom': ['fuu'],
+                 'other': ['bar']},
                 {'loc': [],
-                 'updated': [u'2009-08-16'],
-                 'other': [u'foo'],
+                 'updated': ['2009-08-16'],
+                 'other': ['foo'],
                  'custom': []},
             ], iterator)
 

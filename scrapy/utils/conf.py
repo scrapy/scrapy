@@ -101,11 +101,13 @@ def get_config(use_closest=True):
 
 
 def get_sources(use_closest=True):
-    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or \
-        os.path.expanduser('~/.config')
-    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
-               xdg_config_home + '/scrapy.cfg',
-               os.path.expanduser('~/.scrapy.cfg')]
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
+    sources = [
+        '/etc/scrapy.cfg',
+        r'c:\scrapy\scrapy.cfg',
+        xdg_config_home + '/scrapy.cfg',
+        os.path.expanduser('~/.scrapy.cfg'),
+    ]
     if use_closest:
         sources.append(closest_scrapy_cfg())
     return sources
@@ -113,6 +115,7 @@ def get_sources(use_closest=True):
 
 def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
+    out.setdefault("batch_item_count", settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT'))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
@@ -124,7 +127,8 @@ def feed_complete_default_values_from_settings(feed, settings):
     return out
 
 
-def feed_process_params_from_cli(settings, output, output_format=None):
+def feed_process_params_from_cli(settings, output, output_format=None,
+                                 overwrite_output=None):
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
@@ -136,22 +140,39 @@ def feed_process_params_from_cli(settings, output, output_format=None):
 
     def check_valid_format(output_format):
         if output_format not in valid_output_formats:
-            raise UsageError("Unrecognized output format '%s', set one after a"
-                             " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
-                             " or as a file extension, from the supported list %s" %
-                             (output_format, tuple(valid_output_formats)))
+            raise UsageError(
+                "Unrecognized output format '%s'. Set a supported one (%s) "
+                "after a colon at the end of the output URI (i.e. -o/-O "
+                "<URI>:<FORMAT>) or as a file extension." % (
+                    output_format,
+                    tuple(valid_output_formats),
+                )
+            )
+
+    overwrite = False
+    if overwrite_output:
+        if output:
+            raise UsageError(
+                "Please use only one of -o/--output and -O/--overwrite-output"
+            )
+        output = overwrite_output
+        overwrite = True
 
     if output_format:
         if len(output) == 1:
             check_valid_format(output_format)
-            warnings.warn('The -t command line option is deprecated in favor'
-                          ' of specifying the output format within the -o'
-                          ' option, please check the -o option docs for more details',
-                          category=ScrapyDeprecationWarning, stacklevel=2)
+            message = (
+                'The -t command line option is deprecated in favor of '
+                'specifying the output format within the output URI. See the '
+                'documentation of the -o and -O options for more information.',
+            )
+            warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}
         else:
-            raise UsageError('The -t command line option cannot be used if multiple'
-                             ' output files are specified with the -o option')
+            raise UsageError(
+                'The -t command-line option cannot be used if multiple output '
+                'URIs are specified'
+            )
 
     result = {}
     for element in output:
@@ -165,8 +186,10 @@ def feed_process_params_from_cli(settings, output, output_format=None):
                 feed_uri = 'stdout:'
         check_valid_format(feed_format)
         result[feed_uri] = {'format': feed_format}
+        if overwrite:
+            result[feed_uri]['overwrite'] = True
 
-    # FEEDS setting should take precedence over the -o and -t CLI options
+    # FEEDS setting should take precedence over the matching CLI options
     result.update(settings.getdict('FEEDS'))
 
     return result
