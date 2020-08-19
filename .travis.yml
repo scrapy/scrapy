@@ -62,7 +62,7 @@ install:
 
 script: tox
 after_success:
-  - codecov
+  - [[ -z "$PYTHONOPTIMIZE" ]] && codecov
 notifications:
   irc:
     use_notice: true
