@@ -198,7 +198,7 @@ Documentation updates that cover new or modified features must use Sphinx’s
 :rst:dir:`versionadded` and :rst:dir:`versionchanged` directives. Use
 ``VERSION`` as version, we will replace it with the actual version right before
 the corresponding release. When we release a new major or minor version of
-Scrapy, we remove these directives if they are older than a year.
+Scrapy, we remove these directives if they are older than 3 years.
 
 Documentation about deprecated features must be removed as those features are
 deprecated, so that new readers do not run into it. New deprecations and
