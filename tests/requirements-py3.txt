@@ -13,6 +13,7 @@ pytest-twisted >= 1.11
 pytest-xdist
 sybil >= 1.3.0  # https://github.com/cjw296/sybil/issues/20#issuecomment-605433422
 testfixtures
+uvloop; platform_system != "Windows"
 
 # optional for shell wrapper tests
 bpython

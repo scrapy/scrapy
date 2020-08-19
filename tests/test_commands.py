@@ -16,6 +16,7 @@ from tempfile import mkdtemp
 from threading import Timer
 from unittest import skipIf
 
+from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
@@ -569,6 +570,28 @@ class BadSpider(scrapy.Spider):
     def test_asyncio_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    def test_custom_asyncio_loop_enabled_true(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s',
+            'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor',
+            '-s',
+            'ASYNCIO_EVENT_LOOP=uvloop.Loop',
+        ])
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
+
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
+    def test_custom_asyncio_loop_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+        ])
+        import asyncio
+        loop = asyncio.new_event_loop()
+        self.assertIn("Using asyncio event loop: %s.%s" % (loop.__module__, loop.__class__.__name__), log)
 
     def test_output(self):
         spider_code = """
