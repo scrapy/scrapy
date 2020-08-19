@@ -1,16 +1,15 @@
 import warnings
 from time import time
-from typing import Optional, Tuple
+from typing import Optional
 from urllib.parse import urldefrag
 
-from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
-from twisted.web.client import BrowserLikePolicyForHTTPS, URI
+from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
-from scrapy.core.http2.agent import H2Agent, H2ConnectionPool
+from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -39,30 +38,6 @@ class H2DownloadHandler:
 
     def close(self) -> None:
         self._pool.close_connections()
-
-
-class ScrapyProxyH2Agent(H2Agent):
-    def __init__(
-        self, reactor: ReactorBase,
-        proxy_uri: URI, pool: H2ConnectionPool,
-        context_factory=BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
-    ) -> None:
-        super(ScrapyProxyH2Agent, self).__init__(
-            reactor=reactor,
-            pool=pool,
-            context_factory=context_factory,
-            connect_timeout=connect_timeout,
-            bind_address=bind_address
-        )
-        self._proxy_uri = proxy_uri
-
-    def get_endpoint(self, uri: URI):
-        return self.endpoint_factory.endpointForURI(self._proxy_uri)
-
-    def get_key(self, uri: URI) -> Tuple:
-        """We use the proxy uri instead of uri obtained from request url"""
-        return "http-proxy", self._proxy_uri.host, self._proxy_uri.port
 
 
 class ScrapyH2Agent:
