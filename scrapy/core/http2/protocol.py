@@ -39,7 +39,7 @@ class InvalidNegotiatedProtocol(H2Error):
         self.negotiated_protocol = negotiated_protocol
 
     def __str__(self) -> str:
-        return f'InvalidHostname: Expected h2 as negotiated protocol, received {self.negotiated_protocol!r}'
+        return f'InvalidNegotiatedProtocol: Expected h2 as negotiated protocol, received {self.negotiated_protocol!r}'
 
 
 class RemoteTerminatedConnection(H2Error):

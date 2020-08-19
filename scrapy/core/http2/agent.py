@@ -68,7 +68,7 @@ class H2ConnectionPool:
 
         # Now as we have established a proper HTTP/2 connection
         # we fire all the deferred's with the connection instance
-        pending_requests = self._pending_requests.pop(key)
+        pending_requests = self._pending_requests.pop(key, None)
         while pending_requests:
             d = pending_requests.popleft()
             d.callback(conn)

@@ -31,6 +31,9 @@ class InactiveStreamClosed(ConnectionClosed):
     def __init__(self, request: Request):
         self.request = request
 
+    def __str__(self) -> str:
+        return f'InactiveStreamClosed: Connection was closed without sending the request {self.request!r}'
+
 
 class InvalidHostname(H2Error):
 
