@@ -16,33 +16,6 @@ project (in case you have many).
 
 For a list of available built-in settings see: :ref:`topics-settings-ref`.
 
-.. versionadded:: 2.0
-
-When a setting references an object to be imported by Scrapy, until now
-this had to be a string of an absolute (or project-wide) class path
-(e.g. ``'myproject.extensions.TelnetConsole'``).
-
-Now it is also possible to pass a class object (``TelnetConsole``) directly.
-Passing a classname — to be instanced by Scrapy — is mostly useful in cases
-without a Scrapy project environment, when writing Scrapy Crawlers in a
-single Python source file, or in projects using Scrapy as a library.
-
-Example::
-
-   from mybot.pipelines.validate import ValidateMyItem
-   ITEM_PIPELINES = {
-       # passing the classname...
-       ValidateMyItem: 300,
-       # ...equals passing the class path
-       'mybot.pipelines.validate.ValidateMyItem': 300,
-   }
-
-Passing of already instanced objects is not supported.
-
-.. note::
-    Directly passing a Scrapy class will circumvent Scrapy's
-    deprecation checks for that object.
-
 .. _topics-settings-module-envvar:
 
 Designating the settings
@@ -126,6 +99,32 @@ class.
 
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
+
+
+Import paths and classes
+========================
+
+.. versionadded:: VERSION
+
+When a setting references a callable object to be imported by Scrapy, such as a
+class or a function, there are two different ways you can specify that object:
+
+-   As a string containing the import path of that object
+
+-   As the object itself
+
+For example::
+
+   from mybot.pipelines.validate import ValidateMyItem
+   ITEM_PIPELINES = {
+       # passing the classname...
+       ValidateMyItem: 300,
+       # ...equals passing the class path
+       'mybot.pipelines.validate.ValidateMyItem': 300,
+   }
+
+.. note:: Passing non-callable objects is not supported.
+
 
 How to access settings
 ======================
