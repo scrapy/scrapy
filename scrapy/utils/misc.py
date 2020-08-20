@@ -5,6 +5,7 @@ import os
 import re
 import hashlib
 import warnings
+from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
@@ -188,7 +189,6 @@ def walk_callable(node):
     """Similar to ``ast.walk``, but walks only function body and skips nested
     functions defined within the node.
     """
-    from collections import deque
     todo = deque([node])
     walked_func_def = False
     while todo:
