@@ -396,7 +396,7 @@ class SettingsTest(unittest.TestCase):
 
         settings = Settings({
             'ITEM_PIPELINES': {
-                 TestPipeline: 800,
+                TestPipeline: 800,
             },
             'DOWNLOAD_HANDLERS': {
                 'ftp': FileDownloadHandler,
@@ -416,7 +416,6 @@ class SettingsTest(unittest.TestCase):
         myhandler_instance = create_instance(myhandler, None, get_crawler())
         self.assertIsInstance(myhandler_instance, FileDownloadHandler)
         self.assertTrue(hasattr(myhandler_instance, 'download_request'))
-
 
 
 if __name__ == "__main__":
