@@ -4,13 +4,16 @@ import logging
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
-try:
-    from scrapy.utils.py36 import collect_asyncgen
-except SyntaxError:
-    collect_asyncgen = None
 
 
 logger = logging.getLogger(__name__)
+
+
+async def collect_asyncgen(result):
+    results = []
+    async for x in result:
+        results.append(x)
+    return results
 
 
 def iterate_spider_output(result):

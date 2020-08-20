@@ -221,10 +221,7 @@ class UtilsPythonTestCase(unittest.TestCase):
                 get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
-            if version_info < (3, 6):
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
-            else:
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])

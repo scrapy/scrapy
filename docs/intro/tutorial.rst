@@ -405,8 +405,6 @@ to get all of them:
 
   from sys import version_info
 
-.. skip: next if(version_info < (3, 6), reason="Only Python 3.6+ dictionaries match the output")
-
 Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary:
 
