@@ -5,7 +5,7 @@ from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, request_fingerprint
 
 
-class BaseDupeFilter(object):
+class BaseDupeFilter:
 
     @classmethod
     def from_settings(cls, settings):
@@ -61,7 +61,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def log(self, request, spider):
         if self.debug:
             msg = "Filtered duplicate request: %(request)s (referer: %(referer)s)"
-            args = {'request': request, 'referer': referer_str(request) }
+            args = {'request': request, 'referer': referer_str(request)}
             self.logger.debug(msg, args, extra={'spider': spider})
         elif self.logdupes:
             msg = ("Filtered duplicate request: %(request)s"

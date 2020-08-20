@@ -27,15 +27,19 @@ Each item pipeline component is a Python class that must implement the following
 
 .. method:: process_item(self, item, spider)
 
-   This method is called for every item pipeline component. :meth:`process_item`
-   must either: return a dict with data, return an :class:`~scrapy.item.Item`
-   (or any descendant class) object, return a
-   :class:`~twisted.internet.defer.Deferred` or raise
-   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
-   processed by further pipeline components.
+   This method is called for every item pipeline component.
 
-   :param item: the item scraped
-   :type item: :class:`~scrapy.item.Item` object or a dict
+   `item` is an :ref:`item object <item-types>`, see
+   :ref:`supporting-item-types`.
+
+   :meth:`process_item` must either: return an :ref:`item object <item-types>`,
+   return a :class:`~twisted.internet.defer.Deferred` or raise a
+   :exc:`~scrapy.exceptions.DropItem` exception.
+
+   Dropped items are no longer processed by further pipeline components.
+
+   :param item: the scraped item
+   :type item: :ref:`item object <item-types>`
 
    :param spider: the spider which scraped the item
    :type spider: :class:`~scrapy.spiders.Spider` object
@@ -79,16 +83,17 @@ Let's take a look at the following hypothetical pipeline that adjusts the
 (``price_excludes_vat`` attribute), and drops those items which don't
 contain a price::
 
+    from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
-
-    class PricePipeline(object):
+    class PricePipeline:
 
         vat_factor = 1.15
 
         def process_item(self, item, spider):
-            if item.get('price'):
-                if item.get('price_excludes_vat'):
-                    item['price'] = item['price'] * self.vat_factor
+            adapter = ItemAdapter(item)
+            if adapter.get('price'):
+                if adapter.get('price_excludes_vat'):
+                    adapter['price'] = adapter['price'] * self.vat_factor
                 return item
             else:
                 raise DropItem("Missing price in %s" % item)
@@ -103,7 +108,9 @@ format::
 
    import json
 
-   class JsonWriterPipeline(object):
+   from itemadapter import ItemAdapter
+
+   class JsonWriterPipeline:
 
        def open_spider(self, spider):
            self.file = open('items.jl', 'w')
@@ -112,7 +119,7 @@ format::
            self.file.close()
 
        def process_item(self, item, spider):
-           line = json.dumps(dict(item)) + "\n"
+           line = json.dumps(ItemAdapter(item).asdict()) + "\n"
            self.file.write(line)
            return item
 
@@ -131,8 +138,9 @@ The main point of this example is to show how to use :meth:`from_crawler`
 method and how to clean up the resources properly.::
 
     import pymongo
+    from itemadapter import ItemAdapter
 
-    class MongoPipeline(object):
+    class MongoPipeline:
 
         collection_name = 'scrapy_items'
 
@@ -155,7 +163,7 @@ method and how to clean up the resources properly.::
             self.client.close()
 
         def process_item(self, item, spider):
-            self.db[self.collection_name].insert_one(dict(item))
+            self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
             return item
 
 .. _MongoDB: https://www.mongodb.com/
@@ -167,27 +175,31 @@ method and how to clean up the resources properly.::
 Take screenshot of item
 -----------------------
 
-This example demonstrates how to return a
-:class:`~twisted.internet.defer.Deferred` from the :meth:`process_item` method.
-It uses Splash_ to render screenshot of item url. Pipeline
-makes request to locally running instance of Splash_. After request is downloaded,
-it saves the screenshot to a file and adds filename to the item.
+This example demonstrates how to use :doc:`coroutine syntax <coroutines>` in
+the :meth:`process_item` method.
+
+This item pipeline makes a request to a locally-running instance of Splash_ to
+render a screenshot of the item URL. After the request response is downloaded,
+the item pipeline saves the screenshot to a file and adds the filename to the
+item.
 
 ::
 
-    import scrapy
     import hashlib
     from urllib.parse import quote
 
+    import scrapy
+    from itemadapter import ItemAdapter
 
-    class ScreenshotPipeline(object):
+    class ScreenshotPipeline:
         """Pipeline that uses Splash to render screenshot of
         every Scrapy item."""
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
         async def process_item(self, item, spider):
-            encoded_item_url = quote(item["url"])
+            adapter = ItemAdapter(item)
+            encoded_item_url = quote(adapter["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
             request = scrapy.Request(screenshot_url)
             response = await spider.crawler.engine.download(request, spider)
@@ -197,14 +209,14 @@ it saves the screenshot to a file and adds filename to the item.
                 return item
 
             # Save screenshot to file, filename will be hash of url.
-            url = item["url"]
+            url = adapter["url"]
             url_hash = hashlib.md5(url.encode("utf8")).hexdigest()
             filename = "{}.png".format(url_hash)
             with open(filename, "wb") as f:
                 f.write(response.body)
 
             # Store filename in item.
-            item["screenshot_filename"] = filename
+            adapter["screenshot_filename"] = filename
             return item
 
 .. _Splash: https://splash.readthedocs.io/en/stable/
@@ -217,18 +229,20 @@ already processed. Let's say that our items have a unique id, but our spider
 returns multiples items with the same id::
 
 
+    from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
 
-    class DuplicatesPipeline(object):
+    class DuplicatesPipeline:
 
         def __init__(self):
             self.ids_seen = set()
 
         def process_item(self, item, spider):
-            if item['id'] in self.ids_seen:
-                raise DropItem("Duplicate item found: %s" % item)
+            adapter = ItemAdapter(item)
+            if adapter['id'] in self.ids_seen:
+                raise DropItem("Duplicate item found: %r" % item)
             else:
-                self.ids_seen.add(item['id'])
+                self.ids_seen.add(adapter['id'])
                 return item
 
 

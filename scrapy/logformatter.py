@@ -14,7 +14,7 @@ DOWNLOADERRORMSG_SHORT = "Error downloading %(request)s"
 DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 
 
-class LogFormatter(object):
+class LogFormatter:
     """Class for generating log messages for different actions.
 
     All methods must return a dictionary listing the parameters ``level``, ``msg``
@@ -44,7 +44,7 @@ class LogFormatter(object):
                 def dropped(self, item, exception, response, spider):
                     return {
                         'level': logging.INFO, # lowering the level from logging.WARNING
-                        'msg': u"Dropped: %(exception)s" + os.linesep + "%(item)s",
+                        'msg': "Dropped: %(exception)s" + os.linesep + "%(item)s",
                         'args': {
                             'exception': exception,
                             'item': item,

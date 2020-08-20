@@ -2,8 +2,13 @@ from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.defer import mustbe_deferred, process_chain, \
-    process_chain_both, process_parallel, iter_errback
+from scrapy.utils.defer import (
+    iter_errback,
+    mustbe_deferred,
+    process_chain,
+    process_chain_both,
+    process_parallel,
+)
 
 
 class MustbeDeferredTest(unittest.TestCase):
@@ -64,7 +69,7 @@ class DeferUtilsTest(unittest.TestCase):
         gotexc = False
         try:
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
-        except TypeError as e:
+        except TypeError:
             gotexc = True
         self.assertTrue(gotexc)
 
@@ -104,7 +109,7 @@ class IterErrbackTest(unittest.TestCase):
         def iterbad():
             for x in range(10):
                 if x == 5:
-                    a = 1 / 0
+                    1 / 0
                 yield x
 
         errors = []

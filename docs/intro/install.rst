@@ -4,11 +4,17 @@
 Installation guide
 ==================
 
+.. _faq-python-versions:
+
+Supported Python versions
+=========================
+
+Scrapy requires Python 3.5.2+, either the CPython implementation (default) or
+the PyPy 5.9+ implementation (see :ref:`python:implementations`).
+
+
 Installing Scrapy
 =================
-
-Scrapy runs on Python 3.5 or above under CPython (default Python
-implementation) and PyPy (starting with PyPy 5.9).
 
 If you're using `Anaconda`_ or `Miniconda`_, you can install the package from
 the `conda-forge`_ channel, which has up-to-date packages for Linux, Windows

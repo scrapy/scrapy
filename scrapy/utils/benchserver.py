@@ -3,7 +3,6 @@ from urllib.parse import urlencode
 
 from twisted.web.server import Site
 from twisted.web.resource import Resource
-from twisted.internet import reactor
 
 
 class Root(Resource):
@@ -29,11 +28,11 @@ class Root(Resource):
 
 
 def _getarg(request, name, default=None, type=str):
-    return type(request.args[name][0]) \
-        if name in request.args else default
+    return type(request.args[name][0]) if name in request.args else default
 
 
 if __name__ == '__main__':
+    from twisted.internet import reactor
     root = Root()
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))

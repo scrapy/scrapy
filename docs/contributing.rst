@@ -108,6 +108,11 @@ Well-written patches should:
 
       tox -e docs-coverage
 
+* if you are removing deprecated code, first make sure that at least 1 year
+  (12 months) has passed since the release that introduced the deprecation.
+  See :ref:`deprecation-policy`.
+
+
 .. _submitting-patches:
 
 Submitting patches
@@ -155,6 +160,9 @@ Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
 removal, etc) in separate commits from functional changes. This will make pull
 requests easier to review and more likely to get merged.
 
+
+.. _coding-style:
+
 Coding style
 ============
 
@@ -163,7 +171,7 @@ Scrapy:
 
 * Unless otherwise specified, follow :pep:`8`.
 
-* It's OK to use lines longer than 80 chars if it improves the code
+* It's OK to use lines longer than 79 chars if it improves the code
   readability.
 
 * Don't put your name in the code you contribute; git provides enough
