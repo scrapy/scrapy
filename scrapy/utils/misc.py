@@ -195,9 +195,7 @@ def walk_callable(node):
         node = todo.popleft()
         if isinstance(node, ast.FunctionDef):
             if walked_func_def:
-                # don't traverse nested functions
                 continue
-            # first function def is ok
             walked_func_def = True
         todo.extend(ast.iter_child_nodes(node))
         yield node
