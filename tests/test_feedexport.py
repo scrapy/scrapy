@@ -393,10 +393,10 @@ class GCSFeedStorageTest(unittest.TestCase):
         settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': 'publicRead'}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
-        assert storage.project_id == '123'
-        assert storage.acl == 'publicRead'
-        assert storage.bucket_name == 'mybucket'
-        assert storage.blob_name == 'export.csv'
+        self.assertEqual(storage.project_id , '123')
+        self.assertEqual(storage.acl , 'publicRead')
+        self.assertEqual(storage.bucket_name , 'mybucket')
+        self.assertEqual(storage.blob_name , 'export.csv')
 
     def test_parse_empty_acl(self):
         try:
@@ -407,12 +407,12 @@ class GCSFeedStorageTest(unittest.TestCase):
         settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': ''}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
-        assert storage.acl is None
+        self.assertIs(storage.acl, None)
 
         settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': None}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
-        assert storage.acl is None
+        self.assertIs(storage.acl, None)
 
     @defer.inlineCallbacks
     def test_store(self):

@@ -588,8 +588,8 @@ Sitemap: /sitemap-relative-url.xml
 class DeprecationTest(unittest.TestCase):
 
     def test_crawl_spider(self):
-        assert issubclass(CrawlSpider, Spider)
-        assert isinstance(CrawlSpider(name='foo'), Spider)
+        self.assertTrue(issubclass(CrawlSpider, Spider))
+        self.assertIsInstance(CrawlSpider(name='foo'), Spider)
 
     def test_make_requests_from_url_deprecated(self):
         class MySpider4(Spider):

@@ -152,7 +152,7 @@ class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
     def test_middleware_works(self):
         crawler = get_crawler(_HttpErrorSpider)
         yield crawler.crawl(mockserver=self.mockserver)
-        assert not crawler.spider.skipped, crawler.spider.skipped
+        self.assertFalse(crawler.spider.skipped, crawler.spider.skipped)
         self.assertEqual(crawler.spider.parsed, {'200'})
         self.assertEqual(crawler.spider.failed, {'404', '402', '500'})
 

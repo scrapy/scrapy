@@ -17,20 +17,20 @@ class DownloadTimeoutMiddlewareTest(unittest.TestCase):
     def test_default_download_timeout(self):
         req, spider, mw = self.get_request_spider_mw()
         mw.spider_opened(spider)
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.meta.get('download_timeout'), 180)
 
     def test_string_download_timeout(self):
         req, spider, mw = self.get_request_spider_mw({'DOWNLOAD_TIMEOUT': '20.1'})
         mw.spider_opened(spider)
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.meta.get('download_timeout'), 20.1)
 
     def test_spider_has_download_timeout(self):
         req, spider, mw = self.get_request_spider_mw()
         spider.download_timeout = 2
         mw.spider_opened(spider)
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.meta.get('download_timeout'), 2)
 
     def test_request_has_download_timeout(self):
@@ -38,5 +38,5 @@ class DownloadTimeoutMiddlewareTest(unittest.TestCase):
         spider.download_timeout = 2
         mw.spider_opened(spider)
         req.meta['download_timeout'] = 1
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.meta.get('download_timeout'), 1)

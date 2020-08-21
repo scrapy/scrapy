@@ -14,7 +14,7 @@ class MailSenderTest(unittest.TestCase):
         mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
                         _callback=self._catch_mail_sent)
 
-        assert self.catched_msg
+        self.assertTrue(self.catched_msg)
 
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])
         self.assertEqual(self.catched_msg['subject'], 'subject')
@@ -51,7 +51,7 @@ class MailSenderTest(unittest.TestCase):
         mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
                         attachs=attachs, _callback=self._catch_mail_sent)
 
-        assert self.catched_msg
+        self.assertTrue(self.catched_msg)
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])
         self.assertEqual(self.catched_msg['subject'], 'subject')
         self.assertEqual(self.catched_msg['body'], 'body')
@@ -61,7 +61,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg['subject'], 'subject')
 
         payload = msg.get_payload()
-        assert isinstance(payload, list)
+        self.assertIsInstance(payload, list)
         self.assertEqual(len(payload), 2)
 
         text, attach = payload
@@ -79,7 +79,7 @@ class MailSenderTest(unittest.TestCase):
         mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
                         charset='utf-8', _callback=self._catch_mail_sent)
 
-        assert self.catched_msg
+        self.assertTrue(self.catched_msg)
         self.assertEqual(self.catched_msg['subject'], subject)
         self.assertEqual(self.catched_msg['body'], body)
 
@@ -102,7 +102,7 @@ class MailSenderTest(unittest.TestCase):
                         attachs=attachs, charset='utf-8',
                         _callback=self._catch_mail_sent)
 
-        assert self.catched_msg
+        self.assertTrue(self.catched_msg)
         self.assertEqual(self.catched_msg['subject'], subject)
         self.assertEqual(self.catched_msg['body'], body)
 
@@ -113,7 +113,7 @@ class MailSenderTest(unittest.TestCase):
                          'multipart/mixed; charset="utf-8"')
 
         payload = msg.get_payload()
-        assert isinstance(payload, list)
+        self.assertIsInstance(payload, list)
         self.assertEqual(len(payload), 2)
 
         text, attach = payload

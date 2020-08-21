@@ -197,7 +197,8 @@ class BrokenStartRequestsSpider(FollowAllSpider):
             if self.fail_yielding:
                 2 / 0
 
-        assert self.seedsseen, 'All start requests consumed before any download happened'
+        if not self.seedsseen:
+            raise AssertionError('All start requests consumed before any download happened')
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get('seed'))

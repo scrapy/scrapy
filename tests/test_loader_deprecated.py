@@ -55,7 +55,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = ItemLoader(item=i)
         il.add_value('name', 'marta')
         item = il.load_item()
-        assert item is i
+        self.assertIs(item, i)
         self.assertEqual(item['summary'], ['lala'])
         self.assertEqual(item['name'], ['marta'])
 
@@ -294,12 +294,12 @@ class BasicItemLoaderTest(unittest.TestCase):
             il.load_item()
         except Exception as e:
             exc = e
-        assert isinstance(exc, ValueError)
+        self.assertIsInstance(exc, ValueError)
         s = str(exc)
-        assert 'name' in s, s
-        assert '$10' in s, s
-        assert 'ValueError' in s, s
-        assert expected_exc_str in s, s
+        self.assertIn('name', s, s)
+        self.assertIn('$10', s, s)
+        self.assertIn('ValueError', s, s)
+        self.assertIn(expected_exc_str, s, s)
 
     def test_output_processor_using_classes(self):
         il = TestItemLoader()
@@ -705,15 +705,15 @@ class DeprecatedUtilityFunctionsTestCase(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             wrap_loader_context(function, context=dict())
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(len(w) , 1)
+            self.assertTrue(issubclass(w[0].category, ScrapyDeprecationWarning))
 
     def test_deprecated_extract_regex(self):
         with warnings.catch_warnings(record=True) as w:
             extract_regex(r'\w+', 'this is a test')
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(len(w) , 1)
+            self.assertTrue(issubclass(w[0].category, ScrapyDeprecationWarning))
 
 
 if __name__ == "__main__":

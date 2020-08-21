@@ -11,8 +11,8 @@ class HeadersTest(unittest.TestCase):
 
     def test_basics(self):
         h = Headers({'Content-Type': 'text/html', 'Content-Length': 1234})
-        assert h['Content-Type']
-        assert h['Content-Length']
+        self.assertTrue(h['Content-Type'])
+        self.assertTrue(h['Content-Length'])
 
         self.assertRaises(KeyError, h.__getitem__, 'Accept')
         self.assertEqual(h.get('Accept'), None)
@@ -36,13 +36,13 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h['X-Forwarded-For'], b'ip2')
         self.assertEqual(h.get('X-Forwarded-For'), b'ip2')
         self.assertEqual(h.getlist('X-Forwarded-For'), [b'ip1', b'ip2'])
-        assert h.getlist('X-Forwarded-For') is not hlist
+        self.assertIsNot(h.getlist('X-Forwarded-For'), hlist)
 
     def test_encode_utf8(self):
         h = Headers({'key': '\xa3'}, encoding='utf-8')
         key, val = dict(h).popitem()
-        assert isinstance(key, bytes), key
-        assert isinstance(val[0], bytes), val[0]
+        self.assertIsInstance(key, bytes, key)
+        self.assertIsInstance(val[0], bytes, val[0])
         self.assertEqual(val[0], b'\xc2\xa3')
 
     def test_encode_latin1(self):
@@ -58,21 +58,21 @@ class HeadersTest(unittest.TestCase):
     def test_delete_and_contains(self):
         h = Headers()
         h['Content-Type'] = 'text/html'
-        assert 'Content-Type' in h
+        self.assertIn('Content-Type', h)
         del h['Content-Type']
-        assert 'Content-Type' not in h
+        self.assertNotIn('Content-Type', h)
 
     def test_setdefault(self):
         h = Headers()
         hlist = ['ip1', 'ip2']
         olist = h.setdefault('X-Forwarded-For', hlist)
-        assert h.getlist('X-Forwarded-For') is not hlist
-        assert h.getlist('X-Forwarded-For') is olist
+        self.assertIsNot(h.getlist('X-Forwarded-For'), hlist)
+        self.assertIs(h.getlist('X-Forwarded-For'), olist)
 
         h = Headers()
         olist = h.setdefault('X-Forwarded-For', 'ip1')
         self.assertEqual(h.getlist('X-Forwarded-For'), [b'ip1'])
-        assert h.getlist('X-Forwarded-For') is olist
+        self.assertIs(h.getlist('X-Forwarded-For'), olist)
 
     def test_iterables(self):
         idict = {'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']}
@@ -100,8 +100,8 @@ class HeadersTest(unittest.TestCase):
         h2 = copy.copy(h1)
         self.assertEqual(h1, h2)
         self.assertEqual(h1.getlist('header1'), h2.getlist('header1'))
-        assert h1.getlist('header1') is not h2.getlist('header1')
-        assert isinstance(h2, Headers)
+        self.assertIsNot(h1.getlist('header1'), h2.getlist('header1'))
+        self.assertIsInstance(h2, Headers)
 
     def test_appendlist(self):
         h1 = Headers({'header1': 'value1'})

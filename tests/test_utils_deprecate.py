@@ -160,16 +160,16 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OldStyleClass:
                 pass
 
-        assert issubclass(UpdatedUserClass1, NewName)
-        assert issubclass(UpdatedUserClass1a, NewName)
-        assert issubclass(UpdatedUserClass1, DeprecatedName)
-        assert issubclass(UpdatedUserClass1a, DeprecatedName)
-        assert issubclass(OutdatedUserClass1, DeprecatedName)
-        assert not issubclass(UnrelatedClass, DeprecatedName)
-        assert not issubclass(OldStyleClass, DeprecatedName)
-        assert not issubclass(OldStyleClass, DeprecatedName)
-        assert not issubclass(OutdatedUserClass1, OutdatedUserClass1a)
-        assert not issubclass(OutdatedUserClass1a, OutdatedUserClass1)
+        self.assertTrue(issubclass(UpdatedUserClass1, NewName))
+        self.assertTrue(issubclass(UpdatedUserClass1a, NewName))
+        self.assertTrue(issubclass(UpdatedUserClass1, DeprecatedName))
+        self.assertTrue(issubclass(UpdatedUserClass1a, DeprecatedName))
+        self.assertTrue(issubclass(OutdatedUserClass1, DeprecatedName))
+        self.assertFalse(issubclass(UnrelatedClass, DeprecatedName))
+        self.assertFalse(issubclass(OldStyleClass, DeprecatedName))
+        self.assertFalse(issubclass(OldStyleClass, DeprecatedName))
+        self.assertFalse(issubclass(OutdatedUserClass1, OutdatedUserClass1a))
+        self.assertFalse(issubclass(OutdatedUserClass1a, OutdatedUserClass1))
 
         self.assertRaises(TypeError, issubclass, object(), DeprecatedName)
 
@@ -196,16 +196,16 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OldStyleClass:
                 pass
 
-        assert isinstance(UpdatedUserClass2(), NewName)
-        assert isinstance(UpdatedUserClass2a(), NewName)
-        assert isinstance(UpdatedUserClass2(), DeprecatedName)
-        assert isinstance(UpdatedUserClass2a(), DeprecatedName)
-        assert isinstance(OutdatedUserClass2(), DeprecatedName)
-        assert isinstance(OutdatedUserClass2a(), DeprecatedName)
-        assert not isinstance(OutdatedUserClass2a(), OutdatedUserClass2)
-        assert not isinstance(OutdatedUserClass2(), OutdatedUserClass2a)
-        assert not isinstance(UnrelatedClass(), DeprecatedName)
-        assert not isinstance(OldStyleClass(), DeprecatedName)
+        self.assertIsInstance(UpdatedUserClass2(), NewName)
+        self.assertIsInstance(UpdatedUserClass2a(), NewName)
+        self.assertIsInstance(UpdatedUserClass2(), DeprecatedName)
+        self.assertIsInstance(UpdatedUserClass2a(), DeprecatedName)
+        self.assertIsInstance(OutdatedUserClass2(), DeprecatedName)
+        self.assertIsInstance(OutdatedUserClass2a(), DeprecatedName)
+        self.assertNotIsInstance(OutdatedUserClass2a(), OutdatedUserClass2)
+        self.assertNotIsInstance(OutdatedUserClass2(), OutdatedUserClass2a)
+        self.assertNotIsInstance(UnrelatedClass(), DeprecatedName)
+        self.assertNotIsInstance(OldStyleClass(), DeprecatedName)
 
     def test_clsdict(self):
         with warnings.catch_warnings():

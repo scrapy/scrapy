@@ -124,7 +124,7 @@ class CaselessDictTest(unittest.TestCase):
     def test_contains(self):
         d = CaselessDict()
         d['a'] = 1
-        assert 'a' in d
+        self.assertIn('a', d)
 
     def test_pop(self):
         d = CaselessDict()
@@ -175,7 +175,7 @@ class CaselessDictTest(unittest.TestCase):
         h2 = copy.copy(h1)
         self.assertEqual(h1, h2)
         self.assertEqual(h1.get('header1'), h2.get('header1'))
-        assert isinstance(h2, CaselessDict)
+        self.assertIsInstance(h2, CaselessDict)
 
 
 class SequenceExcludeTest(unittest.TestCase):

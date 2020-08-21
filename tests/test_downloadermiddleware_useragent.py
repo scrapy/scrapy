@@ -16,7 +16,7 @@ class UserAgentMiddlewareTest(TestCase):
     def test_default_agent(self):
         spider, mw = self.get_spider_and_mw('default_useragent')
         req = Request('http://scrapytest.org/')
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.headers['User-Agent'], b'default_useragent')
 
     def test_remove_agent(self):
@@ -25,15 +25,15 @@ class UserAgentMiddlewareTest(TestCase):
         spider.user_agent = None
         mw.spider_opened(spider)
         req = Request('http://scrapytest.org/')
-        assert mw.process_request(req, spider) is None
-        assert req.headers.get('User-Agent') is None
+        self.assertIsNone(mw.process_request(req, spider))
+        self.assertIs(req.headers.get('User-Agent'), None)
 
     def test_spider_agent(self):
         spider, mw = self.get_spider_and_mw('default_useragent')
         spider.user_agent = 'spider_useragent'
         mw.spider_opened(spider)
         req = Request('http://scrapytest.org/')
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.headers['User-Agent'], b'spider_useragent')
 
     def test_header_agent(self):
@@ -42,7 +42,7 @@ class UserAgentMiddlewareTest(TestCase):
         mw.spider_opened(spider)
         req = Request('http://scrapytest.org/',
                       headers={'User-Agent': 'header_useragent'})
-        assert mw.process_request(req, spider) is None
+        self.assertIsNone(mw.process_request(req, spider))
         self.assertEqual(req.headers['User-Agent'], b'header_useragent')
 
     def test_no_agent(self):
@@ -50,5 +50,5 @@ class UserAgentMiddlewareTest(TestCase):
         spider.user_agent = None
         mw.spider_opened(spider)
         req = Request('http://scrapytest.org/')
-        assert mw.process_request(req, spider) is None
-        assert 'User-Agent' not in req.headers
+        self.assertIsNone(mw.process_request(req, spider))
+        self.assertNotIn('User-Agent', req.headers)

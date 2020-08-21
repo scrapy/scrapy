@@ -26,11 +26,11 @@ class RequestTest(unittest.TestCase):
         r = self.request_class('http://www.example.com')
 
         r = self.request_class("http://www.example.com")
-        assert isinstance(r.url, str)
+        self.assertIsInstance(r.url, str)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.method, self.default_method)
 
-        assert isinstance(r.headers, Headers)
+        self.assertIsInstance(r.headers, Headers)
         self.assertEqual(r.headers, self.default_headers)
         self.assertEqual(r.meta, self.default_meta)
 
@@ -38,9 +38,9 @@ class RequestTest(unittest.TestCase):
         headers = {b"caca": b"coco"}
         r = self.request_class("http://www.example.com", meta=meta, headers=headers, body="a body")
 
-        assert r.meta is not meta
+        self.assertIsNot(r.meta, meta)
         self.assertEqual(r.meta, meta)
-        assert r.headers is not headers
+        self.assertIsNot(r.headers, headers)
         self.assertEqual(r.headers[b"caca"], b"coco")
 
     def test_url_no_scheme(self):
@@ -145,18 +145,18 @@ class RequestTest(unittest.TestCase):
 
     def test_body(self):
         r1 = self.request_class(url="http://www.example.com/")
-        assert r1.body == b''
+        self.assertEqual(r1.body , b'')
 
         r2 = self.request_class(url="http://www.example.com/", body=b"")
-        assert isinstance(r2.body, bytes)
+        self.assertIsInstance(r2.body, bytes)
         self.assertEqual(r2.encoding, 'utf-8')  # default encoding
 
         r3 = self.request_class(url="http://www.example.com/", body="Price: \xa3100", encoding='utf-8')
-        assert isinstance(r3.body, bytes)
+        self.assertIsInstance(r3.body, bytes)
         self.assertEqual(r3.body, b"Price: \xc2\xa3100")
 
         r4 = self.request_class(url="http://www.example.com/", body="Price: \xa3100", encoding='latin1')
-        assert isinstance(r4.body, bytes)
+        self.assertIsInstance(r4.body, bytes)
         self.assertEqual(r4.body, b"Price: \xa3100")
 
     def test_ajax_url(self):
@@ -180,25 +180,25 @@ class RequestTest(unittest.TestCase):
         r2 = r1.copy()
 
         # make sure copy does not propagate callbacks
-        assert r1.callback is somecallback
-        assert r1.errback is somecallback
-        assert r2.callback is r1.callback
-        assert r2.errback is r2.errback
+        self.assertIs(r1.callback, somecallback)
+        self.assertIs(r1.errback, somecallback)
+        self.assertIs(r2.callback, r1.callback)
+        self.assertIs(r2.errback, r2.errback)
 
         # make sure flags list is shallow copied
-        assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
+        self.assertIsNot(r1.flags, r2.flags, "flags must be a shallow copy, not identical")
         self.assertEqual(r1.flags, r2.flags)
 
         # make sure cb_kwargs dict is shallow copied
-        assert r1.cb_kwargs is not r2.cb_kwargs, "cb_kwargs must be a shallow copy, not identical"
+        self.assertIsNot(r1.cb_kwargs, r2.cb_kwargs, "cb_kwargs must be a shallow copy, not identical")
         self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
 
         # make sure meta dict is shallow copied
-        assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
+        self.assertIsNot(r1.meta, r2.meta, "meta must be a shallow copy, not identical")
         self.assertEqual(r1.meta, r2.meta)
 
         # make sure headers attribute is shallow copied
-        assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
+        self.assertIsNot(r1.headers, r2.headers, "headers must be a shallow copy, not identical")
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.encoding, r2.encoding)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
@@ -214,7 +214,7 @@ class RequestTest(unittest.TestCase):
         r1 = CustomRequest('http://www.example.com')
         r2 = r1.copy()
 
-        assert type(r2) is CustomRequest
+        self.assertIs(type(r2), CustomRequest)
 
     def test_replace(self):
         """Test Request.replace() method"""
@@ -233,11 +233,11 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r4.url, "http://www.example.com/2")
         self.assertEqual(r4.body, b'')
         self.assertEqual(r4.meta, {})
-        assert r4.dont_filter is False
+        self.assertIs(r4.dont_filter, False)
 
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method="POST")
-        assert isinstance(r.method, str)
+        self.assertIsInstance(r.method, str)
 
     def test_immutable_attributes(self):
         r = self.request_class("http://example.com")

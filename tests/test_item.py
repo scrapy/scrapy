@@ -256,7 +256,7 @@ class ItemTest(unittest.TestCase):
         item = TestItem({'tags': ['tag1']})
         copied_item = item.deepcopy()
         item['tags'].append('tag2')
-        assert item['tags'] != copied_item['tags']
+        self.assertNotEqual(item['tags'], copied_item['tags'])
 
     def test_dictitem_deprecation_warning(self):
         """Make sure the DictItem deprecation warning is not issued for
@@ -298,9 +298,9 @@ class ItemMetaTest(unittest.TestCase):
         (first_call, second_call) = new_mock.call_args_list[-2:]
 
         mcs, class_name, bases, attrs = first_call[0]
-        assert '__classcell__' not in attrs
+        self.assertNotIn('__classcell__', attrs)
         mcs, class_name, bases, attrs = second_call[0]
-        assert '__classcell__' in attrs
+        self.assertIn('__classcell__', attrs)
 
 
 class ItemMetaClassCellRegression(unittest.TestCase):

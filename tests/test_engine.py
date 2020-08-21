@@ -265,7 +265,7 @@ class EngineTest(unittest.TestCase):
                            "/item1.html", "/item2.html", "/item999.html"]
         urls_visited = {rp[0].url for rp in self.run.respplug}
         urls_expected = {self.run.geturl(p) for p in must_be_visited}
-        assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
+        self.assertLessEqual(urls_expected, urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited))
 
     def _assert_scheduled_requests(self, urls_to_visit=None):
         self.assertEqual(urls_to_visit, len(self.run.reqplug))
@@ -274,7 +274,7 @@ class EngineTest(unittest.TestCase):
 
         urls_requested = {rq[0].url for rq in self.run.reqplug}
         urls_expected = {self.run.geturl(p) for p in paths_expected}
-        assert urls_expected <= urls_requested
+        self.assertLessEqual(urls_expected, urls_requested)
         scheduled_requests_count = len(self.run.reqplug)
         dropped_requests_count = len(self.run.reqdropped)
         responses_count = len(self.run.respplug)
@@ -366,11 +366,11 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual(joined_data, b"".join(numbers))
 
     def _assert_signals_caught(self):
-        assert signals.engine_started in self.run.signals_caught
-        assert signals.engine_stopped in self.run.signals_caught
-        assert signals.spider_opened in self.run.signals_caught
-        assert signals.spider_idle in self.run.signals_caught
-        assert signals.spider_closed in self.run.signals_caught
+        self.assertIn(signals.engine_started, self.run.signals_caught)
+        self.assertIn(signals.engine_stopped, self.run.signals_caught)
+        self.assertIn(signals.spider_opened, self.run.signals_caught)
+        self.assertIn(signals.spider_idle, self.run.signals_caught)
+        self.assertIn(signals.spider_closed, self.run.signals_caught)
 
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_caught[signals.spider_opened])

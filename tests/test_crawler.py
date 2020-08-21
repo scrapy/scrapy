@@ -90,7 +90,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             name = 'spider'
 
         Crawler(MySpider, {})
-        assert get_scrapy_root_handler() is None
+        self.assertIs(get_scrapy_root_handler(), None)
 
     def test_spider_custom_settings_log_level(self):
         log_file = self.mktemp()

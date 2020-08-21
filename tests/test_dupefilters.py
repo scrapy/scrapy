@@ -71,11 +71,11 @@ class RFPDupeFilterTest(unittest.TestCase):
         r2 = Request('http://scrapytest.org/2')
         r3 = Request('http://scrapytest.org/2')
 
-        assert not dupefilter.request_seen(r1)
-        assert dupefilter.request_seen(r1)
+        self.assertFalse(dupefilter.request_seen(r1))
+        self.assertTrue(dupefilter.request_seen(r1))
 
-        assert not dupefilter.request_seen(r2)
-        assert dupefilter.request_seen(r3)
+        self.assertFalse(dupefilter.request_seen(r2))
+        self.assertTrue(dupefilter.request_seen(r3))
 
         dupefilter.close('finished')
 
@@ -88,17 +88,17 @@ class RFPDupeFilterTest(unittest.TestCase):
             df = RFPDupeFilter(path)
             try:
                 df.open()
-                assert not df.request_seen(r1)
-                assert df.request_seen(r1)
+                self.assertFalse(df.request_seen(r1))
+                self.assertTrue(df.request_seen(r1))
             finally:
                 df.close('finished')
 
             df2 = RFPDupeFilter(path)
             try:
                 df2.open()
-                assert df2.request_seen(r1)
-                assert not df2.request_seen(r2)
-                assert df2.request_seen(r2)
+                self.assertTrue(df2.request_seen(r1))
+                self.assertFalse(df2.request_seen(r2))
+                self.assertTrue(df2.request_seen(r2))
             finally:
                 df2.close('finished')
         finally:
@@ -115,8 +115,8 @@ class RFPDupeFilterTest(unittest.TestCase):
         dupefilter = RFPDupeFilter()
         dupefilter.open()
 
-        assert not dupefilter.request_seen(r1)
-        assert not dupefilter.request_seen(r2)
+        self.assertFalse(dupefilter.request_seen(r1))
+        self.assertFalse(dupefilter.request_seen(r2))
 
         dupefilter.close('finished')
 
@@ -130,8 +130,8 @@ class RFPDupeFilterTest(unittest.TestCase):
         case_insensitive_dupefilter = CaseInsensitiveRFPDupeFilter()
         case_insensitive_dupefilter.open()
 
-        assert not case_insensitive_dupefilter.request_seen(r1)
-        assert case_insensitive_dupefilter.request_seen(r2)
+        self.assertFalse(case_insensitive_dupefilter.request_seen(r1))
+        self.assertTrue(case_insensitive_dupefilter.request_seen(r2))
 
         case_insensitive_dupefilter.close('finished')
 
@@ -150,11 +150,11 @@ class RFPDupeFilterTest(unittest.TestCase):
 
             with open(os.path.join(path, 'requests.seen'), 'rb') as seen_file:
                 line = next(seen_file).decode()
-                assert not line.endswith('\r\r\n')
+                self.assertFalse(line.endswith('\r\r\n'))
                 if sys.platform == 'win32':
-                    assert line.endswith('\r\n')
+                    self.assertTrue(line.endswith('\r\n'))
                 else:
-                    assert line.endswith('\n')
+                    self.assertTrue(line.endswith('\n'))
 
         finally:
             shutil.rmtree(path)
@@ -176,7 +176,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-            assert crawler.stats.get_value('dupefilter/filtered') == 2
+            self.assertEqual(crawler.stats.get_value('dupefilter/filtered') , 2)
             log.check_present(
                 (
                     'scrapy.dupefilters',
@@ -206,7 +206,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-            assert crawler.stats.get_value('dupefilter/filtered') == 2
+            self.assertEqual(crawler.stats.get_value('dupefilter/filtered') , 2)
             log.check_present(
                 (
                     'scrapy.dupefilters',

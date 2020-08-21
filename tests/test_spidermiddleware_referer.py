@@ -641,7 +641,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
                 request = self.redirectmw.process_response(request, response, self.spider)
                 self.referrermw.request_scheduled(request, self.spider)
 
-            assert isinstance(request, Request)
+            self.assertIsInstance(request, Request)
             self.assertEqual(request.headers.get('Referer'), final_referrer)
 
 

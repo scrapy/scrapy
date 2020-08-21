@@ -82,9 +82,9 @@ class _BaseTest(unittest.TestCase):
 
     def assertEqualRequestButWithCacheValidators(self, request1, request2):
         self.assertEqual(request1.url, request2.url)
-        assert b'If-None-Match' not in request1.headers
-        assert b'If-Modified-Since' not in request1.headers
-        assert any(h in request2.headers for h in (b'If-None-Match', b'If-Modified-Since'))
+        self.assertNotIn(b'If-None-Match', request1.headers)
+        self.assertNotIn(b'If-Modified-Since', request1.headers)
+        self.assertTrue(any(h in request2.headers for h in (b'If-None-Match', b'If-Modified-Since')))
         self.assertEqual(request1.body, request2.body)
 
     def test_dont_cache(self):
@@ -105,22 +105,22 @@ class DefaultStorageTest(_BaseTest):
     def test_storage(self):
         with self._storage() as storage:
             request2 = self.request.copy()
-            assert storage.retrieve_response(self.spider, request2) is None
+            self.assertIsNone(storage.retrieve_response(self.spider, request2))
 
             storage.store_response(self.spider, self.request, self.response)
             response2 = storage.retrieve_response(self.spider, request2)
-            assert isinstance(response2, HtmlResponse)  # content-type header
+            self.assertIsInstance(response2, HtmlResponse)  # content-type header
             self.assertEqualResponse(self.response, response2)
 
             time.sleep(2)  # wait for cache to expire
-            assert storage.retrieve_response(self.spider, request2) is None
+            self.assertIsNone(storage.retrieve_response(self.spider, request2))
 
     def test_storage_never_expire(self):
         with self._storage(HTTPCACHE_EXPIRATION_SECS=0) as storage:
-            assert storage.retrieve_response(self.spider, self.request) is None
+            self.assertIsNone(storage.retrieve_response(self.spider, self.request))
             storage.store_response(self.spider, self.request, self.response)
             time.sleep(0.5)  # give the chance to expire
-            assert storage.retrieve_response(self.spider, self.request)
+            self.assertTrue(storage.retrieve_response(self.spider, self.request))
 
 
 class DbmStorageTest(DefaultStorageTest):
@@ -160,90 +160,90 @@ class DummyPolicyTest(_BaseTest):
 
     def test_middleware(self):
         with self._middleware() as mw:
-            assert mw.process_request(self.request, self.spider) is None
+            self.assertIsNone(mw.process_request(self.request, self.spider))
             mw.process_response(self.request, self.response, self.spider)
             response = mw.process_request(self.request, self.spider)
-            assert isinstance(response, HtmlResponse)
+            self.assertIsInstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
-            assert 'cached' in response.flags
+            self.assertIn('cached', response.flags)
 
     def test_different_request_response_urls(self):
         with self._middleware() as mw:
             req = Request('http://host.com/path')
             res = Response('http://host2.net/test.html')
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.process_request(req, self.spider))
             mw.process_response(req, res, self.spider)
             cached = mw.process_request(req, self.spider)
-            assert isinstance(cached, Response)
+            self.assertIsInstance(cached, Response)
             self.assertEqualResponse(res, cached)
-            assert 'cached' in cached.flags
+            self.assertIn('cached', cached.flags)
 
     def test_middleware_ignore_missing(self):
         with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
             self.assertRaises(IgnoreRequest, mw.process_request, self.request, self.spider)
             mw.process_response(self.request, self.response, self.spider)
             response = mw.process_request(self.request, self.spider)
-            assert isinstance(response, HtmlResponse)
+            self.assertIsInstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
-            assert 'cached' in response.flags
+            self.assertIn('cached', response.flags)
 
     def test_middleware_ignore_schemes(self):
         # http responses are cached by default
         req, res = Request('http://test.com/'), Response('http://test.com/')
         with self._middleware() as mw:
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.process_request(req, self.spider))
             mw.process_response(req, res, self.spider)
 
             cached = mw.process_request(req, self.spider)
-            assert isinstance(cached, Response), type(cached)
+            self.assertIsInstance(cached, Response, type(cached))
             self.assertEqualResponse(res, cached)
-            assert 'cached' in cached.flags
+            self.assertIn('cached', cached.flags)
 
         # file response is not cached by default
         req, res = Request('file:///tmp/t.txt'), Response('file:///tmp/t.txt')
         with self._middleware() as mw:
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.process_request(req, self.spider))
             mw.process_response(req, res, self.spider)
 
-            assert mw.storage.retrieve_response(self.spider, req) is None
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.storage.retrieve_response(self.spider, req))
+            self.assertIsNone(mw.process_request(req, self.spider))
 
         # s3 scheme response is cached by default
         req, res = Request('s3://bucket/key'), Response('http://bucket/key')
         with self._middleware() as mw:
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.process_request(req, self.spider))
             mw.process_response(req, res, self.spider)
 
             cached = mw.process_request(req, self.spider)
-            assert isinstance(cached, Response), type(cached)
+            self.assertIsInstance(cached, Response, type(cached))
             self.assertEqualResponse(res, cached)
-            assert 'cached' in cached.flags
+            self.assertIn('cached', cached.flags)
 
         # ignore s3 scheme
         req, res = Request('s3://bucket/key2'), Response('http://bucket/key2')
         with self._middleware(HTTPCACHE_IGNORE_SCHEMES=['s3']) as mw:
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.process_request(req, self.spider))
             mw.process_response(req, res, self.spider)
 
-            assert mw.storage.retrieve_response(self.spider, req) is None
-            assert mw.process_request(req, self.spider) is None
+            self.assertIsNone(mw.storage.retrieve_response(self.spider, req))
+            self.assertIsNone(mw.process_request(req, self.spider))
 
     def test_middleware_ignore_http_codes(self):
         # test response is not cached
         with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[202]) as mw:
-            assert mw.process_request(self.request, self.spider) is None
+            self.assertIsNone(mw.process_request(self.request, self.spider))
             mw.process_response(self.request, self.response, self.spider)
 
-            assert mw.storage.retrieve_response(self.spider, self.request) is None
-            assert mw.process_request(self.request, self.spider) is None
+            self.assertIsNone(mw.storage.retrieve_response(self.spider, self.request))
+            self.assertIsNone(mw.process_request(self.request, self.spider))
 
         # test response is cached
         with self._middleware(HTTPCACHE_IGNORE_HTTP_CODES=[203]) as mw:
             mw.process_response(self.request, self.response, self.spider)
             response = mw.process_request(self.request, self.spider)
-            assert isinstance(response, HtmlResponse)
+            self.assertIsInstance(response, HtmlResponse)
             self.assertEqualResponse(self.response, response)
-            assert 'cached' in response.flags
+            self.assertIn('cached', response.flags)
 
 
 class RFC2616PolicyTest(DefaultStorageTest):
@@ -255,11 +255,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
         try:
             result = mw.process_request(request, self.spider)
             if result:
-                assert isinstance(result, (Request, Response))
+                self.assertIsInstance(result, (Request, Response))
                 return result
             else:
                 result = mw.process_response(request, response, self.spider)
-                assert isinstance(result, Response)
+                self.assertIsInstance(result, Response)
                 return result
         except Exception:
             print('Request', request)
@@ -277,22 +277,22 @@ class RFC2616PolicyTest(DefaultStorageTest):
             # response for a request with no-store must not be cached
             res1 = self._process_requestresponse(mw, req1, res0)
             self.assertEqualResponse(res1, res0)
-            assert mw.storage.retrieve_response(self.spider, req1) is None
+            self.assertIsNone(mw.storage.retrieve_response(self.spider, req1))
             # Re-do request without no-store and expect it to be cached
             res2 = self._process_requestresponse(mw, req0, res0)
-            assert 'cached' not in res2.flags
+            self.assertNotIn('cached', res2.flags)
             res3 = mw.process_request(req0, self.spider)
-            assert 'cached' in res3.flags
+            self.assertIn('cached', res3.flags)
             self.assertEqualResponse(res2, res3)
             # request with no-cache directive must not return cached response
             # but it allows new response to be stored
             res0b = res0.replace(body=b'foo')
             res4 = self._process_requestresponse(mw, req2, res0b)
             self.assertEqualResponse(res4, res0b)
-            assert 'cached' not in res4.flags
+            self.assertNotIn('cached', res4.flags)
             res5 = self._process_requestresponse(mw, req0, None)
             self.assertEqualResponse(res5, res0b)
-            assert 'cached' in res5.flags
+            self.assertIn('cached', res5.flags)
 
     def test_response_cacheability(self):
         responses = [
@@ -334,10 +334,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 resc = mw.storage.retrieve_response(self.spider, req0)
                 if shouldcache:
                     self.assertEqualResponse(resc, res1)
-                    assert 'cached' in res2.flags and res2.status != 304
+                    self.assertIn('cached', res2.flags)
+                    self.assertNotEqual(res2.status, 304)
                 else:
                     self.assertFalse(resc)
-                    assert 'cached' not in res2.flags
+                    self.assertNotIn('cached', res2.flags)
 
         # cache unconditionally unless response contains no-store or is a 304
         with self._middleware(HTTPCACHE_ALWAYS_STORE=True) as mw:
@@ -353,10 +354,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 resc = mw.storage.retrieve_response(self.spider, req0)
                 if shouldcache:
                     self.assertEqualResponse(resc, res1)
-                    assert 'cached' in res2.flags and res2.status != 304
+                    self.assertIn('cached', res2.flags)
+                    self.assertNotEqual(res2.status, 304)
                 else:
                     self.assertFalse(resc)
-                    assert 'cached' not in res2.flags
+                    self.assertNotIn('cached', res2.flags)
 
     def test_cached_and_fresh(self):
         sampledata = [
@@ -391,18 +393,18 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 # cache fresh response
                 res1 = self._process_requestresponse(mw, req0, res0)
                 self.assertEqualResponse(res1, res0)
-                assert 'cached' not in res1.flags
+                self.assertNotIn('cached', res1.flags)
                 # return fresh cached response without network interaction
                 res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
-                assert 'cached' in res2.flags
+                self.assertIn('cached', res2.flags)
                 # validate cached response if request max-age set as 0
                 req1 = req0.replace(headers={'Cache-Control': 'max-age=0'})
                 res304 = res0.replace(status=304)
-                assert mw.process_request(req1, self.spider) is None
+                self.assertIsNone(mw.process_request(req1, self.spider))
                 res3 = self._process_requestresponse(mw, req1, res304)
                 self.assertEqualResponse(res1, res3)
-                assert 'cached' in res3.flags
+                self.assertIn('cached', res3.flags)
 
     def test_cached_and_stale(self):
         sampledata = [
@@ -428,13 +430,13 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 # cache expired response
                 res1 = self._process_requestresponse(mw, req0, res0a)
                 self.assertEqualResponse(res1, res0a)
-                assert 'cached' not in res1.flags
+                self.assertNotIn('cached', res1.flags)
                 # Same request but as cached response is stale a new response must
                 # be returned
                 res0b = res0a.replace(body=b'bar')
                 res2 = self._process_requestresponse(mw, req0, res0b)
                 self.assertEqualResponse(res2, res0b)
-                assert 'cached' not in res2.flags
+                self.assertNotIn('cached', res2.flags)
                 cc = headers.get('Cache-Control', '')
                 # Previous response expired too, subsequent request to same
                 # resource must revalidate and succeed on 304 if validators
@@ -443,16 +445,16 @@ class RFC2616PolicyTest(DefaultStorageTest):
                     res0c = res0b.replace(status=304)
                     res3 = self._process_requestresponse(mw, req0, res0c)
                     self.assertEqualResponse(res3, res0b)
-                    assert 'cached' in res3.flags
+                    self.assertIn('cached', res3.flags)
                     # get cached response on server errors unless must-revalidate
                     # in cached response
                     res0d = res0b.replace(status=500)
                     res4 = self._process_requestresponse(mw, req0, res0d)
                     if 'must-revalidate' in cc:
-                        assert 'cached' not in res4.flags
+                        self.assertNotIn('cached', res4.flags)
                         self.assertEqualResponse(res4, res0d)
                     else:
-                        assert 'cached' in res4.flags
+                        self.assertIn('cached', res4.flags)
                         self.assertEqualResponse(res4, res0b)
                 # Requests with max-stale can fetch expired cached responses
                 # unless cached response has must-revalidate
@@ -460,9 +462,9 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 res5 = self._process_requestresponse(mw, req1, res0b)
                 self.assertEqualResponse(res5, res0b)
                 if 'no-cache' in cc or 'must-revalidate' in cc:
-                    assert 'cached' not in res5.flags
+                    self.assertNotIn('cached', res5.flags)
                 else:
-                    assert 'cached' in res5.flags
+                    self.assertIn('cached', res5.flags)
 
     def test_process_exception(self):
         with self._middleware() as mw:
@@ -471,14 +473,14 @@ class RFC2616PolicyTest(DefaultStorageTest):
             self._process_requestresponse(mw, req0, res0)
             for e in mw.DOWNLOAD_EXCEPTIONS:
                 # Simulate encountering an error on download attempts
-                assert mw.process_request(req0, self.spider) is None
+                self.assertIsNone(mw.process_request(req0, self.spider))
                 res1 = mw.process_exception(req0, e('foo'), self.spider)
                 # Use cached response as recovery
-                assert 'cached' in res1.flags
+                self.assertIn('cached', res1.flags)
                 self.assertEqualResponse(res0, res1)
             # Do not use cached response for unhandled exceptions
             mw.process_request(req0, self.spider)
-            assert mw.process_exception(req0, Exception('foo'), self.spider) is None
+            self.assertIsNone(mw.process_exception(req0, Exception('foo'), self.spider))
 
     def test_ignore_response_cache_controls(self):
         sampledata = [
@@ -495,11 +497,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 # cache fresh response
                 res1 = self._process_requestresponse(mw, req0, res0)
                 self.assertEqualResponse(res1, res0)
-                assert 'cached' not in res1.flags
+                self.assertNotIn('cached', res1.flags)
                 # return fresh cached response without network interaction
                 res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
-                assert 'cached' in res2.flags
+                self.assertIn('cached', res2.flags)
 
 
 if __name__ == '__main__':

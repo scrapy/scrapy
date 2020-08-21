@@ -17,7 +17,7 @@ class SelectorTestCase(unittest.TestCase):
         xl = sel.xpath('//input')
         self.assertEqual(2, len(xl))
         for x in xl:
-            assert isinstance(x, Selector)
+            self.assertIsInstance(x, Selector)
 
         self.assertEqual(
             sel.xpath('//input').getall(),
@@ -88,7 +88,7 @@ class SelectorTestCase(unittest.TestCase):
         """Check that classes are using slots and are weak-referenceable"""
         x = Selector(text='')
         weakref.ref(x)
-        assert not hasattr(x, '__dict__'), "%s does not use __slots__" % x.__class__.__name__
+        self.assertFalse(hasattr(x, '__dict__'), "%s does not use __slots__" % x.__class__.__name__)
 
     def test_selector_bad_args(self):
         with self.assertRaisesRegex(ValueError, 'received both response and text'):

@@ -117,7 +117,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.body, b'0123456789')
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
-        assert request.url.upper().endswith('%5E')
+        self.assertTrue(request.url.upper().endswith('%5E'))
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_non_existent(self):
@@ -817,7 +817,7 @@ class S3TestCase(unittest.TestCase):
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
-            assert False
+            self.assertTrue(False)
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.

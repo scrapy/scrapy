@@ -41,25 +41,25 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     def test_default_media_to_download(self):
         request = Request('http://url')
-        assert self.pipe.media_to_download(request, self.info) is None
+        self.assertIsNone(self.pipe.media_to_download(request, self.info))
 
     def test_default_get_media_requests(self):
         item = dict(name='name')
-        assert self.pipe.get_media_requests(item, self.info) is None
+        self.assertIsNone(self.pipe.get_media_requests(item, self.info))
 
     def test_default_media_downloaded(self):
         request = Request('http://url')
         response = Response('http://url', body=b'')
-        assert self.pipe.media_downloaded(response, request, self.info) is response
+        self.assertIs(self.pipe.media_downloaded(response, request, self.info), response)
 
     def test_default_media_failed(self):
         request = Request('http://url')
         fail = Failure(Exception())
-        assert self.pipe.media_failed(fail, request, self.info) is fail
+        self.assertIs(self.pipe.media_failed(fail, request, self.info), fail)
 
     def test_default_item_completed(self):
         item = dict(name='name')
-        assert self.pipe.item_completed([], item, self.info) is item
+        self.assertIs(self.pipe.item_completed([], item, self.info), item)
 
         # Check that failures are logged by default
         fail = Failure(Exception())
@@ -68,29 +68,29 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         with LogCapture() as log:
             new_item = self.pipe.item_completed(results, item, self.info)
 
-        assert new_item is item
-        assert len(log.records) == 1
+        self.assertIs(new_item, item)
+        self.assertEqual(len(log.records) , 1)
         record = log.records[0]
-        assert record.levelname == 'ERROR'
+        self.assertEqual(record.levelname , 'ERROR')
         self.assertTupleEqual(record.exc_info, failure_to_exc_info(fail))
 
         # disable failure logging and check again
         self.pipe.LOG_FAILED_RESULTS = False
         with LogCapture() as log:
             new_item = self.pipe.item_completed(results, item, self.info)
-        assert new_item is item
-        assert len(log.records) == 0
+        self.assertIs(new_item, item)
+        self.assertEqual(len(log.records) , 0)
 
     @inlineCallbacks
     def test_default_process_item(self):
         item = dict(name='name')
         new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item is item
+        self.assertIs(new_item, item)
 
     def test_modify_media_request(self):
         request = Request('http://url')
         self.pipe._modify_media_request(request)
-        assert request.meta == {'handle_httpstatus_all': True}
+        self.assertEqual(request.meta , {'handle_httpstatus_all': True})
 
     def test_should_remove_req_res_references_before_caching_the_results(self):
         """Regression test case to prevent a memory leak in the Media Pipeline.
@@ -261,17 +261,17 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         req = Request('http://url')
         item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item is item
-        assert request_fingerprint(req) in self.info.downloaded
+        self.assertIs(new_item, item)
+        self.assertIn(request_fingerprint(req), self.info.downloaded)
 
         # returns iterable of Requests
         req1 = Request('http://url1')
         req2 = Request('http://url2')
         item = dict(requests=iter([req1, req2]))
         new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item is item
-        assert request_fingerprint(req1) in self.info.downloaded
-        assert request_fingerprint(req2) in self.info.downloaded
+        self.assertIs(new_item, item)
+        self.assertIn(request_fingerprint(req1), self.info.downloaded)
+        self.assertIn(request_fingerprint(req2), self.info.downloaded)
 
     @inlineCallbacks
     def test_results_are_cached_across_multiple_items(self):

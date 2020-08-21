@@ -77,7 +77,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         il = ItemLoader(item=i)
         il.add_value('name', 'marta')
         item = il.load_item()
-        assert item is i
+        self.assertIs(item, i)
         self.assertEqual(item['summary'], ['lala'])
         self.assertEqual(item['name'], ['marta'])
 
@@ -510,9 +510,9 @@ class SubselectorLoaderTest(unittest.TestCase):
 
         item = l.load_item()
 
-        assert item is l.item
-        assert item is nl1.item
-        assert item is nl2.item
+        self.assertIs(item, l.item)
+        self.assertIs(item, nl1.item)
+        self.assertIs(item, nl2.item)
 
         self.assertEqual(item['name'], ['marta'])
         self.assertEqual(item['url'], ['http://www.scrapy.org'])

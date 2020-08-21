@@ -84,7 +84,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         i = TestItem(name='foo')
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
+        self.assertIsInstance(i2, TestItem)
         self.assertEqual(i, i2)
 
     def test_serialize_loader(self):
@@ -92,8 +92,8 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         loader = TestLoader()
         q.push(loader)
         loader2 = q.pop()
-        assert isinstance(loader2, TestLoader)
-        assert loader2.default_item_class is TestItem
+        self.assertIsInstance(loader2, TestLoader)
+        self.assertIs(loader2.default_item_class, TestItem)
         self.assertEqual(loader2.name_out('x'), 'xx')
 
     def test_serialize_request_recursive(self):
@@ -102,9 +102,9 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         r.meta['request'] = r
         q.push(r)
         r2 = q.pop()
-        assert isinstance(r2, Request)
+        self.assertIsInstance(r2, Request)
         self.assertEqual(r.url, r2.url)
-        assert r2.meta['request'] is r2
+        self.assertIs(r2.meta['request'], r2)
 
     def test_non_pickable_object(self):
         q = self.queue()
@@ -168,7 +168,7 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         i = TestItem(name='foo')
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
+        self.assertIsInstance(i2, TestItem)
         self.assertEqual(i, i2)
 
     def test_serialize_loader(self):
@@ -176,8 +176,8 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         loader = TestLoader()
         q.push(loader)
         loader2 = q.pop()
-        assert isinstance(loader2, TestLoader)
-        assert loader2.default_item_class is TestItem
+        self.assertIsInstance(loader2, TestLoader)
+        self.assertIs(loader2.default_item_class, TestItem)
         self.assertEqual(loader2.name_out('x'), 'xx')
 
     def test_serialize_request_recursive(self):
@@ -186,6 +186,6 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         r.meta['request'] = r
         q.push(r)
         r2 = q.pop()
-        assert isinstance(r2, Request)
+        self.assertIsInstance(r2, Request)
         self.assertEqual(r.url, r2.url)
-        assert r2.meta['request'] is r2
+        self.assertIs(r2.meta['request'], r2)

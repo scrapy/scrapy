@@ -262,6 +262,12 @@ And their unit-tests are in::
 
     tests/test_loader.py
 
+Even though ``pytest`` supports using ``assert`` statements, do not use them
+for Scrapy tests. One of our test environments runs Scrapy tests with
+``PYTHONOPTIMIZE=1``, which removes those statements, making tests that use
+those statements pointless in that test environment.
+
+
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://reddit.com/r/scrapy

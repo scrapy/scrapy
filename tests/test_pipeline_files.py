@@ -89,7 +89,7 @@ class FilesPipelineTestCase(unittest.TestCase):
             'full/178059cbeba2e34120a67f2dc1afc3ecc09b61cb.png')
 
     def test_fs_store(self):
-        assert isinstance(self.pipeline.store, FSFilesStore)
+        self.assertIsInstance(self.pipeline.store, FSFilesStore)
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
         path = 'some/image/key.jpg'

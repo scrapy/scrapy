@@ -14,7 +14,7 @@ class UtilsMiscTestCase(unittest.TestCase):
 
     def test_load_object(self):
         obj = load_object('scrapy.utils.misc.load_object')
-        assert obj is load_object
+        self.assertIs(obj, load_object)
         self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
 
@@ -63,11 +63,11 @@ class UtilsMiscTestCase(unittest.TestCase):
         class TestItem(Item):
             name = Field()
 
-        assert hasattr(arg_to_iter(None), '__iter__')
-        assert hasattr(arg_to_iter(100), '__iter__')
-        assert hasattr(arg_to_iter('lala'), '__iter__')
-        assert hasattr(arg_to_iter([1, 2, 3]), '__iter__')
-        assert hasattr(arg_to_iter(c for c in 'abcd'), '__iter__')
+        self.assertTrue(hasattr(arg_to_iter(None), '__iter__'))
+        self.assertTrue(hasattr(arg_to_iter(100), '__iter__'))
+        self.assertTrue(hasattr(arg_to_iter('lala'), '__iter__'))
+        self.assertTrue(hasattr(arg_to_iter([1, 2, 3]), '__iter__'))
+        self.assertTrue(hasattr(arg_to_iter(c for c in 'abcd'), '__iter__'))
 
         self.assertEqual(list(arg_to_iter(None)), [])
         self.assertEqual(list(arg_to_iter('lala')), ['lala'])
@@ -140,16 +140,16 @@ class UtilsMiscTestCase(unittest.TestCase):
             create_instance(m, settings, None)
 
     def test_set_environ(self):
-        assert os.environ.get('some_test_environ') is None
+        self.assertIs(os.environ.get('some_test_environ'), None)
         with set_environ(some_test_environ='test_value'):
-            assert os.environ.get('some_test_environ') == 'test_value'
-        assert os.environ.get('some_test_environ') is None
+            self.assertEqual(os.environ.get('some_test_environ') , 'test_value')
+        self.assertIs(os.environ.get('some_test_environ'), None)
 
         os.environ['some_test_environ'] = 'test'
-        assert os.environ.get('some_test_environ') == 'test'
+        self.assertEqual(os.environ.get('some_test_environ') , 'test')
         with set_environ(some_test_environ='test_value'):
-            assert os.environ.get('some_test_environ') == 'test_value'
-        assert os.environ.get('some_test_environ') == 'test'
+            self.assertEqual(os.environ.get('some_test_environ') , 'test_value')
+        self.assertEqual(os.environ.get('some_test_environ') , 'test')
 
 
 if __name__ == "__main__":

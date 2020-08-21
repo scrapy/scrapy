@@ -18,7 +18,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         req = Request('http://a.com')
         rsp = Response('http://a.com', headers={'Location': 'http://a.com/redirected'}, status=301)
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert req2.priority > req.priority
+        self.assertGreater(req2.priority, req.priority)
 
     def test_redirect_3xx_permanent(self):
         def _test(method, status=301):
@@ -28,13 +28,13 @@ class RedirectMiddlewareTest(unittest.TestCase):
             rsp = Response(url, headers={'Location': url2}, status=status)
 
             req2 = self.mw.process_response(req, rsp, self.spider)
-            assert isinstance(req2, Request)
+            self.assertIsInstance(req2, Request)
             self.assertEqual(req2.url, url2)
             self.assertEqual(req2.method, method)
 
             # response without Location header but with status code is 3XX should be ignored
             del rsp.headers['Location']
-            assert self.mw.process_response(req, rsp, self.spider) is rsp
+            self.assertIs(self.mw.process_response(req, rsp, self.spider), rsp)
 
         _test('GET')
         _test('POST')
@@ -55,16 +55,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers={'Location': url2}, status=301)
 
         r = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(r, Response)
-        assert r is rsp
+        self.assertIsInstance(r, Response)
+        self.assertIs(r, rsp)
 
         # Test that it redirects when dont_redirect is False
         req = Request(url, meta={'dont_redirect': False})
         rsp = Response(url2, status=200)
 
         r = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(r, Response)
-        assert r is rsp
+        self.assertIsInstance(r, Response)
+        self.assertIs(r, rsp)
 
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
@@ -74,16 +74,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
+        self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, url2)
         self.assertEqual(req2.method, 'GET')
-        assert 'Content-Type' not in req2.headers, "Content-Type header must not be present in redirected request"
-        assert 'Content-Length' not in req2.headers, "Content-Length header must not be present in redirected request"
-        assert not req2.body, "Redirected body must be empty, not '%s'" % req2.body
+        self.assertNotIn('Content-Type', req2.headers, "Content-Type header must not be present in redirected request")
+        self.assertNotIn('Content-Length', req2.headers, "Content-Length header must not be present in redirected request")
+        self.assertFalse(req2.body, "Redirected body must be empty, not '%s'" % req2.body)
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        self.assertIs(self.mw.process_response(req, rsp, self.spider), rsp)
 
     def test_redirect_302_head(self):
         url = 'http://www.example.com/302'
@@ -92,13 +92,13 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
+        self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, url2)
         self.assertEqual(req2.method, 'HEAD')
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        self.assertIs(self.mw.process_response(req, rsp, self.spider), rsp)
 
     def test_redirect_302_relative(self):
         url = 'http://www.example.com/302'
@@ -108,13 +108,13 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
+        self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, url3)
         self.assertEqual(req2.method, 'HEAD')
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        self.assertIs(self.mw.process_response(req, rsp, self.spider), rsp)
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
@@ -122,8 +122,8 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response('http://scrapytest.org/302', headers={'Location': '/redirected'}, status=302)
 
         req = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req, Request)
-        assert 'redirect_times' in req.meta
+        self.assertIsInstance(req, Request)
+        self.assertIn('redirect_times', req.meta)
         self.assertEqual(req.meta['redirect_times'], 1)
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
@@ -133,7 +133,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response('http://www.scrapytest.org/302', headers={'Location': '/redirected'}, status=302)
 
         req = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req, Request)
+        self.assertIsInstance(req, Request)
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
     def test_redirect_urls(self):
@@ -214,13 +214,13 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         req = Request('http://a.com')
         rsp = HtmlResponse(req.url, body=self._body())
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert req2.priority > req.priority
+        self.assertGreater(req2.priority, req.priority)
 
     def test_meta_refresh(self):
         req = Request(url='http://example.org')
         rsp = HtmlResponse(req.url, body=self._body())
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
+        self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
 
     def test_meta_refresh_with_high_interval(self):
@@ -230,7 +230,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
                            body=self._body(interval=1000),
                            encoding='utf-8')
         rsp2 = self.mw.process_response(req, rsp, self.spider)
-        assert rsp is rsp2
+        self.assertIs(rsp, rsp2)
 
     def test_meta_refresh_trough_posted_request(self):
         req = Request(url='http://example.org', method='POST', body='test',
@@ -238,12 +238,12 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         rsp = HtmlResponse(req.url, body=self._body())
         req2 = self.mw.process_response(req, rsp, self.spider)
 
-        assert isinstance(req2, Request)
+        self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
         self.assertEqual(req2.method, 'GET')
-        assert 'Content-Type' not in req2.headers, "Content-Type header must not be present in redirected request"
-        assert 'Content-Length' not in req2.headers, "Content-Length header must not be present in redirected request"
-        assert not req2.body, "Redirected body must be empty, not '%s'" % req2.body
+        self.assertNotIn('Content-Type', req2.headers, "Content-Type header must not be present in redirected request")
+        self.assertNotIn('Content-Length', req2.headers, "Content-Length header must not be present in redirected request")
+        self.assertFalse(req2.body, "Redirected body must be empty, not '%s'" % req2.body)
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
@@ -251,8 +251,8 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         rsp = HtmlResponse(req.url, body=self._body())
 
         req = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req, Request)
-        assert 'redirect_times' in req.meta
+        self.assertIsInstance(req, Request)
+        self.assertIn('redirect_times', req.meta)
         self.assertEqual(req.meta['redirect_times'], 1)
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
@@ -262,17 +262,17 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         rsp = HtmlResponse(req.url, body=self._body())
 
         req = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req, Request)
+        self.assertIsInstance(req, Request)
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
     def test_redirect_urls(self):
         req1 = Request('http://scrapytest.org/first')
         rsp1 = HtmlResponse(req1.url, body=self._body(url='/redirected'))
         req2 = self.mw.process_response(req1, rsp1, self.spider)
-        assert isinstance(req2, Request), req2
+        self.assertIsInstance(req2, Request, req2)
         rsp2 = HtmlResponse(req2.url, body=self._body(url='/redirected2'))
         req3 = self.mw.process_response(req2, rsp2, self.spider)
-        assert isinstance(req3, Request), req3
+        self.assertIsInstance(req3, Request, req3)
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
@@ -297,7 +297,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
                 '''content="0;URL='http://example.org/newpage'"></noscript>''')
         rsp = HtmlResponse(req.url, body=body.encode())
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
+        self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
 
     def test_ignore_tags_1_x_list(self):
@@ -310,7 +310,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
                 '''content="0;URL='http://example.org/newpage'"></noscript>''')
         rsp = HtmlResponse(req.url, body=body.encode())
         response = mw.process_response(req, rsp, self.spider)
-        assert isinstance(response, Response)
+        self.assertIsInstance(response, Response)
 
 
 if __name__ == "__main__":

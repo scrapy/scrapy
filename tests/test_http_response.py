@@ -34,18 +34,18 @@ class BaseResponseTest(unittest.TestCase):
         )
 
         r = self.response_class("http://www.example.com")
-        assert isinstance(r.url, str)
+        self.assertIsInstance(r.url, str)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.status, 200)
 
-        assert isinstance(r.headers, Headers)
+        self.assertIsInstance(r.headers, Headers)
         self.assertEqual(r.headers, {})
 
         headers = {"foo": "bar"}
         body = b"a body"
         r = self.response_class("http://www.example.com", headers=headers, body=body)
 
-        assert r.headers is not headers
+        self.assertIsNot(r.headers, headers)
         self.assertEqual(r.headers[b"foo"], b"bar")
 
         r = self.response_class("http://www.example.com", status=301)
@@ -65,24 +65,24 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r1.body, r2.body)
 
         # make sure flags list is shallow copied
-        assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
+        self.assertIsNot(r1.flags, r2.flags, "flags must be a shallow copy, not identical")
         self.assertEqual(r1.flags, r2.flags)
 
         # make sure headers attribute is shallow copied
-        assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
+        self.assertIsNot(r1.headers, r2.headers, "headers must be a shallow copy, not identical")
         self.assertEqual(r1.headers, r2.headers)
 
     def test_copy_meta(self):
         req = Request("http://www.example.com")
         req.meta['foo'] = 'bar'
         r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
-        assert r1.meta is req.meta
+        self.assertIs(r1.meta, req.meta)
 
     def test_copy_cb_kwargs(self):
         req = Request("http://www.example.com")
         req.cb_kwargs['foo'] = 'bar'
         r1 = self.response_class("http://www.example.com", body=b"Some body", request=req)
-        assert r1.cb_kwargs is req.cb_kwargs
+        self.assertIs(r1.cb_kwargs, req.cb_kwargs)
 
     def test_unavailable_meta(self):
         r1 = self.response_class("http://www.example.com", body=b"Some body")
@@ -103,14 +103,14 @@ class BaseResponseTest(unittest.TestCase):
         r1 = CustomResponse('http://www.example.com')
         r2 = r1.copy()
 
-        assert type(r2) is CustomResponse
+        self.assertIs(type(r2), CustomResponse)
 
     def test_replace(self):
         """Test Response.replace() method"""
         hdrs = Headers({"key": "value"})
         r1 = self.response_class("http://www.example.com")
         r2 = r1.replace(status=301, body=b"New body", headers=hdrs)
-        assert r1.body == b''
+        self.assertEqual(r1.body , b'')
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.status, r2.status), (200, 301))
         self.assertEqual((r1.body, r2.body), (b'', b"New body"))
@@ -130,8 +130,8 @@ class BaseResponseTest(unittest.TestCase):
             body_unicode = body.decode(encoding)
             body_bytes = body
 
-        assert isinstance(response.body, bytes)
-        assert isinstance(response.text, str)
+        self.assertIsInstance(response.body, bytes)
+        self.assertIsInstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
         self.assertEqual(response.body_as_unicode(), body_unicode)
@@ -310,7 +310,7 @@ class TextResponseTest(BaseResponseTest):
         r2 = r1.replace(url="http://www.example.com/other")
         r3 = r1.replace(url="http://www.example.com/other", encoding="latin1")
 
-        assert isinstance(r2, self.response_class)
+        self.assertIsInstance(r2, self.response_class)
         self.assertEqual(r2.url, "http://www.example.com/other")
         self._assert_response_encoding(r2, "cp852")
         self.assertEqual(r3.url, "http://www.example.com/other")
@@ -323,7 +323,7 @@ class TextResponseTest(BaseResponseTest):
 
         # make sure urls are converted to str
         resp = self.response_class(url="http://www.example.com/", encoding='utf-8')
-        assert isinstance(resp.url, str)
+        self.assertIsInstance(resp.url, str)
 
         resp = self.response_class(url="http://www.example.com/price/\xa3", encoding='utf-8')
         self.assertEqual(resp.url, to_unicode(b'http://www.example.com/price/\xc2\xa3'))
@@ -375,7 +375,8 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r4._headers_encoding(), None)
         self.assertEqual(r5._headers_encoding(), None)
         self._assert_response_encoding(r5, "utf-8")
-        assert r4._body_inferred_encoding() is not None and r4._body_inferred_encoding() != 'ascii'
+        self.assertIsNot(r4._body_inferred_encoding(), None)
+        self.assertNotEqual(r4._body_inferred_encoding(), 'ascii')
         self._assert_response_values(r1, 'utf-8', "\xa3")
         self._assert_response_values(r2, 'utf-8', "\xa3")
         self._assert_response_values(r3, 'iso-8859-1', "\xa3")
@@ -442,18 +443,18 @@ class TextResponseTest(BaseResponseTest):
         r = self.response_class("http://www.example.com", encoding='utf-8', body=b'PREFIX\xe3\xabSUFFIX')
         # XXX: Policy for replacing invalid chars may suffer minor variations
         # but it should always contain the unicode replacement char ('\ufffd')
-        assert '\ufffd' in r.text, repr(r.text)
-        assert 'PREFIX' in r.text, repr(r.text)
-        assert 'SUFFIX' in r.text, repr(r.text)
+        self.assertIn('\ufffd', r.text, repr(r.text))
+        self.assertIn('PREFIX', r.text, repr(r.text))
+        self.assertIn('SUFFIX', r.text, repr(r.text))
 
         # Do not destroy html tags due to encoding bugs
         r = self.response_class("http://example.com", encoding='utf-8',
                                 body=b'\xf0<span>value</span>')
-        assert '<span>value</span>' in r.text, repr(r.text)
+        self.assertIn('<span>value</span>', r.text, repr(r.text))
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
         # r = self.response_class("http://www.example.com", body=b'PREFIX\xe3\xabSUFFIX')
-        # assert '\ufffd' in r.text, repr(r.text)
+        # self.assertIn('\ufffd', r.text, repr(r.text))
 
     def test_selector(self):
         body = b"<html><head><title>Some page</title><body></body></html>"

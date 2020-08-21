@@ -16,22 +16,22 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     @defer.inlineCallbacks
     def test_empty(self):
         _, out, _ = yield self.execute(['-c', 'item'])
-        assert b'{}' in out
+        self.assertIn(b'{}', out)
 
     @defer.inlineCallbacks
     def test_response_body(self):
         _, out, _ = yield self.execute([self.url('/text'), '-c', 'response.body'])
-        assert b'Works' in out
+        self.assertIn(b'Works', out)
 
     @defer.inlineCallbacks
     def test_response_type_text(self):
         _, out, _ = yield self.execute([self.url('/text'), '-c', 'type(response)'])
-        assert b'TextResponse' in out
+        self.assertIn(b'TextResponse', out)
 
     @defer.inlineCallbacks
     def test_response_type_html(self):
         _, out, _ = yield self.execute([self.url('/html'), '-c', 'type(response)'])
-        assert b'HtmlResponse' in out
+        self.assertIn(b'HtmlResponse', out)
 
     @defer.inlineCallbacks
     def test_response_selector_html(self):
@@ -47,19 +47,19 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     @defer.inlineCallbacks
     def test_redirect(self):
         _, out, _ = yield self.execute([self.url('/redirect'), '-c', 'response.url'])
-        assert out.strip().endswith(b'/redirected')
+        self.assertTrue(out.strip().endswith(b'/redirected'))
 
     @defer.inlineCallbacks
     def test_redirect_follow_302(self):
         _, out, _ = yield self.execute([self.url('/redirect-no-meta-refresh'), '-c', 'response.status'])
-        assert out.strip().endswith(b'200')
+        self.assertTrue(out.strip().endswith(b'200'))
 
     @defer.inlineCallbacks
     def test_redirect_not_follow_302(self):
         _, out, _ = yield self.execute(
             ['--no-redirect', self.url('/redirect-no-meta-refresh'), '-c', 'response.status']
         )
-        assert out.strip().endswith(b'302')
+        self.assertTrue(out.strip().endswith(b'302'))
 
     @defer.inlineCallbacks
     def test_fetch_redirect_follow_302(self):
@@ -68,8 +68,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         code = "fetch('{0}')"
         errcode, out, errout = yield self.execute(['-c', code.format(url)])
         self.assertEqual(errcode, 0, out)
-        assert b'Redirecting (302)' in errout
-        assert b'Crawled (200)' in errout
+        self.assertIn(b'Redirecting (302)', errout)
+        self.assertIn(b'Crawled (200)', errout)
 
     @defer.inlineCallbacks
     def test_fetch_redirect_not_follow_302(self):
@@ -78,7 +78,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         code = "fetch('{0}', redirect=False)"
         errcode, out, errout = yield self.execute(['-c', code.format(url)])
         self.assertEqual(errcode, 0, out)
-        assert b'Crawled (302)' in errout
+        self.assertIn(b'Crawled (302)', errout)
 
     @defer.inlineCallbacks
     def test_request_replace(self):
@@ -98,7 +98,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_local_file(self):
         filepath = join(tests_datadir, 'test_site', 'index.html')
         _, out, _ = yield self.execute([filepath, '-c', 'item'])
-        assert b'{}' in out
+        self.assertIn(b'{}', out)
 
     @defer.inlineCallbacks
     def test_local_nofile(self):

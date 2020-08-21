@@ -61,7 +61,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.dropped(item, exception, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, str) for x in lines)
+        self.assertTrue(all(isinstance(x, str) for x in lines))
         self.assertEqual(lines, ["Dropped: \u2018", '{}'])
 
     def test_item_error(self):
@@ -112,7 +112,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logkws = self.formatter.scraped(item, response, self.spider)
         logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
-        assert all(isinstance(x, str) for x in lines)
+        self.assertTrue(all(isinstance(x, str) for x in lines))
         self.assertEqual(lines, ["Scraped from <200 http://www.example.com>", 'name: \xa3'])
 
 

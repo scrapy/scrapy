@@ -50,9 +50,9 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
         resp2 = HtmlResponse(req2.url, body=resp.body, request=req2)
         resp3 = self.mw.process_response(req2, resp2, self.spider)
 
-        assert isinstance(resp3, HtmlResponse), (resp3.__class__, resp3)
+        self.assertIsInstance(resp3, HtmlResponse, (resp3.__class__, resp3))
         self.assertEqual(resp3.request.url, 'http://example.com/?_escaped_fragment_=')
-        assert resp3 is resp2
+        self.assertIs(resp3, resp2)
 
     def test_noncrawlable_body(self):
         req, resp = self._req_resp('http://example.com/', {}, {'body': b'<html></html>'})

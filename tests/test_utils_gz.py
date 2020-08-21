@@ -20,7 +20,7 @@ class GunzipTest(unittest.TestCase):
     def test_gunzip_truncated(self):
         with open(join(SAMPLEDIR, 'truncated-crc-error.gz'), 'rb') as f:
             text = gunzip(f.read())
-            assert text.endswith(b'</html')
+            self.assertTrue(text.endswith(b'</html'))
 
     def test_gunzip_no_gzip_file_raises(self):
         with open(join(SAMPLEDIR, 'feed-sample1.xml'), 'rb') as f:
@@ -29,7 +29,7 @@ class GunzipTest(unittest.TestCase):
     def test_gunzip_truncated_short(self):
         with open(join(SAMPLEDIR, 'truncated-crc-error-short.gz'), 'rb') as f:
             text = gunzip(f.read())
-            assert text.endswith(b'</html>')
+            self.assertTrue(text.endswith(b'</html>'))
 
     def test_is_x_gzipped_right(self):
         hdrs = Headers({"Content-Type": "application/x-gzip"})

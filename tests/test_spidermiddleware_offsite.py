@@ -84,7 +84,7 @@ class TestOffsiteMiddleware5(TestOffsiteMiddleware4):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             self.mw.get_host_regex(self.spider)
-            assert issubclass(w[-1].category, URLWarning)
+            self.assertTrue(issubclass(w[-1].category, URLWarning))
 
 
 class TestOffsiteMiddleware6(TestOffsiteMiddleware4):
@@ -94,4 +94,4 @@ class TestOffsiteMiddleware6(TestOffsiteMiddleware4):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             self.mw.get_host_regex(self.spider)
-            assert issubclass(w[-1].category, PortWarning)
+            self.assertTrue(issubclass(w[-1].category, PortWarning))

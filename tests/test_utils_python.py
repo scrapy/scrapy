@@ -87,22 +87,22 @@ class MemoizedMethodTest(unittest.TestCase):
         one = a.cached()
         two = a.cached()
         three = a.noncached()
-        assert one is two
-        assert one is not three
+        self.assertIs(one, two)
+        self.assertIsNot(one, three)
 
 
 class BinaryIsTextTest(unittest.TestCase):
     def test_binaryistext(self):
-        assert binary_is_text(b"hello")
+        self.assertTrue(binary_is_text(b"hello"))
 
     def test_utf_16_strings_contain_null_bytes(self):
-        assert binary_is_text("hello".encode('utf-16'))
+        self.assertTrue(binary_is_text("hello".encode('utf-16')))
 
     def test_one_with_encoding(self):
-        assert binary_is_text(b"<div>Price \xa3</div>")
+        self.assertTrue(binary_is_text(b"<div>Price \xa3</div>"))
 
     def test_real_binary_bytes(self):
-        assert not binary_is_text(b"\x02\xa3")
+        self.assertFalse(binary_is_text(b"\x02\xa3"))
 
 
 class UtilsPythonTestCase(unittest.TestCase):

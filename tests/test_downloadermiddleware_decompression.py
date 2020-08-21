@@ -29,21 +29,21 @@ class DecompressionMiddlewareTest(TestCase):
             rsp = self.test_responses[fmt]
             new = self.mw.process_response(None, rsp, self.spider)
             error_msg = 'Failed %s, response type %s' % (fmt, type(new).__name__)
-            assert isinstance(new, XmlResponse), error_msg
+            self.assertIsInstance(new, XmlResponse, error_msg)
             assert_samelines(self, new.body, self.uncompressed_body, fmt)
 
     def test_plain_response(self):
         rsp = Response(url='http://test.com', body=self.uncompressed_body)
         new = self.mw.process_response(None, rsp, self.spider)
-        assert new is rsp
+        self.assertIs(new, rsp)
         assert_samelines(self, new.body, rsp.body)
 
     def test_empty_response(self):
         rsp = Response(url='http://test.com', body=b'')
         new = self.mw.process_response(None, rsp, self.spider)
-        assert new is rsp
-        assert not rsp.body
-        assert not new.body
+        self.assertIs(new, rsp)
+        self.assertFalse(rsp.body)
+        self.assertFalse(new.body)
 
     def tearDown(self):
         del self.mw
