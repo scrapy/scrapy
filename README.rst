@@ -2,31 +2,46 @@
 Scrapy
 ======
 
-.. image:: https://badge.fury.io/py/Scrapy.png
-   :target: http://badge.fury.io/py/Scrapy
+.. image:: https://img.shields.io/pypi/v/Scrapy.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: PyPI Version
 
-.. image:: https://secure.travis-ci.org/scrapy/scrapy.png?branch=master
-   :target: http://travis-ci.org/scrapy/scrapy
+.. image:: https://img.shields.io/pypi/pyversions/Scrapy.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: Supported Python Versions
 
-.. image:: https://pypip.in/wheel/Scrapy/badge.png
-    :target: https://pypi.python.org/pypi/Scrapy/
-    :alt: Wheel Status
+.. image:: https://img.shields.io/travis/scrapy/scrapy/master.svg
+   :target: https://travis-ci.org/scrapy/scrapy
+   :alt: Build Status
+
+.. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: Wheel Status
+
+.. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
+   :target: https://codecov.io/github/scrapy/scrapy?branch=master
+   :alt: Coverage report
+
+.. image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg
+   :target: https://anaconda.org/conda-forge/scrapy
+   :alt: Conda Version
+
 
 Overview
 ========
 
-Scrapy is a fast high-level screen scraping and web crawling framework, used to
+Scrapy is a fast high-level web crawling and web scraping framework, used to
 crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
-For more information including a list of features check the Scrapy homepage at:
-http://scrapy.org
+Check the Scrapy homepage at https://scrapy.org for more information,
+including a list of features.
 
 Requirements
 ============
 
-* Python 2.7
-* Works on Linux, Windows, Mac OSX, BSD
+* Python 3.5.2+
+* Works on Linux, Windows, macOS, BSD
 
 Install
 =======
@@ -35,37 +50,45 @@ The quick way::
 
     pip install scrapy
 
-For more details see the install section in the documentation:
-http://doc.scrapy.org/en/latest/intro/install.html
-
-Releases
-========
-
-You can download the latest stable and development releases from:
-http://scrapy.org/download/
+See the install section in the documentation at
+https://docs.scrapy.org/en/latest/intro/install.html for more details.
 
 Documentation
 =============
 
-Documentation is available online at http://doc.scrapy.org/ and in the ``docs``
+Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
 directory.
+
+Releases
+========
+
+You can check https://docs.scrapy.org/en/latest/news.html for the release notes.
 
 Community (blog, twitter, mail list, IRC)
 =========================================
 
-See http://scrapy.org/community/
+See https://scrapy.org/community/ for details.
 
 Contributing
 ============
 
-See http://doc.scrapy.org/en/latest/contributing.html
+See https://docs.scrapy.org/en/master/contributing.html for details.
+
+Code of Conduct
+---------------
+
+Please note that this project is released with a Contributor Code of Conduct
+(see https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md).
+
+By participating in this project you agree to abide by its terms.
+Please report unacceptable behavior to opensource@scrapinghub.com.
 
 Companies using Scrapy
 ======================
 
-See http://scrapy.org/companies/
+See https://scrapy.org/companies/ for a list.
 
 Commercial Support
 ==================
 
-See http://scrapy.org/support/
+See https://scrapy.org/support/ for details.

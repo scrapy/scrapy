@@ -1,9 +1,11 @@
 import time
-from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_unicode
 
 
-class CookieJar(object):
+class CookieJar:
     def __init__(self, policy=None, check_expired_frequency=10000):
         self.policy = policy or DefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
@@ -28,8 +30,8 @@ class CookieJar(object):
 
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
-            if req_host.find(".") == -1:
-                hosts += req_host + ".local"
+            if '.' not in req_host:
+                hosts += [req_host + ".local"]
         else:
             hosts = [req_host]
 
@@ -55,8 +57,8 @@ class CookieJar(object):
     def clear_session_cookies(self, *args, **kwargs):
         return self.jar.clear_session_cookies(*args, **kwargs)
 
-    def clear(self):
-        return self.jar.clear()
+    def clear(self, domain=None, path=None, name=None):
+        return self.jar.clear(domain, path, name)
 
     def __iter__(self):
         return iter(self.jar)
@@ -97,7 +99,8 @@ def potential_domain_matches(domain):
         pass
     return matches + ['.' + d for d in matches]
 
-class _DummyLock(object):
+
+class _DummyLock:
     def acquire(self):
         pass
 
@@ -105,7 +108,7 @@ class _DummyLock(object):
         pass
 
 
-class WrappedRequest(object):
+class WrappedRequest:
     """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
 
     see http://docs.python.org/library/urllib2.html#urllib2.Request
@@ -136,21 +139,46 @@ class WrappedRequest(object):
     def get_origin_req_host(self):
         return urlparse_cached(self.request).hostname
 
+    # python3 uses attributes instead of methods
+    @property
+    def full_url(self):
+        return self.get_full_url()
+
+    @property
+    def host(self):
+        return self.get_host()
+
+    @property
+    def type(self):
+        return self.get_type()
+
+    @property
+    def unverifiable(self):
+        return self.is_unverifiable()
+
+    @property
+    def origin_req_host(self):
+        return self.get_origin_req_host()
+
     def has_header(self, name):
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return self.request.headers.get(name, default)
+        return to_unicode(self.request.headers.get(name, default),
+                          errors='replace')
 
     def header_items(self):
-        return self.request.headers.items()
+        return [
+            (to_unicode(k, errors='replace'),
+             [to_unicode(x, errors='replace') for x in v])
+            for k, v in self.request.headers.items()
+        ]
 
     def add_unredirected_header(self, name, value):
         self.request.headers.appendlist(name, value)
-        #print 'add_unredirected_header', self.request.headers
 
 
-class WrappedResponse(object):
+class WrappedResponse:
 
     def __init__(self, response):
         self.response = response
@@ -158,5 +186,6 @@ class WrappedResponse(object):
     def info(self):
         return self
 
-    def getheaders(self, name):
-        return self.response.headers.getlist(name)
+    def get_all(self, name, default=None):
+        return [to_unicode(v, errors='replace')
+                for v in self.response.headers.getlist(name)]

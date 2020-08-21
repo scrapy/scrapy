@@ -1,19 +1,74 @@
 language: python
-python: 2.7
-env:
-- TOXENV=py27
-- TOXENV=precise
-- TOXENV=py33
+dist: xenial
+branches:
+  only:
+    - master
+    - /^\d\.\d+$/
+    - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
+matrix:
+  include:
+    - env: TOXENV=security
+      python: 3.8
+    - env: TOXENV=flake8
+      python: 3.8
+    - env: TOXENV=pylint
+      python: 3.8
+    - env: TOXENV=docs
+      python: 3.7  # Keep in sync with .readthedocs.yml
+    - env: TOXENV=typing
+      python: 3.8
+
+    - env: TOXENV=pinned
+      python: 3.5.2
+    - env: TOXENV=asyncio-pinned
+      python: 3.5.2  # We use additional code to support 3.5.3 and earlier
+    - env: TOXENV=pypy3-pinned PYPY_VERSION=3-v5.9.0
+
+    - env: TOXENV=py
+      python: 3.5
+    - env: TOXENV=asyncio
+      python: 3.5  # We use specific code to support >= 3.5.4, < 3.6
+    - env: TOXENV=pypy3 PYPY_VERSION=3.5-v7.0.0
+
+    - env: TOXENV=py
+      python: 3.6
+    - env: TOXENV=pypy3 PYPY_VERSION=3.6-v7.3.1
+
+    - env: TOXENV=py
+      python: 3.7
+
+    - env: TOXENV=py PYPI_RELEASE_JOB=true
+      python: 3.8
+      dist: bionic
+    - env: TOXENV=extra-deps
+      python: 3.8
+      dist: bionic
+    - env: TOXENV=asyncio
+      python: 3.8
+      dist: bionic
 install:
-- "./.travis-workarounds.sh"
-- pip install -U tox
+  - |
+      if [[ ! -z "$PYPY_VERSION" ]]; then
+        export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+        wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
+        tar -jxf ${PYPY_VERSION}.tar.bz2
+        virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
+        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+      fi
+  - pip install -U tox twine wheel codecov
+
 script: tox
+after_success:
+  - codecov
 notifications:
   irc:
     use_notice: true
     skip_join: true
     channels:
     - irc.freenode.org#scrapy
+cache:
+  directories:
+    - $HOME/.cache/pip
 deploy:
   provider: pypi
   distributions: "sdist bdist_wheel"
@@ -22,6 +77,5 @@ deploy:
     secure: JaAKcy1AXWXDK3LXdjOtKyaVPCSFoCGCnW15g4f65E/8Fsi9ZzDfmBa4Equs3IQb/vs/if2SVrzJSr7arN7r9Z38Iv1mUXHkFAyA3Ym8mThfABBzzcUWEQhIHrCX0Tdlx9wQkkhs+PZhorlmRS4gg5s6DzPaeA2g8SCgmlRmFfA=
   on:
     tags: true
-    all_branches: true
     repo: scrapy/scrapy
-    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9][.][0-9]*[02468][.]"
+    condition: "$PYPI_RELEASE_JOB == true && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"

@@ -7,7 +7,7 @@ usage:
 
 """
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
 
 
@@ -27,7 +27,7 @@ class QPSSpider(Spider):
     slots = 1
 
     def __init__(self, *a, **kw):
-        super(QPSSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         if self.qps is not None:
             self.qps = float(self.qps)
             self.download_delay = 1 / self.qps
@@ -41,7 +41,7 @@ class QPSSpider(Spider):
 
         slots = int(self.slots)
         if slots > 1:
-            urls = [url.replace('localhost', '127.0.0.%d' % (x + 1)) for x in xrange(slots)]
+            urls = [url.replace('localhost', '127.0.0.%d' % (x + 1)) for x in range(slots)]
         else:
             urls = [url]
 

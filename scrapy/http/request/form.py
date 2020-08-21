@@ -1,70 +1,94 @@
 """
-This module implements the FormRequest class which is a more covenient class
+This module implements the FormRequest class which is a more convenient class
 (than Request) to generate Requests based on form data.
 
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin, urlencode
+
 import lxml.html
-import six
+from parsel.selector import create_root_node
+from w3lib.html import strip_html5_whitespace
+
 from scrapy.http.request import Request
-from scrapy.utils.python import unicode_to_str
+from scrapy.utils.python import to_bytes, is_listlike
+from scrapy.utils.response import get_base_url
 
 
 class FormRequest(Request):
+    valid_form_methods = ['GET', 'POST']
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
-        super(FormRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
-                self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+                self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
                 self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
-    def from_response(cls, response, formname=None, formnumber=0, formdata=None,
-                      clickdata=None, dont_click=False, formxpath=None, **kwargs):
+    def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
+                      clickdata=None, dont_click=False, formxpath=None, formcss=None, **kwargs):
+
         kwargs.setdefault('encoding', response.encoding)
-        form = _get_form(response, formname, formnumber, formxpath)
+
+        if formcss is not None:
+            from parsel.csstranslator import HTMLTranslator
+            formxpath = HTMLTranslator().css_to_xpath(formcss)
+
+        form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
+
         method = kwargs.pop('method', form.method)
+        if method is not None:
+            method = method.upper()
+            if method not in cls.valid_form_methods:
+                method = 'GET'
+
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
 def _get_form_url(form, url):
     if url is None:
-        return form.action or form.base_url
+        action = form.get('action')
+        if action is None:
+            return form.base_url
+        return urljoin(form.base_url, strip_html5_whitespace(action))
     return urljoin(form.base_url, url)
 
 
 def _urlencode(seq, enc):
-    values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
+    values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
-              for v in (vs if hasattr(vs, '__iter__') else [vs])]
-    return urllib.urlencode(values, doseq=1)
+              for v in (vs if is_listlike(vs) else [vs])]
+    return urlencode(values, doseq=1)
 
 
-def _get_form(response, formname, formnumber, formxpath):
+def _get_form(response, formname, formid, formnumber, formxpath):
     """Find the form element """
-    from scrapy.selector.lxmldocument import LxmlDocument
-    root = LxmlDocument(response, lxml.html.HTMLParser)
+    root = create_root_node(response.text, lxml.html.HTMLParser,
+                            base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
 
     if formname is not None:
         f = root.xpath('//form[@name="%s"]' % formname)
+        if f:
+            return f[0]
+
+    if formid is not None:
+        f = root.xpath('//form[@id="%s"]' % formid)
         if f:
             return f[0]
 
@@ -95,24 +119,33 @@ def _get_form(response, formname, formnumber, formxpath):
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
     try:
-        formdata = dict(formdata or ())
+        formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
+    if not formdata:
+        formdata = ()
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
-                        '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
-                        'and ((@type!="checkbox" and @type!="radio") or @checked)]')
-    values = [(k, u'' if v is None else v)
+                        '|descendant::input[not(@type) or @type['
+                        ' not(re:test(., "^(?:submit|image|reset)$", "i"))'
+                        ' and (../@checked or'
+                        '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
+                        namespaces={
+                            "re": "http://exslt.org/regular-expressions"})
+    values = [(k, '' if v is None else v)
               for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata]
+              if k and k not in formdata_keys]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    values.extend(formdata.items())
+    if isinstance(formdata, dict):
+        formdata = formdata.items()
+
+    values.extend((k, v) for k, v in formdata if v is not None)
     return values
 
 
@@ -135,7 +168,7 @@ def _select_value(ele, n, v):
         # This is a workround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath('.//option[@selected]')
-        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+        v = [(o.get('value') or o.text or '').strip() for o in selected_options]
     return n, v
 
 
@@ -145,14 +178,18 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [el for el in form.xpath('.//input[@type="submit"]')]
+    clickables = list(form.xpath(
+        'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
+        '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+        namespaces={"re": "http://exslt.org/regular-expressions"}
+    ))
     if not clickables:
         return
 
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
         el = clickables[0]
-        return (el.name, el.value)
+        return (el.get('name'), el.get('value') or '')
 
     # If clickdata is given, we compare it to the clickable elements to find a
     # match. We first look to see if the number is specified in clickdata,
@@ -164,15 +201,14 @@ def _get_clickable(clickdata, form):
         except IndexError:
             pass
         else:
-            return (el.name, el.value)
+            return (el.get('name'), el.get('value') or '')
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
-    xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
+    xpath = './/*' + ''.join('[@%s="%s"]' % c for c in clickdata.items())
     el = form.xpath(xpath)
     if len(el) == 1:
-        return (el[0].name, el[0].value)
+        return (el[0].get('name'), el[0].get('value') or '')
     elif len(el) > 1:
         raise ValueError("Multiple elements found (%r) matching the criteria "
                          "in clickdata: %r" % (el, clickdata))

@@ -1,17 +1,18 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
-
-It also contains functions (or functionality) which is in Python versions
-higher than 2.5 which used to be the lowest version supported by Scrapy.
-
 """
-import os
-import re
-import inspect
-import weakref
 import errno
-import six
+import gc
+import inspect
+import re
+import sys
+import warnings
+import weakref
 from functools import partial, wraps
+from itertools import chain
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.decorators import deprecated
 
 
 def flatten(x):
@@ -25,15 +26,49 @@ def flatten(x):
     >>> [1, 2, [3,4], (5,6)]
     [1, 2, [3, 4], (5, 6)]
     >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]"""
+    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
+    >>> flatten(["foo", "bar"])
+    ['foo', 'bar']
+    >>> flatten(["foo", ["baz", 42], "bar"])
+    ['foo', 'baz', 42, 'bar']
+    """
+    return list(iflatten(x))
 
-    result = []
+
+def iflatten(x):
+    """iflatten(sequence) -> iterator
+
+    Similar to ``.flatten()``, but returns iterator instead"""
     for el in x:
-        if hasattr(el, "__iter__"):
-            result.extend(flatten(el))
+        if is_listlike(el):
+            for el_ in iflatten(el):
+                yield el_
         else:
-            result.append(el)
-    return result
+            yield el
+
+
+def is_listlike(x):
+    """
+    >>> is_listlike("foo")
+    False
+    >>> is_listlike(5)
+    False
+    >>> is_listlike(b"foo")
+    False
+    >>> is_listlike([b"foo"])
+    True
+    >>> is_listlike((b"foo",))
+    True
+    >>> is_listlike({})
+    True
+    >>> is_listlike(set())
+    True
+    >>> is_listlike((x for x in range(3)))
+    True
+    >>> is_listlike(range(5))
+    True
+    """
+    return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
 def unique(list_, key=lambda x: x):
@@ -49,37 +84,37 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def str_to_unicode(text, encoding=None, errors='strict'):
-    """Return the unicode representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a unicode
-    object without the risk of double-decoding problems (which can happen if
-    you don't use the default 'ascii' encoding)
-    """
-
-    if encoding is None:
-        encoding = 'utf-8'
+def to_unicode(text, encoding=None, errors='strict'):
+    """Return the unicode representation of a bytes object ``text``. If
+    ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, str):
-        return text.decode(encoding, errors)
-    elif isinstance(text, unicode):
         return text
-    else:
-        raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
-
-def unicode_to_str(text, encoding=None, errors='strict'):
-    """Return the str representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a str
-    object without the risk of double-decoding problems (which can happen if
-    you don't use the default 'ascii' encoding)
-    """
-
+    if not isinstance(text, (bytes, str)):
+        raise TypeError('to_unicode must receive a bytes or str '
+                        'object, got %s' % type(text).__name__)
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, unicode):
-        return text.encode(encoding, errors)
-    elif isinstance(text, str):
+    return text.decode(encoding, errors)
+
+
+def to_bytes(text, encoding=None, errors='strict'):
+    """Return the binary representation of ``text``. If ``text``
+    is already a bytes object, return it as-is."""
+    if isinstance(text, bytes):
         return text
-    else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+    if not isinstance(text, str):
+        raise TypeError('to_bytes must receive a str or bytes '
+                        'object, got %s' % type(text).__name__)
+    if encoding is None:
+        encoding = 'utf-8'
+    return text.encode(encoding, errors)
+
+
+@deprecated('to_unicode')
+def to_native_str(text, encoding=None, errors='strict'):
+    """ Return str representation of ``text``. """
+    return to_unicode(text, encoding, errors)
+
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -94,6 +129,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
     def _chunk_iter():
         offset = len(text)
         while True:
@@ -103,38 +139,67 @@ def re_rsearch(pattern, text, chunk_size=1024):
             yield (text[offset:], offset)
         yield (text, 0)
 
-    pattern = re.compile(pattern) if isinstance(pattern, basestring) else pattern
+    if isinstance(pattern, str):
+        pattern = re.compile(pattern)
+
     for chunk, offset in _chunk_iter():
         matches = [match for match in pattern.finditer(chunk)]
         if matches:
-            return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
+            start, end = matches[-1].span()
+            return offset + start, offset + end
     return None
+
 
 def memoizemethod_noargs(method):
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
     cache = weakref.WeakKeyDictionary()
+
     @wraps(method)
     def new_method(self, *args, **kwargs):
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
+
     return new_method
 
-_BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
 
-def isbinarytext(text):
-    """Return True if the given text is considered binary, or false
-    otherwise, by looking for binary bytes at their chars
+_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
+_BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
+
+
+def binary_is_text(data):
+    """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
+    does not contain unprintable control characters.
     """
-    assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
-    return any(c in _BINARYCHARS for c in text)
+    if not isinstance(data, bytes):
+        raise TypeError("data must be bytes, got '%s'" % type(data).__name__)
+    return all(c not in _BINARYCHARS for c in data)
+
+
+def _getargspec_py23(func):
+    """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
+                                                        defaults)
+
+    Was identical to inspect.getargspec() in python2, but uses
+    inspect.getfullargspec() for python3 behind the scenes to avoid
+    DeprecationWarning.
+
+    >>> def f(a, b=2, *ar, **kw):
+    ...     pass
+
+    >>> _getargspec_py23(f)
+    ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
+    """
+    return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
+
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
-        func_args, _, _, _ = inspect.getargspec(func)
+        spec = inspect.getfullargspec(func)
+        func_args = spec.args + spec.kwonlyargs
     elif inspect.isclass(func):
         return get_func_args(func.__init__, True)
     elif inspect.ismethod(func):
@@ -157,13 +222,14 @@ def get_func_args(func, stripself=False):
         func_args.pop(0)
     return func_args
 
+
 def get_spec(func):
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
     (['pattern', 'string'], {'flags': 0})
 
-    >>> class Test(object):
+    >>> class Test:
     ...     def __call__(self, val):
     ...         pass
     ...     def method(self, val, flags=0):
@@ -180,9 +246,9 @@ def get_spec(func):
     """
 
     if inspect.isfunction(func) or inspect.ismethod(func):
-        spec = inspect.getargspec(func)
+        spec = _getargspec_py23(func)
     elif hasattr(func, '__call__'):
-        spec = inspect.getargspec(func.__call__)
+        spec = _getargspec_py23(func.__call__)
     else:
         raise TypeError('%s is not callable' % type(func))
 
@@ -193,33 +259,29 @@ def get_spec(func):
     kwargs = dict(zip(spec.args[firstdefault:], defaults))
     return args, kwargs
 
+
 def equal_attributes(obj1, obj2, attributes):
     """Compare two objects attributes"""
     # not attributes given return False by default
     if not attributes:
         return False
 
+    temp1, temp2 = object(), object()
     for attr in attributes:
         # support callables like itemgetter
         if callable(attr):
-            if not attr(obj1) == attr(obj2):
+            if attr(obj1) != attr(obj2):
                 return False
-        else:
-            # check that objects has attribute
-            if not hasattr(obj1, attr):
-                return False
-            if not hasattr(obj2, attr):
-                return False
-            # compare object attributes
-            if not getattr(obj1, attr) == getattr(obj2, attr):
-                return False
+        elif getattr(obj1, attr, temp1) != getattr(obj2, attr, temp2):
+            return False
     # all attributes equal
     return True
 
 
-class WeakKeyCache(object):
+class WeakKeyCache:
 
     def __init__(self, default_factory):
+        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
 
@@ -229,36 +291,7 @@ class WeakKeyCache(object):
         return self._weakdict[key]
 
 
-def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
-    """Return a (new) dict with the unicode keys (and values if, keys_only is
-    False) of the given dict converted to strings. `dct_or_tuples` can be a
-    dict or a list of tuples, like any dict constructor supports.
-    """
-    d = {}
-    for k, v in six.iteritems(dict(dct_or_tuples)):
-        k = k.encode(encoding) if isinstance(k, unicode) else k
-        if not keys_only:
-            v = v.encode(encoding) if isinstance(v, unicode) else v
-        d[k] = v
-    return d
-
-def is_writable(path):
-    """Return True if the given path can be written (if it exists) or created
-    (if it doesn't exist)
-    """
-    if os.path.exists(path):
-        return os.access(path, os.W_OK)
-    else:
-        return os.access(os.path.dirname(path), os.W_OK)
-
-def setattr_default(obj, name, value):
-    """Set attribute value, but only if it's not already set. Similar to
-    setdefault() for dicts.
-    """
-    if not hasattr(obj, name):
-        setattr(obj, name, value)
-
-
+@deprecated
 def retry_on_eintr(function, *args, **kw):
     """Run a function and retry it while getting EINTR errors"""
     while True:
@@ -267,3 +300,58 @@ def retry_on_eintr(function, *args, **kw):
         except IOError as e:
             if e.errno != errno.EINTR:
                 raise
+
+
+def without_none_values(iterable):
+    """Return a copy of ``iterable`` with all ``None`` entries removed.
+
+    If ``iterable`` is a mapping, return a dictionary where all pairs that have
+    value ``None`` have been removed.
+    """
+    try:
+        return {k: v for k, v in iterable.items() if v is not None}
+    except AttributeError:
+        return type(iterable)((v for v in iterable if v is not None))
+
+
+def global_object_name(obj):
+    """
+    Return full name of a global object.
+
+    >>> from scrapy import Request
+    >>> global_object_name(Request)
+    'scrapy.http.request.Request'
+    """
+    return "%s.%s" % (obj.__module__, obj.__name__)
+
+
+if hasattr(sys, "pypy_version_info"):
+    def garbage_collect():
+        # Collecting weakreferences can take two collections on PyPy.
+        gc.collect()
+        gc.collect()
+else:
+    def garbage_collect():
+        gc.collect()
+
+
+class MutableChain:
+    """
+    Thin wrapper around itertools.chain, allowing to add iterables "in-place"
+    """
+
+    def __init__(self, *args):
+        self.data = chain.from_iterable(args)
+
+    def extend(self, *iterables):
+        self.data = chain(self.data, chain.from_iterable(iterables))
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.data)
+
+    @deprecated("scrapy.utils.python.MutableChain.__next__")
+    def next(self):
+        return self.__next__()

@@ -28,9 +28,10 @@ contains a dictionary of all available extensions and their order similar to
 how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
-.. class:: Crawler(settings)
+.. class:: Crawler(spidercls, settings)
 
     The Crawler object must be instantiated with a
+    :class:`scrapy.spiders.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
     .. attribute:: settings
@@ -64,7 +65,7 @@ how you :ref:`configure the downloader middlewares
 
         For an introduction on stats collection see :ref:`topics-stats`.
 
-        For the API see :class:`~scrapy.statscol.StatsCollector` class.
+        For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
 
     .. attribute:: extensions
 
@@ -75,33 +76,38 @@ how you :ref:`configure the downloader middlewares
         For an introduction on extensions and a list of available extensions on
         Scrapy see :ref:`topics-extensions`.
 
-    .. attribute:: spiders
-
-        The spider manager which takes care of loading and instantiating
-        spiders.
-
-        Most extensions won't need to access this attribute.
-
     .. attribute:: engine
 
         The execution engine, which coordinates the core crawling logic
         between the scheduler, downloader and spiders.
 
-        Some extension may want to access the Scrapy engine, to modify inspect
-        or modify the downloader and scheduler behaviour, although this is an
+        Some extension may want to access the Scrapy engine, to inspect  or 
+        modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
-    .. method:: configure()
+    .. attribute:: spider
 
-        Configure the crawler.
+        Spider currently being crawled. This is an instance of the spider class
+        provided while constructing the crawler, and it is created after the
+        arguments given in the :meth:`crawl` method.
 
-        This loads extensions, middlewares and spiders, leaving the crawler
-        ready to be started. It also configures the execution engine.
+    .. method:: crawl(*args, **kwargs)
 
-    .. method:: start()
+        Starts the crawler by instantiating its spider class with the given
+        ``args`` and ``kwargs`` arguments, while setting the execution engine in
+        motion.
 
-        Start the crawler. This calls :meth:`configure` if it hasn't been called yet.
         Returns a deferred that is fired when the crawl is finished.
+
+    .. automethod:: stop
+
+.. autoclass:: CrawlerRunner
+   :members:
+
+.. autoclass:: CrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. _topics-api-settings:
 
@@ -129,194 +135,80 @@ Settings API
             'default': 0,
             'command': 10,
             'project': 20,
+            'spider': 30,
             'cmdline': 40,
         }
 
     For a detailed explanation on each settings sources, see:
     :ref:`topics-settings`.
 
-.. class:: Settings(values={}, priority='project')
+.. autofunction:: get_settings_priority
 
-    This object stores Scrapy settings for the configuration of internal
-    components, and can be used for any further customization.
+.. autoclass:: Settings
+   :show-inheritance:
+   :members:
 
-    After instantiation of this class, the new object will have the global
-    default settings described on :ref:`topics-settings-ref` already
-    populated.
+.. autoclass:: BaseSettings
+   :members:
 
-    Additional values can be passed on initialization with the ``values``
-    argument, and they would take the ``priority`` level.  If the latter
-    argument is a string, the priority name will be looked up in
-    :attr:`~scrapy.settings.SETTINGS_PRIORITIES`. Otherwise, a expecific
-    integer should be provided.
+.. _topics-api-spiderloader:
 
-    Once the object is created, new settings can be loaded or updated with the
-    :meth:`~scrapy.settings.Settings.set` method, and can be accessed with the
-    square bracket notation of dictionaries, or with the
-    :meth:`~scrapy.settings.Settings.get` method of the instance and its value
-    conversion variants.  When requesting a stored key, the value with the
-    highest priority will be retrieved.
+SpiderLoader API
+================
 
-    .. method:: set(name, value, priority='project')
+.. module:: scrapy.spiderloader
+   :synopsis: The spider loader
 
-       Store a key/value attribute with a given priority.
+.. class:: SpiderLoader
 
-       Settings should be populated *before* configuring the Crawler object
-       (through the :meth:`~scrapy.crawler.Crawler.configure` method),
-       otherwise they won't have any effect.
+    This class is in charge of retrieving and handling the spider classes
+    defined across the project.
 
-       :param name: the setting name
-       :type name: string
+    Custom spider loaders can be employed by specifying their path in the
+    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
+    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
+    errorless execution.
 
-       :param value: the value to associate with the setting
-       :type value: any
+    .. method:: from_settings(settings)
 
-       :param priority: the priority of the setting. Should be a key of
-           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-       :type priority: string or int
+       This class method is used by Scrapy to create an instance of the class.
+       It's called with the current project settings, and it loads the spiders
+       found recursively in the modules of the :setting:`SPIDER_MODULES`
+       setting.
 
-    .. method:: setdict(values, priority='project')
+       :param settings: project settings
+       :type settings: :class:`~scrapy.settings.Settings` instance
 
-       Store key/value pairs with a given priority.
+    .. method:: load(spider_name)
 
-       This is a helper function that calls
-       :meth:`~scrapy.settings.Settings.set` for every item of ``values``
-       with the provided ``priority``.
+       Get the Spider class with the given name. It'll look into the previously
+       loaded spiders for a spider class with name ``spider_name`` and will raise
+       a KeyError if not found.
 
-       :param values: the settings names and values
-       :type values: dict
+       :param spider_name: spider class name
+       :type spider_name: str
 
-       :param priority: the priority of the settings. Should be a key of
-           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-       :type priority: string or int
+    .. method:: list()
 
-    .. method:: setmodule(module, priority='project')
+       Get the names of the available spiders in the project.
 
-       Store settings from a module with a given priority.
+    .. method:: find_by_request(request)
 
-       This is a helper function that calls
-       :meth:`~scrapy.settings.Settings.set` for every globally declared
-       uppercase variable of ``module`` with the provided ``priority``.
+       List the spiders' names that can handle the given request. Will try to
+       match the request's url against the domains of the spiders.
 
-       :param module: the module or the path of the module
-       :type module: module object or string
-
-       :param priority: the priority of the settings. Should be a key of
-           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-       :type priority: string or int
-
-    .. method:: get(name, default=None)
-
-       Get a setting value without affecting its original type.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getbool(name, default=False)
-
-       Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
-       ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
-       return ``False````
-
-       For example, settings populated through environment variables set to ``'0'``
-       will return ``False`` when using this method.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getint(name, default=0)
-
-       Get a setting value as an int
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getfloat(name, default=0.0)
-
-       Get a setting value as a float
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getlist(name, default=None)
-
-       Get a setting value as a list. If the setting original type is a list it
-       will be returned verbatim. If it's a string it will be split by ",".
-
-       For example, settings populated through environment variables set to
-       ``'one,two'`` will return a list ['one', 'two'] when using this method.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
+       :param request: queried request
+       :type request: :class:`~scrapy.http.Request` instance
 
 .. _topics-api-signals:
 
 Signals API
 ===========
 
-.. module:: scrapy.signalmanager
-   :synopsis: The signal manager
-
-.. class:: SignalManager
-
-    .. method:: connect(receiver, signal)
-
-        Connect a receiver function to a signal.
-
-        The signal can be any object, although Scrapy comes with some
-        predefined signals that are documented in the :ref:`topics-signals`
-        section.
-
-        :param receiver: the function to be connected
-        :type receiver: callable
-
-        :param signal: the signal to connect to
-        :type signal: object
-
-    .. method:: send_catch_log(signal, \*\*kwargs)
-
-        Send a signal, catch exceptions and log them.
-
-        The keyword arguments are passed to the signal handlers (connected
-        through the :meth:`connect` method).
-
-    .. method:: send_catch_log_deferred(signal, \*\*kwargs)
-
-        Like :meth:`send_catch_log` but supports returning `deferreds`_ from
-        signal handlers.
-
-        Returns a `deferred`_ that gets fired once all signal handlers
-        deferreds were fired. Send a signal, catch exceptions and log them.
-
-        The keyword arguments are passed to the signal handlers (connected
-        through the :meth:`connect` method).
-
-    .. method:: disconnect(receiver, signal)
-
-        Disconnect a receiver function from a signal. This has the opposite
-        effect of the :meth:`connect` method, and the arguments are the same.
-
-    .. method:: disconnect_all(signal)
-
-        Disconnect all receivers from the given signal.
-
-        :param signal: the signal to disconnect from
-        :type signal: object
+.. automodule:: scrapy.signalmanager
+    :synopsis: The signal manager
+    :members:
+    :undoc-members:
 
 .. _topics-api-stats:
 
@@ -324,11 +216,11 @@ Stats Collector API
 ===================
 
 There are several Stats Collectors available under the
-:mod:`scrapy.statscol` module and they all implement the Stats
-Collector API defined by the :class:`~scrapy.statscol.StatsCollector`
+:mod:`scrapy.statscollectors` module and they all implement the Stats
+Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
 class (which they all inherit from).
 
-.. module:: scrapy.statscol
+.. module:: scrapy.statscollectors
    :synopsis: Stats Collectors
 
 .. class:: StatsCollector
@@ -358,7 +250,7 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. 
+        given key, the value is always set.
 
     .. method:: min_value(key, value)
 
@@ -381,6 +273,3 @@ class (which they all inherit from).
 
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
-
-.. _deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
-.. _deferred: http://twistedmatrix.com/documents/current/core/howto/defer.html

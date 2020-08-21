@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from scrapy.http import Response, XmlResponse
-from scrapy.contrib_exp.downloadermiddleware.decompression import DecompressionMiddleware
-from scrapy.spider import Spider
+from scrapy.downloadermiddlewares.decompression import DecompressionMiddleware
+from scrapy.spiders import Spider
 from tests import get_testdata
 from scrapy.utils.test import assert_samelines
 
@@ -16,7 +16,7 @@ def _test_data(formats):
 
 
 class DecompressionMiddlewareTest(TestCase):
-    
+
     test_formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
     uncompressed_body, test_responses = _test_data(test_formats)
 
@@ -28,8 +28,8 @@ class DecompressionMiddlewareTest(TestCase):
         for fmt in self.test_formats:
             rsp = self.test_responses[fmt]
             new = self.mw.process_response(None, rsp, self.spider)
-            assert isinstance(new, XmlResponse), \
-                    'Failed %s, response type %s' % (fmt, type(new).__name__)
+            error_msg = 'Failed %s, response type %s' % (fmt, type(new).__name__)
+            assert isinstance(new, XmlResponse), error_msg
             assert_samelines(self, new.body, self.uncompressed_body, fmt)
 
     def test_plain_response(self):
@@ -39,7 +39,7 @@ class DecompressionMiddlewareTest(TestCase):
         assert_samelines(self, new.body, rsp.body)
 
     def test_empty_response(self):
-        rsp = Response(url='http://test.com', body='')
+        rsp = Response(url='http://test.com', body=b'')
         new = self.mw.process_response(None, rsp, self.spider)
         assert new is rsp
         assert not rsp.body

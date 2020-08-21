@@ -1,15 +1,17 @@
 import sys
 import os
 
-from twisted.internet import reactor, defer, protocol
+from twisted.internet import defer, protocol
 
-class ProcessTest(object):
+
+class ProcessTest:
 
     command = None
     prefix = [sys.executable, '-m', 'scrapy.cmdline']
-    cwd = os.getcwd() # trial chdirs to temp dir
+    cwd = os.getcwd()  # trial chdirs to temp dir
 
     def execute(self, args, check_code=True, settings=None):
+        from twisted.internet import reactor
         env = os.environ.copy()
         if settings is not None:
             env['SCRAPY_SETTINGS_MODULE'] = settings
@@ -33,8 +35,8 @@ class TestProcessProtocol(protocol.ProcessProtocol):
 
     def __init__(self):
         self.deferred = defer.Deferred()
-        self.out = ''
-        self.err = ''
+        self.out = b''
+        self.err = b''
         self.exitcode = None
 
     def outReceived(self, data):

@@ -1,19 +1,15 @@
 from unittest import TestCase
-import six
+
 import scrapy
 
 
 class ToplevelTestCase(TestCase):
 
     def test_version(self):
-        self.assertIs(type(scrapy.__version__), six.text_type)
+        self.assertIs(type(scrapy.__version__), str)
 
     def test_version_info(self):
         self.assertIs(type(scrapy.version_info), tuple)
-
-    def test_optional_features(self):
-        self.assertIs(type(scrapy.optional_features), set)
-        self.assertIn('ssl', scrapy.optional_features)
 
     def test_request_shortcut(self):
         from scrapy.http import Request, FormRequest
@@ -21,7 +17,7 @@ class ToplevelTestCase(TestCase):
         self.assertIs(scrapy.FormRequest, FormRequest)
 
     def test_spider_shortcut(self):
-        from scrapy.spider import Spider
+        from scrapy.spiders import Spider
         self.assertIs(scrapy.Spider, Spider)
 
     def test_selector_shortcut(self):

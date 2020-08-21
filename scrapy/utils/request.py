@@ -3,20 +3,21 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
-from __future__ import print_function
 import hashlib
 import weakref
-from six.moves.urllib.parse import urlunparse
+from urllib.parse import urlunparse
 
-from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
+from w3lib.url import canonicalize_url
 
-from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import to_bytes, to_unicode
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
-def request_fingerprint(request, include_headers=None):
+
+
+def request_fingerprint(request, include_headers=None, keep_fragments=False):
     """
     Return the request fingerprint.
 
@@ -27,10 +28,10 @@ def request_fingerprint(request, include_headers=None):
     http://www.example.com/query?cat=222&id=111
 
     Even though those are two different URLs both point to the same resource
-    and are equivalent (ie. they should return the same response).
+    and are equivalent (i.e. they should return the same response).
 
     Another example are cookies used to store session ids. Suppose the
-    following page is only accesible to authenticated users:
+    following page is only accessible to authenticated users:
 
     http://www.example.com/members/offers.html
 
@@ -42,23 +43,30 @@ def request_fingerprint(request, include_headers=None):
     the fingeprint. If you want to include specific headers use the
     include_headers argument, which is a list of Request headers to include.
 
+    Also, servers usually ignore fragments in urls when handling requests,
+    so they are also ignored by default when calculating the fingerprint.
+    If you want to include them, set the keep_fragments argument to True
+    (for instance when handling requests with a headless browser).
+
     """
     if include_headers:
-        include_headers = tuple([h.lower() for h in sorted(include_headers)])
+        include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
     cache = _fingerprint_cache.setdefault(request, {})
-    if include_headers not in cache:
+    cache_key = (include_headers, keep_fragments)
+    if cache_key not in cache:
         fp = hashlib.sha1()
-        fp.update(request.method)
-        fp.update(canonicalize_url(request.url))
-        fp.update(request.body or '')
+        fp.update(to_bytes(request.method))
+        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
+        fp.update(request.body or b'')
         if include_headers:
             for hdr in include_headers:
                 if hdr in request.headers:
                     fp.update(hdr)
                     for v in request.headers.getlist(hdr):
                         fp.update(v)
-        cache[include_headers] = fp.hexdigest()
-    return cache[include_headers]
+        cache[cache_key] = fp.hexdigest()
+    return cache[cache_key]
+
 
 def request_authenticate(request, username, password):
     """Autenticate the given request (in place) using the HTTP basic access
@@ -66,19 +74,27 @@ def request_authenticate(request, username, password):
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
 
+
 def request_httprepr(request):
-    """Return the raw HTTP representation (as string) of the given request.
+    """Return the raw HTTP representation (as bytes) of the given request.
     This is provided only for reference since it's not the actual stream of
     bytes that will be send when performing the request (that's controlled
     by Twisted).
     """
     parsed = urlparse_cached(request)
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    s  = "%s %s HTTP/1.1\r\n" % (request.method, path)
-    s += "Host: %s\r\n" % parsed.hostname
+    s = to_bytes(request.method) + b" " + to_bytes(path) + b" HTTP/1.1\r\n"
+    s += b"Host: " + to_bytes(parsed.hostname or b'') + b"\r\n"
     if request.headers:
-        s += request.headers.to_string() + "\r\n"
-    s += "\r\n"
+        s += request.headers.to_string() + b"\r\n"
+    s += b"\r\n"
     s += request.body
     return s
 
+
+def referer_str(request):
+    """ Return Referer HTTP header suitable for logging. """
+    referrer = request.headers.get('Referer')
+    if referrer is None:
+        return referrer
+    return to_unicode(referrer, errors='replace')

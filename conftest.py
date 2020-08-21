@@ -1,49 +1,55 @@
-import six
+from pathlib import Path
+
 import pytest
-from twisted.python import log
-
-from scrapy import optional_features
-
-collect_ignore = ["scrapy/stats.py"]
-if 'django' not in optional_features:
-    collect_ignore.append("tests/test_djangoitem/models.py")
-
-if six.PY3:
-    for fn in open('tests/py3-ignores.txt'):
-        if fn.strip():
-            collect_ignore.append(fn.strip())
-
-class LogObservers:
-    """Class for keeping track of log observers across test modules"""
-
-    def __init__(self):
-        self.observers = []
-
-    def add(self, logfile='test.log'):
-        fileobj = open(logfile, 'wb')
-        observer = log.FileLogObserver(fileobj)
-        log.startLoggingWithObserver(observer.emit, 0)
-        self.observers.append((fileobj, observer))
-
-    def remove(self):
-        fileobj, observer = self.observers.pop()
-        log.removeObserver(observer.emit)
-        fileobj.close()
 
 
-@pytest.fixture(scope='module')
-def log_observers():
-    return LogObservers()
+def _py_files(folder):
+    return (str(p) for p in Path(folder).rglob('*.py'))
 
 
-@pytest.fixture()
-def setlog(request, log_observers):
-    """Attach test.log file observer to twisted log, for trial compatibility"""
-    log_observers.add()
-    request.addfinalizer(log_observers.remove)
+collect_ignore = [
+    # not a test, but looks like a test
+    "scrapy/utils/testsite.py",
+    # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
+    *_py_files("tests/CrawlerProcess"),
+    # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
+    *_py_files("tests/CrawlerRunner"),
+    # Py36-only parts of respective tests
+    *_py_files("tests/py36"),
+]
+
+for line in open('tests/ignores.txt'):
+    file_path = line.strip()
+    if file_path and file_path[0] != '#':
+        collect_ignore.append(file_path)
 
 
 @pytest.fixture()
 def chdir(tmpdir):
     """Change to pytest-provided temporary directory"""
     tmpdir.chdir()
+
+
+def pytest_collection_modifyitems(session, config, items):
+    # Avoid executing tests when executing `--flake8` flag (pytest-flake8)
+    try:
+        from pytest_flake8 import Flake8Item
+        if config.getoption('--flake8'):
+            items[:] = [item for item in items if isinstance(item, Flake8Item)]
+    except ImportError:
+        pass
+
+
+@pytest.fixture(scope='class')
+def reactor_pytest(request):
+    if not request.cls:
+        # doctests
+        return
+    request.cls.reactor_pytest = request.config.getoption("--reactor")
+    return request.cls.reactor_pytest
+
+
+@pytest.fixture(autouse=True)
+def only_asyncio(request, reactor_pytest):
+    if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
+        pytest.skip('This test is only run with --reactor=asyncio')
