@@ -1,5 +1,6 @@
 import pickle
 import sys
+from os import environ
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
@@ -52,6 +53,14 @@ class FifoDiskQueueTestMixin:
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
+    def setUp(self):
+        if environ.get('PYTHONOPTIMIZE', '0') != '0':
+            raise SkipTest(
+                'This test case does not support PYTHONOPTIMIZE due to assert '
+                'statements inherited from queuelib tests'
+            )
+        super().setUp()
+
     def queue(self):
         return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
 
@@ -75,6 +84,14 @@ class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
 class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
 
     chunksize = 100000
+
+    def setUp(self):
+        if environ.get('PYTHONOPTIMIZE', '0') != '0':
+            raise SkipTest(
+                'This test case does not support PYTHONOPTIMIZE due to assert '
+                'statements inherited from queuelib tests'
+            )
+        super().setUp()
 
     def queue(self):
         return PickleFifoDiskQueue(self.qpath, chunksize=self.chunksize)
@@ -154,11 +171,27 @@ class LifoDiskQueueTestMixin:
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
+    def setUp(self):
+        if environ.get('PYTHONOPTIMIZE', '0') != '0':
+            raise SkipTest(
+                'This test case does not support PYTHONOPTIMIZE due to assert '
+                'statements inherited from queuelib tests'
+            )
+        super().setUp()
+
     def queue(self):
         return MarshalLifoDiskQueue(self.qpath)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
+
+    def setUp(self):
+        if environ.get('PYTHONOPTIMIZE', '0') != '0':
+            raise SkipTest(
+                'This test case does not support PYTHONOPTIMIZE due to assert '
+                'statements inherited from queuelib tests'
+            )
+        super().setUp()
 
     def queue(self):
         return PickleLifoDiskQueue(self.qpath)
