@@ -41,7 +41,15 @@ def xmliter(obj, nodename):
 
     r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
     for match in r.finditer(text):
-        nodetext = document_header + match.group().replace(nodename, '%s %s' % (nodename, ' '.join(namespaces.values())), 1) + header_end
+        nodetext = (
+            document_header
+            + match.group().replace(
+                nodename,
+                '%s %s' % (nodename, ' '.join(namespaces.values())),
+                1
+            )
+            + header_end
+        )
         yield Selector(text=nodetext, type='xml')
 
 
