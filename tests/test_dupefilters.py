@@ -176,7 +176,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-            self.assertEqual(crawler.stats.get_value('dupefilter/filtered') , 2)
+            self.assertEqual(crawler.stats.get_value('dupefilter/filtered'), 2)
             log.check_present(
                 (
                     'scrapy.dupefilters',
@@ -206,7 +206,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             dupefilter.log(r1, spider)
             dupefilter.log(r2, spider)
 
-            self.assertEqual(crawler.stats.get_value('dupefilter/filtered') , 2)
+            self.assertEqual(crawler.stats.get_value('dupefilter/filtered'), 2)
             log.check_present(
                 (
                     'scrapy.dupefilters',

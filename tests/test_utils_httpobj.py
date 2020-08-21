@@ -16,8 +16,8 @@ class HttpobjUtilsTest(unittest.TestCase):
         req2 = urlparse_cached(request2)
         urlp = urlparse(url)
 
-        self.assertEqual(req1a , req2)
-        self.assertEqual(req1a , urlp)
+        self.assertEqual(req1a, req2)
+        self.assertEqual(req1a, urlp)
         self.assertIs(req1a, req1b)
         self.assertIsNot(req1a, req2)
         self.assertIsNot(req1a, req2)

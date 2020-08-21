@@ -451,10 +451,10 @@ class GCSFeedStorageTest(unittest.TestCase):
         settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': 'publicRead'}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
-        self.assertEqual(storage.project_id , '123')
-        self.assertEqual(storage.acl , 'publicRead')
-        self.assertEqual(storage.bucket_name , 'mybucket')
-        self.assertEqual(storage.blob_name , 'export.csv')
+        self.assertEqual(storage.project_id, '123')
+        self.assertEqual(storage.acl, 'publicRead')
+        self.assertEqual(storage.bucket_name, 'mybucket')
+        self.assertEqual(storage.blob_name, 'export.csv')
 
     def test_parse_empty_acl(self):
         try:

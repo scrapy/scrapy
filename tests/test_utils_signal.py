@@ -48,7 +48,7 @@ class SendCatchLogTest(unittest.TestCase):
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        self.assertEqual(arg , 'test')
+        self.assertEqual(arg, 'test')
         return "OK"
 
 
@@ -62,7 +62,7 @@ class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        self.assertEqual(arg , 'test')
+        self.assertEqual(arg, 'test')
         d = defer.Deferred()
         reactor.callLater(0, d.callback, "OK")
         return d
@@ -72,7 +72,7 @@ class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
 
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        self.assertEqual(arg , 'test')
+        self.assertEqual(arg, 'test')
         await defer.succeed(42)
         return "OK"
 
@@ -82,7 +82,7 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
 
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        self.assertEqual(arg , 'test')
+        self.assertEqual(arg, 'test')
         await asyncio.sleep(0.2)
         return await get_from_asyncio_queue("OK")
 

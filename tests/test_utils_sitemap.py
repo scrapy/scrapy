@@ -21,7 +21,7 @@ class SitemapTest(unittest.TestCase):
     <priority>0.8</priority>
   </url>
 </urlset>""")
-        self.assertEqual(s.type , 'urlset')
+        self.assertEqual(s.type, 'urlset')
         self.assertEqual(
             list(s),
             [
@@ -43,7 +43,7 @@ class SitemapTest(unittest.TestCase):
       <lastmod>2005-01-01</lastmod>
    </sitemap>
 </sitemapindex>""")
-        self.assertEqual(s.type , 'sitemapindex')
+        self.assertEqual(s.type, 'sitemapindex')
         self.assertEqual(
             list(s),
             [
@@ -120,7 +120,7 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(s.type , 'urlset')
+        self.assertEqual(s.type, 'urlset')
         self.assertEqual(
             list(s),
             [

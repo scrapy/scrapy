@@ -77,8 +77,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, url2)
         self.assertEqual(req2.method, 'GET')
-        self.assertNotIn('Content-Type', req2.headers, "Content-Type header must not be present in redirected request")
-        self.assertNotIn('Content-Length', req2.headers, "Content-Length header must not be present in redirected request")
+        self.assertNotIn(
+            'Content-Type',
+            req2.headers,
+            "Content-Type header must not be present in redirected request"
+        )
+        self.assertNotIn(
+            'Content-Length',
+            req2.headers,
+            "Content-Length header must not be present in redirected request"
+        )
         self.assertFalse(req2.body, "Redirected body must be empty, not '%s'" % req2.body)
 
         # response without Location header but with status code is 3XX should be ignored
@@ -241,8 +249,16 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertIsInstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
         self.assertEqual(req2.method, 'GET')
-        self.assertNotIn('Content-Type', req2.headers, "Content-Type header must not be present in redirected request")
-        self.assertNotIn('Content-Length', req2.headers, "Content-Length header must not be present in redirected request")
+        self.assertNotIn(
+            'Content-Type',
+            req2.headers,
+            "Content-Type header must not be present in redirected request"
+        )
+        self.assertNotIn(
+            'Content-Length',
+            req2.headers,
+            "Content-Length header must not be present in redirected request"
+        )
         self.assertFalse(req2.body, "Redirected body must be empty, not '%s'" % req2.body)
 
     def test_max_redirect_times(self):

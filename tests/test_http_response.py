@@ -110,7 +110,7 @@ class BaseResponseTest(unittest.TestCase):
         hdrs = Headers({"key": "value"})
         r1 = self.response_class("http://www.example.com")
         r2 = r1.replace(status=301, body=b"New body", headers=hdrs)
-        self.assertEqual(r1.body , b'')
+        self.assertEqual(r1.body, b'')
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.status, r2.status), (200, 301))
         self.assertEqual((r1.body, r2.body), (b'', b"New body"))

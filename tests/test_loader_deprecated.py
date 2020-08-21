@@ -705,14 +705,14 @@ class DeprecatedUtilityFunctionsTestCase(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             wrap_loader_context(function, context=dict())
 
-            self.assertEqual(len(w) , 1)
+            self.assertEqual(len(w), 1)
             self.assertTrue(issubclass(w[0].category, ScrapyDeprecationWarning))
 
     def test_deprecated_extract_regex(self):
         with warnings.catch_warnings(record=True) as w:
             extract_regex(r'\w+', 'this is a test')
 
-            self.assertEqual(len(w) , 1)
+            self.assertEqual(len(w), 1)
             self.assertTrue(issubclass(w[0].category, ScrapyDeprecationWarning))
 
 

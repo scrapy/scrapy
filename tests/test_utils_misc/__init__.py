@@ -142,14 +142,14 @@ class UtilsMiscTestCase(unittest.TestCase):
     def test_set_environ(self):
         self.assertIs(os.environ.get('some_test_environ'), None)
         with set_environ(some_test_environ='test_value'):
-            self.assertEqual(os.environ.get('some_test_environ') , 'test_value')
+            self.assertEqual(os.environ.get('some_test_environ'), 'test_value')
         self.assertIs(os.environ.get('some_test_environ'), None)
 
         os.environ['some_test_environ'] = 'test'
-        self.assertEqual(os.environ.get('some_test_environ') , 'test')
+        self.assertEqual(os.environ.get('some_test_environ'), 'test')
         with set_environ(some_test_environ='test_value'):
-            self.assertEqual(os.environ.get('some_test_environ') , 'test_value')
-        self.assertEqual(os.environ.get('some_test_environ') , 'test')
+            self.assertEqual(os.environ.get('some_test_environ'), 'test_value')
+        self.assertEqual(os.environ.get('some_test_environ'), 'test')
 
 
 if __name__ == "__main__":

@@ -145,7 +145,7 @@ class RequestTest(unittest.TestCase):
 
     def test_body(self):
         r1 = self.request_class(url="http://www.example.com/")
-        self.assertEqual(r1.body , b'')
+        self.assertEqual(r1.body, b'')
 
         r2 = self.request_class(url="http://www.example.com/", body=b"")
         self.assertIsInstance(r2.body, bytes)

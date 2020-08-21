@@ -69,9 +69,9 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
             new_item = self.pipe.item_completed(results, item, self.info)
 
         self.assertIs(new_item, item)
-        self.assertEqual(len(log.records) , 1)
+        self.assertEqual(len(log.records), 1)
         record = log.records[0]
-        self.assertEqual(record.levelname , 'ERROR')
+        self.assertEqual(record.levelname, 'ERROR')
         self.assertTupleEqual(record.exc_info, failure_to_exc_info(fail))
 
         # disable failure logging and check again
@@ -79,7 +79,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         with LogCapture() as log:
             new_item = self.pipe.item_completed(results, item, self.info)
         self.assertIs(new_item, item)
-        self.assertEqual(len(log.records) , 0)
+        self.assertEqual(len(log.records), 0)
 
     @inlineCallbacks
     def test_default_process_item(self):
@@ -90,7 +90,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
     def test_modify_media_request(self):
         request = Request('http://url')
         self.pipe._modify_media_request(request)
-        self.assertEqual(request.meta , {'handle_httpstatus_all': True})
+        self.assertEqual(request.meta, {'handle_httpstatus_all': True})
 
     def test_should_remove_req_res_references_before_caching_the_results(self):
         """Regression test case to prevent a memory leak in the Media Pipeline.

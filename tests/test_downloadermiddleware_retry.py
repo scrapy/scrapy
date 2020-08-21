@@ -76,9 +76,9 @@ class RetryTest(unittest.TestCase):
         # discard it
         self.assertIs(self.mw.process_response(req, rsp, self.spider), rsp)
 
-        self.assertEqual(self.crawler.stats.get_value('retry/max_reached') , 1)
-        self.assertEqual(self.crawler.stats.get_value('retry/reason_count/503 Service Unavailable') , 2)
-        self.assertEqual(self.crawler.stats.get_value('retry/count') , 2)
+        self.assertEqual(self.crawler.stats.get_value('retry/max_reached'), 1)
+        self.assertEqual(self.crawler.stats.get_value('retry/reason_count/503 Service Unavailable'), 2)
+        self.assertEqual(self.crawler.stats.get_value('retry/count'), 2)
 
     def test_twistederrors(self):
         exceptions = [
@@ -98,9 +98,9 @@ class RetryTest(unittest.TestCase):
             self._test_retry_exception(req, exc('foo'))
 
         stats = self.crawler.stats
-        self.assertEqual(stats.get_value('retry/max_reached') , len(exceptions))
-        self.assertEqual(stats.get_value('retry/count') , len(exceptions) * 2)
-        self.assertEqual(stats.get_value('retry/reason_count/twisted.internet.defer.TimeoutError') , 2)
+        self.assertEqual(stats.get_value('retry/max_reached'), len(exceptions))
+        self.assertEqual(stats.get_value('retry/count'), len(exceptions) * 2)
+        self.assertEqual(stats.get_value('retry/reason_count/twisted.internet.defer.TimeoutError'), 2)
 
     def _test_retry_exception(self, req, exception):
         # first retry

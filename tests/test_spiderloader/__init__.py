@@ -79,20 +79,20 @@ class SpiderLoaderTest(unittest.TestCase):
         module = 'tests.test_spiderloader.test_spiders.spider1'
         settings = Settings({'SPIDER_MODULES': [module]})
         self.spider_loader = SpiderLoader.from_settings(settings)
-        self.assertEqual(len(self.spider_loader._spiders) , 1)
+        self.assertEqual(len(self.spider_loader._spiders), 1)
 
     def test_load_spider_module_multiple(self):
         prefix = 'tests.test_spiderloader.test_spiders.'
         module = ','.join(prefix + s for s in ('spider1', 'spider2'))
         settings = Settings({'SPIDER_MODULES': module})
         self.spider_loader = SpiderLoader.from_settings(settings)
-        self.assertEqual(len(self.spider_loader._spiders) , 2)
+        self.assertEqual(len(self.spider_loader._spiders), 2)
 
     def test_load_base_spider(self):
         module = 'tests.test_spiderloader.test_spiders.spider0'
         settings = Settings({'SPIDER_MODULES': [module]})
         self.spider_loader = SpiderLoader.from_settings(settings)
-        self.assertEqual(len(self.spider_loader._spiders) , 0)
+        self.assertEqual(len(self.spider_loader._spiders), 0)
 
     def test_crawler_runner_loading(self):
         module = 'tests.test_spiderloader.test_spiders.spider1'

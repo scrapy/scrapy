@@ -71,7 +71,7 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         with set_env(**envvars), warns(None) as warnings:
             settings = get_project_settings()
         self.assertFalse(warnings)
-        self.assertEqual(settings.get('SETTINGS_MODULE') , value)
+        self.assertEqual(settings.get('SETTINGS_MODULE'), value)
 
     def test_invalid_envvar(self):
         envvars = {
@@ -79,8 +79,8 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         }
         with set_env(**envvars), warns(None) as warnings:
             get_project_settings()
-        self.assertEqual(len(warnings) , 1)
-        self.assertEqual(warnings[0].category , ScrapyDeprecationWarning)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         self.assertTrue(str(warnings[0].message).endswith(': FOO'))
 
     def test_valid_and_invalid_envvars(self):
@@ -91,7 +91,7 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         }
         with set_env(**envvars), warns(None) as warnings:
             settings = get_project_settings()
-        self.assertEqual(len(warnings) , 1)
-        self.assertEqual(warnings[0].category , ScrapyDeprecationWarning)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
         self.assertTrue(str(warnings[0].message).endswith(': FOO'))
-        self.assertEqual(settings.get('SETTINGS_MODULE') , value)
+        self.assertEqual(settings.get('SETTINGS_MODULE'), value)
