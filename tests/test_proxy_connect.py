@@ -86,14 +86,6 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, log)
 
-    @pytest.mark.xfail(reason='fails earlier')
-    @defer.inlineCallbacks
-    def test_https_connect_tunnel_error(self):
-        crawler = get_crawler(SimpleSpider)
-        with LogCapture() as log:
-            yield crawler.crawl("https://localhost:99999/status?n=200")
-        self._assert_got_tunnel_error(log)
-
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
         os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy'])
