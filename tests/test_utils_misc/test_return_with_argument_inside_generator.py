@@ -29,9 +29,28 @@ class UtilsMiscPy3TestCase(unittest.TestCase):
             yield 1
             yield from g()
 
+        def m():
+            yield 1
+
+            def helper():
+                return 0
+
+            yield helper()
+
+        def n():
+            yield 1
+
+            def helper():
+                return 0
+
+            yield helper()
+            return 2
+
         self.assertTrue(is_generator_with_return_value(f))
         self.assertTrue(is_generator_with_return_value(g))
         self.assertFalse(is_generator_with_return_value(h))
         self.assertFalse(is_generator_with_return_value(i))
         self.assertFalse(is_generator_with_return_value(j))
         self.assertFalse(is_generator_with_return_value(k))  # not recursive
+        self.assertFalse(is_generator_with_return_value(m))
+        self.assertTrue(is_generator_with_return_value(n))

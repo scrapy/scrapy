@@ -179,6 +179,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         def f2(a, b=None, c=None):
             pass
 
+        def f3(a, b=None, *, c=None):
+            pass
+
         class A:
             def __init__(self, a, b, c):
                 pass
@@ -199,6 +202,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         self.assertEqual(get_func_args(f1), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(f2), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(f3), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(A), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(a.method), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(partial_f1), ['b', 'c'])

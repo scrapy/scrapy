@@ -243,12 +243,17 @@ class ExecutionEngine:
                     % (type(response), response)
                 )
             if isinstance(response, Response):
-                response.request = request  # tie request to response received
-                logkws = self.logformatter.crawled(request, response, spider)
+                if response.request is None:
+                    response.request = request
+                logkws = self.logformatter.crawled(response.request, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
-                self.signals.send_catch_log(signals.response_received,
-                                            response=response, request=request, spider=spider)
+                self.signals.send_catch_log(
+                    signal=signals.response_received,
+                    response=response,
+                    request=response.request,
+                    spider=spider,
+                )
             return response
 
         def _on_complete(_):

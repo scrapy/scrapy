@@ -12,7 +12,7 @@ from scrapy import signals
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.defer import defer_result, defer_succeed, iter_errback, parallel
+from scrapy.utils.defer import defer_fail, defer_succeed, iter_errback, parallel
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
@@ -120,40 +120,40 @@ class Scraper:
             response, request, deferred = slot.next_response_request_deferred()
             self._scrape(response, request, spider).chainDeferred(deferred)
 
-    def _scrape(self, response, request, spider):
-        """Handle the downloaded response or failure through the spider
-        callback/errback"""
-        if not isinstance(response, (Response, Failure)):
-            raise TypeError(
-                "Incorrect type: expected Response or Failure, got %s: %r"
-                % (type(response), response)
-            )
-
-        dfd = self._scrape2(response, request, spider)  # returns spider's processed output
-        dfd.addErrback(self.handle_spider_error, request, response, spider)
-        dfd.addCallback(self.handle_spider_output, request, response, spider)
+    def _scrape(self, result, request, spider):
+        """
+        Handle the downloaded response or failure through the spider callback/errback
+        """
+        if not isinstance(result, (Response, Failure)):
+            raise TypeError("Incorrect type: expected Response or Failure, got %s: %r" % (type(result), result))
+        dfd = self._scrape2(result, request, spider)  # returns spider's processed output
+        dfd.addErrback(self.handle_spider_error, request, result, spider)
+        dfd.addCallback(self.handle_spider_output, request, result, spider)
         return dfd
 
-    def _scrape2(self, request_result, request, spider):
-        """Handle the different cases of request's result been a Response or a
-        Failure"""
-        if not isinstance(request_result, Failure):
-            return self.spidermw.scrape_response(
-                self.call_spider, request_result, request, spider)
-        else:
-            dfd = self.call_spider(request_result, request, spider)
-            return dfd.addErrback(
-                self._log_download_errors, request_result, request, spider)
+    def _scrape2(self, result, request, spider):
+        """
+        Handle the different cases of request's result been a Response or a Failure
+        """
+        if isinstance(result, Response):
+            return self.spidermw.scrape_response(self.call_spider, result, request, spider)
+        else:  # result is a Failure
+            dfd = self.call_spider(result, request, spider)
+            return dfd.addErrback(self._log_download_errors, result, request, spider)
 
     def call_spider(self, result, request, spider):
-        result.request = request
-        dfd = defer_result(result)
-        callback = request.callback or spider._parse
-        warn_on_generator_with_return_value(spider, callback)
-        warn_on_generator_with_return_value(spider, request.errback)
-        dfd.addCallbacks(callback=callback,
-                         errback=request.errback,
-                         callbackKeywords=request.cb_kwargs)
+        if isinstance(result, Response):
+            if getattr(result, "request", None) is None:
+                result.request = request
+            callback = result.request.callback or spider._parse
+            warn_on_generator_with_return_value(spider, callback)
+            dfd = defer_succeed(result)
+            dfd.addCallback(callback, **result.request.cb_kwargs)
+        else:  # result is a Failure
+            result.request = request
+            warn_on_generator_with_return_value(spider, request.errback)
+            dfd = defer_fail(result)
+            dfd.addErrback(request.errback)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, response, spider):
