@@ -46,7 +46,7 @@ def load_object(path):
     try:
         dot = path.rindex('.')
     except ValueError:
-        raise ValueError("Error loading object '%s': not a full path" % path)
+        raise ValueError(f"Error loading object '{path}': not a full path")
 
     module, name = path[:dot], path[dot + 1:]
     mod = import_module(module)
@@ -54,7 +54,7 @@ def load_object(path):
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError("Module '%s' doesn't define any object named '%s'" % (module, name))
+        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
 
     return obj
 
@@ -163,7 +163,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         instance = objcls(*args, **kwargs)
         method_name = '__new__'
     if instance is None:
-        raise TypeError("%s.%s returned None" % (objcls.__qualname__, method_name))
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
 
 
@@ -234,9 +234,10 @@ def warn_on_generator_with_return_value(spider, callable):
     """
     if is_generator_with_return_value(callable):
         warnings.warn(
-            'The "{}.{}" method is a generator and includes a "return" statement with a '
-            'value different than None. This could lead to unexpected behaviour. Please see '
+            f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
+            'a generator and includes a "return" statement with a value '
+            'different than None. This could lead to unexpected behaviour. Please see '
             'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
-            'for details about the semantics of the "return" statement within generators'
-            .format(spider.__class__.__name__, callable.__name__), stacklevel=2,
+            'for details about the semantics of the "return" statement within generators',
+            stacklevel=2,
         )

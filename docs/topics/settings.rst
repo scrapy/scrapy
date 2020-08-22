@@ -110,7 +110,7 @@ In a spider, the settings are available through ``self.settings``::
         start_urls = ['http://example.com']
 
         def parse(self, response):
-            print("Existing settings: %s" % self.settings.attributes.keys())
+            print(f"Existing settings: {self.settings.attributes.keys()}")
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider

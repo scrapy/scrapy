@@ -14,7 +14,7 @@ class Link:
     def __init__(self, url, text='', fragment='', nofollow=False):
         if not isinstance(url, str):
             got = url.__class__.__name__
-            raise TypeError("Link urls must be str objects, got %s" % got)
+            raise TypeError(f"Link urls must be str objects, got {got}")
         self.url = url
         self.text = text
         self.fragment = fragment
@@ -33,6 +33,6 @@ class Link:
 
     def __repr__(self):
         return (
-            'Link(url=%r, text=%r, fragment=%r, nofollow=%r)'
-            % (self.url, self.text, self.fragment, self.nofollow)
+            f'Link(url={self.url!r}, text={self.text!r}, '
+            f'fragment={self.fragment!r}, nofollow={self.nofollow!r})'
         )

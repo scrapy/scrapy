@@ -80,15 +80,15 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                             base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
-        raise ValueError("No <form> element found in %s" % response)
+        raise ValueError(f"No <form> element found in {response}")
 
     if formname is not None:
-        f = root.xpath('//form[@name="%s"]' % formname)
+        f = root.xpath(f'//form[@name="{formname}"]')
         if f:
             return f[0]
 
     if formid is not None:
-        f = root.xpath('//form[@id="%s"]' % formid)
+        f = root.xpath(f'//form[@id="{formid}"]')
         if f:
             return f[0]
 
@@ -103,7 +103,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                 el = el.getparent()
                 if el is None:
                     break
-        raise ValueError('No <form> element found with %s' % formxpath)
+        raise ValueError(f'No <form> element found with {formxpath}')
 
     # If we get here, it means that either formname was None
     # or invalid
@@ -111,8 +111,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
         try:
             form = forms[formnumber]
         except IndexError:
-            raise IndexError("Form number %d not found in %s" %
-                             (formnumber, response))
+            raise IndexError(f"Form number {formnumber} not found in {response}")
         else:
             return form
 
@@ -205,12 +204,12 @@ def _get_clickable(clickdata, form):
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
-    xpath = './/*' + ''.join('[@%s="%s"]' % c for c in clickdata.items())
+    xpath = './/*' + ''.join(f'[@{key}="{clickdata[key]}"]' for key in clickdata)
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].get('name'), el[0].get('value') or '')
     elif len(el) > 1:
-        raise ValueError("Multiple elements found (%r) matching the criteria "
-                         "in clickdata: %r" % (el, clickdata))
+        raise ValueError(f"Multiple elements found ({el!r}) matching the "
+                         f"criteria in clickdata: {clickdata!r}")
     else:
-        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))
+        raise ValueError(f'No clickable element matching clickdata: {clickdata!r}')

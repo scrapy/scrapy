@@ -11,7 +11,7 @@ SEP-004: Library API
 ====================
 .. note:: the library API has been implemented, but slightly different from
           proposed in this SEP. You can run a Scrapy crawler inside a Twisted
-          reactor, but not outside it. 
+          reactor, but not outside it.
 
 Introduction
 ============
@@ -49,7 +49,7 @@ Here's a simple proof-of-concept code of such script:
    cr = Crawler(start_urls, callback=parse_start_page)
    cr.run() # blocking call - this populates scraped_items
 
-   print "%d items scraped" % len(scraped_items)
+   print(f"{len(scraped_items)} items scraped")
    # ... do something more interesting with scraped_items ...
 
 The behaviour of the Scrapy crawler would be controller by the Scrapy settings,

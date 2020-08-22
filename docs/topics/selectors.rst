@@ -328,8 +328,9 @@ too. Here's an example:
  '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
 >>> for index, link in enumerate(links):
-...     args = (index, link.xpath('@href').get(), link.xpath('img/@src').get())
-...     print('Link number %d points to url %r and image %r' % args)
+...     href_xpath = link.xpath('@href').get()
+...     img_xpath = link.xpath('img/@src').get()
+...     print(f'Link number {index} points to url {href_xpath!r} and image {img_xpath!r}')
 Link number 0 points to url 'image1.html' and image 'image1_thumb.jpg'
 Link number 1 points to url 'image2.html' and image 'image2_thumb.jpg'
 Link number 2 points to url 'image3.html' and image 'image3_thumb.jpg'
@@ -822,7 +823,7 @@ with groups of itemscopes and corresponding itemprops::
     ...     props = scope.xpath('''
     ...                 set:difference(./descendant::*/@itemprop,
     ...                                .//*[@itemscope]/*/@itemprop)''')
-    ...     print("    properties: %s" % (props.getall()))
+    ...     print(f"    properties: {props.getall()}")
     ...     print("")
 
     current scope: ['http://schema.org/Product']

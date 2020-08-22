@@ -61,7 +61,7 @@ class ScrapyCommand:
         group.add_option("--logfile", metavar="FILE",
                          help="log file. if omitted stderr will be used")
         group.add_option("-L", "--loglevel", metavar="LEVEL", default=None,
-                         help="log level (default: %s)" % self.settings['LOG_LEVEL'])
+                         help=f"log level (default: {self.settings['LOG_LEVEL']})")
         group.add_option("--nolog", action="store_true",
                          help="disable logging completely")
         group.add_option("--profile", metavar="FILE", default=None,

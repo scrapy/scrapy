@@ -30,7 +30,7 @@ Proposed Implementation
            if hasattr(value, '__iter__'): # str/unicode not allowed
                return [self._field.to_python(v) for v in value]
            else:
-               raise TypeError("Expected iterable, got %s" % type(value).__name__)
+               raise TypeError(f"Expected iterable, got {type(value).__name__}")
 
        def get_default(self):
            # must return a new copy to avoid unexpected behaviors with mutable defaults
