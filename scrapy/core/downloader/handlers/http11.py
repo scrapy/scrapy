@@ -396,7 +396,7 @@ class ScrapyAgent:
         if maxsize and expected_size > maxsize:
             warning_msg = ("Cancelling download of %(url)s: expected response "
                            "size (%(size)s) larger than download max size (%(maxsize)s).")
-            warning_args = {'url': url, 'size': expected_size, 'maxsize': maxsize}
+            warning_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
 
             logger.warning(warning_msg, warning_args)
 
