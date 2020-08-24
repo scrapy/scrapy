@@ -25,8 +25,10 @@ class UnsupportedNegotiatedProtocol(Exception):
         self.negotiated_protocol = negotiated_protocol
 
     def __str__(self):
-        return f'UnsupportedNegotiatedProtocol: Expected one of {SUPPORTED_PROTOCOLS!r} as negotiated protocol,' \
-               f' received {self.negotiated_protocol!r}'
+        return (
+            f'UnsupportedNegotiatedProtocol: Expected one of {SUPPORTED_PROTOCOLS!r}'
+            f' as negotiated protocol, received {self.negotiated_protocol!r}'
+        )
 
 
 class NegotiateProtocol(Protocol):
@@ -212,19 +214,20 @@ class HTTPNegotiateDownloadHandler:
         raise UnsupportedNegotiatedProtocol(negotiated_protocol)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
-        # ToDo:
-        #  1. Check if http --> Directly use HTTP/1.x
-        #  2. Check if we already have a connection to the base-url
-        #   Yes -> Utilize the connection
-        #   No -> Got to 3.
-        #  3. Check what's the negotiated protocol
-        #   3.1 Meanwhile the protocol is negotiated save all the request instances
-        #    having the same base URI (as they'll have same negotiated protocol)
-        #   3.2 After negotiation is done, issue all the pending requests to the respective
-        #    download handler
-        #  4. Store the result (so that we don't have to look for negotiated protocol again?)
-        #  5. Create a new instance of the respective protocol with the `transport` same as that
-        #   of NegotiatedProtocol (use the same connection - switch protocol)
+        """ Working:
+        1. Check if http --> Directly use HTTP/1.x
+        2. Check if we already have a connection to the base-url
+         Yes -> Utilize the connection
+         No -> Got to 3.
+        3. Check what's the negotiated protocol
+         3.1 Meanwhile the protocol is negotiated save all the request instances
+          having the same base URI (as they'll have same negotiated protocol)
+         3.2 After negotiation is done, issue all the pending requests to the respective
+          download handler
+        4. Store the result (so that we don't have to look for negotiated protocol again?)
+        5. Create a new instance of the respective protocol with the `transport` same as that
+         of NegotiatedProtocol (use the same connection - switch protocol)
+        """
         key = self._get_key(request)
 
         def make_request(_download_handler: Union[HTTP11DownloadHandler, H2DownloadHandler]):
@@ -235,8 +238,6 @@ class HTTPNegotiateDownloadHandler:
             # We already have a download handler with a cached connection
             return download_handler.download_request(request, spider)
 
-        # ToDo: Hold off the new requests with same URI until the earlier request
-        #  protocol is negotiated
         if key in self._pending_connections:
             d = Deferred()
             d.addCallback(make_request)
