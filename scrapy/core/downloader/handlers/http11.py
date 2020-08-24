@@ -52,6 +52,10 @@ class HTTP11DownloadHandler:
     def from_crawler(cls, crawler):
         return cls(crawler.settings, crawler)
 
+    @property
+    def pool(self):
+        return self._pool
+
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
         agent = ScrapyAgent(

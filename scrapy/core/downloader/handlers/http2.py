@@ -28,6 +28,10 @@ class H2DownloadHandler:
     def from_crawler(cls, crawler):
         return cls(crawler.settings, crawler)
 
+    @property
+    def pool(self) -> H2ConnectionPool:
+        return self._pool
+
     def download_request(self, request: Request, spider: Spider) -> Deferred:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,

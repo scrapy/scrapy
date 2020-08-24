@@ -28,6 +28,14 @@ class H2ConnectionPool:
         # Save all requests that arrive before the connection is established
         self._pending_requests: Dict[Tuple, Deque[Deferred]] = {}
 
+    @property
+    def established_connections(self) -> Dict[Tuple, H2ClientProtocol]:
+        return self._connections
+
+    @property
+    def pending_connections(self) -> Dict[Tuple, Deque[Deferred]]:
+        return self._pending_requests
+
     def get_connection(self, key: Tuple, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
         if key in self._pending_requests:
             # Received a request while connecting to remote
