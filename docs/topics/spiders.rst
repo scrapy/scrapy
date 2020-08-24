@@ -23,8 +23,8 @@ For spiders, the scraping cycle goes through something like this:
    :attr:`~scrapy.spiders.Spider.parse` method as callback function for the
    Requests.
 
-2. In the callback function, you parse the response (web page) and return either
-   dicts with extracted data, :class:`~scrapy.item.Item` objects,
+2. In the callback function, you parse the response (web page) and return
+   :ref:`item objects <topics-items>`,
    :class:`~scrapy.http.Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
@@ -71,8 +71,6 @@ scrapy.Spider
        spider after the domain, with or without the `TLD`_. So, for example, a
        spider that crawls ``mywebsite.com`` would often be called
        ``mywebsite``.
-
-       .. note:: In Python 2 this must be ASCII only.
 
    .. attribute:: allowed_domains
 
@@ -123,7 +121,7 @@ scrapy.Spider
       send log messages through it as described on
       :ref:`topics-logging-from-spiders`.
 
-   .. method:: from_crawler(crawler, \*args, \**kwargs)
+   .. method:: from_crawler(crawler, *args, **kwargs)
 
        This is the class method used by Scrapy to create your spiders.
 
@@ -181,8 +179,8 @@ scrapy.Spider
        the same requirements as the :class:`Spider` class.
 
        This method, as well as any other Request callback, must return an
-       iterable of :class:`~scrapy.http.Request` and/or
-       dicts or :class:`~scrapy.item.Item` objects.
+       iterable of :class:`~scrapy.http.Request` and/or :ref:`item objects
+       <topics-items>`.
 
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
@@ -236,7 +234,7 @@ Return multiple Requests and items from a single callback::
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
-to give data more structure you can use :ref:`topics-items`::
+to give data more structure you can use :class:`~scrapy.item.Item` objects::
 
     import scrapy
     from myproject.items import MyItem
@@ -300,9 +298,7 @@ Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
 you would have to parse it on your own into a list
-using something like
-`ast.literal_eval <https://docs.python.org/library/ast.html#ast.literal_eval>`_
-or `json.loads <https://docs.python.org/library/json.html#json.loads>`_
+using something like :func:`ast.literal_eval` or :func:`json.loads`
 and then set it as an attribute.
 Otherwise, you would cause iteration over a ``start_urls`` string
 (a very common python pitfall)
@@ -364,31 +360,34 @@ CrawlSpider
 
    This spider also exposes an overrideable method:
 
-   .. method:: parse_start_url(response)
+   .. method:: parse_start_url(response, **kwargs)
 
-      This method is called for the start_urls responses. It allows to parse
+      This method is called for each response produced for the URLs in
+      the spider's ``start_urls`` attribute. It allows to parse
       the initial responses and must return either an
-      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request`
+      :ref:`item object <topics-items>`, a :class:`~scrapy.http.Request`
       object, or an iterable containing any of them.
 
 Crawling rules
 ~~~~~~~~~~~~~~
 
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
+.. autoclass:: Rule
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-   defines how links will be extracted from each crawled page.
+   defines how links will be extracted from each crawled page. Each produced link will
+   be used to generate a :class:`~scrapy.http.Request` object, which will contain the
+   link's text in its ``meta`` dictionary (under the ``link_text`` key).
+   If omitted, a default link extractor created with no arguments will be used,
+   resulting in all links being extracted.
 
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
-   the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing :class:`~scrapy.item.Item` and/or
-   :class:`~scrapy.http.Request` objects (or any subclass of them).
-
-   .. warning:: When writing crawl spider rules, avoid using ``parse`` as
-       callback, since the :class:`CrawlSpider` uses the ``parse`` method
-       itself to implement its logic. So if you override the ``parse`` method,
-       the crawl spider will no longer work.
+   the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
+   as its first argument and must return either a single instance or an iterable of
+   :ref:`item objects <topics-items>` and/or :class:`~scrapy.http.Request` objects
+   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
+   object will contain the text of the link that produced the :class:`~scrapy.http.Request`
+   in its ``meta`` dictionary (under the ``link_text`` key)
 
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
    callback function.
@@ -402,10 +401,26 @@ Crawling rules
    of links extracted from each response using the specified ``link_extractor``.
    This is mainly used for filtering purposes.
 
-   ``process_request`` is a callable, or a string (in which case a method from
-   the spider object with that name will be used) which will be called with
-   every request extracted by this rule, and must return a request or None (to
-   filter out the request).
+   ``process_request`` is a callable (or a string, in which case a method from
+   the spider object with that name will be used) which will be called for every
+   :class:`~scrapy.http.Request` extracted by this rule. This callable should
+   take said request as first argument and the :class:`~scrapy.http.Response`
+   from which the request originated as second argument. It must return a
+   ``Request`` object or ``None`` (to filter out the request).
+
+   ``errback`` is a callable or a string (in which case a method from the spider
+   object with that name will be used) to be called if any exception is
+   raised while processing a request generated by the rule.
+   It receives a :class:`Twisted Failure <twisted.python.failure.Failure>`
+   instance as first parameter.
+
+
+.. warning:: Because of its internal implementation, you must explicitly set
+   callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
+   unexpected behaviour can occur otherwise.
+
+   .. versionadded:: 2.0
+      The *errback* parameter.
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
@@ -436,6 +451,12 @@ Let's now take a look at an example CrawlSpider with rules::
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
             item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
+            item['link_text'] = response.meta['link_text']
+            url = response.xpath('//td[@id="additional_data"]/@href').get()
+            return response.follow(url, self.parse_additional_page, cb_kwargs=dict(item=item))
+
+        def parse_additional_page(self, response, item):
+            item['additional_data'] = response.xpath('//p[@id="additional_data"]/text()').get()
             return item
 
 
@@ -516,7 +537,7 @@ XMLFeedSpider
         (``itertag``).  Receives the response and an
         :class:`~scrapy.selector.Selector` for each node.  Overriding this
         method is mandatory. Otherwise, you spider won't work.  This method
-        must return either a :class:`~scrapy.item.Item` object, a
+        must return an :ref:`item object <topics-items>`, a
         :class:`~scrapy.http.Request` object, or an iterable containing any of
         them.
 
@@ -526,7 +547,12 @@ XMLFeedSpider
         spider, and it's intended to perform any last time processing required
         before returning the results to the framework core, for example setting the
         item IDs. It receives a list of results and the response which originated
-        those results. It must return a list of results (Items or Requests).
+        those results. It must return a list of results (items or requests).
+
+
+.. warning:: Because of its internal implementation, you must explicitly set
+   callbacks for new requests when writing :class:`XMLFeedSpider`-based spiders;
+   unexpected behaviour can occur otherwise.
 
 
 XMLFeedSpider example
@@ -655,7 +681,7 @@ SitemapSpider
 
     .. attribute:: sitemap_follow
 
-        A list of regexes of sitemap that should be followed. This is is only
+        A list of regexes of sitemap that should be followed. This is only
         for sites that use `Sitemap index files`_ that point to other sitemap
         files.
 
@@ -682,7 +708,7 @@ SitemapSpider
 
     .. method:: sitemap_filter(entries)
 
-        This is a filter funtion that could be overridden to select sitemap entries
+        This is a filter function that could be overridden to select sitemap entries
         based on their attributes.
 
         For example::
@@ -797,6 +823,6 @@ Combine SitemapSpider with other sources of urls::
 
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/

@@ -1,16 +1,14 @@
-# -*- coding: utf-8 -*-
-
-import sys
 import logging
+import sys
 import warnings
 from logging.config import dictConfig
 
-from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
+from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings
 from scrapy.utils.versions import scrapy_components_versions
 
 
@@ -39,7 +37,7 @@ class TopLevelFormatter(logging.Filter):
         self.loggers = loggers or []
 
     def filter(self, record):
-        if any(record.name.startswith(l + '.') for l in self.loggers):
+        if any(record.name.startswith(logger + '.') for logger in self.loggers):
             record.name = record.name.split('.', 1)[0]
         return True
 
@@ -144,13 +142,24 @@ def _get_handler(settings):
 def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
-    logger.info("Versions: %(versions)s",
-                {'versions': ", ".join("%s %s" % (name, version)
-                    for name, version in scrapy_components_versions()
-                    if name != "Scrapy")})
+    versions = [
+        "%s %s" % (name, version)
+        for name, version in scrapy_components_versions()
+        if name != "Scrapy"
+    ]
+    logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
+    from twisted.internet import reactor
+    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
+    from twisted.internet import asyncioreactor
+    if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
+        logger.debug(
+            "Using asyncio event loop: %s.%s",
+            reactor._asyncioEventloop.__module__,
+            reactor._asyncioEventloop.__class__.__name__,
+        )
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:
@@ -174,7 +183,7 @@ class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
 
     def __init__(self, crawler, *args, **kwargs):
-        super(LogCounterHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.crawler = crawler
 
     def emit(self, record):

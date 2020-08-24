@@ -1,5 +1,5 @@
 import os
-from six.moves import cPickle as pickle
+import pickle
 import warnings
 
 from importlib import import_module
@@ -7,7 +7,8 @@ from os.path import join, dirname, abspath, isabs, exists
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+
 
 ENVVAR = 'SCRAPY_SETTINGS_MODULE'
 DATADIR_CFG_SECTION = 'datadir'
@@ -67,15 +68,31 @@ def get_project_settings():
     if settings_module_path:
         settings.setmodule(settings_module_path, priority='project')
 
-    # XXX: remove this hack
     pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
     if pickled_settings:
+        warnings.warn("Use of environment variable "
+                      "'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' "
+                      "is deprecated.", ScrapyDeprecationWarning)
         settings.setdict(pickle.loads(pickled_settings), priority='project')
 
-    # XXX: deprecate and remove this functionality
-    env_overrides = {k[7:]: v for k, v in os.environ.items() if
-                     k.startswith('SCRAPY_')}
-    if env_overrides:
-        settings.setdict(env_overrides, priority='project')
+    scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if
+                      k.startswith('SCRAPY_')}
+    valid_envvars = {
+        'CHECK',
+        'PICKLED_SETTINGS_TO_OVERRIDE',
+        'PROJECT',
+        'PYTHON_SHELL',
+        'SETTINGS_MODULE',
+    }
+    setting_envvars = {k for k in scrapy_envvars if k not in valid_envvars}
+    if setting_envvars:
+        setting_envvar_list = ', '.join(sorted(setting_envvars))
+        warnings.warn(
+            'Use of environment variables prefixed with SCRAPY_ to override '
+            'settings is deprecated. The following environment variables are '
+            'currently defined: {}'.format(setting_envvar_list),
+            ScrapyDeprecationWarning
+        )
+    settings.setdict(scrapy_envvars, priority='project')
 
     return settings

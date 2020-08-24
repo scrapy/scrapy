@@ -1,10 +1,10 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
-import six
+import inspect
 
 from scrapy.http import Request
-from scrapy.utils.python import to_unicode, to_native_str
+from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 
 
@@ -32,7 +32,8 @@ def request_to_dict(request, spider=None):
         '_encoding': request._encoding,
         'priority': request.priority,
         'dont_filter': request.dont_filter,
-        'flags': request.flags
+        'flags': request.flags,
+        'cb_kwargs': request.cb_kwargs,
     }
     if type(request) is not Request:
         d['_class'] = request.__module__ + '.' + request.__class__.__name__
@@ -53,7 +54,7 @@ def request_from_dict(d, spider=None):
         eb = _get_method(spider, eb)
     request_cls = load_object(d['_class']) if '_class' in d else Request
     return request_cls(
-        url=to_native_str(d['url']),
+        url=to_unicode(d['url']),
         callback=cb,
         errback=eb,
         method=d['method'],
@@ -64,18 +65,30 @@ def request_from_dict(d, spider=None):
         encoding=d['_encoding'],
         priority=d['priority'],
         dont_filter=d['dont_filter'],
-        flags=d.get('flags'))
+        flags=d.get('flags'),
+        cb_kwargs=d.get('cb_kwargs'),
+    )
 
 
 def _find_method(obj, func):
     if obj:
         try:
-            func_self = six.get_method_self(func)
+            func_self = func.__self__
         except AttributeError:  # func has no __self__
             pass
         else:
             if func_self is obj:
-                return six.get_method_function(func).__name__
+                members = inspect.getmembers(obj, predicate=inspect.ismethod)
+                for name, obj_func in members:
+                    # We need to use __func__ to access the original
+                    # function object because instance method objects
+                    # are generated each time attribute is retrieved from
+                    # instance.
+                    #
+                    # Reference: The standard type hierarchy
+                    # https://docs.python.org/3/reference/datamodel.html
+                    if obj_func.__func__ is func.__func__:
+                        return name
     raise ValueError("Function %s is not a method of: %s" % (func, obj))
 
 

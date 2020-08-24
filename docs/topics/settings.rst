@@ -26,9 +26,9 @@ do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``.
 
 The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
-Python `import search path`_.
+Python :ref:`import search path <tut-searchpath>`.
 
-.. _import search path: https://docs.python.org/2/tutorial/modules.html#the-module-search-path
+.. _populating-settings:
 
 Populating the settings
 =======================
@@ -122,7 +122,7 @@ Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
 extensions, middlewares and item pipelines::
 
-    class MyExtension(object):
+    class MyExtension:
         def __init__(self, log_is_enabled=False):
             if log_is_enabled:
                 print("log is enabled!")
@@ -186,7 +186,6 @@ AWS_ENDPOINT_URL
 Default: ``None``
 
 Endpoint URL used for S3-like storage, for example Minio or s3.scality.
-Only supported with ``botocore`` library.
 
 .. setting:: AWS_USE_SSL
 
@@ -197,7 +196,6 @@ Default: ``None``
 
 Use this option if you want to disable SSL connection for communication with
 S3 or S3-like storage. By default SSL will be used.
-Only supported with ``botocore`` library.
 
 .. setting:: AWS_VERIFY
 
@@ -207,7 +205,7 @@ AWS_VERIFY
 Default: ``None``
 
 Verify SSL connection between Scrapy and S3 or S3-like storage. By default
-SSL verification will occur. Only supported with ``botocore`` library.
+SSL verification will occur.
 
 .. setting:: AWS_REGION_NAME
 
@@ -217,7 +215,26 @@ AWS_REGION_NAME
 Default: ``None``
 
 The name of the region associated with the AWS client.
-Only supported with ``botocore`` library.
+
+.. setting:: ASYNCIO_EVENT_LOOP
+
+ASYNCIO_EVENT_LOOP
+------------------
+
+Default: ``None``
+
+Import path of a given asyncio event loop class.
+
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the 
+asyncio event loop to be used with it. Set the setting to the import path of the 
+desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
+event loop will be used.
+
+If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
+function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop 
+class to be used.  
+
+Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
 
 .. setting:: BOT_NAME
 
@@ -227,8 +244,7 @@ BOT_NAME
 Default: ``'scrapybot'``
 
 The name of the bot implemented by this Scrapy project (also known as the
-project name). This will be used to construct the User-Agent by default, and
-also for logging.
+project name). This name will be used for the logging too.
 
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
@@ -240,8 +256,8 @@ CONCURRENT_ITEMS
 
 Default: ``100``
 
-Maximum number of concurrent items (per response) to process in parallel in the
-Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
+Maximum number of concurrent items (per response) to process in parallel in
+:ref:`item pipelines <topics-item-pipeline>`.
 
 .. setting:: CONCURRENT_REQUESTS
 
@@ -250,7 +266,7 @@ CONCURRENT_REQUESTS
 
 Default: ``16``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed by the Scrapy downloader.
 
 .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
@@ -260,7 +276,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN
 
 Default: ``8``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
 
 See also: :ref:`topics-autothrottle` and its
@@ -274,7 +290,7 @@ CONCURRENT_REQUESTS_PER_IP
 
 Default: ``0``
 
-The maximum number of concurrent (ie. simultaneous) requests that will be
+The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single IP. If non-zero, the
 :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
 used instead. In other words, concurrency limits will be applied per IP, not
@@ -378,6 +394,21 @@ Default: ``10000``
 
 DNS in-memory cache size.
 
+.. setting:: DNS_RESOLVER
+
+DNS_RESOLVER
+------------
+
+.. versionadded:: 2.0
+
+Default: ``'scrapy.resolver.CachingThreadedResolver'``
+
+The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
+supports specifying a timeout for DNS requests via the :setting:`DNS_TIMEOUT` setting,
+but works only with IPv4 addresses. Scrapy provides an alternative resolver,
+``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
+take the :setting:`DNS_TIMEOUT` setting into account.
+
 .. setting:: DNS_TIMEOUT
 
 DNS_TIMEOUT
@@ -409,10 +440,9 @@ connections (for ``HTTP10DownloadHandler``).
 .. note::
 
     HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
-    unless you use Twisted<11.1, or if you really want to use HTTP/1.0
-    and override :setting:`DOWNLOAD_HANDLERS_BASE` for ``http(s)`` scheme
-    accordingly, i.e. to
-    ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    unless you really want to use HTTP/1.0 and override
+    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
+    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -436,11 +466,30 @@ or even enable client-side authentication (and various other things).
     Scrapy also has another context factory class that you can set,
     ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
     which uses the platform's certificates to validate remote endpoints.
-    **This is only available if you use Twisted>=14.0.**
 
-If you do use a custom ContextFactory, make sure it accepts a ``method``
-parameter at init (this is the ``OpenSSL.SSL`` method mapping
-:setting:`DOWNLOADER_CLIENT_TLS_METHOD`).
+If you do use a custom ContextFactory, make sure its ``__init__`` method
+accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
+:setting:`DOWNLOADER_CLIENT_TLS_METHOD`), a ``tls_verbose_logging``
+parameter (``bool``) and a ``tls_ciphers`` parameter (see
+:setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
+
+.. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
+
+DOWNLOADER_CLIENT_TLS_CIPHERS
+-----------------------------
+
+Default: ``'DEFAULT'``
+
+Use  this setting to customize the TLS/SSL ciphers used by the default
+HTTP/1.1 downloader.
+
+The setting should contain a string in the `OpenSSL cipher list format`_,
+these ciphers will be used as client ciphers. Changing this setting may be
+necessary to access certain HTTPS websites: for example, you may need to use
+``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
+specific cipher that is not included in ``DEFAULT`` if a website requires it.
+
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -463,10 +512,20 @@ This setting must be one of these string values:
 - ``'TLSv1.2'``: forces TLS version 1.2
 - ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
-.. note::
 
-    We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
-    or above (Twisted>=14.0 if you can).
+.. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+
+DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
+-------------------------------------
+
+Default: ``False``
+
+Setting this to ``True`` will enable DEBUG level messages about TLS connection
+parameters after establishing HTTPS connections. The kind of information logged
+depends on the versions of OpenSSL and pyOpenSSL.
+
+This setting is only used for the default
+:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -537,6 +596,8 @@ amount of time between requests, but uses a random interval between 0.5 * :setti
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
 per ip address instead of per domain.
+
+.. _spider-download_delay-attribute:
 
 You can also change this setting per spider by setting ``download_delay``
 spider attribute.
@@ -613,8 +674,6 @@ If you want to disable it set to 0.
     spider attribute and per-request using :reqmeta:`download_maxsize`
     Request.meta key.
 
-    This feature needs Twisted >= 11.1.
-
 .. setting:: DOWNLOAD_WARNSIZE
 
 DOWNLOAD_WARNSIZE
@@ -631,8 +690,6 @@ If you want to disable it set to 0.
     This size can be set per spider using :attr:`download_warnsize`
     spider attribute and per-request using :reqmeta:`download_warnsize`
     Request.meta key.
-
-    This feature needs Twisted >= 11.1.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -749,6 +806,14 @@ The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
+.. setting:: FEED_STORAGE_GCS_ACL
+
+FEED_STORAGE_GCS_ACL
+--------------------
+
+The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -758,6 +823,7 @@ Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
 
+.. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
 
 FTP_PASSWORD
@@ -776,6 +842,7 @@ in ``Request`` meta.
 
 .. _RFC 1635: https://tools.ietf.org/html/rfc1635
 
+.. reqmeta:: ftp_user
 .. setting:: FTP_USER
 
 FTP_USER
@@ -785,6 +852,15 @@ Default: ``"anonymous"``
 
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
+
+.. setting:: GCS_PROJECT_ID
+
+GCS_PROJECT_ID
+-----------------
+
+Default: ``None``
+
+The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
 .. setting:: ITEM_PIPELINES
 
@@ -848,10 +924,9 @@ LOG_FORMAT
 
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
-String for formatting log messsages. Refer to the `Python logging documentation`_ for the whole list of available
-placeholders.
-
-.. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
+String for formatting log messages. Refer to the
+:ref:`Python logging documentation <logrecord-attributes>` for the qwhole
+list of available placeholders.
 
 .. setting:: LOG_DATEFORMAT
 
@@ -861,10 +936,18 @@ LOG_DATEFORMAT
 Default: ``'%Y-%m-%d %H:%M:%S'``
 
 String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
-in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the whole list of available
-directives.
+in :setting:`LOG_FORMAT`. Refer to the
+:ref:`Python datetime documentation <strftime-strptime-behavior>` for the
+whole list of available directives.
 
-.. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+.. setting:: LOG_FORMATTER
+
+LOG_FORMATTER
+-------------
+
+Default: :class:`scrapy.logformatter.LogFormatter`
+
+The class to use for :ref:`formatting log messages <custom-log-formats>` for different actions.
 
 .. setting:: LOG_LEVEL
 
@@ -896,6 +979,16 @@ Default: ``False``
 
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
+
+.. setting:: LOGSTATS_INTERVAL
+
+LOGSTATS_INTERVAL
+-----------------
+
+Default: ``60.0``
+
+The interval (in seconds) between each logging printout of the stats
+by :class:`~scrapy.extensions.logstats.LogStats`.
 
 .. setting:: MEMDEBUG_ENABLED
 
@@ -1046,17 +1139,6 @@ multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
 
-.. setting:: REDIRECT_MAX_TIMES
-
-REDIRECT_MAX_TIMES
-------------------
-
-Default: ``20``
-
-Defines the maximum times a request can be redirected. After this maximum the
-request's response is returned as is. We used Firefox default value for the
-same task.
-
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
@@ -1102,6 +1184,28 @@ If enabled, Scrapy will respect robots.txt policies. For more information see
     While the default value is ``False`` for historical reasons,
     this option is enabled by default in settings.py file generated
     by ``scrapy startproject`` command.
+
+.. setting:: ROBOTSTXT_PARSER
+
+ROBOTSTXT_PARSER
+----------------
+
+Default: ``'scrapy.robotstxt.ProtegoRobotParser'``
+
+The parser backend to use for parsing ``robots.txt`` files. For more information see
+:ref:`topics-dlmw-robots`.
+
+.. setting:: ROBOTSTXT_USER_AGENT
+
+ROBOTSTXT_USER_AGENT
+^^^^^^^^^^^^^^^^^^^^
+
+Default: ``None``
+
+The user agent string to use for matching in the robots.txt file. If ``None``,
+the User-Agent header you are sending with the request or the
+:setting:`USER_AGENT` setting (in that order) will be used for determining
+the user agent to use in the robots.txt file.
 
 .. setting:: SCHEDULER
 
@@ -1155,9 +1259,28 @@ Type of in-memory queue used by scheduler. Other available type is:
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
-Default: ``'queuelib.PriorityQueue'``
+Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
-Type of priority queue used by scheduler.
+Type of priority queue used by the scheduler. Another available type is
+``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
+``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
+does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
+
+SCRAPER_SLOT_MAX_ACTIVE_SIZE
+----------------------------
+
+.. versionadded:: 2.0
+
+Default: ``5_000_000``
+
+Soft limit (in bytes) for response data being processed.
+
+While the sum of the sizes of all responses being processed is above this value,
+Scrapy does not process new requests.
 
 .. setting:: SPIDER_CONTRACTS
 
@@ -1182,7 +1305,7 @@ Default::
         'scrapy.contracts.default.ScrapesContract': 3,
     }
 
-A dict containing the scrapy contracts enabled by default in Scrapy. You should
+A dict containing the Scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
 
@@ -1213,7 +1336,7 @@ SPIDER_LOADER_WARN_ONLY
 
 Default: ``False``
 
-By default, when scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
+By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
 it will fail loudly if there is any ``ImportError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
@@ -1311,17 +1434,6 @@ Default: ``True``
 A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
 will be enabled (provided its extension is also enabled).
 
-.. setting:: TELNETCONSOLE_PORT
-
-TELNETCONSOLE_PORT
-------------------
-
-Default: ``[6023, 6073]``
-
-The port range to use for the telnet console. If set to ``None`` or ``0``, a
-dynamically assigned port is used. For more info see
-:ref:`topics-telnetconsole`.
-
 .. setting:: TEMPLATES_DIR
 
 TEMPLATES_DIR
@@ -1335,6 +1447,101 @@ command.
 
 The project name must not conflict with the name of custom files or directories
 in the ``project`` subdirectory.
+
+.. setting:: TWISTED_REACTOR
+
+TWISTED_REACTOR
+---------------
+
+.. versionadded:: 2.0
+
+Default: ``None``
+
+Import path of a given :mod:`~twisted.internet.reactor`.
+
+Scrapy will install this reactor if no other reactor is installed yet, such as
+when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.CrawlerProcess` class.
+
+If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+need to install the correct reactor manually. You can do that using
+:func:`~scrapy.utils.reactor.install_reactor`:
+
+.. autofunction:: scrapy.utils.reactor.install_reactor
+
+If a reactor is already installed,
+:func:`~scrapy.utils.reactor.install_reactor` has no effect.
+
+:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
+:exc:`Exception` if the installed reactor does not match the
+:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:mod:`~twisted.internet.reactor` imports in project files and imported
+third-party libraries will make Scrapy raise :exc:`Exception` when
+it checks which reactor is installed.
+
+In order to use the reactor installed by Scrapy::
+
+    import scrapy
+    from twisted.internet import reactor
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+which raises :exc:`Exception`, becomes::
+
+    import scrapy
+
+
+    class QuotesSpider(scrapy.Spider):
+        name = 'quotes'
+
+        def __init__(self, *args, **kwargs):
+            self.timeout = int(kwargs.pop('timeout', '60'))
+            super(QuotesSpider, self).__init__(*args, **kwargs)
+
+        def start_requests(self):
+            from twisted.internet import reactor
+            reactor.callLater(self.timeout, self.stop)
+
+            urls = ['http://quotes.toscrape.com/page/1']
+            for url in urls:
+                yield scrapy.Request(url=url, callback=self.parse)
+
+        def parse(self, response):
+            for quote in response.css('div.quote'):
+                yield {'text': quote.css('span.text::text').get()}
+
+        def stop(self):
+            self.crawler.engine.close_spider(self, 'timeout')
+
+
+The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
+means that Scrapy will not attempt to install any specific reactor, and the
+default reactor defined by Twisted for the current platform will be used. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
+
+For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
 .. setting:: URLLENGTH_LIMIT
@@ -1356,7 +1563,10 @@ USER_AGENT
 
 Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 
-The default User-Agent to use when crawling, unless overridden.
+The default User-Agent to use when crawling, unless overridden. This user agent is
+also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
+if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
+there is no overridding User-Agent header specified for the request.
 
 
 Settings documented elsewhere:
@@ -1371,3 +1581,4 @@ case to see how to enable and use them.
 .. _Amazon web services: https://aws.amazon.com/
 .. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
 .. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
+.. _Google Cloud Storage: https://cloud.google.com/storage/

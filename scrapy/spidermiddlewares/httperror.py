@@ -15,10 +15,10 @@ class HttpError(IgnoreRequest):
 
     def __init__(self, response, *args, **kwargs):
         self.response = response
-        super(HttpError, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
-class HttpErrorMiddleware(object):
+class HttpErrorMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler):

@@ -30,11 +30,10 @@ In case of status 200 request, response.headers will come with two keys:
 
 import re
 from io import BytesIO
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 
-from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient, CommandFailed
-from twisted.internet.protocol import Protocol, ClientCreator
+from twisted.internet.protocol import ClientCreator, Protocol
+from twisted.protocols.ftp import CommandFailed, FTPClient
 
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
@@ -59,10 +58,11 @@ class ReceivedDataProtocol(Protocol):
     def close(self):
         self.body.close() if self.filename else self.body.seek(0)
 
-_CODE_RE = re.compile("\d+")
+
+_CODE_RE = re.compile(r"\d+")
 
 
-class FTPDownloadHandler(object):
+class FTPDownloadHandler:
     lazy = False
 
     CODE_MAPPING = {
@@ -75,25 +75,30 @@ class FTPDownloadHandler(object):
         self.default_password = settings['FTP_PASSWORD']
         self.passive_mode = settings['FTP_PASSIVE_MODE']
 
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
+
     def download_request(self, request, spider):
+        from twisted.internet import reactor
         parsed_url = urlparse_cached(request)
         user = request.meta.get("ftp_user", self.default_user)
         password = request.meta.get("ftp_password", self.default_password)
         passive_mode = 1 if bool(request.meta.get("ftp_passive",
                                                   self.passive_mode)) else 0
-        creator = ClientCreator(reactor, FTPClient, user, password,
-            passive=passive_mode)
-        return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
-                                request, unquote(parsed_url.path))
+        creator = ClientCreator(reactor, FTPClient, user, password, passive=passive_mode)
+        dfd = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
+        return dfd.addCallback(self.gotClient, request, unquote(parsed_url.path))
 
     def gotClient(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
-        return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
-                        callbackArgs=(request, protocol),
-                        errback=self._failed,
-                        errbackArgs=(request,))
+        return client.retrieveFile(filepath, protocol).addCallbacks(
+            callback=self._build_response,
+            callbackArgs=(request, protocol),
+            errback=self._failed,
+            errbackArgs=(request,),
+        )
 
     def _build_response(self, result, request, protocol):
         self.result = result
@@ -112,4 +117,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=to_bytes(message))
         raise result.type(result.value)
-

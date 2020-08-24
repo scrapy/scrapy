@@ -91,13 +91,15 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(\*args, \**kwargs)
+    .. method:: crawl(*args, **kwargs)
 
         Starts the crawler by instantiating its spider class with the given
         ``args`` and ``kwargs`` arguments, while setting the execution engine in
         motion.
 
         Returns a deferred that is fired when the crawl is finished.
+
+    .. automethod:: stop
 
 .. autoclass:: CrawlerRunner
    :members:
@@ -154,7 +156,7 @@ Settings API
 SpiderLoader API
 ================
 
-.. module:: scrapy.loader
+.. module:: scrapy.spiderloader
    :synopsis: The spider loader
 
 .. class:: SpiderLoader
@@ -271,5 +273,3 @@ class (which they all inherit from).
 
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
-
-.. _reactor: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

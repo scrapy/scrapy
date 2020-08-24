@@ -7,12 +7,12 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 import re
-from six.moves.urllib.parse import (ParseResult, urldefrag, urlparse, urlunparse)
+from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
 from w3lib.url import *
-from w3lib.url import _safe_chars, _unquotepath
+from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
 from scrapy.utils.python import to_unicode
 
 
@@ -27,8 +27,7 @@ def url_is_from_any_domain(url, domains):
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(url,
-        [spider.name] + list(getattr(spider, 'allowed_domains', [])))
+    return url_is_from_any_domain(url, [spider.name] + list(getattr(spider, 'allowed_domains', [])))
 
 
 def url_has_any_extension(url, extensions):
@@ -84,25 +83,54 @@ def add_http_if_no_scheme(url):
     return url
 
 
+def _is_posix_path(string):
+    return bool(
+        re.match(
+            r'''
+            ^                   # start with...
+            (
+                \.              # ...a single dot,
+                (
+                    \. | [^/\.]+  # optionally followed by
+                )?                # either a second dot or some characters
+                |
+                ~   # $HOME
+            )?      # optional match of ".", ".." or ".blabla"
+            /       # at least one "/" for a file path,
+            .       # and something after the "/"
+            ''',
+            string,
+            flags=re.VERBOSE,
+        )
+    )
+
+
+def _is_windows_path(string):
+    return bool(
+        re.match(
+            r'''
+            ^
+            (
+                [a-z]:\\
+                | \\\\
+            )
+            ''',
+            string,
+            flags=re.IGNORECASE | re.VERBOSE,
+        )
+    )
+
+
+def _is_filesystem_path(string):
+    return _is_posix_path(string) or _is_windows_path(string)
+
+
 def guess_scheme(url):
-    """Add an URL scheme if missing: file:// for filepath-like input or http:// otherwise."""
-    parts = urlparse(url)
-    if parts.scheme:
-        return url
-    # Note: this does not match Windows filepath
-    if re.match(r'''^                   # start with...
-                    (
-                        \.              # ...a single dot,
-                        (
-                            \. | [^/\.]+  # optionally followed by
-                        )?                # either a second dot or some characters
-                    )?      # optional match of ".", ".." or ".blabla"
-                    /       # at least one "/" for a file path,
-                    .       # and something after the "/"
-                    ''', parts.path, flags=re.VERBOSE):
+    """Add an URL scheme if missing: file:// for filepath-like input or
+    http:// otherwise."""
+    if _is_filesystem_path(url):
         return any_to_uri(url)
-    else:
-        return add_http_if_no_scheme(url)
+    return add_http_if_no_scheme(url)
 
 
 def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=False, strip_fragment=True):

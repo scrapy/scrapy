@@ -1,7 +1,14 @@
 import unittest
+import warnings
 
-from scrapy.settings import BaseSettings
-from scrapy.utils.conf import build_component_list, arglist_to_dict
+from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
+from scrapy.settings import BaseSettings, Settings
+from scrapy.utils.conf import (
+    arglist_to_dict,
+    build_component_list,
+    feed_complete_default_values_from_settings,
+    feed_process_params_from_cli
+)
 
 
 class BuildComponentListTest(unittest.TestCase):
@@ -79,16 +86,118 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
         d = {'one': {'a': 'a', 'b': 2}}
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {'one': 'lorem ipsum',}
+        d = {'one': 'lorem ipsum'}
         self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-
 
 
 class UtilsConfTestCase(unittest.TestCase):
 
     def test_arglist_to_dict(self):
-        self.assertEqual(arglist_to_dict(['arg1=val1', 'arg2=val2']),
+        self.assertEqual(
+            arglist_to_dict(['arg1=val1', 'arg2=val2']),
             {'arg1': 'val1', 'arg2': 'val2'})
+
+
+class FeedExportConfigTestCase(unittest.TestCase):
+
+    def test_feed_export_config_invalid_format(self):
+        settings = Settings()
+        self.assertRaises(UsageError, feed_process_params_from_cli, settings, ['items.dat'], 'noformat')
+
+    def test_feed_export_config_mismatch(self):
+        settings = Settings()
+        self.assertRaises(
+            UsageError,
+            feed_process_params_from_cli, settings, ['items1.dat', 'items2.dat'], 'noformat'
+        )
+
+    def test_feed_export_config_backward_compatible(self):
+        with warnings.catch_warnings(record=True) as cw:
+            settings = Settings()
+            self.assertEqual(
+                {'items.dat': {'format': 'csv'}},
+                feed_process_params_from_cli(settings, ['items.dat'], 'csv')
+            )
+            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+
+    def test_feed_export_config_explicit_formats(self):
+        settings = Settings()
+        self.assertEqual(
+            {'items_1.dat': {'format': 'json'}, 'items_2.dat': {'format': 'xml'}, 'items_3.dat': {'format': 'csv'}},
+            feed_process_params_from_cli(settings, ['items_1.dat:json', 'items_2.dat:xml', 'items_3.dat:csv'])
+        )
+
+    def test_feed_export_config_implicit_formats(self):
+        settings = Settings()
+        self.assertEqual(
+            {'items_1.json': {'format': 'json'}, 'items_2.xml': {'format': 'xml'}, 'items_3.csv': {'format': 'csv'}},
+            feed_process_params_from_cli(settings, ['items_1.json', 'items_2.xml', 'items_3.csv'])
+        )
+
+    def test_feed_export_config_stdout(self):
+        settings = Settings()
+        self.assertEqual(
+            {'stdout:': {'format': 'pickle'}},
+            feed_process_params_from_cli(settings, ['-:pickle'])
+        )
+
+    def test_feed_export_config_overwrite(self):
+        settings = Settings()
+        self.assertEqual(
+            {'output.json': {'format': 'json', 'overwrite': True}},
+            feed_process_params_from_cli(settings, [], None, ['output.json'])
+        )
+
+    def test_output_and_overwrite_output(self):
+        with self.assertRaises(UsageError):
+            feed_process_params_from_cli(
+                Settings(),
+                ['output1.json'],
+                None,
+                ['output2.json'],
+            )
+
+    def test_feed_complete_default_values_from_settings_empty(self):
+        feed = {}
+        settings = Settings({
+            "FEED_EXPORT_ENCODING": "custom encoding",
+            "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
+            "FEED_EXPORT_INDENT": 42,
+            "FEED_STORE_EMPTY": True,
+            "FEED_URI_PARAMS": (1, 2, 3, 4),
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        })
+        new_feed = feed_complete_default_values_from_settings(feed, settings)
+        self.assertEqual(new_feed, {
+            "encoding": "custom encoding",
+            "fields": ["f1", "f2", "f3"],
+            "indent": 42,
+            "store_empty": True,
+            "uri_params": (1, 2, 3, 4),
+            "batch_item_count": 2,
+        })
+
+    def test_feed_complete_default_values_from_settings_non_empty(self):
+        feed = {
+            "encoding": "other encoding",
+            "fields": None,
+        }
+        settings = Settings({
+            "FEED_EXPORT_ENCODING": "custom encoding",
+            "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
+            "FEED_EXPORT_INDENT": 42,
+            "FEED_STORE_EMPTY": True,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        })
+        new_feed = feed_complete_default_values_from_settings(feed, settings)
+        self.assertEqual(new_feed, {
+            "encoding": "other encoding",
+            "fields": None,
+            "indent": 42,
+            "store_empty": True,
+            "uri_params": None,
+            "batch_item_count": 2,
+        })
 
 
 if __name__ == "__main__":

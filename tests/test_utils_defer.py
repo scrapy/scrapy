@@ -2,26 +2,31 @@ from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.defer import mustbe_deferred, process_chain, \
-    process_chain_both, process_parallel, iter_errback
-
-from six.moves import xrange
+from scrapy.utils.defer import (
+    iter_errback,
+    mustbe_deferred,
+    process_chain,
+    process_chain_both,
+    process_parallel,
+)
 
 
 class MustbeDeferredTest(unittest.TestCase):
     def test_success_function(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             return steps
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
-        steps.append(2) # add another value, that should be catched by assertEqual
+        dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
+        steps.append(2)  # add another value, that should be catched by assertEqual
         return dfd
 
     def test_unfired_deferred(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             dfd = defer.Deferred()
@@ -29,18 +34,27 @@ class MustbeDeferredTest(unittest.TestCase):
             return dfd
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
-        steps.append(2) # add another value, that should be catched by assertEqual
+        dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
+        steps.append(2)  # add another value, that should be catched by assertEqual
         return dfd
+
 
 def cb1(value, arg1, arg2):
     return "(cb1 %s %s %s)" % (value, arg1, arg2)
+
+
 def cb2(value, arg1, arg2):
     return defer.succeed("(cb2 %s %s %s)" % (value, arg1, arg2))
+
+
 def cb3(value, arg1, arg2):
     return "(cb3 %s %s %s)" % (value, arg1, arg2)
+
+
 def cb_fail(value, arg1, arg2):
     return Failure(TypeError())
+
+
 def eb1(failure, arg1, arg2):
     return "(eb1 %s %s %s)" % (failure.value.__class__.__name__, arg1, arg2)
 
@@ -55,7 +69,7 @@ class DeferUtilsTest(unittest.TestCase):
         gotexc = False
         try:
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
-        except TypeError as e:
+        except TypeError:
             gotexc = True
         self.assertTrue(gotexc)
 
@@ -83,7 +97,7 @@ class IterErrbackTest(unittest.TestCase):
 
     def test_iter_errback_good(self):
         def itergood():
-            for x in xrange(10):
+            for x in range(10):
                 yield x
 
         errors = []
@@ -93,9 +107,9 @@ class IterErrbackTest(unittest.TestCase):
 
     def test_iter_errback_bad(self):
         def iterbad():
-            for x in xrange(10):
+            for x in range(10):
                 if x == 5:
-                    a = 1/0
+                    1 / 0
                 yield x
 
         errors = []

@@ -6,10 +6,6 @@ Spiders Contracts
 
 .. versionadded:: 0.15
 
-.. note:: This is a new feature (introduced in Scrapy 0.15) and may be subject
-   to minor functionality/API updates. Check the :ref:`release notes <news>` to
-   be notified of updates.
-
 Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
@@ -35,11 +31,19 @@ This callback is tested using three built-in contracts:
 
 .. class:: UrlContract
 
-    This contract (``@url``) sets the sample url used when checking other
+    This contract (``@url``) sets the sample URL used when checking other
     contract conditions for this spider. This contract is mandatory. All
     callbacks lacking this contract are ignored when running the checks::
 
     @url url
+
+.. class:: CallbackKeywordArgumentsContract
+
+    This contract (``@cb_kwargs``) sets the :attr:`cb_kwargs <scrapy.http.Request.cb_kwargs>`
+    attribute for the sample request. It must be a valid JSON dictionary.
+    ::
+
+    @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
 
 .. class:: ReturnsContract
 
@@ -60,7 +64,7 @@ Use the :command:`check` command to run the contract checks.
 Custom Contracts
 ================
 
-If you find you need more power than the built-in scrapy contracts you can
+If you find you need more power than the built-in Scrapy contracts you can
 create and load your own contracts in the project by using the
 :setting:`SPIDER_CONTRACTS` setting::
 
@@ -69,15 +73,15 @@ create and load your own contracts in the project by using the
         'myproject.contracts.ItemValidate': 10,
     }
 
-Each contract must inherit from :class:`scrapy.contracts.Contract` and can
+Each contract must inherit from :class:`~scrapy.contracts.Contract` and can
 override three methods:
 
 .. module:: scrapy.contracts
 
-.. class:: Contract(method, \*args)
+.. class:: Contract(method, *args)
 
     :param method: callback function to which the contract is associated
-    :type method: function
+    :type method: collections.abc.Callable
 
     :param args: list of arguments passed into the docstring (whitespace
         separated)
@@ -102,9 +106,14 @@ override three methods:
         This allows processing the output of the callback. Iterators are
         converted listified before being passed to this hook.
 
+Raise :class:`~scrapy.exceptions.ContractFail` from
+:class:`~scrapy.contracts.Contract.pre_process` or
+:class:`~scrapy.contracts.Contract.post_process` if expectations are not met:
+
+.. autoclass:: scrapy.exceptions.ContractFail
+
 Here is a demo contract which checks the presence of a custom header in the
-response received. Raise :class:`scrapy.exceptions.ContractFail` in order to
-get the failures pretty printed::
+response received::
 
     from scrapy.contracts import Contract
     from scrapy.exceptions import ContractFail
@@ -120,3 +129,22 @@ get the failures pretty printed::
             for header in self.args:
                 if header not in response.headers:
                     raise ContractFail('X-CustomHeader not present')
+
+.. _detecting-contract-check-runs:
+
+Detecting check runs
+====================
+
+When ``scrapy check`` is running, the ``SCRAPY_CHECK`` environment variable is
+set to the ``true`` string. You can use :data:`os.environ` to perform any change to
+your spiders or your settings when ``scrapy check`` is used::
+
+    import os
+    import scrapy
+
+    class ExampleSpider(scrapy.Spider):
+        name = 'example'
+
+        def __init__(self):
+            if os.environ.get('SCRAPY_CHECK'):
+                pass  # Do some scraper adjustments when a check is running

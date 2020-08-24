@@ -1,8 +1,14 @@
 import unittest
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    ConnectError,
+    ConnectionDone,
+    ConnectionLost,
+    ConnectionRefusedError,
+    DNSLookupError,
+    TCPTimedOutError,
+    TimeoutError,
+)
 from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
@@ -75,9 +81,17 @@ class RetryTest(unittest.TestCase):
         assert self.crawler.stats.get_value('retry/count') == 2
 
     def test_twistederrors(self):
-        exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
-                DNSLookupError, ConnectionRefusedError, ConnectionDone,
-                ConnectError, ConnectionLost, ResponseFailed]
+        exceptions = [
+            ConnectError,
+            ConnectionDone,
+            ConnectionLost,
+            ConnectionRefusedError,
+            defer.TimeoutError,
+            DNSLookupError,
+            ResponseFailed,
+            TCPTimedOutError,
+            TimeoutError,
+        ]
 
         for exc in exceptions:
             req = Request('http://www.scrapytest.org/%s' % exc.__name__)
@@ -124,7 +138,7 @@ class MaxRetryTimesTest(unittest.TestCase):
 
         # SETTINGS: meta(max_retry_times) = 0
         meta_max_retry_times = 0
-        
+
         req = Request(self.invalid_url, meta={'max_retry_times': meta_max_retry_times})
         self._test_retry(req, DNSLookupError('foo'), meta_max_retry_times)
 
@@ -137,7 +151,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         self._test_retry(req, DNSLookupError('foo'), self.mw.max_retry_times)
 
     def test_with_metakey_greater(self):
-        
+
         # SETINGS: RETRY_TIMES < meta(max_retry_times)
         self.mw.max_retry_times = 2
         meta_max_retry_times = 3
@@ -149,7 +163,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         self._test_retry(req2, DNSLookupError('foo'), self.mw.max_retry_times)
 
     def test_with_metakey_lesser(self):
-        
+
         # SETINGS: RETRY_TIMES > meta(max_retry_times)
         self.mw.max_retry_times = 5
         meta_max_retry_times = 4
@@ -165,14 +179,14 @@ class MaxRetryTimesTest(unittest.TestCase):
         # SETTINGS: meta(max_retry_times) = 4
         meta_max_retry_times = 4
 
-        req = Request(self.invalid_url, meta= \
-            {'max_retry_times': meta_max_retry_times, 'dont_retry': True})
+        req = Request(self.invalid_url, meta={
+            'max_retry_times': meta_max_retry_times, 'dont_retry': True
+        })
 
         self._test_retry(req, DNSLookupError('foo'), 0)
 
-
     def _test_retry(self, req, exception, max_retry_times):
-        
+
         for i in range(0, max_retry_times):
             req = self.mw.process_exception(req, exception, self.spider)
             assert isinstance(req, Request)

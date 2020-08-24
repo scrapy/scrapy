@@ -1,4 +1,5 @@
 language: python
+dist: xenial
 branches:
   only:
     - master
@@ -6,38 +7,44 @@ branches:
     - /^\d\.\d+\.\d+(rc\d+|\.dev\d+)?$/
 matrix:
   include:
-    - python: 2.7
-      env: TOXENV=py27
-    - python: 2.7
-      env: TOXENV=jessie
-    - python: 2.7
-      env: TOXENV=pypy
-    - python: 2.7
-      env: TOXENV=pypy3
-    - python: 3.4
-      env: TOXENV=py34
-    - python: 3.5
-      env: TOXENV=py35
-    - python: 3.6
-      env: TOXENV=py36
-    - python: 3.7
-      env: TOXENV=py37
-      dist: xenial
-      sudo: true
-    - python: 3.6
-      env: TOXENV=docs
+    - env: TOXENV=security
+      python: 3.8
+    - env: TOXENV=flake8
+      python: 3.8
+    - env: TOXENV=pylint
+      python: 3.8
+    - env: TOXENV=docs
+      python: 3.7  # Keep in sync with .readthedocs.yml
+    - env: TOXENV=typing
+      python: 3.8
+
+    - env: TOXENV=pinned
+      python: 3.6.1
+    - env: TOXENV=asyncio-pinned
+      python: 3.6.1
+    - env: TOXENV=pypy3-pinned PYPY_VERSION=3.6-v7.2.0
+
+    - env: TOXENV=py
+      python: 3.6
+    - env: TOXENV=pypy3 PYPY_VERSION=3.6-v7.3.1
+
+    - env: TOXENV=py
+      python: 3.7
+
+    - env: TOXENV=py PYPI_RELEASE_JOB=true
+      python: 3.8
+      dist: bionic
+    - env: TOXENV=extra-deps
+      python: 3.8
+      dist: bionic
+    - env: TOXENV=asyncio
+      python: 3.8
+      dist: bionic
 install:
   - |
-      if [ "$TOXENV" = "pypy" ]; then
-        export PYPY_VERSION="pypy-6.0.0-linux_x86_64-portable"
-        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
-        tar -jxf ${PYPY_VERSION}.tar.bz2
-        virtualenv --python="$PYPY_VERSION/bin/pypy" "$HOME/virtualenvs/$PYPY_VERSION"
-        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-      fi
-      if [ "$TOXENV" = "pypy3" ]; then
-        export PYPY_VERSION="pypy3.5-5.9-beta-linux_x86_64-portable"
-        wget "https://bitbucket.org/squeaky/portable-pypy/downloads/${PYPY_VERSION}.tar.bz2"
+      if [[ ! -z "$PYPY_VERSION" ]]; then
+        export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+        wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
         tar -jxf ${PYPY_VERSION}.tar.bz2
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
@@ -65,4 +72,4 @@ deploy:
   on:
     tags: true
     repo: scrapy/scrapy
-    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"
+    condition: "$PYPI_RELEASE_JOB == true && $TRAVIS_TAG =~ ^[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$"

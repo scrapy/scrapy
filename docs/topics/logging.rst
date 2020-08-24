@@ -9,8 +9,7 @@ Logging
     explicit calls to the Python standard logging. Keep reading to learn more
     about the new logging system.
 
-Scrapy uses `Python's builtin logging system
-<https://docs.python.org/3/library/logging.html>`_ for event logging. We'll
+Scrapy uses :mod:`logging` for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.
 
@@ -83,10 +82,10 @@ path::
 
 .. seealso::
 
-    Module logging, `HowTo <https://docs.python.org/2/howto/logging.html>`_
+    Module logging, :doc:`HowTo <howto/logging>`
         Basic Logging Tutorial
 
-    Module logging, `Loggers <https://docs.python.org/2/library/logging.html#logger-objects>`_
+    Module logging, :ref:`Loggers <logger>`
         Further documentation on loggers
 
 .. _topics-logging-from-spiders:
@@ -165,15 +164,13 @@ possible levels listed in :ref:`topics-logging-levels`.
 
 :setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings
 used as layouts for all messages. Those strings can contain any placeholders
-listed in `logging's logrecord attributes docs
-<https://docs.python.org/2/library/logging.html#logrecord-attributes>`_ and
-`datetime's strftime and strptime directives
-<https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
+listed in :ref:`logging's logrecord attributes docs <logrecord-attributes>` and
+:ref:`datetime's strftime and strptime directives <strftime-strptime-behavior>`
 respectively.
 
-If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the scrapy
-component that prints the log. It is unset by default, hence logs contain the 
-scrapy component responsible for that log output.
+If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
+component that prints the log. It is unset by default, hence logs contain the
+Scrapy component responsible for that log output.
 
 Command-line options
 --------------------
@@ -190,8 +187,23 @@ to override some of the Scrapy settings regarding logging.
 
 .. seealso::
 
-    Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_
+    Module :mod:`logging.handlers`
         Further documentation on available handlers
+
+.. _custom-log-formats:
+
+Custom Log Formats
+------------------
+
+A custom log format can be set for different actions by extending
+:class:`~scrapy.logformatter.LogFormatter` class and making
+:setting:`LOG_FORMATTER` point to your new class.
+
+.. autoclass:: scrapy.logformatter.LogFormatter
+   :members:
+
+
+.. _topics-logging-advanced-customization:
 
 Advanced customization
 ----------------------
@@ -238,22 +250,22 @@ scrapy.utils.log module
 
 .. autofunction:: configure_logging
 
-    ``configure_logging`` is automatically called when using Scrapy commands,
-    but needs to be called explicitly when running custom scripts. In that
-    case, its usage is not required but it's recommended.
+    ``configure_logging`` is automatically called when using Scrapy commands
+    or :class:`~scrapy.crawler.CrawlerProcess`, but needs to be called explicitly
+    when running custom scripts using :class:`~scrapy.crawler.CrawlerRunner`.
+    In that case, its usage is not required but it's recommended.
 
-    If you plan on configuring the handlers yourself is still recommended you
-    call this function, passing ``install_root_handler=False``. Bear in mind
-    there won't be any log output set by default in that case.
+    Another option when running custom scripts is to manually configure the logging.
+    To do this you can use :func:`logging.basicConfig` to set a basic root handler.
 
-    To get you started on manually configuring logging's output, you can use
-    `logging.basicConfig()`_ to set a basic root handler. This is an example
-    on how to redirect ``INFO`` or higher messages to a file::
+    Note that :class:`~scrapy.crawler.CrawlerProcess` automatically calls ``configure_logging``,
+    so it is recommended to only use :func:`logging.basicConfig` together with
+    :class:`~scrapy.crawler.CrawlerRunner`.
+
+    This is an example on how to redirect ``INFO`` or higher messages to a file::
 
         import logging
-        from scrapy.utils.log import configure_logging
 
-        configure_logging(install_root_handler=False)
         logging.basicConfig(
             filename='log.txt',
             format='%(levelname)s: %(message)s',
@@ -262,7 +274,3 @@ scrapy.utils.log module
 
     Refer to :ref:`run-from-script` for more details about using Scrapy this
     way.
-
-.. _logging.basicConfig(): https://docs.python.org/2/library/logging.html#logging.basicConfig
-
-

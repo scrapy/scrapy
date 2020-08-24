@@ -3,34 +3,29 @@
 See documentation in docs/topics/shell.rst
 
 """
-from __future__ import print_function
-
 import os
 import signal
-import warnings
 
-from twisted.internet import reactor, threads, defer
+from itemadapter import is_item
+from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.console import start_python_console
+from scrapy.utils.conf import get_config
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
-class Shell(object):
+class Shell:
 
-    relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
-                        Settings)
+    relevant_classes = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
@@ -100,6 +95,7 @@ class Shell(object):
         return spider
 
     def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+        from twisted.internet import reactor
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
@@ -127,7 +123,6 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['sel'] = _SelectorProxy(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
@@ -149,17 +144,16 @@ class Shell(object):
         b.append("Useful shortcuts:")
         if self.inthread:
             b.append("  fetch(url[, redirect=True]) "
-                     "Fetch URL and update local objects "
-                     "(by default, redirects are followed)")
+                     "Fetch URL and update local objects (by default, redirects are followed)")
             b.append("  fetch(req)                  "
                      "Fetch a scrapy.Request and update local objects ")
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join("[s] %s" % l for l in b)
+        return "\n".join("[s] %s" % line for line in b)
 
     def _is_relevant(self, value):
-        return isinstance(value, self.relevant_classes)
+        return isinstance(value, self.relevant_classes) or is_item(value)
 
 
 def inspect_response(response, spider):
@@ -174,7 +168,7 @@ def _request_deferred(request):
 
     This returns a Deferred whose first pair of callbacks are the request
     callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (ie. when the request is downloaded)
+    callback/errback is executed (i.e. when the request is downloaded)
 
     WARNING: Do not call request.replace() until after the deferred is called.
     """
@@ -193,15 +187,3 @@ def _request_deferred(request):
 
     request.callback, request.errback = d.callback, d.errback
     return d
-
-
-class _SelectorProxy(object):
-
-    def __init__(self, response):
-        self._proxiedresponse = response
-
-    def __getattr__(self, name):
-        warnings.warn('"sel" shortcut is deprecated. Use "response.xpath()", '
-                      '"response.css()" or "response.selector" instead',
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        return getattr(self._proxiedresponse.selector, name)

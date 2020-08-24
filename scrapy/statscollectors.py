@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class StatsCollector(object):
+class StatsCollector:
 
     def __init__(self, crawler):
         self._dump = crawler.settings.getbool('STATS_DUMP')
@@ -54,7 +54,7 @@ class StatsCollector(object):
 class MemoryStatsCollector(StatsCollector):
 
     def __init__(self, crawler):
-        super(MemoryStatsCollector, self).__init__(crawler)
+        super().__init__(crawler)
         self.spider_stats = {}
 
     def _persist_stats(self, stats, spider):
@@ -80,5 +80,3 @@ class DummyStatsCollector(StatsCollector):
 
     def min_value(self, key, value, spider=None):
         pass
-
-

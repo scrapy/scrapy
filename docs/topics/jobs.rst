@@ -22,7 +22,7 @@ Job directory
 
 To enable persistence support you just need to define a *job directory* through
 the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (ie. a spider run).  It's important to note that
+keep the state of a single job (i.e. a spider run).  It's important to note that
 this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
@@ -68,36 +68,17 @@ Cookies may expire. So, if you don't resume your spider quickly the requests
 scheduled may no longer work. This won't be an issue if you spider doesn't rely
 on cookies.
 
+
+.. _request-serialization:
+
 Request serialization
 ---------------------
 
-Requests must be serializable by the ``pickle`` module, in order for persistence
-to work, so you should make sure that your requests are serializable.
-
-The most common issue here is to use ``lambda`` functions on request callbacks that
-can't be persisted.
-
-So, for example, this won't work::
-
-    def some_callback(self, response):
-        somearg = 'test'
-        return scrapy.Request('http://www.example.com', callback=lambda r: self.other_callback(r, somearg))
-
-    def other_callback(self, response, somearg):
-        print("the argument passed is: %s" % somearg)
-
-But this will::
-
-    def some_callback(self, response):
-        somearg = 'test'
-        return scrapy.Request('http://www.example.com', callback=self.other_callback, meta={'somearg': somearg})
-
-    def other_callback(self, response):
-        somearg = response.meta['somearg']
-        print("the argument passed is: %s" % somearg)
+For persistence to work, :class:`~scrapy.http.Request` objects must be
+serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
+values passed to their ``__init__`` method, which must be methods of the
+running :class:`~scrapy.spiders.Spider` class.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
-
-.. _pickle: https://docs.python.org/library/pickle.html

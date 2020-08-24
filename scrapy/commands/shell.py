@@ -6,8 +6,8 @@ See documentation in docs/topics/shell.rst
 from threading import Thread
 
 from scrapy.commands import ScrapyCommand
-from scrapy.shell import Shell
 from scrapy.http import Request
+from scrapy.shell import Shell
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 from scrapy.utils.url import guess_scheme
 
@@ -34,11 +34,11 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-c", dest="code",
-            help="evaluate the code in the shell, print the result and exit")
+                          help="evaluate the code in the shell, print the result and exit")
         parser.add_option("--spider", dest="spider",
-            help="use this spider")
-        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", \
-            default=False, help="do not handle HTTP 3xx status codes and print response as-is")
+                          help="use this spider")
+        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", default=False,
+                          help="do not handle HTTP 3xx status codes and print response as-is")
 
     def update_vars(self, vars):
         """You can use this function to update the Scrapy objects that will be

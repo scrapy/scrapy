@@ -34,15 +34,17 @@ Here's an example showing how to run a single spider with it.
         # Your spider definition
         ...
 
-    process = CrawlerProcess({
-        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
+    process = CrawlerProcess(settings={
+        "FEEDS": {
+            "items.json": {"format": "json"},
+        },
     })
 
     process.crawl(MySpider)
     process.start() # the script will block here until the crawling is finished
 
-Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
-acquainted with its usage details.
+Define settings within dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
+documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
@@ -100,7 +102,7 @@ reactor after ``MySpider`` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run() # the script will block here until the crawling is finished
 
-.. seealso:: `Twisted Reactor Overview`_.
+.. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
 .. _run-multiple-spiders:
 
@@ -252,6 +254,5 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _ProxyMesh: https://proxymesh.com/
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
 .. _Crawlera: https://scrapinghub.com/crawlera
 .. _scrapoxy: https://scrapoxy.io/

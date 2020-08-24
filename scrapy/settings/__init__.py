@@ -1,11 +1,10 @@
-import six
 import json
 import copy
-from collections import MutableMapping
+from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
-from . import default_settings
+from scrapy.settings import default_settings
 
 
 SETTINGS_PRIORITIES = {
@@ -23,13 +22,13 @@ def get_settings_priority(priority):
     :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its
     numerical value, or directly returns a given numerical priority.
     """
-    if isinstance(priority, six.string_types):
+    if isinstance(priority, str):
         return SETTINGS_PRIORITIES[priority]
     else:
         return priority
 
 
-class SettingsAttribute(object):
+class SettingsAttribute:
 
     """Class for storing data related to settings attributes.
 
@@ -53,8 +52,7 @@ class SettingsAttribute(object):
             self.priority = priority
 
     def __str__(self):
-        return "<SettingsAttribute value={self.value!r} " \
-               "priority={self.priority}>".format(self=self)
+        return "<SettingsAttribute value={self.value!r} priority={self.priority}>".format(self=self)
 
     __repr__ = __str__
 
@@ -84,7 +82,8 @@ class BaseSettings(MutableMapping):
     def __init__(self, values=None, priority='project'):
         self.frozen = False
         self.attributes = {}
-        self.update(values, priority)
+        if values:
+            self.update(values, priority)
 
     def __getitem__(self, opt_name):
         if opt_name not in self:
@@ -99,10 +98,10 @@ class BaseSettings(MutableMapping):
         Get a setting value without affecting its original type.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         return self[name] if self[name] is not None else default
 
@@ -117,10 +116,10 @@ class BaseSettings(MutableMapping):
         ``'0'`` will return ``False`` when using this method.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         got = self.get(name, default)
         try:
@@ -139,10 +138,10 @@ class BaseSettings(MutableMapping):
         Get a setting value as an int.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         return int(self.get(name, default))
 
@@ -151,10 +150,10 @@ class BaseSettings(MutableMapping):
         Get a setting value as a float.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         return float(self.get(name, default))
 
@@ -167,13 +166,13 @@ class BaseSettings(MutableMapping):
         ``'one,two'`` will return a list ['one', 'two'] when using this method.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         value = self.get(name, default or [])
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = value.split(',')
         return list(value)
 
@@ -188,13 +187,13 @@ class BaseSettings(MutableMapping):
         and losing all information about priority and mutability.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         value = self.get(name, default or {})
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             value = json.loads(value)
         return dict(value)
 
@@ -203,7 +202,7 @@ class BaseSettings(MutableMapping):
         counterpart.
 
         :param name: name of the dictionary-like setting
-        :type name: string
+        :type name: str
         """
         compbs = BaseSettings()
         compbs.update(self[name + '_BASE'])
@@ -216,7 +215,7 @@ class BaseSettings(MutableMapping):
         the given ``name`` does not exist.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
         """
         if name not in self:
             return None
@@ -246,14 +245,14 @@ class BaseSettings(MutableMapping):
         otherwise they won't have any effect.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param value: the value to associate with the setting
-        :type value: any
+        :type value: object
 
         :param priority: the priority of the setting. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
         priority = get_settings_priority(priority)
@@ -277,14 +276,14 @@ class BaseSettings(MutableMapping):
         uppercase variable of ``module`` with the provided ``priority``.
 
         :param module: the module or the path of the module
-        :type module: module object or string
+        :type module: types.ModuleType or str
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
-        if isinstance(module, six.string_types):
+        if isinstance(module, str):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
@@ -310,17 +309,17 @@ class BaseSettings(MutableMapping):
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
-        if isinstance(values, six.string_types):
+        if isinstance(values, str):
             values = json.loads(values)
         if values is not None:
             if isinstance(values, BaseSettings):
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, values.getpriority(name))
             else:
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, priority)
 
     def delete(self, name, priority='project'):
@@ -377,7 +376,7 @@ class BaseSettings(MutableMapping):
 
     def _to_dict(self):
         return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
-                for k, v in six.iteritems(self)}
+                for k, v in self.items()}
 
     def copy_to_dict(self):
         """
@@ -441,11 +440,11 @@ class Settings(BaseSettings):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
-        super(Settings, self).__init__()
+        super().__init__()
         self.setmodule(default_settings, 'default')
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
-        for name, val in six.iteritems(self):
+        for name, val in self.items():
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, 'default'), 'default')
         self.update(values, priority)

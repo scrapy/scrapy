@@ -1,19 +1,16 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import inspect
 import unittest
+from unittest import mock
 import warnings
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import create_deprecated_class, update_classpath
-
-from tests import mock
 
 
 class MyWarning(UserWarning):
     pass
 
 
-class SomeBaseClass(object):
+class SomeBaseClass:
     pass
 
 
@@ -28,7 +25,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_no_warning_on_definition(self):
         with warnings.catch_warnings(record=True) as w:
-            Deprecated = create_deprecated_class('Deprecated', NewName)
+            create_deprecated_class('Deprecated', NewName)
 
         w = self._mywarnings(w)
         self.assertEqual(w, [])
@@ -112,6 +109,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         # ignore subclassing warnings
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', ScrapyDeprecationWarning)
+
             class UserClass(Deprecated):
                 pass
 
@@ -156,7 +154,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OutdatedUserClass1a(DeprecatedName):
                 pass
 
-            class UnrelatedClass(object):
+            class UnrelatedClass:
                 pass
 
             class OldStyleClass:
@@ -192,7 +190,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OutdatedUserClass2a(DeprecatedName):
                 pass
 
-            class UnrelatedClass(object):
+            class UnrelatedClass:
                 pass
 
             class OldStyleClass:
@@ -219,7 +217,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
     def test_deprecate_a_class_with_custom_metaclass(self):
         Meta1 = type('Meta1', (type,), {})
         New = Meta1('New', (), {})
-        Deprecated = create_deprecated_class('Deprecated', New)
+        create_deprecated_class('Deprecated', New)
 
     def test_deprecate_subclass_of_deprecated_class(self):
         with warnings.catch_warnings(record=True) as w:
@@ -235,6 +233,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             AlsoDeprecated()
+
             class UserClass(AlsoDeprecated):
                 pass
 
@@ -249,6 +248,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         with mock.patch('inspect.stack', side_effect=IndexError):
             with warnings.catch_warnings(record=True) as w:
                 DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
+
                 class SubClass(DeprecatedName):
                     pass
 

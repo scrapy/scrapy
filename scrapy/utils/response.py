@@ -8,35 +8,30 @@ import webbrowser
 import tempfile
 
 from twisted.web import http
-from scrapy.utils.python import to_bytes, to_native_str
+from scrapy.utils.python import to_bytes, to_unicode
 from w3lib import html
-
-from scrapy.utils.decorators import deprecated
-
-
-@deprecated
-def body_or_str(*a, **kw):
-    from scrapy.utils.iterators import _body_or_str
-    return _body_or_str(*a, **kw)
 
 
 _baseurl_cache = weakref.WeakKeyDictionary()
+
+
 def get_base_url(response):
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
         text = response.text[0:4096]
-        _baseurl_cache[response] = html.get_base_url(text, response.url,
-            response.encoding)
+        _baseurl_cache[response] = html.get_base_url(text, response.url, response.encoding)
     return _baseurl_cache[response]
 
 
 _metaref_cache = weakref.WeakKeyDictionary()
-def get_meta_refresh(response):
+
+
+def get_meta_refresh(response, ignore_tags=('script', 'noscript')):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
-        _metaref_cache[response] = html.get_meta_refresh(text, response.url,
-            response.encoding, ignore_tags=('script', 'noscript'))
+        _metaref_cache[response] = html.get_meta_refresh(
+            text, response.url, response.encoding, ignore_tags=ignore_tags)
     return _metaref_cache[response]
 
 
@@ -44,7 +39,7 @@ def response_status_message(status):
     """Return status code plus status text descriptive message
     """
     message = http.RESPONSES.get(int(status), "Unknown Status")
-    return '%s %s' % (status, to_native_str(message))
+    return '%s %s' % (status, to_unicode(message))
 
 
 def response_httprepr(response):
@@ -52,13 +47,17 @@ def response_httprepr(response):
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
     """
-    s = b"HTTP/1.1 " + to_bytes(str(response.status)) + b" " + \
-        to_bytes(http.RESPONSES.get(response.status, b'')) + b"\r\n"
+    values = [
+        b"HTTP/1.1 ",
+        to_bytes(str(response.status)),
+        b" ",
+        to_bytes(http.RESPONSES.get(response.status, b'')),
+        b"\r\n",
+    ]
     if response.headers:
-        s += response.headers.to_string() + b"\r\n"
-    s += b"\r\n"
-    s += response.body
-    return s
+        values.extend([response.headers.to_string(), b"\r\n"])
+    values.extend([b"\r\n", response.body])
+    return b"".join(values)
 
 
 def open_in_browser(response, _openfunc=webbrowser.open):

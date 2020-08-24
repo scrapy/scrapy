@@ -6,7 +6,7 @@ class InitSpider(Spider):
     """Base Spider with initialization facilities"""
 
     def start_requests(self):
-        self._postinit_reqs = super(InitSpider, self).start_requests()
+        self._postinit_reqs = super().start_requests()
         return iterate_spider_output(self.init_request())
 
     def initialized(self, response=None):
@@ -29,4 +29,3 @@ class InitSpider(Spider):
         spider
         """
         return self.initialized()
-

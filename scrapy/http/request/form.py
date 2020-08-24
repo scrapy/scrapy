@@ -5,8 +5,7 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import six
-from six.moves.urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode
 
 import lxml.html
 from parsel.selector import create_root_node
@@ -18,13 +17,14 @@ from scrapy.utils.response import get_base_url
 
 
 class FormRequest(Request):
+    valid_form_methods = ['GET', 'POST']
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
-        super(FormRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
@@ -48,7 +48,13 @@ class FormRequest(Request):
         form = _get_form(response, formname, formid, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = _get_form_url(form, kwargs.pop('url', None))
+
         method = kwargs.pop('method', form.method)
+        if method is not None:
+            method = method.upper()
+            if method not in cls.valid_form_methods:
+                method = 'GET'
+
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
@@ -97,8 +103,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                 el = el.getparent()
                 if el is None:
                     break
-        encoded = formxpath if six.PY3 else formxpath.encode('unicode_escape')
-        raise ValueError('No <form> element found with %s' % encoded)
+        raise ValueError('No <form> element found with %s' % formxpath)
 
     # If we get here, it means that either formname was None
     # or invalid
@@ -128,7 +133,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
                         namespaces={
                             "re": "http://exslt.org/regular-expressions"})
-    values = [(k, u'' if v is None else v)
+    values = [(k, '' if v is None else v)
               for k, v in (_value(e) for e in inputs)
               if k and k not in formdata_keys]
 
@@ -163,7 +168,7 @@ def _select_value(ele, n, v):
         # This is a workround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath('.//option[@selected]')
-        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+        v = [(o.get('value') or o.text or '').strip() for o in selected_options]
     return n, v
 
 
@@ -173,12 +178,11 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [
-        el for el in form.xpath(
-            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
-            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
-            namespaces={"re": "http://exslt.org/regular-expressions"})
-        ]
+    clickables = list(form.xpath(
+        'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
+        '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+        namespaces={"re": "http://exslt.org/regular-expressions"}
+    ))
     if not clickables:
         return
 
@@ -201,8 +205,7 @@ def _get_clickable(clickdata, form):
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
-    xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
+    xpath = './/*' + ''.join('[@%s="%s"]' % c for c in clickdata.items())
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].get('name'), el[0].get('value') or '')

@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.versions import scrapy_components_versions
@@ -19,7 +17,7 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--verbose", "-v", dest="verbose", action="store_true",
-            help="also display twisted/python/platform info (useful for bug reports)")
+                          help="also display twisted/python/platform info (useful for bug reports)")
 
     def run(self, args, opts):
         if opts.verbose:
@@ -30,4 +28,3 @@ class Command(ScrapyCommand):
                 print(patt % (name, version))
         else:
             print("Scrapy %s" % scrapy.__version__)
-

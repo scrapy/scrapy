@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Define here the models for your spider middleware
 #
 # See documentation in:
@@ -7,8 +5,11 @@
 
 from scrapy import signals
 
+# useful for handling different item types with a single interface
+from itemadapter import is_item, ItemAdapter
 
-class ${ProjectName}SpiderMiddleware(object):
+
+class ${ProjectName}SpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
@@ -31,7 +32,7 @@ class ${ProjectName}SpiderMiddleware(object):
         # Called with the results returned from the Spider, after
         # it has processed the response.
 
-        # Must return an iterable of Request, dict or Item objects.
+        # Must return an iterable of Request, or item objects.
         for i in result:
             yield i
 
@@ -39,8 +40,7 @@ class ${ProjectName}SpiderMiddleware(object):
         # Called when a spider or process_spider_input() method
         # (from other spider middleware) raises an exception.
 
-        # Should return either None or an iterable of Response, dict
-        # or Item objects.
+        # Should return either None or an iterable of Request or item objects.
         pass
 
     def process_start_requests(self, start_requests, spider):
@@ -56,7 +56,7 @@ class ${ProjectName}SpiderMiddleware(object):
         spider.logger.info('Spider opened: %s' % spider.name)
 
 
-class ${ProjectName}DownloaderMiddleware(object):
+class ${ProjectName}DownloaderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.

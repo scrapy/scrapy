@@ -22,8 +22,8 @@ In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://lxml.de/
-.. _jinja2: http://jinja.pocoo.org/
+.. _lxml: https://lxml.de/
+.. _jinja2: https://palletsprojects.com/p/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -64,20 +64,6 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 
 .. _BeautifulSoup's official documentation: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
-.. _faq-python-versions:
-
-What Python versions does Scrapy support?
------------------------------------------
-
-Scrapy is supported under Python 2.7 and Python 3.4+
-under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 2.6 support was dropped starting at Scrapy 0.20.
-Python 3 support was added in Scrapy 1.1.
-PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
-
-.. note::
-    For Python 3 support on Windows, it is recommended to use
-    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
@@ -129,12 +115,22 @@ Does Scrapy crawl in breadth-first or depth-first order?
 
 By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
 basically means that it crawls in `DFO order`_. This order is more convenient
-in most cases. If you do want to crawl in true `BFO order`_, you can do it by
+in most cases.
+
+If you do want to crawl in true `BFO order`_, you can do it by
 setting the following settings::
 
     DEPTH_PRIORITY = 1
     SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
     SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
+
+While pending requests are below the configured values of
+:setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
+:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
+concurrently. As a result, the first few requests of a crawl rarely follow the
+desired order. Lowering those settings to ``1`` enforces the desired order, but
+it significantly slows down the crawl as a whole.
+
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -240,15 +236,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -o items.json
+    scrapy crawl myspider -O items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -o items.csv
+    scrapy crawl myspider -O items.csv
 
 To dump into a XML file::
 
-    scrapy crawl myspider -o items.xml
+    scrapy crawl myspider -O items.xml
 
 For more information see :ref:`topics-feed-exports`
 
@@ -259,7 +255,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: http://search.cpan.org/~ecarroll/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/pod/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
@@ -319,6 +315,62 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+.. _faq-split-item:
+
+How to split an item into multiple items in an item pipeline?
+-------------------------------------------------------------
+
+:ref:`Item pipelines <topics-item-pipeline>` cannot yield multiple items per
+input item. :ref:`Create a spider middleware <custom-spider-middleware>`
+instead, and use its
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
+method for this purpose. For example::
+
+    from copy import deepcopy
+
+    from itemadapter import is_item, ItemAdapter
+
+    class MultiplyItemsMiddleware:
+
+        def process_spider_output(self, response, result, spider):
+            for item in result:
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
+                        yield deepcopy(item)
+
+Does Scrapy support IPv6 addresses?
+-----------------------------------
+
+Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Note that by doing so, you lose the ability to set a specific timeout for DNS requests
+(the value of the :setting:`DNS_TIMEOUT` setting is ignored).
+
+
+.. _faq-specific-reactor:
+
+How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()`` exceptions?
+----------------------------------------------------------------------------------------------
+
+This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
+Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
+different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+
+
+.. _faq-stop-response-download:
+
+How can I cancel the download of a given response?
+--------------------------------------------------
+
+In some situations, it might be useful to stop the download of a certain response.
+For instance, if you only need the first part of a large response and you would like
+to save resources by avoiding the download of the whole body.
+In that case, you could attach a handler to the :class:`~scrapy.signals.bytes_received`
+signal and raise a :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to
+the :ref:`topics-stop-response-download` topic for additional information and examples.
+
+
+.. _has been reported: https://github.com/scrapy/scrapy/issues/2905
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
