@@ -394,9 +394,9 @@ class ScrapyAgent:
         fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
 
         if maxsize and expected_size > maxsize:
-            warning_msg = ("Expected response size (%(size)s) larger than "
-                           "download max size (%(maxsize)s) in request %(request)s.")
-            warning_args = {'request': request, 'size': expected_size, 'maxsize': maxsize}
+            warning_msg = ("Cancelling download of %(url)s: expected response "
+                           "size (%(size)s) larger than download max size (%(maxsize)s).")
+            warning_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
 
             logger.warning(warning_msg, warning_args)
 
