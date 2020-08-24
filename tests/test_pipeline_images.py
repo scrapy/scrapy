@@ -75,41 +75,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
 
-    def test_convert_image(self):
-        # tests for old API
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            SIZE = (100, 100)
-            # straigh forward case: RGB and JPEG
-            COLOUR = (0, 127, 255)
-            im, _ = _create_image('JPEG', 'RGB', SIZE, COLOUR)
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, 'RGB')
-            self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
-
-            # check that thumbnail keep image ratio
-            thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
-            self.assertEqual(thumbnail.mode, 'RGB')
-            self.assertEqual(thumbnail.size, (10, 10))
-
-            # transparency case: RGBA and PNG
-            COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, 'RGB')
-            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-            # transparency case with palette: P and PNG
-            COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-            im = im.convert('P')
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, 'RGB')
-            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-            # ensure that we recieved deprecation warnings
-            self.assertTrue(len([warning for warning in w if 'ImagesPipeline.convert_image() method called in a deprecated way' in str(warning.message)]) == 4)
-
+    def test_convert_image_new(self):
         # tests for new API
         SIZE = (100, 100)
         # straigh forward case: RGB and JPEG
@@ -206,6 +172,42 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
                              'thumbsup/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
             self.assertEqual(len(w), 1)
             self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
+
+    def test_overriden_convert_image_method(self):
+        self.init_pipeline(ImagesPipeline)
+        # tests for old API
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            SIZE = (100, 100)
+            # straigh forward case: RGB and JPEG
+            COLOUR = (0, 127, 255)
+            im, _ = _create_image('JPEG', 'RGB', SIZE, COLOUR)
+            converted, _ = self.pipeline.convert_image(im)
+            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
+
+            # check that thumbnail keep image ratio
+            thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
+            self.assertEqual(thumbnail.mode, 'RGB')
+            self.assertEqual(thumbnail.size, (10, 10))
+
+            # transparency case: RGBA and PNG
+            COLOUR = (0, 127, 255, 50)
+            im, _ = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+            converted, _ = self.pipeline.convert_image(im)
+            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+
+            # transparency case with palette: P and PNG
+            COLOUR = (0, 127, 255, 50)
+            im, _ = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+            im = im.convert('P')
+            converted, _ = self.pipeline.convert_image(im)
+            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+
+            # ensure that we recieved deprecation warnings
+            self.assertTrue(len([warning for warning in w if 'ImagesPipeline.convert_image() method called in a deprecated way' in str(warning.message)]) == 4)
 
     def tearDown(self):
         rmtree(self.tempdir)

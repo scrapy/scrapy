@@ -6,6 +6,7 @@ See documentation in topics/media-pipeline.rst
 import functools
 import hashlib
 import six
+import warnings
 
 try:
     from cStringIO import StringIO as BytesIO
@@ -19,6 +20,7 @@ from scrapy.utils.python import to_bytes, get_func_args
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.exceptions import DropItem
+from scrapy.exceptions import ScrapyDeprecationWarning
 #TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException, FilesPipeline
 
@@ -132,8 +134,6 @@ class ImagesPipeline(FilesPipeline):
         if self._deprecated_convert_image is None:
             self._deprecated_convert_image = 'response_body' not in get_func_args(self.convert_image)
             if self._deprecated_convert_image:
-                from scrapy.exceptions import ScrapyDeprecationWarning
-                import warnings
                 warnings.warn('ImagesPipeline.convert_image() method overriden in a deprecated way, '
                               'overriden method does not accept response_body argument.',
                               category=ScrapyDeprecationWarning, stacklevel=1)
@@ -153,9 +153,7 @@ class ImagesPipeline(FilesPipeline):
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(self, image, size=None, response_body=None):
-        if not response_body:
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
+        if response_body is None:
             warnings.warn('ImagesPipeline.convert_image() method called in a deprecated way, '
                           'method called without response_body argument.',
                           category=ScrapyDeprecationWarning, stacklevel=1)
@@ -175,7 +173,7 @@ class ImagesPipeline(FilesPipeline):
         if size:
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
-        elif response_body and image.format == 'JPEG':
+        elif response_body is not None and image.format == 'JPEG':
             return image, response_body
                 
         buf = BytesIO()
@@ -193,8 +191,6 @@ class ImagesPipeline(FilesPipeline):
     def file_path(self, request, response=None, info=None):
         ## start of deprecation warning block (can be removed in the future)
         def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
             warnings.warn('ImagesPipeline.image_key(url) and file_key(url) methods are deprecated, '
                           'please use file_path(request, response=None, info=None) instead',
                           category=ScrapyDeprecationWarning, stacklevel=1)
@@ -221,8 +217,6 @@ class ImagesPipeline(FilesPipeline):
     def thumb_path(self, request, thumb_id, response=None, info=None):
         ## start of deprecation warning block (can be removed in the future)
         def _warn():
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            import warnings
             warnings.warn('ImagesPipeline.thumb_key(url) method is deprecated, please use '
                           'thumb_path(request, thumb_id, response=None, info=None) instead',
                           category=ScrapyDeprecationWarning, stacklevel=1)
