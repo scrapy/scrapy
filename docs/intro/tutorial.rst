@@ -464,16 +464,15 @@ Storing the scraped data
 The simplest way to store the scraped data is by using :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl quotes -o quotes.json
+    scrapy crawl quotes -O quotes.json
 
 That will generate an ``quotes.json`` file containing all scraped items,
 serialized in `JSON`_.
 
-For historic reasons, Scrapy appends to a given file instead of overwriting
-its contents. If you run this command twice without removing the file
-before the second time, you'll end up with a broken JSON file.
-
-You can also use other formats, like `JSON Lines`_::
+The ``-O`` command-line switch overwrites any existing file; use ``-o`` instead
+to append new content to any existing file. However, appending to a JSON file
+makes the file contents invalid JSON. When appending to a file, consider
+using a different serialization format, such as `JSON Lines`_::
 
     scrapy crawl quotes -o quotes.jl
 
@@ -704,7 +703,7 @@ Using spider arguments
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
-    scrapy crawl quotes -o quotes-humor.json -a tag=humor
+    scrapy crawl quotes -O quotes-humor.json -a tag=humor
 
 These arguments are passed to the Spider's ``__init__`` method and become
 spider attributes by default.

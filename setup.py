@@ -43,7 +43,7 @@ if has_environment_marker_platform_impl_support():
     ]
     extras_require[':platform_python_implementation == "PyPy"'] = [
         # Earlier lxml versions are affected by
-        # https://bitbucket.org/pypy/pypy/issues/2498/cython-on-pypy-3-dict-object-has-no,
+        # https://foss.heptapod.net/pypy/pypy/-/issues/2498,
         # which was fixed in Cython 0.26, released on 2017-06-19, and used to
         # generate the C headers of lxml release tarballs published since then, the
         # first of which was:
