@@ -12,7 +12,7 @@ from io import BytesIO
 from itemadapter import ItemAdapter
 from PIL import Image
 
-from scrapy.exceptions import DropItem,ScrapyDeprecationWarning
+from scrapy.exceptions import DropItem, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
@@ -175,7 +175,7 @@ class ImagesPipeline(FilesPipeline):
             image.thumbnail(size, Image.ANTIALIAS)
         elif response_body is not None and image.format == 'JPEG':
             return image, response_body
-                
+
         buf = BytesIO()
         image.save(buf, 'JPEG')
         return image, buf
