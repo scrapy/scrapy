@@ -5,6 +5,7 @@ import os
 import re
 import hashlib
 import warnings
+from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
@@ -184,6 +185,22 @@ def set_environ(**kwargs):
                 os.environ[k] = v
 
 
+def walk_callable(node):
+    """Similar to ``ast.walk``, but walks only function body and skips nested
+    functions defined within the node.
+    """
+    todo = deque([node])
+    walked_func_def = False
+    while todo:
+        node = todo.popleft()
+        if isinstance(node, ast.FunctionDef):
+            if walked_func_def:
+                continue
+            walked_func_def = True
+        todo.extend(ast.iter_child_nodes(node))
+        yield node
+
+
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
@@ -201,7 +218,7 @@ def is_generator_with_return_value(callable):
 
     if inspect.isgeneratorfunction(callable):
         tree = ast.parse(dedent(inspect.getsource(callable)))
-        for node in ast.walk(tree):
+        for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
                 _generator_callbacks_cache[callable] = True
                 return _generator_callbacks_cache[callable]

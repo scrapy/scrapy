@@ -423,6 +423,11 @@ response_received
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spiders.Spider` object
 
+.. note:: The ``request`` argument might not contain the original request that
+    reached the downloader, if a :ref:`topics-downloader-middleware` modifies
+    the :class:`~scrapy.http.Response` object and sets a specific ``request``
+    attribute.
+
 response_downloaded
 ~~~~~~~~~~~~~~~~~~~
 
