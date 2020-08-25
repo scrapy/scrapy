@@ -289,8 +289,8 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
     )
     if cipher_string:
         ctx = factory.getContext()
-        # disabling TLS1.2+ because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
+        # disabling TLS1.3 because it unconditionally enables some strong ciphers
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 
