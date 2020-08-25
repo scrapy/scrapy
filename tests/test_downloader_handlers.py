@@ -410,7 +410,7 @@ class Http11TestCase(HttpTestCase):
             request = Request(self.getURL('largechunkedfile'))
 
             def check(logger):
-                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             d = self.download_request(request, Spider('foo', download_maxsize=1500))
             yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
