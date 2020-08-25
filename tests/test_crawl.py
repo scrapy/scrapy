@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
