@@ -37,8 +37,7 @@ class RFPDupeFilter(BaseDupeFilter):
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.file.seek(0)
-            self.fingerprints.update(bytes.fromhex(x.rstrip())
-                                     for x in self.file)
+            self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -59,10 +58,10 @@ class RFPDupeFilter(BaseDupeFilter):
             return True
         self.fingerprints.add(fp)
         if self.file:
-            self.file.write(fp.hex() + '\n')
+            self.file.write(fp + '\n')
 
     def request_fingerprint(self, request):
-        return self.fingerprinter.fingerprint(request)
+        return self.fingerprinter.fingerprint(request).hex()
 
     def close(self, reason):
         if self.file:
