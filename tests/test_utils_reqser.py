@@ -137,9 +137,11 @@ class TestSpiderMixin:
     def __mixin_callback(self, response):
         pass
 
+
 class TestSpiderDelegation:
     def delegated_callback(self, response):
         pass
+
 
 def parse_item(response):
     pass
