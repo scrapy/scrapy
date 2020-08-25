@@ -1,6 +1,7 @@
 import pickle
 import sys
 from os import environ
+from unittest import SkipTest
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
