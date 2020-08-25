@@ -7,9 +7,6 @@ from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
 
 
-FOOBAR_NL = "foo{}bar".format(os.linesep)
-
-
 class XmliterTestCase(unittest.TestCase):
 
     xmliter = staticmethod(xmliter)
@@ -267,7 +264,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual(result,
                          [{'id': '1', 'name': 'alpha', 'value': 'foobar'},
                           {'id': '2', 'name': 'unicode', 'value': '\xfan\xedc\xf3d\xe9\u203d'},
-                          {'id': '3', 'name': 'multi', 'value': FOOBAR_NL},
+                          {'id': '3', 'name': 'multi', 'value': "foo\nbar"},
                           {'id': '4', 'name': 'empty', 'value': ''}])
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
@@ -283,7 +280,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
                          [{'id': '1', 'name': 'alpha', 'value': 'foobar'},
                           {'id': '2', 'name': 'unicode', 'value': '\xfan\xedc\xf3d\xe9\u203d'},
-                          {'id': '3', 'name': 'multi', 'value': FOOBAR_NL},
+                          {'id': '3', 'name': 'multi', 'value': "foo\nbar"},
                           {'id': '4', 'name': 'empty', 'value': ''}])
 
     def test_csviter_quotechar(self):
@@ -296,7 +293,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv1],
                          [{'id': '1', 'name': 'alpha', 'value': 'foobar'},
                           {'id': '2', 'name': 'unicode', 'value': '\xfan\xedc\xf3d\xe9\u203d'},
-                          {'id': '3', 'name': 'multi', 'value': FOOBAR_NL},
+                          {'id': '3', 'name': 'multi', 'value': "foo\nbar"},
                           {'id': '4', 'name': 'empty', 'value': ''}])
 
         response2 = TextResponse(url="http://example.com/", body=body2)
@@ -305,7 +302,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv2],
                          [{'id': '1', 'name': 'alpha', 'value': 'foobar'},
                           {'id': '2', 'name': 'unicode', 'value': '\xfan\xedc\xf3d\xe9\u203d'},
-                          {'id': '3', 'name': 'multi', 'value': FOOBAR_NL},
+                          {'id': '3', 'name': 'multi', 'value': "foo\nbar"},
                           {'id': '4', 'name': 'empty', 'value': ''}])
 
     def test_csviter_wrong_quotechar(self):
@@ -327,7 +324,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
                          [{'id': '1', 'name': 'alpha', 'value': 'foobar'},
                           {'id': '2', 'name': 'unicode', 'value': '\xfan\xedc\xf3d\xe9\u203d'},
-                          {'id': '3', 'name': 'multi', 'value': FOOBAR_NL},
+                          {'id': '3', 'name': 'multi', 'value': "foo\nbar"},
                           {'id': '4', 'name': 'empty', 'value': ''}])
 
     def test_csviter_headers(self):
@@ -353,7 +350,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
                          [{'id': '1', 'name': 'alpha', 'value': 'foobar'},
                           {'id': '2', 'name': 'unicode', 'value': '\xfan\xedc\xf3d\xe9\u203d'},
-                          {'id': '3', 'name': 'multi', 'value': FOOBAR_NL},
+                          {'id': '3', 'name': 'multi', 'value': "foo\nbar"},
                           {'id': '4', 'name': 'empty', 'value': ''}])
 
     def test_csviter_exception(self):

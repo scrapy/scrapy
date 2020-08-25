@@ -3,7 +3,10 @@ import json
 import os
 import random
 import sys
+from pathlib import Path
+from shutil import rmtree
 from subprocess import Popen, PIPE
+from tempfile import mkdtemp
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
@@ -256,6 +259,29 @@ class MockDNSServer:
         self.proc.communicate()
 
 
+class MockFTPServer:
+    """Creates an FTP server on port 2121 with a default passwordless user
+    (anonymous) and a temporary root path that you can read from the
+    :attr:`path` attribute."""
+
+    def __enter__(self):
+        self.path = Path(mkdtemp())
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
+                          stderr=PIPE, env=get_testenv())
+        for line in self.proc.stderr:
+            if b'starting FTP server' in line:
+                break
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        rmtree(str(self.path))
+        self.proc.kill()
+        self.proc.communicate()
+
+    def url(self, path):
+        return 'ftp://127.0.0.1:2121/' + path
+
+
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
         os.path.join(os.path.dirname(__file__), keyfile),
@@ -263,8 +289,8 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
     )
     if cipher_string:
         ctx = factory.getContext()
-        # disabling TLS1.2+ because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
+        # disabling TLS1.3 because it unconditionally enables some strong ciphers
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 
