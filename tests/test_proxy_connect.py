@@ -7,7 +7,6 @@ from subprocess import Popen, PIPE
 from urllib.parse import urlsplit, urlunsplit
 from unittest import skipIf
 
-import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
