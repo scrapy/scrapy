@@ -73,7 +73,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
 _fingerprint_cache = weakref.WeakKeyDictionary()
 
 
-def fingerprint(request, include_headers=None, keep_fragments=False):
+def fingerprint(request, include_headers=None, keep_fragments=False) -> bytes:
     """
     Return the request fingerprint.
 
@@ -103,8 +103,6 @@ def fingerprint(request, include_headers=None, keep_fragments=False):
     so they are also ignored by default when calculating the fingerprint.
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
-
-    :rtype: bytes
     """
     if include_headers:
         include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
