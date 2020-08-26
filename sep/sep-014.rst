@@ -21,7 +21,7 @@ Current flaws and inconsistencies
 2. Link extractors are inflexible and hard to maintain, link
    processing/filtering is tightly coupled. (e.g. canonicalize)
 3. Isn't possible to crawl an url directly from command line because the Spider
-   does not know which callback use.
+   does not know which callback use. 
 
 These flaws will be corrected by the changes proposed in this SEP.
 
@@ -55,7 +55,7 @@ Request Extractors
 Request Extractors takes response object and determines which requests follow.
 
 This is an enhancement to ``LinkExtractors`` which returns urls (links),
-Request Extractors return Request objects.
+Request Extractors return Request objects. 
 
 Request Processors
 ------------------
@@ -142,7 +142,7 @@ Custom Processor and External Callback
 
    # Callback defined out of spider
    def my_external_callback(response):
-       # process item
+       # process item  
        pass
 
    class SampleSpider(CrawlSpider):
@@ -233,7 +233,7 @@ Request/Response Matchers
 
        def matches_request(self, request):
            """Returns True if Request's url matches initial url"""
-           return self.matches_url(request.url)
+           return self.matches_url(request.url) 
 
        def matches_response(self, response):
            """REturns True if Response's url matches initial url"""
@@ -305,14 +305,14 @@ Request Extractor
            for req in self.requests:
                req.meta.setdefault('link_text', '')
                req.meta['link_text'] = str_to_unicode(req.meta['link_text'],
-                                                      encoding)
+                                                      encoding) 
 
        def reset(self):
            """Reset state"""
            FixedSGMLParser.reset(self)
            self.requests = []
            self.base_url = None
-
+               
        def unknown_starttag(self, tag, attrs):
            """Process unknown start tag"""
            if 'base' tag:
@@ -376,7 +376,7 @@ Request Processor
 
    #!python
    #
-   # Request Processors
+   # Request Processors 
    # Processors receive list of requests and return list of requests
    #
    """Request Processors"""
@@ -390,7 +390,7 @@ Request Processor
                # replace in-place
                req.url = canonicalize_url(req.url)
                yield req
-
+           
 
    class Unique(object):
        """Filter duplicate Requests"""
@@ -455,9 +455,9 @@ Request Processor
            """Initialize allow/deny attributes"""
            _re_type = type(re.compile('', 0))
 
-           self.allow_res = [x if isinstance(x, _re_type) else re.compile(x)
+           self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) 
                              for x in arg_to_iter(allow)]
-           self.deny_res = [x if isinstance(x, _re_type) else re.compile(x)
+           self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) 
                             for x in arg_to_iter(deny)]
 
        def __call__(self, requests):
@@ -524,7 +524,7 @@ Rules Manager
    #
    # Handles rules matcher/callbacks
    # Resolve rule for given response
-   #
+   # 
    class RulesManager(object):
        """Rules Manager"""
        def __init__(self, rules, spider, default_matcher=UrlRegexMatcher):
@@ -542,8 +542,8 @@ Rules Manager
                        # instance default matcher
                        matcher = default_matcher(rule.matcher)
                    else:
-                       raise ValueError('Not valid matcher given '
-                                        f'{rule.matcher!r} in {rule!r}')
+                       raise ValueError('Not valid matcher given %r in %r' \
+                                       % (rule.matcher, rule))
 
                # prepare callback
                if callable(rule.callback):
@@ -553,7 +553,8 @@ Rules Manager
                    callback = getattr(spider, rule.callback)
 
                    if not callable(callback):
-                       raise AttributeError(f'Invalid callback {callback!r} can not be resolved')
+                       raise AttributeError('Invalid callback %r can not be resolved' \
+                                               % callback)
                else:
                    callback = None
 

@@ -171,7 +171,7 @@ the same spider:
    #!python
    class MySpider(BaseSpider):
 
-       middlewares = [RegexLinkExtractor(), CallbackRules(), CanonicalizeUrl(),
+       middlewares = [RegexLinkExtractor(), CallbackRules(), CanonicalizeUrl(), 
                       ItemIdSetter(), OffsiteMiddleware()]
 
        allowed_domains = ['example.com', 'sub.example.com']
@@ -196,7 +196,7 @@ the same spider:
            # extract item from response
            return item
 
-The Spider Middleware that implements spider code
+The Spider Middleware that implements spider code 
 =================================================
 
 There's gonna be one middleware that will take care of calling the proper
@@ -324,7 +324,7 @@ Another example could be for building URL canonicalizers:
    class CanonializeUrl(object):
 
        def process_request(self, request, response, spider):
-           curl = canonicalize_url(request.url,
+           curl = canonicalize_url(request.url, 
                                    rules=spider.canonicalization_rules)
            return request.replace(url=curl)
 
@@ -332,7 +332,7 @@ Another example could be for building URL canonicalizers:
    class MySpider(BaseSpider):
 
        middlewares = [CanonicalizeUrl()]
-       canonicalization_rules = ['sort-query-args',
+       canonicalization_rules = ['sort-query-args', 
                                  'normalize-percent-encoding', ...]
 
        # ...
@@ -414,7 +414,7 @@ A spider middleware to avoid visiting pages forbidden by robots.txt:
                if netloc in info.pending:
                    res = None
                else:
-                   robotsurl = f"{url.scheme}://{netloc}/robots.txt"
+                   robotsurl = "%s://%s/robots.txt" % (url.scheme, netloc)
                    meta = {'spider': spider, {'handle_httpstatus_list': [403, 404, 500]}
                    res = Request(robotsurl, callback=self.parse_robots,
                        meta=meta, priority=self.REQUEST_PRIORITY)
@@ -474,7 +474,7 @@ This is a port of the Offsite middleware to the new spider middleware API:
                if host and host not in info.hosts_seen:
                   spider.log("Filtered offsite request to %r: %s" % (host, request))
                   info.hosts_seen.add(host)
-
+    
        def should_follow(self, request, spider):
            info = self.spiders[spider]
            # hostname can be None for wrong urls (like javascript links)
@@ -484,7 +484,7 @@ This is a port of the Offsite middleware to the new spider middleware API:
        def get_host_regex(self, spider):
            """Override this method to implement a different offsite policy"""
            domains = [d.replace('.', r'\.') for d in spider.allowed_domains]
-           regex = fr'^(.*\.)?({"|".join(domains)})$'
+           regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
            return re.compile(regex)
 
        def spider_opened(self, spider):
@@ -570,7 +570,7 @@ A middleware to filter out requests already seen:
            self.dupefilter = load_object(clspath)()
            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
            dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
-
+           
        def enqueue_request(self, spider, request):
            seen = self.dupefilter.request_seen(spider, request)
            if not seen or request.dont_filter:
@@ -601,8 +601,8 @@ A middleware to Scrape data using Parsley as described in UsingParsley
                    for name in parslet.keys():
                        self.fields[name] = Field()
                super(ParsleyItem, self).__init__(*a, **kw)
-           self.item_class = ParsleyItem
-           self.parsley = PyParsley(parslet, output='python')
+           self.item_class = ParsleyItem    
+           self.parsley = PyParsley(parslet, output='python') 
 
        def process_response(self, response, request, spider):
            return self.item_class(self.parsly.parse(string=response.body))
@@ -627,7 +627,7 @@ Resolved:
   not the original one (think of redirections), but it does carry the ``meta``
   of the original one. The original one may not be available anymore (in
   memory) if we're using a persistent scheduler., but in that case it would be
-  the deserialized request from the persistent scheduler queue.
+  the deserialized request from the persistent scheduler queue. 
 
    - No - this would make implementation more complex and we're not sure it's
      really needed
