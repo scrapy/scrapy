@@ -42,8 +42,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
                 raise ValueError(f'Invalid value {value} for component {name}, '
-                                 'please provide a real number or None instead'
-                                 )
+                                 'please provide a real number or None instead')
 
     # BEGIN Backward compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
