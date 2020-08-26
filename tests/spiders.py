@@ -255,7 +255,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     A CrawlSpider which overrides the 'parse' method
     """
     name = 'crawl_spider_with_parse_method'
-    custom_settings = {
+    custom_settings: dict = {
         'RETRY_HTTP_CODES': [],  # no need to retry
     }
     rules = (
