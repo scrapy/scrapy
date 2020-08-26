@@ -311,9 +311,10 @@ CsvItemExporter
       multi-valued fields, if found.
    :type include_headers_line: str
 
-    :param errors: The optional string that specifies how encoding and decoding errors are to be handled.
-        For more information see `documentation <https://docs.python.org/3/library/io.html#io.TextIOWrapper>`_.
-    :type errors: str
+   :param errors: The optional string that specifies how encoding and decoding
+      errors are to be handled. For more information see
+      :class:`io.TextIOWrapper`.
+   :type errors: str
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the
