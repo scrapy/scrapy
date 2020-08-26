@@ -198,7 +198,8 @@ def _getargspec_py23(func):
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
-        func_args, _, _, _ = _getargspec_py23(func)
+        spec = inspect.getfullargspec(func)
+        func_args = spec.args + spec.kwonlyargs
     elif inspect.isclass(func):
         return get_func_args(func.__init__, True)
     elif inspect.ismethod(func):

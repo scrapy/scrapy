@@ -409,7 +409,7 @@ class FilesPipeline(MediaPipeline):
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 
-    def media_to_download(self, request, info):
+    def media_to_download(self, request, info, *, item=None):
         def _onsuccess(result):
             if not result:
                 return  # returning None force download
@@ -436,7 +436,7 @@ class FilesPipeline(MediaPipeline):
             checksum = result.get('checksum', None)
             return {'url': request.url, 'path': path, 'checksum': checksum, 'status': 'uptodate'}
 
-        path = self.file_path(request, info=info)
+        path = self.file_path(request, info=info, item=item)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(
@@ -460,7 +460,7 @@ class FilesPipeline(MediaPipeline):
 
         raise FileException
 
-    def media_downloaded(self, response, request, info):
+    def media_downloaded(self, response, request, info, *, item=None):
         referer = referer_str(request)
 
         if response.status != 200:
@@ -492,8 +492,8 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats(info.spider, status)
 
         try:
-            path = self.file_path(request, response=response, info=info)
-            checksum = self.file_downloaded(response, request, info)
+            path = self.file_path(request, response=response, info=info, item=item)
+            checksum = self.file_downloaded(response, request, info, item=item)
         except FileException as exc:
             logger.warning(
                 'File (error): Error processing file from %(request)s '
@@ -522,8 +522,8 @@ class FilesPipeline(MediaPipeline):
         urls = ItemAdapter(item).get(self.files_urls_field, [])
         return [Request(u) for u in urls]
 
-    def file_downloaded(self, response, request, info):
-        path = self.file_path(request, response=response, info=info)
+    def file_downloaded(self, response, request, info, *, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
         checksum = md5sum(buf)
         buf.seek(0)
@@ -535,7 +535,7 @@ class FilesPipeline(MediaPipeline):
             ItemAdapter(item)[self.files_result_field] = [x for ok, x in results if ok]
         return item
 
-    def file_path(self, request, response=None, info=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         media_ext = os.path.splitext(request.url)[1]
         # Handles empty and wild extensions by trying to guess the
