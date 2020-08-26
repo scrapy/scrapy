@@ -1,15 +1,15 @@
+import inspect
+
 from scrapy.http import Request
-from scrapy.utils.defer import _isasyncgen
 
 
 class RequestInOrderMiddleware:
     def process_spider_output(self, response, result, spider):
         return (self._preserve_in_order(r, spider) for r in result or ())
 
-    def process_start_requests(self, start_requests, spider):
-        if _isasyncgen(start_requests):
-            from tests.py36.middlewares import RequestInOrderMiddleware_process_start_requests
-            return RequestInOrderMiddleware_process_start_requests(self._preserve_in_order, start_requests, spider)
+    async def process_start_requests(self, start_requests, spider):
+        if inspect.isasyncgen(start_requests):
+            return (self._preserve_in_order(r, spider) async for r in start_requests or ())
         else:
             return (self._preserve_in_order(r, spider) for r in start_requests or ())
 

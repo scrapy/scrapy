@@ -98,8 +98,7 @@ class Crawler:
             raise
 
     def call_start_requests(self):
-        if hasattr(inspect, 'isasyncgenfunction') and inspect.isasyncgenfunction(self.spider.start_requests):
-            # requires Python 3.6+
+        if inspect.isasyncgenfunction(self.spider.start_requests):
             return self.spider.start_requests().__aiter__()
         elif inspect.iscoroutinefunction(self.spider.start_requests):
             return deferred_from_coro(self.spider.start_requests())
@@ -108,7 +107,7 @@ class Crawler:
 
     @staticmethod
     def is_start_requests_async(start_requests_function):
-        if hasattr(inspect, 'isasyncgenfunction') and inspect.isasyncgenfunction(start_requests_function):
+        if inspect.isasyncgenfunction(start_requests_function):
             return True
         if inspect.iscoroutinefunction(start_requests_function):
             return True

@@ -137,9 +137,7 @@ A better behavior, which should treat requests from
 requests, is enabled when :meth:`~scrapy.spiders.Spider.start_requests` is an
 async function (declared using ``async def``). It doesn't need to contain
 ``await`` for this to work, so if you want the new queue behavior, you can just
-change ``def`` to ``async def``. Note though, that using ``yield`` statements
-inside an async function makes it an async generator which are only supported
-since Python 3.6.
+change ``def`` to ``async def``.
 
 Usage
 =====

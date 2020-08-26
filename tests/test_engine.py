@@ -9,7 +9,7 @@ module with the ``runserver`` argument::
 
     python test_engine.py runserver
 """
-
+import asyncio
 import os
 import re
 import sys
@@ -121,6 +121,19 @@ class ItemZeroDivisionErrorSpider(TestSpider):
 class StartRequestsAsyncDefSpider(TestSpider):
     async def start_requests(self):
         return [Request(url, dont_filter=True) for url in self.start_urls]
+
+
+class StartRequestsAsyncGenSpider(TestSpider):
+    async def start_requests(self):
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
+
+
+class StartRequestsAsyncGenAsyncioSpider(TestSpider):
+    async def start_requests(self):
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
+            await asyncio.sleep(1)
 
 
 def start_test_site(debug=False):
@@ -272,19 +285,15 @@ class EngineTest(unittest.TestCase):
         yield self.run.run()
         self._assert_visited_urls()
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @defer.inlineCallbacks
     def test_crawler_startrequests_asyncgen(self):
-        from tests.py36._test_engine import StartRequestsAsyncGenSpider
         self.run = CrawlerRun(StartRequestsAsyncGenSpider)
         yield self.run.run()
         self._assert_visited_urls()
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_crawler_startrequests_asyncgen_asyncio(self):
-        from tests.py36._test_engine import StartRequestsAsyncGenAsyncioSpider
         self.run = CrawlerRun(StartRequestsAsyncGenAsyncioSpider)
         yield self.run.run()
         self._assert_visited_urls()

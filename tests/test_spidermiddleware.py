@@ -1,9 +1,7 @@
 import collections
 import inspect
-import sys
 from unittest import mock
 
-from pytest import mark
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
@@ -11,10 +9,11 @@ from twisted.python.failure import Failure
 from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.exceptions import _InvalidOutput
+from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.test import get_crawler
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from tests.test_engine import StartRequestsAsyncDefSpider
+from tests.test_engine import StartRequestsAsyncDefSpider, StartRequestsAsyncGenSpider
 
 
 class SpiderMiddlewareTestCase(TestCase):
@@ -121,6 +120,12 @@ class ProcessStartRequestsAsyncDefMiddleware:
         return start_requests
 
 
+class ProcessStartRequestsAsyncGenMiddleware:
+    async def process_start_requests(self, start_requests, spider):
+        async for r in as_async_generator(start_requests):
+            yield r
+
+
 class ProcessStartRequestsSimple(TestCase):
     """ process_start_requests tests for simple start_requests"""
 
@@ -152,7 +157,6 @@ class ProcessStartRequestsSimple(TestCase):
 
     @defer.inlineCallbacks
     def _test_asyncgen_base(self, *mw_classes):
-        from scrapy.utils.asyncgen import collect_asyncgen
         processed_start_requests = yield self._get_processed_start_requests(*mw_classes)
         self.assertTrue(inspect.isasyncgen(processed_start_requests))
         start_requests_list = yield deferred_from_coro(collect_asyncgen(processed_start_requests))
@@ -169,26 +173,20 @@ class ProcessStartRequestsSimple(TestCase):
         """ Async def mw """
         yield self._test_simple_base(ProcessStartRequestsAsyncDefMiddleware)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @defer.inlineCallbacks
     def test_asyncgen(self):
         """ Asyncgen mw """
-        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
         yield self._test_asyncgen_base(ProcessStartRequestsAsyncGenMiddleware)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @defer.inlineCallbacks
     def test_simple_asyncgen(self):
         """ Simple mw -> asyncgen mw """
-        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
         yield self._test_asyncgen_base(ProcessStartRequestsAsyncGenMiddleware,
                                        ProcessStartRequestsSimpleMiddleware)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @defer.inlineCallbacks
     def test_asyncgen_simple(self):
         """ Asyncgen mw -> simple mw; cannot work """
-        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
         processed_start_requests = yield self._get_processed_start_requests(
             ProcessStartRequestsSimpleMiddleware,
             ProcessStartRequestsAsyncGenMiddleware)
@@ -202,13 +200,11 @@ class ProcessStartRequestsAsyncDef(ProcessStartRequestsSimple):
     spider_cls = StartRequestsAsyncDefSpider
 
 
-@mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
 class ProcessStartRequestsAsyncGen(ProcessStartRequestsSimple):
     """ process_start_requests tests for async generator start_requests """
 
     def __init__(self, methodName='runTest'):
         super().__init__(methodName)
-        from tests.py36._test_engine import StartRequestsAsyncGenSpider
         self.spider_cls = StartRequestsAsyncGenSpider
 
     @defer.inlineCallbacks
@@ -227,7 +223,6 @@ class ProcessStartRequestsAsyncGen(ProcessStartRequestsSimple):
     @defer.inlineCallbacks
     def test_simple_asyncgen(self):
         """ Simple mw -> asyncgen mw; cannot work """
-        from tests.py36._test_spidermiddleware import ProcessStartRequestsAsyncGenMiddleware
         processed_start_requests = yield self._get_processed_start_requests(
             ProcessStartRequestsAsyncGenMiddleware,
             ProcessStartRequestsSimpleMiddleware)

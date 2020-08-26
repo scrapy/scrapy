@@ -1,6 +1,3 @@
-"""
-Helpers using Python 3.6+ async generator syntax (ignore SyntaxError on import).
-"""
 import collections
 
 

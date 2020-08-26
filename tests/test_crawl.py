@@ -20,6 +20,9 @@ from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
 from tests.spiders import (
+    AsyncDefAsyncioGenComplexSpider,
+    AsyncDefAsyncioGenLoopSpider,
+    AsyncDefAsyncioGenSpider,
     AsyncDefAsyncioReqsReturnSpider,
     AsyncDefAsyncioReturnSingleElementSpider,
     AsyncDefAsyncioReturnSpider,
@@ -210,10 +213,13 @@ class CrawlTestCase(TestCase):
 
         yield self._test_start_requests_eagerness(EagerAsyncDefSpider)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @defer.inlineCallbacks
     def test_start_requests_eagerness_asyncgen(self):
-        from tests.py36._test_crawl import EagerAsyncGenSpider
+        class EagerAsyncGenSpider(YieldingRequestsSpider):
+            async def start_requests(self):
+                for r in super().start_requests():
+                    yield r
+
         yield self._test_start_requests_eagerness(EagerAsyncGenSpider)
 
     @defer.inlineCallbacks
@@ -475,7 +481,6 @@ class CrawlSpiderTestCase(TestCase):
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse(self):
-        from tests.py36._test_crawl import AsyncDefAsyncioGenSpider
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
@@ -492,7 +497,6 @@ class CrawlSpiderTestCase(TestCase):
         def _on_item_scraped(item):
             items.append(item)
 
-        from tests.py36._test_crawl import AsyncDefAsyncioGenLoopSpider
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenLoopSpider)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         with LogCapture() as log:
@@ -512,7 +516,6 @@ class CrawlSpiderTestCase(TestCase):
         def _on_item_scraped(item):
             items.append(item)
 
-        from tests.py36._test_crawl import AsyncDefAsyncioGenComplexSpider
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenComplexSpider)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         yield crawler.crawl(mockserver=self.mockserver)
