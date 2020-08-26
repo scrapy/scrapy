@@ -23,8 +23,7 @@ class Command(ScrapyCommand):
         if opts.verbose:
             versions = scrapy_components_versions()
             width = max(len(n) for (n, _) in versions)
-            patt = f"%-{width}s : %s"
             for name, version in versions:
-                print(patt % (name, version))
+                print(f"{name:<{width}} : {version}")
         else:
             print(f"Scrapy {scrapy.__version__}")
