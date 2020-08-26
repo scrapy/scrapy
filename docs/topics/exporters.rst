@@ -292,7 +292,7 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', **kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs)
 
    Exports items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
@@ -310,6 +310,10 @@ CsvItemExporter
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
    :type include_headers_line: str
+
+    :param errors: The optional string that specifies how encoding and decoding errors are to be handled.
+        For more information see `documentation <https://docs.python.org/3/library/io.html#io.TextIOWrapper>`_.
+    :type errors: str
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the
