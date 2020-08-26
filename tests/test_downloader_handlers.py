@@ -61,7 +61,7 @@ class OffDH:
 class LoadTestCase(unittest.TestCase):
 
     def test_enabled_handler(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
+        handlers = {'scheme': DummyDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -69,7 +69,7 @@ class LoadTestCase(unittest.TestCase):
         self.assertNotIn('scheme', dh._notconfigured)
 
     def test_not_configured_handler(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
+        handlers = {'scheme': OffDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -87,7 +87,7 @@ class LoadTestCase(unittest.TestCase):
         self.assertIn('scheme', dh._notconfigured)
 
     def test_lazy_handlers(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.DummyLazyDH'}
+        handlers = {'scheme': DummyLazyDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -410,7 +410,7 @@ class Http11TestCase(HttpTestCase):
             request = Request(self.getURL('largechunkedfile'))
 
             def check(logger):
-                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             d = self.download_request(request, Spider('foo', download_maxsize=1500))
             yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)

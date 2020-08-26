@@ -385,7 +385,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
 
 
 class TestSettingsCustomPolicy(TestRefererMiddleware):
-    settings = {'REFERRER_POLICY': 'tests.test_spidermiddleware_referer.CustomPythonOrgPolicy'}
+    settings = {'REFERRER_POLICY': CustomPythonOrgPolicy}
     scenarii = [
         ('https://example.com/', 'https://scrapy.org/', b'https://python.org/'),
         ('http://example.com/', 'http://scrapy.org/', b'http://python.org/'),
