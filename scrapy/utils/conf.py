@@ -17,7 +17,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
 
     def _check_components(complist):
         if len({convert(c) for c in complist}) != len(complist):
-            raise ValueError('Some paths in {complist!r} convert to the same object, '
+            raise ValueError(f'Some paths in {complist!r} convert to the same object, '
                              'please update your settings')
 
     def _map_keys(compdict):
