@@ -42,7 +42,8 @@ def load_object(path):
     The object can be the import path of a class, function, variable or an
     instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'.
 
-    If ``path`` is not a string, but a callable() object, then return it as is.
+    If ``path`` is not a string, but is a callable object, such as a class or
+    a function, then return it as is.
     """
 
     if not isinstance(path, str):
