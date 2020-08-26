@@ -39,9 +39,19 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be the import path of a class, function, variable or an
-    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
+    The object can be the import path of a class, function, variable or an
+    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'.
+
+    If ``path`` is not a string, but is a callable object, such as a class or
+    a function, then return it as is.
     """
+
+    if not isinstance(path, str):
+        if callable(path):
+            return path
+        else:
+            raise TypeError("Unexpected argument type, expected string "
+                            "or object, got: %s" % type(path))
 
     try:
         dot = path.rindex('.')
