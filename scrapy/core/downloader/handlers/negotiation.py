@@ -1,5 +1,4 @@
 from collections import deque
-from typing import Deque, Dict, List, Optional, Tuple, Union
 from urllib.parse import urldefrag
 
 from twisted.internet.base import ReactorBase
@@ -7,6 +6,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, Protocol
 from twisted.web._newclient import HTTP11ClientProtocol
 from twisted.web.client import BrowserLikePolicyForHTTPS, _StandardEndpointFactory, URI
+from typing import Deque, Dict, List, Optional, Tuple, Union
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory, load_context_factory_from_settings
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
@@ -100,8 +100,6 @@ class HTTPNegotiateDownloadHandler:
         self._settings = settings
         self._crawler = crawler
 
-        # Todo: Check for only https requests are issued via this download handler
-
         # ToDo: Get the list from the settings
         self.acceptable_protocols = SUPPORTED_PROTOCOLS
 
@@ -146,6 +144,7 @@ class HTTPNegotiateDownloadHandler:
     def _connection_established(self, key: Tuple, protocol: str) -> None:
         """We have established a connection with given key. Hence,
         we issue all the request to the negotiated protocol"""
+        self._cache_connection.setdefault(key, protocol)
         download_handler = self.get_download_handler(protocol)
         connections = self._pending_connections.pop(key, None)
         while connections:
@@ -170,6 +169,12 @@ class HTTPNegotiateDownloadHandler:
 
         if key in self._cache_connection:
             return self.get_download_handler(self._cache_connection[key])
+
+        # Check if http (without ssl/tls) request
+        # Issue this request using the HTTP/1.x download handler
+        if key[0] == 'http':
+            self._cache_connection.setdefault(key, 'http/1.1')
+            return self._http1_download_handler
 
         # Check in the order of the acceptable protocols list
         for protocol in self.acceptable_protocols:
