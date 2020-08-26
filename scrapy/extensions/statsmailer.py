@@ -28,7 +28,7 @@ class StatsMailer:
     def spider_closed(self, spider):
         spider_stats = self.stats.get_stats(spider)
         body = "Global stats\n\n"
-        body += "\n".join(f"{i:<50} : {self.stats.get_stats()[i]}" for i in self.stats.get_stats())
+        body += "\n".join(f"{k:<50} : {v}" for k, v in self.stats.get_stats().items())
         body += f"\n\n{spider.name} stats\n\n"
-        body += "\n".join(f"{i:<50} : {spider_stats[i]}" for i in spider_stats)
+        body += "\n".join(f"{k:<50} : {v}" for k, v in spider_stats.items())
         return self.mail.send(self.recipients, f"Scrapy stats for: {spider.name}", body)
