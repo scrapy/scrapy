@@ -90,7 +90,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # all requests in a pool and send them as the connection is made
         self._pending_request_stream_pool: deque = deque()
 
-        # Counter to keep track of opened stream. This counter
+        # Counter to keep track of opened streams. This counter
         # is used to make sure that not more than MAX_CONCURRENT_STREAMS
         # streams are opened which leads to ProtocolError
         # We use simple FIFO policy to handle pending requests
@@ -218,7 +218,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """We close the connection with InvalidNegotiatedProtocol exception
         when the connection was not made via h2 protocol"""
         negotiated_protocol = self.transport.negotiatedProtocol
-        if type(negotiated_protocol) is bytes:
+        if isinstance(negotiated_protocol, bytes):
             negotiated_protocol = str(self.transport.negotiatedProtocol, 'utf-8')
         if negotiated_protocol != 'h2':
             # Here we have not initiated the connection yet
