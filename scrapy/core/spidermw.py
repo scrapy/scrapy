@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred, deferred_f_from_coro_f
 from scrapy.utils.python import MutableChain
 
 
@@ -38,7 +38,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, 'process_spider_input'):
             self.methods['process_spider_input'].append(mw.process_spider_input)
         if hasattr(mw, 'process_start_requests'):
-            self.methods['process_start_requests'].appendleft(mw.process_start_requests)
+            self.methods['process_start_requests'].appendleft(deferred_f_from_coro_f(mw.process_start_requests))
         process_spider_output = getattr(mw, 'process_spider_output', None)
         self.methods['process_spider_output'].appendleft(process_spider_output)
         process_spider_exception = getattr(mw, 'process_spider_exception', None)

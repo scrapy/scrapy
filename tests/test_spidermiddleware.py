@@ -1,3 +1,4 @@
+import collections
 import inspect
 import sys
 from unittest import mock
@@ -115,6 +116,11 @@ class ProcessStartRequestsSimpleMiddleware:
             yield r
 
 
+class ProcessStartRequestsAsyncDefMiddleware:
+    async def process_start_requests(self, start_requests, spider):
+        return start_requests
+
+
 class ProcessStartRequestsSimple(TestCase):
     """ process_start_requests tests for simple start_requests"""
 
@@ -139,7 +145,7 @@ class ProcessStartRequestsSimple(TestCase):
     @defer.inlineCallbacks
     def _test_simple_base(self, *mw_classes):
         processed_start_requests = yield self._get_processed_start_requests(*mw_classes)
-        self.assertTrue(inspect.isgenerator(processed_start_requests))
+        self.assertIsInstance(processed_start_requests, collections.abc.Iterable)
         start_requests_list = list(processed_start_requests)
         self.assertEqual(len(start_requests_list), 3)
         self.assertIsInstance(start_requests_list[0], Request)
@@ -157,6 +163,11 @@ class ProcessStartRequestsSimple(TestCase):
     def test_simple(self):
         """ Simple mw """
         yield self._test_simple_base(ProcessStartRequestsSimpleMiddleware)
+
+    @defer.inlineCallbacks
+    def test_asyncdef(self):
+        """ Async def mw """
+        yield self._test_simple_base(ProcessStartRequestsAsyncDefMiddleware)
 
     @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @defer.inlineCallbacks
@@ -207,6 +218,11 @@ class ProcessStartRequestsAsyncGen(ProcessStartRequestsSimple):
             ProcessStartRequestsSimpleMiddleware)
         self.assertTrue(inspect.isgenerator(processed_start_requests))
         self.assertAsyncGeneratorNotIterable(processed_start_requests)
+
+    @defer.inlineCallbacks
+    def test_asyncdef(self):
+        """ Async def mw """
+        yield self._test_asyncgen_base(ProcessStartRequestsAsyncDefMiddleware)
 
     @defer.inlineCallbacks
     def test_simple_asyncgen(self):
