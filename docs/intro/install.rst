@@ -123,7 +123,7 @@ To install Scrapy on Windows using ``pip`` :
 
 .. warning::
     This installation method requires “Microsoft Visual C++” for installing some 
-    scrapy dependencies which demands significantly more disk space than Anaconda.
+    Scrapy dependencies which demands significantly more disk space than Anaconda.
 
 #. Download and execute `Microsoft C++ Build Tools`_ to install the Visual Studio Installer.
 
