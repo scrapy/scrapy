@@ -20,8 +20,6 @@ matrix:
       python: 3.9-dev
     - env: TOXENV=flake8
       python: 3.9-dev
-    - env: TOXENV=pylint
-      python: 3.9-dev
     - env: TOXENV=typing
       python: 3.9-dev
       
