@@ -73,7 +73,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
 _fingerprint_cache = weakref.WeakKeyDictionary()
 
 
-def fingerprint(request, include_headers=None, keep_fragments=False) -> bytes:
+def fingerprint(request, *, include_headers=None, keep_fragments=False) -> bytes:
     """
     Return the request fingerprint.
 
