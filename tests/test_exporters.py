@@ -355,6 +355,23 @@ class CsvItemExporterTest(BaseItemExporterTest):
             expected='22,False,3.14,2015-01-01 01:01:01\r\n'
         )
 
+    def test_errors_default(self):
+        with self.assertRaises(UnicodeEncodeError):
+            self.assertExportResult(
+                item=dict(text=u'W\u0275\u200Brd'),
+                expected=None,
+                encoding='windows-1251',
+            )
+
+    def test_errors_xmlcharrefreplace(self):
+        self.assertExportResult(
+            item=dict(text=u'W\u0275\u200Brd'),
+            include_headers_line=False,
+            expected='W&#629;&#8203;rd\r\n',
+            encoding='windows-1251',
+            errors='xmlcharrefreplace',
+        )
+
 
 class CsvItemExporterDataclassTest(CsvItemExporterTest):
     item_class = TestDataClass
