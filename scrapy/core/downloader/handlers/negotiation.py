@@ -76,7 +76,7 @@ class NegotiateProtocolFactory(Factory):
 class NegotiateAgent:
     def __init__(
         self, reactor: ReactorBase,
-        acceptable_protocols: List[bytes] = SUPPORTED_PROTOCOLS,
+        acceptable_protocols=SUPPORTED_PROTOCOLS,
         context_factory=BrowserLikePolicyForHTTPS(),
         connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
     ) -> None:
@@ -116,7 +116,7 @@ class HTTPNegotiateDownloadHandler:
         # connections, in case we get a request with the same key,
         # new request can be immediately issued to the respective
         # download handler
-        self._cache_connection: LocalCache[Tuple, str] = LocalCache(limit=10000)
+        self._cache_connection = LocalCache(limit=10000)
 
         # Store off a list of all connections with the same key
         # This is used when there are multiple requests issued at the same time,
@@ -164,6 +164,11 @@ class HTTPNegotiateDownloadHandler:
         Using the pools in all of the download handlers, we check
         if a persistent connection to the request uri already exists.
 
+        Apart from checking in the connection pools, all requests which are
+        1. Using Proxy
+        2. HTTP (insecure)
+        are issued to the HTTP/1.1 download handler.
+
         Arguments:
             request -- Scrapy Request instance
 
@@ -176,9 +181,11 @@ class HTTPNegotiateDownloadHandler:
         if key in self._cache_connection:
             return self.get_download_handler(self._cache_connection[key])
 
-        # Check if http (without ssl/tls) request
+        proxy = request.meta.get('proxy')
+
+        # Check if http (without ssl/tls) request or proxy is required
         # Issue this request using the HTTP/1.x download handler
-        if key[0] == b'http':
+        if key[0] == b'http' or proxy:
             self._cache_connection.setdefault(key, 'http/1.1')
             return self._http1_download_handler
 
