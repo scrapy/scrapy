@@ -7,6 +7,7 @@ See documentation in docs/topics/spiders.rst
 
 import copy
 import warnings
+from typing import Sequence
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, HtmlResponse
@@ -72,7 +73,7 @@ class Rule:
 
 class CrawlSpider(Spider):
 
-    rules = ()
+    rules: Sequence[Rule] = ()
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
