@@ -1,6 +1,5 @@
 import json
 import logging
-import sys
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
@@ -405,7 +404,6 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         self.assertIn({"foo": 42}, items)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse(self):
@@ -417,7 +415,6 @@ class CrawlSpiderTestCase(TestCase):
         itemcount = crawler.stats.get_value('item_scraped_count')
         self.assertEqual(itemcount, 1)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_loop(self):
@@ -437,7 +434,6 @@ class CrawlSpiderTestCase(TestCase):
         for i in range(10):
             self.assertIn({'foo': i}, items)
 
-    @mark.skipif(sys.version_info < (3, 6), reason="Async generators require Python 3.6 or higher")
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_complex(self):
