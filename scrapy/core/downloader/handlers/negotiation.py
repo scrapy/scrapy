@@ -3,10 +3,13 @@ from urllib.parse import urldefrag
 
 from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
+from twisted.internet.interfaces import IHandshakeListener
 from twisted.internet.protocol import Factory, Protocol
+from twisted.internet.protocol import connectionDone
 from twisted.web._newclient import HTTP11ClientProtocol
 from twisted.web.client import BrowserLikePolicyForHTTPS, _StandardEndpointFactory, URI
 from typing import Deque, Dict, List, Optional, Tuple, Union
+from zope.interface import implementer
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory, load_context_factory_from_settings
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
@@ -31,23 +34,24 @@ class UnsupportedNegotiatedProtocol(Exception):
         )
 
 
+@implementer(IHandshakeListener)
 class NegotiateProtocol(Protocol):
     def __init__(self, negotiated_protocol_deferred: Deferred):
         self._negotiated_protocol_deferred = negotiated_protocol_deferred
 
-    @property
-    def negotiated_protocol(self) -> Optional[str]:
+    def connectionLost(self, reason=connectionDone):
+        if not self._negotiated_protocol_deferred.called:
+            self._negotiated_protocol_deferred.errback(reason)
+
+    def handshakeCompleted(self) -> None:
         try:
-            return self.transport.negotiatedProtocol.decode()
+            negotiated_protocol = self.transport.negotiatedProtocol.decode()
         except AttributeError:
-            return 'http/1.1'
+            negotiated_protocol = 'http/1.1'
 
-    def dataReceived(self, data: bytes) -> None:
-        if self._negotiated_protocol_deferred.called:
-            raise Exception('fixme')  # ToDo
-
-        if self.negotiated_protocol not in SUPPORTED_PROTOCOLS:
-            raise UnsupportedNegotiatedProtocol(self.negotiated_protocol)
+        if negotiated_protocol not in SUPPORTED_PROTOCOLS:
+            self._negotiated_protocol_deferred.errback(UnsupportedNegotiatedProtocol(negotiated_protocol))
+            return
 
         self._negotiated_protocol_deferred.callback(self.transport)
 
@@ -172,7 +176,7 @@ class HTTPNegotiateDownloadHandler:
 
         # Check if http (without ssl/tls) request
         # Issue this request using the HTTP/1.x download handler
-        if key[0] == 'http':
+        if key[0] == b'http':
             self._cache_connection.setdefault(key, 'http/1.1')
             return self._http1_download_handler
 
