@@ -18,9 +18,10 @@ from scrapy.core.http2.protocol import H2ClientProtocol
 from scrapy.http.request import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.utils.datatypes import LocalCache
 from scrapy.utils.python import to_bytes
 
-SUPPORTED_PROTOCOLS = ('http/1.1', 'h2')
+SUPPORTED_PROTOCOLS = ('h2', 'http/1.1')
 
 
 class UnsupportedNegotiatedProtocol(Exception):
@@ -104,17 +105,18 @@ class HTTPNegotiateDownloadHandler:
         self._settings = settings
         self._crawler = crawler
 
-        # ToDo: Get the list from the settings
         self.acceptable_protocols = SUPPORTED_PROTOCOLS
 
         # ToDo: Maybe load download-handlers from the settings?
+        #  Need to add default for 'h2' in DOWNLOAD_HANDLERS_BASE
         self._http1_download_handler = HTTP11DownloadHandler(settings, crawler)
         self._h2_download_handler = H2DownloadHandler(settings, crawler)
 
         # Cache to store the protocol negotiated for all the
-        # connections, in case we get a request with the same,
-        # new request can be immediately issue via the respective download handler
-        self._cache_connection: Dict[Tuple, str] = {}
+        # connections, in case we get a request with the same key,
+        # new request can be immediately issued to the respective
+        # download handler
+        self._cache_connection: LocalCache[Tuple, str] = LocalCache(limit=10000)
 
         # Store off a list of all connections with the same key
         # This is used when there are multiple requests issued at the same time,
