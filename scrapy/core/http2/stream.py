@@ -1,7 +1,6 @@
 import logging
 from enum import Enum
 from io import BytesIO
-from typing import List, Optional, Tuple, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from h2.errors import ErrorCodes
@@ -11,8 +10,9 @@ from twisted.internet.defer import Deferred, CancelledError
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
+from typing import Dict
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
-from scrapy.core.http2.types import H2ResponseDict, H2StreamMetadataDict
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
@@ -103,21 +103,40 @@ class Stream:
         self._download_maxsize = self._request.meta.get('download_maxsize', download_maxsize)
         self._download_warnsize = self._request.meta.get('download_warnsize', download_warnsize)
 
-        self.metadata: H2StreamMetadataDict = {
+        # Metadata of an HTTP/2 connection stream
+        # initialized when stream is instantiated
+        self.metadata: Dict = {
             'request_content_length': 0 if self._request.body is None else len(self._request.body),
+
+            # Flag to keep track whether the stream has initiated the request
             'request_sent': False,
+
+            # Flag to track whether we have logged about exceeding download warnsize
             'reached_warnsize': False,
+
+            # Each time we send a data frame, we will decrease value by the amount send.
             'remaining_content_length': 0 if self._request.body is None else len(self._request.body),
+
+            # Flag to keep track whether client (self) have closed this stream
             'stream_closed_local': False,
+
+            # Flag to keep track whether the server has closed the stream
             'stream_closed_server': False,
         }
 
         # Private variable used to build the response
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
-        self._response: H2ResponseDict = {
+        self._response: Dict = {
+            # Data received frame by frame from the server is appended
+            # and passed to the response Deferred when completely received.
             'body': BytesIO(),
+
+            # The amount of data received that counts against the
+            # flow control window
             'flow_controlled_size': 0,
+
+            # Headers received after sending the request
             'headers': Headers({}),
         }
 

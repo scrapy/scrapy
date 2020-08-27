@@ -33,7 +33,6 @@ install_requires = [
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
     'h2>=3.2.0',
-    'typing-extensions>=3.7.4',
 ]
 extras_require = {}
 

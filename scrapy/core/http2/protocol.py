@@ -3,7 +3,6 @@ import itertools
 import logging
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
-from typing import Dict, List, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -22,10 +21,10 @@ from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python.failure import Failure
 from twisted.web.client import URI
+from typing import Dict, List, Optional, Union
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
-from scrapy.core.http2.types import H2ConnectionMetadataDict
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -90,26 +89,39 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # all requests in a pool and send them as the connection is made
         self._pending_request_stream_pool: deque = deque()
 
-        # Counter to keep track of opened streams. This counter
-        # is used to make sure that not more than MAX_CONCURRENT_STREAMS
-        # streams are opened which leads to ProtocolError
-        # We use simple FIFO policy to handle pending requests
-        self._active_streams = 0
-
-        # Flag to keep track if settings were acknowledged by the remote
-        # This ensures that we have established a HTTP/2 connection
-        self._settings_acknowledged = False
-
         # Save an instance of errors raised which lead to losing the connection
         # We pass these instances to the streams ResponseFailed() failure
         self._conn_lost_errors: List[BaseException] = []
 
-        self.metadata: H2ConnectionMetadataDict = {
+        # Some meta data of this connection
+        # initialized when connection is successfully made
+        self.metadata: Dict = {
+            # Peer certificate instance
             'certificate': None,
+
+            # Address of the server we are connected to which
+            # is updated when HTTP/2 connection is  made successfully
             'ip_address': None,
+
+            # URI of the peer HTTP/2 connection is made
             'uri': uri,
+
+            # Both ip_address and uri are used by the Stream before
+            # initiating the request to verify that the base address
+
+            # Variables taken from Project Settings
             'default_download_maxsize': settings.getint('DOWNLOAD_MAXSIZE'),
             'default_download_warnsize': settings.getint('DOWNLOAD_WARNSIZE'),
+
+            # Counter to keep track of opened streams. This counter
+            # is used to make sure that not more than MAX_CONCURRENT_STREAMS
+            # streams are opened which leads to ProtocolError
+            # We use simple FIFO policy to handle pending requests
+            'active_streams': 0,
+
+            # Flag to keep track if settings were acknowledged by the remote
+            # This ensures that we have established a HTTP/2 connection
+            'settings_acknowledged': False,
         }
 
     @property
@@ -118,7 +130,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         This is used while initiating pending streams to make sure
         that we initiate stream only during active HTTP/2 Connection
         """
-        return bool(self.transport.connected) and self._settings_acknowledged
+        return bool(self.transport.connected) and self.metadata['settings_acknowledged']
 
     @property
     def allowed_max_concurrent_streams(self) -> int:
@@ -139,10 +151,10 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """
         while (
             self._pending_request_stream_pool
-            and self._active_streams < self.allowed_max_concurrent_streams
+            and self.metadata['active_streams'] < self.allowed_max_concurrent_streams
             and self.h2_connected
         ):
-            self._active_streams += 1
+            self.metadata['active_streams'] += 1
             stream = self._pending_request_stream_pool.popleft()
             stream.initiate_request()
             self._write_to_transport()
@@ -151,7 +163,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """Perform cleanup when a stream is closed
         """
         stream = self.streams.pop(stream_id)
-        self._active_streams -= 1
+        self.metadata['active_streams'] -= 1
         self._send_pending_requests()
         return stream
 
@@ -261,7 +273,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         if (
             self.conn.open_outbound_streams > 0
             or self.conn.open_inbound_streams > 0
-            or self._active_streams > 0
+            or self.metadata['active_streams'] > 0
         ):
             error_code = ErrorCodes.PROTOCOL_ERROR
         else:
@@ -295,7 +307,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
                 close_reason = StreamCloseReason.INACTIVE
             stream.close(close_reason, self._conn_lost_errors, from_protocol=True)
 
-        self._active_streams -= len(self.streams)
+        self.metadata['active_streams'] -= len(self.streams)
         self.streams.clear()
         self._pending_request_stream_pool.clear()
         self.conn.close_connection()
@@ -338,7 +350,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.streams[event.stream_id].receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
-        self._settings_acknowledged = True
+        self.metadata['settings_acknowledged'] = True
 
         # Send off all the pending requests as now we have
         # established a proper HTTP/2 connection
