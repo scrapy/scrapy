@@ -146,9 +146,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_start_requests(start_requests, spider)
 
-        .. versionadded:: 0.15
-        .. versionchanged:: 2.3
-           Since 2.3 this can take and return an :term:`python:asynchronous
+        .. versionchanged:: VERSION
+           Since VERSION this can take and return an :term:`python:asynchronous
            iterable`.
 
         This method is called with the start requests of the spider, and works
@@ -351,8 +350,6 @@ RefererMiddleware settings
 REFERER_ENABLED
 ^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.15
-
 Default: ``True``
 
 Whether to enable referer middleware.
@@ -361,8 +358,6 @@ Whether to enable referer middleware.
 
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 
