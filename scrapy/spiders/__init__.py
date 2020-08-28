@@ -5,6 +5,7 @@ See documentation in docs/topics/spiders.rst
 """
 import logging
 import warnings
+from typing import Optional
 
 from scrapy import signals
 from scrapy.http import Request
@@ -18,8 +19,8 @@ class Spider(object_ref):
     class.
     """
 
-    name = None
-    custom_settings = None
+    name: Optional[str] = None
+    custom_settings: Optional[dict] = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:

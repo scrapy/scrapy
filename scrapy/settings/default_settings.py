@@ -19,6 +19,8 @@ from os.path import join, abspath, dirname
 
 AJAXCRAWL_ENABLED = False
 
+ASYNCIO_EVENT_LOOP = None
+
 AUTOTHROTTLE_ENABLED = False
 AUTOTHROTTLE_DEBUG = False
 AUTOTHROTTLE_MAX_DELAY = 60.0
