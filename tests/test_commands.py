@@ -128,9 +128,13 @@ class StartprojectTest(ProjectTest):
 
 
 def get_permissions_dict(path, renamings=None, ignore=None):
+
+    def get_permissions(path):
+        return oct(os.stat(path).st_mode)
+
     renamings = renamings or tuple()
     permissions_dict = {
-        '.': os.stat(path).st_mode,
+        '.': get_permissions(path),
     }
     for root, dirs, files in os.walk(path):
         nodes = list(chain(dirs, files))
@@ -145,12 +149,14 @@ def get_permissions_dict(path, renamings=None, ignore=None):
                     search_string,
                     replacement
                 )
-            permissions = os.stat(absolute_path).st_mode
+            permissions = get_permissions(absolute_path)
             permissions_dict[relative_path] = permissions
     return permissions_dict
 
 
 class StartprojectTemplatesTest(ProjectTest):
+
+    maxDiff = None
 
     def setUp(self):
         super().setUp()
@@ -293,7 +299,7 @@ class StartprojectTemplatesTest(ProjectTest):
                 path.mkdir(mode=permissions)
             else:
                 path.touch(mode=permissions)
-            expected_permissions[node] = path.stat().st_mode
+            expected_permissions[node] = oct(path.stat().st_mode)
 
         process = subprocess.Popen(
             (
@@ -312,6 +318,53 @@ class StartprojectTemplatesTest(ProjectTest):
         actual_permissions = get_permissions_dict(project_dir)
 
         self.assertEqual(actual_permissions, expected_permissions)
+
+    def test_startproject_permissions_umask_022(self):
+        """Check that generated files have the right permissions when the
+        system uses a umask value that causes new files to have different
+        permissions than those from the template folder."""
+        @contextmanager
+        def umask(new_mask):
+            cur_mask = os.umask(new_mask)
+            yield
+            os.umask(cur_mask)
+
+        scrapy_path = scrapy.__path__[0]
+        project_template = os.path.join(
+            scrapy_path,
+            'templates',
+            'project'
+        )
+        project_name = 'umaskproject'
+        renamings = (
+            ('module', project_name),
+            ('.tmpl', ''),
+        )
+        expected_permissions = get_permissions_dict(
+            project_template,
+            renamings,
+            IGNORE,
+        )
+
+        with umask(0o002):
+            destination = mkdtemp()
+            process = subprocess.Popen(
+                (
+                    sys.executable,
+                    '-m',
+                    'scrapy.cmdline',
+                    'startproject',
+                    project_name,
+                ),
+                cwd=destination,
+                env=self.env,
+            )
+            process.wait()
+
+            project_dir = os.path.join(destination, project_name)
+            actual_permissions = get_permissions_dict(project_dir)
+
+            self.assertEqual(actual_permissions, expected_permissions)
 
 
 class CommandTest(ProjectTest):
