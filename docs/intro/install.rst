@@ -127,16 +127,16 @@ To install Scrapy on Windows using ``pip`` :
 
 #. Download and execute `Microsoft C++ Build Tools`_ to install the Visual Studio Installer.
 
-#. Open Visual Studio Installer, install Visual Studio and modify installation.
+#. Open Visual Studio Installer, install `Visual Studio`_.
 
 #. Under workloads section, select **Desktop development with C++**.
 
-#. Below Installation details, select and install following packages :
+#. Check installation details and make sure following packages are selected as optional components:
 
   * **MSVC**  (e.g MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.23) )
   * **Windows SDK**  (e.g Windows 10 SDK (10.0.18362.0))
 
-Now, you should be able to :ref:`install scrapy <intro-install-scrapy>` using ``pip``.
+Now, you should be able to :ref:`install Scrapy <intro-install-scrapy>` using ``pip``.
 
 .. _intro-install-ubuntu:
 
@@ -290,5 +290,6 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: https://docs.anaconda.com/anaconda/
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+.. _Visual Studio: https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio
 .. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 .. _conda-forge: https://conda-forge.org/
