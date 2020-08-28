@@ -19,6 +19,9 @@ from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
 from tests.spiders import (
+    AsyncDefAsyncioGenComplexSpider,
+    AsyncDefAsyncioGenLoopSpider,
+    AsyncDefAsyncioGenSpider,
     AsyncDefAsyncioReqsReturnSpider,
     AsyncDefAsyncioReturnSingleElementSpider,
     AsyncDefAsyncioReturnSpider,
@@ -407,7 +410,6 @@ class CrawlSpiderTestCase(TestCase):
     @mark.only_asyncio()
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse(self):
-        from tests.py36._test_crawl import AsyncDefAsyncioGenSpider
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
@@ -423,7 +425,6 @@ class CrawlSpiderTestCase(TestCase):
         def _on_item_scraped(item):
             items.append(item)
 
-        from tests.py36._test_crawl import AsyncDefAsyncioGenLoopSpider
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenLoopSpider)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         with LogCapture() as log:
@@ -442,7 +443,6 @@ class CrawlSpiderTestCase(TestCase):
         def _on_item_scraped(item):
             items.append(item)
 
-        from tests.py36._test_crawl import AsyncDefAsyncioGenComplexSpider
         crawler = self.runner.create_crawler(AsyncDefAsyncioGenComplexSpider)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         yield crawler.crawl(mockserver=self.mockserver)
