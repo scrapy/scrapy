@@ -463,6 +463,8 @@ URL canonicalization::
     from hashlib import sha1
     from weakref import WeakKeyDictionary
 
+    from scrapy.utils.python import to_bytes
+
     class RequestFingerprinter:
 
         cache = WeakKeyDictionary()

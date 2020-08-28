@@ -1,9 +1,12 @@
 import unittest
+from hashlib import sha1
+from weakref import WeakKeyDictionary
 
 import pytest
 
 from scrapy.http import Request
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
     _deprecated_fingerprint_cache,
     _fingerprint_cache,
@@ -12,6 +15,7 @@ from scrapy.utils.request import (
     request_fingerprint,
     request_httprepr,
 )
+from scrapy.utils.test import get_crawler
 
 
 class UtilsRequestTest(unittest.TestCase):
@@ -115,6 +119,154 @@ class RequestFingerprintTest(FingerprintTest):
         expected = ['Call to deprecated function request_fingerprint. Use '
                     'scrapy.utils.request.fingerprint instead.']
         self.assertEqual(actual, expected)
+
+
+class CustomRequestFingerprinterTestCase(unittest.TestCase):
+
+    def test_include_headers(self):
+
+        class RequestFingerprinter:
+
+            def fingerprint(self, request):
+                return fingerprint(request, include_headers=['X-ID'])
+
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        r1 = Request("http://www.example.com", headers={'X-ID': '1'})
+        fp1 = crawler.request_fingerprinter.fingerprint(r1)
+        r2 = Request("http://www.example.com", headers={'X-ID': '2'})
+        fp2 = crawler.request_fingerprinter.fingerprint(r2)
+        self.assertNotEqual(fp1, fp2)
+
+    def test_dont_canonicalize(self):
+
+        class RequestFingerprinter:
+            cache = WeakKeyDictionary()
+
+            def fingerprint(self, request):
+                if request not in self.cache:
+                    fp = sha1()
+                    fp.update(to_bytes(request.url))
+                    self.cache[request] = fp.digest()
+                return self.cache[request]
+
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        r1 = Request("http://www.example.com?a=1&a=2")
+        fp1 = crawler.request_fingerprinter.fingerprint(r1)
+        r2 = Request("http://www.example.com?a=2&a=1")
+        fp2 = crawler.request_fingerprinter.fingerprint(r2)
+        self.assertNotEqual(fp1, fp2)
+
+    def test_meta(self):
+
+        class RequestFingerprinter:
+
+            def fingerprint(self, request):
+                if 'fingerprint' in request.meta:
+                    return request.meta['fingerprint']
+                return fingerprint(request)
+
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        r1 = Request("http://www.example.com")
+        fp1 = crawler.request_fingerprinter.fingerprint(r1)
+        r2 = Request("http://www.example.com", meta={'fingerprint': 'a'})
+        fp2 = crawler.request_fingerprinter.fingerprint(r2)
+        r3 = Request("http://www.example.com", meta={'fingerprint': 'a'})
+        fp3 = crawler.request_fingerprinter.fingerprint(r3)
+        r4 = Request("http://www.example.com", meta={'fingerprint': 'b'})
+        fp4 = crawler.request_fingerprinter.fingerprint(r4)
+        self.assertNotEqual(fp1, fp2)
+        self.assertNotEqual(fp1, fp4)
+        self.assertNotEqual(fp2, fp4)
+        self.assertEqual(fp2, fp3)
+
+    def test_from_crawler(self):
+
+        class RequestFingerprinter:
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler)
+
+            def __init__(self, crawler):
+                self._fingerprint = crawler.settings['FINGERPRINT']
+
+            def fingerprint(self, request):
+                return self._fingerprint
+
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+            'FINGERPRINT': b'fingerprint',
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        request = Request("http://www.example.com")
+        fingerprint = crawler.request_fingerprinter.fingerprint(request)
+        self.assertEqual(fingerprint, settings['FINGERPRINT'])
+
+    def test_from_settings(self):
+
+        class RequestFingerprinter:
+
+            @classmethod
+            def from_settings(cls, settings):
+                return cls(settings)
+
+            def __init__(self, settings):
+                self._fingerprint = settings['FINGERPRINT']
+
+            def fingerprint(self, request):
+                return self._fingerprint
+
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+            'FINGERPRINT': b'fingerprint',
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        request = Request("http://www.example.com")
+        fingerprint = crawler.request_fingerprinter.fingerprint(request)
+        self.assertEqual(fingerprint, settings['FINGERPRINT'])
+
+    def test_from_crawler_and_settings(self):
+
+        class RequestFingerprinter:
+
+            # This method is ignored due to the presence of from_crawler
+            @classmethod
+            def from_settings(cls, settings):
+                return cls(settings)
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler)
+
+            def __init__(self, crawler):
+                self._fingerprint = crawler.settings['FINGERPRINT']
+
+            def fingerprint(self, request):
+                return self._fingerprint
+
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+            'FINGERPRINT': b'fingerprint',
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        request = Request("http://www.example.com")
+        fingerprint = crawler.request_fingerprinter.fingerprint(request)
+        self.assertEqual(fingerprint, settings['FINGERPRINT'])
 
 
 if __name__ == "__main__":
