@@ -45,7 +45,7 @@ class FollowAllSpider(MetaSpider):
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
-        url = self.mockserver.url("/follow?%s" % urlencode(qargs, doseq=1))
+        url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=1)}")
         self.start_urls = [url]
 
     def parse(self, response):
@@ -67,7 +67,7 @@ class DelaySpider(MetaSpider):
 
     def start_requests(self):
         self.t1 = time.time()
-        url = self.mockserver.url("/delay?n=%s&b=%s" % (self.n, self.b))
+        url = self.mockserver.url(f"/delay?n={self.n}&b={self.b}")
         yield Request(url, callback=self.parse, errback=self.errback)
 
     def parse(self, response):
@@ -177,7 +177,7 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
     depth = 2
 
     def _get_req(self, index, cb=None):
-        return Request(self.mockserver.url("/status?n=200&request=%d" % index),
+        return Request(self.mockserver.url(f"/status?n=200&request={index}"),
                        meta={'index': index},
                        dont_filter=True,
                        callback=cb)
@@ -245,7 +245,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
         for s in range(100):
             qargs = {'total': 10, 'seed': s}
-            url = self.mockserver.url("/follow?%s") % urlencode(qargs, doseq=1)
+            url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=1)}")
             yield Request(url, meta={'seed': s})
             if self.fail_yielding:
                 2 / 0
@@ -292,7 +292,7 @@ class DuplicateStartRequestsSpider(MockServerSpider):
     def start_requests(self):
         for i in range(0, self.distinct_urls):
             for j in range(0, self.dupe_factor):
-                url = self.mockserver.url("/echo?headers=1&body=test%d" % i)
+                url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):

@@ -171,8 +171,8 @@ class ExecutionEngine:
     def _handle_downloader_output(self, response, request, spider):
         if not isinstance(response, (Request, Response, Failure)):
             raise TypeError(
-                "Incorrect type: expected Request, Response or Failure, got %s: %r"
-                % (type(response), response)
+                "Incorrect type: expected Request, Response or Failure, got "
+                f"{type(response)}: {response!r}"
             )
         # downloader middleware can return requests (for example, redirects)
         if isinstance(response, Request):
@@ -214,7 +214,7 @@ class ExecutionEngine:
 
     def crawl(self, request, spider):
         if spider not in self.open_spiders:
-            raise RuntimeError("Spider %r not opened when crawling: %s" % (spider.name, request))
+            raise RuntimeError(f"Spider {spider.name!r} not opened when crawling: {request}")
         self.schedule(request, spider)
         self.slot.nextcall.schedule()
 
@@ -239,8 +239,8 @@ class ExecutionEngine:
         def _on_success(response):
             if not isinstance(response, (Response, Request)):
                 raise TypeError(
-                    "Incorrect type: expected Response or Request, got %s: %r"
-                    % (type(response), response)
+                    "Incorrect type: expected Response or Request, got "
+                    f"{type(response)}: {response!r}"
                 )
             if isinstance(response, Response):
                 if response.request is None:
@@ -268,7 +268,7 @@ class ExecutionEngine:
     @defer.inlineCallbacks
     def open_spider(self, spider, start_requests=(), close_if_idle=True):
         if not self.has_capacity():
-            raise RuntimeError("No free spider slot when opening %r" % spider.name)
+            raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={'spider': spider})
         nextcall = CallLaterOnce(self._next_request, spider)
         scheduler = self.scheduler_cls.from_crawler(self.crawler)

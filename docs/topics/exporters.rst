@@ -57,7 +57,7 @@ value of one of their fields::
             adapter = ItemAdapter(item)
             year = adapter['year']
             if year not in self.year_to_exporter:
-                f = open('{}.xml'.format(year), 'wb')
+                f = open(f'{year}.xml', 'wb')
                 exporter = XmlItemExporter(f)
                 exporter.start_exporting()
                 self.year_to_exporter[year] = exporter
@@ -98,7 +98,7 @@ Example::
     import scrapy
 
     def serialize_price(value):
-        return '$ %s' % str(value)
+        return f'$ {str(value)}'
 
     class Product(scrapy.Item):
         name = scrapy.Field()
@@ -122,7 +122,7 @@ Example::
 
           def serialize_field(self, field, name, value):
               if field == 'price':
-                  return '$ %s' % str(value)
+                  return f'$ {str(value)}'
               return super(Product, self).serialize_field(field, name, value)
 
 .. _topics-exporters-reference:

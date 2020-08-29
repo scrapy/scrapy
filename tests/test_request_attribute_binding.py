@@ -79,7 +79,7 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_response_error(self):
         for status in ("404", "500"):
-            url = self.mockserver.url("/status?n={}".format(status))
+            url = self.mockserver.url(f"/status?n={status}")
             crawler = CrawlerRunner().create_crawler(SingleRequestSpider)
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
             failure = crawler.spider.meta["failure"]
@@ -135,7 +135,7 @@ class CrawlTestCase(TestCase):
         self.assertEqual(signal_params["request"].url, OVERRIDEN_URL)
 
         log.check_present(
-            ("scrapy.core.engine", "DEBUG", "Crawled (200) <GET {}> (referer: None)".format(OVERRIDEN_URL)),
+            ("scrapy.core.engine", "DEBUG", f"Crawled (200) <GET {OVERRIDEN_URL}> (referer: None)"),
         )
 
     @defer.inlineCallbacks

@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Scrapy'
-copyright = '2008–{}, Scrapy developers'.format(datetime.now().year)
+copyright = f'2008–{datetime.now().year}, Scrapy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

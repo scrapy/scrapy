@@ -88,8 +88,8 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.stopProducing()
 
         self.factory.noPage(
-            defer.TimeoutError("Getting %s took longer than %s seconds."
-                               % (self.factory.url, self.factory.timeout)))
+            defer.TimeoutError(f"Getting {self.factory.url} took longer "
+                               f"than {self.factory.timeout} seconds."))
 
 
 # This class used to inherit from Twisted’s
@@ -155,7 +155,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
             self.headers['Content-Length'] = 0
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.url)
+        return f"<{self.__class__.__name__}: {self.url}>"
 
     def _cancelTimeout(self, result, timeoutCall):
         if timeoutCall.active():

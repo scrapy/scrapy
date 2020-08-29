@@ -52,7 +52,7 @@ class SettingsAttribute:
             self.priority = priority
 
     def __str__(self):
-        return "<SettingsAttribute value={self.value!r} priority={self.priority}>".format(self=self)
+        return f"<SettingsAttribute value={self.value!r} priority={self.priority}>"
 
     __repr__ = __str__
 

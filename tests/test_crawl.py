@@ -81,7 +81,7 @@ class CrawlTestCase(TestCase):
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
         self.assertTrue(average > delay * tolerance,
-                        "download delay too small: %s" % average)
+                        f"download delay too small: {average}")
 
         # Ensure that the same test parameters would cause a failure if no
         # download delay is set. Otherwise, it means we are using a combination
@@ -206,7 +206,7 @@ with multiples lines
 '''})
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as log:
-            yield crawler.crawl(self.mockserver.url("/raw?{0}".format(query)), mockserver=self.mockserver)
+            yield crawler.crawl(self.mockserver.url(f"/raw?{query}"), mockserver=self.mockserver)
         self.assertEqual(str(log).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
@@ -461,7 +461,7 @@ class CrawlSpiderTestCase(TestCase):
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200"), mockserver=self.mockserver)
         for req_id in range(3):
-            self.assertIn("Got response 200, req_id %d" % req_id, str(log))
+            self.assertIn(f"Got response 200, req_id {req_id}", str(log))
 
     @defer.inlineCallbacks
     def test_response_ssl_certificate_none(self):

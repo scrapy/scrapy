@@ -128,11 +128,11 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
     def image_key(self, url):
         image_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return 'empty/%s.jpg' % (image_guid)
+        return f'empty/{image_guid}.jpg'
 
     def thumb_key(self, url, thumb_id):
         thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return 'thumbsup/%s/%s.jpg' % (thumb_id, thumb_guid)
+        return f'thumbsup/{thumb_id}/{thumb_guid}.jpg'
 
 
 class ImagesPipelineTestCaseFieldsMixin:
