@@ -17,7 +17,7 @@ class TextTestResult(_TextTestResult):
         plural = "s" if run != 1 else ""
 
         writeln(self.separator2)
-        writeln(f"Ran {run} contract{plural} in {stop - start:.3f}")
+        writeln(f"Ran {run} contract{plural} in {stop - start:.3f}s")
         writeln()
 
         infos = []
