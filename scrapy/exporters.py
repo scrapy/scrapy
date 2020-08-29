@@ -195,7 +195,7 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
+    def __init__(self, file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
@@ -205,7 +205,8 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline='',  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            errors=errors,
         )
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
