@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 from io import BytesIO
 from urllib.parse import urlparse
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
@@ -10,8 +11,6 @@ from twisted.internet.defer import Deferred, CancelledError
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
-from typing import Dict
-from typing import List, Optional, Tuple, TYPE_CHECKING
 
 from scrapy.http import Request
 from scrapy.http.headers import Headers

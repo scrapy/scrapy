@@ -3,6 +3,7 @@ import itertools
 import logging
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
+from typing import Dict, List, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -21,7 +22,6 @@ from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python.failure import Failure
 from twisted.web.client import URI
-from typing import Dict, List, Optional, Union
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
