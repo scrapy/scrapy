@@ -303,6 +303,9 @@ For instance::
             'store_empty': False,
             'fields': None,
             'indent': 4,
+            'item_export_kwargs': {
+               'export_empty_fields': True,
+            },
         }, 
         '/home/user/documents/items.xml': {
             'format': 'xml',
@@ -331,6 +334,8 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
+
+-   ``item_export_kwargs``: dict with kwargs for :ref:`Item exporters <topics-exporters>` classes.
 
 -   ``overwrite``: whether to overwrite the file if it already exists
     (``True``) or append to its content (``False``).

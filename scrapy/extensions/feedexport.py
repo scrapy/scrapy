@@ -360,6 +360,7 @@ class FeedExporter:
             fields_to_export=feed_options['fields'],
             encoding=feed_options['encoding'],
             indent=feed_options['indent'],
+            **feed_options['item_export_kwargs'],
         )
         slot = _FeedSlot(
             file=file,
