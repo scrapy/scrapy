@@ -229,7 +229,8 @@ class HTTPNegotiateDownloadHandler:
 
             self._connection_established(key, 'h2')
 
-        raise UnsupportedNegotiatedProtocol(negotiated_protocol)
+        else:
+            raise UnsupportedNegotiatedProtocol(negotiated_protocol)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
         """ Working:
