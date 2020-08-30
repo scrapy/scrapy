@@ -1263,7 +1263,7 @@ class FeedExportTest(FeedExportTestBase):
             {
                 'options': {
                     'format': 'csv',
-                    'item_export_kwargs': dict(include_headers_line=True),
+                    'item_export_kwargs': {'include_headers_line': True},
                 },
                 'expected': expected_with_title_csv,
             },
@@ -1271,7 +1271,7 @@ class FeedExportTest(FeedExportTestBase):
             {
                 'options': {
                     'format': 'csv',
-                    'item_export_kwargs': dict(include_headers_line=False),
+                    'item_export_kwargs': {'include_headers_line': False},
                 },
                 'expected': expected_without_title_csv,
             },
