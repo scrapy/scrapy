@@ -110,6 +110,11 @@ class Https2CustomCiphers(Https11CustomCiphers):
 
 class Http2MockServerTestCase(Http11MockServerTestCase):
     """HTTP 2.0 test case with MockServer"""
+    settings_dict = {
+        'DOWNLOAD_HANDLERS': {
+            'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler'
+        }
+    }
 
 
 class Https2ProxyTestCase(Http11ProxyTestCase):

@@ -291,6 +291,7 @@ Default: ``{}``
 A dictionary in which every key is a feed URI (or a :class:`pathlib.Path`
 object) and each value is a nested dictionary containing configuration
 parameters for the specific feed.
+
 This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
@@ -318,17 +319,43 @@ For instance::
     }
 
 The following is a list of the accepted keys and the setting that is used
-as a fallback value if that key is not provided for a specific feed definition.
+as a fallback value if that key is not provided for a specific feed definition:
 
-* ``format``: the serialization format to be used for the feed.
-  See :ref:`topics-feed-format` for possible values.
-  Mandatory, no fallback setting
-* ``batch_item_count``: falls back to :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
-* ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`
-* ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
-* ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
-* ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
-* ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`
+-   ``format``: the :ref:`serialization format <topics-feed-format>`.
+
+    This setting is mandatory, there is no fallback value.
+
+-   ``batch_item_count``: falls back to
+    :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
+-   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
+
+-   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
+
+-   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
+
+-   ``overwrite``: whether to overwrite the file if it already exists
+    (``True``) or append to its content (``False``).
+
+    The default value depends on the :ref:`storage backend
+    <topics-feed-storage-backends>`:
+
+    -   :ref:`topics-feed-storage-fs`: ``False``
+
+    -   :ref:`topics-feed-storage-ftp`: ``True``
+
+        .. note:: Some FTP servers may not support appending to files (the
+                  ``APPE`` FTP command).
+
+    -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
+        <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
+
+    -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
+
+-   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
+
+-   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
+
 
 .. setting:: FEED_EXPORT_ENCODING
 

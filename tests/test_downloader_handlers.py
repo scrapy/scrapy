@@ -601,6 +601,7 @@ class Https11CustomCiphers(unittest.TestCase):
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
+    settings_dict = None
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -611,7 +612,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_with_content_length(self):
-        crawler = get_crawler(SingleRequestSpider)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
         # download it
         yield crawler.crawl(seed=Request(url=self.mockserver.url('/partial'), meta={'download_maxsize': 1000}))
@@ -620,7 +621,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download(self):
-        crawler = get_crawler(SingleRequestSpider)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         yield crawler.crawl(seed=Request(url=self.mockserver.url('')))
         failure = crawler.spider.meta.get('failure')
         self.assertTrue(failure is None)
@@ -629,7 +630,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_gzip_response(self):
-        crawler = get_crawler(SingleRequestSpider)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         body = b'1' * 100  # PayloadResource requires body length to be 100
         request = Request(self.mockserver.url('/payload'), method='POST',
                           body=body, meta={'download_maxsize': 50})

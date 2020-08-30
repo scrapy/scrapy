@@ -340,5 +340,5 @@ class CrawlerProcess(CrawlerRunner):
 
     def _handle_twisted_reactor(self):
         if self.settings.get("TWISTED_REACTOR"):
-            install_reactor(self.settings["TWISTED_REACTOR"])
+            install_reactor(self.settings["TWISTED_REACTOR"], self.settings["ASYNCIO_EVENT_LOOP"])
         super()._handle_twisted_reactor()
