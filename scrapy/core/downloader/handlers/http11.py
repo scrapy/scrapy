@@ -146,8 +146,9 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             else:
                 extra = rcvd_bytes[:32]
             self._tunnelReadyDeferred.errback(
-                TunnelError('Could not open CONNECT tunnel with proxy %s:%s [%r]' % (
-                    self._host, self._port, extra)))
+                TunnelError('Could not open CONNECT tunnel with proxy '
+                            f'{self._host}:{self._port} [{extra!r}]')
+            )
 
     def connectFailed(self, reason):
         """Propagates the errback to the appropriate deferred."""
@@ -348,7 +349,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
+        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result, request, start_time):
         request.meta['download_latency'] = time() - start_time
@@ -371,13 +372,14 @@ class ScrapyAgent:
         fail_on_dataloss = request.meta.get('download_fail_on_dataloss', self._fail_on_dataloss)
 
         if maxsize and expected_size > maxsize:
-            error_msg = ("Cancelling download of %(url)s: expected response "
-                         "size (%(size)s) larger than download max size (%(maxsize)s).")
-            error_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
+            warning_msg = ("Cancelling download of %(url)s: expected response "
+                           "size (%(size)s) larger than download max size (%(maxsize)s).")
+            warning_args = {'url': request.url, 'size': expected_size, 'maxsize': maxsize}
 
-            logger.error(error_msg, error_args)
+            logger.warning(warning_msg, warning_args)
+
             txresponse._transport._producer.loseConnection()
-            raise defer.CancelledError(error_msg % error_args)
+            raise defer.CancelledError(warning_msg % warning_args)
 
         if warnsize and expected_size > warnsize:
             logger.warning("Expected response size (%(size)s) larger than "
@@ -500,11 +502,11 @@ class _ResponseReader(protocol.Protocol):
                 self._finish_response(flags=["download_stopped"], failure=failure)
 
         if self._maxsize and self._bytes_received > self._maxsize:
-            logger.error("Received (%(bytes)s) bytes larger than download "
-                         "max size (%(maxsize)s) in request %(request)s.",
-                         {'bytes': self._bytes_received,
-                          'maxsize': self._maxsize,
-                          'request': self._request})
+            logger.warning("Received (%(bytes)s) bytes larger than download "
+                           "max size (%(maxsize)s) in request %(request)s.",
+                           {'bytes': self._bytes_received,
+                            'maxsize': self._maxsize,
+                            'request': self._request})
             # Clear buffer earlier to avoid keeping data in memory for a long time.
             self._bodybuf.truncate(0)
             self._finished.cancel()

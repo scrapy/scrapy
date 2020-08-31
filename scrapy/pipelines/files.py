@@ -108,7 +108,7 @@ class S3FilesStore:
             from boto.s3.connection import S3Connection
             self.S3Connection = S3Connection
         if not uri.startswith("s3://"):
-            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
+            raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
@@ -133,7 +133,7 @@ class S3FilesStore:
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
-        key_name = '%s%s' % (self.prefix, path)
+        key_name = f'{self.prefix}{path}'
         if self.is_botocore:
             return threads.deferToThread(
                 self.s3_client.head_object,
@@ -145,7 +145,7 @@ class S3FilesStore:
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         """Upload file to S3 storage"""
-        key_name = '%s%s' % (self.prefix, path)
+        key_name = f'{self.prefix}{path}'
         buf.seek(0)
         if self.is_botocore:
             extra = self._headers_to_botocore_kwargs(self.HEADERS)
@@ -208,8 +208,7 @@ class S3FilesStore:
             try:
                 kwarg = mapping[key]
             except KeyError:
-                raise TypeError(
-                    'Header "%s" is not supported by botocore' % key)
+                raise TypeError(f'Header "{key}" is not supported by botocore')
             else:
                 extra[kwarg] = value
         return extra
@@ -283,7 +282,7 @@ class FTPFilesStore:
 
     def __init__(self, uri):
         if not uri.startswith("ftp://"):
-            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
+            raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
         u = urlparse(uri)
         self.port = u.port
         self.host = u.hostname
@@ -293,7 +292,7 @@ class FTPFilesStore:
         self.basedir = u.path.rstrip('/')
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        path = '%s/%s' % (self.basedir, path)
+        path = f'{self.basedir}/{path}'
         return threads.deferToThread(
             ftp_store_file, path=path, file=buf,
             host=self.host, port=self.port, username=self.username,
@@ -308,10 +307,10 @@ class FTPFilesStore:
                 ftp.login(self.username, self.password)
                 if self.USE_ACTIVE_MODE:
                     ftp.set_pasv(False)
-                file_path = "%s/%s" % (self.basedir, path)
-                last_modified = float(ftp.voidcmd("MDTM %s" % file_path)[4:].strip())
+                file_path = f"{self.basedir}/{path}"
+                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
                 m = hashlib.md5()
-                ftp.retrbinary('RETR %s' % file_path, m.update)
+                ftp.retrbinary(f'RETR {file_path}', m.update)
                 return {'last_modified': last_modified, 'checksum': m.hexdigest()}
             # The file doesn't exist
             except Exception:
@@ -515,7 +514,7 @@ class FilesPipeline(MediaPipeline):
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
-        spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
+        spider.crawler.stats.inc_value(f'file_status_count/{status}', spider=spider)
 
     # Overridable Interface
     def get_media_requests(self, item, info):
@@ -545,4 +544,4 @@ class FilesPipeline(MediaPipeline):
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
                 media_ext = mimetypes.guess_extension(media_type)
-        return 'full/%s%s' % (media_guid, media_ext)
+        return f'full/{media_guid}{media_ext}'

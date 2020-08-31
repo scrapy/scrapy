@@ -101,10 +101,10 @@ This is the code for our first Spider. Save it in a file named
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = 'quotes-%s.html' % page
+            filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
-            self.log('Saved file %s' % filename)
+            self.log(f'Saved file {filename}')
 
 
 As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
@@ -190,7 +190,7 @@ for your spider::
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = 'quotes-%s.html' % page
+            filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
@@ -404,8 +404,6 @@ to get all of them:
 .. invisible-code-block: python
 
   from sys import version_info
-
-.. skip: next if(version_info < (3, 6), reason="Only Python 3.6+ dictionaries match the output")
 
 Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary:

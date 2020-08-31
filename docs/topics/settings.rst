@@ -98,6 +98,32 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+
+Import paths and classes
+========================
+
+.. versionadded:: VERSION
+
+When a setting references a callable object to be imported by Scrapy, such as a
+class or a function, there are two different ways you can specify that object:
+
+-   As a string containing the import path of that object
+
+-   As the object itself
+
+For example::
+
+   from mybot.pipelines.validate import ValidateMyItem
+   ITEM_PIPELINES = {
+       # passing the classname...
+       ValidateMyItem: 300,
+       # ...equals passing the class path
+       'mybot.pipelines.validate.ValidateMyItem': 300,
+   }
+
+.. note:: Passing non-callable objects is not supported.
+
+
 How to access settings
 ======================
 
@@ -110,7 +136,7 @@ In a spider, the settings are available through ``self.settings``::
         start_urls = ['http://example.com']
 
         def parse(self, response):
-            print("Existing settings: %s" % self.settings.attributes.keys())
+            print(f"Existing settings: {self.settings.attributes.keys()}")
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider
@@ -1073,8 +1099,6 @@ See :ref:`topics-extensions-ref-memusage`.
 MEMUSAGE_CHECK_INTERVAL_SECONDS
 -------------------------------
 
-.. versionadded:: 1.1
-
 Default: ``60.0``
 
 Scope: ``scrapy.extensions.memusage``
@@ -1354,8 +1378,6 @@ The class that will be used for loading spiders, which must implement the
 
 SPIDER_LOADER_WARN_ONLY
 -----------------------
-
-.. versionadded:: 1.3.3
 
 Default: ``False``
 

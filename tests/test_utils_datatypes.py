@@ -299,7 +299,7 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         cache = LocalWeakReferencedCache()
         refs = []
         for x in range(max):
-            refs.append(Request('https://example.org/{}'.format(x)))
+            refs.append(Request(f'https://example.org/{x}'))
             cache[refs[-1]] = x
         self.assertEqual(len(cache), max)
         for i, r in enumerate(refs):

@@ -79,7 +79,7 @@ def get_ftp_content_and_delete(
 
     def buffer_data(data):
         ftp_data.append(data)
-    ftp.retrbinary('RETR %s' % path, buffer_data)
+    ftp.retrbinary(f'RETR {path}', buffer_data)
     dirname, filename = split(path)
     ftp.cwd(dirname)
     ftp.delete(filename)

@@ -9,7 +9,7 @@ from w3lib.http import basic_auth_header
 
 class CurlParser(argparse.ArgumentParser):
     def error(self, message):
-        error_msg = 'There was an error parsing the curl command: {}'.format(message)
+        error_msg = f'There was an error parsing the curl command: {message}'
         raise ValueError(error_msg)
 
 
@@ -52,7 +52,7 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
 
     if argv:
-        msg = 'Unrecognized options: {}'.format(', '.join(argv))
+        msg = f'Unrecognized options: {", ".join(argv)}'
         if ignore_unknown_options:
             warnings.warn(msg)
         else:
