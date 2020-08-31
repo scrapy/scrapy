@@ -184,8 +184,7 @@ class FTPFeedStorageTest(unittest.TestCase):
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe='')
-        st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted,
-                            {})
+        st = FTPFeedStorage(f'ftp://foo:{pw_quoted}@example.com/some_path', {})
         self.assertEqual(st.password, string.punctuation)
 
 
@@ -1230,7 +1229,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ['json', 'xml', 'csv']:
-            self.assertIn('Stored %s feed (2 items)' % fmt, str(log))
+            self.assertIn(f'Stored {fmt} feed (2 items)', str(log))
 
     @defer.inlineCallbacks
     def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
@@ -1251,7 +1250,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ['json', 'xml', 'csv']:
-            self.assertIn('Error storing %s feed (2 items)' % fmt, str(log))
+            self.assertIn(f'Error storing {fmt} feed (2 items)', str(log))
 
 
 class BatchDeliveriesTest(FeedExportTestBase):
@@ -1582,10 +1581,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
         filename = ''.join(chars)
-        prefix = 'tmp/{filename}'.format(filename=filename)
-        s3_test_file_uri = 's3://{bucket_name}/{prefix}/%(batch_time)s.json'.format(
-            bucket_name=s3_test_bucket_name, prefix=prefix
-        )
+        prefix = f'tmp/{filename}'
+        s3_test_file_uri = f's3://{s3_test_bucket_name}/{prefix}/%(batch_time)s.json'
         storage = S3FeedStorage(s3_test_bucket_name, access_key, secret_key)
         settings = Settings({
             'FEEDS': {

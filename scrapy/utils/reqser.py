@@ -84,7 +84,7 @@ def _find_method(obj, func):
             # https://docs.python.org/3/reference/datamodel.html
             if obj_func.__func__ is func.__func__:
                 return name
-    raise ValueError("Function %s is not an instance method in: %s" % (func, obj))
+    raise ValueError(f"Function {func} is not an instance method in: {obj}")
 
 
 def _get_method(obj, name):
@@ -92,4 +92,4 @@ def _get_method(obj, name):
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError("Method %r not found in: %s" % (name, obj))
+        raise ValueError(f"Method {name!r} not found in: {obj}")
