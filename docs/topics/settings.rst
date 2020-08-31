@@ -640,6 +640,20 @@ handler (without replacement), place this in your ``settings.py``::
         'ftp': None,
     }
 
+The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
+:setting:`DOWNLOAD_HANDLERS` as follows::
+
+    DOWNLOAD_HANDLERS = {
+        'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+    }
+
+.. note::
+
+    Scrapy currently does not support HTTP/2 Cleartext (h2c) since none
+    of the major browsers support HTTP/2 unencrypted (refer `http2 faq`_).
+
+.. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -716,6 +730,15 @@ Optionally, this can be set per-request basis by using the
   broken responses considering they may contain partial or incomplete content.
   If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+
+.. warning::
+
+    This setting is ignored by the
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
+    download handler (see :setting:`DOWNLOAD_HANDLERS`). In case of a data loss
+    error, the corresponding HTTP/2 connection may be corrupted, affecting other
+    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
+    failure is always raised for every request that was using that connection.
 
 .. setting:: DUPEFILTER_CLASS
 
