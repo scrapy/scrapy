@@ -94,7 +94,7 @@ class NegotiationInvalidDNSPattern(NegotiationTestCase):
         try:
             from service_identity.exceptions import CertificateError  # noqa: F401
         except ImportError:
-            raise unittest.SkipTest("cryptography lib is too old")
+            raise SkipTest("cryptography lib is too old")
         self.tls_log_message = (
             'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
             'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
