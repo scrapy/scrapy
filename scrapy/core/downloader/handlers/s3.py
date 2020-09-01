@@ -56,7 +56,7 @@ class S3DownloadHandler:
             import botocore.credentials
             kw.pop('anon', None)
             if kw:
-                raise TypeError('Unexpected keyword arguments: %s' % kw)
+                raise TypeError(f'Unexpected keyword arguments: {kw}')
             if not self.anon:
                 SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
                 self._signer = SignerCls(botocore.credentials.Credentials(
@@ -85,14 +85,14 @@ class S3DownloadHandler:
         scheme = 'https' if request.meta.get('is_secure') else 'http'
         bucket = p.hostname
         path = p.path + '?' + p.query if p.query else p.path
-        url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
+        url = f'{scheme}://{bucket}.s3.amazonaws.com{path}'
         if self.anon:
             request = request.replace(url=url)
         elif self._signer is not None:
             import botocore.awsrequest
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
-                url='%s://s3.amazonaws.com/%s%s' % (scheme, bucket, path),
+                url=f'{scheme}://s3.amazonaws.com/{bucket}{path}',
                 headers=request.headers.to_unicode_dict(),
                 data=request.body)
             self._signer.add_auth(awsrequest)

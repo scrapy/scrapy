@@ -5,6 +5,7 @@ See documentation in docs/topics/spiders.rst
 """
 import logging
 import warnings
+from typing import Optional
 
 from scrapy import signals
 from scrapy.http import Request
@@ -32,8 +33,8 @@ class Spider(object_ref):
     class.
     """
 
-    name = None
-    custom_settings = None
+    name: Optional[str] = None
+    custom_settings: Optional[dict] = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:
@@ -82,9 +83,8 @@ class Spider(object_ref):
             warnings.warn(
                 "Spider.make_requests_from_url method is deprecated; it "
                 "won't be called in future Scrapy releases. Please "
-                "override Spider.start_requests method instead (see %s.%s)." % (
-                    cls.__module__, cls.__name__
-                ),
+                "override Spider.start_requests method instead "
+                f"(see {cls.__module__}.{cls.__name__}).",
             )
             for url in self.start_urls:
                 yield self.make_requests_from_url(url)
@@ -106,7 +106,7 @@ class Spider(object_ref):
         return self.parse(response, **kwargs)
 
     def parse(self, response, **kwargs):
-        raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
+        raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')
 
     @classmethod
     def update_settings(cls, settings):
@@ -123,7 +123,7 @@ class Spider(object_ref):
             return closed(reason)
 
     def __str__(self):
-        return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
+        return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
 
     __repr__ = __str__
 

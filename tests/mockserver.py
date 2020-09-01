@@ -3,7 +3,10 @@ import json
 import os
 import random
 import sys
+from pathlib import Path
+from shutil import rmtree
 from subprocess import Popen, PIPE
+from tempfile import mkdtemp
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
@@ -70,7 +73,7 @@ class Follow(LeafResource):
         for nl in nlist:
             args[b"n"] = [to_bytes(str(nl))]
             argstr = urlencode(args, doseq=True)
-            s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
+            s += f"<a href='/follow?{argstr}'>follow {nl}</a><br>"
         s += """</body>"""
         request.write(to_bytes(s))
         request.finish()
@@ -88,7 +91,7 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request, n):
-        request.write(to_bytes("Response delayed for %0.3f seconds\n" % n))
+        request.write(to_bytes(f"Response delayed for {n:.3f} seconds\n"))
         request.finish()
 
 
@@ -256,6 +259,29 @@ class MockDNSServer:
         self.proc.communicate()
 
 
+class MockFTPServer:
+    """Creates an FTP server on port 2121 with a default passwordless user
+    (anonymous) and a temporary root path that you can read from the
+    :attr:`path` attribute."""
+
+    def __enter__(self):
+        self.path = Path(mkdtemp())
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
+                          stderr=PIPE, env=get_testenv())
+        for line in self.proc.stderr:
+            if b'starting FTP server' in line:
+                break
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        rmtree(str(self.path))
+        self.proc.kill()
+        self.proc.communicate()
+
+    def url(self, path):
+        return 'ftp://127.0.0.1:2121/' + path
+
+
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
         os.path.join(os.path.dirname(__file__), keyfile),
@@ -263,8 +289,8 @@ def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.c
     )
     if cipher_string:
         ctx = factory.getContext()
-        # disabling TLS1.2+ because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
+        # disabling TLS1.3 because it unconditionally enables some strong ciphers
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 
@@ -284,8 +310,8 @@ if __name__ == "__main__":
         def print_listening():
             httpHost = httpPort.getHost()
             httpsHost = httpsPort.getHost()
-            httpAddress = "http://%s:%d" % (httpHost.host, httpHost.port)
-            httpsAddress = "https://%s:%d" % (httpsHost.host, httpsHost.port)
+            httpAddress = f'http://{httpHost.host}:{httpHost.port}'
+            httpsAddress = f'https://{httpsHost.host}:{httpsHost.port}'
             print(httpAddress)
             print(httpsAddress)
 
@@ -297,7 +323,7 @@ if __name__ == "__main__":
 
         def print_listening():
             host = listener.getHost()
-            print("%s:%s" % (host.host, host.port))
+            print(f"{host.host}:{host.port}")
 
     reactor.callWhenRunning(print_listening)
     reactor.run()

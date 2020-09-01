@@ -94,7 +94,7 @@ class RetryTest(unittest.TestCase):
         ]
 
         for exc in exceptions:
-            req = Request('http://www.scrapytest.org/%s' % exc.__name__)
+            req = Request(f'http://www.scrapytest.org/{exc.__name__}')
             self._test_retry_exception(req, exc('foo'))
 
         stats = self.crawler.stats

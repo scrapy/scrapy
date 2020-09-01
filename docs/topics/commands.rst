@@ -6,8 +6,6 @@
 Command line tool
 =================
 
-.. versionadded:: 0.10
-
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
@@ -497,6 +495,8 @@ Supported options:
 
 * ``--output`` or ``-o``: dump scraped items to a file
 
+  .. versionadded:: 2.3
+
 .. skip: start
 
 Usage example::
@@ -567,8 +567,6 @@ and Platform info, which is useful for bug reports.
 
 bench
 -----
-
-.. versionadded:: 0.17
 
 * Syntax: ``scrapy bench``
 * Requires project: *no*
