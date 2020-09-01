@@ -54,8 +54,8 @@ class CookiesMiddleware:
             cl = [to_unicode(c, errors='replace')
                   for c in request.headers.getlist('Cookie')]
             if cl:
-                cookies = "\n".join("Cookie: {}\n".format(c) for c in cl)
-                msg = "Sending cookies to: {}\n{}".format(request, cookies)
+                cookies = "\n".join(f"Cookie: {c}\n" for c in cl)
+                msg = f"Sending cookies to: {request}\n{cookies}"
                 logger.debug(msg, extra={'spider': spider})
 
     def _debug_set_cookie(self, response, spider):
@@ -63,8 +63,8 @@ class CookiesMiddleware:
             cl = [to_unicode(c, errors='replace')
                   for c in response.headers.getlist('Set-Cookie')]
             if cl:
-                cookies = "\n".join("Set-Cookie: {}\n".format(c) for c in cl)
-                msg = "Received cookies from: {}\n{}".format(response, cookies)
+                cookies = "\n".join(f"Set-Cookie: {c}\n" for c in cl)
+                msg = f"Received cookies from: {response}\n{cookies}"
                 logger.debug(msg, extra={'spider': spider})
 
     def _format_cookie(self, cookie, request):
@@ -74,7 +74,7 @@ class CookiesMiddleware:
         """
         decoded = {}
         for key in ("name", "value", "path", "domain"):
-            if not cookie.get(key):
+            if cookie.get(key) is None:
                 if key in ("name", "value"):
                     msg = "Invalid cookie found in request {}: {} ('{}' is missing)"
                     logger.warning(msg.format(request, cookie, key))
@@ -90,9 +90,9 @@ class CookiesMiddleware:
                                    request, cookie)
                     decoded[key] = cookie[key].decode("latin1", errors="replace")
 
-        cookie_str = "{}={}".format(decoded.pop("name"), decoded.pop("value"))
+        cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
         for key, value in decoded.items():  # path, domain
-            cookie_str += "; {}={}".format(key.capitalize(), value)
+            cookie_str += f"; {key.capitalize()}={value}"
         return cookie_str
 
     def _get_request_cookies(self, jar, request):

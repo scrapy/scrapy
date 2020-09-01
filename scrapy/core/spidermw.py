@@ -19,10 +19,7 @@ def _isiterable(possible_iterator):
 
 
 def _fname(f):
-    return "{}.{}".format(
-        f.__self__.__class__.__name__,
-        f.__func__.__name__
-    )
+    return f"{f.__self__.__class__.__name__}.{f.__func__.__name__}"
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
@@ -51,8 +48,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 try:
                     result = method(response=response, spider=spider)
                     if result is not None:
-                        msg = "Middleware {} must return None or raise an exception, got {}"
-                        raise _InvalidOutput(msg.format(_fname(method), type(result)))
+                        msg = (f"Middleware {_fname(method)} must return None "
+                               f"or raise an exception, got {type(result)}")
+                        raise _InvalidOutput(msg)
                 except _InvalidOutput:
                     raise
                 except Exception:
@@ -86,8 +84,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 elif result is None:
                     continue
                 else:
-                    msg = "Middleware {} must return None or an iterable, got {}"
-                    raise _InvalidOutput(msg.format(_fname(method), type(result)))
+                    msg = (f"Middleware {_fname(method)} must return None "
+                           f"or an iterable, got {type(result)}")
+                    raise _InvalidOutput(msg)
             return _failure
 
         def process_spider_output(result, start_index=0):
@@ -110,8 +109,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if _isiterable(result):
                     result = _evaluate_iterable(result, method_index + 1, recovered)
                 else:
-                    msg = "Middleware {} must return an iterable, got {}"
-                    raise _InvalidOutput(msg.format(_fname(method), type(result)))
+                    msg = (f"Middleware {_fname(method)} must return an "
+                           f"iterable, got {type(result)}")
+                    raise _InvalidOutput(msg)
 
             return MutableChain(result, recovered)
 

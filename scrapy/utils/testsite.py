@@ -9,7 +9,7 @@ class SiteTest:
         from twisted.internet import reactor
         super().setUp()
         self.site = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
-        self.baseurl = "http://localhost:%d/" % self.site.getHost().port
+        self.baseurl = f"http://localhost:{self.site.getHost().port}/"
 
     def tearDown(self):
         super().tearDown()
@@ -40,5 +40,5 @@ def test_site():
 if __name__ == '__main__':
     from twisted.internet import reactor
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
-    print("http://localhost:%d/" % port.getHost().port)
+    print(f"http://localhost:{port.getHost().port}/")
     reactor.run()

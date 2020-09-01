@@ -127,8 +127,8 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish."
-              % port.getHost().port)
+        print(f"Test server running at http://localhost:{port.getHost().port}/ "
+              "- hit Ctrl-C to finish.")
     return port
 
 
@@ -185,7 +185,7 @@ class CrawlerRun:
         self.deferred.callback(None)
 
     def geturl(self, path):
-        return "http://localhost:%s%s" % (self.portno, path)
+        return f"http://localhost:{self.portno}{path}"
 
     def getpath(self, url):
         u = urlparse(url)
@@ -265,7 +265,7 @@ class EngineTest(unittest.TestCase):
                            "/item1.html", "/item2.html", "/item999.html"]
         urls_visited = {rp[0].url for rp in self.run.respplug}
         urls_expected = {self.run.geturl(p) for p in must_be_visited}
-        assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
+        assert urls_expected <= urls_visited, f"URLs not visited: {list(urls_expected - urls_visited)}"
 
     def _assert_scheduled_requests(self, urls_to_visit=None):
         self.assertEqual(urls_to_visit, len(self.run.reqplug))
@@ -413,16 +413,19 @@ class StopDownloadEngineTest(EngineTest):
                 yield self.run.run()
                 log.check_present(("scrapy.core.downloader.handlers.http11",
                                    "DEBUG",
-                                   "Download stopped for <GET http://localhost:{}/redirected> from signal handler"
-                                   " StopDownloadCrawlerRun.bytes_received".format(self.run.portno)))
+                                   f"Download stopped for <GET http://localhost:{self.run.portno}/redirected> "
+                                   "from signal handler"
+                                   " StopDownloadCrawlerRun.bytes_received"))
                 log.check_present(("scrapy.core.downloader.handlers.http11",
                                    "DEBUG",
-                                   "Download stopped for <GET http://localhost:{}/> from signal handler"
-                                   " StopDownloadCrawlerRun.bytes_received".format(self.run.portno)))
+                                   f"Download stopped for <GET http://localhost:{self.run.portno}/> "
+                                   "from signal handler"
+                                   " StopDownloadCrawlerRun.bytes_received"))
                 log.check_present(("scrapy.core.downloader.handlers.http11",
                                    "DEBUG",
-                                   "Download stopped for <GET http://localhost:{}/numbers> from signal handler"
-                                   " StopDownloadCrawlerRun.bytes_received".format(self.run.portno)))
+                                   f"Download stopped for <GET http://localhost:{self.run.portno}/numbers> "
+                                   "from signal handler"
+                                   " StopDownloadCrawlerRun.bytes_received"))
             self._assert_visited_urls()
             self._assert_scheduled_requests(urls_to_visit=9)
             self._assert_downloaded_responses()

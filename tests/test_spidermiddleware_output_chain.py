@@ -163,11 +163,11 @@ class GeneratorOutputChainSpider(Spider):
 class _GeneratorDoNothingMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
-            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
             yield r
 
     def process_spider_exception(self, response, exception, spider):
-        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        method = f'{self.__class__.__name__}.process_spider_exception'
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         return None
 
@@ -175,12 +175,12 @@ class _GeneratorDoNothingMiddleware:
 class GeneratorFailMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
-            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
             yield r
             raise LookupError()
 
     def process_spider_exception(self, response, exception, spider):
-        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        method = f'{self.__class__.__name__}.process_spider_exception'
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         yield {'processed': [method]}
 
@@ -192,11 +192,11 @@ class GeneratorDoNothingAfterFailureMiddleware(_GeneratorDoNothingMiddleware):
 class GeneratorRecoverMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
-            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
             yield r
 
     def process_spider_exception(self, response, exception, spider):
-        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        method = f'{self.__class__.__name__}.process_spider_exception'
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         yield {'processed': [method]}
 
@@ -229,12 +229,12 @@ class _NotGeneratorDoNothingMiddleware:
     def process_spider_output(self, response, result, spider):
         out = []
         for r in result:
-            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
             out.append(r)
         return out
 
     def process_spider_exception(self, response, exception, spider):
-        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        method = f'{self.__class__.__name__}.process_spider_exception'
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         return None
 
@@ -243,13 +243,13 @@ class NotGeneratorFailMiddleware:
     def process_spider_output(self, response, result, spider):
         out = []
         for r in result:
-            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
             out.append(r)
         raise ReferenceError()
         return out
 
     def process_spider_exception(self, response, exception, spider):
-        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        method = f'{self.__class__.__name__}.process_spider_exception'
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         return [{'processed': [method]}]
 
@@ -262,12 +262,12 @@ class NotGeneratorRecoverMiddleware:
     def process_spider_output(self, response, result, spider):
         out = []
         for r in result:
-            r['processed'].append('{}.process_spider_output'.format(self.__class__.__name__))
+            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
             out.append(r)
         return out
 
     def process_spider_exception(self, response, exception, spider):
-        method = '{}.process_spider_exception'.format(self.__class__.__name__)
+        method = f'{self.__class__.__name__}.process_spider_exception'
         spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
         return [{'processed': [method]}]
 

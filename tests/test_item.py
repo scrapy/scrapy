@@ -1,13 +1,9 @@
-import sys
 import unittest
 from unittest import mock
 from warnings import catch_warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, _BaseItem, BaseItem, DictItem, Field, Item, ItemMeta
-
-
-PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
 
 
 class ItemTest(unittest.TestCase):
@@ -280,14 +276,6 @@ class ItemMetaTest(unittest.TestCase):
         with mock.patch.object(base, '__new__', new_mock):
 
             class MyItem(Item):
-                if not PY36_PLUS:
-                    # This attribute is an internal attribute in Python 3.6+
-                    # and must be propagated properly. See
-                    # https://docs.python.org/3.6/reference/datamodel.html#creating-the-class-object
-                    # In <3.6, we add a dummy attribute just to ensure the
-                    # __new__ method propagates it correctly.
-                    __classcell__ = object()
-
                 def f(self):
                     # For rationale of this see:
                     # https://github.com/python/cpython/blob/ee1a81b77444c6715cbe610e951c655b6adab88b/Lib/test/test_super.py#L222

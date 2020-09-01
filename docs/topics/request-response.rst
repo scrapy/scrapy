@@ -553,18 +553,6 @@ fields with form data from :class:`Response` objects.
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` ``__init__`` method.
 
-       .. versionadded:: 0.10.3
-          The ``formname`` parameter.
-
-       .. versionadded:: 0.17
-          The ``formxpath`` parameter.
-
-       .. versionadded:: 1.1.0
-          The ``formcss`` parameter.
-
-       .. versionadded:: 1.1.0
-          The ``formid`` parameter.
-
 Request usage examples
 ----------------------
 

@@ -288,8 +288,6 @@ If zero (or non set), spiders won't be closed by number of passed items.
 CLOSESPIDER_PAGECOUNT
 """""""""""""""""""""
 
-.. versionadded:: 0.11
-
 Default: ``0``
 
 An integer which specifies the maximum number of responses to crawl. If the spider
@@ -301,8 +299,6 @@ number of crawled responses.
 
 CLOSESPIDER_ERRORCOUNT
 """"""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 

@@ -37,7 +37,7 @@ class Root(Resource):
         if now - self.lastmark >= 3:
             self.lastmark = now
             qps = len(self.tail) / sum(self.tail)
-            print('samplesize={0} concurrent={1} qps={2:0.2f}'.format(len(self.tail), self.concurrent, qps))
+            print(f'samplesize={len(self.tail)} concurrent={self.concurrent} qps={qps:0.2f}')
 
         if 'latency' in request.args:
             latency = float(request.args['latency'][0])

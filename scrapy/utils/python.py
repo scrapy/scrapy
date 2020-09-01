@@ -91,7 +91,7 @@ def to_unicode(text, encoding=None, errors='strict'):
         return text
     if not isinstance(text, (bytes, str)):
         raise TypeError('to_unicode must receive a bytes or str '
-                        'object, got %s' % type(text).__name__)
+                        f'object, got {type(text).__name__}')
     if encoding is None:
         encoding = 'utf-8'
     return text.decode(encoding, errors)
@@ -104,7 +104,7 @@ def to_bytes(text, encoding=None, errors='strict'):
         return text
     if not isinstance(text, str):
         raise TypeError('to_bytes must receive a str or bytes '
-                        'object, got %s' % type(text).__name__)
+                        f'object, got {type(text).__name__}')
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
@@ -174,7 +174,7 @@ def binary_is_text(data):
     does not contain unprintable control characters.
     """
     if not isinstance(data, bytes):
-        raise TypeError("data must be bytes, got '%s'" % type(data).__name__)
+        raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
     return all(c not in _BINARYCHARS for c in data)
 
 
@@ -217,7 +217,7 @@ def get_func_args(func, stripself=False):
         else:
             return get_func_args(func.__call__, True)
     else:
-        raise TypeError('%s is not callable' % type(func))
+        raise TypeError(f'{type(func)} is not callable')
     if stripself:
         func_args.pop(0)
     return func_args
@@ -250,7 +250,7 @@ def get_spec(func):
     elif hasattr(func, '__call__'):
         spec = _getargspec_py23(func.__call__)
     else:
-        raise TypeError('%s is not callable' % type(func))
+        raise TypeError(f'{type(func)} is not callable')
 
     defaults = spec.defaults or []
 
@@ -322,7 +322,7 @@ def global_object_name(obj):
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
     """
-    return "%s.%s" % (obj.__module__, obj.__name__)
+    return f"{obj.__module__}.{obj.__name__}"
 
 
 if hasattr(sys, "pypy_version_info"):

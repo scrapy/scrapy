@@ -27,7 +27,7 @@ class SpiderLoader:
         dupes = []
         for name, locations in self._found.items():
             dupes.extend([
-                "  {cls} named {name!r} (in {module})".format(module=mod, cls=cls, name=name)
+                f"  {cls} named {name!r} (in {mod})"
                 for mod, cls in locations
                 if len(locations) > 1
             ])
@@ -36,7 +36,7 @@ class SpiderLoader:
             dupes_string = "\n\n".join(dupes)
             warnings.warn(
                 "There are several spiders with the same name:\n\n"
-                "{}\n\n  This can cause unexpected behavior.".format(dupes_string),
+                f"{dupes_string}\n\n  This can cause unexpected behavior.",
                 category=UserWarning,
             )
 
@@ -53,10 +53,9 @@ class SpiderLoader:
             except ImportError:
                 if self.warn_only:
                     warnings.warn(
-                        "\n{tb}Could not load spiders from module '{modname}'. "
-                        "See above traceback for details.".format(
-                            modname=name, tb=traceback.format_exc()
-                        ),
+                        f"\n{traceback.format_exc()}Could not load spiders "
+                        f"from module '{name}'. "
+                        "See above traceback for details.",
                         category=RuntimeWarning,
                     )
                 else:
@@ -75,7 +74,7 @@ class SpiderLoader:
         try:
             return self._spiders[spider_name]
         except KeyError:
-            raise KeyError("Spider not found: {}".format(spider_name))
+            raise KeyError(f"Spider not found: {spider_name}")
 
     def find_by_request(self, request):
         """
