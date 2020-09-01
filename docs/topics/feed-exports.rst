@@ -335,7 +335,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
--   ``item_export_kwargs``: dict with kwargs for :ref:`Item exporters <topics-exporters>` classes.
+-   ``item_export_kwargs``: :class:`dict` with keyword arguments for the corresponding :ref:`item exporter class <topics-exporters>`.
 
 -   ``overwrite``: whether to overwrite the file if it already exists
     (``True``) or append to its content (``False``).
