@@ -22,7 +22,6 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
-from scrapy.utils.boto import is_botocore
 from scrapy.utils.test import (
     assert_aws_environ,
     assert_gcs_environ,
@@ -437,16 +436,10 @@ class TestS3FilesStore(unittest.TestCase):
         content, key = get_s3_content_and_delete(
             u.hostname, u.path[1:], with_key=True)
         self.assertEqual(content, data)
-        if is_botocore():
-            self.assertEqual(key['Metadata'], {'foo': 'bar'})
-            self.assertEqual(
-                key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
-            self.assertEqual(key['ContentType'], 'image/png')
-        else:
-            self.assertEqual(key.metadata, {'foo': 'bar'})
-            self.assertEqual(
-                key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
-            self.assertEqual(key.content_type, 'image/png')
+        self.assertEqual(key['Metadata'], {'foo': 'bar'})
+        self.assertEqual(
+            key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
+        self.assertEqual(key['ContentType'], 'image/png')
 
 
 class TestGCSFilesStore(unittest.TestCase):
