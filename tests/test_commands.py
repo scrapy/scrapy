@@ -706,32 +706,37 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     def setUp(self):
         super(WindowsRunSpiderCommandTest, self).setUp()
 
-    if platform.system() != 'Windows':
-        def test_run_good_spider(self):
-            raise unittest.SkipTest("Windows required")
-
-        def test_runspider(self):
-            raise unittest.SkipTest("Windows required")
-
-        def test_runspider_dnscache_disabled(self):
-            raise unittest.SkipTest("Windows required")
-
-        def test_runspider_log_level(self):
-            raise unittest.SkipTest("Windows required")
-
-        def test_runspider_log_short_names(self):
-            raise unittest.SkipTest("Windows required")
-
-        def test_runspider_no_spider_found(self):
-            raise unittest.SkipTest("Windows required")
-
-    def test_runspider_unable_to_load(self):
-        raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
-
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name='badspider.pyw')
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_run_good_spider(self):
+        super().test_run_good_spider()
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_runspider(self):
+        super().test_runspider()
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_runspider_dnscache_disabled(self):
+        super().test_runspider_dnscache_disabled()
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_runspider_log_level(self):
+        super().test_runspider_log_level()
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_runspider_log_short_names(self):
+        super().test_runspider_log_short_names()
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_runspider_no_spider_found(self):
+        super().test_runspider_no_spider_found()
+
+    def test_runspider_unable_to_load(self):
+        raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
 
 
 class BenchCommandTest(CommandTest):
