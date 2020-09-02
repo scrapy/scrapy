@@ -21,14 +21,14 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
         self.spider_name = 'parse_spider'
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
         with open(fname, 'w') as f:
-            f.write("""
+            f.write(f"""
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
 
 class MySpider(scrapy.Spider):
-    name = '{0}'
+    name = '{self.spider_name}'
 
     def parse(self, response):
         if getattr(self, 'test_arg', None):
@@ -58,7 +58,7 @@ class MySpider(scrapy.Spider):
             self.logger.debug('It Does Not Work :(')
 
 class MyGoodCrawlSpider(CrawlSpider):
-    name = 'goodcrawl{0}'
+    name = 'goodcrawl{self.spider_name}'
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
@@ -74,7 +74,7 @@ class MyGoodCrawlSpider(CrawlSpider):
 
 class MyBadCrawlSpider(CrawlSpider):
     '''Spider which doesn't define a parse_item callback while using it in a rule.'''
-    name = 'badcrawl{0}'
+    name = 'badcrawl{self.spider_name}'
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
@@ -82,7 +82,7 @@ class MyBadCrawlSpider(CrawlSpider):
 
     def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
-""".format(self.spider_name))
+""")
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
         with open(fname, 'w') as f:
@@ -99,9 +99,9 @@ class MyPipeline:
 
         fname = abspath(join(self.proj_mod_path, 'settings.py'))
         with open(fname, 'a') as f:
-            f.write("""
-ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
-""" % self.project_name)
+            f.write(f"""
+ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
+""")
 
     @defer.inlineCallbacks
     def test_spider_arguments(self):

@@ -142,7 +142,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
 
     def test_spider_manager_verify_interface(self):
         settings = Settings({
-            'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
+            'SPIDER_LOADER_CLASS': SpiderLoaderWithWrongInterface,
         })
         with warnings.catch_warnings(record=True) as w:
             self.assertRaises(AttributeError, CrawlerRunner, settings)

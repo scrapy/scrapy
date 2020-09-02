@@ -37,11 +37,11 @@ class QPSSpider(Spider):
     def start_requests(self):
         url = self.benchurl
         if self.latency is not None:
-            url += '?latency={0}'.format(self.latency)
+            url += f'?latency={self.latency}'
 
         slots = int(self.slots)
         if slots > 1:
-            urls = [url.replace('localhost', '127.0.0.%d' % (x + 1)) for x in range(slots)]
+            urls = [url.replace('localhost', f'127.0.0.{x + 1}') for x in range(slots)]
         else:
             urls = [url]
 

@@ -8,9 +8,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 def attribute(obj, oldattr, newattr, version='0.12'):
     cname = obj.__class__.__name__
     warnings.warn(
-        "%s.%s attribute is deprecated and will be no longer supported "
-        "in Scrapy %s, use %s.%s attribute instead"
-        % (cname, oldattr, version, cname, newattr),
+        f"{cname}.{oldattr} attribute is deprecated and will be no longer supported "
+        f"in Scrapy {version}, use {cname}.{newattr} attribute instead",
         ScrapyDeprecationWarning,
         stacklevel=3)
 
@@ -116,7 +115,7 @@ def create_deprecated_class(
         # deprecated class is in jinja2 template). __module__ attribute is not
         # important enough to raise an exception as users may be unable
         # to fix inspect.stack() errors.
-        warnings.warn("Error detecting parent module: %r" % e)
+        warnings.warn(f"Error detecting parent module: {e!r}")
 
     return deprecated_cls
 
@@ -124,7 +123,7 @@ def create_deprecated_class(
 def _clspath(cls, forced=None):
     if forced is not None:
         return forced
-    return '{}.{}'.format(cls.__module__, cls.__name__)
+    return f'{cls.__module__}.{cls.__name__}'
 
 
 DEPRECATION_RULES = [
@@ -135,9 +134,9 @@ DEPRECATION_RULES = [
 def update_classpath(path):
     """Update a deprecated path from an object with its new location"""
     for prefix, replacement in DEPRECATION_RULES:
-        if path.startswith(prefix):
+        if isinstance(path, str) and path.startswith(prefix):
             new_path = path.replace(prefix, replacement, 1)
-            warnings.warn("`{}` class is deprecated, use `{}` instead".format(path, new_path),
+            warnings.warn(f"`{path}` class is deprecated, use `{new_path}` instead",
                           ScrapyDeprecationWarning)
             return new_path
     return path

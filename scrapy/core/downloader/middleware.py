@@ -36,8 +36,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 response = yield deferred_from_coro(method(request=request, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
-                        "Middleware %s.process_request must return None, Response or Request, got %s"
-                        % (method.__self__.__class__.__name__, response.__class__.__name__)
+                        f"Middleware {method.__self__.__class__.__name__}"
+                        ".process_request must return None, Response or "
+                        f"Request, got {response.__class__.__name__}"
                     )
                 if response:
                     return response
@@ -54,8 +55,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 response = yield deferred_from_coro(method(request=request, response=response, spider=spider))
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
-                        "Middleware %s.process_response must return Response or Request, got %s"
-                        % (method.__self__.__class__.__name__, type(response))
+                        f"Middleware {method.__self__.__class__.__name__}"
+                        ".process_response must return Response or Request, "
+                        f"got {type(response)}"
                     )
                 if isinstance(response, Request):
                     return response
@@ -68,8 +70,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
-                        "Middleware %s.process_exception must return None, Response or Request, got %s"
-                        % (method.__self__.__class__.__name__, type(response))
+                        f"Middleware {method.__self__.__class__.__name__}"
+                        ".process_exception must return None, Response or "
+                        f"Request, got {type(response)}"
                     )
                 if response:
                     return response

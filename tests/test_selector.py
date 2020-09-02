@@ -88,7 +88,7 @@ class SelectorTestCase(unittest.TestCase):
         """Check that classes are using slots and are weak-referenceable"""
         x = Selector(text='')
         weakref.ref(x)
-        assert not hasattr(x, '__dict__'), "%s does not use __slots__" % x.__class__.__name__
+        assert not hasattr(x, '__dict__'), f"{x.__class__.__name__} does not use __slots__"
 
     def test_selector_bad_args(self):
         with self.assertRaisesRegex(ValueError, 'received both response and text'):

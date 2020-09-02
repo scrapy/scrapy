@@ -184,8 +184,7 @@ class FTPFeedStorageTest(unittest.TestCase):
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe='')
-        st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted,
-                            {})
+        st = FTPFeedStorage(f'ftp://foo:{pw_quoted}@example.com/some_path', {})
         self.assertEqual(st.password, string.punctuation)
 
 
@@ -845,7 +844,7 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {'format': 'xml'},
                 self._random_temp_filename(): {'format': 'csv'},
             },
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.LogOnStoreFileStorage'},
+            'FEED_STORAGES': {'file': LogOnStoreFileStorage},
             'FEED_STORE_EMPTY': False
         }
 
@@ -1189,8 +1188,8 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_init_exporters_storages_with_crawler(self):
         settings = {
-            'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.FromCrawlerCsvItemExporter'},
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.FromCrawlerFileFeedStorage'},
+            'FEED_EXPORTERS': {'csv': FromCrawlerCsvItemExporter},
+            'FEED_STORAGES': {'file': FromCrawlerFileFeedStorage},
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'csv'},
             },
@@ -1219,7 +1218,7 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {'format': 'xml'},
                 self._random_temp_filename(): {'format': 'csv'},
             },
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.DummyBlockingFeedStorage'},
+            'FEED_STORAGES': {'file': DummyBlockingFeedStorage},
         }
         items = [
             {'foo': 'bar1', 'baz': ''},
@@ -1230,7 +1229,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ['json', 'xml', 'csv']:
-            self.assertIn('Stored %s feed (2 items)' % fmt, str(log))
+            self.assertIn(f'Stored {fmt} feed (2 items)', str(log))
 
     @defer.inlineCallbacks
     def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
@@ -1240,7 +1239,7 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {'format': 'xml'},
                 self._random_temp_filename(): {'format': 'csv'},
             },
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.FailingBlockingFeedStorage'},
+            'FEED_STORAGES': {'file': FailingBlockingFeedStorage},
         }
         items = [
             {'foo': 'bar1', 'baz': ''},
@@ -1251,7 +1250,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ['json', 'xml', 'csv']:
-            self.assertIn('Error storing %s feed (2 items)' % fmt, str(log))
+            self.assertIn(f'Error storing {fmt} feed (2 items)', str(log))
 
 
 class BatchDeliveriesTest(FeedExportTestBase):
@@ -1582,10 +1581,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
         filename = ''.join(chars)
-        prefix = 'tmp/{filename}'.format(filename=filename)
-        s3_test_file_uri = 's3://{bucket_name}/{prefix}/%(batch_time)s.json'.format(
-            bucket_name=s3_test_bucket_name, prefix=prefix
-        )
+        prefix = f'tmp/{filename}'
+        s3_test_file_uri = f's3://{s3_test_bucket_name}/{prefix}/%(batch_time)s.json'
         storage = S3FeedStorage(s3_test_bucket_name, access_key, secret_key)
         settings = Settings({
             'FEEDS': {
@@ -1667,7 +1664,7 @@ class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.StdoutFeedStorageWithoutFeedOptions'
+                'file': StdoutFeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1708,7 +1705,7 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.FileFeedStorageWithoutFeedOptions'
+                'file': FileFeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1756,7 +1753,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.S3FeedStorageWithoutFeedOptions'
+                'file': S3FeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1784,7 +1781,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.S3FeedStorageWithoutFeedOptionsWithFromCrawler'
+                'file': S3FeedStorageWithoutFeedOptionsWithFromCrawler
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1833,7 +1830,7 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.FTPFeedStorageWithoutFeedOptions'
+                'file': FTPFeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1861,7 +1858,7 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.FTPFeedStorageWithoutFeedOptionsWithFromCrawler'
+                'file': FTPFeedStorageWithoutFeedOptionsWithFromCrawler
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
