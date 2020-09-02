@@ -64,7 +64,8 @@ more shortcuts: ``response.xpath()`` and ``response.css()``:
 
 Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
-markup as an unicode string (in ``text`` argument).
+markup as a string (in ``text`` argument).
+
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
 it is more convenient to use ``response.css()`` and ``response.xpath()``
@@ -327,8 +328,9 @@ too. Here's an example:
  '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
 >>> for index, link in enumerate(links):
-...     args = (index, link.xpath('@href').get(), link.xpath('img/@src').get())
-...     print('Link number %d points to url %r and image %r' % args)
+...     href_xpath = link.xpath('@href').get()
+...     img_xpath = link.xpath('img/@src').get()
+...     print(f'Link number {index} points to url {href_xpath!r} and image {img_xpath!r}')
 Link number 0 points to url 'image1.html' and image 'image1_thumb.jpg'
 Link number 1 points to url 'image2.html' and image 'image2_thumb.jpg'
 Link number 2 points to url 'image3.html' and image 'image3_thumb.jpg'
@@ -383,7 +385,7 @@ Using selectors with regular expressions
 
 :class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
-``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
+``.css()`` methods, ``.re()`` returns a list of strings. So you
 can't construct nested ``.re()`` calls.
 
 Here's an example used to extract image names from the :ref:`HTML code
@@ -821,7 +823,7 @@ with groups of itemscopes and corresponding itemprops::
     ...     props = scope.xpath('''
     ...                 set:difference(./descendant::*/@itemprop,
     ...                                .//*[@itemscope]/*/@itemprop)''')
-    ...     print("    properties: %s" % (props.getall()))
+    ...     print(f"    properties: {props.getall()}")
     ...     print("")
 
     current scope: ['http://schema.org/Product']
@@ -989,7 +991,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel.xpath("//h1")
 
 2. Extract the text of all ``<h1>`` elements from an HTML response body,
-   returning a list of unicode strings::
+   returning a list of strings::
 
       sel.xpath("//h1").getall()         # this includes the h1 tag
       sel.xpath("//h1/text()").getall()  # this excludes the h1 tag

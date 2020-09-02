@@ -322,6 +322,9 @@ class CookiesMiddlewareTest(TestCase):
             cookies2 = [{'name': 'foo'}, {'name': 'key', 'value': 'value2'}]
             req2 = Request('http://example.org/2', cookies=cookies2)
             assert self.mw.process_request(req2, self.spider) is None
+            cookies3 = [{'name': 'foo', 'value': None}, {'name': 'key', 'value': ''}]
+            req3 = Request('http://example.org/3', cookies=cookies3)
+            assert self.mw.process_request(req3, self.spider) is None
             lc.check(
                 ("scrapy.downloadermiddlewares.cookies",
                  "WARNING",
@@ -331,6 +334,11 @@ class CookiesMiddlewareTest(TestCase):
                  "WARNING",
                  "Invalid cookie found in request <GET http://example.org/2>:"
                  " {'name': 'foo'} ('value' is missing)"),
+                ("scrapy.downloadermiddlewares.cookies",
+                 "WARNING",
+                 "Invalid cookie found in request <GET http://example.org/3>:"
+                 " {'name': 'foo', 'value': None} ('value' is missing)"),
             )
         self.assertCookieValEqual(req1.headers['Cookie'], 'key=value1')
         self.assertCookieValEqual(req2.headers['Cookie'], 'key=value2')
+        self.assertCookieValEqual(req3.headers['Cookie'], 'key=')

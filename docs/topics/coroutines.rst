@@ -17,19 +17,14 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   :class:`~scrapy.http.Request` callbacks.
 
-    The following are known caveats of the current implementation that we aim
-    to address in future versions of Scrapy:
-
-    -   The callback output is not processed until the whole callback finishes.
+    .. note:: The callback output is not processed until the whole callback
+        finishes.
 
         As a side effect, if the callback raises an exception, none of its
         output is processed.
 
-    -   Because `asynchronous generators were introduced in Python 3.6`_, you
-        can only use ``yield`` if you are using Python 3.6 or later.
-
-        If you need to output multiple items or requests and you are using
-        Python 3.5, return an iterable (e.g. a list) instead.
+        This is a known caveat of the current implementation that we aim to
+        address in a future version of Scrapy.
 
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
@@ -43,8 +38,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
-
-.. _asynchronous generators were introduced in Python 3.6: https://www.python.org/dev/peps/pep-0525/
 
 Usage
 =====

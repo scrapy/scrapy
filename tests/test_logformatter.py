@@ -20,7 +20,7 @@ class CustomItem(Item):
     name = Field()
 
     def __str__(self):
-        return "name: %s" % self['name']
+        return f"name: {self['name']}"
 
 
 class LogFormatterTestCase(unittest.TestCase):
@@ -118,7 +118,7 @@ class LogFormatterTestCase(unittest.TestCase):
 
 class LogFormatterSubclass(LogFormatter):
     def crawled(self, request, response, spider):
-        kwargs = super(LogFormatterSubclass, self).crawled(request, response, spider)
+        kwargs = super().crawled(request, response, spider)
         CRAWLEDMSG = (
             "Crawled (%(status)s) %(request)s (referer: %(referer)s) %(flags)s"
         )

@@ -579,7 +579,7 @@ class TestOutputProcessorDict(unittest.TestCase):
 
         class TempDict(dict):
             def __init__(self, *args, **kwargs):
-                super(TempDict, self).__init__(self, *args, **kwargs)
+                super().__init__(self, *args, **kwargs)
                 self.setdefault('temp', 0.3)
 
         class TempLoader(ItemLoader):
@@ -657,7 +657,7 @@ class SelectJmesTestCase(unittest.TestCase):
             self.assertEqual(
                 test,
                 expected,
-                msg='test "{}" got {} expected {}'.format(tl, test, expected)
+                msg=f'test "{tl}" got {test} expected {expected}'
             )
 
 

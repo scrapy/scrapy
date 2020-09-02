@@ -146,8 +146,6 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_start_requests(start_requests, spider)
 
-        .. versionadded:: 0.15
-
         This method is called with the start requests of the spider, and works
         similarly to the :meth:`process_spider_output` method, except that it
         doesn't have a response associated and must return only requests (not
@@ -341,8 +339,6 @@ RefererMiddleware settings
 REFERER_ENABLED
 ^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.15
-
 Default: ``True``
 
 Whether to enable referer middleware.
@@ -351,8 +347,6 @@ Whether to enable referer middleware.
 
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 

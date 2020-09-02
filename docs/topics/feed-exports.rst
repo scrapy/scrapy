@@ -4,8 +4,6 @@
 Feed exports
 ============
 
-.. versionadded:: 0.10
-
 One of the most frequently required features when implementing scrapers is
 being able to store the scraped data properly and, quite often, that means
 generating an "export file" with the scraped data (commonly called "export
@@ -100,6 +98,7 @@ The storages backends supported out of the box are:
  * :ref:`topics-feed-storage-fs`
  * :ref:`topics-feed-storage-ftp`
  * :ref:`topics-feed-storage-s3` (requires botocore_)
+ * :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
  * :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
@@ -169,6 +168,9 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
+This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
 .. _topics-feed-storage-s3:
 
 S3
@@ -194,10 +196,15 @@ You can also define a custom ACL for exported feeds using this setting:
 
  * :setting:`FEED_STORAGE_S3_ACL`
 
+This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+
 .. _topics-feed-storage-gcs:
 
 Google Cloud Storage (GCS)
 --------------------------
+
+.. versionadded:: 2.3
 
 The feeds are stored on `Google Cloud Storage`_.
 
@@ -206,7 +213,7 @@ The feeds are stored on `Google Cloud Storage`_.
 
    * ``gs://mybucket/path/to/export.csv``
 
- * Required external libraries: `google-cloud-storage <https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python>`_.
+ * Required external libraries: `google-cloud-storage`_.
 
 For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
 
@@ -214,6 +221,11 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 
  * :setting:`FEED_STORAGE_GCS_ACL`
  * :setting:`GCS_PROJECT_ID`
+
+This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
+
+.. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
+
 
 .. _topics-feed-storage-stdout:
 
@@ -225,6 +237,26 @@ The feeds are written to the standard output of the Scrapy process.
  * URI scheme: ``stdout``
  * Example URI: ``stdout:``
  * Required external libraries: none
+
+
+.. _delayed-file-delivery:
+
+Delayed file delivery
+---------------------
+
+As indicated above, some of the described storage backends use delayed file
+delivery.
+
+These storage backends do not upload items to the feed URI as those items are
+scraped. Instead, Scrapy writes items into a temporary local file, and only
+once all the file contents have been written (i.e. at the end of the crawl) is
+that file uploaded to the feed URI.
+
+If you want item delivery to start earlier when using one of these storage
+backends, use :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` to split the output items
+in multiple files, with the specified maximum item count per file. That way, as
+soon as a file reaches the maximum item count, that file is delivered to the
+feed URI, allowing item delivery to start way before the end of the crawl.
 
 
 Settings
@@ -257,6 +289,7 @@ Default: ``{}``
 A dictionary in which every key is a feed URI (or a :class:`pathlib.Path`
 object) and each value is a nested dictionary containing configuration
 parameters for the specific feed.
+
 This setting is required for enabling the feed export feature.
 
 See :ref:`topics-feed-storage-backends` for supported URI schemes.
@@ -284,16 +317,43 @@ For instance::
     }
 
 The following is a list of the accepted keys and the setting that is used
-as a fallback value if that key is not provided for a specific feed definition.
+as a fallback value if that key is not provided for a specific feed definition:
 
-* ``format``: the serialization format to be used for the feed.
-  See :ref:`topics-feed-format` for possible values. 
-  Mandatory, no fallback setting
-* ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`
-* ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`
-* ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`
-* ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`
-* ``batch_item_count``: falls back to :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
+-   ``format``: the :ref:`serialization format <topics-feed-format>`.
+
+    This setting is mandatory, there is no fallback value.
+
+-   ``batch_item_count``: falls back to
+    :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
+-   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
+
+-   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
+
+-   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
+
+-   ``overwrite``: whether to overwrite the file if it already exists
+    (``True``) or append to its content (``False``).
+
+    The default value depends on the :ref:`storage backend
+    <topics-feed-storage-backends>`:
+
+    -   :ref:`topics-feed-storage-fs`: ``False``
+
+    -   :ref:`topics-feed-storage-ftp`: ``True``
+
+        .. note:: Some FTP servers may not support appending to files (the
+                  ``APPE`` FTP command).
+
+    -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
+        <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
+
+    -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
+
+-   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
+
+-   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
+
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -466,7 +526,7 @@ generated:
 * ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
   (e.g. ``2020-03-28T14-45-08.237134``)
 
-* ``%(batch_id)d`` - gets replaced by the sequence number of the batch.
+* ``%(batch_id)d`` - gets replaced by the 1-based sequence number of the batch.
 
   Use :ref:`printf-style string formatting <python:old-string-formatting>` to
   alter the number format. For example, to make the batch ID a 5-digit
@@ -483,14 +543,72 @@ And your :command:`crawl` command line is::
 
 The command line above can generate a directory tree like::
 
-->projectname
--->dirname
---->1-filename2020-03-28T14-45-08.237134.json
---->2-filename2020-03-28T14-45-09.148903.json
---->3-filename2020-03-28T14-45-10.046092.json
+    ->projectname
+    -->dirname
+    --->1-filename2020-03-28T14-45-08.237134.json
+    --->2-filename2020-03-28T14-45-09.148903.json
+    --->3-filename2020-03-28T14-45-10.046092.json
 
 Where the first and second files contain exactly 100 items. The last one contains
 100 items or fewer.
+
+
+.. setting:: FEED_URI_PARAMS
+
+FEED_URI_PARAMS
+---------------
+
+Default: ``None``
+
+A string with the import path of a function to set the parameters to apply with
+:ref:`printf-style string formatting <python:old-string-formatting>` to the
+feed URI.
+
+The function signature should be as follows:
+
+.. function:: uri_params(params, spider)
+
+   Return a :class:`dict` of key-value pairs to apply to the feed URI using
+   :ref:`printf-style string formatting <python:old-string-formatting>`.
+
+   :param params: default key-value pairs
+
+        Specifically:
+
+        -   ``batch_id``: ID of the file batch. See
+            :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
+            If :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` is ``0``, ``batch_id``
+            is always ``1``.
+
+        -   ``batch_time``: UTC date and time, in ISO format with ``:``
+            replaced with ``-``.
+
+            See :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
+        -   ``time``: ``batch_time``, with microseconds set to ``0``.
+   :type params: dict
+
+   :param spider: source spider of the feed items
+   :type spider: scrapy.spiders.Spider
+
+For example, to include the :attr:`name <scrapy.spiders.Spider.name>` of the
+source spider in the feed URI:
+
+#.  Define the following function somewhere in your project::
+
+        # myproject/utils.py
+        def uri_params(params, spider):
+            return {**params, 'spider_name': spider.name}
+
+#.  Point :setting:`FEED_URI_PARAMS` to that function in your settings::
+
+        # myproject/settings.py
+        FEED_URI_PARAMS = 'myproject.utils.uri_params'
+
+#.  Use ``%(spider_name)s`` in your feed URI::
+
+        scrapy crawl <spider_name> -o "%(spider_name)s.jl"
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier

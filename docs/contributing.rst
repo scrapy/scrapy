@@ -108,6 +108,11 @@ Well-written patches should:
 
       tox -e docs-coverage
 
+* if you are removing deprecated code, first make sure that at least 1 year
+  (12 months) has passed since the release that introduced the deprecation.
+  See :ref:`deprecation-policy`.
+
+
 .. _submitting-patches:
 
 Submitting patches
@@ -193,6 +198,17 @@ In any case, if something is covered in a docstring, use the
 :mod:`~sphinx.ext.autodoc` extension to pull the docstring into the
 documentation instead of duplicating the docstring in files within the
 ``docs/`` directory.
+
+Documentation updates that cover new or modified features must use Sphinx’s
+:rst:dir:`versionadded` and :rst:dir:`versionchanged` directives. Use
+``VERSION`` as version, we will replace it with the actual version right before
+the corresponding release. When we release a new major or minor version of
+Scrapy, we remove these directives if they are older than 3 years.
+
+Documentation about deprecated features must be removed as those features are
+deprecated, so that new readers do not run into it. New deprecations and
+deprecation removals are documented in the :ref:`release notes <news>`.
+
 
 Tests
 =====

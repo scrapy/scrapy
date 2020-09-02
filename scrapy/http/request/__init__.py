@@ -25,13 +25,13 @@ class Request(object_ref):
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
-            raise TypeError("Request priority not an integer: %r" % priority)
+            raise TypeError(f"Request priority not an integer: {priority!r}")
         self.priority = priority
 
         if callback is not None and not callable(callback):
-            raise TypeError('callback must be a callable, got %s' % type(callback).__name__)
+            raise TypeError(f'callback must be a callable, got {type(callback).__name__}')
         if errback is not None and not callable(errback):
-            raise TypeError('errback must be a callable, got %s' % type(errback).__name__)
+            raise TypeError(f'errback must be a callable, got {type(errback).__name__}')
         self.callback = callback
         self.errback = errback
 
@@ -60,13 +60,13 @@ class Request(object_ref):
 
     def _set_url(self, url):
         if not isinstance(url, str):
-            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+            raise TypeError(f'Request url must be str or unicode, got {type(url).__name__}')
 
         s = safe_url_string(url, self.encoding)
         self._url = escape_ajax(s)
 
         if ('://' not in self._url) and (not self._url.startswith('data:')):
-            raise ValueError('Missing scheme in request url: %s' % self._url)
+            raise ValueError(f'Missing scheme in request url: {self._url}')
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
@@ -86,7 +86,7 @@ class Request(object_ref):
         return self._encoding
 
     def __str__(self):
-        return "<%s %s>" % (self.method, self.url)
+        return f"<{self.method} {self.url}>"
 
     __repr__ = __str__
 

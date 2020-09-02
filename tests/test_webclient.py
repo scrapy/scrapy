@@ -253,7 +253,7 @@ class WebClientTestCase(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"http://127.0.0.1:{self.portno}/{path}"
 
     def testPayload(self):
         s = "0123456789" * 10
@@ -265,7 +265,7 @@ class WebClientTestCase(unittest.TestCase):
         # it should extract from url
         return defer.gatherResults([
             getPage(self.getURL("host")).addCallback(
-                self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno)),
+                self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}")),
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
                 self.assertEqual, to_bytes("www.example.com"))])
 
@@ -298,7 +298,7 @@ class WebClientTestCase(unittest.TestCase):
         """
         d = getPage(self.getURL("host"), timeout=100)
         d.addCallback(
-            self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno))
+            self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}"))
         return d
 
     def test_timeoutTriggering(self):
@@ -376,7 +376,7 @@ class WebClientSSLTestCase(unittest.TestCase):
             interface="127.0.0.1")
 
     def getURL(self, path):
-        return "https://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
         self.tmpname = self.mktemp()

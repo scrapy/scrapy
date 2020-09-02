@@ -82,8 +82,8 @@ class MemoryUsage:
                          {'memusage': mem}, extra={'crawler': self.crawler})
             if self.notify_mails:
                 subj = (
-                    "%s terminated: memory usage exceeded %dM at %s"
-                    % (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
+                    f"{self.crawler.settings['BOT_NAME']} terminated: "
+                    f"memory usage exceeded {mem}M at {socket.gethostname()}"
                 )
                 self._send_report(self.notify_mails, subj)
                 self.crawler.stats.set_value('memusage/limit_notified', 1)
@@ -105,8 +105,8 @@ class MemoryUsage:
                            {'memusage': mem}, extra={'crawler': self.crawler})
             if self.notify_mails:
                 subj = (
-                    "%s warning: memory usage reached %dM at %s"
-                    % (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
+                    f"{self.crawler.settings['BOT_NAME']} warning: "
+                    f"memory usage reached {mem}M at {socket.gethostname()}"
                 )
                 self._send_report(self.notify_mails, subj)
                 self.crawler.stats.set_value('memusage/warning_notified', 1)
@@ -115,9 +115,9 @@ class MemoryUsage:
     def _send_report(self, rcpts, subject):
         """send notification mail with some additional useful info"""
         stats = self.crawler.stats
-        s = "Memory usage at engine startup : %dM\r\n" % (stats.get_value('memusage/startup')/1024/1024)
-        s += "Maximum memory usage           : %dM\r\n" % (stats.get_value('memusage/max')/1024/1024)
-        s += "Current memory usage           : %dM\r\n" % (self.get_virtual_size()/1024/1024)
+        s = f"Memory usage at engine startup : {stats.get_value('memusage/startup')/1024/1024}M\r\n"
+        s += f"Maximum memory usage          : {stats.get_value('memusage/max')/1024/1024}M\r\n"
+        s += f"Current memory usage          : {self.get_virtual_size()/1024/1024}M\r\n"
 
         s += "ENGINE STATUS ------------------------------------------------------- \r\n"
         s += "\r\n"
