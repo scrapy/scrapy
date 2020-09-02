@@ -5,6 +5,7 @@ import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
+from unittest.mock import patch
 
 import attr
 from itemadapter import ItemAdapter
@@ -12,7 +13,7 @@ from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImagesPipeline
+from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
@@ -92,6 +93,78 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     response=Response("file:///tmp/some.name/foo"),
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+
+    def test_get_images_exception(self):
+        self.pipeline.min_width = 100
+        self.pipeline.min_height = 100
+
+        _, buf1 = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
+        _, buf2 = _create_image('JPEG', 'RGB', (150, 50), (0, 0, 0))
+        _, buf3 = _create_image('JPEG', 'RGB', (50, 150), (0, 0, 0))
+
+        resp1 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf1.getvalue())
+        resp2 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf2.getvalue())
+        resp3 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf3.getvalue())
+        req = Request(url="https://dev.mydeco.com/mydeco.gif")
+
+        with self.assertRaises(ImageException):
+            next(self.pipeline.get_images(response=resp1, request=req, info=object()))
+        with self.assertRaises(ImageException):
+            next(self.pipeline.get_images(response=resp2, request=req, info=object()))
+        with self.assertRaises(ImageException):
+            next(self.pipeline.get_images(response=resp3, request=req, info=object()))
+
+    def test_get_images_new(self):
+        self.pipeline.min_width = 0
+        self.pipeline.min_height = 0
+        self.pipeline.thumbs = {'small': (20, 20)}
+
+        orig_im, buf = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
+        orig_thumb, orig_thumb_buf = _create_image('JPEG', 'RGB', (20, 20), (0, 0, 0))
+        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
+        req = Request(url="https://dev.mydeco.com/mydeco.gif")
+
+        get_images_gen = self.pipeline.get_images(response=resp, request=req, info=object())
+
+        path, new_im, new_buf = next(get_images_gen)
+        self.assertEqual(path, 'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+        self.assertEqual(orig_im, new_im)
+        self.assertEqual(buf.getvalue(), new_buf.getvalue())
+
+        thumb_path, thumb_img, thumb_buf = next(get_images_gen)
+        self.assertEqual(thumb_path, 'thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+        self.assertEqual(thumb_img, thumb_img)
+        self.assertEqual(orig_thumb_buf.getvalue(), thumb_buf.getvalue())
+
+    def test_get_images_old(self):
+        self.pipeline.thumbs = {'small': (20, 20)}
+        orig_im, buf = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
+        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
+        req = Request(url="https://dev.mydeco.com/mydeco.gif")
+
+        def overridden_convert_image(image, size=None):
+            im, buf = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
+            return im, buf
+
+        with patch.object(self.pipeline, 'convert_image', overridden_convert_image):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter('always')
+                get_images_gen = self.pipeline.get_images(response=resp, request=req, info=object())
+                path, new_im, new_buf = next(get_images_gen)
+                self.assertEqual(path, 'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+                self.assertEqual(orig_im.mode, new_im.mode)
+                self.assertEqual(orig_im.getcolors(), new_im.getcolors())
+                self.assertEqual(buf.getvalue(), new_buf.getvalue())
+
+                thumb_path, thumb_img, thumb_buf = next(get_images_gen)
+                self.assertEqual(thumb_path, 'thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+                self.assertEqual(orig_im.mode, thumb_img.mode)
+                self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
+                self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
+
+                expected_warning_msg = ('ImagesPipeline.convert_image() method overriden in a deprecated way, '
+                                        'overriden method does not accept response_body argument.')
+                self.assertEqual(len([warning for warning in w if expected_warning_msg in str(warning.message)]), 1)
 
     def test_convert_image_old(self):
         # tests for old API

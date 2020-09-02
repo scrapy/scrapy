@@ -18,7 +18,7 @@ from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
-from scrapy.utils.python import to_bytes, get_func_args
+from scrapy.utils.python import get_func_args, to_bytes
 
 
 class NoimagesDrop(DropItem):
@@ -136,7 +136,7 @@ class ImagesPipeline(FilesPipeline):
             if self._deprecated_convert_image:
                 warnings.warn('ImagesPipeline.convert_image() method overriden in a deprecated way, '
                               'overriden method does not accept response_body argument.',
-                              category=ScrapyDeprecationWarning, stacklevel=1)
+                              category=ScrapyDeprecationWarning)
 
         if self._deprecated_convert_image:
             image, buf = self.convert_image(orig_image)
@@ -156,7 +156,7 @@ class ImagesPipeline(FilesPipeline):
         if response_body is None:
             warnings.warn('ImagesPipeline.convert_image() method called in a deprecated way, '
                           'method called without response_body argument.',
-                          category=ScrapyDeprecationWarning, stacklevel=1)
+                          category=ScrapyDeprecationWarning, stacklevel=2)
 
         if image.format == 'PNG' and image.mode == 'RGBA':
             background = Image.new('RGBA', image.size, (255, 255, 255))
