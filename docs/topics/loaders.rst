@@ -193,10 +193,10 @@ Item Loaders are declared using a class definition syntax. Here is an example::
 
         default_output_processor = TakeFirst()
 
-        name_in = MapCompose(unicode.title)
+        name_in = MapCompose(str.title)
         name_out = Join()
 
-        price_in = MapCompose(unicode.strip)
+        price_in = MapCompose(str.strip)
 
         # ...
 
@@ -237,10 +237,10 @@ metadata. Here is an example::
 
 >>> from scrapy.loader import ItemLoader
 >>> il = ItemLoader(item=Product())
->>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
->>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
+>>> il.add_value('name', ['Welcome to my', '<strong>website</strong>'])
+>>> il.add_value('price', ['&euro;', '<span>1000</span>'])
 >>> il.load_item()
-{'name': u'Welcome to my website', 'price': u'1000'}
+{'name': 'Welcome to my website', 'price': '1000'}
 
 The precedence order, for both input and output processors, is as follows:
 

@@ -161,6 +161,19 @@ class FilesPipelineTestCase(unittest.TestCase):
         for p in patchers:
             p.stop()
 
+    def test_file_path_from_item(self):
+        """
+        Custom file path based on item data, overriding default implementation
+        """
+        class CustomFilesPipeline(FilesPipeline):
+            def file_path(self, request, response=None, info=None, item=None):
+                return f'full/{item.get("path")}'
+
+        file_path = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_path
+        item = dict(path='path-to-store-file')
+        request = Request("http://example.com")
+        self.assertEqual(file_path(request, item=item), 'full/path-to-store-file')
+
 
 class FilesPipelineTestCaseFieldsMixin:
 
@@ -482,7 +495,7 @@ class TestFTPFileStore(unittest.TestCase):
         self.assertIn('last_modified', stat)
         self.assertIn('checksum', stat)
         self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
-        path = '%s/%s' % (store.basedir, path)
+        path = f'{store.basedir}/{path}'
         content = get_ftp_content_and_delete(
             path, store.host, store.port,
             store.username, store.password, store.USE_ACTIVE_MODE)
