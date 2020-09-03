@@ -77,6 +77,7 @@ Basic concepts
    topics/link-extractors
    topics/settings
    topics/exceptions
+   topics/link
 
 
 :doc:`topics/commands`
