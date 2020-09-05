@@ -1,8 +1,11 @@
 import unittest
+import warnings
+from functools import partial
 from hashlib import sha1
 from weakref import WeakKeyDictionary
 
 import pytest
+from w3lib.url import canonicalize_url
 
 from scrapy.http import Request
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
@@ -48,25 +51,33 @@ class UtilsRequestTest(unittest.TestCase):
 class FingerprintTest(unittest.TestCase):
     function = staticmethod(fingerprint)
     cache = _fingerprint_cache
+    default_cache_key = (None, False)
 
-    def test_function(self):
+    def test_query_string_key_order(self):
         r1 = Request("http://www.example.com/query?id=111&cat=222")
         r2 = Request("http://www.example.com/query?cat=222&id=111")
         self.assertEqual(self.function(r1), self.function(r1))
         self.assertEqual(self.function(r1), self.function(r2))
 
+    def test_query_string_key_without_value(self):
         r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78132,199')
         r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
         self.assertNotEqual(self.function(r1), self.function(r2))
 
-        # make sure caching is working
-        self.assertEqual(self.function(r1), self.cache[r1][(None, False)])
+    def test_caching(self):
+        r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
+        self.assertEqual(
+            self.function(r1),
+            self.cache[r1][self.default_cache_key]
+        )
 
+    def test_header(self):
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")
         r2.headers['SESSIONID'] = b"somehash"
         self.assertEqual(self.function(r1), self.function(r2))
 
+    def test_headers(self):
         r1 = Request("http://www.example.com/")
         r2 = Request("http://www.example.com/")
         r2.headers['Accept-Language'] = b'en'
@@ -86,6 +97,7 @@ class FingerprintTest(unittest.TestCase):
         self.assertEqual(self.function(r3, include_headers=['accept-language', 'sessionid']),
                          self.function(r3, include_headers=['SESSIONID', 'Accept-Language']))
 
+    def test_fragment(self):
         r1 = Request("http://www.example.com/test.html")
         r2 = Request("http://www.example.com/test.html#fragment")
         self.assertEqual(self.function(r1), self.function(r2))
@@ -93,6 +105,7 @@ class FingerprintTest(unittest.TestCase):
         self.assertNotEqual(self.function(r2), self.function(r2, keep_fragments=True))
         self.assertNotEqual(self.function(r1), self.function(r2, keep_fragments=True))
 
+    def test_method_and_body(self):
         r1 = Request("http://www.example.com")
         r2 = Request("http://www.example.com", method='POST')
         r3 = Request("http://www.example.com", method='POST', body=b'request body')
@@ -100,6 +113,7 @@ class FingerprintTest(unittest.TestCase):
         self.assertNotEqual(self.function(r1), self.function(r2))
         self.assertNotEqual(self.function(r2), self.function(r3))
 
+    def test_request_replace(self):
         # cached fingerprint must be cleared on request copy
         r1 = Request("http://www.example.com")
         fp1 = self.function(r1)
@@ -107,18 +121,165 @@ class FingerprintTest(unittest.TestCase):
         fp2 = self.function(r2)
         self.assertNotEqual(fp1, fp2)
 
+    def test_part_separation(self):
+        # An old implementation used to serialize request data in a way that
+        # would put the body right after the URL.
+        r1 = Request("http://www.example.com/foo")
+        fp1 = self.function(r1)
+        r2 = Request("http://www.example.com/f", body=b'oo')
+        fp2 = self.function(r2)
+        self.assertNotEqual(fp1, fp2)
+
 
 class RequestFingerprintTest(FingerprintTest):
     function = staticmethod(request_fingerprint)
     cache = _deprecated_fingerprint_cache
+    default_cache_key = (None, False, False)
 
-    def test_deprecation(self):
+    @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
+    def test_part_separation(self):
+        super().test_part_separation()
+
+    def test_as_bytes_reuse(self):
+        r1 = Request("http://www.example.com/uncached1")
+        with unittest.mock.patch('scrapy.utils.request.hashlib.sha1') as sha1_mock:
+            self.function(r1, as_bytes=True)
+            sha1_mock.assert_not_called()
+
+        r2 = Request("http://www.example.com/uncached2")
+        with unittest.mock.patch('scrapy.utils.request.hashlib.sha1') as sha1_mock:
+            self.function(r2)
+            sha1_mock.assert_not_called()
+
+    def test_as_bytes_equal(self):
+        r3 = Request("http://www.example.com/uncached3")
+        fp5 = self.function(r3)
+        fp6 = self.function(r3, as_bytes=True)
+        self.assertEqual(fp5, fp6.hex())
+
+        r4 = Request("http://www.example.com/uncached4")
+        fp7 = self.function(r4, as_bytes=True)
+        fp8 = self.function(r4)
+        self.assertEqual(fp7.hex(), fp8)
+
+    def test_deprecation_default_parameters(self):
         with pytest.warns(ScrapyDeprecationWarning) as warnings:
             self.function(Request("http://www.example.com"))
-        actual = [str(warning.message) for warning in warnings]
-        expected = ['Call to deprecated function request_fingerprint. Use '
-                    'scrapy.utils.request.fingerprint instead.']
-        self.assertEqual(actual, expected)
+        messages = [str(warning.message) for warning in warnings]
+        self.assertTrue(
+            any(
+                'Call to deprecated function' in message
+                for message in messages
+            )
+        )
+        self.assertFalse(any('non-default' in message for message in messages))
+
+    def test_deprecation_non_default_parameters(self):
+        with pytest.warns(ScrapyDeprecationWarning) as warnings:
+            self.function(Request("http://www.example.com"), keep_fragments=True)
+        messages = [str(warning.message) for warning in warnings]
+        self.assertTrue(
+            any(
+                'Call to deprecated function' in message
+                for message in messages
+            )
+        )
+        self.assertTrue(any('non-default' in message for message in messages))
+
+
+class RequestFingerprintAsBytesTest(FingerprintTest):
+    function = staticmethod(partial(request_fingerprint, as_bytes=True))
+    cache = _deprecated_fingerprint_cache
+    default_cache_key = (None, False, True)
+
+    @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
+    def test_part_separation(self):
+        super().test_part_separation()
+
+
+_fingerprint_cache_2_3 = WeakKeyDictionary()
+
+
+def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False):
+    if include_headers:
+        include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
+    cache = _fingerprint_cache_2_3.setdefault(request, {})
+    cache_key = (include_headers, keep_fragments)
+    if cache_key not in cache:
+        fp = sha1()
+        fp.update(to_bytes(request.method))
+        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
+        fp.update(request.body or b'')
+        if include_headers:
+            for hdr in include_headers:
+                if hdr in request.headers:
+                    fp.update(hdr)
+                    for v in request.headers.getlist(hdr):
+                        fp.update(v)
+        cache[cache_key] = fp.hexdigest()
+    return cache[cache_key]
+
+
+@pytest.mark.parametrize(
+    'request_object',
+    (
+        Request("http://www.example.com/"),
+        Request("http://www.example.com/query?id=111&cat=222"),
+        Request("http://www.example.com/query?cat=222&id=111"),
+        Request('http://www.example.com/hnnoticiaj1.aspx?78132,199'),
+        Request('http://www.example.com/hnnoticiaj1.aspx?78160,199'),
+        Request("http://www.example.com/members/offers.html"),
+        Request(
+            "http://www.example.com/members/offers.html",
+            headers={'SESSIONID': b"somehash"},
+        ),
+        Request(
+            "http://www.example.com/",
+            headers={'Accept-Language': b"en"},
+        ),
+        Request(
+            "http://www.example.com/",
+            headers={
+                'Accept-Language': b"en",
+                'SESSIONID': b"somehash",
+            },
+        ),
+        Request("http://www.example.com/test.html"),
+        Request("http://www.example.com/test.html#fragment"),
+        Request("http://www.example.com", method='POST'),
+        Request("http://www.example.com", method='POST', body=b'request body'),
+    )
+)
+@pytest.mark.parametrize(
+    'include_headers',
+    (
+        None,
+        ['Accept-Language'],
+        ['accept-language', 'sessionid'],
+        ['SESSIONID', 'Accept-Language'],
+    ),
+)
+@pytest.mark.parametrize(
+    'keep_fragments',
+    (
+        False,
+        True,
+    ),
+)
+def test_backward_compatibility(request_object, include_headers, keep_fragments):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fp_str = request_fingerprint(
+            request_object,
+            include_headers=include_headers,
+            keep_fragments=keep_fragments,
+        )
+    old_fp = request_fingerprint_2_3(
+        request_object,
+        include_headers=include_headers,
+        keep_fragments=keep_fragments,
+    )
+    assert fp_str == old_fp
 
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):

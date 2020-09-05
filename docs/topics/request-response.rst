@@ -371,19 +371,66 @@ To change how request fingerprints are built for your requests, use the
 REQUEST_FINGERPRINTER_CLASS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default: ``'scrapy.utils.request.RequestFingerprinter'``
+.. versionadded:: 2.4
 
-The import path of a :ref:`request fingerprinter
-<custom-request-fingerprinter>`.
+Default: :class:`scrapy.utils.request.RequestFingerprinter`
 
-The default request fingerprinter takes into account a canonical version
-(:func:`w3lib.url.canonicalize_url`) of
-:attr:`request.url <scrapy.http.Request.url>` and the values of
-:attr:`request.method <scrapy.http.Request.method>` and
-:attr:`request.body <scrapy.http.Request.body>`. It then generates an
-`SHA1 <https://en.wikipedia.org/wiki/SHA-1>`_ hash from their concatenation.
+A :ref:`request fingerprinter class <custom-request-fingerprinter>` or its
+import path.
+
+.. autoclass:: scrapy.utils.request.RequestFingerprinter
 
 
+.. setting:: REQUEST_FINGERPRINTER_IMPLEMENTATION
+
+REQUEST_FINGERPRINTER_IMPLEMENTATION
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.4
+
+Default: ``'2.3'``
+
+Determines which request fingerprinting algorithm is used by the default
+request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
+
+Possible values are:
+
+-   ``'2.3'`` (default)
+
+    This implementation uses the same request fingerprinting algorithm as
+    Scrapy 2.3 and earlier versions.
+
+    Even though this is the default value for backward compatibility reasons,
+    it is a deprecated value.
+
+-   ``'2.4'``
+
+    This implementation was introduced in ``'2.4'`` to fix an issue of the
+    previous implementation.
+
+    New projects should use this value. The :command:`startproject` command
+    sets this value in the generated ``settings.py`` file.
+
+If you are using the default value (``'2.3'``) for this setting, and you are
+using Scrapy components where changing the request fingerprinting algorithm
+would cause undesired results, you need to carefully decide when to change the
+value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
+setting to a custom class value that implements the 2.3 request fingerprinting
+algorithm and does not log this warning (see :ref:`2.3-request-fingerprinter`).
+
+Scenarios where changing the request fingerprinting algorithm may cause
+undesired results include, for example, using the HTTP cache middleware (see
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
+Changing the request fingerprinting algorithm would invalidade the current
+cache, requiring you to redownload all requests again.
+
+Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'2.4'`` in
+your settings to switch to the future default and only request fingerprinting
+implementation already, and remove the deprecation warning triggered by using
+the default value (``'2.3'``).
+
+
+.. _2.3-request-fingerprinter:
 .. _custom-request-fingerprinter:
 
 Writing your own request fingerprinter
@@ -458,7 +505,7 @@ you use :class:`~weakref.WeakKeyDictionary` to cache request fingerprints:
     references to them in your cache dictionary.
 
 For example, to take into account only the URL of a request, without any prior
-URL canonicalization::
+URL canonicalization or taking the request method or body into account::
 
     from hashlib import sha1
     from weakref import WeakKeyDictionary
@@ -490,6 +537,30 @@ when available, and then falls back to
             if 'fingerprint' in request.meta:
                 return request.meta['fingerprint']
             return fingerprint(request)
+
+If you need to reproduce the same fingerprinting algorithm as Scrapy 2.3
+without using the deprecated ``'2.3'`` value of the
+:setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` setting, use the following
+request fingerprinter::
+
+    from hashlib import sha1
+    from weakref import WeakKeyDictionary
+
+    from scrapy.utils.python import to_bytes
+    from w3lib.url import canonicalize_url
+
+    class RequestFingerprinter:
+
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                fp = sha1()
+                fp.update(to_bytes(request.method))
+                fp.update(to_bytes(canonicalize_url(request.url)))
+                fp.update(request.body or b'')
+                self.cache[request] = fp.digest()
+            return self.cache[request]
 
 
 .. _request-fingerprint-restrictions:

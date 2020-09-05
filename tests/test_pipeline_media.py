@@ -13,7 +13,6 @@ from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.request import fingerprint
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 
@@ -36,6 +35,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo
+        self.fingerprint = crawler.request_fingerprinter.fingerprint
 
     def tearDown(self):
         for name, signal in vars(signals).items():
@@ -148,7 +148,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
-        fp = fingerprint(request)
+        fp = self.fingerprint(request)
         info = self.pipe.spiderinfo
         info.downloading.add(fp)
         info.waiting[fp] = []
@@ -265,7 +265,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
-        assert fingerprint(req) in self.info.downloaded
+        self.assertIn(self.fingerprint(req), self.info.downloaded)
 
         # returns iterable of Requests
         req1 = Request('http://url1')
@@ -273,8 +273,8 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=iter([req1, req2]))
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
-        assert fingerprint(req1) in self.info.downloaded
-        assert fingerprint(req2) in self.info.downloaded
+        assert self.fingerprint(req1) in self.info.downloaded
+        assert self.fingerprint(req2) in self.info.downloaded
 
     @inlineCallbacks
     def test_results_are_cached_across_multiple_items(self):
@@ -290,7 +290,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req2)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertTrue(new_item is item)
-        self.assertEqual(fingerprint(req1), fingerprint(req2))
+        self.assertEqual(self.fingerprint(req1), self.fingerprint(req2))
         self.assertEqual(new_item['results'], [(True, rsp1)])
 
     @inlineCallbacks
@@ -306,7 +306,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_wait_if_request_is_downloading(self):
         def _check_downloading(response):
-            fp = fingerprint(req1)
+            fp = self.fingerprint(req1)
             self.assertTrue(fp in self.info.downloading)
             self.assertTrue(fp in self.info.waiting)
             self.assertTrue(fp not in self.info.downloaded)
