@@ -123,7 +123,11 @@ class TestHttpProxyMiddleware(TestCase):
 
     def test_no_proxy(self):
         os.environ['http_proxy'] = 'https://proxy.for.http:3128'
+        os.environ['no_proxy'] = '/var/run/docker.sock'
         mw = HttpProxyMiddleware()
+        # '/var/run/docker.sock' may be used by the user for
+        # no_proxy value but is not parseable and should be skipped
+        assert 'no' not in mw.proxies
 
         os.environ['no_proxy'] = '*'
         req = Request('http://noproxy.com')
