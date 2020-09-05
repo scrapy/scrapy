@@ -735,6 +735,14 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     def test_runspider_no_spider_found(self):
         super().test_runspider_no_spider_found()
 
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_output(self):
+        super().test_output()
+
+    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
+    def test_overwrite_output(self):
+        super().test_overwrite_output()
+
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
 
