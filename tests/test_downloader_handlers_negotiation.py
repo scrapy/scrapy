@@ -4,7 +4,7 @@ from twisted.internet import error, reactor
 from twisted.internet.defer import CancelledError, Deferred, DeferredList, inlineCallbacks
 from twisted.trial.unittest import TestCase, SkipTest
 from twisted.web.server import Site
-
+from twisted.internet.endpoints import TCP4ServerEndpoint, SSL4ServerEndpoint
 from scrapy.core.downloader.handlers.negotiation import HTTPNegotiateDownloadHandler
 from scrapy.http import Request
 from scrapy.spiders import Spider
@@ -146,12 +146,14 @@ class NegotiationHttp11TestCase(TestCase):
         site = ProtocolsSite(root, self.server_acceptable_protocols)
         context_factory = ssl_context_factory()
 
-        self.https_server = yield reactor.listenSSL(0, site, context_factory)
-        # self.https_server = yield https_endpoint.listen(site)
+        self.hostname = u'localhost'
+        https_endpoint = SSL4ServerEndpoint(reactor, 0, context_factory, interface=self.hostname)
+        self.https_server = yield https_endpoint.listen(site)
         https_host = self.https_server.getHost()
-        self.https_address = f'https://0.0.0.0:{https_host.port}'
+        self.https_address = f'https://{https_host.host}:{https_host.port}'
 
-        self.http_server = yield reactor.listenTCP(0, site)
+        http_endpoint = TCP4ServerEndpoint(reactor, 0, interface=self.hostname)
+        self.http_server = yield http_endpoint.listen(site)
         http_host = self.http_server.getHost()
         self.http_address = f'http://{http_host.host}:{http_host.port}'
 
