@@ -5,9 +5,9 @@ scrapy.http.Request objects
 
 import hashlib
 import json
+import warnings
 import weakref
 from urllib.parse import urlunparse
-from warnings import warn
 
 from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
@@ -110,7 +110,7 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
             'implementing your own function which returns the same '
             'fingerprints as the deprecated \'request_fingerprint()\' function.'
         )
-    warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
+    warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
     if include_headers:
         include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
     cache = _deprecated_fingerprint_cache.setdefault(request, {})
@@ -128,7 +128,9 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False):
 
 
 def _request_fingerprint_as_bytes(*args, **kwargs):
-    return bytes.fromhex(request_fingerprint(*args, **kwargs))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return bytes.fromhex(request_fingerprint(*args, **kwargs))
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
@@ -230,7 +232,7 @@ class RequestFingerprinter:
                 '\'REQUEST_FINGERPRINTER_IMPLEMENTATION\' setting for '
                 'information on how to handle this deprecation.'
             )
-            warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
+            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
             self._fingerprint = _request_fingerprint_as_bytes
         elif implementation == '2.4':
             self._fingerprint = fingerprint

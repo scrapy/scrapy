@@ -297,6 +297,54 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
             self.assertFalse(logged_warnings)
 
 
+
+class RequestFingerprinterTestCase(unittest.TestCase):
+
+    def test_default_implementation(self):
+        with warnings.catch_warnings(record=True) as logged_warnings:
+            crawler = get_crawler()
+        request = Request('https://example.com')
+        self.assertEqual(
+            crawler.request_fingerprinter.fingerprint(request),
+            _request_fingerprint_as_bytes(request),
+        )
+        self.assertTrue(logged_warnings)
+
+    def test_deprecated_implementation(self):
+        settings = {
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.3',
+        }
+        with warnings.catch_warnings(record=True) as logged_warnings:
+            crawler = get_crawler(settings_dict=settings)
+        request = Request('https://example.com')
+        self.assertEqual(
+            crawler.request_fingerprinter.fingerprint(request),
+            _request_fingerprint_as_bytes(request),
+        )
+        self.assertTrue(logged_warnings)
+
+    def test_recommended_implementation(self):
+        settings = {
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.4',
+        }
+        with warnings.catch_warnings(record=True) as logged_warnings:
+            crawler = get_crawler(settings_dict=settings)
+        request = Request('https://example.com')
+        self.assertEqual(
+            crawler.request_fingerprinter.fingerprint(request),
+            fingerprint(request),
+        )
+        self.assertFalse(logged_warnings)
+
+    def test_unknown_implementation(self):
+        settings = {
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.5',
+        }
+        with self.assertRaises(ValueError):
+            crawler = get_crawler(settings_dict=settings)
+
+
+
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
 
     def test_include_headers(self):
