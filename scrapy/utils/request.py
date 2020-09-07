@@ -21,6 +21,14 @@ from scrapy.utils.python import to_bytes, to_unicode
 _deprecated_fingerprint_cache = weakref.WeakKeyDictionary()
 
 
+def _serialize_headers(headers, request):
+    for header in headers:
+        if header in request.headers:
+            yield header
+            for value in request.headers.getlist(header):
+                yield v
+
+
 def request_fingerprint(request, include_headers=None, keep_fragments=False, as_bytes=False):
     """
     Return the request fingerprint as an hexadecimal string.
@@ -128,11 +136,8 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False, as_
             fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
             fp.update(request.body or b'')
             if include_headers:
-                for hdr in include_headers:
-                    if hdr in request.headers:
-                        fp.update(hdr)
-                        for v in request.headers.getlist(hdr):
-                            fp.update(v)
+                for part in _serialize_headers(include_headers, request):
+                    fp.update(part)
             cache[cache_key] = fp.digest() if as_bytes else fp.hexdigest()
     return cache[cache_key]
 
