@@ -204,36 +204,36 @@ def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False)
     return cache[cache_key]
 
 
-@pytest.mark.parametrize(
-    'request_object',
-    (
-        Request("http://www.example.com/"),
-        Request("http://www.example.com/query?id=111&cat=222"),
-        Request("http://www.example.com/query?cat=222&id=111"),
-        Request('http://www.example.com/hnnoticiaj1.aspx?78132,199'),
-        Request('http://www.example.com/hnnoticiaj1.aspx?78160,199'),
-        Request("http://www.example.com/members/offers.html"),
-        Request(
-            "http://www.example.com/members/offers.html",
-            headers={'SESSIONID': b"somehash"},
-        ),
-        Request(
-            "http://www.example.com/",
-            headers={'Accept-Language': b"en"},
-        ),
-        Request(
-            "http://www.example.com/",
-            headers={
-                'Accept-Language': b"en",
-                'SESSIONID': b"somehash",
-            },
-        ),
-        Request("http://www.example.com/test.html"),
-        Request("http://www.example.com/test.html#fragment"),
-        Request("http://www.example.com", method='POST'),
-        Request("http://www.example.com", method='POST', body=b'request body'),
-    )
+REQUEST_OBJECTS_TO_TEST = (
+    Request("http://www.example.com/"),
+    Request("http://www.example.com/query?id=111&cat=222"),
+    Request("http://www.example.com/query?cat=222&id=111"),
+    Request('http://www.example.com/hnnoticiaj1.aspx?78132,199'),
+    Request('http://www.example.com/hnnoticiaj1.aspx?78160,199'),
+    Request("http://www.example.com/members/offers.html"),
+    Request(
+        "http://www.example.com/members/offers.html",
+        headers={'SESSIONID': b"somehash"},
+    ),
+    Request(
+        "http://www.example.com/",
+        headers={'Accept-Language': b"en"},
+    ),
+    Request(
+        "http://www.example.com/",
+        headers={
+            'Accept-Language': b"en",
+            'SESSIONID': b"somehash",
+        },
+    ),
+    Request("http://www.example.com/test.html"),
+    Request("http://www.example.com/test.html#fragment"),
+    Request("http://www.example.com", method='POST'),
+    Request("http://www.example.com", method='POST', body=b'request body'),
 )
+
+
+@pytest.mark.parametrize('request_object', REQUEST_OBJECTS_TO_TEST)
 @pytest.mark.parametrize(
     'include_headers',
     (
@@ -243,13 +243,7 @@ def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False)
         ['SESSIONID', 'Accept-Language'],
     ),
 )
-@pytest.mark.parametrize(
-    'keep_fragments',
-    (
-        False,
-        True,
-    ),
-)
+@pytest.mark.parametrize('keep_fragments', (False, True))
 def test_function_backward_compatibility(request_object, include_headers, keep_fragments):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -266,36 +260,7 @@ def test_function_backward_compatibility(request_object, include_headers, keep_f
     assert fp == old_fp
 
 
-@pytest.mark.parametrize(
-    'request_object',
-    (
-        Request("http://www.example.com/"),
-        Request("http://www.example.com/query?id=111&cat=222"),
-        Request("http://www.example.com/query?cat=222&id=111"),
-        Request('http://www.example.com/hnnoticiaj1.aspx?78132,199'),
-        Request('http://www.example.com/hnnoticiaj1.aspx?78160,199'),
-        Request("http://www.example.com/members/offers.html"),
-        Request(
-            "http://www.example.com/members/offers.html",
-            headers={'SESSIONID': b"somehash"},
-        ),
-        Request(
-            "http://www.example.com/",
-            headers={'Accept-Language': b"en"},
-        ),
-        Request(
-            "http://www.example.com/",
-            headers={
-                'Accept-Language': b"en",
-                'SESSIONID': b"somehash",
-            },
-        ),
-        Request("http://www.example.com/test.html"),
-        Request("http://www.example.com/test.html#fragment"),
-        Request("http://www.example.com", method='POST'),
-        Request("http://www.example.com", method='POST', body=b'request body'),
-    )
-)
+@pytest.mark.parametrize('request_object', REQUEST_OBJECTS_TO_TEST)
 def test_component_backward_compatibility(request_object):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
