@@ -2,6 +2,7 @@ import unittest
 import warnings
 from functools import partial
 from hashlib import sha1
+from typing import Tuple, Union
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -51,7 +52,7 @@ class UtilsRequestTest(unittest.TestCase):
 class FingerprintTest(unittest.TestCase):
     function = staticmethod(fingerprint)
     cache = _fingerprint_cache
-    default_cache_key = (None, False)
+    default_cache_key: Union[Tuple[None, bool], Tuple[None, bool, bool]] = (None, False)
 
     def test_query_string_key_order(self):
         r1 = Request("http://www.example.com/query?id=111&cat=222")
@@ -199,7 +200,7 @@ class RequestFingerprintAsBytesTest(FingerprintTest):
         super().test_part_separation()
 
 
-_fingerprint_cache_2_3 = WeakKeyDictionary()
+_fingerprint_cache_2_3: WeakKeyDictionary[Request, Tuple[None, bool]] = WeakKeyDictionary()
 
 
 def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False):
