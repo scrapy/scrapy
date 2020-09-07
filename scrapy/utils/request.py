@@ -6,7 +6,6 @@ scrapy.http.Request objects
 import hashlib
 import json
 import weakref
-from functools import partial
 from urllib.parse import urlunparse
 from warnings import warn
 
@@ -29,7 +28,7 @@ def _serialize_headers(headers, request):
                 yield value
 
 
-def request_fingerprint(request, include_headers=None, keep_fragments=False, as_bytes=False):
+def request_fingerprint(request, include_headers=None, keep_fragments=False):
     """
     Return the request fingerprint as an hexadecimal string.
 
@@ -59,13 +58,6 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False, as_
     so they are also ignored by default when calculating the fingerprint.
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
-
-    The `as_bytes` argument was implemented as part of the deprecation of this
-    function, to allow the introduced :class:`RequestFingerprinter` class to
-    reproduce the same, bogus fingerprinting algorithm for backward
-    compatibility, while avoiding the performance hit of converting from
-    :class:`bytes` to :class:`str` and back to :class:`bytes`, and reusing
-    fingerprints between calls where `as_bytes` if the only different argument.
     """
     if include_headers or keep_fragments:
         message = (
@@ -132,7 +124,11 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False, as_
             for part in _serialize_headers(include_headers, request):
                 fp.update(part)
         cache[cache_key] = fp.hexdigest()
-    return bytes.fromhex(cache[cache_key]) if as_bytes else cache[cache_key]
+    return cache[cache_key]
+
+
+def _request_fingerprint_as_bytes(*args, **kwargs):
+    return bytes.fromhex(request_fingerprint(*args, **kwargs))
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
@@ -235,7 +231,7 @@ class RequestFingerprinter:
                 'information on how to handle this deprecation.'
             )
             warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
-            self._fingerprint = partial(request_fingerprint, as_bytes=True)
+            self._fingerprint = _request_fingerprint_as_bytes
         elif implementation == '2.4':
             self._fingerprint = fingerprint
         else:

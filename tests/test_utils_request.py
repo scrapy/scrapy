@@ -1,6 +1,5 @@
 import unittest
 import warnings
-from functools import partial
 from hashlib import sha1
 from typing import Mapping, Tuple
 from weakref import WeakKeyDictionary
@@ -14,6 +13,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
     _deprecated_fingerprint_cache,
     _fingerprint_cache,
+    _request_fingerprint_as_bytes,
     fingerprint,
     request_authenticate,
     request_fingerprint,
@@ -140,17 +140,6 @@ class RequestFingerprintTest(FingerprintTest):
     def test_part_separation(self):
         super().test_part_separation()
 
-    def test_as_bytes_equal(self):
-        r3 = Request("http://www.example.com/uncached3")
-        fp5 = self.function(r3)
-        fp6 = self.function(r3, as_bytes=True)
-        self.assertEqual(fp5, fp6.hex())
-
-        r4 = Request("http://www.example.com/uncached4")
-        fp7 = self.function(r4, as_bytes=True)
-        fp8 = self.function(r4)
-        self.assertEqual(fp7.hex(), fp8)
-
     def test_deprecation_default_parameters(self):
         with pytest.warns(ScrapyDeprecationWarning) as warnings:
             self.function(Request("http://www.example.com"))
@@ -177,7 +166,7 @@ class RequestFingerprintTest(FingerprintTest):
 
 
 class RequestFingerprintAsBytesTest(FingerprintTest):
-    function = staticmethod(partial(request_fingerprint, as_bytes=True))
+    function = staticmethod(_request_fingerprint_as_bytes)
     cache = _deprecated_fingerprint_cache
 
     def test_caching(self):
@@ -261,10 +250,10 @@ def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False)
         True,
     ),
 )
-def test_backward_compatibility(request_object, include_headers, keep_fragments):
+def test_function_backward_compatibility(request_object, include_headers, keep_fragments):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        fp_str = request_fingerprint(
+        fp = request_fingerprint(
             request_object,
             include_headers=include_headers,
             keep_fragments=keep_fragments,
@@ -274,7 +263,45 @@ def test_backward_compatibility(request_object, include_headers, keep_fragments)
         include_headers=include_headers,
         keep_fragments=keep_fragments,
     )
-    assert fp_str == old_fp
+    assert fp == old_fp
+
+
+@pytest.mark.parametrize(
+    'request_object',
+    (
+        Request("http://www.example.com/"),
+        Request("http://www.example.com/query?id=111&cat=222"),
+        Request("http://www.example.com/query?cat=222&id=111"),
+        Request('http://www.example.com/hnnoticiaj1.aspx?78132,199'),
+        Request('http://www.example.com/hnnoticiaj1.aspx?78160,199'),
+        Request("http://www.example.com/members/offers.html"),
+        Request(
+            "http://www.example.com/members/offers.html",
+            headers={'SESSIONID': b"somehash"},
+        ),
+        Request(
+            "http://www.example.com/",
+            headers={'Accept-Language': b"en"},
+        ),
+        Request(
+            "http://www.example.com/",
+            headers={
+                'Accept-Language': b"en",
+                'SESSIONID': b"somehash",
+            },
+        ),
+        Request("http://www.example.com/test.html"),
+        Request("http://www.example.com/test.html#fragment"),
+        Request("http://www.example.com", method='POST'),
+        Request("http://www.example.com", method='POST', body=b'request body'),
+    )
+)
+def test_component_backward_compatibility(request_object):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fp = get_crawler().request_fingerprinter.fingerprint(request_object)
+    old_fp = request_fingerprint_2_3(request_object)
+    assert fp.hex() == old_fp
 
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
