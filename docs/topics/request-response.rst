@@ -427,8 +427,9 @@ Changing the request fingerprinting algorithm would invalidade the current
 cache, requiring you to redownload all requests again.
 
 Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'2.4'`` in
-your settings to switch to the future default and only request fingerprinting
-implementation already, and remove the deprecation warning triggered by using
+your settings to switch already to the request fingerprinting implementation
+that will be the only request fingerprinting implementation available in a
+future version of Scrapy, and remove the deprecation warning triggered by using
 the default value (``'2.3'``).
 
 
