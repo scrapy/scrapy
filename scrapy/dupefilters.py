@@ -7,10 +7,6 @@ from scrapy.utils.request import referer_str, RequestFingerprinter
 
 class BaseDupeFilter:
 
-    @classmethod
-    def from_settings(cls, settings):
-        return cls()
-
     def request_seen(self, request):
         return False
 
