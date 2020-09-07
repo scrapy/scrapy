@@ -142,11 +142,13 @@ class RequestFingerprintTest(FingerprintTest):
 
     def test_as_bytes_reuse(self):
         r1 = Request("http://www.example.com/uncached1")
+        self.function(r1)
         with unittest.mock.patch('scrapy.utils.request.hashlib.sha1') as sha1_mock:
             self.function(r1, as_bytes=True)
             sha1_mock.assert_not_called()
 
         r2 = Request("http://www.example.com/uncached2")
+        self.function(r2, as_bytes=True)
         with unittest.mock.patch('scrapy.utils.request.hashlib.sha1') as sha1_mock:
             self.function(r2)
             sha1_mock.assert_not_called()
