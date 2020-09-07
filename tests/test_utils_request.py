@@ -233,70 +233,68 @@ REQUEST_OBJECTS_TO_TEST = (
 )
 
 
-@pytest.mark.parametrize('request_object', REQUEST_OBJECTS_TO_TEST)
-@pytest.mark.parametrize(
-    'include_headers',
-    (
-        None,
-        ['Accept-Language'],
-        ['accept-language', 'sessionid'],
-        ['SESSIONID', 'Accept-Language'],
-    ),
-)
-@pytest.mark.parametrize('keep_fragments', (False, True))
-def test_function_backward_compatibility(request_object, include_headers, keep_fragments):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        fp = request_fingerprint(
-            request_object,
-            include_headers=include_headers,
-            keep_fragments=keep_fragments,
+class BackwardCompatibilityTestCase(unittest.TestCase):
+
+    def test_function_backward_compatibility(self):
+        include_headers_to_test = (
+            None,
+            ['Accept-Language'],
+            ['accept-language', 'sessionid'],
+            ['SESSIONID', 'Accept-Language'],
         )
-    old_fp = request_fingerprint_2_3(
-        request_object,
-        include_headers=include_headers,
-        keep_fragments=keep_fragments,
-    )
-    assert fp == old_fp
+        for request_object in REQUEST_OBJECTS_TO_TEST:
+            for include_headers in include_headers_to_test:
+                for keep_fragments in (False, True):
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fp = request_fingerprint(
+                            request_object,
+                            include_headers=include_headers,
+                            keep_fragments=keep_fragments,
+                        )
+                    old_fp = request_fingerprint_2_3(
+                        request_object,
+                        include_headers=include_headers,
+                        keep_fragments=keep_fragments,
+                    )
+                    self.assertEqual(fp, old_fp)
 
+    def test_component_backward_compatibility(self):
+        for request_object in REQUEST_OBJECTS_TO_TEST:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                fp = get_crawler().request_fingerprinter.fingerprint(request_object)
+            old_fp = request_fingerprint_2_3(request_object)
+            self.assertEqual(fp.hex(), old_fp)
 
-@pytest.mark.parametrize('request_object', REQUEST_OBJECTS_TO_TEST)
-def test_component_backward_compatibility(request_object):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        fp = get_crawler().request_fingerprinter.fingerprint(request_object)
-    old_fp = request_fingerprint_2_3(request_object)
-    assert fp.hex() == old_fp
+    def test_custom_component_backward_compatibility(self):
+        """Tests that the backward-compatible request fingerprinting class featured
+        in the documentation is indeed backward compatible and does not cause a
+        warning to be logged."""
 
+        class RequestFingerprinter:
 
-@pytest.mark.parametrize('request_object', REQUEST_OBJECTS_TO_TEST)
-def test_custom_component_backward_compatibility(request_object):
-    """Tests that the backward-compatible request fingerprinting class featured
-    in the documentation is indeed backward compatible and does not cause a
-    warning to be logged."""
+            cache = WeakKeyDictionary()
 
-    class RequestFingerprinter:
+            def fingerprint(self, request):
+                if request not in self.cache:
+                    fp = sha1()
+                    fp.update(to_bytes(request.method))
+                    fp.update(to_bytes(canonicalize_url(request.url)))
+                    fp.update(request.body or b'')
+                    self.cache[request] = fp.digest()
+                return self.cache[request]
 
-        cache = WeakKeyDictionary()
-
-        def fingerprint(self, request):
-            if request not in self.cache:
-                fp = sha1()
-                fp.update(to_bytes(request.method))
-                fp.update(to_bytes(canonicalize_url(request.url)))
-                fp.update(request.body or b'')
-                self.cache[request] = fp.digest()
-            return self.cache[request]
-
-    with warnings.catch_warnings() as logged_warnings:
-        settings = {
-            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
-        }
-        crawler = get_crawler(settings_dict=settings)
-        fp = crawler.request_fingerprinter.fingerprint(request_object)
-    old_fp = request_fingerprint_2_3(request_object)
-    assert fp.hex() == old_fp
-    assert not logged_warnings
+        for request_object in REQUEST_OBJECTS_TO_TEST:
+            with warnings.catch_warnings() as logged_warnings:
+                settings = {
+                    'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+                }
+                crawler = get_crawler(settings_dict=settings)
+                fp = crawler.request_fingerprinter.fingerprint(request_object)
+            old_fp = request_fingerprint_2_3(request_object)
+            self.assertEqual(fp.hex(), old_fp)
+            self.assertFalse(logged_warnings)
 
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
