@@ -2,7 +2,7 @@ import unittest
 import warnings
 from functools import partial
 from hashlib import sha1
-from typing import Tuple, Union
+from typing import Mapping, Tuple
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -52,7 +52,7 @@ class UtilsRequestTest(unittest.TestCase):
 class FingerprintTest(unittest.TestCase):
     function = staticmethod(fingerprint)
     cache = _fingerprint_cache
-    default_cache_key: Union[Tuple[None, bool], Tuple[None, bool, bool]] = (None, False)
+    default_cache_key = (None, False)
 
     def test_query_string_key_order(self):
         r1 = Request("http://www.example.com/query?id=111&cat=222")
@@ -135,24 +135,10 @@ class FingerprintTest(unittest.TestCase):
 class RequestFingerprintTest(FingerprintTest):
     function = staticmethod(request_fingerprint)
     cache = _deprecated_fingerprint_cache
-    default_cache_key = (None, False, False)
 
     @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
     def test_part_separation(self):
         super().test_part_separation()
-
-    def test_as_bytes_reuse(self):
-        r1 = Request("http://www.example.com/uncached1")
-        self.function(r1)
-        with unittest.mock.patch('scrapy.utils.request.hashlib.sha1') as sha1_mock:
-            self.function(r1, as_bytes=True)
-            sha1_mock.assert_not_called()
-
-        r2 = Request("http://www.example.com/uncached2")
-        self.function(r2, as_bytes=True)
-        with unittest.mock.patch('scrapy.utils.request.hashlib.sha1') as sha1_mock:
-            self.function(r2)
-            sha1_mock.assert_not_called()
 
     def test_as_bytes_equal(self):
         r3 = Request("http://www.example.com/uncached3")
@@ -193,14 +179,20 @@ class RequestFingerprintTest(FingerprintTest):
 class RequestFingerprintAsBytesTest(FingerprintTest):
     function = staticmethod(partial(request_fingerprint, as_bytes=True))
     cache = _deprecated_fingerprint_cache
-    default_cache_key = (None, False, True)
+
+    def test_caching(self):
+        r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
+        self.assertEqual(
+            self.function(r1),
+            bytes.fromhex(self.cache[r1][self.default_cache_key])
+        )
 
     @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
     def test_part_separation(self):
         super().test_part_separation()
 
 
-_fingerprint_cache_2_3: WeakKeyDictionary[Request, Tuple[None, bool]] = WeakKeyDictionary()
+_fingerprint_cache_2_3: Mapping[Request, Tuple[None, bool]] = WeakKeyDictionary()
 
 
 def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False):

@@ -26,7 +26,7 @@ def _serialize_headers(headers, request):
         if header in request.headers:
             yield header
             for value in request.headers.getlist(header):
-                yield v
+                yield value
 
 
 def request_fingerprint(request, include_headers=None, keep_fragments=False, as_bytes=False):
@@ -122,24 +122,17 @@ def request_fingerprint(request, include_headers=None, keep_fragments=False, as_
     if include_headers:
         include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
     cache = _deprecated_fingerprint_cache.setdefault(request, {})
-    cache_key = (include_headers, keep_fragments, as_bytes)
-    alternative_cache_key = (include_headers, keep_fragments, not as_bytes)
+    cache_key = (include_headers, keep_fragments)
     if cache_key not in cache:
-        if alternative_cache_key in cache:
-            cache[cache_key] = (
-                bytes.fromhex(cache[alternative_cache_key]) if as_bytes
-                else cache[alternative_cache_key].hex()
-            )
-        else:
-            fp = hashlib.sha1()
-            fp.update(to_bytes(request.method))
-            fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
-            fp.update(request.body or b'')
-            if include_headers:
-                for part in _serialize_headers(include_headers, request):
-                    fp.update(part)
-            cache[cache_key] = fp.digest() if as_bytes else fp.hexdigest()
-    return cache[cache_key]
+        fp = hashlib.sha1()
+        fp.update(to_bytes(request.method))
+        fp.update(to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments)))
+        fp.update(request.body or b'')
+        if include_headers:
+            for part in _serialize_headers(include_headers, request):
+                fp.update(part)
+        cache[cache_key] = fp.hexdigest()
+    return bytes.fromhex(cache[cache_key]) if as_bytes else cache[cache_key]
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
