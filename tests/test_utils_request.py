@@ -269,6 +269,36 @@ def test_component_backward_compatibility(request_object):
     assert fp.hex() == old_fp
 
 
+@pytest.mark.parametrize('request_object', REQUEST_OBJECTS_TO_TEST)
+def test_custom_component_backward_compatibility(request_object):
+    """Tests that the backward-compatible request fingerprinting class featured
+    in the documentation is indeed backward compatible and does not cause a
+    warning to be logged."""
+
+    class RequestFingerprinter:
+
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                fp = sha1()
+                fp.update(to_bytes(request.method))
+                fp.update(to_bytes(canonicalize_url(request.url)))
+                fp.update(request.body or b'')
+                self.cache[request] = fp.digest()
+            return self.cache[request]
+
+    with warnings.catch_warnings() as logged_warnings:
+        settings = {
+            'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        fp = crawler.request_fingerprinter.fingerprint(request_object)
+    old_fp = request_fingerprint_2_3(request_object)
+    assert fp.hex() == old_fp
+    assert not logged_warnings
+
+
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
 
     def test_include_headers(self):

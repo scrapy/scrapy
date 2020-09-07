@@ -405,7 +405,7 @@ Possible values are:
 
 -   ``'2.4'``
 
-    This implementation was introduced in ``'2.4'`` to fix an issue of the
+    This implementation was introduced in Scrapy 2.4 to fix an issue of the
     previous implementation.
 
     New projects should use this value. The :command:`startproject` command
@@ -415,8 +415,10 @@ If you are using the default value (``'2.3'``) for this setting, and you are
 using Scrapy components where changing the request fingerprinting algorithm
 would cause undesired results, you need to carefully decide when to change the
 value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
-setting to a custom class value that implements the 2.3 request fingerprinting
-algorithm and does not log this warning (see :ref:`2.3-request-fingerprinter`).
+setting to a custom request fingerprinter class that implements the 2.3 request
+fingerprinting algorithm and does not log this warning (
+:ref:`2.3-request-fingerprinter` includes an example implementation of such a
+class).
 
 Scenarios where changing the request fingerprinting algorithm may cause
 undesired results include, for example, using the HTTP cache middleware (see
