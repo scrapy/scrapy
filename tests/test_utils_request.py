@@ -297,7 +297,6 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
             self.assertFalse(logged_warnings)
 
 
-
 class RequestFingerprinterTestCase(unittest.TestCase):
 
     def test_default_implementation(self):
@@ -341,8 +340,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
             'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.5',
         }
         with self.assertRaises(ValueError):
-            crawler = get_crawler(settings_dict=settings)
-
+            get_crawler(settings_dict=settings)
 
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
