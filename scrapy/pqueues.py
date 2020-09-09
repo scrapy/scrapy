@@ -58,11 +58,7 @@ class ScrapyPriorityQueue:
         self.key = key
         self.queues = {}
         self.curprio = None
-        self.selfcheck()
         self.init_prios(startprios)
-
-    def selfcheck(self):
-        self.qfactory('selfcheck').close()
 
     def init_prios(self, startprios):
         if not startprios:
@@ -161,13 +157,10 @@ class DownloaderAwarePriorityQueue:
         self.downstream_queue_cls = downstream_queue_cls
         self.key = key
         self.crawler = crawler
-        self.selfcheck()
+
         self.pqueues = {}  # slot -> priority queue
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
-
-    def selfcheck(self):
-        self.pqfactory('hostname.invalid').close()
 
     def pqfactory(self, slot, startprios=()):
         return ScrapyPriorityQueue(self.crawler,
