@@ -204,3 +204,11 @@ class NegotiationHttp11TestCase(TestCase):
 class NegotiationHttp2TestCase(NegotiationHttp11TestCase):
     server_acceptable_protocols = [b'h2']
     expected_negotiated_protocol = 'h2'
+
+
+class NegotiationHttp2_11TestCase(NegotiationHttp11TestCase):
+    # NPN being deprecated and replaced by ALPN. In ALPN, ClientHello
+    # message includes the list of supported protocols for the server
+    # to choose from. The Client cannot provide a priority here.
+    server_acceptable_protocols = [b'h2', b'http/1.1']
+    expected_negotiated_protocol = 'h2'
