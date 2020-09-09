@@ -53,7 +53,7 @@ class MockCrawler(Crawler):
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
             **settings,
         )
-        super(MockCrawler, self).__init__(Spider, settings)
+        super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
 
 
@@ -300,7 +300,7 @@ class StartUrlsSpider(Spider):
 
     def __init__(self, start_urls):
         self.start_urls = start_urls
-        super(StartUrlsSpider, self).__init__(name='StartUrlsSpider')
+        super().__init__(name='StartUrlsSpider')
 
     def parse(self, response):
         pass

@@ -142,7 +142,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
 
     def test_spider_manager_verify_interface(self):
         settings = Settings({
-            'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
+            'SPIDER_LOADER_CLASS': SpiderLoaderWithWrongInterface,
         })
         with warnings.catch_warnings(record=True) as w:
             self.assertRaises(AttributeError, CrawlerRunner, settings)
@@ -344,6 +344,14 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    def test_custom_loop_asyncio(self):
+        log = self.run_script("asyncio_custom_loop.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):

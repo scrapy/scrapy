@@ -8,7 +8,7 @@ import sys
 import tempfile
 from contextlib import contextmanager
 from itertools import chain
-from os.path import exists, join, abspath
+from os.path import exists, join, abspath, getmtime
 from pathlib import Path
 from shutil import rmtree, copytree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
@@ -16,6 +16,7 @@ from tempfile import mkdtemp
 from threading import Timer
 from unittest import skipIf
 
+from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
@@ -41,7 +42,7 @@ class CommandSettings(unittest.TestCase):
 
     def test_settings_json_string(self):
         feeds_json = '{"data.json": {"format": "json"}, "data.xml": {"format": "xml"}}'
-        opts, args = self.parser.parse_args(args=['-s', 'FEEDS={}'.format(feeds_json), 'spider.py'])
+        opts, args = self.parser.parse_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
         self.command.process_options(args, opts)
         self.assertIsInstance(self.command.settings['FEEDS'], scrapy.settings.BaseSettings)
         self.assertEqual(dict(self.command.settings['FEEDS']), json.loads(feeds_json))
@@ -74,6 +75,7 @@ class ProjectTest(unittest.TestCase):
 
         def kill_proc():
             p.kill()
+            p.communicate()
             assert False, 'Command took too much time to complete'
 
         timer = Timer(15, kill_proc)
@@ -126,9 +128,13 @@ class StartprojectTest(ProjectTest):
 
 
 def get_permissions_dict(path, renamings=None, ignore=None):
+
+    def get_permissions(path):
+        return oct(os.stat(path).st_mode)
+
     renamings = renamings or tuple()
     permissions_dict = {
-        '.': os.stat(path).st_mode,
+        '.': get_permissions(path),
     }
     for root, dirs, files in os.walk(path):
         nodes = list(chain(dirs, files))
@@ -143,15 +149,17 @@ def get_permissions_dict(path, renamings=None, ignore=None):
                     search_string,
                     replacement
                 )
-            permissions = os.stat(absolute_path).st_mode
+            permissions = get_permissions(absolute_path)
             permissions_dict[relative_path] = permissions
     return permissions_dict
 
 
 class StartprojectTemplatesTest(ProjectTest):
 
+    maxDiff = None
+
     def setUp(self):
-        super(StartprojectTemplatesTest, self).setUp()
+        super().setUp()
         self.tmpl = join(self.temp_path, 'templates')
         self.tmpl_proj = join(self.tmpl, 'project')
 
@@ -161,10 +169,10 @@ class StartprojectTemplatesTest(ProjectTest):
             pass
         assert exists(join(self.tmpl_proj, 'root_template'))
 
-        args = ['--set', 'TEMPLATES_DIR=%s' % self.tmpl]
+        args = ['--set', f'TEMPLATES_DIR={self.tmpl}']
         p, out, err = self.proc('startproject', self.project_name, *args)
-        self.assertIn("New Scrapy project '%s', using template directory"
-                      % self.project_name, out)
+        self.assertIn(f"New Scrapy project '{self.project_name}', "
+                      "using template directory", out)
         self.assertIn(self.tmpl_proj, out)
         assert exists(join(self.proj_path, 'root_template'))
 
@@ -245,7 +253,7 @@ class StartprojectTemplatesTest(ProjectTest):
                 'startproject',
                 project_name,
                 '--set',
-                'TEMPLATES_DIR={}'.format(read_only_templates_dir),
+                f'TEMPLATES_DIR={read_only_templates_dir}',
             ),
             cwd=destination,
             env=self.env,
@@ -291,7 +299,7 @@ class StartprojectTemplatesTest(ProjectTest):
                 path.mkdir(mode=permissions)
             else:
                 path.touch(mode=permissions)
-            expected_permissions[node] = path.stat().st_mode
+            expected_permissions[node] = oct(path.stat().st_mode)
 
         process = subprocess.Popen(
             (
@@ -311,14 +319,61 @@ class StartprojectTemplatesTest(ProjectTest):
 
         self.assertEqual(actual_permissions, expected_permissions)
 
+    def test_startproject_permissions_umask_022(self):
+        """Check that generated files have the right permissions when the
+        system uses a umask value that causes new files to have different
+        permissions than those from the template folder."""
+        @contextmanager
+        def umask(new_mask):
+            cur_mask = os.umask(new_mask)
+            yield
+            os.umask(cur_mask)
+
+        scrapy_path = scrapy.__path__[0]
+        project_template = os.path.join(
+            scrapy_path,
+            'templates',
+            'project'
+        )
+        project_name = 'umaskproject'
+        renamings = (
+            ('module', project_name),
+            ('.tmpl', ''),
+        )
+        expected_permissions = get_permissions_dict(
+            project_template,
+            renamings,
+            IGNORE,
+        )
+
+        with umask(0o002):
+            destination = mkdtemp()
+            process = subprocess.Popen(
+                (
+                    sys.executable,
+                    '-m',
+                    'scrapy.cmdline',
+                    'startproject',
+                    project_name,
+                ),
+                cwd=destination,
+                env=self.env,
+            )
+            process.wait()
+
+            project_dir = os.path.join(destination, project_name)
+            actual_permissions = get_permissions_dict(project_dir)
+
+            self.assertEqual(actual_permissions, expected_permissions)
+
 
 class CommandTest(ProjectTest):
 
     def setUp(self):
-        super(CommandTest, self).setUp()
+        super().setUp()
         self.call('startproject', self.project_name)
         self.cwd = join(self.temp_path, self.project_name)
-        self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
+        self.env['SCRAPY_SETTINGS_MODULE'] = f'{self.project_name}.settings'
 
 
 class GenspiderCommandTest(CommandTest):
@@ -332,13 +387,16 @@ class GenspiderCommandTest(CommandTest):
         assert exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
 
     def test_template(self, tplname='crawl'):
-        args = ['--template=%s' % tplname] if tplname else []
+        args = [f'--template={tplname}'] if tplname else []
         spname = 'test_spider'
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
-        self.assertIn("Created spider %r using template %r in module" % (spname, tplname), out)
+        self.assertIn(f"Created spider {spname!r} using template {tplname!r} in module", out)
         self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
+        modify_time_before = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
-        self.assertIn("Spider %r already exists in module" % spname, out)
+        self.assertIn(f"Spider {spname!r} already exists in module", out)
+        modify_time_after = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
+        self.assertEqual(modify_time_after, modify_time_before)
 
     def test_template_basic(self):
         self.test_template('basic')
@@ -358,7 +416,41 @@ class GenspiderCommandTest(CommandTest):
 
     def test_same_name_as_project(self):
         self.assertEqual(2, self.call('genspider', self.project_name))
-        assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
+        assert not exists(join(self.proj_mod_path, 'spiders', f'{self.project_name}.py'))
+
+    def test_same_filename_as_existing_spider(self, force=False):
+        file_name = 'example'
+        file_path = join(self.proj_mod_path, 'spiders', f'{file_name}.py')
+        self.assertEqual(0, self.call('genspider', file_name, 'example.com'))
+        assert exists(file_path)
+
+        # change name of spider but not its file name
+        with open(file_path, 'r+') as spider_file:
+            file_data = spider_file.read()
+            file_data = file_data.replace("name = \'example\'", "name = \'renamed\'")
+            spider_file.seek(0)
+            spider_file.write(file_data)
+            spider_file.truncate()
+        modify_time_before = getmtime(file_path)
+        file_contents_before = file_data
+
+        if force:
+            p, out, err = self.proc('genspider', '--force', file_name, 'example.com')
+            self.assertIn(f"Created spider {file_name!r} using template \'basic\' in module", out)
+            modify_time_after = getmtime(file_path)
+            self.assertNotEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertNotEqual(file_contents_after, file_contents_before)
+        else:
+            p, out, err = self.proc('genspider', file_name, 'example.com')
+            self.assertIn(f"{file_path} already exists", out)
+            modify_time_after = getmtime(file_path)
+            self.assertEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertEqual(file_contents_after, file_contents_before)
+
+    def test_same_filename_as_existing_spider_force(self):
+        self.test_same_filename_as_existing_spider(force=True)
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):
@@ -366,6 +458,34 @@ class GenspiderStandaloneCommandTest(ProjectTest):
     def test_generate_standalone_spider(self):
         self.call('genspider', 'example', 'example.com')
         assert exists(join(self.temp_path, 'example.py'))
+
+    def test_same_name_as_existing_file(self, force=False):
+        file_name = 'example'
+        file_path = join(self.temp_path, file_name + '.py')
+        p, out, err = self.proc('genspider', file_name, 'example.com')
+        self.assertIn(f"Created spider {file_name!r} using template \'basic\' ", out)
+        assert exists(file_path)
+        modify_time_before = getmtime(file_path)
+        file_contents_before = open(file_path, 'r').read()
+
+        if force:
+            # use different template to ensure contents were changed
+            p, out, err = self.proc('genspider', '--force', '-t', 'crawl', file_name, 'example.com')
+            self.assertIn(f"Created spider {file_name!r} using template \'crawl\' ", out)
+            modify_time_after = getmtime(file_path)
+            self.assertNotEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertNotEqual(file_contents_after, file_contents_before)
+        else:
+            p, out, err = self.proc('genspider', file_name, 'example.com')
+            self.assertIn(f"{join(self.temp_path, file_name + '.py')} already exists", out)
+            modify_time_after = getmtime(file_path)
+            self.assertEqual(modify_time_after, modify_time_before)
+            file_contents_after = open(file_path, 'r').read()
+            self.assertEqual(file_contents_after, file_contents_before)
+
+    def test_same_name_as_existing_file_force(self):
+        self.test_same_name_as_existing_file(force=True)
 
 
 class MiscCommandsTest(CommandTest):
@@ -504,6 +624,77 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=[])
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    def test_custom_asyncio_loop_enabled_true(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s',
+            'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor',
+            '-s',
+            'ASYNCIO_EVENT_LOOP=uvloop.Loop',
+        ])
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
+
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
+    def test_custom_asyncio_loop_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
+        ])
+        import asyncio
+        loop = asyncio.new_event_loop()
+        self.assertIn("Using asyncio event loop: %s.%s" % (loop.__module__, loop.__class__.__name__), log)
+
+    def test_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        return []
+"""
+        args = ['-o', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}", log)
+
+    def test_overwrite_output(self):
+        spider_code = """
+import json
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug(
+            'FEEDS: {}'.format(
+                json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
+            )
+        )
+        return []
+"""
+        args = ['-O', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+
+    def test_output_and_overwrite_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        return []
+"""
+        args = ['-o', 'example1.json', '-O', 'example2.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
+
 
 class BenchCommandTest(CommandTest):
 
@@ -512,3 +703,79 @@ class BenchCommandTest(CommandTest):
                               '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
+
+
+class CrawlCommandTest(CommandTest):
+
+    def crawl(self, code, args=()):
+        fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
+        with open(fname, 'w') as f:
+            f.write(code)
+        return self.proc('crawl', 'myspider', *args)
+
+    def get_log(self, code, args=()):
+        _, _, stderr = self.crawl(code, args=args)
+        return stderr
+
+    def test_no_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('It works!')
+        return []
+"""
+        log = self.get_log(spider_code)
+        self.assertIn("[myspider] DEBUG: It works!", log)
+
+    def test_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        return []
+"""
+        args = ['-o', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}", log)
+
+    def test_overwrite_output(self):
+        spider_code = """
+import json
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug(
+            'FEEDS: {}'.format(
+                json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
+            )
+        )
+        return []
+"""
+        args = ['-O', 'example.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+
+    def test_output_and_overwrite_output(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        return []
+"""
+        args = ['-o', 'example1.json', '-O', 'example2.json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)

@@ -6,11 +6,10 @@ import struct
 from scrapy.utils.decorators import deprecated
 
 
-# - Python>=3.5 GzipFile's read() has issues returning leftover
-#   uncompressed data when input is corrupted
-#   (regression or bug-fix compared to Python 3.4)
+# - GzipFile's read() has issues returning leftover uncompressed data when
+#   input is corrupted
 # - read1(), which fetches data before raising EOFError on next call
-#   works here but is only available from Python>=3.3
+#   works here
 @deprecated('GzipFile.read1')
 def read1(gzf, size=-1):
     return gzf.read1(size)

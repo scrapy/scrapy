@@ -65,8 +65,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_fetch_redirect_follow_302(self):
         """Test that calling ``fetch(url)`` follows HTTP redirects by default."""
         url = self.url('/redirect-no-meta-refresh')
-        code = "fetch('{0}')"
-        errcode, out, errout = yield self.execute(['-c', code.format(url)])
+        code = f"fetch('{url}')"
+        errcode, out, errout = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
         assert b'Redirecting (302)' in errout
         assert b'Crawled (200)' in errout
@@ -75,23 +75,23 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_fetch_redirect_not_follow_302(self):
         """Test that calling ``fetch(url, redirect=False)`` disables automatic redirects."""
         url = self.url('/redirect-no-meta-refresh')
-        code = "fetch('{0}', redirect=False)"
-        errcode, out, errout = yield self.execute(['-c', code.format(url)])
+        code = f"fetch('{url}', redirect=False)"
+        errcode, out, errout = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
         assert b'Crawled (302)' in errout
 
     @defer.inlineCallbacks
     def test_request_replace(self):
         url = self.url('/text')
-        code = "fetch('{0}') or fetch(response.request.replace(method='POST'))"
-        errcode, out, _ = yield self.execute(['-c', code.format(url)])
+        code = f"fetch('{url}') or fetch(response.request.replace(method='POST'))"
+        errcode, out, _ = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
 
     @defer.inlineCallbacks
     def test_scrapy_import(self):
         url = self.url('/text')
-        code = "fetch(scrapy.Request('{0}'))"
-        errcode, out, _ = yield self.execute(['-c', code.format(url)])
+        code = f"fetch(scrapy.Request('{url}'))"
+        errcode, out, _ = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
 
     @defer.inlineCallbacks

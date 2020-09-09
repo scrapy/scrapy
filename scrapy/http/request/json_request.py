@@ -32,7 +32,7 @@ class JsonRequest(Request):
             if 'method' not in kwargs:
                 kwargs['method'] = 'POST'
 
-        super(JsonRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.headers.setdefault('Content-Type', 'application/json')
         self.headers.setdefault('Accept', 'application/json, text/javascript, */*; q=0.01')
 
@@ -47,7 +47,7 @@ class JsonRequest(Request):
         elif not body_passed and data_passed:
             kwargs['body'] = self._dumps(data)
 
-        return super(JsonRequest, self).replace(*args, **kwargs)
+        return super().replace(*args, **kwargs)
 
     def _dumps(self, data):
         """Convert to JSON """

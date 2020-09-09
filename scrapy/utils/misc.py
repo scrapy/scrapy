@@ -5,6 +5,7 @@ import os
 import re
 import hashlib
 import warnings
+from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
@@ -38,14 +39,24 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be the import path of a class, function, variable or an
-    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
+    The object can be the import path of a class, function, variable or an
+    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'.
+
+    If ``path`` is not a string, but is a callable object, such as a class or
+    a function, then return it as is.
     """
+
+    if not isinstance(path, str):
+        if callable(path):
+            return path
+        else:
+            raise TypeError("Unexpected argument type, expected string "
+                            "or object, got: %s" % type(path))
 
     try:
         dot = path.rindex('.')
     except ValueError:
-        raise ValueError("Error loading object '%s': not a full path" % path)
+        raise ValueError(f"Error loading object '{path}': not a full path")
 
     module, name = path[:dot], path[dot + 1:]
     mod = import_module(module)
@@ -53,7 +64,7 @@ def load_object(path):
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError("Module '%s' doesn't define any object named '%s'" % (module, name))
+        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
 
     return obj
 
@@ -162,7 +173,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         instance = objcls(*args, **kwargs)
         method_name = '__new__'
     if instance is None:
-        raise TypeError("%s.%s returned None" % (objcls.__qualname__, method_name))
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
 
 
@@ -184,6 +195,22 @@ def set_environ(**kwargs):
                 os.environ[k] = v
 
 
+def walk_callable(node):
+    """Similar to ``ast.walk``, but walks only function body and skips nested
+    functions defined within the node.
+    """
+    todo = deque([node])
+    walked_func_def = False
+    while todo:
+        node = todo.popleft()
+        if isinstance(node, ast.FunctionDef):
+            if walked_func_def:
+                continue
+            walked_func_def = True
+        todo.extend(ast.iter_child_nodes(node))
+        yield node
+
+
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
@@ -201,7 +228,7 @@ def is_generator_with_return_value(callable):
 
     if inspect.isgeneratorfunction(callable):
         tree = ast.parse(dedent(inspect.getsource(callable)))
-        for node in ast.walk(tree):
+        for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
                 _generator_callbacks_cache[callable] = True
                 return _generator_callbacks_cache[callable]
@@ -217,9 +244,10 @@ def warn_on_generator_with_return_value(spider, callable):
     """
     if is_generator_with_return_value(callable):
         warnings.warn(
-            'The "{}.{}" method is a generator and includes a "return" statement with a '
-            'value different than None. This could lead to unexpected behaviour. Please see '
+            f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
+            'a generator and includes a "return" statement with a value '
+            'different than None. This could lead to unexpected behaviour. Please see '
             'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
-            'for details about the semantics of the "return" statement within generators'
-            .format(spider.__class__.__name__, callable.__name__), stacklevel=2,
+            'for details about the semantics of the "return" statement within generators',
+            stacklevel=2,
         )

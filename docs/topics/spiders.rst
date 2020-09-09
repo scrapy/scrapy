@@ -279,7 +279,7 @@ Spiders can access arguments in their `__init__` methods::
 
         def __init__(self, category=None, *args, **kwargs):
             super(MySpider, self).__init__(*args, **kwargs)
-            self.start_urls = ['http://www.example.com/categories/%s' % category]
+            self.start_urls = [f'http://www.example.com/categories/{category}']
             # ...
 
 The default `__init__` method will take any spider arguments
@@ -292,7 +292,7 @@ The above example can also be written as follows::
         name = 'myspider'
 
         def start_requests(self):
-            yield scrapy.Request('http://www.example.com/categories/%s' % self.category)
+            yield scrapy.Request(f'http://www.example.com/categories/{self.category}')
 
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
