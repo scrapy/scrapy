@@ -7,6 +7,10 @@ from scrapy.utils.request import referer_str, RequestFingerprinter
 
 class BaseDupeFilter:
 
+    @classmethod
+    def from_settings(cls, settings):
+        return cls()
+
     def request_seen(self, request):
         return False
 
@@ -40,13 +44,9 @@ class RFPDupeFilter(BaseDupeFilter):
         path = job_dir(crawler.settings)
         debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
         fingerprinter = crawler.request_fingerprinter
-        try:
-            result = cls.from_settings(crawler.settings)
-        except AttributeError:
-            return cls(path=path, debug=debug, fingerprinter=fingerprinter)
-        else:
-            result.fingerprinter = fingerprinter
-            return result
+        result = cls.from_settings(crawler.settings)
+        result.fingerprinter = fingerprinter
+        return result
 
     def request_seen(self, request):
         fp = self.request_fingerprint(request)
