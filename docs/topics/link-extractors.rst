@@ -17,7 +17,7 @@ Link extractors are used in :class:`~scrapy.spiders.CrawlSpider` spiders
 through a set of :class:`~scrapy.spiders.Rule` objects. You can also use link
 extractors in regular spiders.
 
-In other to use link extractors in regular spiders, you should instantiate ``scrapy.linkextractors.LinkExtractor`` into
+In order to use link extractors in regular spiders, you can instantiate ``scrapy.linkextractors.LinkExtractor`` into
 a class variable in your spider. This variable can be accessed through the ``parse`` method
 and used to extract links using a format similar to the one below::
 
