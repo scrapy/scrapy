@@ -153,4 +153,12 @@ LxmlLinkExtractor
 
     .. automethod:: extract_links
 
+Link
+----
+
+.. module:: scrapy.link
+   :synopsis: Link from link extractors
+
+.. autoclass:: Link
+
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

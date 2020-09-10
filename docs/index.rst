@@ -77,8 +77,6 @@ Basic concepts
    topics/link-extractors
    topics/settings
    topics/exceptions
-   topics/link
-
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
