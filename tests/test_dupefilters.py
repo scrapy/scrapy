@@ -64,7 +64,9 @@ class RFPDupeFilterTest(unittest.TestCase):
         self.assertEqual(scheduler.df.method, 'n/a')
 
     def test_filter(self):
-        dupefilter = RFPDupeFilter()
+        crawler = get_crawler()
+        scheduler = Scheduler.from_crawler(crawler)
+        dupefilter = scheduler.df
         dupefilter.open()
 
         r1 = Request('http://scrapytest.org/1')
@@ -84,8 +86,10 @@ class RFPDupeFilterTest(unittest.TestCase):
         r2 = Request('http://scrapytest.org/2')
 
         path = tempfile.mkdtemp()
+        crawler = get_crawler(settings_dict={'JOBDIR': path})
         try:
-            df = RFPDupeFilter(path)
+            scheduler = Scheduler.from_crawler(crawler)
+            df = scheduler.df
             try:
                 df.open()
                 assert not df.request_seen(r1)
@@ -112,7 +116,9 @@ class RFPDupeFilterTest(unittest.TestCase):
         r1 = Request('http://scrapytest.org/index.html')
         r2 = Request('http://scrapytest.org/INDEX.html')
 
-        dupefilter = RFPDupeFilter()
+        crawler = get_crawler()
+        scheduler = Scheduler.from_crawler(crawler)
+        dupefilter = scheduler.df
         dupefilter.open()
 
         assert not dupefilter.request_seen(r1)
@@ -127,7 +133,10 @@ class RFPDupeFilterTest(unittest.TestCase):
                 fp.update(to_bytes(request.url.lower()))
                 return fp.digest()
 
-        case_insensitive_dupefilter = RFPDupeFilter(fingerprinter=RequestFingerprinter())
+        settings = {'REQUEST_FINGERPRINTER_CLASS': RequestFingerprinter}
+        crawler = get_crawler(settings_dict=settings)
+        scheduler = Scheduler.from_crawler(crawler)
+        case_insensitive_dupefilter = scheduler.df
         case_insensitive_dupefilter.open()
 
         assert not case_insensitive_dupefilter.request_seen(r1)
@@ -142,8 +151,10 @@ class RFPDupeFilterTest(unittest.TestCase):
         r1 = Request('http://scrapytest.org/1')
 
         path = tempfile.mkdtemp()
+        crawler = get_crawler(settings_dict={'JOBDIR': path})
         try:
-            df = RFPDupeFilter(path)
+            scheduler = Scheduler.from_crawler(crawler)
+            df = scheduler.df
             df.open()
             df.request_seen(r1)
             df.close('finished')
@@ -192,6 +203,42 @@ class RFPDupeFilterTest(unittest.TestCase):
         with LogCapture() as log:
             settings = {'DUPEFILTER_DEBUG': True,
                         'DUPEFILTER_CLASS': __name__ + '.FromCrawlerRFPDupeFilter'}
+            crawler = get_crawler(SimpleSpider, settings_dict=settings)
+            scheduler = Scheduler.from_crawler(crawler)
+            spider = SimpleSpider.from_crawler(crawler)
+
+            dupefilter = scheduler.df
+            dupefilter.open()
+
+            r1 = Request('http://scrapytest.org/index.html')
+            r2 = Request('http://scrapytest.org/index.html',
+                         headers={'Referer': 'http://scrapytest.org/INDEX.html'})
+
+            dupefilter.log(r1, spider)
+            dupefilter.log(r2, spider)
+
+            assert crawler.stats.get_value('dupefilter/filtered') == 2
+            log.check_present(
+                (
+                    'scrapy.dupefilters',
+                    'DEBUG',
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html> (referer: None)'
+                )
+            )
+            log.check_present(
+                (
+                    'scrapy.dupefilters',
+                    'DEBUG',
+                    'Filtered duplicate request: <GET http://scrapytest.org/index.html>'
+                    ' (referer: http://scrapytest.org/INDEX.html)'
+                )
+            )
+
+            dupefilter.close('finished')
+
+    def test_log_debug_default_dupefilter(self):
+        with LogCapture() as log:
+            settings = {'DUPEFILTER_DEBUG': True}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             scheduler = Scheduler.from_crawler(crawler)
             spider = SimpleSpider.from_crawler(crawler)

@@ -40,12 +40,14 @@ class RFPDupeFilter(BaseDupeFilter):
             self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
+    def from_settings(cls, settings):
+        debug = settings.getbool('DUPEFILTER_DEBUG')
+        return cls(job_dir(settings), debug)
+
+    @classmethod
     def from_crawler(cls, crawler):
-        path = job_dir(crawler.settings)
-        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
-        fingerprinter = crawler.request_fingerprinter
         result = cls.from_settings(crawler.settings)
-        result.fingerprinter = fingerprinter
+        result.fingerprinter = crawler.request_fingerprinter
         return result
 
     def request_seen(self, request):
