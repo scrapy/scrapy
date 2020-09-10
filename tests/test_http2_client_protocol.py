@@ -357,28 +357,29 @@ class Https2ClientProtocolTestCase(TestCase):
             200
         )
 
-    def _check_POST_json_x10(self, *args, **kwargs):
+    def _check_POST_json_xTimes(self, *args, times=10, **kwargs):
         def get_deferred():
             return self._check_POST_json(*args, **kwargs)
 
-        return self._check_repeat(get_deferred, 10)
+        return self._check_repeat(get_deferred, times)
 
     def test_POST_small_json_x10(self):
         request = JsonRequest(url=self.get_url('/post-data-json-small'), method='POST', data=Data.JSON_SMALL)
-        return self._check_POST_json_x10(
+        return self._check_POST_json_xTimes(
             request,
             Data.JSON_SMALL,
             Data.EXTRA_SMALL,
             200
         )
 
-    def test_POST_large_json_x10(self):
+    def test_POST_large_json_x5(self):
         request = JsonRequest(url=self.get_url('/post-data-json-large'), method='POST', data=Data.JSON_LARGE)
-        return self._check_POST_json_x10(
+        return self._check_POST_json_xTimes(
             request,
             Data.JSON_LARGE,
             Data.EXTRA_LARGE,
-            200
+            200,
+            times=5
         )
 
     def test_cancel_request(self):
