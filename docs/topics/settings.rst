@@ -678,6 +678,10 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
     Scrapy currently does not support HTTP/2 Cleartext (h2c) since none
     of the major browsers support HTTP/2 unencrypted (refer `http2 faq`_).
 
+.. warning:: HTTP/2 support in Scrapy is experimental, and not yet recommended
+             for production environments. Future Scrapy versions may introduce
+             related changes without a deprecation period or warning.
+
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 
 .. setting:: DOWNLOAD_TIMEOUT
