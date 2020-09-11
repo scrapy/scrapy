@@ -19,6 +19,7 @@ from scrapy.responsetypes import responsetypes
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +28,7 @@ class InactiveStreamClosed(ConnectionClosed):
     of the stream. This happens when a stream is waiting for other
     streams to close and connection is lost."""
 
-    def __init__(self, request: Request):
+    def __init__(self, request: Request) -> None:
         self.request = request
 
     def __str__(self) -> str:
@@ -139,7 +140,7 @@ class Stream:
             'headers': Headers({}),
         }
 
-        def _cancel(_):
+        def _cancel(_) -> None:
             # Close this stream as gracefully as possible
             # If the associated request is initiated we reset this stream
             # else we directly call close() method
@@ -360,7 +361,7 @@ class Stream:
         self,
         reason: StreamCloseReason,
         errors: Optional[List[BaseException]] = None,
-        from_protocol: bool = False
+        from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case.
         """
