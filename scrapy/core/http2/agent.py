@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Deque, Dict, List, Optional, Tuple, Type
+from typing import Deque, Dict, List, Optional, Tuple
 
 from twisted.internet import defer
 from twisted.internet.base import ReactorBase
@@ -98,7 +98,7 @@ class H2Agent:
         self,
         reactor: ReactorBase,
         pool: H2ConnectionPool,
-        context_factory: Type[BrowserLikePolicyForHTTPS] = BrowserLikePolicyForHTTPS(),
+        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
         connect_timeout: Optional[float] = None,
         bind_address: Optional[bytes] = None,
     ) -> None:
@@ -138,7 +138,7 @@ class ScrapyProxyH2Agent(H2Agent):
         reactor: ReactorBase,
         proxy_uri: URI,
         pool: H2ConnectionPool,
-        context_factory: Type[BrowserLikePolicyForHTTPS] = BrowserLikePolicyForHTTPS(),
+        context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
         connect_timeout: Optional[float] = None,
         bind_address: Optional[bytes] = None,
     ) -> None:
