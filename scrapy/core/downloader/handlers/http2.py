@@ -18,7 +18,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
 
-H2DownloadHandlerTV = TypeVar("H2DownloadHandlerTV", bound="H2DownloadHandler")
+H2DownloadHandlerOrSubclass = TypeVar("H2DownloadHandlerOrSubclass", bound="H2DownloadHandler")
 
 
 class H2DownloadHandler:
@@ -30,7 +30,7 @@ class H2DownloadHandler:
         self._context_factory = load_context_factory_from_settings(settings, crawler)
 
     @classmethod
-    def from_crawler(cls: Type[H2DownloadHandlerTV], crawler: Crawler) -> H2DownloadHandlerTV:
+    def from_crawler(cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler) -> H2DownloadHandlerOrSubclass:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
