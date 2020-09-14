@@ -15,7 +15,7 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 Both pipelines implement these features:
 
 * Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, Amazon S3 bucket,
+* Specifying where to store the media (filesystem directory, FTP server, Amazon S3 bucket,
   Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
