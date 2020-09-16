@@ -45,7 +45,7 @@ def make_html_body(val):
 
 class DummySpider(Spider):
     name = 'dummy'
-    start_urls = []
+    start_urls: list = []
 
     def parse(self, response):
         print(response)
