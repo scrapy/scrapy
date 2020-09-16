@@ -13,7 +13,8 @@ class Link:
 
             <a href="https://example.com/nofollow.html#foo" rel="nofollow">Dont follow this one</a>
 
-    :param url: the absolute url being linked to in the anchor tag. From the sample, this is ``https://example.com/nofollow.html``.
+    :param url: the absolute url being linked to in the anchor tag. 
+                From the sample, this is ``https://example.com/nofollow.html``.
 
     :param text: the text in the anchor tag. From the sample, this is ``Dont follow this one``.
 
