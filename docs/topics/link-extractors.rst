@@ -14,12 +14,11 @@ list of matching :class:`~scrapy.link.Link` objects from a
 :class:`~scrapy.http.Response` object.
 
 Link extractors are used in :class:`~scrapy.spiders.CrawlSpider` spiders
-through a set of :class:`~scrapy.spiders.Rule` objects. You can also use link
-extractors in regular spiders.
+through a set of :class:`~scrapy.spiders.Rule` objects.
 
-In order to use link extractors in regular spiders, you can instantiate ``scrapy.linkextractors.LinkExtractor`` into
-a class variable in your spider. This variable can be accessed through the ``parse`` method
-and used to extract links using a format similar to the one below::
+You can also use link extractors in regular spiders. For example, you can instantiate
+:class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` into a class
+variable in your spider, and use it from your spider callbacks::
 
     def parse(self, response):
         for link in self.link_extractor.extract_links(response):
