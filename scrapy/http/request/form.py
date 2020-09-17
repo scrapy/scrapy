@@ -33,7 +33,7 @@ class FormRequest(Request):
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                self._set_params(formdata)
+                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
