@@ -164,15 +164,16 @@ class RequestTest(unittest.TestCase):
 
     def test_params(self):
         params = {'first': 'param1', 'second': 'param2'}
-        r1 = self.request_class(url="http://www.example.com/", params=params)
+        body = "body"
+        r1 = self.request_class(url="http://www.example.com/", params=params, body=body)
         self.assertEqual(r1.url, 'http://www.example.com/?first=param1&second=param2')
         self.assertEqual(r1.params, 'first=param1&second=param2')
 
-        r2 = self.request_class(url="http://www.example.com", params=params)
+        r2 = self.request_class(url="http://www.example.com", params=params, body=body)
         self.assertEqual(r2.url, 'http://www.example.com?first=param1&second=param2')
         self.assertEqual(r2.params, 'first=param1&second=param2')
 
-        r3 = self.request_class(url="http://www.example.com/list?other=1", params=params)
+        r3 = self.request_class(url="http://www.example.com/list?other=1", params=params, body=body)
         self.assertEqual(r3.url, 'http://www.example.com/list?other=1&first=param1&second=param2')
         self.assertEqual(r3.params, 'first=param1&second=param2')
 
