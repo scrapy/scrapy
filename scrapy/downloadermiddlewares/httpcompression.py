@@ -37,6 +37,8 @@ class HttpCompressionMiddleware:
             if content_encoding:
                 encoding = content_encoding.pop()
                 decoded_body = self._decode(response.body, encoding.lower())
+                spider.crawler.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
+                spider.crawler.stats.inc_value('httpcompression/response_count', spider=spider)
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
