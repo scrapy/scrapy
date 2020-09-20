@@ -19,7 +19,7 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.utils.boto import is_botocore
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -120,22 +120,19 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, access_key=None, secret_key=None, acl=None, *,
                  feed_options=None):
+        if not is_botocore_available():
+            raise NotConfigured('missing botocore library')
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
-        self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
-        if self.is_botocore:
-            import botocore.session
-            session = botocore.session.get_session()
-            self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key)
-        else:
-            import boto
-            self.connect_s3 = boto.connect_s3
+        import botocore.session
+        session = botocore.session.get_session()
+        self.s3_client = session.create_client(
+            's3', aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key)
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
                            'suppress this warning, remove the overwrite '
@@ -154,18 +151,10 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         file.seek(0)
-        if self.is_botocore:
-            kwargs = {'ACL': self.acl} if self.acl else {}
-            self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file,
-                **kwargs)
-        else:
-            conn = self.connect_s3(self.access_key, self.secret_key)
-            bucket = conn.get_bucket(self.bucketname, validate=False)
-            key = bucket.new_key(self.keyname)
-            kwargs = {'policy': self.acl} if self.acl else {}
-            key.set_contents_from_file(file, **kwargs)
-            key.close()
+        kwargs = {'ACL': self.acl} if self.acl else {}
+        self.s3_client.put_object(
+            Bucket=self.bucketname, Key=self.keyname, Body=file,
+            **kwargs)
         file.close()
 
 
