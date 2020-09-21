@@ -120,7 +120,19 @@ class Scheduler:
             return
         try:
             self.dqs.push(request)
-        except SerializationError as e:  # non serializable request
+        except (ValueError, SerializationError) as e:  # non serializable request
+            if isinstance(e, ValueError):
+                msg = ('Usage of "%(depr)s" exception type for serialization '
+                       'errors is deprecated. Please use "%(new)s" exception '
+                       'type for this')
+                logger.warning(
+                    msg,
+                    {
+                        'depr': type(e).__name__,
+                        'new': SerializationError.__name__
+                    },
+                )
+
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
                        " %(reason)s - no more unserializable requests will be"
