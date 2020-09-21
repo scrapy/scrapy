@@ -368,9 +368,9 @@ class ConstantErrorQueue(PickleFifoDiskQueue):
             raise ValueError('This class raises an ValueError')
 
 
-def test_TransientError(caplog):
+def test_exceptions_handling(caplog):
 
-    class TransientErrorEmitter(SchedulerHandler):
+    class ErrorEmitter(SchedulerHandler):
         priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
         disk_queue_cls = 'tests.test_scheduler.ConstantErrorQueue'
 
@@ -384,7 +384,7 @@ def test_TransientError(caplog):
                 continue
         return False
 
-    mock = TransientErrorEmitter()
+    mock = ErrorEmitter()
     mock.jobdir = tempfile.mkdtemp()
     mock.create_scheduler()
 
