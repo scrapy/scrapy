@@ -13,6 +13,7 @@ from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
 from unittest import mock
+from unittest.mock import call
 from urllib.parse import urljoin, urlparse, quote
 from urllib.request import pathname2url
 
@@ -254,21 +255,42 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        assert_aws_environ()
-        uri = os.environ.get('S3_TEST_FILE_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        storage = S3FeedStorage(uri, access_key, secret_key)
+        skip_if_no_boto()
+
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        bucket = 'mybucket'
+        key = 'export.csv'
+        storage = S3FeedStorage.from_crawler(crawler, f's3://{bucket}/{key}')
         verifyObject(IFeedStorage, storage)
-        file = storage.open(scrapy.Spider("default"))
-        expected_content = b"content: \xe2\x98\x83"
-        file.write(expected_content)
-        yield storage.store(file)
-        u = urlparse(uri)
-        content = get_s3_content_and_delete(u.hostname, u.path[1:])
-        self.assertEqual(content, expected_content)
+
+        file = mock.MagicMock()
+        from botocore.stub import Stubber
+        with Stubber(storage.s3_client) as stub:
+            stub.add_response(
+                'put_object',
+                expected_params={
+                    'Body': file,
+                    'Bucket': bucket,
+                    'Key': key,
+                },
+                service_response={},
+            )
+
+            yield storage.store(file)
+
+            stub.assert_no_pending_responses()
+            self.assertEqual(
+                file.method_calls,
+                [
+                    call.seek(0),
+                    # The call to read does not happen with Stubber
+                    call.close(),
+                ]
+            )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage(
