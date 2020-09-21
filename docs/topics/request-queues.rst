@@ -1,140 +1,145 @@
 .. _topics-request-queues:
 
 ==============
-Request Queues
+Request queues
 ==============
 
-Scrapy uses queues to store requests and to decide what request to schedule
-next. The scheduler does not use a specific queue implementation (called
-*downstream queue*) directly but instead the downstream queue is wrapped by a
-priority queue.
+.. _priority-queues:
+.. setting:: SCHEDULER_PRIORITY_QUEUE
 
-Priority Queues
+Priority queues
 ===============
 
-Priority queues make sure that requests with the highest priority are scheduled
-first. For this purpose, a priority queue uses multiple downstream queues---one
-for each priority. The setting :setting:`SCHEDULER_PRIORITY_QUEUE` determines
-the type of priority queue that will be used by the scheduler.
+.. currentmodule:: scrapy.pqueues
 
-Scrapy comes with two priority queue implementations:
+To decide the order in which requests are sent, Scrapy uses a queue called the
+*priority queue*.
 
-  * ``'scrapy.pqueues.ScrapyPriorityQueue'``
-  * ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
+The :setting:`SCHEDULER_PRIORITY_QUEUE` setting determines the type of priority
+queue that Scrapy uses. Its default value is :class:`ScrapyPriorityQueue`.
 
-The default priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'`` and works
-best during single-domain crawls (see also
-:ref:`broad-crawls-scheduler-priority-queue`). For crawling multiple different
-domains in parallel the recommended priority queue is
-``'scrapy.pqueues.DownloaderAwarePriorityQueue'``. This priority queue takes
-downloader activity into account: Domains with the least amount of active
-downloads are dequeued first.
+Scrapy provides the following priority queue implementations:
 
-Downstream Queues
+.. autoclass:: DownloaderAwarePriorityQueue
+
+.. autoclass:: ScrapyPriorityQueue
+
+
+.. setting:: SCHEDULER_DISK_QUEUE
+.. setting:: SCHEDULER_MEMORY_QUEUE
+.. _downstream-queues:
+
+Downstream queues
 =================
 
-Scrapy differentiates between two types of downstream queues (the data
-structures that hold the actual data): memory queues and disk queues. If the
-:setting:`JOBDIR` setting is defined, a disk queue is used.  If it is not
-defined, a memory queue is used (this is the default).
+.. currentmodule:: scrapy.squeues
 
-Memory queue
-------------
+A :ref:`priority queue <priority-queues>` uses queues internally to store
+pending requests. These internal queues are called *downstream queues*.
 
-Memory queues do not require additional configuration or additional storage and
-are therefore used by default. The default for :setting:`SCHEDULER_MEMORY_QUEUE`
-is ``'scrapy.squeues.LifoMemoryQueue'``.
+The organization method used by the downstream queues, usually either
+FIFO or LIFO, affects the order in which requests are sent for requests
+that the :ref:`priority queue <priority-queues>` considers to have the same
+priority.
 
-Disk queue
-----------
+The type of downstream queue used depends on the :setting:`JOBDIR` setting (see
+:ref:`topics-jobs`):
 
-With disk queues it is possible to :ref:`pause and resume crawls <topics-jobs>`
-and schedule more requests than fit in memory. The default for
-:setting:`SCHEDULER_DISK_QUEUE` is ``'scrapy.squeues.PickleLifoDiskQueue'``.
+-   If :setting:`JOBDIR` is not set (default), the memory downstream queue type
+    defined in the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used, which
+    defaults to :class:`LifoMemoryQueue`.
 
-Disk queues serialize requests, e.g. using :meth:`pickle.serialize`. If
-serialization fails, the scheduler falls back to a memory queue.
+    Scrapy provides the following memory downstream queue classes:
 
-.. note::
+    .. autoclass:: FifoMemoryQueue
 
-    :setting:`JOBDIR` has to be set so that the scheduler uses the disk queue
-    configured by :setting:`SCHEDULER_DISK_QUEUE`.
+    .. autoclass:: LifoMemoryQueue
 
-Interface
----------
+-   If :setting:`JOBDIR` is set, the disk downstream queue from the
+    :setting:`SCHEDULER_DISK_QUEUE` setting is used instead, which defaults to
+    :class:`PickleLifoDiskQueue`.
 
-If you want to use your own disk queue implementation, it has to conform to
-the following interface:
+    In addition to request order, which disk downstream queue you use can
+    affect request serialization speed (CPU usage) and size (disk usage). See
+    “Comparison with ``marshal``” in the documentation of :mod:`pickle` for
+    more information.
+
+    When request serialization fails, Scrapy falls back to using a memory
+    downstream queue.
+
+    Scrapy provides the following disk downstream queue classes:
+
+    .. autoclass:: MarshalFifoDiskQueue
+
+    .. autoclass:: MarshalLifoDiskQueue
+
+    .. autoclass:: PickleFifoDiskQueue
+
+    .. autoclass:: PickleLifoDiskQueue
+
+
+Writing your own disk downstream queue class
+--------------------------------------------
+
+If you want to define and use your own disk downstream queue implementation,
+it has to conform to the following interface:
 
 .. class:: MyExternalQueue
 
-   .. classmethod:: from_crawler(cls, crawler, key)
+   .. classmethod:: from_crawler(cls, crawler: scrapy.crawler.Crawler, key: str)
 
-      Creates a new queue object based on ``crawler`` and ``key``.
+      Return an instance of this disk downstream queue class.
 
-      This factory method receives the ``crawler`` argument to access the
-      crawler's settings and the ``key`` argument which identifies the queue.
-      The class method creates and returns a queue object based on the
-      arguments.
+      *key* is the unique ID of the disk downstream queue instance. It may be
+      used, for example, to create a unique file or folder to store the queue
+      content.
 
-      The method is expected to verify the arguments and the relevant settings
-      and raise an exception in case of an error. This may involve opening
-      a connection to a remote service.
+      If the input data is invalid, raise an exception from this class method
+      of from your ``__init__`` method to halt the crawl.
 
-      .. note::
-         In case an exception is raised, the crawling process is halted.
+   .. method:: push(self, request: scrapy.http.Request)
 
-      :raises Exception: If ``key`` or a queue-specific setting is invalid.
+      Push a request into the queue.
 
-   .. method:: push(self, request)
+      The helper function :func:`~scrapy.utils.reqser.request_to_dict` can be
+      used to convert the request into a dict that can then be easily
+      serialized with, for example, :func:`pickle.dumps`.
 
-      Pushes a request to the queue.
+      Scrapy falls back to the memory downstream queue for *request* if one of
+      the following exceptions is raised:
 
-      The helper function :meth:`~scrapy.utils.reqser.request_to_dict` can be
-      used to convert the request to a dict which can then be easily
-      serialized with, for example, :meth:`pickle.dumps`.
+      -     :exc:`TransientError`: indicates a temporary failure.
 
-      The scheduler will fall back to the memory queue (for this particular
-      request) in case of a :exc:`TransientError` or a
-      :exc:`SerializationError`. In case of any other exception the crawling
-      process is halted.
+            For example, if storing requests on a server, raise this exception
+            if you temporarily loose access to the server.
 
-      :raises TransientError: If pushing to the queue failed due to a
-          temporary error (e.g. the connection was dropped).
-      :raises SerializationError: If pushing to the queue failed because the
-          request could not be serialized.
+        -   :exc:`SerializationError`: indicates that *request* could not be
+            serialized
 
    .. method:: pop(self)
 
-      Pops a request from the queue.
+      Pop a request from the queue.
 
       In case of a temporary problem, ``None`` is returned. In all other cases,
-      an exception is raised.
+      an exception is raised, causing the crawling process to halt.
 
-      The helper function :meth:`~scrapy.utils.reqser.request_from_dict` can
-      be used to convert the deserialized dict back to a request.
-
-      It is up to the queue implementation to decide if the most recently
-      pushed value (LIFO) or the least recently pushed value (FIFO) is
-      returned.
-
-      .. note::
-         In case of a temporary error, the method must not raise an exception
-         but return ``None`` instead. If an exception is raised, the crawling
-         process is halted.
+      The helper function :func:`~scrapy.utils.reqser.request_from_dict` can
+      be used to convert a deserialized dict back into a
+      :class:`~scrapy.http.Request` object.
 
    .. method:: close(self)
 
-      Releases internal resources (e.g. closes a file or socket).
+      Release internal resources (e.g. close files or sockets).
 
    .. method:: __len__(self)
 
-      Returns the number of elements in the queue.
+      Return the number of requests in the queue.
 
-      If the number of elements cannot be determined (e.g. because of a
-      connection problem), the method must not return 0 because this would
-      cause the queue to be closed.
+      If the number of requests cannot be determined (e.g. because of a
+      connection problem), the method should neither return 0, which would
+      cause the queue to be closed, nor raise an exception, which would halt
+      the crawl.
 
-      .. note::
-         In case of a temporary error, the method must not raise an exception
-         but return the number of elements instead.
+.. autofunction:: scrapy.utils.reqser.request_from_dict
+
+.. autofunction:: scrapy.utils.reqser.request_to_dict

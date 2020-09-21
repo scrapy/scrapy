@@ -373,7 +373,7 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the :attr:`~scrapy.http.Request.priority` of
+An integer that is used to adjust the :attr:`~scrapy.http.Request` priority of
 a :class:`~scrapy.http.Request` based on its depth.
 
 The priority of a request is adjusted as follows::
@@ -1258,39 +1258,6 @@ Example entry in logs::
     (type Request)> - no more unserializable requests will be logged
     (see 'scheduler/unserializable' stats counter)
 
-
-.. setting:: SCHEDULER_DISK_QUEUE
-
-SCHEDULER_DISK_QUEUE
---------------------
-
-Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
-
-Type of disk queue that will be used by scheduler. Other available types are
-``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
-
-.. setting:: SCHEDULER_MEMORY_QUEUE
-
-SCHEDULER_MEMORY_QUEUE
-----------------------
-Default: ``'scrapy.squeues.LifoMemoryQueue'``
-
-Type of in-memory queue used by scheduler. Other available type is:
-``scrapy.squeues.FifoMemoryQueue``.
-
-.. setting:: SCHEDULER_PRIORITY_QUEUE
-
-SCHEDULER_PRIORITY_QUEUE
-------------------------
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
-
-Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
-``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
-``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
-domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
-does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 

@@ -4,15 +4,17 @@ Helper functions for serializing (and deserializing) requests.
 import inspect
 
 from scrapy.http import Request
+from scrapy.spiders import Spider
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 
 
-def request_to_dict(request, spider=None):
-    """Convert Request object to a dict.
+def request_to_dict(request: Request, spider: Spider=None):
+    """Convert *request* into a :class:`dict`.
 
-    If a spider is given, it will try to find out the name of the spider method
-    used in the callback and store that as the callback.
+    If *spider* is not ``None``, find out the name of the spider methods used
+    as request callback and errback, and replace the callables with their names
+    in the result.
     """
     cb = request.callback
     if callable(cb):
@@ -40,11 +42,11 @@ def request_to_dict(request, spider=None):
     return d
 
 
-def request_from_dict(d, spider=None):
-    """Create Request object from a dict.
+def request_from_dict(d: dict, spider: Spider=None) -> Request:
+    """Create a :class:`~scrapy.http.Request` object from *d*.
 
-    If a spider is given, it will try to resolve the callbacks looking at the
-    spider for methods with the same name.
+    If *spider* is not ``None``, resolve the callback and errback attributes
+    to spider methods with the same name.
     """
     cb = d['callback']
     if cb and spider:
