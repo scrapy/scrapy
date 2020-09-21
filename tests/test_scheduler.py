@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import unittest
 
+import pytest
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
@@ -368,31 +369,39 @@ class ConstantErrorQueue(PickleFifoDiskQueue):
             raise ValueError('This class raises an ValueError')
 
 
-def test_exceptions_handling(caplog):
+class ErrorEmitter(SchedulerHandler, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+    disk_queue_cls = 'tests.test_scheduler.ConstantErrorQueue'
 
-    class ErrorEmitter(SchedulerHandler):
-        priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
-        disk_queue_cls = 'tests.test_scheduler.ConstantErrorQueue'
+    @pytest.fixture(autouse=True)
+    def _pass_fixtures(self, caplog):
+        self.caplog = caplog
 
-    def _find_in_logs(needle):
-        for r in caplog.records:
-            try:
-                i = r.getMessage().index(needle)
-                if i != -1:
-                    return True
-            except ValueError:
-                continue
-        return False
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.create_scheduler()
 
-    mock = ErrorEmitter()
-    mock.jobdir = tempfile.mkdtemp()
-    mock.create_scheduler()
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
 
-    mock.scheduler.enqueue_request(Request('http://example.com/'))
-    assert _find_in_logs('Unable to push request to queue')  # TransientError
-    mock.scheduler.enqueue_request(Request('http://example.com/'))
-    assert _find_in_logs('Unable to serialize request')  # SerializationError
-    mock.scheduler.enqueue_request(Request('http://example.com/'))
-    assert _find_in_logs(
-        'Usage of "ValueError" exception type for serialization'
-    )  # ValueError
+    def test_exceptions_handling(self):
+        def _find_in_logs(needle):
+            for r in self.caplog.records:
+                try:
+                    i = r.getMessage().index(needle)
+                    if i != -1:
+                        return True
+                except ValueError:
+                    continue
+            return False
+
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs('Unable to push request to queue')  # TransientError
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs('Unable to serialize request')  # SerializationError
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(
+            'Usage of "ValueError" exception type for serialization'
+        )  # ValueError
