@@ -13,15 +13,6 @@ from twisted.trial.unittest import SkipTest
 from scrapy.utils.boto import is_botocore_available
 
 
-def assert_aws_environ():
-    """Asserts the current environment is suitable for running AWS testsi.
-    Raises SkipTest with the reason if it's not.
-    """
-    skip_if_no_boto()
-    if 'AWS_ACCESS_KEY_ID' not in os.environ:
-        raise SkipTest("AWS keys not found")
-
-
 def assert_gcs_environ():
     if 'GCS_PROJECT_ID' not in os.environ:
         raise SkipTest("GCS_PROJECT_ID not found")
