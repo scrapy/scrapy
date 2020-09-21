@@ -41,7 +41,6 @@ from scrapy.extensions.feedexport import (
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import (
-    get_s3_content_and_delete,
     get_crawler,
     mock_google_cloud_storage,
     skip_if_no_boto,
@@ -1577,7 +1576,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             TestSpider.start_urls = [server.url('/')]
             yield runner.crawl(TestSpider)
 
-        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items)+1)
+        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
 

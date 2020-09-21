@@ -27,7 +27,6 @@ from scrapy.utils.test import (
     assert_gcs_environ,
     get_ftp_content_and_delete,
     get_gcs_content_and_delete,
-    get_s3_content_and_delete,
     skip_if_no_boto,
 )
 

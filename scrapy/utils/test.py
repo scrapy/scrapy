@@ -23,18 +23,6 @@ def skip_if_no_boto():
         raise SkipTest('missing botocore library')
 
 
-def get_s3_content_and_delete(bucket, path, with_key=False):
-    """ Get content from s3 key, and delete key afterwards.
-    """
-    import botocore.session
-    session = botocore.session.get_session()
-    client = session.create_client('s3')
-    key = client.get_object(Bucket=bucket, Key=path)
-    content = key['Body'].read()
-    client.delete_object(Bucket=bucket, Key=path)
-    return (content, key) if with_key else content
-
-
 def get_gcs_content_and_delete(bucket, path):
     from google.cloud import storage
     client = storage.Client(project=os.environ.get('GCS_PROJECT_ID'))
