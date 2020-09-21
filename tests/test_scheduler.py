@@ -9,8 +9,10 @@ from twisted.trial.unittest import TestCase
 from scrapy.crawler import Crawler
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
+from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.squeues import PickleFifoDiskQueue
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
@@ -45,7 +47,7 @@ class MockDownloader:
 class MockCrawler(Crawler):
     def __init__(self, priority_queue_cls, jobdir, disk_queue_cls, settings={}):
         settings = dict(
-            SCHEDULER_DEBUG=False,
+            SCHEDULER_DEBUG=True,
             SCHEDULER_DISK_QUEUE=disk_queue_cls,
             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
@@ -346,3 +348,51 @@ class TestIncompatibility(unittest.TestCase):
     def test_incompatibility(self):
         with self.assertRaises(ValueError):
             self._incompatible()
+
+
+class ConstantErrorQueue(PickleFifoDiskQueue):
+    def push(self, request):
+        if getattr(self, 'counter', None) is None:
+            self.counter = 0
+
+        if self.counter == 0:
+            self.counter += 1
+            raise TransientError('This class raises an TransientError')
+
+        elif self.counter == 1:
+            self.counter += 1
+            raise SerializationError('This class raises an SerializationError')
+
+        elif self.counter == 2:
+            self.counter += 1
+            raise ValueError('This class raises an ValueError')
+
+
+def test_TransientError(caplog):
+
+    class TransientErrorEmitter(SchedulerHandler):
+        priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+        disk_queue_cls = 'tests.test_scheduler.ConstantErrorQueue'
+
+    def _find_in_logs(needle):
+        for r in caplog.records:
+            try:
+                i = r.getMessage().index(needle)
+                if i != -1:
+                    return True
+            except ValueError:
+                continue
+        return False
+
+    mock = TransientErrorEmitter()
+    mock.jobdir = tempfile.mkdtemp()
+    mock.create_scheduler()
+
+    mock.scheduler.enqueue_request(Request('http://example.com/'))
+    assert _find_in_logs('Unable to push request to queue')  # TransientError
+    mock.scheduler.enqueue_request(Request('http://example.com/'))
+    assert _find_in_logs('Unable to serialize request')  # SerializationError
+    mock.scheduler.enqueue_request(Request('http://example.com/'))
+    assert _find_in_logs(
+        'Usage of "ValueError" exception type for serialization'
+    )  # ValueError

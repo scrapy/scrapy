@@ -120,8 +120,12 @@ class Scheduler:
             return
         try:
             self.dqs.push(request)
+        except TransientError as e:
+            msg = "Unable to push request to queue: %s"
+            logger.warning(msg, e, exc_info=True, extra={'spider': self.spider})
+            return
         except (ValueError, SerializationError) as e:  # non serializable request
-            if isinstance(e, ValueError):
+            if not isinstance(e, SerializationError):
                 msg = ('Usage of "%(depr)s" exception type for serialization '
                        'errors is deprecated. Please use "%(new)s" exception '
                        'type for this')
@@ -142,10 +146,6 @@ class Scheduler:
                 self.logunser = False
             self.stats.inc_value('scheduler/unserializable',
                                  spider=self.spider)
-            return
-        except TransientError as e:
-            msg = "Unable to push request to queue: %s"
-            logger.warning(msg, e, exc_info=True, extra={'spider': self.spider})
             return
         else:
             return True
