@@ -89,31 +89,44 @@ def _pickle_serialize(obj):
         raise SerializationError(str(e)) from e
 
 
-def _ignore_args_kwargs_passed_to_constructor(queue_class):
+def _ignore_args_kwargs_passed_to_constructor(queue_class, used_kwargs):
     class AcceptingQueue(queue_class):
-        def __init__(self, path, *_, **__):
-            super().__init__(path)
+        def __init__(self, path, *_, **kwargs):
+            new_kwargs = {k: kwargs[k] for k in used_kwargs if k in kwargs}
+            super().__init__(path, **new_kwargs)
 
     return AcceptingQueue
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.FifoDiskQueue)),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
+        queue.FifoDiskQueue,
+        ['chunksize'],
+    )),
     _pickle_serialize,
     pickle.loads
 )
 PickleLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.LifoDiskQueue)),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
+        queue.LifoDiskQueue,
+        ['chunksize'],
+    )),
     _pickle_serialize,
     pickle.loads
 )
 MarshalFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.FifoDiskQueue)),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
+        queue.FifoDiskQueue,
+        ['chunksize'],
+    )),
     marshal.dumps,
     marshal.loads
 )
 MarshalLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.LifoDiskQueue)),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
+        queue.LifoDiskQueue,
+        ['chunksize'],
+    )),
     marshal.dumps,
     marshal.loads
 )
