@@ -469,6 +469,7 @@ class TestS3FilesStore(unittest.TestCase):
         key = 'export.csv'
         uri = f's3://{bucket}/{key}'
         checksum = '3187896a9657a28163abb31667df64c8'
+        last_modified = datetime(2019, 12, 1)
 
         store = S3FilesStore(uri)
         from botocore.stub import Stubber
@@ -481,7 +482,7 @@ class TestS3FilesStore(unittest.TestCase):
                 },
                 service_response={
                     'ETag': f'"{checksum}"',
-                    'LastModified': datetime(2019, 12, 1),
+                    'LastModified': last_modified,
                 },
             )
 
@@ -490,7 +491,7 @@ class TestS3FilesStore(unittest.TestCase):
                 file_stats,
                 {
                     'checksum': checksum,
-                    'last_modified': 1575154800,
+                    'last_modified': last_modified.timestamp(),
                 },
             )
 
