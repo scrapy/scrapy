@@ -1,9 +1,12 @@
 import collections
+import logging
+import pickle
 import shutil
 import tempfile
 import unittest
 
 import pytest
+from queuelib import queue
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
@@ -13,7 +16,13 @@ from scrapy.core.scheduler import Scheduler
 from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.squeues import PickleFifoDiskQueue
+from scrapy.squeues import (
+    PickleFifoDiskQueue,
+    _scrapy_serialization_queue,
+    _serializable_queue,
+    _with_mkdir,
+    _pickle_serialize,
+)
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
@@ -369,6 +378,18 @@ class ConstantErrorQueue(PickleFifoDiskQueue):
             raise ValueError('This class raises an ValueError')
 
 
+def _find_in_logs(caplog, needle):
+    count = 0
+    for r in caplog.records:
+        try:
+            i = r.getMessage().index(needle)
+            if i != -1:
+                count += 1
+        except ValueError:
+            continue
+    return count
+
+
 class ErrorEmitter(SchedulerHandler, unittest.TestCase):
     priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
     disk_queue_cls = 'tests.test_scheduler.ConstantErrorQueue'
@@ -387,21 +408,63 @@ class ErrorEmitter(SchedulerHandler, unittest.TestCase):
         self.jobdir = None
 
     def test_exceptions_handling(self):
-        def _find_in_logs(needle):
-            for r in self.caplog.records:
-                try:
-                    i = r.getMessage().index(needle)
-                    if i != -1:
-                        return True
-                except ValueError:
-                    continue
-            return False
-
-        self.scheduler.enqueue_request(Request('http://example.com/'))
-        assert _find_in_logs('Unable to push request to queue')  # TransientError
-        self.scheduler.enqueue_request(Request('http://example.com/'))
-        assert _find_in_logs('Unable to serialize request')  # SerializationError
         self.scheduler.enqueue_request(Request('http://example.com/'))
         assert _find_in_logs(
-            'Usage of "ValueError" exception type for serialization'
+            self.caplog,
+            'Unable to push request to queue'
+        )  # TransientError
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(
+            self.caplog,
+            'Unable to serialize request',
+        )  # SerializationError
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(
+            self.caplog,
+            'Usage of "ValueError" exception type for serialization',
         )  # ValueError
+
+
+class FifoWithCrawlerAccess(queue.FifoDiskQueue):
+    def __init__(self, path, crawler, *_, **__):
+        self.hello_message = crawler.settings.get('HELLO_MESSAGE')
+        self.logger = logging.getLogger(__name__)
+        super().__init__(path)
+
+    def push(self, request):
+        self.logger.warning(self.hello_message)
+        super().push(request)
+
+
+TestedQueue = _scrapy_serialization_queue(
+    _serializable_queue(
+        _with_mkdir(FifoWithCrawlerAccess),
+        _pickle_serialize,
+        pickle.loads,
+    )
+)
+
+
+class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+    disk_queue_cls = 'tests.test_scheduler.TestedQueue'
+    settings = {'HELLO_MESSAGE': 'hello world'}
+
+    @pytest.fixture(autouse=True)
+    def _pass_fixtures(self, caplog):
+        self.caplog = caplog
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
+
+    def test_access(self):
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(self.caplog, 'hello world') == 3

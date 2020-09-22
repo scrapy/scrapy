@@ -30,10 +30,6 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
     class SerializableQueue(queue_class):
 
-        def __init__(self, path, settings=None, *args, **kwargs):
-            self.settings = settings
-            super(SerializableQueue, self).__init__(path, *args, **kwargs)
-
         def push(self, obj):
             s = serialize(obj)
             super().push(s)
@@ -50,13 +46,13 @@ def _scrapy_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
 
-        def __init__(self, crawler, key):
+        def __init__(self, crawler, key, *args, **kwargs):
             self.spider = crawler.spider
-            super().__init__(key, crawler.settings)
+            super().__init__(key, crawler, *args, **kwargs)
 
         @classmethod
         def from_crawler(cls, crawler, key, *args, **kwargs):
-            return cls(crawler, key)
+            return cls(crawler, key, *args, **kwargs)
 
         def push(self, request):
             request = request_to_dict(request, self.spider)
@@ -93,23 +89,31 @@ def _pickle_serialize(obj):
         raise SerializationError(str(e)) from e
 
 
+def _ignore_args_kwargs_passed_to_constructor(queue_class):
+    class AcceptingQueue(queue_class):
+        def __init__(self, path, *_, **__):
+            super().__init__(path)
+
+    return AcceptingQueue
+
+
 PickleFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.FifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
 PickleLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.LifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
 MarshalFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.FifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
 MarshalLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue),
+    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(queue.LifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
