@@ -287,7 +287,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = 'Scrapy/%s (+https://scrapy.org)' % import_module('scrapy').__version__
+USER_AGENT = f'Scrapy/{import_module("scrapy").__version__} (+https://scrapy.org)'
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]

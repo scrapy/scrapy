@@ -2,6 +2,7 @@ import contextlib
 import os
 import shutil
 import tempfile
+from typing import Optional, Type
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -59,7 +60,7 @@ class OffDH:
 class LoadTestCase(unittest.TestCase):
 
     def test_enabled_handler(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
+        handlers = {'scheme': DummyDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -67,7 +68,7 @@ class LoadTestCase(unittest.TestCase):
         self.assertNotIn('scheme', dh._notconfigured)
 
     def test_not_configured_handler(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
+        handlers = {'scheme': OffDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -85,7 +86,7 @@ class LoadTestCase(unittest.TestCase):
         self.assertIn('scheme', dh._notconfigured)
 
     def test_lazy_handlers(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.DummyLazyDH'}
+        handlers = {'scheme': DummyLazyDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -119,7 +120,7 @@ class FileTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request('file://%s' % self.mktemp())
+        request = Request(f'file://{self.mktemp()}')
         d = self.download_request(request, Spider('foo'))
         return self.assertFailure(d, IOError)
 
@@ -206,7 +207,7 @@ class LargeChunkedFileResource(resource.Resource):
 
 class HttpTestCase(unittest.TestCase):
     scheme = 'http'
-    download_handler_cls = HTTPDownloadHandler
+    download_handler_cls: Type = HTTPDownloadHandler
 
     # only used for HTTPS tests
     keyfile = 'keys/localhost.key'
@@ -253,7 +254,7 @@ class HttpTestCase(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -304,7 +305,7 @@ class HttpTestCase(unittest.TestCase):
     def test_host_header_not_in_request_headers(self):
         def _test(response):
             self.assertEqual(
-                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
+                response.body, to_bytes(f'{self.host}:{self.portno}'))
             self.assertEqual(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -365,7 +366,7 @@ class HttpTestCase(unittest.TestCase):
 
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
-    download_handler_cls = HTTP10DownloadHandler
+    download_handler_cls: Type = HTTP10DownloadHandler
 
 
 class Https10TestCase(Http10TestCase):
@@ -374,7 +375,7 @@ class Https10TestCase(Http10TestCase):
 
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
-    download_handler_cls = HTTP11DownloadHandler
+    download_handler_cls: Type = HTTP11DownloadHandler
 
     def test_download_without_maxsize_limit(self):
         request = Request(self.getURL('file'))
@@ -417,7 +418,7 @@ class Http11TestCase(HttpTestCase):
             request = Request(self.getURL('largechunkedfile'))
 
             def check(logger):
-                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             d = self.download_request(request, Spider('foo', download_maxsize=1500))
             yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
@@ -561,7 +562,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
 
 class Https11CustomCiphers(unittest.TestCase):
     scheme = 'https'
-    download_handler_cls = HTTP11DownloadHandler
+    download_handler_cls: Type = HTTP11DownloadHandler
 
     keyfile = 'keys/localhost.key'
     certfile = 'keys/localhost.crt'
@@ -589,7 +590,7 @@ class Https11CustomCiphers(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -601,7 +602,7 @@ class Https11CustomCiphers(unittest.TestCase):
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
-    settings_dict = None
+    settings_dict: Optional[dict] = None
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -668,7 +669,7 @@ class UriResource(resource.Resource):
 
 
 class HttpProxyTestCase(unittest.TestCase):
-    download_handler_cls = HTTPDownloadHandler
+    download_handler_cls: Type = HTTPDownloadHandler
     expected_http_proxy_request_body = b'http://example.com'
 
     def setUp(self):
@@ -686,7 +687,7 @@ class HttpProxyTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"http://127.0.0.1:{self.portno}/{path}"
 
     def test_download_with_proxy(self):
         def _test(response):
@@ -704,7 +705,7 @@ class HttpProxyTestCase(unittest.TestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.body, b'https://example.com')
 
-        http_proxy = '%s?noconnect' % self.getURL('')
+        http_proxy = f'{self.getURL("")}?noconnect'
         request = Request('https://example.com', meta={'proxy': http_proxy})
         with self.assertWarnsRegex(ScrapyDeprecationWarning,
                                    r'Using HTTPS proxies in the noconnect mode is deprecated'):
@@ -721,14 +722,14 @@ class HttpProxyTestCase(unittest.TestCase):
 
 
 class Http10ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls = HTTP10DownloadHandler
+    download_handler_cls: Type = HTTP10DownloadHandler
 
     def test_download_with_proxy_https_noconnect(self):
         raise unittest.SkipTest('noconnect is not supported in HTTP10DownloadHandler')
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls = HTTP11DownloadHandler
+    download_handler_cls: Type = HTTP11DownloadHandler
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
@@ -776,7 +777,7 @@ class S3AnonTestCase(unittest.TestCase):
 
 
 class S3TestCase(unittest.TestCase):
-    download_handler_cls = S3DownloadHandler
+    download_handler_cls: Type = S3DownloadHandler
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
@@ -985,7 +986,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return deferred
 
     def test_ftp_download_success(self):
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
@@ -998,7 +999,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
     def test_ftp_download_path_with_spaces(self):
         request = Request(
-            url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
+            url=f"ftp://127.0.0.1:{self.portNum}/file with spaces.txt",
             meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
@@ -1011,7 +1012,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
-        request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/notexist.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1026,7 +1027,7 @@ class BaseFTPTestCase(unittest.TestCase):
         os.close(f)
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1049,7 +1050,7 @@ class FTPTestCase(BaseFTPTestCase):
 
         meta = dict(self.req_meta)
         meta.update({"ftp_password": 'invalid'})
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 

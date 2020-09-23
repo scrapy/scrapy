@@ -167,7 +167,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         """
         class CustomFilesPipeline(FilesPipeline):
             def file_path(self, request, response=None, info=None, item=None):
-                return 'full/%s' % item.get('path')
+                return f'full/{item.get("path")}'
 
         file_path = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_path
         item = dict(path='path-to-store-file')
@@ -495,7 +495,7 @@ class TestFTPFileStore(unittest.TestCase):
         self.assertIn('last_modified', stat)
         self.assertIn('checksum', stat)
         self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
-        path = '%s/%s' % (store.basedir, path)
+        path = f'{store.basedir}/{path}'
         content = get_ftp_content_and_delete(
             path, store.host, store.port,
             store.username, store.password, store.USE_ACTIVE_MODE)

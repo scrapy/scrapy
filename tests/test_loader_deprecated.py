@@ -657,7 +657,7 @@ class SelectJmesTestCase(unittest.TestCase):
             self.assertEqual(
                 test,
                 expected,
-                msg='test "{}" got {} expected {}'.format(tl, test, expected)
+                msg=f'test "{tl}" got {test} expected {expected}'
             )
 
 

@@ -38,7 +38,7 @@ class LocalhostSpider(Spider):
 if __name__ == "__main__":
     with MockServer() as mock_http_server, MockDNSServer() as mock_dns_server:
         port = urlparse(mock_http_server.http_address).port
-        url = "http://not.a.real.domain:{port}/echo".format(port=port)
+        url = f"http://not.a.real.domain:{port}/echo"
 
         servers = [(mock_dns_server.host, mock_dns_server.port)]
         reactor.installResolver(createResolver(servers=servers))

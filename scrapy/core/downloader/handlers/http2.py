@@ -1,8 +1,9 @@
 import warnings
 from time import time
-from typing import Optional
+from typing import Optional, Type, TypeVar
 from urllib.parse import urldefrag
 
+from twisted.internet.base import DelayedCall
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.web.client import URI
@@ -10,14 +11,18 @@ from twisted.web.client import URI
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
+from scrapy.crawler import Crawler
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
 
+H2DownloadHandlerOrSubclass = TypeVar("H2DownloadHandlerOrSubclass", bound="H2DownloadHandler")
+
+
 class H2DownloadHandler:
-    def __init__(self, settings: Settings, crawler=None):
+    def __init__(self, settings: Settings, crawler: Optional[Crawler] = None):
         self._crawler = crawler
 
         from twisted.internet import reactor
@@ -25,7 +30,7 @@ class H2DownloadHandler:
         self._context_factory = load_context_factory_from_settings(settings, crawler)
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler) -> H2DownloadHandlerOrSubclass:
         return cls(crawler.settings, crawler)
 
     @property
@@ -36,7 +41,7 @@ class H2DownloadHandler:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
-            crawler=self._crawler
+            crawler=self._crawler,
         )
         return agent.download_request(request, spider)
 
@@ -51,8 +56,9 @@ class ScrapyH2Agent:
     def __init__(
         self, context_factory,
         pool: H2ConnectionPool,
-        connect_timeout=10, bind_address: Optional[bytes] = None,
-        crawler=None
+        connect_timeout: int = 10,
+        bind_address: Optional[bytes] = None,
+        crawler: Optional[Crawler] = None,
     ) -> None:
         self._context_factory = context_factory
         self._connect_timeout = connect_timeout
@@ -84,7 +90,7 @@ class ScrapyH2Agent:
                 proxy_uri=URI.fromBytes(to_bytes(proxy, encoding='ascii')),
                 connect_timeout=timeout,
                 bind_address=bind_address,
-                pool=self._pool
+                pool=self._pool,
             )
 
         return self._Agent(
@@ -92,7 +98,7 @@ class ScrapyH2Agent:
             context_factory=self._context_factory,
             connect_timeout=timeout,
             bind_address=bind_address,
-            pool=self._pool
+            pool=self._pool,
         )
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
@@ -114,7 +120,7 @@ class ScrapyH2Agent:
         return response
 
     @staticmethod
-    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl) -> Response:
+    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl: DelayedCall) -> Response:
         if timeout_cl.active():
             timeout_cl.cancel()
             return response

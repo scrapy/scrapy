@@ -52,7 +52,7 @@ class Command(ScrapyCommand):
             print('Error: Project names must begin with a letter and contain'
                   ' only\nletters, numbers and underscores')
         elif _module_exists(project_name):
-            print('Error: Module %r already exists' % project_name)
+            print(f'Error: Module {project_name!r} already exists')
         else:
             return True
         return False
@@ -100,7 +100,7 @@ class Command(ScrapyCommand):
 
         if exists(join(project_dir, 'scrapy.cfg')):
             self.exitcode = 1
-            print('Error: scrapy.cfg already exists in %s' % abspath(project_dir))
+            print(f'Error: scrapy.cfg already exists in {abspath(project_dir)}')
             return
 
         if not self._is_valid_name(project_name):
@@ -113,11 +113,11 @@ class Command(ScrapyCommand):
             path = join(*paths)
             tplfile = join(project_dir, string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name, ProjectName=string_camelcase(project_name))
-        print("New Scrapy project '%s', using template directory '%s', "
-              "created in:" % (project_name, self.templates_dir))
-        print("    %s\n" % abspath(project_dir))
+        print(f"New Scrapy project '{project_name}', using template directory "
+              f"'{self.templates_dir}', created in:")
+        print(f"    {abspath(project_dir)}\n")
         print("You can start your first spider with:")
-        print("    cd %s" % project_dir)
+        print(f"    cd {project_dir}")
         print("    scrapy genspider example example.com")
 
     @property

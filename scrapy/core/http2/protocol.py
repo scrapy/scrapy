@@ -29,6 +29,7 @@ from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +43,11 @@ class InvalidNegotiatedProtocol(H2Error):
 
 
 class RemoteTerminatedConnection(H2Error):
-    def __init__(self, remote_ip_address: Optional[Union[IPv4Address, IPv6Address]], event: ConnectionTerminated):
+    def __init__(
+        self,
+        remote_ip_address: Optional[Union[IPv4Address, IPv6Address]],
+        event: ConnectionTerminated,
+    ) -> None:
         self.remote_ip_address = remote_ip_address
         self.terminate_event = event
 
@@ -51,7 +56,7 @@ class RemoteTerminatedConnection(H2Error):
 
 
 class MethodNotAllowed405(H2Error):
-    def __init__(self, remote_ip_address: Optional[Union[IPv4Address, IPv6Address]]):
+    def __init__(self, remote_ip_address: Optional[Union[IPv4Address, IPv6Address]]) -> None:
         self.remote_ip_address = remote_ip_address
 
     def __str__(self) -> str:
@@ -220,13 +225,13 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.conn.initiate_connection()
         self._write_to_transport()
 
-    def _lose_connection_with_error(self, errors: List[BaseException]):
+    def _lose_connection_with_error(self, errors: List[BaseException]) -> None:
         """Helper function to lose the connection with the error sent as a
         reason"""
         self._conn_lost_errors += errors
         self.transport.loseConnection()
 
-    def handshakeCompleted(self):
+    def handshakeCompleted(self) -> None:
         """We close the connection with InvalidNegotiatedProtocol exception
         when the connection was not made via h2 protocol"""
         negotiated_protocol = self.transport.negotiatedProtocol
@@ -263,7 +268,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         finally:
             self._write_to_transport()
 
-    def timeoutConnection(self):
+    def timeoutConnection(self) -> None:
         """Called when the connection times out.
         We lose the connection with TimeoutError"""
 

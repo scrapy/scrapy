@@ -146,7 +146,7 @@ def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
     versions = [
-        "%s %s" % (name, version)
+        f"{name} {version}"
         for name, version in scrapy_components_versions()
         if name != "Scrapy"
     ]
@@ -190,7 +190,7 @@ class LogCounterHandler(logging.Handler):
         self.crawler = crawler
 
     def emit(self, record):
-        sname = 'log_count/{}'.format(record.levelname)
+        sname = f'log_count/{record.levelname}'
         self.crawler.stats.inc_value(sname)
 
 

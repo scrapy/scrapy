@@ -125,8 +125,9 @@ class ImagesPipeline(FilesPipeline):
 
         width, height = orig_image.size
         if width < self.min_width or height < self.min_height:
-            raise ImageException("Image too small (%dx%d < %dx%d)" %
-                                 (width, height, self.min_width, self.min_height))
+            raise ImageException("Image too small "
+                                 f"({width}x{height} < "
+                                 f"{self.min_width}x{self.min_height})")
 
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
@@ -168,8 +169,8 @@ class ImagesPipeline(FilesPipeline):
 
     def file_path(self, request, response=None, info=None, *, item=None):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        return 'full/%s.jpg' % (image_guid)
+        return f'full/{image_guid}.jpg'
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
+        return f'thumbs/{thumb_id}/{thumb_guid}.jpg'
