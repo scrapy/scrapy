@@ -3,6 +3,202 @@
 Release notes
 =============
 
+.. _release-2.4.0:
+
+Scrapy 2.4.0 (2020-10-??)
+-------------------------
+
+Highlights:
+
+*   Python 3.5 support has been dropped
+
+*   The ``file_path`` method of :ref:`media pipelines <topics-media-pipeline>`
+    can now access the source :ref:`item <topics-items>`
+
+    This allows you to set a download file path based on item data.
+
+*   You can now choose whether :ref:`feed exports <topics-feed-exports>`
+    overwrite or append to the output file
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+*   Python 3.6 or greater is now required; support for Python 3.5 has been
+    dropped
+
+    As a result:
+
+    -   For Amazon S3 storage support in :ref:`feed exports
+        <topics-feed-storage-s3>` or :ref:`media pipelines
+        <media-pipelines-s3>`, botocore_ 1.4.87 or greater is now required
+
+    -   To use the :ref:`images pipeline <images-pipeline>`, Pillow_ 4.0.0 or
+        greater is now required
+
+    (:issue:`4718`, :issue:`4732`, :issue:`4743`)
+
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   :class:`scrapy.extensions.feedexport.S3FeedStorage` no longer reads the
+    values of ``access_key`` and ``secret_key`` from the running project
+    settings when they are not passed to its ``__init__`` method; you must
+    either pass those parameters to its ``__init__`` method or use
+    :class:`S3FeedStorage.from_crawler
+    <scrapy.extensions.feedexport.S3FeedStorage.from_crawler>`
+    (:issue:`4356`, :issue:`4411`, :issue:`4688`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   In custom :ref:`media pipelines <topics-media-pipeline>`, signatures that
+    do not accept a keyword-only ``item`` parameter in any of the  methods that
+    :ref:`now support this parameter <media-pipeline-item-parameter>` are now
+    deprecated (:issue:`4628`, :issue:`4686`)
+
+*   In custom :ref:`feed storage backend classes <topics-feed-storage>`,
+    ``__init__`` method signatures that do not accept a keyword-only
+    ``feed_options`` parameter are now deprecated (:issue:`547`, :issue:`716`,
+    :issue:`4512`)
+
+*   The :class:`scrapy.utils.python.WeakKeyCache` class is now deprecated
+    (:issue:`4684`, :issue:`4701`)
+
+
+New features
+~~~~~~~~~~~~
+
+.. _media-pipeline-item-parameter:
+
+*   The following methods of :ref:`media pipelines <topics-media-pipeline>` now
+    accept an ``item`` keyword-only parameter containing the source
+    :ref:`item <topics-items>`:
+
+    -   In :class:`scrapy.pipelines.files.FilesPipeline`:
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.file_downloaded`
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.file_path`
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.media_downloaded`
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.media_to_download`
+
+    -   In :class:`scrapy.pipelines.images.ImagesPipeline`:
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.file_downloaded`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.file_path`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.get_images`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.image_downloaded`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.media_downloaded`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.media_to_download`
+
+    (:issue:`4628`, :issue:`4686`)
+
+*   :ref:`Feed exports <topics-feed-exports>` gained overwrite support:
+
+    *   When using the :command:`crawl` or :command:`runspider` commands, you
+        can use the ``-O`` option instead of ``-o`` to overwrite the output
+        file
+
+    *   You can use the ``overwrite`` key in the :setting:`FEEDS` setting to
+        configure whether to overwrite the output file (``True``) or append to
+        its content (``False``)
+
+    *   The ``__init__`` and ``from_crawler`` methods of :ref:`feed storage
+        backend classes <topics-feed-storage>` now receive a new keyword-only
+        parameter, ``feed_options``, which is a dictionary of :ref:`feed
+        options <feed-options>`
+
+    (:issue:`547`, :issue:`716`, :issue:`4512`)
+
+*   :ref:`Downloader middlewares <topics-downloader-middleware>` can now
+    override :class:`response.request <scrapy.http.Response.request>`.
+
+    If a :ref:`downloader middleware <topics-downloader-middleware>` returns
+    a :class:`~scrapy.http.Response` object from
+    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+    or
+    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
+    with a custom :class:`~scrapy.http.Request` object assigned to
+    :class:`response.request <scrapy.http.Response.request>`:
+
+    -   The response is handled by the callback of that custom
+        :class:`~scrapy.http.Request` object, instead of being handled by the
+        callback of the original :class:`~scrapy.http.Request` object
+
+    -   That custom :class:`~scrapy.http.Request` object is now sent as the
+        ``request`` argument to the :signal:`response_received` signal, instead
+        of the original :class:`~scrapy.http.Request` object
+
+    (:issue:`4529`, :issue:`4632`)
+
+*   When using the :ref:`FTP feed storage backend <topics-feed-storage-ftp>`:
+
+    -   It is now possible to set the new ``overwrite`` :ref:`feed option
+        <feed-options>` to ``False`` to append to an existing file instead of
+        overwriting it
+
+    -   The FTP password can now be omitted if is is not necessary
+
+    (:issue:`547`, :issue:`716`, :issue:`4512`)
+
+*   When :ref:`using asyncio <using-asyncio>`, it is now possible to
+    :ref:`set a custom asyncio loop <using-custom-loops>` (:issue:`4306`,
+    :issue:`4414`)
+
+
+Bug fixes
+~~~~~~~~~
+
+*   The :command:`genspider` command no longer overwrites existing files
+    unless the ``--force`` option is used (:issue:`4561`, :issue:`4616`,
+    :issue:`4623`)
+
+*   Checks for generator callbacks with a ``return`` statement no longer warn
+    about ``return`` statements in nested functions (:issue:`4720`,
+    :issue:`4721`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   We now have an :ref:`official deprecation policy <deprecation-policy>`
+    (:issue:`4705`)
+
+*   The :setting:`FEED_URI_PARAMS` setting is now documented (:issue:`4671`,
+    :issue:`4724`)
+
+*   Removed references to Python 2’s ``unicode`` type (:issue:`4547`,
+    :issue:`4703`)
+
+*   Other documentation cleanups (:issue:`4090`)
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+*   Extended typing hints (:issue:`4243`)
+
+*   Added tests for the :command:`check` command (:issue:`4663`)
+
+*   Fixed test failures on Debian (:issue:`4726`, :issue:`4727`, :issue:`4735`)
+
+*   Improved Windows test coverage (:issue:`4723`)
+
+*   Modernized :func:`super` usage (:issue:`4707`)
+
+*   Other code and test cleanups (:issue:`3288`, :issue:`4165`, :issue:`4564`,
+    :issue:`4714`, :issue:`4738`, :issue:`4745`, :issue:`4747`)
+
+
 .. _release-2.3.0:
 
 Scrapy 2.3.0 (2020-08-04)

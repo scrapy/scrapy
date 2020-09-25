@@ -184,7 +184,7 @@ The feeds are stored on `Amazon S3`_.
    * ``s3://mybucket/path/to/export.csv``
    * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
- * Required external libraries: `botocore`_
+ * Required external libraries: `botocore`_ >= 1.4.87
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -315,6 +315,8 @@ For instance::
             'fields': ['price', 'name'],
         },
     }
+
+.. _feed-options:
 
 The following is a list of the accepted keys and the setting that is used
 as a fallback value if that key is not provided for a specific feed definition:
