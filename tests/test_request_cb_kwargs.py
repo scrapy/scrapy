@@ -50,10 +50,10 @@ class KeywordArgumentsSpider(MockServerSpider):
     name = 'kwargs'
     custom_settings = {
         'DOWNLOADER_MIDDLEWARES': {
-            __name__ + '.InjectArgumentsDownloaderMiddleware': 750,
+            InjectArgumentsDownloaderMiddleware: 750,
         },
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.InjectArgumentsSpiderMiddleware': 750,
+            InjectArgumentsSpiderMiddleware: 750,
         },
     }
 
