@@ -24,17 +24,6 @@ from scrapy.utils.python import to_bytes
 SUPPORTED_PROTOCOLS = ('h2', 'http/1.1')
 
 
-class UnsupportedNegotiatedProtocol(Exception):
-    def __init__(self, negotiated_protocol: str):
-        self.negotiated_protocol = negotiated_protocol
-
-    def __str__(self):
-        return (
-            f'UnsupportedNegotiatedProtocol: Expected one of {SUPPORTED_PROTOCOLS!r}'
-            f' as negotiated protocol, received {self.negotiated_protocol!r}'
-        )
-
-
 @implementer(IHandshakeListener)
 class NegotiateProtocol(Protocol):
     def __init__(self, negotiated_protocol_deferred: Deferred):
@@ -45,15 +34,6 @@ class NegotiateProtocol(Protocol):
             self._negotiated_protocol_deferred.errback(reason)
 
     def handshakeCompleted(self) -> None:
-        try:
-            negotiated_protocol = self.transport.negotiatedProtocol.decode()
-        except AttributeError:
-            negotiated_protocol = 'http/1.1'
-
-        if negotiated_protocol not in SUPPORTED_PROTOCOLS:
-            self._negotiated_protocol_deferred.errback(UnsupportedNegotiatedProtocol(negotiated_protocol))
-            return
-
         self._negotiated_protocol_deferred.callback(self.transport)
 
 
@@ -145,8 +125,6 @@ class HTTPNegotiateDownloadHandler:
         elif protocol == 'h2':
             return self._h2_download_handler
 
-        raise UnsupportedNegotiatedProtocol(protocol)
-
     def _connection_established(self, key: Tuple, protocol: str) -> None:
         """We have established a connection with given key. Hence,
         we issue all the request to the negotiated protocol"""
@@ -228,9 +206,6 @@ class HTTPNegotiateDownloadHandler:
             self._h2_download_handler.pool.put_connection(conn, key)
 
             self._connection_established(key, 'h2')
-
-        else:
-            raise UnsupportedNegotiatedProtocol(negotiated_protocol)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
         """ Working:
