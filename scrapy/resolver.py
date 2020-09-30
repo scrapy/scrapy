@@ -1,7 +1,6 @@
 from twisted.internet import defer
-from twisted.internet._resolver import HostResolution
 from twisted.internet.base import ThreadedResolver
-from twisted.internet.interfaces import IHostnameResolver, IResolutionReceiver, IResolverSimple
+from twisted.internet.interfaces import IHostResolution, IHostnameResolver, IResolutionReceiver, IResolverSimple
 from zope.interface.declarations import implementer, provider
 
 from scrapy.utils.datatypes import LocalCache
@@ -49,6 +48,15 @@ class CachingThreadedResolver(ThreadedResolver):
     def _cache_result(self, result, name):
         dnscache[name] = result
         return result
+
+
+@implementer(IHostResolution)
+class HostResolution:
+    def __init__(self, name):
+        self.name = name
+
+    def cancel(self):
+        raise NotImplementedError()
 
 
 @provider(IResolutionReceiver)
