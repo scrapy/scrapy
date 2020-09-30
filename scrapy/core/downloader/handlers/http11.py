@@ -442,6 +442,7 @@ class ScrapyAgent:
             flags=result["flags"],
             certificate=result["certificate"],
             ip_address=result["ip_address"],
+            protocol=getattr(result["txresponse"], "version", None),
         )
         if result.get("failure"):
             result["failure"].value.response = response
