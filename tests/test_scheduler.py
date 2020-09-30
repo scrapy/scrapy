@@ -17,7 +17,6 @@ from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.squeues import (
-    PickleFifoDiskQueue,
     _scrapy_serialization_queue,
     _serializable_queue,
     _with_mkdir,
@@ -360,7 +359,16 @@ class TestIncompatibility(unittest.TestCase):
             self._incompatible()
 
 
-class ConstantErrorQueue(PickleFifoDiskQueue):
+class ConstantErrorQueue:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __len__(self):
+        return 0
+
+    def close(self):
+        return None
+
     def push(self, request):
         if getattr(self, 'counter', None) is None:
             self.counter = 0
