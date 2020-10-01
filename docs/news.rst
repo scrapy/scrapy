@@ -150,7 +150,7 @@ New features
         <feed-options>` to ``False`` to append to an existing file instead of
         overwriting it
 
-    -   The FTP password can now be omitted if is is not necessary
+    -   The FTP password can now be omitted if it is not necessary
 
     (:issue:`547`, :issue:`716`, :issue:`4512`)
 
