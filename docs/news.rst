@@ -20,6 +20,10 @@ Highlights:
 *   You can now choose whether :ref:`feed exports <topics-feed-exports>`
     overwrite or append to the output file.
 
+    For example, when using the :command:`crawl` or :command:`runspider`
+    commands, you can use the ``-O`` option instead of ``-o`` to overwrite the
+    output file.
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
