@@ -5,7 +5,6 @@ from service_identity.exceptions import CertificateError
 from twisted.internet._sslverify import ClientTLSOptions, verifyHostname, VerificationError
 from twisted.internet.ssl import AcceptableCiphers
 
-from scrapy import twisted_version
 from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
 
 
@@ -28,13 +27,6 @@ openssl_methods = {
 }
 
 
-if twisted_version < (17, 0, 0):
-    from twisted.internet._sslverify import _maybeSetHostNameIndication as set_tlsext_host_name
-else:
-    def set_tlsext_host_name(connection, hostNameBytes):
-        connection.set_tlsext_host_name(hostNameBytes)
-
-
 class ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
@@ -52,7 +44,7 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
 
     def _identityVerifyingInfoCallback(self, connection, where, ret):
         if where & SSL.SSL_CB_HANDSHAKE_START:
-            set_tlsext_host_name(connection, self._hostnameBytes)
+            connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
                 logger.debug('SSL connection to %s using protocol %s, cipher %s',
