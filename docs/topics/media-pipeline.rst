@@ -197,6 +197,25 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_USE_SSL = False # or True (None by default)
     AWS_VERIFY = False # or True (None by default)
 
+
+Custom Amazon S3 headers in FileStorage
+
+Steps to pass **SSEKMSKeyId** and **ServerSideEncryption** to **scrapy** FilesPipeline using **AWS S3**
+
+Configuration Steps::
+
+    1. Subclass ``scrapy.pipelines.files.S3FilesStore``, 
+
+    2. Extend its ``HEADERS`` class attribute in your subclass to define the headers you want with the values you 
+    want, for eg, ``X-Amz-Server-Side-Encryption``, ``X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id``, etc.
+
+    3. You can see the header-to-key mapping in the source code of the class, for additional header names,
+
+    4. Subclass ``FilesPipeline``, and edit the ``STORE_SCHEMES`` class attribute in your subclass to point ``s3`` 
+    to your ``S3FilesStore`` subclass,
+
+    5. Update your ``ITEM_PIPELINES`` setting to use your ``FilesPipeline`` subclass.
+
 .. _Minio: https://github.com/minio/minio
 .. _s3.scality: https://s3.scality.com/
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
@@ -638,26 +657,3 @@ To enable your custom media pipeline component you must add its class import pat
 
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
 
-Custom Amazon S3 headers in FileStorage
-====================================================
-
-Steps to pass **SSEKMSKeyId** and **ServerSideEncryption** to **scrapy** FilesPipeline using **AWS S3**
-
-
-Configuration Steps
-======================
-
-1. Subclass ``scrapy.pipelines.files.S3FilesStore``, 
-
-2. Extend its ``HEADERS`` class attribute in your subclass to define the headers you want with the values you 
-   want,
-
-3. In your case, the corresponding headers are: ``X-Amz-Server-Side-Encryption``, 
-   ``X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id``
-
-4. You can see the header-to-key mapping in the source code of the class, for additional header names,
-
-5. Subclass ``FilesPipeline``, and edit the ``STORE_SCHEMES`` class attribute in your subclass to point ``s3`` 
-   to your ``S3FilesStore`` subclass,
-
-6. Update your ``ITEM_PIPELINES`` setting to use your ``FilesPipeline`` subclass.
