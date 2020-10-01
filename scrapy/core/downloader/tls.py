@@ -55,18 +55,11 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
             set_tlsext_host_name(connection, self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
-                if hasattr(connection, 'get_cipher_name'):  # requires pyOPenSSL 0.15
-                    if hasattr(connection, 'get_protocol_version_name'):  # requires pyOPenSSL 16.0.0
-                        logger.debug('SSL connection to %s using protocol %s, cipher %s',
-                                     self._hostnameASCII,
-                                     connection.get_protocol_version_name(),
-                                     connection.get_cipher_name(),
-                                     )
-                    else:
-                        logger.debug('SSL connection to %s using cipher %s',
-                                     self._hostnameASCII,
-                                     connection.get_cipher_name(),
-                                     )
+                logger.debug('SSL connection to %s using protocol %s, cipher %s',
+                             self._hostnameASCII,
+                             connection.get_protocol_version_name(),
+                             connection.get_cipher_name(),
+                             )
                 server_cert = connection.get_peer_certificate()
                 logger.debug('SSL connection certificate: issuer "%s", subject "%s"',
                              x509name_to_string(server_cert.get_issuer()),
