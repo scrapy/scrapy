@@ -1,5 +1,3 @@
-from copy import copy
-
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -58,9 +56,8 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
             # spider
-            LogExceptionMiddleware: 10,
             FailProcessSpiderInputMiddleware: 8,
-            copy(LogExceptionMiddleware): 6,
+            LogExceptionMiddleware: 6,
             # engine
         }
     }
