@@ -49,6 +49,7 @@ install:
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
       fi
+  - python -m pip install --upgrade pip #force travis to use newest version of pip
   - pip install -U tox twine wheel codecov
 
 script: tox
