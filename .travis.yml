@@ -40,9 +40,6 @@ matrix:
     - env: TOXENV=asyncio
       python: 3.8
       dist: bionic
-before_install:
-  - pip install -U pip
-  - pip --version
 install:
   - |
       if [[ ! -z "$PYPY_VERSION" ]]; then
@@ -63,6 +60,7 @@ notifications:
     skip_join: true
     channels:
     - irc.freenode.org#scrapy
+
 deploy:
   provider: pypi
   distributions: "sdist bdist_wheel"
