@@ -10,15 +10,15 @@ Scrapy 2.4.0 (2020-10-??)
 
 Highlights:
 
-*   Python 3.5 support has been dropped
+*   Python 3.5 support has been dropped.
 
 *   The ``file_path`` method of :ref:`media pipelines <topics-media-pipeline>`
-    can now access the source :ref:`item <topics-items>`
+    can now access the source :ref:`item <topics-items>`.
 
     This allows you to set a download file path based on item data.
 
 *   You can now choose whether :ref:`feed exports <topics-feed-exports>`
-    overwrite or append to the output file
+    overwrite or append to the output file.
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
