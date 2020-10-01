@@ -24,6 +24,9 @@ Highlights:
     commands, you can use the ``-O`` option instead of ``-o`` to overwrite the
     output file.
 
+*   In settings, where the import path of a class is required, it is now
+    possible to pass a class object instead.
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -32,6 +35,9 @@ Modified requirements
 
     As a result:
 
+    -   When using PyPy, PyPy 7.2.0 or greater :ref:`is now required
+        <faq-python-versions>`
+
     -   For Amazon S3 storage support in :ref:`feed exports
         <topics-feed-storage-s3>` or :ref:`media pipelines
         <media-pipelines-s3>`, botocore_ 1.4.87 or greater is now required
@@ -39,7 +45,8 @@ Modified requirements
     -   To use the :ref:`images pipeline <images-pipeline>`, Pillow_ 4.0.0 or
         greater is now required
 
-    (:issue:`4718`, :issue:`4732`, :issue:`4743`)
+    (:issue:`4718`, :issue:`4732`, :issue:`4733`, :issue:`4742`, :issue:`4743`,
+    :issue:`4764`)
 
 
 Deprecation removals
@@ -69,6 +76,10 @@ Deprecations
 
 *   The :class:`scrapy.utils.python.WeakKeyCache` class is now deprecated
     (:issue:`4684`, :issue:`4701`)
+
+*   The :func:`scrapy.utils.boto.is_botocore` function is now deprecated, use
+    :func:`scrapy.utils.boto.is_botocore_available` instead (:issue:`4734`,
+    :issue:`4776`)
 
 
 New features
@@ -123,6 +134,13 @@ New features
 
     (:issue:`547`, :issue:`716`, :issue:`4512`)
 
+*   In settings, where the import path of a class is required, it is now
+    possible to pass a class object instead (:issue:`3870`, :issue:`3873`).
+
+    This includes also settings where only part of its value is made of an
+    import path, such as :setting:`DOWNLOADER_MIDDLEWARES` or
+    :setting:`DOWNLOAD_HANDLERS`.
+
 *   :ref:`Downloader middlewares <topics-downloader-middleware>` can now
     override :class:`response.request <scrapy.http.Response.request>`.
 
@@ -154,9 +172,20 @@ New features
 
     (:issue:`547`, :issue:`716`, :issue:`4512`)
 
+*   The ``__init__`` method of :class:`~scrapy.exporters.CsvItemExporter` now
+    supports an ``errors`` parameter to indicate how to handle encoding errors
+    (:issue:`4755`)
+
 *   When :ref:`using asyncio <using-asyncio>`, it is now possible to
     :ref:`set a custom asyncio loop <using-custom-loops>` (:issue:`4306`,
     :issue:`4414`)
+
+*   Serialized requests (see :ref:`topics-jobs`) now support callbacks that are
+    spider methods that delegate on other callable (:issue:`4756`)
+
+*   When a response is larger than :setting:`DOWNLOAD_MAXSIZE`, the logged
+    message is now a warning, instead of an error (:issue:`3874`,
+    :issue:`3886`, :issue:`4752`)
 
 
 Bug fixes
@@ -166,16 +195,19 @@ Bug fixes
     unless the ``--force`` option is used (:issue:`4561`, :issue:`4616`,
     :issue:`4623`)
 
+*   Cookies with an empty value are no longer considered invalid cookies
+    (:issue:`4772`)
+
 *   Checks for generator callbacks with a ``return`` statement no longer warn
     about ``return`` statements in nested functions (:issue:`4720`,
     :issue:`4721`)
 
+*   The system file mode creation mask no longer affects the permissions of
+    files generated using the :command:`startproject` command (:issue:`4722`)
+
 
 Documentation
 ~~~~~~~~~~~~~
-
-*   We now have an :ref:`official deprecation policy <deprecation-policy>`
-    (:issue:`4705`)
 
 *   The :setting:`FEED_URI_PARAMS` setting is now documented (:issue:`4671`,
     :issue:`4724`)
@@ -183,13 +215,22 @@ Documentation
 *   Removed references to Python 2’s ``unicode`` type (:issue:`4547`,
     :issue:`4703`)
 
-*   Other documentation cleanups (:issue:`4090`)
+*   We now have an :ref:`official deprecation policy <deprecation-policy>`
+    (:issue:`4705`)
+
+*   Our :ref:`documentation policies <documentation-policies>` now cover usage
+    of Sphinx’s :rst:dir:`versionadded` and :rst:dir:`versionchanged`
+    directives, and we have removed usages referencing Scrapy 1.4.0 and earlier
+    versions (:issue:`3971`, :issue:`4310`)
+
+*   Other documentation cleanups (:issue:`4090`, :issue:`4782`, :issue:`4800`,
+    :issue:`4801`, :issue:`4809`)
 
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
 
-*   Extended typing hints (:issue:`4243`)
+*   Extended typing hints (:issue:`4243`, :issue:`4691`)
 
 *   Added tests for the :command:`check` command (:issue:`4663`)
 
@@ -197,10 +238,14 @@ Quality assurance
 
 *   Improved Windows test coverage (:issue:`4723`)
 
+*   Switched to :ref:`formatted string literals <f-strings>` where possible
+    (:issue:`4307`, :issue:`4324`, :issue:`4672`)
+
 *   Modernized :func:`super` usage (:issue:`4707`)
 
 *   Other code and test cleanups (:issue:`3288`, :issue:`4165`, :issue:`4564`,
-    :issue:`4714`, :issue:`4738`, :issue:`4745`, :issue:`4747`)
+    :issue:`4651`, :issue:`4714`, :issue:`4738`, :issue:`4745`, :issue:`4747`,
+    :issue:`4761`, :issue:`4765`)
 
 
 .. _release-2.3.0:
