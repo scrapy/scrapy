@@ -116,9 +116,7 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.dupefilters.RFPDupeFilter'
 
-EDITOR = 'vi'
-if sys.platform == 'win32':
-    EDITOR = '%s -m idlelib.idle'
+EDITOR = '%s -m idlelib.idle' if sys.platform == 'win32' else 'vi'
 
 EXTENSIONS = {}
 
