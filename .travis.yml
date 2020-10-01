@@ -40,6 +40,8 @@ matrix:
     - env: TOXENV=asyncio
       python: 3.8
       dist: bionic
+before_install:
+  - pip install -U pip
 install:
   - |
       if [[ ! -z "$PYPY_VERSION" ]]; then
@@ -49,7 +51,6 @@ install:
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
       fi
-  - pip install --upgrade pip
   - pip install -U tox twine wheel codecov
 
 script: tox
