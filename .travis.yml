@@ -48,8 +48,8 @@ install:
         tar -jxf ${PYPY_VERSION}.tar.bz2
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+        python -m pip install -U pip
       fi
-  - python -m pip install --upgrade pip #force travis to use newest version of pip
   - pip install -U tox twine wheel codecov
 
 script: tox
