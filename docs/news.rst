@@ -17,6 +17,10 @@ Highlights:
 
     This allows you to set a download file path based on item data.
 
+*   The new ``item_export_kwargs`` key of the :settings:`FEEDS` setting allows
+    to define keyword parameters to pass to :ref:`item exporter classes
+    <topics-exporters>`
+
 *   You can now choose whether :ref:`feed exports <topics-feed-exports>`
     overwrite or append to the output file.
 
@@ -59,6 +63,10 @@ Deprecation removals
     :class:`S3FeedStorage.from_crawler
     <scrapy.extensions.feedexport.S3FeedStorage.from_crawler>`
     (:issue:`4356`, :issue:`4411`, :issue:`4688`)
+
+*   :attr:`Rule.process_request <scrapy.spiders.crawl.Rule.process_request>`
+    no longer admits callables which expect a single ``request`` parameter,
+    rather than both ``request`` and ``response`` (:issue:`4818`)
 
 
 Deprecations
@@ -116,6 +124,10 @@ New features
         -   :meth:`~scrapy.pipelines.images.ImagesPipeline.media_to_download`
 
     (:issue:`4628`, :issue:`4686`)
+
+*   The new ``item_export_kwargs`` key of the :settings:`FEEDS` setting allows
+    to define keyword parameters to pass to :ref:`item exporter classes
+    <topics-exporters>` (:issue:`4606`, :issue:`4768`)
 
 *   :ref:`Feed exports <topics-feed-exports>` gained overwrite support:
 
@@ -198,6 +210,13 @@ Bug fixes
 *   Cookies with an empty value are no longer considered invalid cookies
     (:issue:`4772`)
 
+*   The :command:`runspider` command now supports files with the ``.pyw`` file
+    extension (:issue:`4643`, :issue:`4646`)
+
+*   The :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`
+    middleware now simply ignores unsupported proxy values (:issue:`3331`,
+    :issue:`4778`)
+
 *   Checks for generator callbacks with a ``return`` statement no longer warn
     about ``return`` statements in nested functions (:issue:`4720`,
     :issue:`4721`)
@@ -212,6 +231,11 @@ Documentation
 *   The :setting:`FEED_URI_PARAMS` setting is now documented (:issue:`4671`,
     :issue:`4724`)
 
+*   Improved the documentation of
+    :ref:`link extractors <topics-link-extractors>` with an usage example from
+    a spider callback and reference documentation for the
+    :class:`~scrapy.link.Link` class (:issue:`4751`, :issue:`4775`)
+
 *   Removed references to Python 2’s ``unicode`` type (:issue:`4547`,
     :issue:`4703`)
 
@@ -224,7 +248,7 @@ Documentation
     versions (:issue:`3971`, :issue:`4310`)
 
 *   Other documentation cleanups (:issue:`4090`, :issue:`4782`, :issue:`4800`,
-    :issue:`4801`, :issue:`4809`)
+    :issue:`4801`, :issue:`4809`, :issue:`4816`)
 
 
 Quality assurance
@@ -245,7 +269,7 @@ Quality assurance
 
 *   Other code and test cleanups (:issue:`3288`, :issue:`4165`, :issue:`4564`,
     :issue:`4651`, :issue:`4714`, :issue:`4738`, :issue:`4745`, :issue:`4747`,
-    :issue:`4761`, :issue:`4765`)
+    :issue:`4761`, :issue:`4765`, :issue:`4817`, :issue:`4820`, :issue:`4822`)
 
 
 .. _release-2.3.0:

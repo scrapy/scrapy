@@ -331,6 +331,8 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``batch_item_count``: falls back to
     :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
 
+    .. versionadded:: 2.3.0
+
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
@@ -338,6 +340,8 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
 -   ``item_export_kwargs``: :class:`dict` with keyword arguments for the corresponding :ref:`item exporter class <topics-exporters>`.
+
+    .. versionadded:: 2.4.0
 
 -   ``overwrite``: whether to overwrite the file if it already exists
     (``True``) or append to its content (``False``).
@@ -356,6 +360,8 @@ as a fallback value if that key is not provided for a specific feed definition:
         <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
+
+    .. versionadded:: 2.4.0
 
 -   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
 
@@ -519,7 +525,9 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 .. setting:: FEED_EXPORT_BATCH_ITEM_COUNT
 
 FEED_EXPORT_BATCH_ITEM_COUNT
------------------------------
+----------------------------
+
+.. versionadded:: 2.3.0
 
 Default: ``0``
 
@@ -588,10 +596,14 @@ The function signature should be as follows:
             If :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` is ``0``, ``batch_id``
             is always ``1``.
 
+            .. versionadded:: 2.3.0
+
         -   ``batch_time``: UTC date and time, in ISO format with ``:``
             replaced with ``-``.
 
             See :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
+
+            .. versionadded:: 2.3.0
 
         -   ``time``: ``batch_time``, with microseconds set to ``0``.
    :type params: dict
