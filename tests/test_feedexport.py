@@ -1191,6 +1191,43 @@ class FeedExportTest(FeedExportTestBase):
         for fmt in ['json', 'xml', 'csv']:
             self.assertIn(f'Error storing {fmt} feed (2 items)', str(log))
 
+    @defer.inlineCallbacks
+    def test_extend_kwargs(self):
+        items = [{'foo': 'FOO', 'bar': 'BAR'}]
+
+        expected_with_title_csv = 'foo,bar\r\nFOO,BAR\r\n'.encode('utf-8')
+        expected_without_title_csv = 'FOO,BAR\r\n'.encode('utf-8')
+        test_cases = [
+            # with title
+            {
+                'options': {
+                    'format': 'csv',
+                    'item_export_kwargs': {'include_headers_line': True},
+                },
+                'expected': expected_with_title_csv,
+            },
+            # without title
+            {
+                'options': {
+                    'format': 'csv',
+                    'item_export_kwargs': {'include_headers_line': False},
+                },
+                'expected': expected_without_title_csv,
+            },
+        ]
+
+        for row in test_cases:
+            feed_options = row['options']
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): feed_options,
+                },
+                'FEED_EXPORT_INDENT': None,
+            }
+
+            data = yield self.exported_data(items, settings)
+            self.assertEqual(row['expected'], data[feed_options['format']])
+
 
 class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
