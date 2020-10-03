@@ -162,7 +162,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
                 self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
                 self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
 
-                expected_warning_msg = ('ImagesPipeline.convert_image() method overriden in a deprecated way, '
+                expected_warning_msg = ('.convert_image() method overriden in a deprecated way, '
                                         'overriden method does not accept response_body argument.')
                 self.assertEqual(len([warning for warning in w if expected_warning_msg in str(warning.message)]), 1)
 
@@ -199,7 +199,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
             # ensure that we recieved deprecation warnings
-            expected_warning_msg = 'ImagesPipeline.convert_image() method called in a deprecated way'
+            expected_warning_msg = '.convert_image() method called in a deprecated way'
             self.assertTrue(len([warning for warning in w if expected_warning_msg in str(warning.message)]) == 4)
 
     def test_convert_image_new(self):
