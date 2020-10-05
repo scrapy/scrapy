@@ -248,6 +248,9 @@ class CsvItemExporter(BaseItemExporter):
                 self.fields_to_export = ItemAdapter(item).field_names()
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
+                            
+    def finish_exporting(self):
+        self.stream.close()
 
 
 class PickleItemExporter(BaseItemExporter):
