@@ -20,6 +20,12 @@ FORMAT = {
     'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
     'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
     'br': ('html-br.bin', 'br'),
+    # $ zstd raw.html --content-size -o html-zstd-static-content-size.bin
+    'zstd-static-content-size': ('html-zstd-static-content-size.bin', 'zstd'),
+    # $ zstd raw.html --no-content-size -o html-zstd-static-no-content-size.bin
+    'zstd-static-no-content-size': ('html-zstd-static-no-content-size.bin', 'zstd'),
+    # $ cat raw.html | zstd -o html-zstd-streaming-no-content-size.bin
+    'zstd-streaming-no-content-size': ('html-zstd-static-no-content-size.bin', 'zstd'),
 }
 
 
@@ -79,6 +85,26 @@ class HttpCompressionTest(TestCase):
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert 'Content-Encoding' not in newresponse.headers
+
+    def test_process_response_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
+        raw_content = None
+        for check_key in FORMAT:
+            if not check_key.startswith('zstd-'):
+                continue
+            response = self._getresponse(check_key)
+            request = response.request
+            self.assertEqual(response.headers['Content-Encoding'], b'zstd')
+            newresponse = self.mw.process_response(request, response, self.spider)
+            if raw_content is None:
+                raw_content = newresponse.body
+            assert raw_content == newresponse.body
+            assert newresponse is not response
+            assert newresponse.body.startswith(b"<!DOCTYPE")
+            assert 'Content-Encoding' not in newresponse.headers
 
     def test_process_response_rawdeflate(self):
         response = self._getresponse('rawdeflate')
