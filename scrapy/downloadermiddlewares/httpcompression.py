@@ -14,6 +14,12 @@ try:
 except ImportError:
     pass
 
+try:
+    import zstd
+    ACCEPTED_ENCODINGS.append(b'zstd')
+except ImportError:
+    pass
+
 
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
@@ -67,4 +73,6 @@ class HttpCompressionMiddleware:
                 body = zlib.decompress(body, -15)
         if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
             body = brotli.decompress(body)
+        if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
+            body = zstd.decompress(body)
         return body
