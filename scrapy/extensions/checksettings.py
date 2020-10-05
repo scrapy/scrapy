@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 class CheckSettings:
     def __init__(self, crawler):
         self.settings = crawler.settings
-
+        self.check_settings_min = crawler.settings.getint("CHECK_SETTINGS_MIN")
         self.not_used_settings = [s for s in self.settings
                                   if not self.settings.attributes[s].hit]
-        self.similar = self.get_suggestions()
+        self.suggestions = self.get_suggestions()
 
     def get_suggestions(self):
         similar = {}
@@ -31,7 +31,7 @@ class CheckSettings:
                                 if valid not in self.not_used_settings),
                                key=operator.itemgetter(1))
 
-            if 70 <= most_similar[1] < 100:
+            if self.check_settings_min <= most_similar[1]:
                 similar[not_used] = setting_keys[most_similar[0]]
         return similar
 
@@ -47,8 +47,8 @@ class CheckSettings:
         if self.not_used_settings:
             logger.warning("Not used settings: \n%(not_used)s",
                            {"not_used": pprint.pformat(self.not_used_settings)})
-        if self.similar:
+        if self.suggestions:
             suggestion_list = [("%s, did you mean %s ?" % (key, value))
-                               for key, value in self.similar.items()]
+                               for key, value in self.suggestions.items()]
             logger.info("Settings suggestions: \n%(suggestion)s",
                         {"suggestion": pprint.pformat(suggestion_list)})

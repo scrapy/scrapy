@@ -369,3 +369,14 @@ For more info see `Debugging in Python`_.
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
+
+CheckSettings extension
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: CheckSettings
+
+Inspect settings and find unused/mistyped variables. If a found variable is similar enough
+to a valid variable a suggestion will be showed.
+
+To enable this extension, turn on the :setting:`CHECK_SETTINGS_ENABLED` setting. The similarity
+threshold is set through :setting:`CHECK_SETTINGS_MIN` setting.

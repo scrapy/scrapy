@@ -31,7 +31,8 @@ install_requires = [
     'w3lib>=1.17.0',
     'zope.interface>=4.1.3',
     'protego>=0.1.15',
-    'itemadapter>=0.1.0', #TODO ADD fuzzywuzzy
+    'itemadapter>=0.1.0',
+    'fuzzywuzzy==0.18.0',
 ]
 extras_require = {}
 

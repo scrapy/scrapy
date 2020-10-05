@@ -275,6 +275,27 @@ project name). This name will be used for the logging too.
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
 
+.. setting:: CHECK_SETTINGS_ENABLED
+
+CHECK_SETTINGS_ENABLED
+----------------------
+
+Default: ``True``
+
+Whether to enable Check Settings.
+
+.. setting:: CHECK_SETTINGS_MIN
+
+CHECK_SETTINGS_MIN
+------------------
+
+Default: ``70``
+
+Minimum similarity between `0-100` a valid and not_valid setting to consider it as a
+suggestion, the similarity is calculated using `Levenshtein Distance`_.
+
+.. _Levenshtein Distance: https://en.wikipedia.org/wiki/Levenshtein_distance
+
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
