@@ -17,7 +17,7 @@ Highlights:
 
     This allows you to set a download file path based on item data.
 
-*   The new ``item_export_kwargs`` key of the :settings:`FEEDS` setting allows
+*   The new ``item_export_kwargs`` key of the :setting:`FEEDS` setting allows
     to define keyword parameters to pass to :ref:`item exporter classes
     <topics-exporters>`
 
@@ -125,7 +125,7 @@ New features
 
     (:issue:`4628`, :issue:`4686`)
 
-*   The new ``item_export_kwargs`` key of the :settings:`FEEDS` setting allows
+*   The new ``item_export_kwargs`` key of the :setting:`FEEDS` setting allows
     to define keyword parameters to pass to :ref:`item exporter classes
     <topics-exporters>` (:issue:`4606`, :issue:`4768`)
 
@@ -248,7 +248,7 @@ Documentation
     versions (:issue:`3971`, :issue:`4310`)
 
 *   Other documentation cleanups (:issue:`4090`, :issue:`4782`, :issue:`4800`,
-    :issue:`4801`, :issue:`4809`, :issue:`4816`)
+    :issue:`4801`, :issue:`4809`, :issue:`4816`, :issue:`4825`)
 
 
 Quality assurance
