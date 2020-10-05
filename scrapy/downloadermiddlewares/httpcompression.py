@@ -1,4 +1,5 @@
 import zlib
+import io
 
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
@@ -15,7 +16,7 @@ except ImportError:
     pass
 
 try:
-    import zstd
+    import zstandard
     ACCEPTED_ENCODINGS.append(b'zstd')
 except ImportError:
     pass
@@ -74,5 +75,8 @@ class HttpCompressionMiddleware:
         if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
             body = brotli.decompress(body)
         if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
-            body = zstd.decompress(body)
+            # Using its streaming API since its simple API could handle only cases
+            # where there is content size data embedded in the frame
+            reader = zstandard.ZstdDecompressor().stream_reader(io.BytesIO(body))
+            body = reader.read()
         return body
