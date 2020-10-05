@@ -250,7 +250,7 @@ class CsvItemExporter(BaseItemExporter):
             self.csv_writer.writerow(row)
                             
     def finish_exporting(self):
-        self.stream.close()
+        self.stream.flush()
 
 
 class PickleItemExporter(BaseItemExporter):
