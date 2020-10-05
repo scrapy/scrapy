@@ -101,7 +101,8 @@ class HttpCompressionTest(TestCase):
             newresponse = self.mw.process_response(request, response, self.spider)
             if raw_content is None:
                 raw_content = newresponse.body
-            assert raw_content == newresponse.body
+            else:
+                assert raw_content == newresponse.body
             assert newresponse is not response
             assert newresponse.body.startswith(b"<!DOCTYPE")
             assert 'Content-Encoding' not in newresponse.headers
