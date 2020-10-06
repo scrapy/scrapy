@@ -48,6 +48,7 @@ install:
         tar -jxf ${PYPY_VERSION}.tar.bz2
         virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+        $HOME/virtualenvs/$PYPY_VERSION/bin/pypy -m ensurepip --default-pip
       fi
   - pip install -U tox twine wheel codecov
 
