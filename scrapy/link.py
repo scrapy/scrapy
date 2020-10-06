@@ -7,7 +7,22 @@ its documentation in: docs/topics/link-extractors.rst
 
 
 class Link:
-    """Link objects represent an extracted link by the LinkExtractor."""
+    """Link objects represent an extracted link by the LinkExtractor.
+
+    Using the anchor tag sample below to illustrate the parameters::
+
+            <a href="https://example.com/nofollow.html#foo" rel="nofollow">Dont follow this one</a>
+
+    :param url: the absolute url being linked to in the anchor tag.
+                From the sample, this is ``https://example.com/nofollow.html``.
+
+    :param text: the text in the anchor tag. From the sample, this is ``Dont follow this one``.
+
+    :param fragment: the part of the url after the hash symbol. From the sample, this is ``foo``.
+
+    :param nofollow: an indication of the presence or absence of a nofollow value in the ``rel`` attribute
+                    of the anchor tag.
+    """
 
     __slots__ = ['url', 'text', 'fragment', 'nofollow']
 

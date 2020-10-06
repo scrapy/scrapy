@@ -74,7 +74,7 @@ class CookiesMiddleware:
         """
         decoded = {}
         for key in ("name", "value", "path", "domain"):
-            if not cookie.get(key):
+            if cookie.get(key) is None:
                 if key in ("name", "value"):
                     msg = "Invalid cookie found in request {}: {} ('{}' is missing)"
                     logger.warning(msg.format(request, cookie, key))
