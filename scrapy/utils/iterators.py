@@ -35,7 +35,7 @@ def xmliter(obj, nodename):
     namespaces = {}
     if header_end:
         for tagname in reversed(re.findall(END_TAG_RE, header_end)):
-            tag = re.search(r'<\s*%s.*?xmlns[:=][^>]*>' % tagname, text[:header_end_idx[1]], re.S)
+            tag = re.search(fr'<\s*{tagname}.*?xmlns[:=][^>]*>', text[:header_end_idx[1]], re.S)
             if tag:
                 namespaces.update(reversed(x) for x in re.findall(NAMESPACE_RE, tag.group()))
 
@@ -45,7 +45,7 @@ def xmliter(obj, nodename):
             document_header
             + match.group().replace(
                 nodename,
-                '%s %s' % (nodename, ' '.join(namespaces.values())),
+                f'{nodename} {" ".join(namespaces.values())}',
                 1
             )
             + header_end
@@ -56,7 +56,7 @@ def xmliter(obj, nodename):
 def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     from lxml import etree
     reader = _StreamReader(obj)
-    tag = f'{{{namespace}}}{nodename}'if namespace else nodename
+    tag = f'{{{namespace}}}{nodename}' if namespace else nodename
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
     selxpath = '//' + (f'{prefix}:{nodename}' if namespace else nodename)
     for _, node in iterable:
