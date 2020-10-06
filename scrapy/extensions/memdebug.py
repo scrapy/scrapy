@@ -11,7 +11,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.trackref import live_refs
 
 
-class MemoryDebugger(object):
+class MemoryDebugger:
 
     def __init__(self, stats):
         self.stats = stats
@@ -30,4 +30,4 @@ class MemoryDebugger(object):
         for cls, wdict in live_refs.items():
             if not wdict:
                 continue
-            self.stats.set_value('memdebug/live_refs/%s' % cls.__name__, len(wdict), spider=spider)
+            self.stats.set_value(f'memdebug/live_refs/{cls.__name__}', len(wdict), spider=spider)

@@ -2,14 +2,14 @@
 Helper functions for dealing with Twisted deferreds
 """
 import asyncio
-from functools import wraps
 import inspect
+from functools import wraps
 
 from twisted.internet import defer, task
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.utils.asyncio import is_asyncio_reactor_installed
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 
 
 def defer_fail(_failure):
@@ -88,8 +88,11 @@ def process_chain_both(callbacks, errbacks, input, *a, **kw):
     """Return a Deferred built by chaining the given callbacks and errbacks"""
     d = defer.Deferred()
     for cb, eb in zip(callbacks, errbacks):
-        d.addCallbacks(cb, eb, callbackArgs=a, callbackKeywords=kw,
-            errbackArgs=a, errbackKeywords=kw)
+        d.addCallbacks(
+            callback=cb, errback=eb,
+            callbackArgs=a, callbackKeywords=kw,
+            errbackArgs=a, errbackKeywords=kw,
+        )
     if isinstance(input, failure.Failure):
         d.errback(input)
     else:
@@ -121,18 +124,11 @@ def iter_errback(iterable, errback, *a, **kw):
             errback(failure.Failure(), *a, **kw)
 
 
-def _isfuture(o):
-    # workaround for Python before 3.5.3 not having asyncio.isfuture
-    if hasattr(asyncio, 'isfuture'):
-        return asyncio.isfuture(o)
-    return isinstance(o, asyncio.Future)
-
-
 def deferred_from_coro(o):
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, defer.Deferred):
         return o
-    if _isfuture(o) or inspect.isawaitable(o):
+    if asyncio.isfuture(o) or inspect.isawaitable(o):
         if not is_asyncio_reactor_installed():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
@@ -153,3 +149,20 @@ def deferred_f_from_coro_f(coro_f):
     def f(*coro_args, **coro_kwargs):
         return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
     return f
+
+
+def maybeDeferred_coro(f, *args, **kw):
+    """ Copy of defer.maybeDeferred that also converts coroutines to Deferreds. """
+    try:
+        result = f(*args, **kw)
+    except:  # noqa: E722
+        return defer.fail(failure.Failure(captureVars=defer.Deferred.debug))
+
+    if isinstance(result, defer.Deferred):
+        return result
+    elif asyncio.isfuture(result) or inspect.isawaitable(result):
+        return deferred_from_coro(result)
+    elif isinstance(result, failure.Failure):
+        return defer.fail(result)
+    else:
+        return defer.succeed(result)

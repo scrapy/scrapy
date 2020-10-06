@@ -11,7 +11,7 @@ from scrapy.http import Request
 logger = logging.getLogger(__name__)
 
 
-class DepthMiddleware(object):
+class DepthMiddleware:
 
     def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth
@@ -43,7 +43,7 @@ class DepthMiddleware(object):
                     return False
                 else:
                     if self.verbose_stats:
-                        self.stats.inc_value('request_depth_count/%s' % depth,
+                        self.stats.inc_value(f'request_depth_count/{depth}',
                                              spider=spider)
                     self.stats.max_value('request_depth_max', depth,
                                          spider=spider)

@@ -19,9 +19,8 @@ NoneType = type(None)
 live_refs = defaultdict(weakref.WeakKeyDictionary)
 
 
-class object_ref(object):
-    """Inherit from this class (instead of object) to a keep a record of live
-    instances"""
+class object_ref:
+    """Inherit from this class to a keep a record of live instances"""
 
     __slots__ = ()
 
@@ -42,9 +41,7 @@ def format_live_refs(ignore=NoneType):
         if issubclass(cls, ignore):
             continue
         oldest = min(wdict.values())
-        s += "%-30s %6d   oldest: %ds ago\n" % (
-            cls.__name__, len(wdict), now - oldest
-        )
+        s += f"{cls.__name__:<30} {len(wdict):6}   oldest: {int(now - oldest)}s ago\n"
     return s
 
 

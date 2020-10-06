@@ -108,6 +108,11 @@ Well-written patches should:
 
       tox -e docs-coverage
 
+* if you are removing deprecated code, first make sure that at least 1 year
+  (12 months) has passed since the release that introduced the deprecation.
+  See :ref:`deprecation-policy`.
+
+
 .. _submitting-patches:
 
 Submitting patches
@@ -135,7 +140,7 @@ original pull request author hasn't had time to address them.
 In this case consider picking up this pull request: open
 a new pull request with all commits from the original pull request, as well as
 additional changes to address the raised issues. Doing so helps a lot; it is
-not considered rude as soon as the original author is acknowledged by keeping
+not considered rude as long as the original author is acknowledged by keeping
 his/her commits.
 
 You can pull an existing pull request to a local branch
@@ -143,7 +148,7 @@ by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
 (replace 'upstream' with a remote name for scrapy repository,
 ``$PR_NUMBER`` with an ID of the pull request, and ``$BRANCH_NAME_TO_CREATE``
 with a name of the branch you want to create locally).
-See also: https://help.github.com/articles/checking-out-pull-requests-locally/#modifying-an-inactive-pull-request-locally.
+See also: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
 E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
@@ -155,6 +160,9 @@ Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
 removal, etc) in separate commits from functional changes. This will make pull
 requests easier to review and more likely to get merged.
 
+
+.. _coding-style:
+
 Coding style
 ============
 
@@ -163,12 +171,12 @@ Scrapy:
 
 * Unless otherwise specified, follow :pep:`8`.
 
-* It's OK to use lines longer than 80 chars if it improves the code
+* It's OK to use lines longer than 79 chars if it improves the code
   readability.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
-  See https://help.github.com/articles/setting-your-username-in-git/ for
+  See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
 
 .. _documentation-policies:
@@ -190,6 +198,17 @@ In any case, if something is covered in a docstring, use the
 :mod:`~sphinx.ext.autodoc` extension to pull the docstring into the
 documentation instead of duplicating the docstring in files within the
 ``docs/`` directory.
+
+Documentation updates that cover new or modified features must use Sphinx’s
+:rst:dir:`versionadded` and :rst:dir:`versionchanged` directives. Use
+``VERSION`` as version, we will replace it with the actual version right before
+the corresponding release. When we release a new major or minor version of
+Scrapy, we remove these directives if they are older than 3 years.
+
+Documentation about deprecated features must be removed as those features are
+deprecated, so that new readers do not run into it. New deprecations and
+deprecation removals are documented in the :ref:`release notes <news>`.
+
 
 Tests
 =====
@@ -266,5 +285,5 @@ And their unit-tests are in::
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257/
-.. _pull request: https://help.github.com/en/articles/creating-a-pull-request
+.. _pull request: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist

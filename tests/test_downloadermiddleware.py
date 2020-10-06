@@ -84,7 +84,7 @@ class DefaultsTest(ManagerTestCase):
         })
         ret = self._download(request=req, response=resp)
         self.assertTrue(isinstance(ret, Request),
-                        "Not redirected: {0!r}".format(ret))
+                        f"Not redirected: {ret!r}")
         self.assertEqual(to_bytes(ret.url), resp.headers['Location'],
                          "Not redirected to location header")
 
@@ -106,7 +106,7 @@ class ResponseFromProcessRequestTest(ManagerTestCase):
     def test_download_func_not_called(self):
         resp = Response('http://example.com/index.html')
 
-        class ResponseMiddleware(object):
+        class ResponseMiddleware:
             def process_request(self, request, spider):
                 return resp
 

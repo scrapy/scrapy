@@ -12,7 +12,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 logger = logging.getLogger(__name__)
 
 
-class BaseRedirectMiddleware(object):
+class BaseRedirectMiddleware:
 
     enabled_setting = 'REDIRECT_ENABLED'
 
@@ -34,10 +34,8 @@ class BaseRedirectMiddleware(object):
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_ttl'] = ttl - 1
-            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
-                [request.url]
-            redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + \
-                [reason]
+            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + [request.url]
+            redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + [reason]
             fingerprints = request.meta.get('redirect_fingerprints', set())
             fingerprint = request_fingerprint(request)
             redirected.meta['redirect_fingerprints'] = fingerprints | {fingerprint}
@@ -64,11 +62,14 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     Handle redirection of requests based on response status
     and meta-refresh html tag.
     """
+
     def process_response(self, request, response, spider):
-        if (request.meta.get('dont_redirect', False) or
-                response.status in getattr(spider, 'handle_httpstatus_list', []) or
-                response.status in request.meta.get('handle_httpstatus_list', []) or
-                request.meta.get('handle_httpstatus_all', False)):
+        if (
+            request.meta.get('dont_redirect', False)
+            or response.status in getattr(spider, 'handle_httpstatus_list', [])
+            or response.status in request.meta.get('handle_httpstatus_list', [])
+            or request.meta.get('handle_httpstatus_all', False)
+        ):
             return response
 
         allowed_status = (301, 302, 303, 307, 308)
@@ -95,14 +96,16 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
     enabled_setting = 'METAREFRESH_ENABLED'
 
     def __init__(self, settings):
-        super(MetaRefreshMiddleware, self).__init__(settings)
+        super().__init__(settings)
         self._ignore_tags = settings.getlist('METAREFRESH_IGNORE_TAGS')
-        self._maxdelay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY',
-                                         settings.getint('METAREFRESH_MAXDELAY'))
+        self._maxdelay = settings.getint('METAREFRESH_MAXDELAY')
 
     def process_response(self, request, response, spider):
-        if request.meta.get('dont_redirect', False) or request.method == 'HEAD' or \
-                not isinstance(response, HtmlResponse):
+        if (
+            request.meta.get('dont_redirect', False)
+            or request.method == 'HEAD'
+            or not isinstance(response, HtmlResponse)
+        ):
             return response
 
         interval, url = get_meta_refresh(response,

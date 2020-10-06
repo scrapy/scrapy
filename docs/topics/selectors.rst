@@ -14,7 +14,7 @@ achieve this, such as:
    drawback: it's slow.
 
  * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
-   API based on `ElementTree`_. (lxml is not part of the Python standard
+   API based on :mod:`~xml.etree.ElementTree`. (lxml is not part of the Python standard
    library.)
 
 Scrapy comes with its own mechanism for extracting data. They're called
@@ -35,12 +35,10 @@ defines selectors to associate those styles with specific HTML elements.
     in speed and parsing accuracy to lxml.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://lxml.de/
-.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
-.. _cssselect: https://pypi.python.org/pypi/cssselect/
-.. _XPath: https://www.w3.org/TR/xpath
+.. _lxml: https://lxml.de/
+.. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
-.. _parsel: https://parsel.readthedocs.io/
+.. _parsel: https://parsel.readthedocs.io/en/latest/
 
 Using selectors
 ===============
@@ -66,7 +64,8 @@ more shortcuts: ``response.xpath()`` and ``response.css()``:
 
 Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
-markup as an unicode string (in ``text`` argument).
+markup as a string (in ``text`` argument).
+
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
 it is more convenient to use ``response.css()`` and ``response.xpath()``
@@ -255,7 +254,7 @@ that Scrapy (parsel) implements a couple of **non-standard pseudo-elements**:
     They will most probably not work with other libraries like
     `lxml`_ or `PyQuery`_.
 
-.. _PyQuery: https://pypi.python.org/pypi/pyquery
+.. _PyQuery: https://pypi.org/project/pyquery/
 
 Examples:
 
@@ -309,7 +308,7 @@ Examples:
     make much sense: text nodes do not have attributes, and attribute values
     are string values already and do not have children nodes.
 
-.. _CSS Selectors: https://www.w3.org/TR/css3-selectors/#selectors
+.. _CSS Selectors: https://www.w3.org/TR/selectors-3/#selectors
 
 .. _topics-selectors-nesting-selectors:
 
@@ -329,8 +328,9 @@ too. Here's an example:
  '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
 >>> for index, link in enumerate(links):
-...     args = (index, link.xpath('@href').get(), link.xpath('img/@src').get())
-...     print('Link number %d points to url %r and image %r' % args)
+...     href_xpath = link.xpath('@href').get()
+...     img_xpath = link.xpath('img/@src').get()
+...     print(f'Link number {index} points to url {href_xpath!r} and image {img_xpath!r}')
 Link number 0 points to url 'image1.html' and image 'image1_thumb.jpg'
 Link number 1 points to url 'image2.html' and image 'image2_thumb.jpg'
 Link number 2 points to url 'image3.html' and image 'image3_thumb.jpg'
@@ -385,7 +385,7 @@ Using selectors with regular expressions
 
 :class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
-``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
+``.css()`` methods, ``.re()`` returns a list of strings. So you
 can't construct nested ``.re()`` calls.
 
 Here's an example used to extract image names from the :ref:`HTML code
@@ -504,7 +504,7 @@ Another common case would be to extract all direct ``<p>`` children:
 For more details about relative XPaths see the `Location Paths`_ section in the
 XPath specification.
 
-.. _Location Paths: https://www.w3.org/TR/xpath#location-paths
+.. _Location Paths: https://www.w3.org/TR/xpath/all/#location-paths
 
 When querying by class, consider using CSS
 ------------------------------------------
@@ -612,7 +612,7 @@ But using the ``.`` to mean the node, works:
 >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
 ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath/#section-String-Functions
+.. _`XPath string function`: https://www.w3.org/TR/xpath/all/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 
@@ -736,7 +736,7 @@ The ``test()`` function, for example, can prove quite useful when XPath's
 Example selecting links in list item with a "class" attribute ending with a digit:
 
 >>> from scrapy import Selector
->>> doc = u"""
+>>> doc = """
 ... <div>
 ...     <ul>
 ...         <li class="item-0"><a href="link1.html">first item</a></li>
@@ -764,10 +764,10 @@ Set operations
 These can be handy for excluding parts of a document tree before
 extracting text elements for example.
 
-Example extracting microdata (sample content taken from http://schema.org/Product)
+Example extracting microdata (sample content taken from https://schema.org/Product)
 with groups of itemscopes and corresponding itemprops::
 
-    >>> doc = u"""
+    >>> doc = """
     ... <div itemscope itemtype="http://schema.org/Product">
     ...   <span itemprop="name">Kenmore White 17" Microwave</span>
     ...   <img src="kenmore-microwave-17in.jpg" alt='Kenmore 17" Microwave' />
@@ -823,7 +823,7 @@ with groups of itemscopes and corresponding itemprops::
     ...     props = scope.xpath('''
     ...                 set:difference(./descendant::*/@itemprop,
     ...                                .//*[@itemscope]/*/@itemprop)''')
-    ...     print("    properties: %s" % (props.getall()))
+    ...     print(f"    properties: {props.getall()}")
     ...     print("")
 
     current scope: ['http://schema.org/Product']
@@ -986,12 +986,12 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
 
       sel.xpath("//h1")
 
 2. Extract the text of all ``<h1>`` elements from an HTML response body,
-   returning a list of unicode strings::
+   returning a list of strings::
 
       sel.xpath("//h1").getall()         # this includes the h1 tag
       sel.xpath("//h1/text()").getall()  # this excludes the h1 tag
@@ -1013,7 +1013,7 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object::
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (ie. a :class:`SelectorList` object)::
+   of :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
 
       sel.xpath("//product")
 

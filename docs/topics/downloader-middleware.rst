@@ -202,6 +202,11 @@ CookiesMiddleware
    sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
+   .. caution:: When non-UTF8 encoded byte sequences are passed to a
+      :class:`~scrapy.http.Request`, the ``CookiesMiddleware`` will log
+      a warning. Refer to :ref:`topics-logging-advanced-customization`
+      to customize the logging behaviour.
+
 The following settings can be used to configure the cookie middleware:
 
 * :setting:`COOKIES_ENABLED`
@@ -211,8 +216,6 @@ The following settings can be used to configure the cookie middleware:
 
 Multiple cookie sessions per spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 0.15
 
 There is support for keeping multiple cookie sessions per spider by using the
 :reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
@@ -259,8 +262,8 @@ COOKIES_DEBUG
 
 Default: ``False``
 
-If enabled, Scrapy will log all cookies sent in requests (ie. ``Cookie``
-header) and all cookies received in responses (ie. ``Set-Cookie`` header).
+If enabled, Scrapy will log all cookies sent in requests (i.e. ``Cookie``
+header) and all cookies received in responses (i.e. ``Set-Cookie`` header).
 
 Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 
@@ -470,8 +473,6 @@ DBM storage backend
 
 .. class:: DbmCacheStorage
 
-    .. versionadded:: 0.13
-
     A DBM_ storage backend is also available for the HTTP cache middleware.
 
     By default, it uses the :mod:`dbm`, but you can change it with the
@@ -544,14 +545,9 @@ settings:
 HTTPCACHE_ENABLED
 ^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.11
-
 Default: ``False``
 
 Whether the HTTP cache will be enabled.
-
-.. versionchanged:: 0.11
-   Before 0.11, :setting:`HTTPCACHE_DIR` was used to enable cache.
 
 .. setting:: HTTPCACHE_EXPIRATION_SECS
 
@@ -564,9 +560,6 @@ Expiration time for cached requests, in seconds.
 
 Cached requests older than this time will be re-downloaded. If zero, cached
 requests will never expire.
-
-.. versionchanged:: 0.11
-   Before 0.11, zero meant cached requests always expire.
 
 .. setting:: HTTPCACHE_DIR
 
@@ -583,8 +576,6 @@ project data dir. For more info see: :ref:`topics-project-structure`.
 
 HTTPCACHE_IGNORE_HTTP_CODES
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.10
 
 Default: ``[]``
 
@@ -604,8 +595,6 @@ If enabled, requests not found in the cache will be ignored instead of downloade
 HTTPCACHE_IGNORE_SCHEMES
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.10
-
 Default: ``['file']``
 
 Don't cache responses with these URI schemes.
@@ -624,8 +613,6 @@ The class which implements the cache storage backend.
 HTTPCACHE_DBM_MODULE
 ^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.13
-
 Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
@@ -636,8 +623,6 @@ The database module to use in the :ref:`DBM storage backend
 HTTPCACHE_POLICY
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.18
-
 Default: ``'scrapy.extensions.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
@@ -646,8 +631,6 @@ The class which implements the cache policy.
 
 HTTPCACHE_GZIP
 ^^^^^^^^^^^^^^
-
-.. versionadded:: 1.0
 
 Default: ``False``
 
@@ -658,8 +641,6 @@ This setting is specific to the Filesystem backend.
 
 HTTPCACHE_ALWAYS_STORE
 ^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.1
 
 Default: ``False``
 
@@ -678,8 +659,6 @@ responses you feed to the cache middleware.
 
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.1
 
 Default: ``[]``
 
@@ -709,7 +688,7 @@ HttpCompressionMiddleware
    provided `brotlipy`_ is installed.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotlipy: https://pypi.python.org/pypi/brotlipy
+.. _brotlipy: https://pypi.org/project/brotlipy/
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -730,8 +709,6 @@ HttpProxyMiddleware
 .. module:: scrapy.downloadermiddlewares.httpproxy
    :synopsis: Http Proxy Middleware
 
-.. versionadded:: 0.8
-
 .. reqmeta:: proxy
 
 .. class:: HttpProxyMiddleware
@@ -739,7 +716,7 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
-   Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
+   Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
 
    * ``http_proxy``
@@ -750,9 +727,6 @@ HttpProxyMiddleware
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
-
-.. _urllib: https://docs.python.org/2/library/urllib.html
-.. _urllib2: https://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -815,8 +789,6 @@ RedirectMiddleware settings
 REDIRECT_ENABLED
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.13
-
 Default: ``True``
 
 Whether the Redirect middleware will be enabled.
@@ -829,6 +801,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
+After this maximum, the request's response is returned as is.
 
 MetaRefreshMiddleware
 ---------------------
@@ -857,8 +830,6 @@ MetaRefreshMiddleware settings
 METAREFRESH_ENABLED
 ^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.17
-
 Default: ``True``
 
 Whether the Meta Refresh middleware will be enabled.
@@ -868,9 +839,13 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``['script', 'noscript']``
+Default: ``[]``
 
 Meta tags within these tags are ignored.
+
+.. versionchanged:: 2.0
+   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
+   ``['script', 'noscript']`` to ``[]``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -916,8 +891,6 @@ RetryMiddleware Settings
 
 RETRY_ENABLED
 ^^^^^^^^^^^^^
-
-.. versionadded:: 0.13
 
 Default: ``True``
 
@@ -1032,13 +1005,12 @@ Scrapy uses this parser by default.
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-Based on `RobotFileParser
-<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+Based on :class:`~urllib.robotparser.RobotFileParser`:
 
 * is Python's built-in robots.txt_ parser
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * lacks support for wildcard matching
 
@@ -1061,7 +1033,7 @@ Based on `Reppy <https://github.com/seomoz/reppy/>`_:
   <https://github.com/seomoz/rep-cpp>`_
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1086,7 +1058,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 * implemented in Python
 
 * is compliant with `Martijn Koster's 1996 draft specification
-  <http://www.robotstxt.org/norobots-rfc.txt>`_
+  <https://www.robotstxt.org/norobots-rfc.txt>`_
 
 * supports wildcard matching
 
@@ -1115,7 +1087,7 @@ implementing the methods described below.
 .. autoclass:: RobotParser
    :members:
 
-.. _robots.txt: http://www.robotstxt.org/
+.. _robots.txt: https://www.robotstxt.org/
 
 DownloaderStats
 ---------------
@@ -1155,7 +1127,7 @@ AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
    on meta-fragment html tag. See
-   https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
    for more info.
 
    .. note::
@@ -1172,8 +1144,6 @@ AjaxCrawlMiddleware Settings
 
 AJAXCRAWL_ENABLED
 ^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.21
 
 Default: ``False``
 
