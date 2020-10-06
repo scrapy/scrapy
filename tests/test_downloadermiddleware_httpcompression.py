@@ -25,7 +25,7 @@ FORMAT = {
     # $ zstd raw.html --no-content-size -o html-zstd-static-no-content-size.bin
     'zstd-static-no-content-size': ('html-zstd-static-no-content-size.bin', 'zstd'),
     # $ cat raw.html | zstd -o html-zstd-streaming-no-content-size.bin
-    'zstd-streaming-no-content-size': ('html-zstd-static-no-content-size.bin', 'zstd'),
+    'zstd-streaming-no-content-size': ('html-zstd-streaming-no-content-size.bin', 'zstd'),
 }
 
 
