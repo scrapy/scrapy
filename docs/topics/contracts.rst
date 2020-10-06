@@ -4,8 +4,6 @@
 Spiders Contracts
 =================
 
-.. versionadded:: 0.15
-
 Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
@@ -81,7 +79,7 @@ override three methods:
 .. class:: Contract(method, *args)
 
     :param method: callback function to which the contract is associated
-    :type method: function
+    :type method: collections.abc.Callable
 
     :param args: list of arguments passed into the docstring (whitespace
         separated)

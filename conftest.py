@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.keys import generate_keys
+
 
 def _py_files(folder):
     return (str(p) for p in Path(folder).rglob('*.py'))
@@ -14,8 +16,6 @@ collect_ignore = [
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
-    # Py36-only parts of respective tests
-    *_py_files("tests/py36"),
 ]
 
 for line in open('tests/ignores.txt'):
@@ -53,3 +53,7 @@ def reactor_pytest(request):
 def only_asyncio(request, reactor_pytest):
     if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
         pytest.skip('This test is only run with --reactor=asyncio')
+
+
+# Generate localhost certificate files, needed by some tests
+generate_keys()

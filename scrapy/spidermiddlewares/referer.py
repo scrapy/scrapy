@@ -278,7 +278,7 @@ def _load_policy_class(policy, warning_only=False):
         try:
             return _policy_classes[policy.lower()]
         except KeyError:
-            msg = "Could not load referrer policy %r" % policy
+            msg = f"Could not load referrer policy {policy!r}"
             if not warning_only:
                 raise RuntimeError(msg)
             else:

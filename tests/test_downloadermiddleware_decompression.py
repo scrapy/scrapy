@@ -28,7 +28,7 @@ class DecompressionMiddlewareTest(TestCase):
         for fmt in self.test_formats:
             rsp = self.test_responses[fmt]
             new = self.mw.process_response(None, rsp, self.spider)
-            error_msg = 'Failed %s, response type %s' % (fmt, type(new).__name__)
+            error_msg = f'Failed {fmt}, response type {type(new).__name__}'
             assert isinstance(new, XmlResponse), error_msg
             assert_samelines(self, new.body, self.uncompressed_body, fmt)
 

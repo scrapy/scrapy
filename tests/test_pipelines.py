@@ -99,7 +99,7 @@ class PipelineTestCase(unittest.TestCase):
     def _create_crawler(self, *pipeline_classes, **extra_settings):
         settings = {
             'ITEM_PIPELINES': {
-                __name__ + '.' + pipeline_class.__name__: value
+                pipeline_class: value
                 for value, pipeline_class in
                 enumerate(pipeline_classes, start=1)
             },

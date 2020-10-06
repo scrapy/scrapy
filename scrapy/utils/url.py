@@ -22,7 +22,7 @@ def url_is_from_any_domain(url, domains):
     if not host:
         return False
     domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith('.%s' % d)) for d in domains)
+    return any((host == d) or (host.endswith(f'.{d}')) for d in domains)
 
 
 def url_is_from_spider(url, spider):
@@ -153,7 +153,7 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
         if (parsed_url.scheme, parsed_url.port) in (('http', 80),
                                                     ('https', 443),
                                                     ('ftp', 21)):
-            netloc = netloc.replace(':{p.port}'.format(p=parsed_url), '')
+            netloc = netloc.replace(f':{parsed_url.port}', '')
     return urlunparse((
         parsed_url.scheme,
         netloc,

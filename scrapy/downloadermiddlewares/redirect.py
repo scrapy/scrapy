@@ -92,7 +92,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
     enabled_setting = 'METAREFRESH_ENABLED'
 
     def __init__(self, settings):
-        super(MetaRefreshMiddleware, self).__init__(settings)
+        super().__init__(settings)
         self._ignore_tags = settings.getlist('METAREFRESH_IGNORE_TAGS')
         self._maxdelay = settings.getint('METAREFRESH_MAXDELAY')
 

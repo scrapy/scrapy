@@ -9,8 +9,8 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.5.2+, either the CPython implementation (default) or
-the PyPy 5.9+ implementation (see :ref:`python:implementations`).
+Scrapy requires Python 3.6+, either the CPython implementation (default) or
+the PyPy 7.2.0+ implementation (see :ref:`python:implementations`).
 
 
 Installing Scrapy
@@ -211,8 +211,8 @@ PyPy
 We recommend using the latest PyPy version. The version tested is 5.9.0.
 For PyPy3, only Linux installation was tested.
 
-Most Scrapy dependencides now have binary wheels for CPython, but not for PyPy.
-This means that these dependecies will be built during installation.
+Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
+This means that these dependencies will be built during installation.
 On macOS, you are likely to face an issue with building Cryptography dependency,
 solution to this problem is described
 `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,

@@ -6,10 +6,12 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from functools import partial, wraps
 from itertools import chain
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.decorators import deprecated
 
 
@@ -89,7 +91,7 @@ def to_unicode(text, encoding=None, errors='strict'):
         return text
     if not isinstance(text, (bytes, str)):
         raise TypeError('to_unicode must receive a bytes or str '
-                        'object, got %s' % type(text).__name__)
+                        f'object, got {type(text).__name__}')
     if encoding is None:
         encoding = 'utf-8'
     return text.decode(encoding, errors)
@@ -102,7 +104,7 @@ def to_bytes(text, encoding=None, errors='strict'):
         return text
     if not isinstance(text, str):
         raise TypeError('to_bytes must receive a str or bytes '
-                        'object, got %s' % type(text).__name__)
+                        f'object, got {type(text).__name__}')
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
@@ -127,6 +129,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
     the start position of the match, and the ending (regarding the entire text).
     """
+
     def _chunk_iter():
         offset = len(text)
         while True:
@@ -158,6 +161,7 @@ def memoizemethod_noargs(method):
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
+
     return new_method
 
 
@@ -170,7 +174,7 @@ def binary_is_text(data):
     does not contain unprintable control characters.
     """
     if not isinstance(data, bytes):
-        raise TypeError("data must be bytes, got '%s'" % type(data).__name__)
+        raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
     return all(c not in _BINARYCHARS for c in data)
 
 
@@ -194,7 +198,8 @@ def _getargspec_py23(func):
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
-        func_args, _, _, _ = _getargspec_py23(func)
+        spec = inspect.getfullargspec(func)
+        func_args = spec.args + spec.kwonlyargs
     elif inspect.isclass(func):
         return get_func_args(func.__init__, True)
     elif inspect.ismethod(func):
@@ -212,7 +217,7 @@ def get_func_args(func, stripself=False):
         else:
             return get_func_args(func.__call__, True)
     else:
-        raise TypeError('%s is not callable' % type(func))
+        raise TypeError(f'{type(func)} is not callable')
     if stripself:
         func_args.pop(0)
     return func_args
@@ -245,7 +250,7 @@ def get_spec(func):
     elif hasattr(func, '__call__'):
         spec = _getargspec_py23(func.__call__)
     else:
-        raise TypeError('%s is not callable' % type(func))
+        raise TypeError(f'{type(func)} is not callable')
 
     defaults = spec.defaults or []
 
@@ -276,6 +281,7 @@ def equal_attributes(obj1, obj2, attributes):
 class WeakKeyCache:
 
     def __init__(self, default_factory):
+        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
         self.default_factory = default_factory
         self._weakdict = weakref.WeakKeyDictionary()
 
@@ -316,7 +322,7 @@ def global_object_name(obj):
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
     """
-    return "%s.%s" % (obj.__module__, obj.__name__)
+    return f"{obj.__module__}.{obj.__name__}"
 
 
 if hasattr(sys, "pypy_version_info"):
