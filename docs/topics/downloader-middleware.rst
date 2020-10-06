@@ -207,6 +207,11 @@ CookiesMiddleware
       a warning. Refer to :ref:`topics-logging-advanced-customization`
       to customize the logging behaviour.
 
+   .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+      :ref:`cookies-mw`. If you need to set cookies for a request, use the
+      :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+      current limitation that is being worked on.
+
 The following settings can be used to configure the cookie middleware:
 
 * :setting:`COOKIES_ENABLED`
