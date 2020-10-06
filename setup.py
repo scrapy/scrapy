@@ -24,7 +24,6 @@ install_requires = [
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
-    'PyDispatcher>=2.0.5',
     'pyOpenSSL>=16.2.0',
     'queuelib>=1.4.2',
     'service_identity>=16.0.0',
@@ -38,6 +37,7 @@ extras_require = {}
 if has_environment_marker_platform_impl_support():
     extras_require[':platform_python_implementation == "CPython"'] = [
         'lxml>=3.5.0',
+        'PyDispatcher>=2.0.5',
     ]
     extras_require[':platform_python_implementation == "PyPy"'] = [
         # Earlier lxml versions are affected by
