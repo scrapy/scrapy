@@ -45,7 +45,7 @@ class AsyncDefAsyncioPipeline:
 
 
 class OrderPipeline:
-    name = None
+    name = ''
 
     @classmethod
     def from_crawler(cls, crawler):
