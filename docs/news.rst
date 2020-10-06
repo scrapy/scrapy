@@ -224,6 +224,9 @@ Bug fixes
 *   The system file mode creation mask no longer affects the permissions of
     files generated using the :command:`startproject` command (:issue:`4722`)
 
+*   :func:`scrapy.utils.iterators.xmliter` now supports namespaced node names
+    (:issue:`861`, :issue:`4746`)
+
 
 Documentation
 ~~~~~~~~~~~~~
@@ -267,9 +270,10 @@ Quality assurance
 
 *   Modernized :func:`super` usage (:issue:`4707`)
 
-*   Other code and test cleanups (:issue:`3288`, :issue:`4165`, :issue:`4564`,
-    :issue:`4651`, :issue:`4714`, :issue:`4738`, :issue:`4745`, :issue:`4747`,
-    :issue:`4761`, :issue:`4765`, :issue:`4817`, :issue:`4820`, :issue:`4822`)
+*   Other code and test cleanups (:issue:`1790`, :issue:`3288`, :issue:`4165`,
+    :issue:`4564`, :issue:`4651`, :issue:`4714`, :issue:`4738`, :issue:`4745`,
+    :issue:`4747`, :issue:`4761`, :issue:`4765`, :issue:`4804`, :issue:`4817`,
+    :issue:`4820`, :issue:`4822`)
 
 
 .. _release-2.3.0:
