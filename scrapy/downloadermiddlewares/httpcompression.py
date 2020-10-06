@@ -1,5 +1,5 @@
-import zlib
 import io
+import zlib
 
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
