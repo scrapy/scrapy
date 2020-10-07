@@ -42,7 +42,7 @@ class SettingsAttribute:
             self.priority = max(self._value.maxpriority(), priority)
         else:
             self.priority = priority
-        self.hit = False
+        self.has_been_read = False
 
     def set(self, value, priority):
         """Sets value if priority is higher or equal than current priority."""
@@ -54,7 +54,7 @@ class SettingsAttribute:
 
     @property
     def value(self):
-        self.hit = True
+        self.has_been_read = True
         return self._value
 
     @value.setter

@@ -378,5 +378,4 @@ CheckSettings extension
 Inspect settings and find unused/mistyped variables. If a found variable is similar enough
 to a valid variable a suggestion will be showed.
 
-To enable this extension, turn on the :setting:`CHECK_SETTINGS_ENABLED` setting. The similarity
-threshold is set through :setting:`CHECK_SETTINGS_MIN` setting.
+To enable this extension, turn on the :setting:`CHECK_SETTINGS_ENABLED` setting.

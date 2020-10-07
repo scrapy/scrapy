@@ -284,18 +284,6 @@ Default: ``True``
 
 Whether to enable Check Settings.
 
-.. setting:: CHECK_SETTINGS_MIN
-
-CHECK_SETTINGS_MIN
-------------------
-
-Default: ``70``
-
-Minimum similarity between `0-100` a valid and not_valid setting to consider it as a
-suggestion, the similarity is calculated using `Levenshtein Distance`_.
-
-.. _Levenshtein Distance: https://en.wikipedia.org/wiki/Levenshtein_distance
-
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS

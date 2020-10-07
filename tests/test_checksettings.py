@@ -17,9 +17,7 @@ class TestCheckSettings(TestCase):
 
     @defer.inlineCallbacks
     def test_checksettings_not_used_settings(self):
-        check_settings_min = 100
         settings = {
-            'CHECK_SETTINGS_MIN': check_settings_min,
             'CHECK_SETTINGS_ENABLED': True,
             "NOT_USED_SETTING": True,
             "COOKIES_ENAVLED": False,
@@ -27,40 +25,24 @@ class TestCheckSettings(TestCase):
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
         check_settings = CheckSettings(crawler)
+        check_settings.spider_closed()
         self.assertEqual(
             check_settings.not_used_settings, ["NOT_USED_SETTING", "COOKIES_ENAVLED"])
 
     @defer.inlineCallbacks
     def test_checksettings_suggestions(self):
-        check_settings_min = 70
         settings = {
             "CHECK_SETTINGS_ENABLED": True,
-            "CHECK_SETTINGS_MIN": check_settings_min,
             "DOWNLOADER_STATSIE": True,
             "COOKIES_ENABLEDIE": True,
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
         check_settings = CheckSettings(crawler)
-        self.assertEqual(check_settings.suggestions, {
+        check_settings.spider_closed()
+        self.assertEqual(check_settings.get_suggestions(), {
             "DOWNLOADER_STATSIE": "DOWNLOADER_STATS",
             "COOKIES_ENABLEDIE": "COOKIES_ENABLED",
         })
-        self.assertEqual(check_settings.not_used_settings,
-                         ["DOWNLOADER_STATSIE", "COOKIES_ENABLEDIE"])
-
-    @defer.inlineCallbacks
-    def test_checksettings_no_suggestions(self):
-        check_settings_min = 95
-        settings = {
-            "CHECK_SETTINGS_ENABLED": True,
-            "CHECK_SETTINGS_MIN": check_settings_min,
-            "DOWNLOADER_STATSIE": True,
-            "COOKIES_ENABLEDIE": True,
-        }
-        crawler = get_crawler(ItemSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
-        check_settings = CheckSettings(crawler)
-        self.assertEqual(check_settings.suggestions, {})
         self.assertEqual(check_settings.not_used_settings,
                          ["DOWNLOADER_STATSIE", "COOKIES_ENABLEDIE"])
