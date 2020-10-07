@@ -227,6 +227,9 @@ Bug fixes
 *   :func:`scrapy.utils.iterators.xmliter` now supports namespaced node names
     (:issue:`861`, :issue:`4746`)
 
+*   :class:`~scrapy.Request` objects can now have ``about:`` URLs, which can
+    work when using a headless browser (:issue:`4835`)
+
 
 Documentation
 ~~~~~~~~~~~~~
