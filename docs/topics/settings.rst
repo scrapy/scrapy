@@ -373,7 +373,7 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the :attr:`~scrapy.http.Request` priority of
+An integer that is used to adjust the priority of
 a :class:`~scrapy.http.Request` based on its depth.
 
 The priority of a request is adjusted as follows::
