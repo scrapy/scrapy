@@ -1,7 +1,7 @@
 import unittest
 import warnings
 from hashlib import sha1
-from typing import Mapping, Tuple
+from typing import Dict, Mapping, Tuple, Union
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -55,7 +55,7 @@ class FingerprintTest(unittest.TestCase):
     function = staticmethod(fingerprint)
     cache = _fingerprint_cache
     default_cache_key = (None, False)
-    known_hashes = (
+    known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
         (
             Request("http://example.org"),
             b'xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD',
@@ -227,7 +227,7 @@ class FingerprintTest(unittest.TestCase):
 class RequestFingerprintTest(FingerprintTest):
     function = staticmethod(request_fingerprint)
     cache = _deprecated_fingerprint_cache
-    known_hashes = (
+    known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
         (
             Request("http://example.org"),
             'b2e5245ef826fd9576c93bd6e392fce3133fab62',
