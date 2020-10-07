@@ -36,10 +36,10 @@ class CheckSettings:
         if not crawler.settings.getbool("CHECK_SETTINGS_ENABLED"):
             raise NotConfigured
         ext = cls(crawler)
-        crawler.signals.connect(ext.spider_closed, signal=signals.spider_closed)
+        crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
         return ext
 
-    def spider_closed(self):
+    def spider_opened(self):
         self.not_used_settings = [s for s in self.settings
                                   if not self.settings.attributes[s].has_been_read]
         suggestions = self.get_suggestions()
