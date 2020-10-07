@@ -50,9 +50,88 @@ class UtilsRequestTest(unittest.TestCase):
 
 
 class FingerprintTest(unittest.TestCase):
+    maxDiff = None
+
     function = staticmethod(fingerprint)
     cache = _fingerprint_cache
     default_cache_key = (None, False)
+    known_hashes = (
+        (
+            Request("http://example.org"),
+            b'xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD',
+            {},
+        ),
+        (
+            Request("https://example.org"),
+            b'\xc04\x85P,\xaa\x91\x06\xf8t\xb4\xbd*\xd9\xe9\x8a:m\xc3l',
+            {},
+        ),
+        (
+            Request("https://example.org?a"),
+            b'G\xad\xb8Ck\x19\x1c\xed\x838,\x01\xc4\xde;\xee\xa5\x94a\x0c',
+            {},
+        ),
+        (
+            Request("https://example.org?a=b"),
+            b'\x024MYb\x8a\xc2\x1e\xbc>\xd6\xac*\xda\x9cF\xc1r\x7f\x17',
+            {},
+        ),
+        (
+            Request("https://example.org?a=b&a"),
+            b't+\xe8*\xfb\x84\xe3v\x1a}\x88p\xc0\xccB\xd7\x9d\xfez\x96',
+            {},
+        ),
+        (
+            Request("https://example.org?a=b&a=c"),
+            b'\xda\x1ec\xd0\x9c\x08s`\xb4\x9b\xe2\xb6R\xf8k\xef\xeaQG\xef',
+            {},
+        ),
+        (
+            Request("https://example.org", method='POST'),
+            b'\x9d\xcdA\x0fT\x02:\xca\xa0}\x90\xda\x05B\xded\x8aN7\x1d',
+            {},
+        ),
+        (
+            Request("https://example.org", body=b'a'),
+            b'\xc34z>\xd8\x99\x8b\xda7\x05r\x99I\xa8\xa0x;\xa41_',
+            {},
+        ),
+        (
+            Request("https://example.org", method='POST', body=b'a'),
+            b'5`\xe2y4\xd0\x9d\xee\xe0\xbatw\x87Q\xe8O\xd78\xfc\xe7',
+            {},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            b'\xc04\x85P,\xaa\x91\x06\xf8t\xb4\xbd*\xd9\xe9\x8a:m\xc3l',
+            {},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            b']\xc7\x1f\xf2\xafG2\xbc\xa4\xfa\x99\n33\xda\x18\x94\x81U.',
+            {'include_headers': ['A']},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            b'<\x1a\xeb\x85y\xdeW\xfb\xdcq\x88\xee\xaf\x17\xdd\x0c\xbfH\x18\x1f',
+            {'keep_fragments': True},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            b'\xc1\xef~\x94\x9bS\xc1\x83\t\xdcz8\x9f\xdc{\x11\x16I.\x11',
+            {'include_headers': ['A'], 'keep_fragments': True},
+        ),
+        (
+            Request("https://example.org/ab"),
+            b'N\xe5l\xb8\x12@iw\xe2\xf3\x1bp\xea\xffp!u\xe2\x8a\xc6',
+            {},
+        ),
+        (
+            Request("https://example.org/a", body=b'b'),
+            b'_NOv\xbco$6\xfcW\x9f\xb24g\x9f\xbb\xdd\xa82\xc5',
+            {},
+        ),
+    )
 
     def test_query_string_key_order(self):
         r1 = Request("http://www.example.com/query?id=111&cat=222")
@@ -131,10 +210,100 @@ class FingerprintTest(unittest.TestCase):
         fp2 = self.function(r2)
         self.assertNotEqual(fp1, fp2)
 
+    def test_hashes(self):
+        """Test hardcoded hashes, to make sure future changes to not introduce
+        backward incompatibilities."""
+        actual = [
+            self.function(request, **kwargs)
+            for request, _, kwargs in self.known_hashes
+        ]
+        expected = [
+            _fingerprint
+            for _, _fingerprint, _ in self.known_hashes
+        ]
+        self.assertEqual(actual, expected)
+
 
 class RequestFingerprintTest(FingerprintTest):
     function = staticmethod(request_fingerprint)
     cache = _deprecated_fingerprint_cache
+    known_hashes = (
+        (
+            Request("http://example.org"),
+            'b2e5245ef826fd9576c93bd6e392fce3133fab62',
+            {},
+        ),
+        (
+            Request("https://example.org"),
+            'bd10a0a89ea32cdee77917320f1309b0da87e892',
+            {},
+        ),
+        (
+            Request("https://example.org?a"),
+            '2fb7d48ae02f04b749f40caa969c0bc3c43204ce',
+            {},
+        ),
+        (
+            Request("https://example.org?a=b"),
+            '42e5fe149b147476e3f67ad0670c57b4cc57856a',
+            {},
+        ),
+        (
+            Request("https://example.org?a=b&a"),
+            'd23a9787cb56c6375c2cae4453c5a8c634526942',
+            {},
+        ),
+        (
+            Request("https://example.org?a=b&a=c"),
+            '9a18a7a8552a9182b7f1e05d33876409e421e5c5',
+            {},
+        ),
+        (
+            Request("https://example.org", method='POST'),
+            'ba20a80cb5c5ca460021ceefb3c2467b2bfd1bc6',
+            {},
+        ),
+        (
+            Request("https://example.org", body=b'a'),
+            '4bb136e54e715a4ea7a9dd1101831765d33f2d60',
+            {},
+        ),
+        (
+            Request("https://example.org", method='POST', body=b'a'),
+            '6c6595374a304b293be762f7b7be3f54e9947c65',
+            {},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            'bd10a0a89ea32cdee77917320f1309b0da87e892',
+            {},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            '515b633cb3ca502a33a9d8c890e889ec1e425e65',
+            {'include_headers': ['A']},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            '505c96e7da675920dfef58725e8c957dfdb38f47',
+            {'keep_fragments': True},
+        ),
+        (
+            Request("https://example.org#a", headers={'A': b'B'}),
+            'd6f673cdcb661b7970c2b9a00ee63e87d1e2e5da',
+            {'include_headers': ['A'], 'keep_fragments': True},
+        ),
+        (
+            Request("https://example.org/ab"),
+            '4e2870fee58582d6f81755e9b8fdefe3cba0c951',
+            {},
+        ),
+        (
+            Request("https://example.org/a", body=b'b'),
+            '4e2870fee58582d6f81755e9b8fdefe3cba0c951',
+            {},
+        ),
+    )
 
     @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
     def test_part_separation(self):
@@ -168,6 +337,7 @@ class RequestFingerprintTest(FingerprintTest):
 class RequestFingerprintAsBytesTest(FingerprintTest):
     function = staticmethod(_request_fingerprint_as_bytes)
     cache = _deprecated_fingerprint_cache
+    known_hashes = RequestFingerprintTest.known_hashes
 
     def test_caching(self):
         r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
@@ -179,6 +349,17 @@ class RequestFingerprintAsBytesTest(FingerprintTest):
     @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
     def test_part_separation(self):
         super().test_part_separation()
+
+    def test_hashes(self):
+        actual = [
+            self.function(request, **kwargs)
+            for request, _, kwargs in self.known_hashes
+        ]
+        expected = [
+            bytes.fromhex(_fingerprint)
+            for _, _fingerprint, _ in self.known_hashes
+        ]
+        self.assertEqual(actual, expected)
 
 
 _fingerprint_cache_2_3: Mapping[Request, Tuple[None, bool]] = WeakKeyDictionary()
