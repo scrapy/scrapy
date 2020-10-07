@@ -188,7 +188,7 @@ def fingerprint(request, *, include_headers=None, keep_fragments=False) -> bytes
             'body': (request.body or b'').hex(),
             'headers': headers,
         }
-        fingerprint_json = json.dumps(fingerprint_data)
+        fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
         cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()
     return cache[cache_key]
 
