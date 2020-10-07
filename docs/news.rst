@@ -242,6 +242,10 @@ Documentation
     a spider callback and reference documentation for the
     :class:`~scrapy.link.Link` class (:issue:`4751`, :issue:`4775`)
 
+*   Clarified the impact of :setting:`CONCURRENT_REQUESTS` when using the
+    :class:`~scrapy.extensions.closespider.CloseSpider` extension
+    (:issue:`4836`)
+
 *   Removed references to Python 2’s ``unicode`` type (:issue:`4547`,
     :issue:`4703`)
 
