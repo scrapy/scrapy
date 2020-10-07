@@ -102,7 +102,7 @@ class CookiesMiddleware:
         """
         def get_cookies_from_header(jar, request):
             cookie_header = request.headers.get("Cookie")
-            if not cookie_header:
+            if not cookie_header or request.meta.get("_cookie_header_processed"):
                 return []
             cookie_gen_bytes = (s.strip() for s in cookie_header.split(b";"))
             cookie_list_unicode = []
@@ -115,6 +115,7 @@ class CookiesMiddleware:
                     cookie_unicode = cookie_bytes.decode("latin1", errors="replace")
                 cookie_list_unicode.append(cookie_unicode)
             response = Response(request.url, headers={"Set-Cookie": cookie_list_unicode})
+            request.meta["_cookie_header_processed"] = True
             return jar.make_cookies(response, request)
 
         def get_cookies_from_attribute(jar, request):
