@@ -28,6 +28,8 @@ Highlights:
     commands, you can use the ``-O`` option instead of ``-o`` to overwrite the
     output file.
 
+*   Zstd-compressed responses are now supported if zstandard_ is installed
+
 *   In settings, where the import path of a class is required, it is now
     possible to pass a class object instead.
 
@@ -51,6 +53,25 @@ Modified requirements
 
     (:issue:`4718`, :issue:`4732`, :issue:`4733`, :issue:`4742`, :issue:`4743`,
     :issue:`4764`)
+
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` once again
+    discards cookies defined in :attr:`Request.headers
+    <scrapy.http.Request.headers>`.
+
+    We decided to revert this bug fix, introduced in Scrapy 2.2.0, because it
+    was reported that the current implementation could break existing code.
+
+    If you need to set cookies for a request, use the :class:`Request.cookies
+    <scrapy.http.Request>` parameter.
+
+    A future version of Scrapy will include a new, better implementation of the
+    reverted bug fix.
+
+    (:issue:`4717`, :issue:`4823`)
 
 
 Deprecation removals
@@ -145,6 +166,9 @@ New features
         options <feed-options>`
 
     (:issue:`547`, :issue:`716`, :issue:`4512`)
+
+*   Zstd-compressed responses are now supported if zstandard_ is installed
+    (:issue:`4831`)
 
 *   In settings, where the import path of a class is required, it is now
     possible to pass a class object instead (:issue:`3870`, :issue:`3873`).
@@ -280,7 +304,7 @@ Quality assurance
 *   Other code and test cleanups (:issue:`1790`, :issue:`3288`, :issue:`4165`,
     :issue:`4564`, :issue:`4651`, :issue:`4714`, :issue:`4738`, :issue:`4745`,
     :issue:`4747`, :issue:`4761`, :issue:`4765`, :issue:`4804`, :issue:`4817`,
-    :issue:`4820`, :issue:`4822`)
+    :issue:`4820`, :issue:`4822`, :issue:`4839`)
 
 
 .. _release-2.3.0:
@@ -4294,3 +4318,4 @@ First release of Scrapy.
 .. _What is cacheable: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
 .. _zope.interface: https://zopeinterface.readthedocs.io/en/latest/
 .. _Zsh: https://www.zsh.org/
+.. _zstandard: https://pypi.org/project/zstandard/
