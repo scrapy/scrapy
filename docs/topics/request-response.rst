@@ -61,6 +61,12 @@ Request objects
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
        ``None`` is passed as value, the HTTP header will not be sent at all.
+
+        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+            :ref:`cookies-mw`. If you need to set cookies for a request, use the
+            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            current limitation that is being worked on.
+
     :type headers: dict
 
     :param cookies: the request cookies. These can be sent in two forms.
@@ -102,6 +108,12 @@ Request objects
             )
 
         For more info see :ref:`cookies-mw`.
+
+        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+            :ref:`cookies-mw`. If you need to set cookies for a request, use the
+            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            current limitation that is being worked on.
+
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
