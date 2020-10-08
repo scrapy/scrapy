@@ -868,29 +868,6 @@ class S3TestCase(unittest.TestCase):
         self.assertEqual(httpreq.headers['Authorization'],
                          b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
-    def test_request_signing5(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            pass
-        else:
-            raise unittest.SkipTest(
-                'botocore does not support overriding date with x-amz-date')
-        # deletes an object from the 'johnsmith' bucket using the
-        # path-style and Date alternative.
-        date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request(
-            's3://johnsmith/photos/puppy.jpg', method='DELETE', headers={
-                'Date': date,
-                'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-            })
-        with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
-        # botocore does not override Date with x-amz-date
-        self.assertEqual(
-            httpreq.headers['Authorization'],
-            b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
-
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = 'Tue, 27 Mar 2007 21:06:08 +0000'
