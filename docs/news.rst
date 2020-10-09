@@ -4312,7 +4312,6 @@ First release of Scrapy.
 .. _six: https://six.readthedocs.io/
 .. _tox: https://pypi.org/project/tox/
 .. _Twisted: https://twistedmatrix.com/trac/
-.. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
 .. _w3lib: https://github.com/scrapy/w3lib
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _What is cacheable: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
