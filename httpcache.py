@@ -1,3 +1,4 @@
+import os
 import pathlib
 import pickle
 import sqlite3
@@ -27,7 +28,8 @@ class SqliteCacheStorage:
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
 
     def open_spider(self, spider):
-        dbpath = pathlib.Path(self.cachedir).joinpath(f'{spider.name}.sqlite')
+        dbpath = pathlib.Path(self.cachedir).joinpath(f'{spider.name}.sqlite').resolve()
+        os.makedirs(dbpath.parent, mode=0o755, exist_ok=True)  # just in case
         # isolation_level=None means "autocommit", the default in C (but not Python).
         # It means we don't have to decide how often to call .commit().
         self.conn = sqlite3.connect(dbpath, isolation_level=None)
