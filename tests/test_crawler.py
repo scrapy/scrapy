@@ -330,7 +330,8 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_caching_hostname_resolver_finite_execution(self):
         with MockServer() as mock_server:
-            log = self.run_script("caching_hostname_resolver.py", mock_server.http_address)
+            http_address = mock_server.http_address.replace("0.0.0.0", "127.0.0.1")
+            log = self.run_script("caching_hostname_resolver.py", http_address)
             self.assertIn("Spider closed (finished)", log)
             self.assertNotIn("ERROR: Error downloading", log)
             self.assertNotIn("TimeoutError", log)
