@@ -28,7 +28,7 @@ Highlights:
     commands, you can use the ``-O`` option instead of ``-o`` to overwrite the
     output file.
 
-*   Zstd-compressed responses are now supported if zstandard_ is installed
+*   Zstd-compressed responses are now supported if zstandard_ is installed.
 
 *   In settings, where the import path of a class is required, it is now
     possible to pass a class object instead.
