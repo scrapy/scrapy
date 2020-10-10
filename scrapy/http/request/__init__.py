@@ -65,12 +65,12 @@ class Request(object_ref):
         if params is None:
             self._params = None
             return
-        if isinstance(params, dict):
+        if any([isinstance(params, dict), isinstance(params, list)]):
             qs = urlencode(params, doseq=True)
             self._set_url(self.url + ('&' if '?' in self.url else '?') + qs)
             self._params = qs
         else:
-            raise TypeError('Params must be dict, got {}'.format(type(params)))
+            raise TypeError('Params must be dict or a list of 2-tuples, got {}'.format(type(params)))
 
     params = property(_get_params, obsolete_setter(_set_params, 'params'))
 

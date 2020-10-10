@@ -46,6 +46,10 @@ class RequestTest(unittest.TestCase):
         assert r.headers is not headers
         self.assertEqual(r.params, 'first=param1&second=param2')
 
+    def test_params_types(self):
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', params='text')
+
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
         self.assertRaises(ValueError, self.request_class, '/foo/')
@@ -176,6 +180,10 @@ class RequestTest(unittest.TestCase):
         r3 = self.request_class(url="http://www.example.com/list?other=1", params=params, body=body)
         self.assertEqual(r3.url, 'http://www.example.com/list?other=1&first=param1&second=param2')
         self.assertEqual(r3.params, 'first=param1&second=param2')
+
+        params_list = [('first', 'param1'), ('first', 'param2')]
+        r4 = self.request_class("http://www.example.com", body="a body", params=params_list)
+        self.assertEqual(r4.params, 'first=param1&first=param2')
 
     def test_ajax_url(self):
         # ascii url
