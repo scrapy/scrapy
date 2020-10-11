@@ -26,16 +26,17 @@ class SqliteCacheStorage:
     def __init__(self, settings):
         self.cachedir = scrapy.utils.project.data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
+        self.connections = dict()
 
     def open_spider(self, spider):
         dbpath = pathlib.Path(self.cachedir).joinpath(f'{spider.name}.sqlite').resolve()
         os.makedirs(dbpath.parent, mode=0o755, exist_ok=True)  # just in case
         # isolation_level=None means "autocommit", the default in C (but not Python).
         # It means we don't have to decide how often to call .commit().
-        self.conn = sqlite3.connect(dbpath, isolation_level=None)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute('PRAGMA journal_mode = WAL')  # "go faster" stripes, only SLIGHTLY risky.
-        self.conn.execute(
+        conn = sqlite3.connect(dbpath, isolation_level=None)
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA journal_mode = WAL')  # "go faster" stripes, only SLIGHTLY risky.
+        conn.execute(
             '''
             CREATE TABLE IF NOT EXISTS pages(
             -- sqlite is MUCH better at integral PKs
@@ -47,13 +48,16 @@ class SqliteCacheStorage:
             headers     BLOB NOT NULL,  -- FIXME: stop pickling
             body        BLOB NOT NULL   -- FIXME: stop pickling
             ) WITHOUT ROWID''')
+        self.connections[spider] = conn
 
     def close_spider(self, spider):
-        self.conn.close()
+        self.connections[spider].close()
+        del self.connections[spider]
 
     def store_response(self, spider, request, response):
         fingerprint = scrapy.utils.request.request_fingerprint(request)  # Ref. https://bugs.python.org/issue27925
-        self.conn.execute(
+        conn = self.connections[spider]
+        conn.execute(
             '''
             REPLACE INTO pages (fingerprint, time, status, url, headers, body)
             VALUES (:fingerprint, :time, :status, :url, :headers, :body)
@@ -67,15 +71,16 @@ class SqliteCacheStorage:
 
     def retrieve_response(self, spider, request):
         fingerprint = scrapy.utils.request.request_fingerprint(request)
+        conn = self.connections[spider]
         try:
-            (ts,), = self.conn.execute('SELECT time FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchall()
+            (ts,), = conn.execute('SELECT time FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchall()
         except ValueError:
             return              # not in the cache
         if 0 < self.expiration_secs < (time.time() - float(ts)):
             # Clean up the database, don't just grow it unboundedly.
-            self.conn.execute('DELETE FROM pages WHERE fingerprint = ?', (fingerprint,))
+            conn.execute('DELETE FROM pages WHERE fingerprint = ?', (fingerprint,))
             return              # expired, i.e. nothing in the cache
-        row = self.conn.execute('SELECT * FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchone()
+        row = conn.execute('SELECT * FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchone()
         # This part is largely copy-pasted from DbmCacheStorage with no real understanding.
         url = row['url']
         status = row['status']
