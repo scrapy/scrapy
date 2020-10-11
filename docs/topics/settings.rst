@@ -102,7 +102,7 @@ module and documented in the :ref:`topics-settings-ref` section.
 Import paths and classes
 ========================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.4.0
 
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
