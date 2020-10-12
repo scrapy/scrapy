@@ -43,7 +43,7 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.meta, meta)
         assert r.headers is not headers
         self.assertEqual(r.headers[b"caca"], b"coco")
-        assert r.headers is not headers
+        assert r.params is not params
         self.assertEqual(r.params, 'first=param1&second=param2')
 
     def test_params_types(self):
