@@ -122,11 +122,14 @@ def _get_handler(settings):
     filename = settings.get('LOG_FILE')
     if filename:
         encoding = settings.get('LOG_ENCODING')
-        max_bytes = settings.get('LOG_MAX_BYTES', 5242880)
-        log_backup_count = settings.get('LOG_BACKUP_COUNT', 5)
-        handler = RotatingFileHandler(filename, mode="a+", maxBytes=max_bytes,
-                                      backupCount=log_backup_count,
-                                      encoding=encoding)
+        if settings.get("LOG_ROTATING") is True:
+            max_bytes = settings.get('LOG_MAX_BYTES', 0)
+            log_backup_count = settings.get('LOG_BACKUP_COUNT', 0)
+            handler = RotatingFileHandler(filename, maxBytes=max_bytes,
+                                          backupCount=log_backup_count,
+                                          encoding=encoding)
+        else:
+            handler = logging.FileHandler(filename, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
