@@ -69,7 +69,7 @@ class Request(object_ref):
         self._set_url(self.url + ('&' if '?' in self.url else '?') + qs)
         self._params = qs
 
-    params = property(_get_params, obsolete_setter(_set_params, 'params'))
+    params = property(_get_params)
 
     def _get_url(self):
         return self._url
