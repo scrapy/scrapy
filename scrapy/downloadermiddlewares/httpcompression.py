@@ -18,7 +18,7 @@ except ImportError:
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
-    def __init__(self, stats):
+    def __init__(self, stats=None):
         self.stats = stats
 
     @classmethod
@@ -40,8 +40,9 @@ class HttpCompressionMiddleware:
             if content_encoding:
                 encoding = content_encoding.pop()
                 decoded_body = self._decode(response.body, encoding.lower())
-                self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
-                self.stats.inc_value('httpcompression/response_count', spider=spider)
+                if self.stats:
+                    self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
+                    self.stats.inc_value('httpcompression/response_count', spider=spider)
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
