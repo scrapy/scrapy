@@ -6,6 +6,7 @@ from gzip import GzipFile
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, ACCEPTED_ENCODINGS
+from scrapy.exceptions import NotConfigured
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from scrapy.utils.test import get_crawler
@@ -58,6 +59,27 @@ class HttpCompressionTest(TestCase):
             self.crawler.stats.get_value(key, spider=self.spider),
             value,
             str(self.crawler.stats.get_stats(self.spider))
+        )
+
+    def test_setting_false_compression_enabled(self):
+        self.assertRaises(
+            NotConfigured,
+            HttpCompressionMiddleware.from_crawler,
+            get_crawler(settings_dict={'COMPRESSION_ENABLED': False})
+        )
+
+    def test_setting_default_compression_enabled(self):
+        self.assertIsInstance(
+            HttpCompressionMiddleware.from_crawler(get_crawler()),
+            HttpCompressionMiddleware
+        )
+
+    def test_setting_true_compression_enabled(self):
+        self.assertIsInstance(
+            HttpCompressionMiddleware.from_crawler(
+                get_crawler(settings_dict={'COMPRESSION_ENABLED': True})
+            ),
+            HttpCompressionMiddleware
         )
 
     def test_process_request(self):
