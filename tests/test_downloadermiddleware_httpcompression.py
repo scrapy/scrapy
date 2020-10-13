@@ -29,7 +29,7 @@ class HttpCompressionTest(TestCase):
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('scrapytest.org')
-        self.mw = HttpCompressionMiddleware(self.crawler.stats)
+        self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
         self.crawler.stats.open_spider(self.spider)
 
     def _getresponse(self, coding):
@@ -78,6 +78,18 @@ class HttpCompressionTest(TestCase):
         assert 'Content-Encoding' not in newresponse.headers
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 74837)
+
+    def test_process_response_gzip_no_stats(self):
+        mw = HttpCompressionMiddleware()
+        response = self._getresponse('gzip')
+        request = response.request
+
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        newresponse = mw.process_response(request, response, self.spider)
+        self.assertEqual(mw.stats, None)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b'<!DOCTYPE')
+        assert 'Content-Encoding' not in newresponse.headers
 
     def test_process_response_br(self):
         try:
