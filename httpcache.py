@@ -1,6 +1,6 @@
+import json
 import os
 import pathlib
-import pickle
 import sqlite3
 import time
 
@@ -13,10 +13,18 @@ import scrapy.utils.request
 #   * the built-in dbm storage is a pain to work with, and is old and slow
 #   * neither auto-expire old records from the cache
 #   * sqlite is VERY widely understood, and is "good enough" to be an incremental improvement over dbm.
+#
+#
+# GOAL:
+#   * scrapy uses pickle, which is widely considered to be FUCKING AWFUL.
+#   * standard practice is to use json if the data "fits" into json's worldview.
+#   * pickle is only pickling dicts of lists of bytes, which we could JUST ABOUT do
+#   * python json only does str, not bytes.
+#   * scrapy will get VERY CONFUSED if we force it to use str
+#   * can we trick json into dumping bytes and loading bytes back out?
 
 
-# FIXME: this is still really awful.
-# FIXME: this is still using pickle which is DEEPLY INSECURE and generally just awful.
+# FIXME: this is still awful.
 # Is it sensible to replace this with sqlalchemy, and
 # have it write to the same real database as the actual scraped data?
 # That feels slightly bad, because this is ONLY a cache, not "real" data.
@@ -45,8 +53,8 @@ class SqliteCacheStorage:
             time        REAL NOT NULL,
             status      INTEGER NOT NULL,
             url         TEXT NOT NULL,
-            headers     BLOB NOT NULL,  -- FIXME: stop pickling
-            body        BLOB NOT NULL   -- FIXME: stop pickling
+            headers     TEXT NOT NULL,
+            body        BLOB NOT NULL
             ) WITHOUT ROWID''')
         self.connections[spider] = conn
 
@@ -60,14 +68,19 @@ class SqliteCacheStorage:
         conn.execute(
             '''
             REPLACE INTO pages (fingerprint, time, status, url, headers, body)
-            VALUES (:fingerprint, :time, :status, :url, :headers, :body)
+            VALUES (:fingerprint, :time, :status, :url, json(:headers), :body)
             ''',
             {'fingerprint': fingerprint,
              'time': time.time(),
              'status': response.status,  # an integer (right???)
              'url': response.url,        # a string (right???)
-             'headers': pickle.dumps(dict(response.headers), protocol=4),
-             'body': pickle.dumps(response.body, protocol=4)})
+             'headers': json.dumps(
+                 # Convert {b'key': [b'val']} to {'key': ['val']}.
+                 {key.decode(response.headers.encoding):
+                  [value.decode(response.headers.encoding)
+                   for value in values]
+                  for key, values in response.headers.items()}),
+             'body': response.body})
 
     def retrieve_response(self, spider, request):
         fingerprint = scrapy.utils.request.request_fingerprint(request)
@@ -84,8 +97,10 @@ class SqliteCacheStorage:
         # This part is largely copy-pasted from DbmCacheStorage with no real understanding.
         url = row['url']
         status = row['status']
-        headers = scrapy.http.Headers(pickle.loads(row['headers']))
-        body = pickle.loads(row['body'])
+        # NOTE: Headers() understands u'' and forces it to b'' as UTF-8.
+        #       So *we* don't need to reverse the bytes-to-str from store_response().
+        headers = scrapy.http.Headers(json.loads(row['headers']))
+        body = row['body']
         response_class = scrapy.responsetypes.responsetypes.from_args(
             headers=headers,
             url=url)
