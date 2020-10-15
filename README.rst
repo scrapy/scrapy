@@ -1,5 +1,5 @@
 ======
-Scrapy
+Scrapy --
 ======
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
@@ -27,7 +27,7 @@ Scrapy
    :alt: Conda Version
 
 
-Overview
+Overview --
 ========
 
 Scrapy is a fast high-level web crawling and web scraping framework, used to
@@ -37,13 +37,13 @@ a wide range of purposes, from data mining to monitoring and automated testing.
 Check the Scrapy homepage at https://scrapy.org for more information,
 including a list of features.
 
-Requirements
+Requirements --
 ============
 
 * Python 3.6+
 * Works on Linux, Windows, macOS, BSD
 
-Install
+Install --
 =======
 
 The quick way::
@@ -53,13 +53,13 @@ The quick way::
 See the install section in the documentation at
 https://docs.scrapy.org/en/latest/intro/install.html for more details.
 
-Documentation
+Documentation --
 =============
 
 Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
 directory.
 
-Releases
+Releases --
 ========
 
 You can check https://docs.scrapy.org/en/latest/news.html for the release notes.
@@ -69,12 +69,12 @@ Community (blog, twitter, mail list, IRC)
 
 See https://scrapy.org/community/ for details.
 
-Contributing
+Contributing --
 ============
 
 See https://docs.scrapy.org/en/master/contributing.html for details.
 
-Code of Conduct
+Code of Conduct --
 ---------------
 
 Please note that this project is released with a Contributor Code of Conduct
@@ -83,12 +83,12 @@ Please note that this project is released with a Contributor Code of Conduct
 By participating in this project you agree to abide by its terms.
 Please report unacceptable behavior to opensource@scrapinghub.com.
 
-Companies using Scrapy
+Companies using Scrapy --
 ======================
 
 See https://scrapy.org/companies/ for a list.
 
-Commercial Support
+Commercial Support --
 ==================
 
 See https://scrapy.org/support/ for details.
