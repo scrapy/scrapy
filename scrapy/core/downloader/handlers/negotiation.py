@@ -101,9 +101,6 @@ class HTTPNegotiateDownloadHandler:
                 crawler=self._crawler,
             )
 
-        # self._http1_download_handler = HTTP11DownloadHandler(settings, crawler)
-        # self.handlers['h2'] = H2DownloadHandler(settings, crawler)
-
         # Cache to store the protocol negotiated for all the
         # connections, in case we get a request with the same key,
         # new request can be immediately issued to the respective
@@ -205,7 +202,7 @@ class HTTPNegotiateDownloadHandler:
             transport.wrappedProtocol = conn
             conn.makeConnection(transport)
             handler.pool._putConnection(key, conn)
-        else:
+        else:  # 'h2' expected
             assert isinstance(handler, H2DownloadHandler)
 
             conn_lost_deferred = Deferred()
