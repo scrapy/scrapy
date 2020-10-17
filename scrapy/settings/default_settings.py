@@ -65,6 +65,10 @@ DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
 
+HTTP_DOWNLOAD_HANDLERS_BASE = {
+    'http/1.1': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
+    'h2': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+}
 DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
     'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',

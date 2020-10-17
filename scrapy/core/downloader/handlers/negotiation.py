@@ -1,14 +1,14 @@
 from collections import deque
+from typing import Deque, Dict, List, Optional, Tuple, Union
 from urllib.parse import urldefrag
 
 from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
-from twisted.internet.interfaces import IHandshakeListener
+from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
 from twisted.internet.protocol import Factory, Protocol
 from twisted.internet.protocol import connectionDone
 from twisted.web._newclient import HTTP11ClientProtocol
 from twisted.web.client import BrowserLikePolicyForHTTPS, _StandardEndpointFactory, URI
-from typing import Deque, Dict, List, Optional, Tuple, Union
 from zope.interface import implementer
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory, load_context_factory_from_settings
@@ -19,9 +19,8 @@ from scrapy.http.request import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.datatypes import LocalCache
-from scrapy.utils.python import to_bytes
-
-SUPPORTED_PROTOCOLS = ('h2', 'http/1.1')
+from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.python import to_bytes, without_none_values
 
 
 @implementer(IHandshakeListener)
@@ -37,11 +36,12 @@ class NegotiateProtocol(Protocol):
         self._negotiated_protocol_deferred.callback(self.transport)
 
 
+@implementer(IProtocolNegotiationFactory)
 class NegotiateProtocolFactory(Factory):
     def __init__(
-        self,
-        acceptable_protocols: List[bytes],
-        negotiated_protocol_deferred: Deferred
+            self,
+            acceptable_protocols: List[bytes],
+            negotiated_protocol_deferred: Deferred
     ) -> None:
         self.acceptable_protocols = acceptable_protocols
         self.negotiated_protocol_deferred = negotiated_protocol_deferred
@@ -55,14 +55,16 @@ class NegotiateProtocolFactory(Factory):
 
 class NegotiateAgent:
     def __init__(
-        self, reactor: ReactorBase,
-        acceptable_protocols=SUPPORTED_PROTOCOLS,
-        context_factory=BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
+            self, reactor: ReactorBase,
+            acceptable_protocols: List,
+            context_factory=BrowserLikePolicyForHTTPS(),
+            connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
     ) -> None:
         self._reactor = reactor
-        self._acceptable_protocols = acceptable_protocols
-        self._context_factory = AcceptableProtocolsContextFactory(context_factory, acceptable_protocols)
+        self._acceptable_protocols = [
+            to_bytes(protocol) for protocol in acceptable_protocols
+        ]
+        self._context_factory = AcceptableProtocolsContextFactory(context_factory, self._acceptable_protocols)
         self._endpoint_factory = _StandardEndpointFactory(
             self._reactor, self._context_factory,
             connect_timeout, bind_address
@@ -85,12 +87,22 @@ class HTTPNegotiateDownloadHandler:
         self._settings = settings
         self._crawler = crawler
 
-        self.acceptable_protocols = SUPPORTED_PROTOCOLS
+        self.acceptable_protocols = []
 
-        # ToDo: Maybe load download-handlers from the settings?
-        #  Need to add default for 'h2' in DOWNLOAD_HANDLERS_BASE
-        self._http1_download_handler = HTTP11DownloadHandler(settings, crawler)
-        self._h2_download_handler = H2DownloadHandler(settings, crawler)
+        handlers_base = without_none_values(self._settings.get('HTTP_DOWNLOAD_HANDLERS_BASE'))
+        self.handlers: Dict = {}
+        for protocol, cls_path in handlers_base.items():
+            self.acceptable_protocols.append(protocol)
+
+            dh_cls = load_object(cls_path)
+            self.handlers[protocol] = create_instance(
+                objcls=dh_cls,
+                settings=self._settings,
+                crawler=self._crawler,
+            )
+
+        # self._http1_download_handler = HTTP11DownloadHandler(settings, crawler)
+        # self.handlers['h2'] = H2DownloadHandler(settings, crawler)
 
         # Cache to store the protocol negotiated for all the
         # connections, in case we get a request with the same key,
@@ -120,10 +132,7 @@ class HTTPNegotiateDownloadHandler:
         return uri.scheme, uri.host, uri.port
 
     def get_download_handler(self, protocol):
-        if protocol == 'http/1.1':
-            return self._http1_download_handler
-        elif protocol == 'h2':
-            return self._h2_download_handler
+        return self.handlers.get(protocol)
 
     def _connection_established(self, key: Tuple, protocol: str) -> None:
         """We have established a connection with given key. Hence,
@@ -165,15 +174,15 @@ class HTTPNegotiateDownloadHandler:
         # Issue this request using the HTTP/1.x download handler
         if key[0] == b'http' or proxy:
             self._cache_connection.setdefault(key, 'http/1.1')
-            return self._http1_download_handler
+            return self.handlers['http/1.1']
 
         # Check in the order of the acceptable protocols list
         for protocol in self.acceptable_protocols:
             if (
-                key in self._http1_download_handler.pool._connections
-                or key in self._h2_download_handler.pool.established_connections
-                or key in self._h2_download_handler.pool.pending_connections
-                or self._cache_connection.get(key, None) == protocol
+                    key in self.handlers['http/1.1'].pool._connections
+                    or key in self.handlers['h2'].pool.established_connections
+                    or key in self.handlers['h2'].pool.pending_connections
+                    or self._cache_connection.get(key, None) == protocol
             ):
                 return self.get_download_handler(protocol)
 
@@ -183,29 +192,31 @@ class HTTPNegotiateDownloadHandler:
         negotiated_protocol = transport.negotiatedProtocol.decode()
         key = self._get_key(request)
         uri = self._parse_uri(request.url)
+        handler = self.handlers[negotiated_protocol]
 
         # Create an instance of the connection
         if negotiated_protocol == 'http/1.1':
+            assert isinstance(handler, HTTP11DownloadHandler)
+
             def quiescent_callback(protocol):
-                self._http1_download_handler.pool._putConnection(key, protocol)
+                handler.pool._putConnection(key, protocol)
 
             conn = HTTP11ClientProtocol(quiescent_callback)
             transport.wrappedProtocol = conn
             conn.makeConnection(transport)
-            self._http1_download_handler.pool._putConnection(key, conn)
+            handler.pool._putConnection(key, conn)
+        else:
+            assert isinstance(handler, H2DownloadHandler)
 
-            self._connection_established(key, 'http/1.1')
-
-        elif negotiated_protocol == 'h2':
             conn_lost_deferred = Deferred()
-            conn_lost_deferred.addCallback(self._h2_download_handler.pool._remove_connection, key)
+            conn_lost_deferred.addCallback(handler.pool._remove_connection, key)
 
             conn = H2ClientProtocol(uri, self._settings, conn_lost_deferred)
             transport.wrappedProtocol = conn
             conn.makeConnection(transport)
-            self._h2_download_handler.pool.put_connection(conn, key)
+            handler.pool.put_connection(conn, key)
 
-            self._connection_established(key, 'h2')
+        self._connection_established(key, negotiated_protocol)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
         """ Working:
@@ -240,7 +251,11 @@ class HTTPNegotiateDownloadHandler:
 
         # Connect to the negotiated protocol
         from twisted.internet import reactor
-        agent = NegotiateAgent(reactor=reactor, context_factory=self._context_factory)
+        agent = NegotiateAgent(
+            reactor=reactor,
+            acceptable_protocols=self.acceptable_protocols,
+            context_factory=self._context_factory
+        )
         conn_d = agent.negotiate(self._parse_uri(request.url))
         conn_d.addCallback(self.add_connection, request)
 
@@ -255,5 +270,5 @@ class HTTPNegotiateDownloadHandler:
         return d
 
     def close(self) -> Deferred:
-        self._h2_download_handler.close()
-        return self._http1_download_handler.close()
+        self.handlers['h2'].close()
+        return self.handlers['http/1.1'].close()
