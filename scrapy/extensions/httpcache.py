@@ -238,11 +238,11 @@ class SqliteCacheStorage:
             CREATE TABLE IF NOT EXISTS pages(
             -- sqlite is MUCH better at integral PKs
             -- unfortuately SHA-1 is too long to be a sqlite3 INTEGER.
-            fingerprint TEXT PRIMARY KEY,
-            time        REAL NOT NULL,
-            status      INTEGER NOT NULL,
-            url         TEXT NOT NULL,
-            headers     TEXT NOT NULL,
+            fingerprint TEXT PRIMARY KEY NOT NULL CHECK (length(fingerprint) = 40),
+            time        REAL NOT NULL CHECK (time >= 0),
+            status      INTEGER NOT NULL CHECK (status BETWEEN 0 AND 999),
+            url         TEXT NOT NULL CHECK (url <> ''),
+            headers     TEXT NOT NULL CHECK (json(headers)),
             body        BLOB NOT NULL
             ) WITHOUT ROWID''')
         self.connections[spider] = conn
