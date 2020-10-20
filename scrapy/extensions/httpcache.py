@@ -1,7 +1,10 @@
 import gzip
+import json
 import logging
 import os
+import pathlib
 import pickle
+import sqlite3
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
@@ -212,6 +215,90 @@ class RFC2616Policy:
                 pass
 
         return currentage
+
+
+# FIXME: this is still awful.
+class SqliteCacheStorage:
+
+    def __init__(self, settings):
+        self.cachedir = data_path(settings['HTTPCACHE_DIR'])
+        self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
+        self.connections = dict()
+
+    def open_spider(self, spider):
+        dbpath = pathlib.Path(self.cachedir).joinpath(f'{spider.name}.sqlite').resolve()
+        os.makedirs(dbpath.parent, mode=0o755, exist_ok=True)  # just in case
+        # isolation_level=None means "autocommit", the default in C (but not Python).
+        # It means we don't have to decide how often to call .commit().
+        conn = sqlite3.connect(dbpath, isolation_level=None)
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA journal_mode = WAL')  # "go faster" stripes, only SLIGHTLY risky.
+        conn.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS pages(
+            -- sqlite is MUCH better at integral PKs
+            -- unfortuately SHA-1 is too long to be a sqlite3 INTEGER.
+            fingerprint TEXT PRIMARY KEY,
+            time        REAL NOT NULL,
+            status      INTEGER NOT NULL,
+            url         TEXT NOT NULL,
+            headers     TEXT NOT NULL,
+            body        BLOB NOT NULL
+            ) WITHOUT ROWID''')
+        self.connections[spider] = conn
+
+    def close_spider(self, spider):
+        self.connections[spider].close()
+        del self.connections[spider]
+
+    def store_response(self, spider, request, response):
+        fingerprint = request_fingerprint(request)  # Ref. https://bugs.python.org/issue27925
+        conn = self.connections[spider]
+        conn.execute(
+            '''
+            REPLACE INTO pages (fingerprint, time, status, url, headers, body)
+            VALUES (:fingerprint, :time, :status, :url, json(:headers), :body)
+            ''',
+            {'fingerprint': fingerprint,
+             'time': time.time(),
+             'status': response.status,  # an integer (right???)
+             'url': response.url,        # a string (right???)
+             'headers': json.dumps(
+                 # Convert {b'key': [b'val']} to {'key': ['val']}.
+                 {key.decode(response.headers.encoding):
+                  [value.decode(response.headers.encoding)
+                   for value in values]
+                  for key, values in response.headers.items()}),
+             'body': response.body})
+
+    def retrieve_response(self, spider, request):
+        fingerprint = request_fingerprint(request)
+        conn = self.connections[spider]
+        try:
+            (ts,), = conn.execute('SELECT time FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchall()
+        except ValueError:
+            return              # not in the cache
+        if 0 < self.expiration_secs < (time.time() - float(ts)):
+            # Clean up the database, don't just grow it unboundedly.
+            conn.execute('DELETE FROM pages WHERE fingerprint = ?', (fingerprint,))
+            return              # expired, i.e. nothing in the cache
+        row = conn.execute('SELECT * FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchone()
+        # This part is largely copy-pasted from DbmCacheStorage with no real understanding.
+        url = row['url']
+        status = row['status']
+        # NOTE: Headers() understands u'' and forces it to b'' as UTF-8.
+        #       So *we* don't need to reverse the bytes-to-str from store_response().
+        headers = Headers(json.loads(row['headers']))
+        body = row['body']
+        response_class = responsetypes.from_args(
+            headers=headers,
+            url=url)
+        response_object = response_class(
+            url=url,
+            headers=headers,
+            status=status,
+            body=body)
+        return response_object
 
 
 class DbmCacheStorage:
