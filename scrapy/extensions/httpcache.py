@@ -218,6 +218,21 @@ class RFC2616Policy:
 
 
 # FIXME: this is still awful.
+#
+# NOTE: because we avoid pickle, we can do interesting statistical
+#       analysis on the cache, e.g.
+#
+#         SELECT count(*),
+#                json_extract(headers, '$.Content-Type') AS "Content-Type"
+#         FROM pages
+#         GROUP BY 2
+#         ORDER BY 1 DESC;
+#
+#         DELETE FROM pages
+#         WHERE json_extract(headers, '$.Cache-Control[0]') LIKE '%no-store%';
+#
+# NOTE: response bodies are not pickled, but are still gzipped.
+#       This means ZFS transparent compression won't "work" :-(
 class SqliteCacheStorage:
 
     def __init__(self, settings):
