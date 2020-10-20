@@ -277,7 +277,7 @@ class SqliteCacheStorage:
             VALUES (:fingerprint, :time, :status, :url, json(:headers), :body)
             ''',
             {'fingerprint': fingerprint,
-             'time': time.time(),
+             'time': time(),
              'status': response.status,  # an integer (right???)
              'url': response.url,        # a string (right???)
              'headers': json.dumps(
@@ -295,7 +295,7 @@ class SqliteCacheStorage:
             (ts,), = conn.execute('SELECT time FROM pages WHERE fingerprint = ?', (fingerprint,)).fetchall()
         except ValueError:
             return              # not in the cache
-        if 0 < self.expiration_secs < (time.time() - float(ts)):
+        if 0 < self.expiration_secs < (time() - float(ts)):
             # Clean up the database, don't just grow it unboundedly.
             conn.execute('DELETE FROM pages WHERE fingerprint = ?', (fingerprint,))
             return              # expired, i.e. nothing in the cache
