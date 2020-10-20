@@ -231,6 +231,8 @@ class SqliteCacheStorage:
         # isolation_level=None means "autocommit", the default in C (but not Python).
         # It means we don't have to decide how often to call .commit().
         conn = sqlite3.connect(dbpath, isolation_level=None)
+        if not conn.execute("SELECT 1 FROM pragma_compile_options WHERE compile_options = 'ENABLE_JSON1';").fetchone():
+            raise RuntimeError('SqliteCacheStorage needs https://www.sqlite.org/json1.html')
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA journal_mode = WAL')  # "go faster" stripes, only SLIGHTLY risky.
         conn.execute(
