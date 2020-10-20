@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+      <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="file://path_to_scrape.xsd"><!-- THIS MUST BE SET FOR VALIDATION TO WORK IN YOUR IDE -->
+
+      <product id="17685">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_twice_as_mice_]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Twice As Mice]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_twice_as_mice.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[no]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>Picture can be personalised! </p><p>An original and delightful gift, perfect as a bedroom or nursery decoration. (Especially pleasing for any cat lover!) </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;) </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17682">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_cuddles_mounted_and_framed_picture]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Cuddles]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_cuddles.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>Picture can be personalised! </p><p>An original and delightful gift, perfect as a bedroom or nursery decoration. (Especially pleasing for any cat lover!) </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;) </p>]]></description>
+        <category><![CDATA[Home Accessories]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17683">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_playtime_mounted_and_framed_picture]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Playtime]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_playtime.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>Picture can be personalised! </p><p>An original and delightful gift, perfect as a bedroom or nursery decoration. (Especially pleasing for any cat lover!) </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;) </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17686">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_hat_trick_]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Hat Trick]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_hat_trick.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>Picture can be personalised! </p><p>An original and delightful gift, perfect as a bedroom or nursery decoration. (Especially pleasing for any cat lover!) </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;) </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17689">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_happy_cat_]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Happy Cat]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_happy_cat.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>Picture can be personalised! </p><p>An original and delightful gift, perfect as a bedroom or nursery decoration. (Especially pleasing for any cat lover!) </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;) </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17691">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_quiet_night_]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Quiet Night]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_quiet_night.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>An original and delightful christening gift , perfect nursery decoration. </p><p>FREE hand finished, &quot;Quiet night&quot; greeting card included!</p><p>Picture can be personalised! </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;). </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17692">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_sunshine_lullaby_]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Sunshine Lullaby]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_sunshine_lullaby.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>An original and delightful christening gift , perfect nursery decoration. </p><p>FREE hand finished, &quot;Sunshine lullaby&quot; greeting card included!</p><p>Picture can be personalised! </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;). </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      <product id="17693">
+        <url><![CDATA[http://www.example.com/agathajasinskagallery/product/_tiddlywinks_]]></url>
+        <name><![CDATA[Mounted And Framed Picture: Tiddlywinks]]></name>
+        <image_url><![CDATA[http://www.example.com/uploads/partners/agathajasinskagallery/500/a_tiddlywinks.jpg]]></image_url>
+        <price>28.00</price>
+        <availability><![CDATA[yes]]></availability>
+        <supplier><![CDATA[example.com]]></supplier>
+        <designer><![CDATA[Agatha Jasinska Gallery]]></designer>
+        <description><![CDATA[<p>Beautiful, open edition giclee print from Agatha's original watercolours, reprinted onto watercolour paper, reproducing all the qualities of the original painting. </p><p>The print is conservation mounted and individually signed by the artist.</p><p>Picture can be personalised! </p><p>An original and delightful gift, perfect as a bedroom or nursery decoration. (Especially pleasing for any cat lover!) </p><p>Picture size: 17cm x 17cm Framed picture size: 30cm x 30cm (12&quot; x 12&quot;) </p>]]></description>
+        <category><![CDATA[Art]]></category>
+        <delivery_within><![CDATA[1-2 days]]></delivery_within>
+      </product>
+      </products>

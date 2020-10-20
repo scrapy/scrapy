@@ -1,0 +1,26 @@
+include README.rst
+include AUTHORS
+include INSTALL
+include LICENSE
+include MANIFEST.in
+include NEWS
+
+include scrapy/VERSION
+include scrapy/mime.types
+
+include codecov.yml
+include conftest.py
+include pytest.ini
+include requirements-*.txt
+include tox.ini
+
+recursive-include scrapy/templates *
+recursive-include scrapy license.txt
+recursive-include docs *
+prune docs/build
+
+recursive-include extras *
+recursive-include bin *
+recursive-include tests *
+
+global-exclude __pycache__ *.py[cod]

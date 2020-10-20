@@ -1,0 +1,166 @@
+==============================
+SEP      3
+Title    Nested items API (ItemField)
+Author   Pablo Hoffman
+Created  2009-07-19
+Status   Obsolete by :ref:`sep-008`
+==============================
+
+=======================================
+SEP-003 - Nested items API (ItemField)
+=======================================
+
+This page presents different usage scenarios for the new nested items field API
+called !ItemField.
+
+Prerequisites
+=============
+
+This API proposal relies on the following API:
+
+1. instantiating a item with an item instance as its first argument (i.e.
+   ``item2 = MyItem(item1)``) must return a **copy** of the first item
+   instance)
+2. items can be instantiated using this syntax: ``item = Item(attr1=value1,
+   attr2=value2)``
+
+Proposed Implementation of ItemField
+====================================
+
+::
+
+   #!python
+   from scrapy.item.fields import BaseField
+
+   class ItemField(BaseField):
+       def __init__(self, item_type, default=None):
+           self._item_type = item_type
+           super(ItemField, self).__init__(default)
+
+       def to_python(self, value):
+           return self._item_type(value) if not isinstance(value, self._item_type) else value
+
+       def get_default(self):
+           # WARNING: returns default item instead of a copy - this must be
+           # well documented, as Items are mutable objects and may lead to
+           # unexpected behaviors # always returning a copy may not be desirable
+           # either (see Supplier item, for example). this method can be
+           # overridden to change this behaviour
+           return self._default
+
+Usage Scenarios
+===============
+
+Defining an item containing ItemField's
+---------------------------------------
+
+::
+
+   #!python
+   from scrapy.item.models import Item
+   from scrapy.item.fields import ListField, ItemField, TextField, UrlField, DecimalField
+
+   class Supplier(Item):
+       name = TextField(default="anonymous supplier")
+       url = UrlField()
+
+   class Variant(Item):
+       name = TextField(required=True)
+       url = UrlField()
+       price = DecimalField()
+
+   class Product(Variant):
+       supplier = ItemField(Supplier, default=Supplier(name="default supplier")
+       variants = ListField(ItemField(Variant))
+       
+       # these ones are used for documenting default value examples
+       supplier2 = ItemField(Supplier)
+       variants2 = ListField(ItemField(Variant), default=[])
+
+It's important to note here that the (perhaps most intuitive) way of defining a
+Product-Variant relationship (i.e. defining a recursive !ItemField) doesn't
+work. For example, this fails to compile:
+
+::
+
+   #!python
+   class Product(Item):
+       variants = ItemField(Product) # Fails to compile
+
+Assigning an item field
+-----------------------
+
+::
+
+   #!python
+   supplier = Supplier(name="Supplier 1", url="http://example.com")
+
+   p = Product()
+
+   # standard assignment
+   p['supplier'] = supplier
+   # this also works as it tries to instantiate a Supplier with the given dict
+   p['supplier'] = {'name': 'Supplier 1' url='http://example.com'}
+   # this fails because it can't instantiate a Supplier 
+   p['supplier'] = 'Supplier 1'
+   # this fails because url doesn't have the valid type
+   p['supplier'] = {'name': 'Supplier 1' url=123}
+
+   v1 = Variant()
+   v1['name'] = "lala"
+   v1['price'] = Decimal("100")
+
+   v2 = Variant()
+   v2['name'] = "lolo"
+   v2['price'] = Decimal("150")
+
+   # standard assignment
+   p['variants'] = [v1, v2] # OK
+   # can also instantiate at assignment time
+   p['variants'] = [v1, Variant(name="lolo", price=Decimal("150")]
+   # this also works as it tries to instantiate a Variant with the given dict
+   p['variants'] = [v1, {'name': 'lolo', 'price': Decimal("150")] 
+   # this fails because it can't instantiate a Variant 
+   p['variants'] = [v1, 'test']
+   # this fails because 'coco' is not a valid value for price
+   p['variants'] = [v1, {'name': 'lolo', 'price': 'coco'] 
+
+Default values
+--------------
+
+::
+
+   #!python
+   p = Product()
+
+   p['supplier'] # returns: Supplier(name='default supplier')
+   p['supplier2'] # raises KeyError
+   p['supplier2'] = Supplier()
+   p['supplier2'] # returns: Supplier(name='anonymous supplier')
+
+   p['variants'] # raises KeyError
+   p['variants2'] # returns []
+
+   p['categories'] # raises KeyError
+   p.get('categories') # returns None
+
+   p['numbers'] # returns []
+
+Accessing and changing nested item values
+----------------------------------------
+
+::
+
+   #!python
+   p = Product(supplier=Supplier(name="some name", url="http://example.com"))
+   p['supplier']['url'] # returns 'http://example.com'
+   p['supplier']['url'] = "http://www.other.com" # works as expected
+   p['supplier']['url'] = 123 # fails: wrong type for supplier url
+
+   p['variants'] = [v1, v2]
+   p['variants'][0]['name'] # returns v1 name
+   p['variants'][1]['name'] # returns v2 name
+
+   # XXX: decide what to do about these cases:
+   p['variants'].append(v3) # works but doesn't check type of v3
+   p['variants'].append(1) # works but shouldn't?

@@ -1,0 +1,74 @@
+.TH SCRAPY 1 "October 17, 2009"
+.SH NAME
+scrapy \- the Scrapy command-line tool
+.SH SYNOPSIS
+.B scrapy
+[\fIcommand\fR] [\fIOPTIONS\fR] ...
+.SH DESCRIPTION
+.PP
+Scrapy is controlled through the \fBscrapy\fR command-line tool. The script provides several commands, for different purposes. Each command supports its own particular syntax. In other words, each command supports a different set of arguments and options.
+.SH OPTIONS
+.SS fetch\fR [\fIOPTION\fR]  \fIURL\fR
+.TP
+Fetch a URL using the Scrapy downloader
+.TP
+.I --headers
+Print response HTTP headers instead of body
+
+.SS runspider\fR [\fIOPTION\fR]  \fIspiderfile\fR
+Run a spider
+.TP
+.I --output=FILE
+Store scraped items to FILE in XML format
+
+.SS settings [\fIOPTION\fR]
+Query Scrapy settings
+.TP
+.I --get=SETTING
+Print raw setting value
+.TP
+.I --getbool=SETTING
+Print setting value, interpreted as a boolean
+.TP
+.I --getint=SETTING
+Print setting value, interpreted as an integer
+.TP
+.I --getfloat=SETTING
+Print setting value, interpreted as a float
+.TP
+.I --getlist=SETTING
+Print setting value, interpreted as a float
+.TP
+.I --init
+Print initial setting value (before loading extensions and spiders)
+
+.SS shell\fR  \fIURL\fR | \fIfile\fR
+Launch the interactive scraping console
+
+.SS startproject\fR \fIprojectname\fR
+Create new project with an initial project template
+
+.SS --help, -h
+Print command help and options
+.SS --logfile=FILE
+Log file. if omitted stderr will be used
+.SS --loglevel=LEVEL, -L LEVEL
+Log level (default: None)
+.SS --nolog
+Disable logging completely
+.SS --spider=SPIDER
+Always use this spider when arguments are urls
+.SS --profile=FILE
+Write python cProfile stats to FILE
+.SS --lsprof=FILE
+Write lsprof profiling stats to FILE
+.SS --pidfile=FILE
+Write process ID to FILE
+.SS --set=NAME=VALUE, -s NAME=VALUE
+Set/override setting (may be repeated)
+
+.SH AUTHOR
+Scrapy was written by the Scrapy Developers.
+.PP
+This manual page was written by Ignace Mouzannar <mouzannar@gmail.com>,
+for the Debian project (but may be used by others).

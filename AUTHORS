@@ -1,0 +1,58 @@
+Scrapy was brought to life by Shane Evans while hacking a scraping framework
+prototype for Mydeco (mydeco.com). It soon became maintained, extended and
+improved by Insophia (insophia.com), with the initial sponsorship of Mydeco to
+bootstrap the project. In mid-2011, Scrapinghub became the new official
+maintainer.
+
+Here is the list of the primary authors & contributors:
+
+ * Pablo Hoffman
+ * Daniel Graña
+ * Martin Olveyra
+ * Gabriel García
+ * Michael Cetrulo
+ * Artem Bogomyagkov
+ * Damian Canabal
+ * Andres Moreira
+ * Ismael Carnales
+ * Matías Aguirre
+ * German Hoffmann
+ * Anibal Pacheco
+ * Bruno Deferrari
+ * Shane Evans
+ * Ezequiel Rivero
+ * Patrick Mezard
+ * Rolando Espinoza
+ * Ping Yin
+ * Lucian Ursu
+ * Shuaib Khan
+ * Didier Deshommes
+ * Vikas Dhiman
+ * Jochen Maes
+ * Darian Moody
+ * Jordi Lonch
+ * Zuhao Wan
+ * Steven Almeroth
+ * Tom Mortimer-Jones
+ * Chris Tilden
+ * Alexandr N Zamaraev
+ * Emanuel Schorsch
+ * Michal Danilak
+ * Natan Lao
+ * Hasnain Lakhani
+ * Pedro Faustino
+ * Alex Cepoi
+ * Ilya Baryshev
+ * Libor Nenadál
+ * Jae-Myoung Yu
+ * Vladislav Poluhin
+ * Marc Abramowitz
+ * Valentin-Costel Hăloiu
+ * Jason Yeo
+ * Сергей Прохоров
+ * Simon Ratne
+ * Julien Duponchelle
+ * Jochen Maes
+ * Vikas Dhiman
+ * Juan Picca
+ * Nicolás Ramírez
