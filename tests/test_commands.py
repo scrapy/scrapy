@@ -680,9 +680,14 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
+        with open(os.path.join(self.cwd, "example.json"), "w") as file:
+            file.write("not empty")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+        with open(os.path.join(self.cwd, "example.json")) as file:
+            first_line = file.readline()
+        self.assertNotEqual(first_line, "not empty")
 
     def test_output_and_overwrite_output(self):
         spider_code = """
