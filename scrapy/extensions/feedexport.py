@@ -452,7 +452,7 @@ class FeedExporter:
         crawler = getattr(self, 'crawler', None)
 
         def build_instance(builder, *preargs):
-            return build_storage(builder, uri, preargs=preargs)
+            return build_storage(builder, uri, feed_options=feed_options, preargs=preargs)
 
         if crawler and hasattr(feedcls, 'from_crawler'):
             instance = build_instance(feedcls.from_crawler, crawler)
