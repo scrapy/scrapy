@@ -680,13 +680,13 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
-        with open(os.path.join(self.cwd, "example.json"), "w") as file:
-            file.write("not empty")
+        with open(os.path.join(self.cwd, "example.json"), "w") as f1:
+            f1.write("not empty")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
-        with open(os.path.join(self.cwd, "example.json")) as file:
-            first_line = file.readline()
+        with open(os.path.join(self.cwd, "example.json")) as f2:
+            first_line = f2.readline()
         self.assertNotEqual(first_line, "not empty")
 
     def test_output_and_overwrite_output(self):
@@ -818,13 +818,13 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
-        with open(os.path.join(self.cwd, "example.json"), "w") as file:
-            file.write("not empty")
+        with open(os.path.join(self.cwd, "example.json"), "w") as f1:
+            f1.write("not empty")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
-        with open(os.path.join(self.cwd, "example.json")) as file:
-            first_line = file.readline()
+        with open(os.path.join(self.cwd, "example.json")) as f2:
+            first_line = f2.readline()
         self.assertNotEqual(first_line, "not empty")
 
     def test_output_and_overwrite_output(self):
