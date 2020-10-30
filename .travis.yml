@@ -11,6 +11,8 @@ matrix:
       python: 3.9
     - env: TOXENV=flake8
       python: 3.9
+    - env: TOXENV=pylint
+      python: 3.9
     - env: TOXENV=typing
       python: 3.9
       
