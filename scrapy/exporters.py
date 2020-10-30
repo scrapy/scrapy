@@ -234,6 +234,9 @@ class CsvItemExporter(BaseItemExporter):
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
+    def finish_exporting(self):
+        self.stream.flush()
+
     def _build_row(self, values):
         for s in values:
             try:

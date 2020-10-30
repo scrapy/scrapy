@@ -18,6 +18,7 @@ htmlcov/
 .mypy_cache/
 /tests/keys/localhost.crt
 /tests/keys/localhost.key
+.vscode
 
 # Windows
 Thumbs.db
