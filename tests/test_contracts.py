@@ -393,7 +393,7 @@ class ContractsManagerTest(unittest.TestCase):
                 return TestItem()
 
         with MockServer() as mockserver:
-            contract_doc = '@url {}'.format(mockserver.url('/status?n=200'))
+            contract_doc = f'@url {mockserver.url("/status?n=200")}'
 
             TestSameUrlSpider.parse_first.__doc__ = contract_doc
             TestSameUrlSpider.parse_second.__doc__ = contract_doc

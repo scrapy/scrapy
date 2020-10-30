@@ -7,7 +7,6 @@ from subprocess import Popen, PIPE
 from urllib.parse import urlsplit, urlunsplit
 from unittest import skipIf
 
-import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -37,14 +36,14 @@ sys.exit(mitmdump())
                            '-c', script,
                            '--listen-host', '127.0.0.1',
                            '--listen-port', '0',
-                           '--proxyauth', '%s:%s' % (self.auth_user, self.auth_pass),
+                           '--proxyauth', f'{self.auth_user}:{self.auth_pass}',
                            '--certs', cert_path,
                            '--ssl-insecure',
                            ],
                           stdout=PIPE, env=get_testenv())
         line = self.proc.stdout.readline().decode('utf-8')
         host_port = re.search(r'listening at http://([^:]+:\d+)', line).group(1)
-        address = 'http://%s:%s@%s' % (self.auth_user, self.auth_pass, host_port)
+        address = f'http://{self.auth_user}:{self.auth_pass}@{host_port}'
         return address
 
     def stop(self):
@@ -58,8 +57,6 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-@skipIf(sys.version_info < (3, 5, 4),
-        "requires mitmproxy < 3.0.0, which these tests do not support")
 @skipIf("pypy" in sys.executable,
         "mitmproxy does not support PyPy")
 @skipIf(platform.system() == 'Windows' and sys.version_info < (3, 7),
@@ -88,14 +85,6 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, log)
 
-    @pytest.mark.xfail(reason='Python 3.6+ fails this earlier', condition=sys.version_info >= (3, 6))
-    @defer.inlineCallbacks
-    def test_https_connect_tunnel_error(self):
-        crawler = get_crawler(SimpleSpider)
-        with LogCapture() as log:
-            yield crawler.crawl("https://localhost:99999/status?n=200")
-        self._assert_got_tunnel_error(log)
-
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
         os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy'])
@@ -118,7 +107,7 @@ class ProxyConnectTestCase(TestCase):
 
     def _assert_got_response_code(self, code, log):
         print(log)
-        self.assertEqual(str(log).count('Crawled (%d)' % code), 1)
+        self.assertEqual(str(log).count(f'Crawled ({code})'), 1)
 
     def _assert_got_tunnel_error(self, log):
         print(log)

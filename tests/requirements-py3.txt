@@ -4,7 +4,6 @@ dataclasses; python_version == '3.6'
 git+git://github.com/mitmproxy/mitmproxy@8e5e43de24c9bc93092b63efc67fbec029a9e7fe#egg=mitmproxy; python_version >= '3.9'
 mitmproxy; python_version >= '3.7' and python_version < '3.9'
 mitmproxy >= 4, < 5; python_version >= '3.6' and python_version < '3.7'
-mitmproxy < 4; python_version < '3.6'
 pyftpdlib
 # https://github.com/pytest-dev/pytest-twisted/issues/93
 pytest != 5.4, != 5.4.1
@@ -18,6 +17,7 @@ uvloop; platform_system != "Windows"
 
 # optional for shell wrapper tests
 bpython
-brotlipy
+brotlipy  # optional for HTTP compress downloader middleware tests
+zstandard  # optional for HTTP compress downloader middleware tests
 ipython
 pywin32; sys_platform == "win32"

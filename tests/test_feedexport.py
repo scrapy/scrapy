@@ -13,7 +13,7 @@ from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
 from unittest import mock
-from urllib.parse import urljoin, urlparse, quote
+from urllib.parse import urljoin, quote
 from urllib.request import pathname2url
 
 import lxml.etree
@@ -41,10 +41,9 @@ from scrapy.extensions.feedexport import (
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import (
-    assert_aws_environ,
-    get_s3_content_and_delete,
     get_crawler,
     mock_google_cloud_storage,
+    skip_if_no_boto,
 )
 
 from tests.mockserver import MockFTPServer, MockServer
@@ -184,8 +183,7 @@ class FTPFeedStorageTest(unittest.TestCase):
     def test_uri_auth_quote(self):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe='')
-        st = FTPFeedStorage('ftp://foo:%s@example.com/some_path' % pw_quoted,
-                            {})
+        st = FTPFeedStorage(f'ftp://foo:{pw_quoted}@example.com/some_path', {})
         self.assertEqual(st.password, string.punctuation)
 
 
@@ -228,10 +226,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
 class S3FeedStorageTest(unittest.TestCase):
 
     def test_parse_credentials(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("S3FeedStorage requires botocore")
+        skip_if_no_boto()
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
                            'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
         crawler = get_crawler(settings_dict=aws_credentials)
@@ -257,21 +252,42 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        assert_aws_environ()
-        uri = os.environ.get('S3_TEST_FILE_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        storage = S3FeedStorage(uri, access_key, secret_key)
+        skip_if_no_boto()
+
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        bucket = 'mybucket'
+        key = 'export.csv'
+        storage = S3FeedStorage.from_crawler(crawler, f's3://{bucket}/{key}')
         verifyObject(IFeedStorage, storage)
-        file = storage.open(scrapy.Spider("default"))
-        expected_content = b"content: \xe2\x98\x83"
-        file.write(expected_content)
-        yield storage.store(file)
-        u = urlparse(uri)
-        content = get_s3_content_and_delete(u.hostname, u.path[1:])
-        self.assertEqual(content, expected_content)
+
+        file = mock.MagicMock()
+        from botocore.stub import Stubber
+        with Stubber(storage.s3_client) as stub:
+            stub.add_response(
+                'put_object',
+                expected_params={
+                    'Body': file,
+                    'Bucket': bucket,
+                    'Key': key,
+                },
+                service_response={},
+            )
+
+            yield storage.store(file)
+
+            stub.assert_no_pending_responses()
+            self.assertEqual(
+                file.method_calls,
+                [
+                    mock.call.seek(0),
+                    # The call to read does not happen with Stubber
+                    mock.call.close(),
+                ]
+            )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage(
@@ -325,11 +341,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest('botocore is required')
-
+        skip_if_no_boto()
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -345,11 +357,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest('botocore is required')
-
+        skip_if_no_boto()
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -365,57 +373,6 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(
             storage.s3_client.put_object.call_args[1].get('ACL'),
             'custom-acl'
-        )
-
-    @defer.inlineCallbacks
-    def test_store_not_botocore_without_acl(self):
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-        )
-        self.assertEqual(storage.access_key, 'access_key')
-        self.assertEqual(storage.secret_key, 'secret_key')
-        self.assertEqual(storage.acl, None)
-
-        storage.is_botocore = False
-        storage.connect_s3 = mock.MagicMock()
-        self.assertFalse(storage.is_botocore)
-
-        yield storage.store(BytesIO(b'test file'))
-
-        conn = storage.connect_s3(*storage.connect_s3.call_args)
-        bucket = conn.get_bucket(*conn.get_bucket.call_args)
-        key = bucket.new_key(*bucket.new_key.call_args)
-        self.assertNotIn(
-            dict(policy='custom-acl'),
-            key.set_contents_from_file.call_args
-        )
-
-    @defer.inlineCallbacks
-    def test_store_not_botocore_with_acl(self):
-        storage = S3FeedStorage(
-            's3://mybucket/export.csv',
-            'access_key',
-            'secret_key',
-            'custom-acl'
-        )
-        self.assertEqual(storage.access_key, 'access_key')
-        self.assertEqual(storage.secret_key, 'secret_key')
-        self.assertEqual(storage.acl, 'custom-acl')
-
-        storage.is_botocore = False
-        storage.connect_s3 = mock.MagicMock()
-        self.assertFalse(storage.is_botocore)
-
-        yield storage.store(BytesIO(b'test file'))
-
-        conn = storage.connect_s3(*storage.connect_s3.call_args)
-        bucket = conn.get_bucket(*conn.get_bucket.call_args)
-        key = bucket.new_key(*bucket.new_key.call_args)
-        self.assertIn(
-            dict(policy='custom-acl'),
-            key.set_contents_from_file.call_args
         )
 
     def test_overwrite_default(self):
@@ -845,7 +802,7 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {'format': 'xml'},
                 self._random_temp_filename(): {'format': 'csv'},
             },
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.LogOnStoreFileStorage'},
+            'FEED_STORAGES': {'file': LogOnStoreFileStorage},
             'FEED_STORE_EMPTY': False
         }
 
@@ -1189,8 +1146,8 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_init_exporters_storages_with_crawler(self):
         settings = {
-            'FEED_EXPORTERS': {'csv': 'tests.test_feedexport.FromCrawlerCsvItemExporter'},
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.FromCrawlerFileFeedStorage'},
+            'FEED_EXPORTERS': {'csv': FromCrawlerCsvItemExporter},
+            'FEED_STORAGES': {'file': FromCrawlerFileFeedStorage},
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'csv'},
             },
@@ -1219,7 +1176,7 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {'format': 'xml'},
                 self._random_temp_filename(): {'format': 'csv'},
             },
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.DummyBlockingFeedStorage'},
+            'FEED_STORAGES': {'file': DummyBlockingFeedStorage},
         }
         items = [
             {'foo': 'bar1', 'baz': ''},
@@ -1230,7 +1187,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ['json', 'xml', 'csv']:
-            self.assertIn('Stored %s feed (2 items)' % fmt, str(log))
+            self.assertIn(f'Stored {fmt} feed (2 items)', str(log))
 
     @defer.inlineCallbacks
     def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
@@ -1240,7 +1197,7 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {'format': 'xml'},
                 self._random_temp_filename(): {'format': 'csv'},
             },
-            'FEED_STORAGES': {'file': 'tests.test_feedexport.FailingBlockingFeedStorage'},
+            'FEED_STORAGES': {'file': FailingBlockingFeedStorage},
         }
         items = [
             {'foo': 'bar1', 'baz': ''},
@@ -1251,7 +1208,44 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ['json', 'xml', 'csv']:
-            self.assertIn('Error storing %s feed (2 items)' % fmt, str(log))
+            self.assertIn(f'Error storing {fmt} feed (2 items)', str(log))
+
+    @defer.inlineCallbacks
+    def test_extend_kwargs(self):
+        items = [{'foo': 'FOO', 'bar': 'BAR'}]
+
+        expected_with_title_csv = 'foo,bar\r\nFOO,BAR\r\n'.encode('utf-8')
+        expected_without_title_csv = 'FOO,BAR\r\n'.encode('utf-8')
+        test_cases = [
+            # with title
+            {
+                'options': {
+                    'format': 'csv',
+                    'item_export_kwargs': {'include_headers_line': True},
+                },
+                'expected': expected_with_title_csv,
+            },
+            # without title
+            {
+                'options': {
+                    'format': 'csv',
+                    'item_export_kwargs': {'include_headers_line': False},
+                },
+                'expected': expected_without_title_csv,
+            },
+        ]
+
+        for row in test_cases:
+            feed_options = row['options']
+            settings = {
+                'FEEDS': {
+                    self._random_temp_filename(): feed_options,
+                },
+                'FEED_EXPORT_INDENT': None,
+            }
+
+            data = yield self.exported_data(items, settings)
+            self.assertEqual(row['expected'], data[feed_options['format']])
 
 
 class BatchDeliveriesTest(FeedExportTestBase):
@@ -1558,48 +1552,53 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_s3_export(self):
-        """
-        Test export of items into s3 bucket.
-        S3_TEST_BUCKET_NAME, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY must be specified in tox.ini
-        to perform this test:
-        [testenv]
-        setenv =
-            AWS_SECRET_ACCESS_KEY = ABCD
-            AWS_ACCESS_KEY_ID = EFGH
-            S3_TEST_BUCKET_NAME = IJKL
-        """
-        try:
-            import boto3
-        except ImportError:
-            raise unittest.SkipTest("S3FeedStorage requires boto3")
+        skip_if_no_boto()
 
-        assert_aws_environ()
-        s3_test_bucket_name = os.environ.get('S3_TEST_BUCKET_NAME')
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        if not s3_test_bucket_name:
-            raise unittest.SkipTest("No S3 BUCKET available for testing")
-
-        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
-        filename = ''.join(chars)
-        prefix = 'tmp/{filename}'.format(filename=filename)
-        s3_test_file_uri = 's3://{bucket_name}/{prefix}/%(batch_time)s.json'.format(
-            bucket_name=s3_test_bucket_name, prefix=prefix
-        )
-        storage = S3FeedStorage(s3_test_bucket_name, access_key, secret_key)
-        settings = Settings({
-            'FEEDS': {
-                s3_test_file_uri: {
-                    'format': 'json',
-                },
-            },
-            'FEED_EXPORT_BATCH_ITEM_COUNT': 1,
-        })
+        bucket = 'mybucket'
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
             self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
         ]
+
+        class CustomS3FeedStorage(S3FeedStorage):
+
+            stubs = []
+
+            def open(self, *args, **kwargs):
+                from botocore.stub import ANY, Stubber
+                stub = Stubber(self.s3_client)
+                stub.activate()
+                CustomS3FeedStorage.stubs.append(stub)
+                stub.add_response(
+                    'put_object',
+                    expected_params={
+                        'Body': ANY,
+                        'Bucket': bucket,
+                        'Key': ANY,
+                    },
+                    service_response={},
+                )
+                return super().open(*args, **kwargs)
+
+        key = 'export.csv'
+        uri = f's3://{bucket}/{key}/%(batch_time)s.json'
+        batch_item_count = 1
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+            'FEED_EXPORT_BATCH_ITEM_COUNT': batch_item_count,
+            'FEED_STORAGES': {
+                's3': CustomS3FeedStorage,
+            },
+            'FEEDS': {
+                uri: {
+                    'format': 'json',
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(crawler, uri)
         verifyObject(IFeedStorage, storage)
 
         class TestSpider(scrapy.Spider):
@@ -1609,22 +1608,14 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 for item in items:
                     yield item
 
-        s3 = boto3.resource('s3')
-        my_bucket = s3.Bucket(s3_test_bucket_name)
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
-
-        with MockServer() as s:
+        with MockServer() as server:
             runner = CrawlerRunner(Settings(settings))
-            TestSpider.start_urls = [s.url('/')]
+            TestSpider.start_urls = [server.url('/')]
             yield runner.crawl(TestSpider)
 
-        for file_uri in my_bucket.objects.filter(Prefix=prefix):
-            content = get_s3_content_and_delete(s3_test_bucket_name, file_uri.key)
-            if not content and not items:
-                break
-            content = json.loads(content.decode('utf-8'))
-            expected_batch, items = items[:batch_size], items[batch_size:]
-            self.assertEqual(expected_batch, content)
+        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
+        for stub in CustomS3FeedStorage.stubs[:-1]:
+            stub.assert_no_pending_responses()
 
 
 class FeedExportInitTest(unittest.TestCase):
@@ -1667,7 +1658,7 @@ class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.StdoutFeedStorageWithoutFeedOptions'
+                'file': StdoutFeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1708,7 +1699,7 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.FileFeedStorageWithoutFeedOptions'
+                'file': FileFeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1756,7 +1747,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.S3FeedStorageWithoutFeedOptions'
+                'file': S3FeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1784,7 +1775,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.S3FeedStorageWithoutFeedOptionsWithFromCrawler'
+                'file': S3FeedStorageWithoutFeedOptionsWithFromCrawler
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1833,7 +1824,7 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.FTPFeedStorageWithoutFeedOptions'
+                'file': FTPFeedStorageWithoutFeedOptions
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)
@@ -1861,7 +1852,7 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
-                'file': 'tests.test_feedexport.FTPFeedStorageWithoutFeedOptionsWithFromCrawler'
+                'file': FTPFeedStorageWithoutFeedOptionsWithFromCrawler
             },
         }
         crawler = get_crawler(settings_dict=settings_dict)

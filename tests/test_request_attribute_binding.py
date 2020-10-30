@@ -79,7 +79,7 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_response_error(self):
         for status in ("404", "500"):
-            url = self.mockserver.url("/status?n={}".format(status))
+            url = self.mockserver.url(f"/status?n={status}")
             crawler = CrawlerRunner().create_crawler(SingleRequestSpider)
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
             failure = crawler.spider.meta["failure"]
@@ -92,7 +92,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionRequestMiddleware": 590,
+                RaiseExceptionRequestMiddleware: 590,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -119,7 +119,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".ProcessResponseMiddleware": 595,
+                ProcessResponseMiddleware: 595,
             }
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -135,7 +135,7 @@ class CrawlTestCase(TestCase):
         self.assertEqual(signal_params["request"].url, OVERRIDEN_URL)
 
         log.check_present(
-            ("scrapy.core.engine", "DEBUG", "Crawled (200) <GET {}> (referer: None)".format(OVERRIDEN_URL)),
+            ("scrapy.core.engine", "DEBUG", f"Crawled (200) <GET {OVERRIDEN_URL}> (referer: None)"),
         )
 
     @defer.inlineCallbacks
@@ -149,8 +149,8 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionRequestMiddleware": 590,
-                __name__ + ".CatchExceptionOverrideRequestMiddleware": 595,
+                RaiseExceptionRequestMiddleware: 590,
+                CatchExceptionOverrideRequestMiddleware: 595,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -170,8 +170,8 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionRequestMiddleware": 590,
-                __name__ + ".CatchExceptionDoNotOverrideRequestMiddleware": 595,
+                RaiseExceptionRequestMiddleware: 590,
+                CatchExceptionDoNotOverrideRequestMiddleware: 595,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -188,7 +188,7 @@ class CrawlTestCase(TestCase):
         """
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".AlternativeCallbacksMiddleware": 595,
+                AlternativeCallbacksMiddleware: 595,
             }
         })
         crawler = runner.create_crawler(AlternativeCallbacksSpider)

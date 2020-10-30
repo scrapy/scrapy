@@ -61,6 +61,12 @@ Request objects
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
        ``None`` is passed as value, the HTTP header will not be sent at all.
+
+        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+            :ref:`cookies-mw`. If you need to set cookies for a request, use the
+            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            current limitation that is being worked on.
+
     :type headers: dict
 
     :param cookies: the request cookies. These can be sent in two forms.
@@ -102,6 +108,12 @@ Request objects
             )
 
         For more info see :ref:`cookies-mw`.
+
+        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+            :ref:`cookies-mw`. If you need to set cookies for a request, use the
+            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            current limitation that is being worked on.
+
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
@@ -552,18 +564,6 @@ fields with form data from :class:`Response` objects.
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` ``__init__`` method.
-
-       .. versionadded:: 0.10.3
-          The ``formname`` parameter.
-
-       .. versionadded:: 0.17
-          The ``formxpath`` parameter.
-
-       .. versionadded:: 1.1.0
-          The ``formcss`` parameter.
-
-       .. versionadded:: 1.1.0
-          The ``formid`` parameter.
 
 Request usage examples
 ----------------------

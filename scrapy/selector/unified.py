@@ -66,8 +66,8 @@ class Selector(_ParselSelector, object_ref):
 
     def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
         if response is not None and text is not None:
-            raise ValueError('%s.__init__() received both response and text'
-                             % self.__class__.__name__)
+            raise ValueError(f'{self.__class__.__name__}.__init__() received '
+                             'both response and text')
 
         st = _st(response, type or self._default_type)
 

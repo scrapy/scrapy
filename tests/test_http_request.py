@@ -43,6 +43,15 @@ class RequestTest(unittest.TestCase):
         assert r.headers is not headers
         self.assertEqual(r.headers[b"caca"], b"coco")
 
+    def test_url_scheme(self):
+        # This test passes by not raising any (ValueError) exception
+        self.request_class('http://example.org')
+        self.request_class('https://example.org')
+        self.request_class('s3://example.org')
+        self.request_class('ftp://example.org')
+        self.request_class('about:config')
+        self.request_class('data:,Hello%2C%20World!')
+
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
         self.assertRaises(ValueError, self.request_class, '/foo/')

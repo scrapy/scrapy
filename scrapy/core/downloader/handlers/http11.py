@@ -60,11 +60,11 @@ class HTTP11DownloadHandler:
                 settings=settings,
                 crawler=crawler,
             )
-            msg = """
- '%s' does not accept `method` argument (type OpenSSL.SSL method,\
- e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
- Please upgrade your context factory class to handle them or ignore them.""" % (
-                settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
+            msg = f"""
+ '{settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]}' does not accept `method` \
+ argument (type OpenSSL.SSL method, e.g. OpenSSL.SSL.SSLv23_METHOD) and/or \
+ `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
+ Please upgrade your context factory class to handle them or ignore them."""
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
@@ -169,8 +169,9 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             else:
                 extra = rcvd_bytes[:32]
             self._tunnelReadyDeferred.errback(
-                TunnelError('Could not open CONNECT tunnel with proxy %s:%s [%r]' % (
-                    self._host, self._port, extra)))
+                TunnelError('Could not open CONNECT tunnel with proxy '
+                            f'{self._host}:{self._port} [{extra!r}]')
+            )
 
     def connectFailed(self, reason):
         """Propagates the errback to the appropriate deferred."""
@@ -371,7 +372,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
+        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result, request, start_time):
         request.meta['download_latency'] = time() - start_time

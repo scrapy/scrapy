@@ -39,7 +39,7 @@ def response_status_message(status):
     """Return status code plus status text descriptive message
     """
     message = http.RESPONSES.get(int(status), "Unknown Status")
-    return '%s %s' % (status, to_unicode(message))
+    return f'{status} {to_unicode(message)}'
 
 
 def response_httprepr(response):
@@ -69,15 +69,15 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     body = response.body
     if isinstance(response, HtmlResponse):
         if b'<base' not in body:
-            repl = '<head><base href="%s">' % response.url
+            repl = f'<head><base href="{response.url}">'
             body = body.replace(b'<head>', to_bytes(repl))
         ext = '.html'
     elif isinstance(response, TextResponse):
         ext = '.txt'
     else:
-        raise TypeError("Unsupported response type: %s" %
-                        response.__class__.__name__)
+        raise TypeError("Unsupported response type: "
+                        f"{response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)
-    return _openfunc("file://%s" % fname)
+    return _openfunc(f"file://{fname}")

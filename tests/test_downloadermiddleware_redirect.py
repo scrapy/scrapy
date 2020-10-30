@@ -22,7 +22,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
     def test_redirect_3xx_permanent(self):
         def _test(method, status=301):
-            url = 'http://www.example.com/{}'.format(status)
+            url = f'http://www.example.com/{status}'
             url2 = 'http://www.example.com/redirected'
             req = Request(url, method=method)
             rsp = Response(url, headers={'Location': url2}, status=status)
@@ -79,7 +79,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.method, 'GET')
         assert 'Content-Type' not in req2.headers, "Content-Type header must not be present in redirected request"
         assert 'Content-Length' not in req2.headers, "Content-Length header must not be present in redirected request"
-        assert not req2.body, "Redirected body must be empty, not '%s'" % req2.body
+        assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
@@ -207,8 +207,8 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url='http://example.org/newpage'):
-        html = """<html><head><meta http-equiv="refresh" content="{0};url={1}"/></head></html>"""
-        return html.format(interval, url).encode('utf-8')
+        html = f"""<html><head><meta http-equiv="refresh" content="{interval};url={url}"/></head></html>"""
+        return html.encode('utf-8')
 
     def test_priority_adjust(self):
         req = Request('http://a.com')
@@ -243,7 +243,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.method, 'GET')
         assert 'Content-Type' not in req2.headers, "Content-Type header must not be present in redirected request"
         assert 'Content-Length' not in req2.headers, "Content-Length header must not be present in redirected request"
-        assert not req2.body, "Redirected body must be empty, not '%s'" % req2.body
+        assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
