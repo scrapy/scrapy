@@ -25,7 +25,12 @@ class HttpCompressionMiddleware:
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
-        return cls(crawler.stats)
+        try:
+            return cls(stats=crawler.stats)
+        except TypeError:
+            result = cls()
+            result.stats = crawler.stats
+            return result
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
