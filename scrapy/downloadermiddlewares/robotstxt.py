@@ -54,6 +54,16 @@ class RobotsTxtMiddleware:
                          {'request': request}, extra={'spider': spider})
             self.crawler.stats.inc_value('robotstxt/forbidden')
             raise IgnoreRequest("Forbidden by robots.txt")
+    
+    def process_response(self, request, response, spider):
+        noindex_tags = response.xpath('//meta[@content="noindex"]')
+
+        if self._default_useragent in noindex_tags.getAll():
+            logger.debug("Forbidden by robots meta tags: %(request)s",
+                         {'request': request}, extra={'spider': spider})
+            self.crawler.stats.inc_value('robotstxt/forbidden')
+            raise IgnoreRequest("Forbidden by robots.txt")
+            
 
     def robot_parser(self, request, spider):
         url = urlparse_cached(request)
