@@ -1,0 +1,31 @@
+name: Run test suite
+on: [push, pull_request]
+
+jobs:
+  test-windows:
+    name: "Windows Tests"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        python-version: [3.7, 3.8]
+        env: [TOXENV: py]
+        include:
+        - os: windows-latest
+          python-version: 3.6
+          env:
+            TOXENV: windows-pinned
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run test suite
+      env: ${{ matrix.env }}
+      run: |
+        pip install -U tox twine wheel codecov
+        tox
