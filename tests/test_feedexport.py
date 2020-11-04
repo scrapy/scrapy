@@ -8,6 +8,7 @@ import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
@@ -782,8 +783,13 @@ class FeedExportTest(FeedExportTestBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        with MockServer() as mockserver, \
-                mock.patch("scrapy.extensions.feedexport.FileFeedStorage.store", side_effect=KeyError("foo")):
+        with ExitStack() as stack:
+            mockserver = stack.enter_context(MockServer())
+            stack.enter_context(
+                mock.patch(
+                    "scrapy.extensions.feedexport.FileFeedStorage.store",
+                    side_effect=KeyError("foo"))
+            )
             yield crawler.crawl(mockserver=mockserver)
         self.assertIn("feedexport/failed_count/FileFeedStorage", crawler.stats.get_stats())
         self.assertEqual(crawler.stats.get_value("feedexport/failed_count/FileFeedStorage"), 1)
