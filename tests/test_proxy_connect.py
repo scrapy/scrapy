@@ -1,6 +1,5 @@
 import json
 import os
-import platform
 import re
 import sys
 from subprocess import Popen, PIPE
@@ -59,7 +58,7 @@ class ProxyConnectTestCase(TestCase):
 
     def setUp(self):
         try:
-            import mitmproxy
+            import mitmproxy  # noqa: F401
         except ImportError:
             self.skipTest('mitmproxy is not installed')
 
