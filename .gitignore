@@ -10,6 +10,7 @@ venv
 build
 dist
 .idea
+.vscode
 htmlcov/
 .coverage
 .pytest_cache/
