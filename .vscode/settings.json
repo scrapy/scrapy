@@ -1,0 +1,3 @@
+{
+    "python.formatting.provider": "black"
+}

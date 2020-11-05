@@ -56,7 +56,7 @@ class RobotsTxtMiddleware:
             raise IgnoreRequest("Forbidden by robots.txt")
 
     def process_response(self, request, response, spider):
-        noindex_tags = response.xpath('//meta[@content="noindex"]/@name').getAll()
+        noindex_tags = response.xpath('//meta[@content="noindex"]/@name').getall()
 
         if 'robots' in noindex_tags or  self._default_useragent in noindex_tags:
             logger.debug("Forbidden by robots meta tags: %(request)s",
