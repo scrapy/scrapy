@@ -334,7 +334,7 @@ class HttpCompressionSubclassTest(TestCase):
 
         crawler = get_crawler(Spider)
         with catch_warnings(record=True) as caught_warnings:
-            instance = HttpCompressionMiddlewareSubclass.from_crawler(crawler)
+            HttpCompressionMiddlewareSubclass.from_crawler(crawler)
         messages = tuple(
             str(warning.message) for warning in caught_warnings
             if warning.category is ScrapyDeprecationWarning
