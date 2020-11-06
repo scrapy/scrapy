@@ -68,7 +68,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def _create_crawler(self, pipeline_class):
         settings = {
-            'ITEM_PIPELINES': {__name__ + '.' + pipeline_class.__name__: 1},
+            'ITEM_PIPELINES': {pipeline_class: 1},
         }
         crawler = get_crawler(ItemSpider, settings)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)

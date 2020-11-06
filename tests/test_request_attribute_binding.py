@@ -92,7 +92,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionRequestMiddleware": 590,
+                RaiseExceptionRequestMiddleware: 590,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -119,7 +119,7 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".ProcessResponseMiddleware": 595,
+                ProcessResponseMiddleware: 595,
             }
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -149,8 +149,8 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionRequestMiddleware": 590,
-                __name__ + ".CatchExceptionOverrideRequestMiddleware": 595,
+                RaiseExceptionRequestMiddleware: 590,
+                CatchExceptionOverrideRequestMiddleware: 595,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -170,8 +170,8 @@ class CrawlTestCase(TestCase):
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".RaiseExceptionRequestMiddleware": 590,
-                __name__ + ".CatchExceptionDoNotOverrideRequestMiddleware": 595,
+                RaiseExceptionRequestMiddleware: 590,
+                CatchExceptionDoNotOverrideRequestMiddleware: 595,
             },
         })
         crawler = runner.create_crawler(SingleRequestSpider)
@@ -188,7 +188,7 @@ class CrawlTestCase(TestCase):
         """
         runner = CrawlerRunner(settings={
             "DOWNLOADER_MIDDLEWARES": {
-                __name__ + ".AlternativeCallbacksMiddleware": 595,
+                AlternativeCallbacksMiddleware: 595,
             }
         })
         crawler = runner.create_crawler(AlternativeCallbacksSpider)

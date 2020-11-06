@@ -97,35 +97,14 @@ class CookiesMiddleware:
 
     def _get_request_cookies(self, jar, request):
         """
-        Extract cookies from a Request. Values from the `Request.cookies` attribute
-        take precedence over values from the `Cookie` request header.
+        Extract cookies from the Request.cookies attribute
         """
-        def get_cookies_from_header(jar, request):
-            cookie_header = request.headers.get("Cookie")
-            if not cookie_header:
-                return []
-            cookie_gen_bytes = (s.strip() for s in cookie_header.split(b";"))
-            cookie_list_unicode = []
-            for cookie_bytes in cookie_gen_bytes:
-                try:
-                    cookie_unicode = cookie_bytes.decode("utf8")
-                except UnicodeDecodeError:
-                    logger.warning("Non UTF-8 encoded cookie found in request %s: %s",
-                                   request, cookie_bytes)
-                    cookie_unicode = cookie_bytes.decode("latin1", errors="replace")
-                cookie_list_unicode.append(cookie_unicode)
-            response = Response(request.url, headers={"Set-Cookie": cookie_list_unicode})
-            return jar.make_cookies(response, request)
-
-        def get_cookies_from_attribute(jar, request):
-            if not request.cookies:
-                return []
-            elif isinstance(request.cookies, dict):
-                cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
-            else:
-                cookies = request.cookies
-            formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
-            response = Response(request.url, headers={"Set-Cookie": formatted})
-            return jar.make_cookies(response, request)
-
-        return get_cookies_from_header(jar, request) + get_cookies_from_attribute(jar, request)
+        if not request.cookies:
+            return []
+        elif isinstance(request.cookies, dict):
+            cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
+        else:
+            cookies = request.cookies
+        formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
+        response = Response(request.url, headers={"Set-Cookie": formatted})
+        return jar.make_cookies(response, request)
