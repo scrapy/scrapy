@@ -104,7 +104,7 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
         return await get_from_asyncio_queue("OK")
 
     def test_send_catch_log(self):
-        if (twisted_version < Version('twisted', 18, 4, 0):
+        if twisted_version < Version('twisted', 18, 4, 0):
             raise SkipTest(
                 'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
                 'fails due to a timeout when using Twisted versions lower '
