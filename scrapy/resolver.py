@@ -1,6 +1,6 @@
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
-from twisted.internet.interfaces import IHostnameResolver, IResolutionReceiver, IResolverSimple
+from twisted.internet.interfaces import IHostResolution, IHostnameResolver, IResolutionReceiver, IResolverSimple
 from zope.interface.declarations import implementer, provider
 
 from scrapy.utils.datatypes import LocalCache
@@ -17,7 +17,7 @@ class CachingThreadedResolver(ThreadedResolver):
     """
 
     def __init__(self, reactor, cache_size, timeout):
-        super(CachingThreadedResolver, self).__init__(reactor)
+        super().__init__(reactor)
         dnscache.limit = cache_size
         self.timeout = timeout
 
@@ -40,7 +40,7 @@ class CachingThreadedResolver(ThreadedResolver):
         # so the input argument above is simply overridden
         # to enforce Scrapy's DNS_TIMEOUT setting's value
         timeout = (self.timeout,)
-        d = super(CachingThreadedResolver, self).getHostByName(name, timeout)
+        d = super().getHostByName(name, timeout)
         if dnscache.limit:
             d.addCallback(self._cache_result, name)
         return d
@@ -48,6 +48,36 @@ class CachingThreadedResolver(ThreadedResolver):
     def _cache_result(self, result, name):
         dnscache[name] = result
         return result
+
+
+@implementer(IHostResolution)
+class HostResolution:
+    def __init__(self, name):
+        self.name = name
+
+    def cancel(self):
+        raise NotImplementedError()
+
+
+@provider(IResolutionReceiver)
+class _CachingResolutionReceiver:
+    def __init__(self, resolutionReceiver, hostName):
+        self.resolutionReceiver = resolutionReceiver
+        self.hostName = hostName
+        self.addresses = []
+
+    def resolutionBegan(self, resolution):
+        self.resolutionReceiver.resolutionBegan(resolution)
+        self.resolution = resolution
+
+    def addressResolved(self, address):
+        self.resolutionReceiver.addressResolved(address)
+        self.addresses.append(address)
+
+    def resolutionComplete(self):
+        self.resolutionReceiver.resolutionComplete()
+        if self.addresses:
+            dnscache[self.hostName] = self.addresses
 
 
 @implementer(IHostnameResolver)
@@ -73,33 +103,22 @@ class CachingHostnameResolver:
     def install_on_reactor(self):
         self.reactor.installNameResolver(self)
 
-    def resolveHostName(self, resolutionReceiver, hostName, portNumber=0,
-                        addressTypes=None, transportSemantics='TCP'):
-
-        @provider(IResolutionReceiver)
-        class CachingResolutionReceiver(resolutionReceiver):
-
-            def resolutionBegan(self, resolution):
-                super(CachingResolutionReceiver, self).resolutionBegan(resolution)
-                self.resolution = resolution
-                self.resolved = False
-
-            def addressResolved(self, address):
-                super(CachingResolutionReceiver, self).addressResolved(address)
-                self.resolved = True
-
-            def resolutionComplete(self):
-                super(CachingResolutionReceiver, self).resolutionComplete()
-                if self.resolved:
-                    dnscache[hostName] = self.resolution
-
+    def resolveHostName(
+        self, resolutionReceiver, hostName, portNumber=0, addressTypes=None, transportSemantics="TCP"
+    ):
         try:
-            return dnscache[hostName]
+            addresses = dnscache[hostName]
         except KeyError:
             return self.original_resolver.resolveHostName(
-                CachingResolutionReceiver(),
+                _CachingResolutionReceiver(resolutionReceiver, hostName),
                 hostName,
                 portNumber,
                 addressTypes,
-                transportSemantics
+                transportSemantics,
             )
+        else:
+            resolutionReceiver.resolutionBegan(HostResolution(hostName))
+            for addr in addresses:
+                resolutionReceiver.addressResolved(addr)
+            resolutionReceiver.resolutionComplete()
+            return resolutionReceiver

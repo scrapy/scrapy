@@ -45,7 +45,7 @@ class ResponseTypes:
         elif mimetype in self.classes:
             return self.classes[mimetype]
         else:
-            basetype = "%s/*" % mimetype.split('/')[0]
+            basetype = f"{mimetype.split('/')[0]}/*"
             return self.classes.get(basetype, Response)
 
     def from_content_type(self, content_type, content_encoding=None):
@@ -58,9 +58,9 @@ class ResponseTypes:
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = to_unicode(content_disposition,
-                encoding='latin-1', errors='replace').split(';')[1].split('=')[1]
-            filename = filename.strip('"\'')
+            filename = to_unicode(
+                content_disposition, encoding='latin-1', errors='replace'
+            ).split(';')[1].split('=')[1].strip('"\'')
             return self.from_filename(filename)
         except IndexError:
             return Response

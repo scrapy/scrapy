@@ -15,13 +15,14 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r)
 
     def test_all_attributes(self):
-        r = Request("http://www.example.com",
+        r = Request(
+            url="http://www.example.com",
             callback=self.spider.parse_item,
             errback=self.spider.handle_error,
             method="POST",
             body=b"some body",
             headers={'content-encoding': 'text/html; charset=latin-1'},
-            cookies={'currency': u'руб'},
+            cookies={'currency': 'руб'},
             encoding='latin-1',
             priority=20,
             meta={'a': 'b'},
@@ -101,6 +102,12 @@ class RequestSerializationTest(unittest.TestCase):
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
+    def test_delegated_callback_serialization(self):
+        r = Request("http://www.example.com",
+                    callback=self.spider.delegated_callback,
+                    errback=self.spider.handle_error)
+        self._assert_serializes_ok(r, spider=self.spider)
+
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
         self.assertRaises(ValueError, request_to_dict, r)
@@ -131,6 +138,11 @@ class TestSpiderMixin:
         pass
 
 
+class TestSpiderDelegation:
+    def delegated_callback(self, response):
+        pass
+
+
 def parse_item(response):
     pass
 
@@ -153,6 +165,9 @@ class TestSpider(Spider, TestSpiderMixin):
     handle_error_reference = handle_error
     __parse_item_reference = private_parse_item
     __handle_error_reference = private_handle_error
+
+    def __init__(self):
+        self.delegated_callback = TestSpiderDelegation().delegated_callback
 
     def parse_item(self, response):
         pass

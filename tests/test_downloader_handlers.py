@@ -61,7 +61,7 @@ class OffDH:
 class LoadTestCase(unittest.TestCase):
 
     def test_enabled_handler(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
+        handlers = {'scheme': DummyDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -69,7 +69,7 @@ class LoadTestCase(unittest.TestCase):
         self.assertNotIn('scheme', dh._notconfigured)
 
     def test_not_configured_handler(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
+        handlers = {'scheme': OffDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -87,7 +87,7 @@ class LoadTestCase(unittest.TestCase):
         self.assertIn('scheme', dh._notconfigured)
 
     def test_lazy_handlers(self):
-        handlers = {'scheme': 'tests.test_downloader_handlers.DummyLazyDH'}
+        handlers = {'scheme': DummyLazyDH}
         crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
         dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._schemes)
@@ -121,7 +121,7 @@ class FileTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request('file://%s' % self.mktemp())
+        request = Request(f'file://{self.mktemp()}')
         d = self.download_request(request, Spider('foo'))
         return self.assertFailure(d, IOError)
 
@@ -249,7 +249,7 @@ class HttpTestCase(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -300,7 +300,7 @@ class HttpTestCase(unittest.TestCase):
     def test_host_header_not_in_request_headers(self):
         def _test(response):
             self.assertEqual(
-                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
+                response.body, to_bytes(f'{self.host}:{self.portno}'))
             self.assertEqual(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -410,7 +410,7 @@ class Http11TestCase(HttpTestCase):
             request = Request(self.getURL('largechunkedfile'))
 
             def check(logger):
-                logger.error.assert_called_once_with(mock.ANY, mock.ANY)
+                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             d = self.download_request(request, Spider('foo', download_maxsize=1500))
             yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
@@ -493,7 +493,10 @@ class Http11TestCase(HttpTestCase):
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
 
-    tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", subject "/C=IE/O=Scrapy/CN=localhost"'
+    tls_log_message = (
+        'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
+        'subject "/C=IE/O=Scrapy/CN=localhost"'
+    )
 
     @defer.inlineCallbacks
     def test_tls_logging(self):
@@ -527,7 +530,7 @@ class Https11InvalidDNSId(Https11TestCase):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     def setUp(self):
-        super(Https11InvalidDNSId, self).setUp()
+        super().setUp()
         self.host = '127.0.0.1'
 
 
@@ -542,8 +545,11 @@ class Https11InvalidDNSPattern(Https11TestCase):
             from service_identity.exceptions import CertificateError  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("cryptography lib is too old")
-        self.tls_log_message = 'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
-        super(Https11InvalidDNSPattern, self).setUp()
+        self.tls_log_message = (
+            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
+            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
+        )
+        super().setUp()
 
 
 class Https11CustomCiphers(unittest.TestCase):
@@ -577,7 +583,7 @@ class Https11CustomCiphers(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -672,7 +678,7 @@ class HttpProxyTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"http://127.0.0.1:{self.portno}/{path}"
 
     def test_download_with_proxy(self):
         def _test(response):
@@ -690,7 +696,7 @@ class HttpProxyTestCase(unittest.TestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.body, b'https://example.com')
 
-        http_proxy = '%s?noconnect' % self.getURL('')
+        http_proxy = f'{self.getURL("")}?noconnect'
         request = Request('https://example.com', meta={'proxy': http_proxy})
         with self.assertWarnsRegex(ScrapyDeprecationWarning,
                                    r'Using HTTPS proxies in the noconnect mode is deprecated'):
@@ -729,6 +735,9 @@ class Http11ProxyTestCase(HttpProxyTestCase):
 
 
 class HttpDownloadHandlerMock:
+
+    def __init__(self, *args, **kwargs):
+        pass
 
     def download_request(self, request, spider):
         return request
@@ -822,11 +831,15 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
         date = 'Tue, 27 Mar 2007 21:15:45 +0000'
-        req = Request('s3://johnsmith/photos/puppy.jpg', method='PUT', headers={
-            'Content-Type': 'image/jpeg',
-            'Date': date,
-            'Content-Length': '94328',
-            })
+        req = Request(
+            's3://johnsmith/photos/puppy.jpg',
+            method='PUT',
+            headers={
+                'Content-Type': 'image/jpeg',
+                'Date': date,
+                'Content-Length': '94328',
+            },
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'],
@@ -849,34 +862,11 @@ class S3TestCase(unittest.TestCase):
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
         date = 'Tue, 27 Mar 2007 19:44:46 +0000'
-        req = Request('s3://johnsmith/?acl',
-            method='GET', headers={'Date': date})
+        req = Request('s3://johnsmith/?acl', method='GET', headers={'Date': date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'],
                          b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
-
-    def test_request_signing5(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            pass
-        else:
-            raise unittest.SkipTest(
-                'botocore does not support overriding date with x-amz-date')
-        # deletes an object from the 'johnsmith' bucket using the
-        # path-style and Date alternative.
-        date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request(
-            's3://johnsmith/photos/puppy.jpg', method='DELETE', headers={
-                'Date': date,
-                'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-            })
-        with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
-        # botocore does not override Date with x-amz-date
-        self.assertEqual(httpreq.headers['Authorization'],
-                b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
 
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
@@ -906,11 +896,10 @@ class S3TestCase(unittest.TestCase):
         # ensure that spaces are quoted properly before signing
         date = 'Tue, 27 Mar 2007 19:42:41 +0000'
         req = Request(
-            ("s3://johnsmith/photos/my puppy.jpg"
-             "?response-content-disposition=my puppy.jpg"),
+            "s3://johnsmith/photos/my puppy.jpg?response-content-disposition=my puppy.jpg",
             method='GET',
             headers={'Date': date},
-            )
+        )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
         self.assertEqual(
@@ -965,7 +954,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return deferred
 
     def test_ftp_download_success(self):
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
@@ -977,7 +966,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
     def test_ftp_download_path_with_spaces(self):
         request = Request(
-            url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
+            url=f"ftp://127.0.0.1:{self.portNum}/file with spaces.txt",
             meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
@@ -989,7 +978,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
-        request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/notexist.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1003,7 +992,7 @@ class BaseFTPTestCase(unittest.TestCase):
         os.close(f)
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1025,7 +1014,7 @@ class FTPTestCase(BaseFTPTestCase):
 
         meta = dict(self.req_meta)
         meta.update({"ftp_password": 'invalid'})
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1090,8 +1079,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype_encoding(self):
         def _test(response):
             self.assertEqual(response.text, 'A brief note')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "US-ASCII")
 
         request = Request("data:,A%20brief%20note")
@@ -1099,9 +1087,8 @@ class DataURITestCase(unittest.TestCase):
 
     def test_default_mediatype(self):
         def _test(response):
-            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(response.text, '\u038e\u03a3\u038e')
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "iso-8859-7")
 
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
@@ -1109,7 +1096,7 @@ class DataURITestCase(unittest.TestCase):
 
     def test_text_charset(self):
         def _test(response):
-            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
+            self.assertEqual(response.text, '\u038e\u03a3\u038e')
             self.assertEqual(response.body, b'\xbe\xd3\xbe')
             self.assertEqual(response.encoding, "iso-8859-7")
 
@@ -1118,9 +1105,8 @@ class DataURITestCase(unittest.TestCase):
 
     def test_mediatype_parameters(self):
         def _test(response):
-            self.assertEqual(response.text, u'\u038e\u03a3\u038e')
-            self.assertEqual(type(response),
-                              responsetypes.from_mimetype("text/plain"))
+            self.assertEqual(response.text, '\u038e\u03a3\u038e')
+            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
             self.assertEqual(response.encoding, "utf-8")
 
         request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'

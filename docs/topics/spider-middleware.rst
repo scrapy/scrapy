@@ -102,20 +102,19 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
-        objects.
+        :class:`~scrapy.http.Request` objects and :ref:`item object
+        <topics-items>`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request`, dict
-          or :class:`~scrapy.item.Item` objects
+        :type result: an iterable of :class:`~scrapy.http.Request` objects and
+          :ref:`item object <topics-items>`
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
-
 
     .. method:: process_spider_exception(response, exception, spider)
 
@@ -123,8 +122,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request`, dict or
-        :class:`~scrapy.item.Item` objects.
+        iterable of :class:`~scrapy.http.Request` objects and :ref:`item object
+        <topics-items>`.
 
         If it returns ``None``, Scrapy will continue processing this exception,
         executing any other :meth:`process_spider_exception` in the following
@@ -146,8 +145,6 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
-
-        .. versionadded:: 0.15
 
         This method is called with the start requests of the spider, and works
         similarly to the :meth:`process_spider_output` method, except that it
@@ -342,8 +339,6 @@ RefererMiddleware settings
 REFERER_ENABLED
 ^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.15
-
 Default: ``True``
 
 Whether to enable referer middleware.
@@ -352,8 +347,6 @@ Whether to enable referer middleware.
 
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 

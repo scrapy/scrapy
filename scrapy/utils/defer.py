@@ -88,8 +88,11 @@ def process_chain_both(callbacks, errbacks, input, *a, **kw):
     """Return a Deferred built by chaining the given callbacks and errbacks"""
     d = defer.Deferred()
     for cb, eb in zip(callbacks, errbacks):
-        d.addCallbacks(cb, eb, callbackArgs=a, callbackKeywords=kw,
-            errbackArgs=a, errbackKeywords=kw)
+        d.addCallbacks(
+            callback=cb, errback=eb,
+            callbackArgs=a, callbackKeywords=kw,
+            errbackArgs=a, errbackKeywords=kw,
+        )
     if isinstance(input, failure.Failure):
         d.errback(input)
     else:
@@ -121,18 +124,11 @@ def iter_errback(iterable, errback, *a, **kw):
             errback(failure.Failure(), *a, **kw)
 
 
-def _isfuture(o):
-    # workaround for Python before 3.5.3 not having asyncio.isfuture
-    if hasattr(asyncio, 'isfuture'):
-        return asyncio.isfuture(o)
-    return isinstance(o, asyncio.Future)
-
-
 def deferred_from_coro(o):
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, defer.Deferred):
         return o
-    if _isfuture(o) or inspect.isawaitable(o):
+    if asyncio.isfuture(o) or inspect.isawaitable(o):
         if not is_asyncio_reactor_installed():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
@@ -164,7 +160,7 @@ def maybeDeferred_coro(f, *args, **kw):
 
     if isinstance(result, defer.Deferred):
         return result
-    elif _isfuture(result) or inspect.isawaitable(result):
+    elif asyncio.isfuture(result) or inspect.isawaitable(result):
         return deferred_from_coro(result)
     elif isinstance(result, failure.Failure):
         return defer.fail(result)

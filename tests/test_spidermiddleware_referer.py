@@ -6,16 +6,28 @@ from scrapy.http import Response, Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
-from scrapy.spidermiddlewares.referer import RefererMiddleware, \
-    POLICY_NO_REFERRER, POLICY_NO_REFERRER_WHEN_DOWNGRADE, \
-    POLICY_SAME_ORIGIN, POLICY_ORIGIN, POLICY_ORIGIN_WHEN_CROSS_ORIGIN, \
-    POLICY_SCRAPY_DEFAULT, POLICY_UNSAFE_URL, \
-    POLICY_STRICT_ORIGIN, POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, \
-    DefaultReferrerPolicy, \
-    NoReferrerPolicy, NoReferrerWhenDowngradePolicy, \
-    OriginWhenCrossOriginPolicy, OriginPolicy, \
-    StrictOriginWhenCrossOriginPolicy, StrictOriginPolicy, \
-    SameOriginPolicy, UnsafeUrlPolicy, ReferrerPolicy
+from scrapy.spidermiddlewares.referer import (
+    DefaultReferrerPolicy,
+    NoReferrerPolicy,
+    NoReferrerWhenDowngradePolicy,
+    OriginPolicy,
+    OriginWhenCrossOriginPolicy,
+    POLICY_NO_REFERRER,
+    POLICY_NO_REFERRER_WHEN_DOWNGRADE,
+    POLICY_ORIGIN,
+    POLICY_ORIGIN_WHEN_CROSS_ORIGIN,
+    POLICY_SAME_ORIGIN,
+    POLICY_SCRAPY_DEFAULT,
+    POLICY_STRICT_ORIGIN,
+    POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+    POLICY_UNSAFE_URL,
+    RefererMiddleware,
+    ReferrerPolicy,
+    SameOriginPolicy,
+    StrictOriginPolicy,
+    StrictOriginWhenCrossOriginPolicy,
+    UnsafeUrlPolicy,
+)
 
 
 class TestRefererMiddleware(TestCase):
@@ -119,7 +131,11 @@ class MixinSameOrigin:
         ('https://example.com:443/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('http://example.com:80/page.html', 'http://example.com/not-page.html', b'http://example.com/page.html'),
         ('http://example.com/page.html', 'http://example.com:80/not-page.html', b'http://example.com/page.html'),
-        ('http://example.com:8888/page.html', 'http://example.com:8888/not-page.html', b'http://example.com:8888/page.html'),
+        (
+            'http://example.com:8888/page.html',
+            'http://example.com:8888/not-page.html',
+            b'http://example.com:8888/page.html',
+        ),
 
         # Different host: do NOT send referrer
         ('https://example.com/page.html', 'https://not.example.com/otherpage.html', None),
@@ -139,8 +155,12 @@ class MixinSameOrigin:
         ('ftps://example.com/urls.zip', 'https://example.com/not-page.html', None),
 
         # test for user/password stripping
-        ('https://user:password@example.com/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('https://user:password@example.com/page.html', 'http://example.com/not-page.html', None),
+        (
+            'https://user:password@example.com/page.html',
+            'https://example.com/not-page.html',
+            b'https://example.com/page.html',
+        ),
     ]
 
 
@@ -184,7 +204,11 @@ class MixinOriginWhenCrossOrigin:
         ('https://example.com:443/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('http://example.com:80/page.html', 'http://example.com/not-page.html', b'http://example.com/page.html'),
         ('http://example.com/page.html', 'http://example.com:80/not-page.html', b'http://example.com/page.html'),
-        ('http://example.com:8888/page.html', 'http://example.com:8888/not-page.html', b'http://example.com:8888/page.html'),
+        (
+            'http://example.com:8888/page.html',
+            'http://example.com:8888/not-page.html',
+            b'http://example.com:8888/page.html',
+        ),
 
         # Different host: send origin as referrer
         ('https://example2.com/page.html', 'https://scrapy.org/otherpage.html', b'https://example2.com/'),
@@ -205,9 +229,17 @@ class MixinOriginWhenCrossOrigin:
         ('ftps://example4.com/urls.zip', 'https://example4.com/not-page.html', b'ftps://example4.com/'),
 
         # test for user/password stripping
-        ('https://user:password@example5.com/page.html', 'https://example5.com/not-page.html', b'https://example5.com/page.html'),
+        (
+            'https://user:password@example5.com/page.html',
+            'https://example5.com/not-page.html',
+            b'https://example5.com/page.html',
+        ),
         # TLS to non-TLS downgrade: send origin
-        ('https://user:password@example5.com/page.html', 'http://example5.com/not-page.html', b'https://example5.com/'),
+        (
+            'https://user:password@example5.com/page.html',
+            'http://example5.com/not-page.html',
+            b'https://example5.com/',
+        ),
     ]
 
 
@@ -219,7 +251,11 @@ class MixinStrictOriginWhenCrossOrigin:
         ('https://example.com:443/page.html', 'https://example.com/not-page.html', b'https://example.com/page.html'),
         ('http://example.com:80/page.html', 'http://example.com/not-page.html', b'http://example.com/page.html'),
         ('http://example.com/page.html', 'http://example.com:80/not-page.html', b'http://example.com/page.html'),
-        ('http://example.com:8888/page.html', 'http://example.com:8888/not-page.html', b'http://example.com:8888/page.html'),
+        (
+            'http://example.com:8888/page.html',
+            'http://example.com:8888/not-page.html',
+            b'http://example.com:8888/page.html',
+        ),
 
         # Different host: send origin as referrer
         ('https://example2.com/page.html', 'https://scrapy.org/otherpage.html', b'https://example2.com/'),
@@ -248,7 +284,11 @@ class MixinStrictOriginWhenCrossOrigin:
         ('ftps://example4.com/urls.zip', 'https://example4.com/not-page.html', b'ftps://example4.com/'),
 
         # test for user/password stripping
-        ('https://user:password@example5.com/page.html', 'https://example5.com/not-page.html', b'https://example5.com/page.html'),
+        (
+            'https://user:password@example5.com/page.html',
+            'https://example5.com/not-page.html',
+            b'https://example5.com/page.html',
+        ),
 
         # TLS to non-TLS downgrade: send nothing
         ('https://user:password@example5.com/page.html', 'http://example5.com/not-page.html', None),
@@ -281,8 +321,16 @@ class MixinUnsafeUrl:
         ('ftp://example3.com/urls.zip', 'https://scrapy.org/', b'ftp://example3.com/urls.zip'),
 
         # test for user/password stripping
-        ('http://user:password@example4.com/page.html', 'https://not.example4.com/', b'http://example4.com/page.html'),
-        ('https://user:password@example4.com/page.html', 'http://scrapy.org/', b'https://example4.com/page.html'),
+        (
+            'http://user:password@example4.com/page.html',
+            'https://not.example4.com/',
+            b'http://example4.com/page.html',
+        ),
+        (
+            'https://user:password@example4.com/page.html',
+            'http://scrapy.org/',
+            b'https://example4.com/page.html',
+        ),
     ]
 
 
@@ -337,7 +385,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
 
 
 class TestSettingsCustomPolicy(TestRefererMiddleware):
-    settings = {'REFERRER_POLICY': 'tests.test_spidermiddleware_referer.CustomPythonOrgPolicy'}
+    settings = {'REFERRER_POLICY': CustomPythonOrgPolicy}
     scenarii = [
         ('https://example.com/', 'https://scrapy.org/', b'https://python.org/'),
         ('http://example.com/', 'http://scrapy.org/', b'http://python.org/'),
@@ -459,7 +507,6 @@ class TestRequestMetaSettingFallback(TestCase):
         target = 'http://www.example.com'
 
         for settings, response_headers, request_meta, policy_class, check_warning in self.params[3:]:
-            spider = Spider('foo')
             mw = RefererMiddleware(Settings(settings))
 
             response = Response(origin, headers=response_headers)
@@ -478,32 +525,32 @@ class TestSettingsPolicyByName(TestCase):
 
     def test_valid_name(self):
         for s, p in [
-                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-                (POLICY_NO_REFERRER, NoReferrerPolicy),
-                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-                (POLICY_SAME_ORIGIN, SameOriginPolicy),
-                (POLICY_ORIGIN, OriginPolicy),
-                (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-                (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+            (POLICY_NO_REFERRER, NoReferrerPolicy),
+            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+            (POLICY_SAME_ORIGIN, SameOriginPolicy),
+            (POLICY_ORIGIN, OriginPolicy),
+            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+        ]:
             settings = Settings({'REFERRER_POLICY': s})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
 
     def test_valid_name_casevariants(self):
         for s, p in [
-                (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
-                (POLICY_NO_REFERRER, NoReferrerPolicy),
-                (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
-                (POLICY_SAME_ORIGIN, SameOriginPolicy),
-                (POLICY_ORIGIN, OriginPolicy),
-                (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
-                (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
-                (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
-                (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
-            ]:
+            (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
+            (POLICY_NO_REFERRER, NoReferrerPolicy),
+            (POLICY_NO_REFERRER_WHEN_DOWNGRADE, NoReferrerWhenDowngradePolicy),
+            (POLICY_SAME_ORIGIN, SameOriginPolicy),
+            (POLICY_ORIGIN, OriginPolicy),
+            (POLICY_STRICT_ORIGIN, StrictOriginPolicy),
+            (POLICY_ORIGIN_WHEN_CROSS_ORIGIN, OriginWhenCrossOriginPolicy),
+            (POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN, StrictOriginWhenCrossOriginPolicy),
+            (POLICY_UNSAFE_URL, UnsafeUrlPolicy),
+        ]:
             settings = Settings({'REFERRER_POLICY': s.upper()})
             mw = RefererMiddleware(settings)
             self.assertEqual(mw.default_policy, p)
@@ -511,7 +558,7 @@ class TestSettingsPolicyByName(TestCase):
     def test_invalid_name(self):
         settings = Settings({'REFERRER_POLICY': 'some-custom-unknown-policy'})
         with self.assertRaises(RuntimeError):
-            mw = RefererMiddleware(settings)
+            RefererMiddleware(settings)
 
 
 class TestPolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):

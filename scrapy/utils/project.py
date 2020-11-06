@@ -20,7 +20,7 @@ def inside_project():
         try:
             import_module(scrapy_module)
         except ImportError as exc:
-            warnings.warn("Cannot import scrapy settings module %s: %s" % (scrapy_module, exc))
+            warnings.warn(f"Cannot import scrapy settings module {scrapy_module}: {exc}")
         else:
             return True
     return bool(closest_scrapy_cfg())
@@ -90,7 +90,7 @@ def get_project_settings():
         warnings.warn(
             'Use of environment variables prefixed with SCRAPY_ to override '
             'settings is deprecated. The following environment variables are '
-            'currently defined: {}'.format(setting_envvar_list),
+            f'currently defined: {setting_envvar_list}',
             ScrapyDeprecationWarning
         )
     settings.setdict(scrapy_envvars, priority='project')

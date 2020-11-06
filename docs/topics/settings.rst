@@ -98,6 +98,32 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+
+Import paths and classes
+========================
+
+.. versionadded:: 2.4.0
+
+When a setting references a callable object to be imported by Scrapy, such as a
+class or a function, there are two different ways you can specify that object:
+
+-   As a string containing the import path of that object
+
+-   As the object itself
+
+For example::
+
+   from mybot.pipelines.validate import ValidateMyItem
+   ITEM_PIPELINES = {
+       # passing the classname...
+       ValidateMyItem: 300,
+       # ...equals passing the class path
+       'mybot.pipelines.validate.ValidateMyItem': 300,
+   }
+
+.. note:: Passing non-callable objects is not supported.
+
+
 How to access settings
 ======================
 
@@ -110,7 +136,7 @@ In a spider, the settings are available through ``self.settings``::
         start_urls = ['http://example.com']
 
         def parse(self, response):
-            print("Existing settings: %s" % self.settings.attributes.keys())
+            print(f"Existing settings: {self.settings.attributes.keys()}")
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider
@@ -216,6 +242,26 @@ Default: ``None``
 
 The name of the region associated with the AWS client.
 
+.. setting:: ASYNCIO_EVENT_LOOP
+
+ASYNCIO_EVENT_LOOP
+------------------
+
+Default: ``None``
+
+Import path of a given asyncio event loop class.
+
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the 
+asyncio event loop to be used with it. Set the setting to the import path of the 
+desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
+event loop will be used.
+
+If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
+function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop 
+class to be used.  
+
+Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
+
 .. setting:: BOT_NAME
 
 BOT_NAME
@@ -236,8 +282,8 @@ CONCURRENT_ITEMS
 
 Default: ``100``
 
-Maximum number of concurrent items (per response) to process in parallel in the
-Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
+Maximum number of concurrent items (per response) to process in parallel in
+:ref:`item pipelines <topics-item-pipeline>`.
 
 .. setting:: CONCURRENT_REQUESTS
 
@@ -305,6 +351,11 @@ Default::
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
+
+.. caution:: Cookies set via the ``Cookie`` header are not considered by the
+    :ref:`cookies-mw`. If you need to set cookies for a request, use the
+    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
 
@@ -420,10 +471,9 @@ connections (for ``HTTP10DownloadHandler``).
 .. note::
 
     HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
-    unless you use Twisted<11.1, or if you really want to use HTTP/1.0
-    and override :setting:`DOWNLOAD_HANDLERS_BASE` for ``http(s)`` scheme
-    accordingly, i.e. to
-    ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    unless you really want to use HTTP/1.0 and override
+    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
+    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -447,7 +497,6 @@ or even enable client-side authentication (and various other things).
     Scrapy also has another context factory class that you can set,
     ``'scrapy.core.downloader.contextfactory.BrowserLikeContextFactory'``,
     which uses the platform's certificates to validate remote endpoints.
-    **This is only available if you use Twisted>=14.0.**
 
 If you do use a custom ContextFactory, make sure its ``__init__`` method
 accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
@@ -471,7 +520,7 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -494,10 +543,6 @@ This setting must be one of these string values:
 - ``'TLSv1.2'``: forces TLS version 1.2
 - ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
-.. note::
-
-    We recommend that you use PyOpenSSL>=0.13 and Twisted>=0.13
-    or above (Twisted>=14.0 if you can).
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -660,8 +705,6 @@ If you want to disable it set to 0.
     spider attribute and per-request using :reqmeta:`download_maxsize`
     Request.meta key.
 
-    This feature needs Twisted >= 11.1.
-
 .. setting:: DOWNLOAD_WARNSIZE
 
 DOWNLOAD_WARNSIZE
@@ -678,8 +721,6 @@ If you want to disable it set to 0.
     This size can be set per spider using :attr:`download_warnsize`
     spider attribute and per-request using :reqmeta:`download_warnsize`
     Request.meta key.
-
-    This feature needs Twisted >= 11.1.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -796,6 +837,14 @@ The Feed Temp dir allows you to set a custom folder to save crawler
 temporary files before uploading with :ref:`FTP feed storage <topics-feed-storage-ftp>` and
 :ref:`Amazon S3 <topics-feed-storage-s3>`.
 
+.. setting:: FEED_STORAGE_GCS_ACL
+
+FEED_STORAGE_GCS_ACL
+--------------------
+
+The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
+For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
+
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -834,6 +883,15 @@ Default: ``"anonymous"``
 
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
+
+.. setting:: GCS_PROJECT_ID
+
+GCS_PROJECT_ID
+-----------------
+
+Default: ``None``
+
+The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
 .. setting:: ITEM_PIPELINES
 
@@ -1022,8 +1080,6 @@ See :ref:`topics-extensions-ref-memusage`.
 
 MEMUSAGE_CHECK_INTERVAL_SECONDS
 -------------------------------
-
-.. versionadded:: 1.1
 
 Default: ``60.0``
 
@@ -1305,8 +1361,6 @@ The class that will be used for loading spiders, which must implement the
 SPIDER_LOADER_WARN_ONLY
 -----------------------
 
-.. versionadded:: 1.3.3
-
 Default: ``False``
 
 By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
@@ -1554,3 +1608,4 @@ case to see how to enable and use them.
 .. _Amazon web services: https://aws.amazon.com/
 .. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
 .. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
+.. _Google Cloud Storage: https://cloud.google.com/storage/

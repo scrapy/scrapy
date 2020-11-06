@@ -28,8 +28,10 @@ def _to_bytes_or_none(text):
 
 
 class MailSender:
-    def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
-            smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
+    def __init__(
+        self, smtphost='localhost', mailfrom='scrapy@localhost', smtpuser=None,
+        smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False
+    ):
         self.smtphost = smtphost
         self.smtpport = smtpport
         self.smtpuser = _to_bytes_or_none(smtpuser)
@@ -41,9 +43,15 @@ class MailSender:
 
     @classmethod
     def from_settings(cls, settings):
-        return cls(settings['MAIL_HOST'], settings['MAIL_FROM'], settings['MAIL_USER'],
-            settings['MAIL_PASS'], settings.getint('MAIL_PORT'),
-            settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
+        return cls(
+            smtphost=settings['MAIL_HOST'],
+            mailfrom=settings['MAIL_FROM'],
+            smtpuser=settings['MAIL_USER'],
+            smtppass=settings['MAIL_PASS'],
+            smtpport=settings.getint('MAIL_PORT'),
+            smtptls=settings.getbool('MAIL_TLS'),
+            smtpssl=settings.getbool('MAIL_SSL'),
+        )
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None, _callback=None):
         from twisted.internet import reactor
@@ -89,9 +97,12 @@ class MailSender:
             return
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or 'utf-8'))
-        dfd.addCallbacks(self._sent_ok, self._sent_failed,
+        dfd.addCallbacks(
+            callback=self._sent_ok,
+            errback=self._sent_failed,
             callbackArgs=[to, cc, subject, len(attachs)],
-            errbackArgs=[to, cc, subject, len(attachs)])
+            errbackArgs=[to, cc, subject, len(attachs)],
+        )
         reactor.addSystemEventTrigger('before', 'shutdown', lambda: dfd)
         return dfd
 
@@ -115,9 +126,10 @@ class MailSender:
         from twisted.mail.smtp import ESMTPSenderFactory
         msg = BytesIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
-            to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
-            requireTransportSecurity=self.smtptls)
+        factory = ESMTPSenderFactory(
+            self.smtpuser, self.smtppass, self.mailfrom, to_addrs, msg, d,
+            heloFallback=True, requireAuthentication=False, requireTransportSecurity=self.smtptls,
+        )
         factory.noisy = False
 
         if self.smtpssl:
