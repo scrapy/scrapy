@@ -66,9 +66,12 @@ scrapy.Spider
        If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default) and you
        use the default Scrapy spider loader (see
        :setting:`SPIDER_LOADER_CLASS`), a non-empty name is required for the
-       spider to be discoverable by Scrapy, and the spider name must be
-       unique to one spider class; however, nothing prevents you from
-       instantiating more than one instance of the same spider.
+       spider to be discoverable by the Scrapy commands :command:`crawl`,
+       :command:`list`, and :command:`runspider`.
+
+       The spider name must be unique to one spider class. If two or more
+       spiders have the same name, Scrapy commands :command:`crawl` and
+       :command:`runspider` will only be able to run one of the spiders.
 
        If the spider scrapes a single domain, a common practice is to name the
        spider after the domain, with or without the `TLD`_. So, for example, a
@@ -831,31 +834,27 @@ Combine SitemapSpider with other sources of urls::
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
 
 
-.. _base-spiders:
-
 Base spiders
 ============
 
 Base spiders are :class:`~scrapy.spiders.Spider` subclasses that are not meant
 to be run by Scrapy. They are only meant to be subclassed to create regular
-spiders. They are one way to share code between two or more spiders.
+spiders or other base spiders. They are one way to share code between two or
+more spiders.
 
-Use the :func:`~scrapy.spiders.basespider` decorator to mark a spider class as
-a base spider, so that the default Scrapy spider loader (see
-:setting:`SPIDER_LOADER_CLASS`) ignores that spider class, hence preventing
-Scrapy from running or listing (see the :command:`list` command) that spider
-class.
+Use the :func:`~scrapy.spiders.ignore_spider` decorator to mark any base spider
+class:
 
-.. autodecorator:: scrapy.spiders.basespider
+.. autodecorator:: scrapy.spiders.ignore_spider
 
 For example::
 
-    from scrapy.spiders import basespider, Spider
+    from scrapy.spiders import ignore_spider, Spider
 
-    @basespider
+    @ignore_spider
     class MyBaseSpider(Spider):
         pass
 
 If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` (default), any
 :class:`~scrapy.spiders.Spider` subclass without a ``name`` class attribute is
-also treated as a base spider.
+also ignored.

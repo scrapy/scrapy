@@ -310,9 +310,8 @@ list
 * Syntax: ``scrapy list``
 * Requires project: *yes*
 
-List all :ref:`spiders <topics-spiders>` available in the current project,
-excluding :ref:`base spiders <base-spiders>`. The output is one spider per
-line.
+List all :ref:`spiders <topics-spiders>` available in the current project. The
+output is one spider per line.
 
 Usage example::
 

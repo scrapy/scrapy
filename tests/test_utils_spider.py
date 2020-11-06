@@ -2,7 +2,7 @@ import unittest
 
 from scrapy import Spider
 from scrapy.http import Request
-from scrapy.spiders import basespider
+from scrapy.spiders import ignore_spider
 from scrapy.item import Item
 from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
 
@@ -11,12 +11,12 @@ class SpiderA(Spider):
     pass
 
 
-@basespider
+@ignore_spider
 class SpiderB(Spider):
     pass
 
 
-@basespider
+@ignore_spider
 class SpiderC(Spider):
     name = 'c'
 

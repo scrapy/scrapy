@@ -1,7 +1,7 @@
 import re
 import logging
 
-from scrapy.spiders import basespider, Spider
+from scrapy.spiders import ignore_spider, Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, gzip_magic_number
@@ -10,7 +10,7 @@ from scrapy.utils.gz import gunzip, gzip_magic_number
 logger = logging.getLogger(__name__)
 
 
-@basespider
+@ignore_spider
 class SitemapSpider(Spider):
 
     sitemap_urls = ()

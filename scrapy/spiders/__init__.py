@@ -14,17 +14,21 @@ from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import method_is_overridden
 
 
-def basespider(decorated_cls):
-    """Marks a :class:`~scrapy.spiders.Spider` subclass as a :ref:`base spider
-    <base-spiders>`."""
+def ignore_spider(decorated_cls):
+    """Mark a :class:`~scrapy.spiders.Spider` subclass to be ignored.
+
+    The default spider loader (see :setting:`SPIDER_LOADER_CLASS`) does not
+    make marked spider classes available for the :command:`crawl`,
+    :command:`list`, and :command:`runspider` commands.
+    """
 
     @classmethod
-    def is_abstract(cls):
+    def _is_ignored(cls):
         if cls is decorated_cls:
             return True
-        return super(decorated_cls, cls).is_abstract()
+        return super(decorated_cls, cls)._is_ignored()
 
-    decorated_cls.is_abstract = is_abstract
+    decorated_cls._is_ignored = _is_ignored
     return decorated_cls
 
 
@@ -44,7 +48,7 @@ class Spider(object_ref):
             self.start_urls = []
 
     @classmethod
-    def is_abstract(cls):
+    def _is_ignored(cls):
         return cls is Spider
 
     @property

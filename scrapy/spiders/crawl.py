@@ -10,7 +10,7 @@ from typing import Sequence
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import basespider, Spider
+from scrapy.spiders import ignore_spider, Spider
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -59,7 +59,7 @@ class Rule:
         self.process_request = _get_method(self.process_request, spider)
 
 
-@basespider
+@ignore_spider
 class CrawlSpider(Spider):
 
     rules: Sequence[Rule] = ()

@@ -25,33 +25,29 @@ def iterate_spider_output(result):
     return arg_to_iter(result)
 
 
-def _is_non_base_spider(spider_class, require_name):
+def _is_ignored(spider_class, *, require_name):
     return (
-        inspect.isclass(spider_class)
-        and issubclass(spider_class, Spider)
-        and not spider_class.is_abstract()
-        and (
-            getattr(spider_class, 'name', None)
-            or not require_name
-        )
+        not inspect.isclass(spider_class)
+        or not issubclass(spider_class, Spider)
+        or spider_class._is_ignored()
+        or require_name and not getattr(spider_class, 'name', None)
     )
 
 
 def iter_spider_classes(module, *, require_name=True):
-    """Return an iterator over all :ref:`spider <topics-spiders>` classes
-    defined in the given module, excluding :ref:`base spiders <base-spiders>`.
+    """Return an iterator over all :class:`~scrapy.spiders.Spider` subclasses
+    defined in the given module, excluding those marked with
+    :func:`scrapy.spiders.ignore_spider`.
 
     If `require_name` is ``True`` (default), any
-    :class:`~scrapy.spiders.Spider` subclass with a non-empty
-    :class:`~scrapy.spiders.Spider.name` and not decorated with
-    :func:`~scrapy.spiders.basespider` is yielded.
-
-    If `require_name` is ``False``, any :class:`~scrapy.spiders.Spider`
-    subclass not decorated with :func:`~scrapy.spiders.basespider` is
-    yielded.
+    :class:`~scrapy.spiders.Spider` subclass without a non-empty
+    :class:`~scrapy.spiders.Spider.name` is also excluded.
     """
     for obj in vars(module).values():
-        if _is_non_base_spider(obj, require_name) and obj.__module__ == module.__name__:
+        if (
+            not _is_ignored(obj, require_name=require_name)
+            and obj.__module__ == module.__name__
+        ):
             yield obj
 
 
