@@ -1,9 +1,11 @@
+import warnings
 import zlib
 
-from scrapy.utils.gz import gunzip
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.exceptions import NotConfigured
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.gz import gunzip
 
 
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
@@ -28,6 +30,12 @@ class HttpCompressionMiddleware:
         try:
             return cls(stats=crawler.stats)
         except TypeError:
+            warnings.warn(
+                "HttpCompressionMiddleware subclasses must either modify "
+                "their '__init__' method to support a 'stats' parameter or "
+                "reimplement the 'from_crawler' method.",
+                ScrapyDeprecationWarning,
+            )
             result = cls()
             result.stats = crawler.stats
             return result

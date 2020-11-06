@@ -1,12 +1,13 @@
-from io import BytesIO
-from unittest import TestCase, SkipTest
-from os.path import join
 from gzip import GzipFile
+from io import BytesIO
+from os.path import join
+from unittest import TestCase, SkipTest
+from warnings import catch_warnings
 
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, ACCEPTED_ENCODINGS
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from scrapy.utils.test import get_crawler
@@ -321,3 +322,30 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(response.body, b'')
         self.assertStatsEqual('httpcompression/response_count', None)
         self.assertStatsEqual('httpcompression/response_bytes', None)
+
+
+class HttpCompressionSubclassTest(TestCase):
+
+    def test_init_missing_stats(self):
+        class HttpCompressionMiddlewareSubclass(HttpCompressionMiddleware):
+
+            def __init__(self):
+                super().__init__()
+
+        crawler = get_crawler(Spider)
+        with catch_warnings(record=True) as caught_warnings:
+            instance = HttpCompressionMiddlewareSubclass.from_crawler(crawler)
+        messages = tuple(
+            str(warning.message) for warning in caught_warnings
+            if warning.category is ScrapyDeprecationWarning
+        )
+        self.assertEqual(
+            messages,
+            (
+                (
+                    "HttpCompressionMiddleware subclasses must either modify "
+                    "their '__init__' method to support a 'stats' parameter "
+                    "or reimplement the 'from_crawler' method."
+                ),
+            )
+        )
