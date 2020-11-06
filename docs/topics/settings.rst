@@ -102,7 +102,7 @@ module and documented in the :ref:`topics-settings-ref` section.
 Import paths and classes
 ========================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.4.0
 
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
@@ -351,6 +351,11 @@ Default::
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
+
+.. caution:: Cookies set via the ``Cookie`` header are not considered by the
+    :ref:`cookies-mw`. If you need to set cookies for a request, use the
+    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
 

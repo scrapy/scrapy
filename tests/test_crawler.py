@@ -22,6 +22,8 @@ from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
 
+from tests.mockserver import MockServer
+
 
 class BaseCrawlerTest(unittest.TestCase):
 
@@ -280,9 +282,9 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 
 class ScriptRunnerMixin:
-    def run_script(self, script_name):
+    def run_script(self, script_name, *script_args):
         script_path = os.path.join(self.script_dir, script_name)
-        args = (sys.executable, script_path)
+        args = [sys.executable, script_path] + list(script_args)
         p = subprocess.Popen(args, env=get_testenv(),
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -321,10 +323,19 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
             log)
 
-    def test_ipv6_alternative_name_resolver(self):
-        log = self.run_script('alternative_name_resolver.py')
-        self.assertIn('Spider closed (finished)', log)
+    def test_caching_hostname_resolver_ipv6(self):
+        log = self.run_script("caching_hostname_resolver_ipv6.py")
+        self.assertIn("Spider closed (finished)", log)
         self.assertNotIn("twisted.internet.error.DNSLookupError", log)
+
+    def test_caching_hostname_resolver_finite_execution(self):
+        with MockServer() as mock_server:
+            http_address = mock_server.http_address.replace("0.0.0.0", "127.0.0.1")
+            log = self.run_script("caching_hostname_resolver.py", http_address)
+            self.assertIn("Spider closed (finished)", log)
+            self.assertNotIn("ERROR: Error downloading", log)
+            self.assertNotIn("TimeoutError", log)
+            self.assertNotIn("twisted.internet.error.DNSLookupError", log)
 
     def test_reactor_select(self):
         log = self.run_script("twisted_reactor_select.py")

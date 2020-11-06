@@ -121,6 +121,7 @@ def feed_complete_default_values_from_settings(feed, settings):
     out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
     out.setdefault("uri_params", settings["FEED_URI_PARAMS"])
+    out.setdefault("item_export_kwargs", dict())
     if settings["FEED_EXPORT_INDENT"] is None:
         out.setdefault("indent", None)
     else:
