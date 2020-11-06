@@ -248,6 +248,12 @@ class MiddlewareUsingCoro(ManagerTestCase):
 
     @mark.only_asyncio()
     def test_asyncdef_asyncio(self):
+        if twisted_version < Version('twisted', 18, 4, 0):
+            raise SkipTest(
+                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
+                'hangs when using Twisted versions lower than 18.4.0'
+            )
+
         resp = Response('http://example.com/index.html')
 
         class CoroMiddleware:
