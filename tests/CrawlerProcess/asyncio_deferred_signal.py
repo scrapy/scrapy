@@ -1,9 +1,9 @@
 import asyncio
 import sys
 
-import scrapy
-
+from scrapy import Spider
 from scrapy.crawler import CrawlerProcess
+from scrapy.utils.defer import deferred_from_coro
 from twisted.internet.defer import Deferred
 
 
@@ -14,13 +14,13 @@ class UppercasePipeline:
 
     def open_spider(self, spider):
         loop = asyncio.get_event_loop()
-        return Deferred.fromFuture(loop.create_task(self._open_spider(spider)))
+        return deferred_from_coro(self._open_spider(spider))
 
     def process_item(self, item, spider):
         return {"url": item["url"].upper()}
 
 
-class UrlSpider(scrapy.Spider):
+class UrlSpider(Spider):
     name = "url_spider"
     start_urls = ["data:,"]
     custom_settings = {
