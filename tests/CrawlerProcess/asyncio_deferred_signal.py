@@ -13,7 +13,6 @@ class UppercasePipeline:
         await asyncio.sleep(0.1)
 
     def open_spider(self, spider):
-        loop = asyncio.get_event_loop()
         return deferred_from_coro(self._open_spider(spider))
 
     def process_item(self, item, spider):
