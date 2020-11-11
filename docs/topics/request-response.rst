@@ -700,14 +700,14 @@ Response objects
         to represent "HTTP/1.1".
     :type protocol: :class:`tuple`
 
-    .. versionadded:: 2.X.X
-       The ``protocol`` parameter.
+    .. versionadded:: 2.0.0
+       The ``certificate`` parameter.
 
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
 
-    .. versionadded:: 2.0.0
-       The ``certificate`` parameter.
+    .. versionadded:: 2.X.X
+       The ``protocol`` parameter.
 
     .. attribute:: Response.url
 
