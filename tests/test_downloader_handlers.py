@@ -489,6 +489,13 @@ class Http11TestCase(HttpTestCase):
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
         return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, (b"HTTP", 1, 1))
+        return d
+
 
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
