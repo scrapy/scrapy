@@ -434,6 +434,11 @@ class ScrapyAgent:
     def _cb_bodydone(self, result, request, url):
         headers = Headers(result["txresponse"].headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
+        try:
+            version = result["txresponse"].version
+            protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
+        except (AttributeError, TypeError):
+            protocol = None
         response = respcls(
             url=url,
             status=int(result["txresponse"].code),
@@ -442,7 +447,7 @@ class ScrapyAgent:
             flags=result["flags"],
             certificate=result["certificate"],
             ip_address=result["ip_address"],
-            protocol=getattr(result["txresponse"], "version", None),
+            protocol=protocol,
         )
         if result.get("failure"):
             result["failure"].value.response = response
