@@ -100,8 +100,9 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body',
-                  'request', 'flags', 'certificate', 'ip_address', 'protocol']:
+        for x in [
+            "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
+        ]:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
