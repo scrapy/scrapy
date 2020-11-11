@@ -437,7 +437,7 @@ class ScrapyAgent:
         try:
             version = result["txresponse"].version
             protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError, IndexError):
             protocol = None
         response = respcls(
             url=url,
