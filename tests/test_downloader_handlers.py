@@ -360,6 +360,13 @@ class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
     download_handler_cls = HTTP10DownloadHandler
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.0")
+        return d
+
 
 class Https10TestCase(Http10TestCase):
     scheme = 'https'
@@ -493,7 +500,7 @@ class Http11TestCase(HttpTestCase):
         request = Request(self.getURL("host"), method="GET")
         d = self.download_request(request, Spider("foo"))
         d.addCallback(lambda r: r.protocol)
-        d.addCallback(self.assertEqual, (b"HTTP", 1, 1))
+        d.addCallback(self.assertEqual, "HTTP/1.1")
         return d
 
 

@@ -7,7 +7,7 @@ from twisted.internet.protocol import ClientFactory
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.responsetypes import responsetypes
 
 
@@ -110,7 +110,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)
-        return respcls(url=self._url, status=status, headers=headers, body=body)
+        return respcls(url=self._url, status=status, headers=headers, body=body, protocol=to_unicode(self.version))
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
