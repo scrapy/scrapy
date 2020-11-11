@@ -706,7 +706,7 @@ Response objects
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
 
-    .. versionadded:: 2.X.X
+    .. versionadded:: VERSION
        The ``protocol`` parameter.
 
     .. attribute:: Response.url
@@ -812,7 +812,7 @@ Response objects
 
     .. attribute:: Response.protocol
 
-        .. versionadded:: 2.X.X
+        .. versionadded:: VERSION
 
         A tuple containing information about the protocol that was used
         to download the response. Taken from the ``version`` attribute of the
