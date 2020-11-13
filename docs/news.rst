@@ -8,7 +8,7 @@ Release notes
 Scrapy 2.4.1 (2020-11-1N)
 -------------------------
 
--   Fixed overwrite support (:issue:`4845`, :issue:`4857`, :issue:`4859`)
+-   Fixed :ref:`feed exports <topics-feed-exports>` overwrite support (:issue:`4845`, :issue:`4857`, :issue:`4859`)
 
 -   Fixed the AsyncIO event loop handling, which could make code hang
     (:issue:`4855`, :issue:`4872`)
