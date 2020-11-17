@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.4.1:
 
-Scrapy 2.4.1 (2020-11-1N)
+Scrapy 2.4.1 (2020-11-17)
 -------------------------
 
 -   Fixed :ref:`feed exports <topics-feed-exports>` overwrite support (:issue:`4845`, :issue:`4857`, :issue:`4859`)
