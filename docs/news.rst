@@ -20,7 +20,7 @@ Scrapy 2.4.1 (2020-11-17)
     (:issue:`4802`, :issue:`4803`)
 
 -   Fixed the output of the :command:`genspider` command showing placeholders
-    instead of the import part of the generated spider module (:issue:`4874`)
+    instead of the import path of the generated spider module (:issue:`4874`)
 
 -   Migrated Windows CI from Azure Pipelines to GitHub Actions (:issue:`4869`,
     :issue:`4876`)
