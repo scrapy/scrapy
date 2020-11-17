@@ -101,7 +101,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
                 'LOG_LEVEL': 'INFO',
                 'LOG_FILE': log_file,
                 # settings to avoid extra warnings
-                'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.4',
+                'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
                 'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
             }
 

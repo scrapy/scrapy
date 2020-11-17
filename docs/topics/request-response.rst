@@ -371,7 +371,7 @@ To change how request fingerprints are built for your requests, use the
 REQUEST_FINGERPRINTER_CLASS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 2.4
+.. versionadded:: VERSION
 
 Default: :class:`scrapy.utils.request.RequestFingerprinter`
 
@@ -386,38 +386,38 @@ import path.
 REQUEST_FINGERPRINTER_IMPLEMENTATION
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 2.4
+.. versionadded:: VERSION
 
-Default: ``'2.3'``
+Default: ``'PREVIOUS_VERSION'``
 
 Determines which request fingerprinting algorithm is used by the default
 request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
 
 Possible values are:
 
--   ``'2.3'`` (default)
+-   ``'PREVIOUS_VERSION'`` (default)
 
     This implementation uses the same request fingerprinting algorithm as
-    Scrapy 2.3 and earlier versions.
+    Scrapy PREVIOUS_VERSION and earlier versions.
 
     Even though this is the default value for backward compatibility reasons,
     it is a deprecated value.
 
--   ``'2.4'``
+-   ``'VERSION'``
 
-    This implementation was introduced in Scrapy 2.4 to fix an issue of the
+    This implementation was introduced in Scrapy VERSION to fix an issue of the
     previous implementation.
 
     New projects should use this value. The :command:`startproject` command
     sets this value in the generated ``settings.py`` file.
 
-If you are using the default value (``'2.3'``) for this setting, and you are
+If you are using the default value (``'PREVIOUS_VERSION'``) for this setting, and you are
 using Scrapy components where changing the request fingerprinting algorithm
 would cause undesired results, you need to carefully decide when to change the
 value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
-setting to a custom request fingerprinter class that implements the 2.3 request
+setting to a custom request fingerprinter class that implements the PREVIOUS_VERSION request
 fingerprinting algorithm and does not log this warning (
-:ref:`2.3-request-fingerprinter` includes an example implementation of such a
+:ref:`PREVIOUS_VERSION-request-fingerprinter` includes an example implementation of such a
 class).
 
 Scenarios where changing the request fingerprinting algorithm may cause
@@ -426,14 +426,14 @@ undesired results include, for example, using the HTTP cache middleware (see
 Changing the request fingerprinting algorithm would invalidade the current
 cache, requiring you to redownload all requests again.
 
-Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'2.4'`` in
+Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'VERSION'`` in
 your settings to switch already to the request fingerprinting implementation
 that will be the only request fingerprinting implementation available in a
 future version of Scrapy, and remove the deprecation warning triggered by using
-the default value (``'2.3'``).
+the default value (``'PREVIOUS_VERSION'``).
 
 
-.. _2.3-request-fingerprinter:
+.. _PREVIOUS_VERSION-request-fingerprinter:
 .. _custom-request-fingerprinter:
 
 Writing your own request fingerprinter
@@ -541,8 +541,8 @@ when available, and then falls back to
                 return request.meta['fingerprint']
             return fingerprint(request)
 
-If you need to reproduce the same fingerprinting algorithm as Scrapy 2.3
-without using the deprecated ``'2.3'`` value of the
+If you need to reproduce the same fingerprinting algorithm as Scrapy PREVIOUS_VERSION
+without using the deprecated ``'PREVIOUS_VERSION'`` value of the
 :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` setting, use the following
 request fingerprinter::
 
