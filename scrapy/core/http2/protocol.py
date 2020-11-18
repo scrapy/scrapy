@@ -349,10 +349,16 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         ])
 
     def data_received(self, event: DataReceived) -> None:
-        self.streams[event.stream_id].receive_data(event.data, event.flow_controlled_length)
+        try:
+            self.streams[event.stream_id].receive_data(event.data, event.flow_controlled_length)
+        except KeyError:
+            logger.debug(f'Ignoring server-initiated event {event}')
 
     def response_received(self, event: ResponseReceived) -> None:
-        self.streams[event.stream_id].receive_headers(event.headers)
+        try:
+            self.streams[event.stream_id].receive_headers(event.headers)
+        except KeyError:
+            logger.debug(f'Ignoring server-initiated event {event}')
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata['settings_acknowledged'] = True
@@ -365,12 +371,20 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
 
     def stream_ended(self, event: StreamEnded) -> None:
-        stream = self.pop_stream(event.stream_id)
-        stream.close(StreamCloseReason.ENDED, from_protocol=True)
+        try:
+            stream = self.pop_stream(event.stream_id)
+        except KeyError:
+            logger.debug(f'Ignoring server-initiated event {event}')
+        else:
+            stream.close(StreamCloseReason.ENDED, from_protocol=True)
 
     def stream_reset(self, event: StreamReset) -> None:
-        stream = self.pop_stream(event.stream_id)
-        stream.close(StreamCloseReason.RESET, from_protocol=True)
+        try:
+            stream = self.pop_stream(event.stream_id)
+        except KeyError:
+            logger.debug(f'Ignoring server-initiated event {event}')
+        else:
+            stream.close(StreamCloseReason.RESET, from_protocol=True)
 
     def window_updated(self, event: WindowUpdated) -> None:
         if event.stream_id != 0:
