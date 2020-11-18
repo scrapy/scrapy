@@ -13,7 +13,7 @@ from h2.events import (
     SettingsAcknowledged, StreamEnded, StreamReset, UnknownFrameReceived,
     WindowUpdated
 )
-from h2.exceptions import H2Error
+from h2.exceptions import FrameTooLargeError, H2Error
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
@@ -261,6 +261,13 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             events = self.conn.receive_data(data)
             self._handle_events(events)
         except H2Error as e:
+            if isinstance(e, FrameTooLargeError):
+                # hyper-h2 does not drop the connection in this scenario, we
+                # need to abort the connection manually.
+                self._conn_lost_errors += [e]
+                self.transport.abortConnection()
+                return
+
             # Save this error as ultimately the connection will be dropped
             # internally by hyper-h2. Saved error will be passed to all the streams
             # closed with the connection.
