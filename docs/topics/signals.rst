@@ -400,6 +400,33 @@ bytes_received
     exception. Please refer to the :ref:`topics-stop-response-download` topic
     for additional information and examples.
 
+headers_received
+~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+.. signal:: headers_received
+.. function:: headers_received(headers, request, spider)
+
+    Sent by the HTTP 1.1 and S3 download handlers when the response headers are
+    available for a given request, before downloading any additional content.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param headers: the headers received by the download handler
+    :type headers: :class:`scrapy.http.headers.Headers` object
+
+    :param request: the request that generated the download
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider associated with the response
+    :type spider: :class:`~scrapy.spiders.Spider` object
+
+.. note:: Handlers of this signal can stop the download of a response while it
+    is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`
+    exception. Please refer to the :ref:`topics-stop-response-download` topic
+    for additional information and examples.
+
 Response signals
 ----------------
 
