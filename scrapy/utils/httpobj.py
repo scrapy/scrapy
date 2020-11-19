@@ -1,13 +1,16 @@
 """Helper functions for scrapy.http objects (Request, Response)"""
 
-import weakref
-from urllib.parse import urlparse
+from typing import Union
+from urllib.parse import urlparse, ParseResult
+from weakref import WeakKeyDictionary
+
+from scrapy.http import Request, Response
 
 
-_urlparse_cache = weakref.WeakKeyDictionary()
+_urlparse_cache: "WeakKeyDictionary[Union[Request, Response], ParseResult]" = WeakKeyDictionary()
 
 
-def urlparse_cached(request_or_response):
+def urlparse_cached(request_or_response: Union[Request, Response]) -> ParseResult:
     """Return urlparse.urlparse caching the result, where the argument can be a
     Request or Response object
     """
