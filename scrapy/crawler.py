@@ -1,3 +1,4 @@
+import inspect
 import logging
 import pprint
 import signal
@@ -21,6 +22,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
     get_scrapy_root_handler,
@@ -85,14 +87,31 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
+            start_requests = yield self.call_start_requests()
+            new_queue_behavior = self.is_start_requests_async(self.spider.start_requests)
+            yield self.engine.open_spider(self.spider, start_requests, new_queue_behavior=new_queue_behavior)
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
             self.crawling = False
             if self.engine is not None:
                 yield self.engine.close()
             raise
+
+    def call_start_requests(self):
+        if inspect.isasyncgenfunction(self.spider.start_requests):
+            return self.spider.start_requests().__aiter__()
+        elif inspect.iscoroutinefunction(self.spider.start_requests):
+            return deferred_from_coro(self.spider.start_requests())
+        else:
+            return iter(self.spider.start_requests())
+
+    @staticmethod
+    def is_start_requests_async(start_requests_function):
+        if inspect.isasyncgenfunction(start_requests_function):
+            return True
+        if inspect.iscoroutinefunction(start_requests_function):
+            return True
+        return False
 
     def _create_spider(self, *args, **kwargs):
         return self.spidercls.from_crawler(self, *args, **kwargs)

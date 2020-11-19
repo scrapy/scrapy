@@ -169,6 +169,14 @@ scrapy.Spider
                    # each of them, with another callback
                    pass
 
+       .. note::
+           .. versionchanged:: 2.x
+
+           By default the requests produced by :meth:`start_requests` can be
+           processed much later than expected. For :meth:`start_requests`
+           declared as an ``async def`` function a better behavior is used. See
+           :ref:`async-start_requests-queue` for details.
+
    .. method:: parse(response)
 
        This is the default callback used by Scrapy to process downloaded

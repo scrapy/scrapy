@@ -37,7 +37,100 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     methods of
     :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
 
+-   The
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests`
+    method of :ref:`spider middlewares <custom-spider-middleware>`. See
+    :ref:`async-start_requests` below for details.
+
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
+
+-   The :meth:`~scrapy.spiders.Spider.start_requests` spider method.
+
+.. _async-start_requests:
+
+Asynchronous start_requests and spider middlewares
+==================================================
+
+.. versionadded:: 2.3
+
+The :meth:`~scrapy.spiders.Spider.start_requests` spider method can be an
+asynchronous generator::
+
+    async def start_requests():
+        # ...
+        yield scrapy.Request(...)
+        # ...
+
+In this case all spider middlewares used with this spider that have the
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests`
+method must support this: if they receive an asynchronous iterable, they must
+return one as well. On the other hand, if they receive a normal iterable, they
+shouldn't break and ideally should return a normal iterable too. There can be
+several possible implementations of this.
+
+First, such universal :meth:`process_start_requests` can be an asynchronous
+generator itself, and so it will always convert a normal iterable to an
+asynchronous one. Because a result of a middleware method is passed to the same
+method of the next middleware, it's only possible to mix middlewares with
+synchronous and asynchronous :meth:`process_start_requests` if all synchronous
+ones are called first.
+
+.. autofunction:: scrapy.utils.asyncgen.as_async_generator
+
+Here is an example of a universal middleware using this approach::
+
+    from scrapy.utils.asyncgen import as_async_generator
+
+    class ProcessStartRequestsAsyncGenMiddleware:
+        async def process_start_requests(self, start_requests, spider):
+            async for req in as_async_generator(start_requests):
+                # ... do something with req
+                yield req
+
+If this method includes asynchronous code, that code will work even with
+synchronous :meth:`~scrapy.spiders.Spider.start_requests`.
+
+Another option is to make separate methods for normal and asynchronous
+iterables and choose one at run time::
+
+    from inspect import isasyncgen
+
+    class ProcessStartRequestsAsyncGenMiddleware:
+        def _normal_process_start_requests(self, start_requests, spider):
+            # ... do something with normal start_requests
+
+        async def _async_process_start_requests(self, start_requests, spider):
+            # ... do something with async start_requests
+
+        def process_start_requests(self, start_requests, spider):
+            if isasyncgen(start_requests):
+                return self._async_process_start_requests(start_requests, spider)
+            else:
+                return self._normal_process_start_requests(start_requests, spider)
+
+
+.. _async-start_requests-queue:
+
+Queue behavior with asynchronous start_requests
+===============================================
+
+.. versionadded:: 2.x
+
+By default the requests produced by
+:meth:`~scrapy.spiders.Spider.start_requests` don't follow the usual request
+priorities: they are only scheduled while the downloader queue is empty. In
+practice this often means that after some initial requests are scheduled (the
+number depends on the spider concurrency settings), only the requests produced
+by callbacks are scheduled. This behavior is inconvenient, confusing and
+requires workarounds (such as calling ``self.crawler.engine.schedule(request)``
+directly), but changing it would be backwards-incompatible.
+
+A better behavior, which should treat requests from
+:meth:`~scrapy.spiders.Spider.start_requests` in the same way as other
+requests, is enabled when :meth:`~scrapy.spiders.Spider.start_requests` is an
+async function (declared using ``async def``). It doesn't need to contain
+``await`` for this to work, so if you want the new queue behavior, you can just
+change ``def`` to ``async def``.
 
 Usage
 =====
@@ -85,7 +178,7 @@ This means you can use many useful Python libraries providing such code::
         async def parse_with_asyncio(self, response):
             async with aiohttp.ClientSession() as session:
                 async with session.get('https://additional.url') as additional_response:
-                    additional_data = await r.text()
+                    additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
@@ -94,8 +187,8 @@ This means you can use many useful Python libraries providing such code::
 
 Common use cases for asynchronous code include:
 
-* requesting data from websites, databases and other services (in callbacks,
-  pipelines and middlewares);
+* requesting data from websites, databases and other services (in
+  :meth:`~scrapy.spiders.Spider.start_requests`, callbacks, pipelines and middlewares);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);

@@ -9,7 +9,7 @@ module with the ``runserver`` argument::
 
     python test_engine.py runserver
 """
-
+import asyncio
 import os
 import re
 import sys
@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import attr
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
+from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer, reactor
 from twisted.trial import unittest
@@ -115,6 +116,24 @@ class ItemZeroDivisionErrorSpider(TestSpider):
             "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
         }
     }
+
+
+class StartRequestsAsyncDefSpider(TestSpider):
+    async def start_requests(self):
+        return [Request(url, dont_filter=True) for url in self.start_urls]
+
+
+class StartRequestsAsyncGenSpider(TestSpider):
+    async def start_requests(self):
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
+
+
+class StartRequestsAsyncGenAsyncioSpider(TestSpider):
+    async def start_requests(self):
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
+            await asyncio.sleep(1)
 
 
 def start_test_site(debug=False):
@@ -259,6 +278,25 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
+
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncdef(self):
+        self.run = CrawlerRun(StartRequestsAsyncDefSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
+
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncgen(self):
+        self.run = CrawlerRun(StartRequestsAsyncGenSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_crawler_startrequests_asyncgen_asyncio(self):
+        self.run = CrawlerRun(StartRequestsAsyncGenAsyncioSpider)
+        yield self.run.run()
+        self._assert_visited_urls()
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
