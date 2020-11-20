@@ -141,17 +141,16 @@ class DownloaderAwarePriorityQueue:
 
     def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
         if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
-            raise ValueError('"%s" does not support CONCURRENT_REQUESTS_PER_IP'
-                             % (self.__class__,))
+            raise ValueError(f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP')
 
         if slot_startprios and not isinstance(slot_startprios, dict):
             raise ValueError("DownloaderAwarePriorityQueue accepts "
-                             "``slot_startprios`` as a dict; %r instance "
+                             "``slot_startprios`` as a dict; "
+                             f"{slot_startprios.__class__!r} instance "
                              "is passed. Most likely, it means the state is"
                              "created by an incompatible priority queue. "
                              "Only a crawl started with the same priority "
-                             "queue class can be resumed." %
-                             slot_startprios.__class__)
+                             "queue class can be resumed.")
 
         self._downloader_interface = DownloaderInterface(crawler)
         self.downstream_queue_cls = downstream_queue_cls

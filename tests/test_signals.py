@@ -13,7 +13,7 @@ class ItemSpider(Spider):
 
     def start_requests(self):
         for index in range(10):
-            yield Request(self.mockserver.url('/status?n=200&id=%d' % index),
+            yield Request(self.mockserver.url(f'/status?n=200&id={index}'),
                           meta={'index': index})
 
     def parse(self, response):

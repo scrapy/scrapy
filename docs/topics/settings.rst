@@ -98,6 +98,32 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+
+Import paths and classes
+========================
+
+.. versionadded:: 2.4.0
+
+When a setting references a callable object to be imported by Scrapy, such as a
+class or a function, there are two different ways you can specify that object:
+
+-   As a string containing the import path of that object
+
+-   As the object itself
+
+For example::
+
+   from mybot.pipelines.validate import ValidateMyItem
+   ITEM_PIPELINES = {
+       # passing the classname...
+       ValidateMyItem: 300,
+       # ...equals passing the class path
+       'mybot.pipelines.validate.ValidateMyItem': 300,
+   }
+
+.. note:: Passing non-callable objects is not supported.
+
+
 How to access settings
 ======================
 
@@ -110,7 +136,7 @@ In a spider, the settings are available through ``self.settings``::
         start_urls = ['http://example.com']
 
         def parse(self, response):
-            print("Existing settings: %s" % self.settings.attributes.keys())
+            print(f"Existing settings: {self.settings.attributes.keys()}")
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider
@@ -216,6 +242,32 @@ Default: ``None``
 
 The name of the region associated with the AWS client.
 
+.. setting:: ASYNCIO_EVENT_LOOP
+
+ASYNCIO_EVENT_LOOP
+------------------
+
+Default: ``None``
+
+Import path of a given ``asyncio`` event loop class.
+
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the
+asyncio event loop to be used with it. Set the setting to the import path of the
+desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
+event loop will be used.
+
+If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
+function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop
+class to be used.
+
+Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
+
+.. caution:: Please be aware that, when using a non-default event loop
+    (either defined via :setting:`ASYNCIO_EVENT_LOOP` or installed with
+    :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
+    :func:`asyncio.set_event_loop`, which will set the specified event loop
+    as the current loop for the current OS thread.
+
 .. setting:: BOT_NAME
 
 BOT_NAME
@@ -305,6 +357,11 @@ Default::
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
+
+.. caution:: Cookies set via the ``Cookie`` header are not considered by the
+    :ref:`cookies-mw`. If you need to set cookies for a request, use the
+    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
 
@@ -1030,8 +1087,6 @@ See :ref:`topics-extensions-ref-memusage`.
 MEMUSAGE_CHECK_INTERVAL_SECONDS
 -------------------------------
 
-.. versionadded:: 1.1
-
 Default: ``60.0``
 
 Scope: ``scrapy.extensions.memusage``
@@ -1311,8 +1366,6 @@ The class that will be used for loading spiders, which must implement the
 
 SPIDER_LOADER_WARN_ONLY
 -----------------------
-
-.. versionadded:: 1.3.3
 
 Default: ``False``
 

@@ -3,8 +3,8 @@ import gc
 import operator
 import platform
 import unittest
+from datetime import datetime
 from itertools import count
-from sys import version_info
 from warnings import catch_warnings
 
 from scrapy.utils.python import (
@@ -179,6 +179,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         def f2(a, b=None, c=None):
             pass
 
+        def f3(a, b=None, *, c=None):
+            pass
+
         class A:
             def __init__(self, a, b, c):
                 pass
@@ -199,6 +202,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         self.assertEqual(get_func_args(f1), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(f2), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(f3), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(A), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(a.method), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(partial_f1), ['b', 'c'])
@@ -212,15 +216,15 @@ class UtilsPythonTestCase(unittest.TestCase):
             self.assertEqual(get_func_args(str.split), [])
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
-        else:
-            self.assertEqual(
-                get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
-            self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
-            if version_info < (3, 6):
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
-            else:
+        elif platform.python_implementation() == 'PyPy':
+            self.assertEqual(get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
+            self.assertEqual(get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
+
+            build_date = datetime.strptime(platform.python_build()[1], '%b %d %Y')
+            if build_date >= datetime(2020, 4, 7):  # PyPy 3.6-v7.3.1
                 self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
+            else:
+                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])

@@ -41,9 +41,7 @@ def format_live_refs(ignore=NoneType):
         if issubclass(cls, ignore):
             continue
         oldest = min(wdict.values())
-        s += "%-30s %6d   oldest: %ds ago\n" % (
-            cls.__name__, len(wdict), now - oldest
-        )
+        s += f"{cls.__name__:<30} {len(wdict):6}   oldest: {int(now - oldest)}s ago\n"
     return s
 
 

@@ -22,6 +22,8 @@ from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
 
+from tests.mockserver import MockServer
+
 
 class BaseCrawlerTest(unittest.TestCase):
 
@@ -142,7 +144,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
 
     def test_spider_manager_verify_interface(self):
         settings = Settings({
-            'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
+            'SPIDER_LOADER_CLASS': SpiderLoaderWithWrongInterface,
         })
         with warnings.catch_warnings(record=True) as w:
             self.assertRaises(AttributeError, CrawlerRunner, settings)
@@ -280,9 +282,9 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 
 class ScriptRunnerMixin:
-    def run_script(self, script_name):
+    def run_script(self, script_name, *script_args):
         script_path = os.path.join(self.script_dir, script_name)
-        args = (sys.executable, script_path)
+        args = [sys.executable, script_path] + list(script_args)
         p = subprocess.Popen(args, env=get_testenv(),
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -321,10 +323,19 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
             log)
 
-    def test_ipv6_alternative_name_resolver(self):
-        log = self.run_script('alternative_name_resolver.py')
-        self.assertIn('Spider closed (finished)', log)
+    def test_caching_hostname_resolver_ipv6(self):
+        log = self.run_script("caching_hostname_resolver_ipv6.py")
+        self.assertIn("Spider closed (finished)", log)
         self.assertNotIn("twisted.internet.error.DNSLookupError", log)
+
+    def test_caching_hostname_resolver_finite_execution(self):
+        with MockServer() as mock_server:
+            http_address = mock_server.http_address.replace("0.0.0.0", "127.0.0.1")
+            log = self.run_script("caching_hostname_resolver.py", http_address)
+            self.assertIn("Spider closed (finished)", log)
+            self.assertNotIn("ERROR: Error downloading", log)
+            self.assertNotIn("TimeoutError", log)
+            self.assertNotIn("twisted.internet.error.DNSLookupError", log)
 
     def test_reactor_select(self):
         log = self.run_script("twisted_reactor_select.py")
@@ -344,6 +355,33 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    def test_custom_loop_asyncio(self):
+        log = self.run_script("asyncio_custom_loop.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
+
+    @mark.skipif(sys.implementation.name == "pypy", reason="uvloop does not support pypy properly")
+    @mark.skipif(platform.system() == "Windows", reason="uvloop does not support Windows")
+    def test_custom_loop_asyncio_deferred_signal(self):
+        log = self.run_script("asyncio_deferred_signal.py", "uvloop.Loop")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
+        self.assertIn("async pipeline opened!", log)
+
+    # https://twistedmatrix.com/trac/ticket/9766
+    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
+            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
+    def test_default_loop_asyncio_deferred_signal(self):
+        log = self.run_script("asyncio_deferred_signal.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+        self.assertNotIn("Using asyncio event loop: uvloop.Loop", log)
+        self.assertIn("async pipeline opened!", log)
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):

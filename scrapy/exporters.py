@@ -40,7 +40,7 @@ class BaseItemExporter:
         self.export_empty_fields = options.pop('export_empty_fields', False)
         self.indent = options.pop('indent', None)
         if not dont_fail and options:
-            raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
+            raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
     def export_item(self, item):
         raise NotImplementedError
@@ -208,7 +208,7 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
+    def __init__(self, file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
@@ -218,7 +218,8 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline='',  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            errors=errors,
         )
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True

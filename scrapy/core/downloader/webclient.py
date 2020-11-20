@@ -1,9 +1,9 @@
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
 
-from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
-from twisted.internet import defer
+from twisted.internet import defer, reactor
+from twisted.internet.protocol import ClientFactory
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
@@ -88,21 +88,37 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.stopProducing()
 
         self.factory.noPage(
-            defer.TimeoutError("Getting %s took longer than %s seconds."
-                               % (self.factory.url, self.factory.timeout)))
+            defer.TimeoutError(f"Getting {self.factory.url} took longer "
+                               f"than {self.factory.timeout} seconds."))
 
 
-class ScrapyHTTPClientFactory(HTTPClientFactory):
-    """Scrapy implementation of the HTTPClientFactory overwriting the
-    setUrl method to make use of our Url object that cache the parse
-    result.
-    """
+# This class used to inherit from Twisted’s
+# twisted.web.client.HTTPClientFactory. When that class was deprecated in
+# Twisted (https://github.com/twisted/twisted/pull/643), we merged its
+# non-overriden code into this class.
+class ScrapyHTTPClientFactory(ClientFactory):
 
     protocol = ScrapyHTTPPageGetter
+
     waiting = 1
     noisy = False
     followRedirect = False
     afterFoundGet = False
+
+    def _build_response(self, body, request):
+        request.meta['download_latency'] = self.headers_time - self.start_time
+        status = int(self.status)
+        headers = Headers(self.response_headers)
+        respcls = responsetypes.from_args(headers=headers, url=self._url)
+        return respcls(url=self._url, status=status, headers=headers, body=body)
+
+    def _set_connection_attributes(self, request):
+        parsed = urlparse_cached(request)
+        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(parsed)
+        proxy = request.meta.get('proxy')
+        if proxy:
+            self.scheme, _, self.host, self.port, _ = _parse(proxy)
+            self.path = self.url
 
     def __init__(self, request, timeout=180):
         self._url = urldefrag(request.url)[0]
@@ -138,21 +154,59 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         elif self.method == b'POST':
             self.headers['Content-Length'] = 0
 
-    def _build_response(self, body, request):
-        request.meta['download_latency'] = self.headers_time - self.start_time
-        status = int(self.status)
-        headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self._url)
-        return respcls(url=self._url, status=status, headers=headers, body=body)
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.url}>"
 
-    def _set_connection_attributes(self, request):
-        parsed = urlparse_cached(request)
-        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(parsed)
-        proxy = request.meta.get('proxy')
-        if proxy:
-            self.scheme, _, self.host, self.port, _ = _parse(proxy)
-            self.path = self.url
+    def _cancelTimeout(self, result, timeoutCall):
+        if timeoutCall.active():
+            timeoutCall.cancel()
+        return result
+
+    def buildProtocol(self, addr):
+        p = ClientFactory.buildProtocol(self, addr)
+        p.followRedirect = self.followRedirect
+        p.afterFoundGet = self.afterFoundGet
+        if self.timeout:
+            timeoutCall = reactor.callLater(self.timeout, p.timeout)
+            self.deferred.addBoth(self._cancelTimeout, timeoutCall)
+        return p
 
     def gotHeaders(self, headers):
         self.headers_time = time()
         self.response_headers = headers
+
+    def gotStatus(self, version, status, message):
+        """
+        Set the status of the request on us.
+        @param version: The HTTP version.
+        @type version: L{bytes}
+        @param status: The HTTP status code, an integer represented as a
+            bytestring.
+        @type status: L{bytes}
+        @param message: The HTTP status message.
+        @type message: L{bytes}
+        """
+        self.version, self.status, self.message = version, status, message
+
+    def page(self, page):
+        if self.waiting:
+            self.waiting = 0
+            self.deferred.callback(page)
+
+    def noPage(self, reason):
+        if self.waiting:
+            self.waiting = 0
+            self.deferred.errback(reason)
+
+    def clientConnectionFailed(self, _, reason):
+        """
+        When a connection attempt fails, the request cannot be issued.  If no
+        result has yet been provided to the result Deferred, provide the
+        connection failure reason as an error result.
+        """
+        if self.waiting:
+            self.waiting = 0
+            # If the connection attempt failed, there is nothing more to
+            # disconnect, so just fire that Deferred now.
+            self._disconnectedDeferred.callback(None)
+            self.deferred.errback(reason)

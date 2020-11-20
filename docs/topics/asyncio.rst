@@ -1,3 +1,5 @@
+.. _using-asyncio:
+
 =======
 asyncio
 =======
@@ -26,3 +28,15 @@ reactor manually. You can do that using
 :func:`~scrapy.utils.reactor.install_reactor`::
 
     install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
+
+.. _using-custom-loops:
+
+Using custom asyncio loops
+==========================    
+
+You can also use custom asyncio event loops with the asyncio reactor. Set the
+:setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event loop class to
+use it instead of the default asyncio event loop.
+
+
+

@@ -15,7 +15,7 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 Both pipelines implement these features:
 
 * Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, Amazon S3 bucket,
+* Specifying where to store the media (filesystem directory, FTP server, Amazon S3 bucket,
   Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
@@ -56,6 +56,8 @@ this:
    error will be logged and the file won't be present in the ``files`` field.
 
 
+.. _images-pipeline:
+
 Using the Images Pipeline
 =========================
 
@@ -68,14 +70,10 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline uses `Pillow`_ for thumbnailing and normalizing images to
-JPEG/RGB format, so you need to install this library in order to use it.
-`Python Imaging Library`_ (PIL) should also work in most cases, but it is known
-to cause troubles in some setups, so we recommend to use `Pillow`_ instead of
-PIL.
+The Images Pipeline requires Pillow_ 4.0.0 or greater. It is used for
+thumbnailing and normalizing images to JPEG/RGB format.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
-.. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 
 .. _topics-media-pipeline-enabling:
@@ -164,14 +162,17 @@ FTP supports two different connection modes: active or passive. Scrapy uses
 the passive connection mode by default. To use the active connection mode instead,
 set the :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
+.. _media-pipelines-s3:
+
 Amazon S3 storage
 -----------------
 
 .. setting:: FILES_STORE_S3_ACL
 .. setting:: IMAGES_STORE_S3_ACL
 
-:setting:`FILES_STORE` and :setting:`IMAGES_STORE` can represent an Amazon S3
-bucket. Scrapy will automatically upload the files to the bucket.
+If botocore_ >= 1.4.87 is installed, :setting:`FILES_STORE` and
+:setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
+automatically upload the files to the bucket.
 
 For example, this is a valid :setting:`IMAGES_STORE` value::
 
@@ -187,8 +188,9 @@ policy::
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
-Because Scrapy uses ``botocore`` internally you can also use other S3-like storages. Storages like
-self-hosted `Minio`_ or `s3.scality`_. All you need to do is set endpoint option in you Scrapy settings::
+You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
+`s3.scality`_. All you need to do is set endpoint option in you Scrapy
+settings::
 
     AWS_ENDPOINT_URL = 'http://minio.example.com:9000'
 
@@ -197,9 +199,10 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_USE_SSL = False # or True (None by default)
     AWS_VERIFY = False # or True (None by default)
 
+.. _botocore: https://github.com/boto/botocore
+.. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
 .. _s3.scality: https://s3.scality.com/
-.. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
 
 .. _media-pipeline-gcs:
@@ -412,15 +415,16 @@ See here the methods that you can override in your custom Files Pipeline:
 
 .. class:: FilesPipeline
 
-   .. method:: file_path(self, request, response=None, info=None)
+   .. method:: file_path(self, request, response=None, info=None, *, item=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
       :class:`response <scrapy.http.Response>`.
 
       In addition to ``response``, this method receives the original
-      :class:`request <scrapy.Request>` and
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+      :class:`request <scrapy.Request>`,
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`item <scrapy.item.Item>`
 
       You can override this method to customize the download path of each file.
 
@@ -436,11 +440,17 @@ See here the methods that you can override in your custom Files Pipeline:
 
         class MyFilesPipeline(FilesPipeline):
 
-            def file_path(self, request, response=None, info=None):
+            def file_path(self, request, response=None, info=None, *, item=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
+      Similarly, you can use the ``item`` to determine the file path based on some item 
+      property.
+      
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
+
+      .. versionadded:: 2.4
+         The *item* parameter.
 
    .. method:: FilesPipeline.get_media_requests(item, info)
 
@@ -544,15 +554,16 @@ See here the methods that you can override in your custom Images Pipeline:
     The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
     customizing the field names and adding custom behavior for images.
 
-   .. method:: file_path(self, request, response=None, info=None)
+   .. method:: file_path(self, request, response=None, info=None, *, item=None)
 
       This method is called once per downloaded item. It returns the
       download path of the file originating from the specified
       :class:`response <scrapy.http.Response>`.
 
       In addition to ``response``, this method receives the original
-      :class:`request <scrapy.Request>` and
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>`.
+      :class:`request <scrapy.Request>`,
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`item <scrapy.item.Item>`
 
       You can override this method to customize the download path of each file.
 
@@ -568,11 +579,17 @@ See here the methods that you can override in your custom Images Pipeline:
 
         class MyImagesPipeline(ImagesPipeline):
 
-            def file_path(self, request, response=None, info=None):
+            def file_path(self, request, response=None, info=None, *, item=None):
                 return 'files/' + os.path.basename(urlparse(request.url).path)
 
+      Similarly, you can use the ``item`` to determine the file path based on some item 
+      property.
+      
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
+
+      .. versionadded:: 2.4
+         The *item* parameter.
 
    .. method:: ImagesPipeline.get_media_requests(item, info)
 

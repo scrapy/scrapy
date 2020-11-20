@@ -143,13 +143,20 @@ def log_scrapy_info(settings):
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
     versions = [
-        "%s %s" % (name, version)
+        f"{name} {version}"
         for name, version in scrapy_components_versions()
         if name != "Scrapy"
     ]
     logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
     from twisted.internet import reactor
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
+    from twisted.internet import asyncioreactor
+    if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
+        logger.debug(
+            "Using asyncio event loop: %s.%s",
+            reactor._asyncioEventloop.__module__,
+            reactor._asyncioEventloop.__class__.__name__,
+        )
 
 
 class StreamLogger:
@@ -180,7 +187,7 @@ class LogCounterHandler(logging.Handler):
         self.crawler = crawler
 
     def emit(self, record):
-        sname = 'log_count/{}'.format(record.levelname)
+        sname = f'log_count/{record.levelname}'
         self.crawler.stats.inc_value(sname)
 
 

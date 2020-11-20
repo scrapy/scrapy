@@ -180,9 +180,9 @@ class CrawlerRunner:
         :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
             :class:`~scrapy.spiders.Spider` subclass or string
 
-        :param list args: arguments to initialize the spider
+        :param args: arguments to initialize the spider
 
-        :param dict kwargs: keyword arguments to initialize the spider
+        :param kwargs: keyword arguments to initialize the spider
         """
         if isinstance(crawler_or_spidercls, Spider):
             raise ValueError(
@@ -307,7 +307,7 @@ class CrawlerProcess(CrawlerRunner):
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.
 
-        :param boolean stop_after_crawl: stop or not the reactor when all
+        :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
         """
         from twisted.internet import reactor
@@ -340,5 +340,5 @@ class CrawlerProcess(CrawlerRunner):
 
     def _handle_twisted_reactor(self):
         if self.settings.get("TWISTED_REACTOR"):
-            install_reactor(self.settings["TWISTED_REACTOR"])
+            install_reactor(self.settings["TWISTED_REACTOR"], self.settings["ASYNCIO_EVENT_LOOP"])
         super()._handle_twisted_reactor()

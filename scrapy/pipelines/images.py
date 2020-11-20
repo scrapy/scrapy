@@ -103,12 +103,12 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
-    def file_downloaded(self, response, request, info):
-        return self.image_downloaded(response, request, info)
+    def file_downloaded(self, response, request, info, *, item=None):
+        return self.image_downloaded(response, request, info, item=item)
 
-    def image_downloaded(self, response, request, info):
+    def image_downloaded(self, response, request, info, *, item=None):
         checksum = None
-        for path, image, buf in self.get_images(response, request, info):
+        for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
@@ -119,14 +119,15 @@ class ImagesPipeline(FilesPipeline):
                 headers={'Content-Type': 'image/jpeg'})
         return checksum
 
-    def get_images(self, response, request, info):
-        path = self.file_path(request, response=response, info=info)
+    def get_images(self, response, request, info, *, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
         if width < self.min_width or height < self.min_height:
-            raise ImageException("Image too small (%dx%d < %dx%d)" %
-                                 (width, height, self.min_width, self.min_height))
+            raise ImageException("Image too small "
+                                 f"({width}x{height} < "
+                                 f"{self.min_width}x{self.min_height})")
 
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
@@ -166,10 +167,10 @@ class ImagesPipeline(FilesPipeline):
             ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
         return item
 
-    def file_path(self, request, response=None, info=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        return 'full/%s.jpg' % (image_guid)
+        return f'full/{image_guid}.jpg'
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
+        return f'thumbs/{thumb_id}/{thumb_guid}.jpg'

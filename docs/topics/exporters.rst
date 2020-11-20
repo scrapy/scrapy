@@ -57,7 +57,7 @@ value of one of their fields::
             adapter = ItemAdapter(item)
             year = adapter['year']
             if year not in self.year_to_exporter:
-                f = open('{}.xml'.format(year), 'wb')
+                f = open(f'{year}.xml', 'wb')
                 exporter = XmlItemExporter(f)
                 exporter.start_exporting()
                 self.year_to_exporter[year] = exporter
@@ -98,7 +98,7 @@ Example::
     import scrapy
 
     def serialize_price(value):
-        return '$ %s' % str(value)
+        return f'$ {str(value)}'
 
     class Product(scrapy.Item):
         name = scrapy.Field()
@@ -122,7 +122,7 @@ Example::
 
           def serialize_field(self, field, name, value):
               if field == 'price':
-                  return '$ %s' % str(value)
+                  return f'$ {str(value)}'
               return super(Product, self).serialize_field(field, name, value)
 
 .. _topics-exporters-reference:
@@ -308,7 +308,7 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', **kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs)
 
    Exports items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
@@ -321,11 +321,16 @@ CsvItemExporter
    :param include_headers_line: If enabled, makes the exporter output a header
       line with the field names taken from
       :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
-   :type include_headers_line: boolean
+   :type include_headers_line: bool
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
    :type include_headers_line: str
+
+   :param errors: The optional string that specifies how encoding and decoding
+      errors are to be handled. For more information see
+      :class:`io.TextIOWrapper`.
+   :type errors: str
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the
