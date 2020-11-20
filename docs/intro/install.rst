@@ -265,7 +265,6 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
 .. _setuptools: https://pypi.python.org/pypi/setuptools
-.. _ArchlinuxScrapyPackage: https://www.archlinux.org/packages/community-staging/any/scrapy/
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
 .. _Scrapinghub: https://scrapinghub.com
