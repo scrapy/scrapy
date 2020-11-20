@@ -72,7 +72,7 @@ please refer to their respective installation instructions:
 * `cryptography installation`_
 
 .. _lxml installation: https://lxml.de/installation.html
-.. _cryptography installation: https://cryptography.io/en/latest/installation/
+.. _cryptography installation: https://cryptography.io/en/latest/installation.html
 
 
 .. _intro-using-virtualenv:
@@ -265,7 +265,7 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
 .. _setuptools: https://pypi.python.org/pypi/setuptools
-.. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
+.. _ArchlinuxScrapyPackage: https://www.archlinux.org/packages/community-staging/any/scrapy/
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
 .. _Scrapinghub: https://scrapinghub.com
