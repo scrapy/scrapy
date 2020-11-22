@@ -50,8 +50,9 @@ class BuildComponentListTest(unittest.TestCase):
 
     def test_duplicate_components_in_list(self):
         duplicate_list = ['a', 'b', 'a']
-        self.assertRaises(ValueError, build_component_list, None,
-                          duplicate_list, convert=lambda x: x)
+        with self.assertRaises(ValueError) as cm:
+            build_component_list(None, duplicate_list, convert=lambda x: x)
+        self.assertIn(str(duplicate_list), str(cm.exception))
 
     def test_duplicate_components_in_basesettings(self):
         # Higher priority takes precedence
@@ -141,6 +142,22 @@ class FeedExportConfigTestCase(unittest.TestCase):
             feed_process_params_from_cli(settings, ['-:pickle'])
         )
 
+    def test_feed_export_config_overwrite(self):
+        settings = Settings()
+        self.assertEqual(
+            {'output.json': {'format': 'json', 'overwrite': True}},
+            feed_process_params_from_cli(settings, [], None, ['output.json'])
+        )
+
+    def test_output_and_overwrite_output(self):
+        with self.assertRaises(UsageError):
+            feed_process_params_from_cli(
+                Settings(),
+                ['output1.json'],
+                None,
+                ['output2.json'],
+            )
+
     def test_feed_complete_default_values_from_settings_empty(self):
         feed = {}
         settings = Settings({
@@ -149,6 +166,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
             "FEED_URI_PARAMS": (1, 2, 3, 4),
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -157,6 +175,8 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "indent": 42,
             "store_empty": True,
             "uri_params": (1, 2, 3, 4),
+            "batch_item_count": 2,
+            "item_export_kwargs": dict(),
         })
 
     def test_feed_complete_default_values_from_settings_non_empty(self):
@@ -169,6 +189,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -177,6 +198,8 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "indent": 42,
             "store_empty": True,
             "uri_params": None,
+            "batch_item_count": 2,
+            "item_export_kwargs": dict(),
         })
 
 

@@ -64,20 +64,6 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 
 .. _BeautifulSoup's official documentation: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
-.. _faq-python-versions:
-
-What Python versions does Scrapy support?
------------------------------------------
-
-Scrapy is supported under Python 3.5.2+
-under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 3 support was added in Scrapy 1.1.
-PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
-Python 2 support was dropped in Scrapy 2.0.
-
-.. note::
-    For Python 3 support on Windows, it is recommended to use
-    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
@@ -250,15 +236,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -o items.json
+    scrapy crawl myspider -O items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -o items.csv
+    scrapy crawl myspider -O items.csv
 
 To dump into a XML file::
 
-    scrapy crawl myspider -o items.xml
+    scrapy crawl myspider -O items.xml
 
 For more information see :ref:`topics-feed-exports`
 

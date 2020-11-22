@@ -2,8 +2,13 @@ from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.defer import mustbe_deferred, process_chain, \
-    process_chain_both, process_parallel, iter_errback
+from scrapy.utils.defer import (
+    iter_errback,
+    mustbe_deferred,
+    process_chain,
+    process_chain_both,
+    process_parallel,
+)
 
 
 class MustbeDeferredTest(unittest.TestCase):
@@ -35,15 +40,15 @@ class MustbeDeferredTest(unittest.TestCase):
 
 
 def cb1(value, arg1, arg2):
-    return "(cb1 %s %s %s)" % (value, arg1, arg2)
+    return f"(cb1 {value} {arg1} {arg2})"
 
 
 def cb2(value, arg1, arg2):
-    return defer.succeed("(cb2 %s %s %s)" % (value, arg1, arg2))
+    return defer.succeed(f"(cb2 {value} {arg1} {arg2})")
 
 
 def cb3(value, arg1, arg2):
-    return "(cb3 %s %s %s)" % (value, arg1, arg2)
+    return f"(cb3 {value} {arg1} {arg2})"
 
 
 def cb_fail(value, arg1, arg2):
@@ -51,7 +56,7 @@ def cb_fail(value, arg1, arg2):
 
 
 def eb1(failure, arg1, arg2):
-    return "(eb1 %s %s %s)" % (failure.value.__class__.__name__, arg1, arg2)
+    return f"(eb1 {failure.value.__class__.__name__} {arg1} {arg2})"
 
 
 class DeferUtilsTest(unittest.TestCase):

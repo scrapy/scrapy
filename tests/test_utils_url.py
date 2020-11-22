@@ -1,8 +1,14 @@
 import unittest
 
 from scrapy.spiders import Spider
-from scrapy.utils.url import (url_is_from_any_domain, url_is_from_spider,
-                              add_http_if_no_scheme, guess_scheme, strip_url)
+from scrapy.utils.url import (
+    add_http_if_no_scheme,
+    guess_scheme,
+    _is_filesystem_path,
+    strip_url,
+    url_is_from_any_domain,
+    url_is_from_spider,
+)
 
 
 __doctests__ = ['scrapy.utils.url']
@@ -207,8 +213,7 @@ def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
         assert url.startswith(args[1]), \
-            'Wrong scheme guessed: for `%s` got `%s`, expected `%s...`' % (
-                args[0], url, args[1])
+            f'Wrong scheme guessed: for `{args[0]}` got `{url}`, expected `{args[1]}...`'
     return do_expected
 
 
@@ -249,7 +254,7 @@ for k, args in enumerate(
     start=1,
 ):
     t_method = create_guess_scheme_t(args)
-    t_method.__name__ = 'test_uri_%03d' % k
+    t_method.__name__ = f'test_uri_{k:03}'
     setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 # TODO: the following tests do not pass with current implementation
@@ -264,7 +269,7 @@ for k, args in enumerate(
     start=1,
 ):
     t_method = create_skipped_scheme_t(args)
-    t_method.__name__ = 'test_uri_skipped_%03d' % k
+    t_method.__name__ = f'test_uri_skipped_{k:03}'
     setattr(GuessSchemeTest, t_method.__name__, t_method)
 
 
@@ -432,6 +437,29 @@ class StripUrl(unittest.TestCase):
              'https://www.example.com/'),
         ]:
             self.assertEqual(strip_url(i, origin_only=True), o)
+
+
+class IsPathTestCase(unittest.TestCase):
+
+    def test_path(self):
+        for input_value, output_value in (
+            # https://en.wikipedia.org/wiki/Path_(computing)#Representations_of_paths_by_operating_system_and_shell
+            # Unix-like OS, Microsoft Windows / cmd.exe
+            ("/home/user/docs/Letter.txt", True),
+            ("./inthisdir", True),
+            ("../../greatgrandparent", True),
+            ("~/.rcinfo", True),
+            (r"C:\user\docs\Letter.txt", True),
+            ("/user/docs/Letter.txt", True),
+            (r"C:\Letter.txt", True),
+            (r"\\Server01\user\docs\Letter.txt", True),
+            (r"\\?\UNC\Server01\user\docs\Letter.txt", True),
+            (r"\\?\C:\user\docs\Letter.txt", True),
+            (r"C:\user\docs\somefile.ext:alternate_stream_name", True),
+
+            (r"https://example.com", False),
+        ):
+            self.assertEqual(_is_filesystem_path(input_value), output_value, input_value)
 
 
 if __name__ == "__main__":

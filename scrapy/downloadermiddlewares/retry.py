@@ -60,8 +60,10 @@ class RetryMiddleware:
         return response
 
     def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
-                and not request.meta.get('dont_retry', False):
+        if (
+            isinstance(exception, self.EXCEPTIONS_TO_RETRY)
+            and not request.meta.get('dont_retry', False)
+        ):
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):
@@ -86,7 +88,7 @@ class RetryMiddleware:
                 reason = global_object_name(reason.__class__)
 
             stats.inc_value('retry/count')
-            stats.inc_value('retry/reason_count/%s' % reason)
+            stats.inc_value(f'retry/reason_count/{reason}')
             return retryreq
         else:
             stats.inc_value('retry/max_reached')

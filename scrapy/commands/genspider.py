@@ -66,31 +66,25 @@ class Command(ScrapyCommand):
             print("Cannot create a spider with the same name as your project")
             return
 
-        try:
-            spidercls = self.crawler_process.spider_loader.load(name)
-        except KeyError:
-            pass
-        else:
-            # if spider already exists and not --force then halt
-            if not opts.force:
-                print("Spider %r already exists in module:" % name)
-                print("  %s" % spidercls.__module__)
-                return
+        if not opts.force and self._spider_exists(name):
+            return
+
         template_file = self._find_template(opts.template)
         if template_file:
             self._genspider(module, name, domain, opts.template, template_file)
             if opts.edit:
-                self.exitcode = os.system('scrapy edit "%s"' % name)
+                self.exitcode = os.system(f'scrapy edit "{name}"')
 
     def _genspider(self, module, name, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
+        capitalized_module = ''.join(s.capitalize() for s in module.split('_'))
         tvars = {
             'project_name': self.settings.get('BOT_NAME'),
             'ProjectName': string_camelcase(self.settings.get('BOT_NAME')),
             'module': module,
             'name': name,
             'domain': domain,
-            'classname': '%sSpider' % ''.join(s.capitalize() for s in module.split('_'))
+            'classname': f'{capitalized_module}Spider'
         }
         if self.settings.get('NEWSPIDER_MODULE'):
             spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
@@ -98,29 +92,58 @@ class Command(ScrapyCommand):
         else:
             spiders_module = None
             spiders_dir = "."
-        spider_file = "%s.py" % join(spiders_dir, module)
+        spider_file = f"{join(spiders_dir, module)}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print("Created spider %r using template %r "
-              % (name, template_name), end=('' if spiders_module else '\n'))
+        print(f"Created spider {name!r} using template {template_name!r} ",
+              end=('' if spiders_module else '\n'))
         if spiders_module:
-            print("in module:\n  %s.%s" % (spiders_module.__name__, module))
+            print(f"in module:\n  {spiders_module.__name__}.{module}")
 
     def _find_template(self, template):
-        template_file = join(self.templates_dir, '%s.tmpl' % template)
+        template_file = join(self.templates_dir, f'{template}.tmpl')
         if exists(template_file):
             return template_file
-        print("Unable to find template: %s\n" % template)
+        print(f"Unable to find template: {template}\n")
         print('Use "scrapy genspider --list" to see all available templates.')
 
     def _list_templates(self):
         print("Available templates:")
         for filename in sorted(os.listdir(self.templates_dir)):
             if filename.endswith('.tmpl'):
-                print("  %s" % splitext(filename)[0])
+                print(f"  {splitext(filename)[0]}")
+
+    def _spider_exists(self, name):
+        if not self.settings.get('NEWSPIDER_MODULE'):
+            # if run as a standalone command and file with same filename already exists
+            if exists(name + ".py"):
+                print(f"{abspath(name + '.py')} already exists")
+                return True
+            return False
+
+        try:
+            spidercls = self.crawler_process.spider_loader.load(name)
+        except KeyError:
+            pass
+        else:
+            # if spider with same name exists
+            print(f"Spider {name!r} already exists in module:")
+            print(f"  {spidercls.__module__}")
+            return True
+
+        # a file with the same name exists in the target directory
+        spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
+        spiders_dir = dirname(spiders_module.__file__)
+        spiders_dir_abs = abspath(spiders_dir)
+        if exists(join(spiders_dir_abs, name + ".py")):
+            print(f"{join(spiders_dir_abs, (name + '.py'))} already exists")
+            return True
+
+        return False
 
     @property
     def templates_dir(self):
-        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
-            join(scrapy.__path__[0], 'templates')
-        return join(_templates_base_dir, 'spiders')
+        return join(
+            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
+            'spiders'
+        )

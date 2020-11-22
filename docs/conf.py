@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Scrapy'
-copyright = '2008–{}, Scrapy developers'.format(datetime.now().year)
+copyright = f'2008–{datetime.now().year}, Scrapy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -284,6 +284,7 @@ intersphinx_mapping = {
     'attrs': ('https://www.attrs.org/en/stable/', None),
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
     'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
+    'itemloaders': ('https://itemloaders.readthedocs.io/en/latest/', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
@@ -305,3 +306,15 @@ hoverxref_role_types = {
     "ref": "tooltip",
 }
 hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', maybe_skip_member)
+
+
+def maybe_skip_member(app, what, name, obj, skip, options):
+    if not skip:
+        # autodocs was generating a text "alias of" for the following members
+        # https://github.com/sphinx-doc/sphinx/issues/4422
+        return name in {'default_item_class', 'default_selector_class'}
+    return skip

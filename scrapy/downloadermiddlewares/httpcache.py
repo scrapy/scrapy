@@ -1,4 +1,5 @@
 from email.utils import formatdate
+from typing import Optional, Type, TypeVar
 
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -13,8 +14,17 @@ from twisted.internet.error import (
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
+from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.http.request import Request
+from scrapy.http.response import Response
+from scrapy.settings import Settings
+from scrapy.spiders import Spider
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.misc import load_object
+
+
+HttpCacheMiddlewareTV = TypeVar("HttpCacheMiddlewareTV", bound="HttpCacheMiddleware")
 
 
 class HttpCacheMiddleware:
@@ -24,7 +34,7 @@ class HttpCacheMiddleware:
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError)
 
-    def __init__(self, settings, stats):
+    def __init__(self, settings: Settings, stats: StatsCollector) -> None:
         if not settings.getbool('HTTPCACHE_ENABLED'):
             raise NotConfigured
         self.policy = load_object(settings['HTTPCACHE_POLICY'])(settings)
@@ -33,26 +43,26 @@ class HttpCacheMiddleware:
         self.stats = stats
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls: Type[HttpCacheMiddlewareTV], crawler: Crawler) -> HttpCacheMiddlewareTV:
         o = cls(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider: Spider) -> None:
         self.storage.open_spider(spider)
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider: Spider) -> None:
         self.storage.close_spider(spider)
 
-    def process_request(self, request, spider):
+    def process_request(self, request: Request, spider: Spider) -> Optional[Response]:
         if request.meta.get('dont_cache', False):
-            return
+            return None
 
         # Skip uncacheable requests
         if not self.policy.should_cache_request(request):
             request.meta['_dont_cache'] = True  # flag as uncacheable
-            return
+            return None
 
         # Look for cached response and check if expired
         cachedresponse = self.storage.retrieve_response(spider, request)
@@ -61,7 +71,7 @@ class HttpCacheMiddleware:
             if self.ignore_missing:
                 self.stats.inc_value('httpcache/ignore', spider=spider)
                 raise IgnoreRequest("Ignored request not in cache: %s" % request)
-            return  # first time request
+            return None  # first time request
 
         # Return cached response only if not expired
         cachedresponse.flags.append('cached')
@@ -73,7 +83,9 @@ class HttpCacheMiddleware:
         # process_response hook
         request.meta['cached_response'] = cachedresponse
 
-    def process_response(self, request, response, spider):
+        return None
+
+    def process_response(self, request: Request, response: Response, spider: Spider) -> Response:
         if request.meta.get('dont_cache', False):
             return response
 
@@ -85,7 +97,7 @@ class HttpCacheMiddleware:
         # RFC2616 requires origin server to set Date header,
         # https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
         if 'Date' not in response.headers:
-            response.headers['Date'] = formatdate(usegmt=1)
+            response.headers['Date'] = formatdate(usegmt=True)
 
         # Do not validate first-hand responses
         cachedresponse = request.meta.pop('cached_response', None)
@@ -102,13 +114,18 @@ class HttpCacheMiddleware:
         self._cache_response(spider, response, request, cachedresponse)
         return response
 
-    def process_exception(self, request, exception, spider):
+    def process_exception(
+        self, request: Request, exception: Exception, spider: Spider
+    ) -> Optional[Response]:
         cachedresponse = request.meta.pop('cached_response', None)
         if cachedresponse is not None and isinstance(exception, self.DOWNLOAD_EXCEPTIONS):
             self.stats.inc_value('httpcache/errorrecovery', spider=spider)
             return cachedresponse
+        return None
 
-    def _cache_response(self, spider, response, request, cachedresponse):
+    def _cache_response(
+        self, spider: Spider, response: Response, request: Request, cachedresponse: Optional[Response]
+    ) -> None:
         if self.policy.should_cache_response(response, request):
             self.stats.inc_value('httpcache/store', spider=spider)
             self.storage.store_response(spider, request, response)

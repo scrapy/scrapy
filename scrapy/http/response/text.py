@@ -35,23 +35,23 @@ class TextResponse(Response):
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
-        super(TextResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _set_url(self, url):
         if isinstance(url, str):
             self._url = to_unicode(url, self.encoding)
         else:
-            super(TextResponse, self)._set_url(url)
+            super()._set_url(url)
 
     def _set_body(self, body):
         self._body = b''  # used by encoding detection
         if isinstance(body, str):
             if self._encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                                type(self).__name__)
+                raise TypeError('Cannot convert unicode body - '
+                                f'{type(self).__name__} has no encoding')
             self._body = body.encode(self._encoding)
         else:
-            super(TextResponse, self)._set_body(body)
+            super()._set_body(body)
 
     def replace(self, *args, **kwargs):
         kwargs.setdefault('encoding', self.encoding)
@@ -62,8 +62,11 @@ class TextResponse(Response):
         return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
-        return self._encoding or self._headers_encoding() \
+        return (
+            self._encoding
+            or self._headers_encoding()
             or self._body_declared_encoding()
+        )
 
     def body_as_unicode(self):
         """Return body as unicode"""
@@ -74,6 +77,8 @@ class TextResponse(Response):
 
     def json(self):
         """
+        .. versionadded:: 2.2
+
         Deserialize a JSON document to a Python object.
         """
         if self._cached_decoded_json is _NONE:
@@ -87,7 +92,7 @@ class TextResponse(Response):
         # _body_inferred_encoding is called
         benc = self.encoding
         if self._cached_ubody is None:
-            charset = 'charset=%s' % benc
+            charset = f'charset={benc}'
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
@@ -161,7 +166,7 @@ class TextResponse(Response):
         elif isinstance(url, parsel.SelectorList):
             raise ValueError("SelectorList is not supported")
         encoding = self.encoding if encoding is None else encoding
-        return super(TextResponse, self).follow(
+        return super().follow(
             url=url,
             callback=callback,
             method=method,
@@ -221,7 +226,7 @@ class TextResponse(Response):
             for sel in selectors:
                 with suppress(_InvalidSelector):
                     urls.append(_url_from_selector(sel))
-        return super(TextResponse, self).follow_all(
+        return super().follow_all(
             urls=urls,
             callback=callback,
             method=method,
@@ -250,12 +255,11 @@ def _url_from_selector(sel):
         # e.g. ::attr(href) result
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):
-        raise _InvalidSelector("Unsupported selector: %s" % sel)
+        raise _InvalidSelector(f"Unsupported selector: {sel}")
     if sel.root.tag not in ('a', 'link'):
-        raise _InvalidSelector("Only <a> and <link> elements are supported; got <%s>" %
-                               sel.root.tag)
+        raise _InvalidSelector("Only <a> and <link> elements are supported; "
+                               f"got <{sel.root.tag}>")
     href = sel.root.get('href')
     if href is None:
-        raise _InvalidSelector("<%s> element has no href attribute: %s" %
-                               (sel.root.tag, sel))
+        raise _InvalidSelector(f"<{sel.root.tag}> element has no href attribute: {sel}")
     return strip_html5_whitespace(href)
