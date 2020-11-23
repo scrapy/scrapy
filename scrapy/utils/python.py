@@ -355,3 +355,10 @@ class MutableChain:
     @deprecated("scrapy.utils.python.MutableChain.__next__")
     def next(self):
         return self.__next__()
+
+
+async def collect_asyncgen(result):
+    results = []
+    async for x in result:
+        results.append(x)
+    return results
