@@ -31,6 +31,105 @@ from scrapy.utils.python import global_object_name
 logger = logging.getLogger(__name__)
 
 
+def get_retry_request(
+    request,
+    *,
+    reason,
+    spider,
+    max_retry_times=None,
+    priority_adjust=None,
+):
+    settings = spider.crawler.settings
+    stats = spider.crawler.stats
+    retry_times = request.meta.get('retry_times', 0) + 1
+    request_max_retry_times = request.meta.get(
+        'max_retry_times',
+        max_retry_times,
+    )
+    if request_max_retry_times is None:
+        request_max_retry_times = settings.getint('RETRY_TIMES')
+    if retry_times <= request_max_retry_times:
+        logger.debug(
+            "Retrying %(request)s (failed %(retry_times)d times): %(reason)s",
+            {'request': request, 'retry_times': retry_times, 'reason': reason},
+            extra={'spider': spider}
+        )
+        new_request = request.copy()
+        new_request.meta['retry_times'] = retry_times
+        new_request.dont_filter = True
+        if priority_adjust is None:
+            priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
+        new_request.priority = request.priority + priority_adjust
+
+        if isinstance(reason, Exception):
+            reason = global_object_name(reason.__class__)
+
+        stats.inc_value('retry/count')
+        stats.inc_value(f'retry/reason_count/{reason}')
+        return new_request
+    else:
+        stats.inc_value('retry/max_reached')
+        logger.error("Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",
+                        {'request': request, 'retry_times': retry_times, 'reason': reason},
+                        extra={'spider': spider})
+        return None
+
+
+def retry_request(
+    request,
+    *,
+    reason,
+    spider,
+    max_retry_times=None,
+    priority_adjust=None,
+):
+    new_request = get_retry_request(
+        request,
+        reason=reason,
+        spider=spider,
+        max_retry_times=max_retry_times,
+        priority_adjust=priority_adjust,
+    )
+    if new_request:
+        return [new_request]
+    return []
+
+
+class RetrySpiderMixin:
+
+    def get_retry_request(
+        self,
+        request,
+        *,
+        reason,
+        max_retry_times=None,
+        priority_adjust=None,
+    ):
+        return get_retry_request(
+            request,
+            reason=reason,
+            spider=self,
+            max_retry_times=max_retry_times,
+            priority_adjust=priority_adjust,
+        )
+
+    def retry_request(
+        self,
+        request,
+        *,
+        reason,
+        max_retry_times=None,
+        priority_adjust=None,
+    ):
+        return retry_request(
+            request,
+            reason=reason,
+            spider=self,
+            max_retry_times=max_retry_times,
+            priority_adjust=priority_adjust,
+        )
+
+
 class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
@@ -67,31 +166,10 @@ class RetryMiddleware:
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):
-        retries = request.meta.get('retry_times', 0) + 1
-
-        retry_times = self.max_retry_times
-
-        if 'max_retry_times' in request.meta:
-            retry_times = request.meta['max_retry_times']
-
-        stats = spider.crawler.stats
-        if retries <= retry_times:
-            logger.debug("Retrying %(request)s (failed %(retries)d times): %(reason)s",
-                         {'request': request, 'retries': retries, 'reason': reason},
-                         extra={'spider': spider})
-            retryreq = request.copy()
-            retryreq.meta['retry_times'] = retries
-            retryreq.dont_filter = True
-            retryreq.priority = request.priority + self.priority_adjust
-
-            if isinstance(reason, Exception):
-                reason = global_object_name(reason.__class__)
-
-            stats.inc_value('retry/count')
-            stats.inc_value(f'retry/reason_count/{reason}')
-            return retryreq
-        else:
-            stats.inc_value('retry/max_reached')
-            logger.error("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
-                         {'request': request, 'retries': retries, 'reason': reason},
-                         extra={'spider': spider})
+        return get_retry_request(
+            request,
+            reason=reason,
+            spider=spider,
+            max_retry_times=self.max_retry_times,
+            priority_adjust=self.priority_adjust,
+        )
