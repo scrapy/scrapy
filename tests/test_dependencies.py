@@ -26,7 +26,7 @@ class ScrapyUtilsTest(unittest.TestCase):
 
         See https://github.com/scrapy/scrapy/pull/4814#issuecomment-706230011
         """
-        if not os.environ.get('SCRAPY_PINNED', None):
+        if not os.environ.get('_SCRAPY_PINNED', None):
             self.skipTest('Not in a pinned environment')
 
         tox_config_file_path = os.path.join(
