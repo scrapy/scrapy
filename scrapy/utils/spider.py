@@ -4,7 +4,7 @@ import logging
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import collect_asyncgen
+from scrapy.utils.asyncgen import collect_asyncgen
 
 
 logger = logging.getLogger(__name__)
