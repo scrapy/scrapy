@@ -54,6 +54,8 @@ class ResponseTypesTest(unittest.TestCase):
             (b'\x03\x02\xdf\xdd\x23', Response),
             (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
             (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            # https://codersblock.com/blog/the-smallest-valid-html5-page/
+            (b'<!DOCTYPE html>\n<title>.</title>', HtmlResponse),
             (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
         ]
         for source, cls in mappings:
