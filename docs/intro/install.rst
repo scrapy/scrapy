@@ -69,10 +69,9 @@ In case of any trouble related to these dependencies,
 please refer to their respective installation instructions:
 
 * `lxml installation`_
-* `cryptography installation`_
+* :doc:`cryptography installation <cryptography:installation>`
 
 .. _lxml installation: https://lxml.de/installation.html
-.. :doc:`cryptography installation <cryptography:installation>`
 
 
 .. _intro-using-virtualenv:
