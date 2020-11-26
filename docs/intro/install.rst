@@ -72,7 +72,7 @@ please refer to their respective installation instructions:
 * `cryptography installation`_
 
 .. _lxml installation: https://lxml.de/installation.html
-.. :doc: `cryptography installation <cryptography:installation>`
+.. :doc:`cryptography installation <cryptography:installation>`
 
 
 .. _intro-using-virtualenv:
