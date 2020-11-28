@@ -5,7 +5,6 @@ See documentation in docs/topics/extensions.rst
 """
 import logging
 import pprint
-
 from difflib import get_close_matches
 
 from scrapy import signals
@@ -18,6 +17,7 @@ class CheckSettings:
     def __init__(self, crawler):
         self.settings = crawler.settings
         self.not_used_settings = []
+        self.ignored_settings_list = crawler.settings.get("CHECK_SETTINGS_IGNORED")
         self.sim_min = 0.8
 
     def get_suggestions(self):
@@ -41,7 +41,8 @@ class CheckSettings:
 
     def spider_opened(self):
         self.not_used_settings = [s for s in self.settings
-                                  if not self.settings.attributes[s].has_been_read]
+                                  if s not in self.ignored_settings_list and
+                                  not self.settings.attributes[s].has_been_read]
         suggestions = self.get_suggestions()
         if self.not_used_settings:
             logger.warning("Not used settings: \n%(not_used)s",

@@ -61,10 +61,10 @@ class TestCheckSettings(TestCase):
         check_settings = CheckSettings(crawler)
         with LogCapture() as lc:
             check_settings.spider_opened()
-        lc.check(
-            ("scrapy.extensions.checksettings", "WARNING",
-             "Not used settings: \n['NOT_USED_SETTING_FOO', 'NOT_USED_SETTING_BAR']")
-        )
+            lc.check(
+                ("scrapy.extensions.checksettings", "WARNING",
+                 "Not used settings: \n['NOT_USED_SETTING_FOO', 'NOT_USED_SETTING_BAR']")
+            )
 
     @defer.inlineCallbacks
     def test_checksettings_suggestion_message(self):
@@ -78,11 +78,26 @@ class TestCheckSettings(TestCase):
         check_settings = CheckSettings(crawler)
         with LogCapture() as lc:
             check_settings.spider_opened()
-        lc.check(
-            ("scrapy.extensions.checksettings", "WARNING",
-             "Not used settings: \n['COOKIES_ENABLEDIE', 'DOWNLOADER_STATSIE']"),
-            ("scrapy.extensions.checksettings", "INFO",
-             "Settings suggestions: \n"
-             "['COOKIES_ENABLEDIE, did you mean COOKIES_ENABLED ?',\n"
-             " 'DOWNLOADER_STATSIE, did you mean DOWNLOADER_STATS ?']")
-        )
+            lc.check(
+                ("scrapy.extensions.checksettings", "WARNING",
+                 "Not used settings: \n['COOKIES_ENABLEDIE', 'DOWNLOADER_STATSIE']"),
+                ("scrapy.extensions.checksettings", "INFO",
+                 "Settings suggestions: \n"
+                 "['COOKIES_ENABLEDIE, did you mean COOKIES_ENABLED ?',\n"
+                 " 'DOWNLOADER_STATSIE, did you mean DOWNLOADER_STATS ?']")
+            )
+
+    @defer.inlineCallbacks
+    def test_checksettings_ignored_list(self):
+        settings = {
+            "CHECK_SETTINGS_ENABLED": True,
+            "COOKIES_ENABLEDIE": True,
+            "DOWNLOADER_STATSIE": True,
+            "CHECK_SETTINGS_IGNORED": ["DOWNLOADER_STATSIE", "COOKIES_ENABLEDIE"]
+        }
+        crawler = get_crawler(ItemSpider, settings)
+        yield crawler.crawl(mockserver=self.mockserver)
+        check_settings = CheckSettings(crawler)
+        with LogCapture() as lc:
+            check_settings.spider_opened()
+            lc.check()

@@ -282,7 +282,21 @@ CHECK_SETTINGS_ENABLED
 
 Default: ``True``
 
-Whether to enable Check Settings.
+Scope: ``scrapy.extensions.checksettings.CheckSettings``
+
+Whether to enable Check Settings. Optionally a list of variables to ignore
+can be specified (see :setting:`CHECK_SETTINGS_IGNORED`).
+
+.. setting:: CHECK_SETTINGS_IGNORED
+
+CHECK_SETTINGS_IGNORED
+----------------------
+
+Default: ``[]``
+
+Scope: ``scrapy.extensions.checksettings.CheckSettings``
+
+List of settings variables to ignore by Check Settings extension.
 
 .. setting:: CONCURRENT_ITEMS
 
