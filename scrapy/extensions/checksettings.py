@@ -41,8 +41,8 @@ class CheckSettings:
 
     def spider_opened(self):
         self.not_used_settings = [s for s in self.settings
-                                  if s not in self.ignored_settings_list and
-                                  not self.settings.attributes[s].has_been_read]
+                                  if s not in self.ignored_settings_list
+                                  and not self.settings.attributes[s].has_been_read]
         suggestions = self.get_suggestions()
         if self.not_used_settings:
             logger.warning("Not used settings: \n%(not_used)s",
