@@ -20,7 +20,7 @@ from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 
 
-class NoimagesDrop(DropItem):
+class NoImagesDrop(DropItem):
     """Product with no images exception"""
 
 
