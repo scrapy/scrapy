@@ -239,7 +239,7 @@ class DbmCacheStorage:
         status = data['status']
         headers = Headers(data['headers'])
         body = data['body']
-        respcls = responsetypes.from_args(headers=headers, url=url)
+        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
