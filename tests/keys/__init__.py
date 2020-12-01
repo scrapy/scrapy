@@ -16,8 +16,8 @@ from cryptography.x509 import (
     NameAttribute,
     random_serial_number,
     SubjectAlternativeName,
+    NameOID
 )
-from cryptography.x509.oid import NameOID
 
 
 # https://cryptography.io/en/latest/x509/tutorial/#creating-a-self-signed-certificate
