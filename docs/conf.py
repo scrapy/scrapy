@@ -292,7 +292,6 @@ intersphinx_mapping = {
     'tox': ('https://tox.readthedocs.io/en/latest', None),
     'twisted': ('https://twistedmatrix.com/documents/current', None),
     'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
-    'cryptography' : ('https://cryptography.io/en/latest/', None),
 }
 
 
