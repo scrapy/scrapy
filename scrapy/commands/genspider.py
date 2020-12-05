@@ -2,8 +2,8 @@ import os
 import shutil
 import string
 
+from pathlib import Path
 from importlib import import_module
-from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -53,8 +53,7 @@ class Command(ScrapyCommand):
         if opts.dump:
             template_file = self._find_template(opts.dump)
             if template_file:
-                with open(template_file, "r") as f:
-                    print(f.read())
+                print(template_file.read_text())
             return
         if len(args) != 2:
             raise UsageError()
@@ -88,11 +87,11 @@ class Command(ScrapyCommand):
         }
         if self.settings.get('NEWSPIDER_MODULE'):
             spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-            spiders_dir = abspath(dirname(spiders_module.__file__))
+            spiders_dir = Path(spiders_module.__file__).resolve().parent
         else:
             spiders_module = None
-            spiders_dir = "."
-        spider_file = f"{join(spiders_dir, module)}.py"
+            spiders_dir = Path(".")
+        spider_file = (spiders_dir / module).with_stem('.py')
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
         print(f"Created spider {name!r} using template {template_name!r} ",
@@ -101,23 +100,23 @@ class Command(ScrapyCommand):
             print(f"in module:\n  {spiders_module.__name__}.{module}")
 
     def _find_template(self, template):
-        template_file = join(self.templates_dir, f'{template}.tmpl')
-        if exists(template_file):
-            return template_file
+        file = self.templates_dir / f'{template}.tmpl'
+        if file.exists():
+            return file
         print(f"Unable to find template: {template}\n")
         print('Use "scrapy genspider --list" to see all available templates.')
 
     def _list_templates(self):
         print("Available templates:")
-        for filename in sorted(os.listdir(self.templates_dir)):
-            if filename.endswith('.tmpl'):
-                print(f"  {splitext(filename)[0]}")
+        for file in sorted(self.templates_dir.glob('*.tmpl')):
+            print(f"  {file.stem}")
 
     def _spider_exists(self, name):
         if not self.settings.get('NEWSPIDER_MODULE'):
             # if run as a standalone command and file with same filename already exists
-            if exists(name + ".py"):
-                print(f"{abspath(name + '.py')} already exists")
+            file = Path(name + '.py')
+            if file.exists():
+                print(f"{file.resolve()} already exists")
                 return True
             return False
 
@@ -133,17 +132,14 @@ class Command(ScrapyCommand):
 
         # a file with the same name exists in the target directory
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-        spiders_dir = dirname(spiders_module.__file__)
-        spiders_dir_abs = abspath(spiders_dir)
-        if exists(join(spiders_dir_abs, name + ".py")):
-            print(f"{join(spiders_dir_abs, (name + '.py'))} already exists")
+        target_path = Path(spiders_module.__file__).resolve().with_stem(name)
+        if target_path.exists():
+            print(f"{target_path} already exists")
             return True
 
         return False
 
     @property
     def templates_dir(self):
-        return join(
-            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
-            'spiders'
-        )
+        parent = self.settings['TEMPLATES_DIR'] or Path(scrapy.__path__[0]) / 'templates'
+        return parent / 'spiders'

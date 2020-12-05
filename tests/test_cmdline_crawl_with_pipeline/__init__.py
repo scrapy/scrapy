@@ -1,6 +1,6 @@
-import os
 import sys
 import unittest
+from pathlib import Path
 from subprocess import Popen, PIPE
 
 
@@ -8,7 +8,7 @@ class CmdlineCrawlPipelineTest(unittest.TestCase):
 
     def _execute(self, spname):
         args = (sys.executable, '-m', 'scrapy.cmdline', 'crawl', spname)
-        cwd = os.path.dirname(os.path.abspath(__file__))
+        cwd = Path(__file__).resolve().parent
         proc = Popen(args, stdout=PIPE, stderr=PIPE, cwd=cwd)
         proc.communicate()
         return proc.returncode

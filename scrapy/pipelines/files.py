@@ -13,6 +13,7 @@ from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -48,31 +49,28 @@ class FSFilesStore:
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         absolute_path = self._get_filesystem_path(path)
-        self._mkdir(os.path.dirname(absolute_path), info)
-        with open(absolute_path, 'wb') as f:
-            f.write(buf.getvalue())
+        self._mkdir(absolute_path.parent, info)
+        absolute_path.write_bytes(buf.getvalue())
 
     def stat_file(self, path, info):
         absolute_path = self._get_filesystem_path(path)
         try:
-            last_modified = os.path.getmtime(absolute_path)
+            last_modified = absolute_path.stat().st_mtime
         except os.error:
             return {}
 
-        with open(absolute_path, 'rb') as f:
+        with absolute_path.open('rb') as f:
             checksum = md5sum(f)
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
     def _get_filesystem_path(self, path):
-        path_comps = path.split('/')
-        return os.path.join(self.basedir, *path_comps)
+        return self.basedir / path
 
     def _mkdir(self, dirname, domain=None):
         seen = self.created_directories[domain] if domain else set()
         if dirname not in seen:
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
+            dirname.mkdir(parents=True, exist_ok=True)
             seen.add(dirname)
 
 
@@ -368,7 +366,7 @@ class FilesPipeline(MediaPipeline):
         return cls(store_uri, settings=settings)
 
     def _get_store(self, uri):
-        if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
+        if uri.is_absolute():  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse(uri).scheme
@@ -503,7 +501,7 @@ class FilesPipeline(MediaPipeline):
 
     def file_path(self, request, response=None, info=None, *, item=None):
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        media_ext = os.path.splitext(request.url)[1]
+        media_ext = Path(request.url).suffix
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
         if media_ext not in mimetypes.types_map:
@@ -511,4 +509,4 @@ class FilesPipeline(MediaPipeline):
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
                 media_ext = mimetypes.guess_extension(media_type)
-        return f'full/{media_guid}{media_ext}'
+        return Path('full') / f'{media_guid}{media_ext}'

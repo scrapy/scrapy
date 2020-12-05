@@ -18,10 +18,9 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-for line in open('tests/ignores.txt'):
-    file_path = line.strip()
-    if file_path and file_path[0] != '#':
-        collect_ignore.append(file_path)
+for file_path_line in Path('tests/ignores.txt').read_text().splitlines():
+    if file_path_line and not file_path_line.startswith('#'):
+        collect_ignore.append(str(Path(file_path_line)))
 
 
 @pytest.fixture()

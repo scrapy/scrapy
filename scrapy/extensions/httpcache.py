@@ -223,7 +223,7 @@ class DbmCacheStorage:
         self.db = None
 
     def open_spider(self, spider):
-        dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
+        dbpath = self.cachedir / f'{spider.name}.db'
         self.db = self.dbmodule.open(dbpath, 'c')
 
         logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
@@ -292,9 +292,9 @@ class FilesystemCacheStorage:
         if metadata is None:
             return  # not cached
         rpath = self._get_request_path(spider, request)
-        with self._open(os.path.join(rpath, 'response_body'), 'rb') as f:
+        with self._open(rpath / 'response_body', 'rb') as f:
             body = f.read()
-        with self._open(os.path.join(rpath, 'response_headers'), 'rb') as f:
+        with self._open(rpath / 'response_headers', 'rb') as f:
             rawheaders = f.read()
         url = metadata.get('response_url')
         status = metadata['status']
@@ -306,8 +306,7 @@ class FilesystemCacheStorage:
     def store_response(self, spider, request, response):
         """Store the given response in the cache."""
         rpath = self._get_request_path(spider, request)
-        if not os.path.exists(rpath):
-            os.makedirs(rpath)
+        rpath.mkdir(parent=True, exist_ok=True)
         metadata = {
             'url': request.url,
             'method': request.method,
@@ -315,27 +314,27 @@ class FilesystemCacheStorage:
             'response_url': response.url,
             'timestamp': time(),
         }
-        with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
+        with self._open(rpath / 'meta', 'wb') as f:
             f.write(to_bytes(repr(metadata)))
-        with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
+        with self._open(rpath / 'pickled_meta', 'wb') as f:
             pickle.dump(metadata, f, protocol=4)
-        with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
+        with self._open(rpath / 'response_headers', 'wb') as f:
             f.write(headers_dict_to_raw(response.headers))
-        with self._open(os.path.join(rpath, 'response_body'), 'wb') as f:
+        with self._open(rpath / 'response_body', 'wb') as f:
             f.write(response.body)
-        with self._open(os.path.join(rpath, 'request_headers'), 'wb') as f:
+        with self._open(rpath / 'request_headers', 'wb') as f:
             f.write(headers_dict_to_raw(request.headers))
-        with self._open(os.path.join(rpath, 'request_body'), 'wb') as f:
+        with self._open(rpath / 'request_body', 'wb') as f:
             f.write(request.body)
 
     def _get_request_path(self, spider, request):
         key = request_fingerprint(request)
-        return os.path.join(self.cachedir, spider.name, key[0:2], key)
+        return self.cachedir / spider.name / key[0:2] / key
 
     def _read_meta(self, spider, request):
         rpath = self._get_request_path(spider, request)
-        metapath = os.path.join(rpath, 'pickled_meta')
-        if not os.path.exists(metapath):
+        metapath = rpath / 'pickled_meta'
+        if not metapath.exists():
             return  # not found
         mtime = os.stat(metapath).st_mtime
         if 0 < self.expiration_secs < time() - mtime:

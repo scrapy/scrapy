@@ -10,7 +10,6 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
-import os
 import re
 import sys
 from collections import defaultdict
@@ -118,7 +117,7 @@ class ItemZeroDivisionErrorSpider(TestSpider):
 
 
 def start_test_site(debug=False):
-    root_dir = os.path.join(tests_datadir, "test_site")
+    root_dir = tests_datadir / "test_site"
     r = static.File(root_dir)
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
     r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))

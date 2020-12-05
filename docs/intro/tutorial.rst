@@ -101,9 +101,8 @@ This is the code for our first Spider. Save it in a file named
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = f'quotes-{page}.html'
-            with open(filename, 'wb') as f:
-                f.write(response.body)
+            filename = Path(f'quotes-{page}.html')
+            filename.write_bytes(response.body)
             self.log(f'Saved file {filename}')
 
 
@@ -190,9 +189,8 @@ for your spider::
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = f'quotes-{page}.html'
-            with open(filename, 'wb') as f:
-                f.write(response.body)
+            filename = Path(f'quotes-{page}.html')
+            filename.write_bytes(response.body)
 
 The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
 of the requests for those URLs, even though we haven't explicitly told Scrapy

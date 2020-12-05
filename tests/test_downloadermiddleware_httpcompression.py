@@ -1,6 +1,5 @@
 from io import BytesIO
 from unittest import TestCase, SkipTest
-from os.path import join
 from gzip import GzipFile
 
 from scrapy.spiders import Spider
@@ -12,7 +11,7 @@ from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
 
 
-SAMPLEDIR = join(tests_datadir, 'compressed')
+SAMPLEDIR = tests_datadir / 'compressed'
 
 FORMAT = {
     'gzip': ('html-gzip.bin', 'gzip'),
@@ -41,8 +40,7 @@ class HttpCompressionTest(TestCase):
 
         samplefile, contentencoding = FORMAT[coding]
 
-        with open(join(SAMPLEDIR, samplefile), 'rb') as sample:
-            body = sample.read()
+        body = (SAMPLEDIR / samplefile).read_bytes()
 
         headers = {
             'Server': 'Yaws/1.49 Yet Another Web Server',

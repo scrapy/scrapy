@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import mock, skipIf
@@ -91,8 +92,8 @@ class FilesPipelineTestCase(unittest.TestCase):
         assert isinstance(self.pipeline.store, FSFilesStore)
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
-        path = 'some/image/key.jpg'
-        fullpath = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
+        path = Path('some/image/key.jpg')
+        fullpath = self.tempdir / 'some' / 'image' / 'key.jpg'
         self.assertEqual(self.pipeline.store._get_filesystem_path(path), fullpath)
 
     @defer.inlineCallbacks

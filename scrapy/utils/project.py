@@ -2,7 +2,7 @@ import os
 import warnings
 
 from importlib import import_module
-from os.path import join, dirname, abspath, isabs, exists
+from pathlib import Path
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 from scrapy.settings import Settings
@@ -36,9 +36,8 @@ def project_data_dir(project='default'):
         scrapy_cfg = closest_scrapy_cfg()
         if not scrapy_cfg:
             raise NotConfigured("Unable to find scrapy.cfg file to infer project data dir")
-        d = abspath(join(dirname(scrapy_cfg), '.scrapy'))
-    if not exists(d):
-        os.makedirs(d)
+        d = scrapy_cfg.resolve().with_name('.scrapy')
+    d.mkdir(parents=True, exist_ok=True)
     return d
 
 
@@ -47,13 +46,12 @@ def data_path(path, createdir=False):
     Return the given path joined with the .scrapy data directory.
     If given an absolute path, return it unmodified.
     """
-    if not isabs(path):
+    if not path.is_absolute():
         if inside_project():
-            path = join(project_data_dir(), path)
+            path = project_data_dir() / path
         else:
-            path = join('.scrapy', path)
-    if createdir and not exists(path):
-        os.makedirs(path)
+            path = Path('.scrapy') / path
+    path.mkdir(parents=True, exist_ok=True)
     return path
 
 

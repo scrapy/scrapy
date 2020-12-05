@@ -1,6 +1,6 @@
 import sys
-import os
 from importlib import import_module
+from pathlib import Path
 
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.exceptions import UsageError
@@ -8,17 +8,16 @@ from scrapy.commands import BaseRunSpiderCommand
 
 
 def _import_file(filepath):
-    abspath = os.path.abspath(filepath)
-    dirname, file = os.path.split(abspath)
-    fname, fext = os.path.splitext(file)
-    if fext not in ('.py', '.pyw'):
-        raise ValueError(f"Not a Python source file: {abspath}")
-    if dirname:
-        sys.path = [dirname] + sys.path
+    filepath = filepath.resolve()
+
+    if filepath.suffix not in ('.py', '.pyw'):
+        raise ValueError(f"Not a Python source file: {filepath}")
+    if filepath.parent:
+        sys.path.insert(0, str(filepath))
     try:
-        module = import_module(fname)
+        module = import_module(filepath.stem)
     finally:
-        if dirname:
+        if filepath.parent:
             sys.path.pop(0)
     return module
 
@@ -40,8 +39,8 @@ class Command(BaseRunSpiderCommand):
     def run(self, args, opts):
         if len(args) != 1:
             raise UsageError()
-        filename = args[0]
-        if not os.path.exists(filename):
+        filename = Path(args[0])
+        if not filename.exists():
             raise UsageError(f"File not found: {filename}\n")
         try:
             module = _import_file(filename)

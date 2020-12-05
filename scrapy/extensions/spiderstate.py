@@ -1,4 +1,3 @@
-import os
 import pickle
 
 from scrapy import signals
@@ -25,16 +24,16 @@ class SpiderState:
 
     def spider_closed(self, spider):
         if self.jobdir:
-            with open(self.statefn, 'wb') as f:
+            with self.statefn.open('wb') as f:
                 pickle.dump(spider.state, f, protocol=4)
 
     def spider_opened(self, spider):
-        if self.jobdir and os.path.exists(self.statefn):
-            with open(self.statefn, 'rb') as f:
+        if self.jobdir and self.statefn.exists():
+            with self.statefn.open('rb') as f:
                 spider.state = pickle.load(f)
         else:
             spider.state = {}
 
     @property
     def statefn(self):
-        return os.path.join(self.jobdir, 'spider.state')
+        return self.jobdir / 'spider.state'

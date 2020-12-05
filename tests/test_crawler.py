@@ -1,9 +1,9 @@
 import logging
-import os
 import platform
 import subprocess
 import sys
 import warnings
+from pathlib import Path
 from unittest import skipIf
 
 from pytest import raises, mark
@@ -116,8 +116,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         logging.warning('warning message')
         logging.error('error message')
 
-        with open(log_file, 'rb') as fo:
-            logged = fo.read().decode('utf8')
+        logged = log_file.read_text(encoding='utf8')
 
         self.assertNotIn('debug message', logged)
         self.assertIn('info message', logged)
@@ -283,7 +282,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 class ScriptRunnerMixin:
     def run_script(self, script_name, *script_args):
-        script_path = os.path.join(self.script_dir, script_name)
+        script_path = self.script_dir / script_name
         args = [sys.executable, script_path] + list(script_args)
         p = subprocess.Popen(args, env=get_testenv(),
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -292,7 +291,7 @@ class ScriptRunnerMixin:
 
 
 class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
-    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
+    script_dir = Path(__file__).resolve().with_name('CrawlerProcess')
 
     def test_simple(self):
         log = self.run_script('simple.py')
@@ -385,7 +384,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
-    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerRunner')
+    script_dir = Path(__file__).resolve().with_name('CrawlerRunner')
 
     def test_response_ip_address(self):
         log = self.run_script("ip_address.py")

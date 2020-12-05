@@ -1,6 +1,5 @@
 import csv
 import json
-import os
 import random
 import shutil
 import string
@@ -68,31 +67,31 @@ def build_url(path):
 class FileFeedStorageTest(unittest.TestCase):
 
     def test_store_file_uri(self):
-        path = os.path.abspath(self.mktemp())
+        path = Path(self.mktemp()).resolve()
         uri = path_to_file_uri(path)
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_file_uri_makedirs(self):
-        path = os.path.abspath(self.mktemp())
-        path = os.path.join(path, 'more', 'paths', 'file.txt')
+        path = Path(self.mktemp()).resolve()
+        path = path / 'more' / 'paths' / 'file.txt'
         uri = path_to_file_uri(path)
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_direct_path(self):
-        path = os.path.abspath(self.mktemp())
+        path = Path(self.mktemp()).resolve()
         return self._assert_stores(FileFeedStorage(path), path)
 
     def test_store_direct_path_relative(self):
-        path = self.mktemp()
+        path = Path(self.mktemp()).resolve()
         return self._assert_stores(FileFeedStorage(path), path)
 
     def test_interface(self):
-        path = self.mktemp()
+        path = Path(self.mktemp()).resolve()
         st = FileFeedStorage(path)
         verifyObject(IFeedStorage, st)
 
     def _store(self, feed_options=None):
-        path = os.path.abspath(self.mktemp())
+        path = Path(self.mktemp()).resolve()
         storage = FileFeedStorage(path, feed_options=feed_options)
         spider = scrapy.Spider("default")
         file = storage.open(spider)
@@ -117,12 +116,11 @@ class FileFeedStorageTest(unittest.TestCase):
         file = storage.open(spider)
         file.write(b"content")
         yield storage.store(file)
-        self.assertTrue(os.path.exists(path))
+        self.assertTrue(path.exists())
         try:
-            with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), expected_content)
+            self.assertEqual(path.read_bytes(), expected_content)
         finally:
-            os.unlink(path)
+            path.unlink()
 
 
 class FTPFeedStorageTest(unittest.TestCase):
@@ -151,10 +149,9 @@ class FTPFeedStorageTest(unittest.TestCase):
     def _assert_stored(self, path, content):
         self.assertTrue(path.exists())
         try:
-            with path.open('rb') as fp:
-                self.assertEqual(fp.read(), content)
+            self.assertEqual(path.read_bytes(), content)
         finally:
-            os.unlink(str(path))
+            path.unlink()
 
     @defer.inlineCallbacks
     def test_append(self):
@@ -217,23 +214,23 @@ class BlockingFeedStorageTest(unittest.TestCase):
         b = BlockingFeedStorage()
 
         tmp = b.open(self.get_test_spider())
-        tmp_path = os.path.dirname(tmp.name)
+        tmp_path = Path(tmp.name).parent
         self.assertEqual(tmp_path, tempfile.gettempdir())
 
     def test_temp_file(self):
         b = BlockingFeedStorage()
 
-        tests_path = os.path.dirname(os.path.abspath(__file__))
+        tests_path = Path(__file__).parent
         spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
         tmp = b.open(spider)
-        tmp_path = os.path.dirname(tmp.name)
+        tmp_path = Path(tmp.name).parent
         self.assertEqual(tmp_path, tests_path)
 
     def test_invalid_folder(self):
         b = BlockingFeedStorage()
 
-        tests_path = os.path.dirname(os.path.abspath(__file__))
-        invalid_path = os.path.join(tests_path, 'invalid_path')
+        tests_path = Path(__file__).parent
+        invalid_path = tests_path / 'invalid_path'
         spider = self.get_test_spider({'FEED_TEMPDIR': invalid_path})
 
         self.assertRaises(OSError, b.open, spider=spider)
@@ -519,10 +516,8 @@ class DummyBlockingFeedStorage(BlockingFeedStorage):
         self.path = file_uri_to_path(uri)
 
     def _store_in_thread(self, file):
-        dirname = os.path.dirname(self.path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
-        with open(self.path, 'ab') as output_file:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open('ab') as output_file:
             output_file.write(file.read())
 
         file.close()
@@ -562,12 +557,11 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         baz = scrapy.Field()
 
     def _random_temp_filename(self, inter_dir=''):
-        chars = [random.choice(ascii_letters + digits) for _ in range(15)]
-        filename = ''.join(chars)
-        return os.path.join(self.temp_dir, inter_dir, filename)
+        filename = ''.join(random.choice(ascii_letters + digits) for _ in range(15))
+        return self.temp_dir / inter_dir / filename
 
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp()
+        self.temp_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -650,18 +644,12 @@ class FeedExportTest(FeedExportTestBase):
                 yield runner.crawl(spider_cls)
 
             for file_path, feed_options in FEEDS.items():
-                if not os.path.exists(str(file_path)):
-                    continue
-
-                with open(str(file_path), 'rb') as f:
-                    content[feed_options['format']] = f.read()
+                if file_path.exists():
+                    content[feed_options['format']] = file_path.read_bytes()
 
         finally:
             for file_path in FEEDS.keys():
-                if not os.path.exists(str(file_path)):
-                    continue
-
-                os.remove(str(file_path))
+                file_path.unlink(missing_ok=True)
 
         return content
 
@@ -1342,11 +1330,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 yield runner.crawl(spider_cls)
 
             for path, feed in FEEDS.items():
-                dir_name = os.path.dirname(path)
-                for file in sorted(os.listdir(dir_name)):
-                    with open(os.path.join(dir_name, file), 'rb') as f:
-                        data = f.read()
-                        content[feed['format']].append(data)
+                for file in sorted(path.parent.iterdir()):
+                    content[feed['format']].append(file.read_bytes())
         finally:
             self.tearDown()
         defer.returnValue(content)
@@ -1356,7 +1341,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'jl', self._file_mark): {'format': 'jl'},
+                (self._random_temp_filename() / 'jl' / self._file_mark): {'format': 'jl'},
             },
         })
         batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
@@ -1372,7 +1357,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {'format': 'csv'},
+                (self._random_temp_filename() / 'csv' / self._file_mark): {'format': 'csv'},
             },
         })
         batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
@@ -1388,7 +1373,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
+                (self._random_temp_filename() / 'xml' / self._file_mark): {'format': 'xml'},
             },
         })
         batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
@@ -1405,8 +1390,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
-                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {'format': 'json'},
+                (self._random_temp_filename() / 'xml' / self._file_mark): {'format': 'xml'},
+                (self._random_temp_filename() / 'json' / self._file_mark): {'format': 'json'},
             },
         })
         batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
@@ -1431,7 +1416,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'pickle', self._file_mark): {'format': 'pickle'},
+                (self._random_temp_filename() / 'pickle' / self._file_mark): {'format': 'pickle'},
             },
         })
         batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
@@ -1448,7 +1433,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'marshal', self._file_mark): {'format': 'marshal'},
+                (self._random_temp_filename() / 'marshal' / self._file_mark): {'format': 'marshal'},
             },
         })
         batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
@@ -1495,7 +1480,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for fmt in ('json', 'jsonlines', 'xml', 'csv'):
             settings = {
                 'FEEDS': {
-                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                    (self._random_temp_filename() / fmt / self._file_mark): {'format': fmt},
                 },
                 'FEED_EXPORT_BATCH_ITEM_COUNT': 1
             }
@@ -1515,7 +1500,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for fmt, expctd in formats:
             settings = {
                 'FEEDS': {
-                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                    (self._random_temp_filename() / fmt / self._file_mark): {'format': fmt},
                 },
                 'FEED_STORE_EMPTY': True,
                 'FEED_EXPORT_INDENT': None,
@@ -1548,19 +1533,19 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {
+                (self._random_temp_filename() / 'json' / self._file_mark): {
                     'format': 'json',
                     'indent': 0,
                     'fields': ['bar'],
                     'encoding': 'utf-8',
                 },
-                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {
+                (self._random_temp_filename() / 'xml' / self._file_mark): {
                     'format': 'xml',
                     'indent': 2,
                     'fields': ['foo'],
                     'encoding': 'latin-1',
                 },
-                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {
+                (self._random_temp_filename() / 'csv' / self._file_mark): {
                     'format': 'csv',
                     'indent': None,
                     'fields': ['foo', 'bar'],
@@ -1583,7 +1568,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         }
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {
+                (self._random_temp_filename() / 'json' / self._file_mark): {
                     'format': 'json',
                     'indent': None,
                     'encoding': 'utf-8',
@@ -1609,7 +1594,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         ]
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), '%(batch_time)s'): {
+                (self._random_temp_filename() / '%(batch_time)s'): {
                     'format': 'json',
                 },
             },
@@ -1622,7 +1607,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def test_stats_batch_file_success(self):
         settings = {
             "FEEDS": {
-                build_url(os.path.join(self._random_temp_filename(), "json", self._file_mark)): {
+                build_url(self._random_temp_filename() / "json" / self._file_mark): {
                     "format": "json",
                 }
             },

@@ -1,6 +1,5 @@
 import argparse
 import json
-import os
 import random
 import sys
 from pathlib import Path
@@ -191,7 +190,7 @@ class Root(Resource):
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
-            self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+            self.putChild(b"files", File(tests_datadir / 'test_site/files/'))
         except Exception:
             pass
         self.putChild(b"redirect-to", RedirectTo())
@@ -283,10 +282,8 @@ class MockFTPServer:
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
-    factory = ssl.DefaultOpenSSLContextFactory(
-        os.path.join(os.path.dirname(__file__), keyfile),
-        os.path.join(os.path.dirname(__file__), certfile),
-    )
+    factory = ssl.DefaultOpenSSLContextFactory(str(Path(__file__).parent / keyfile),
+                                               str(Path(__file__).parent / certfile))
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.3 because it unconditionally enables some strong ciphers

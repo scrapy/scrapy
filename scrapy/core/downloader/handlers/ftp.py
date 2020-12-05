@@ -44,7 +44,7 @@ from scrapy.utils.python import to_bytes
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
         self.__filename = filename
-        self.body = open(filename, "wb") if filename else BytesIO()
+        self.body = filename.open("wb") if filename else BytesIO()
         self.size = 0
 
     def dataReceived(self, data):

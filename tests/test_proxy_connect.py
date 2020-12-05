@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import sys
+from pathlib import Path
 from subprocess import Popen, PIPE
 from urllib.parse import urlsplit, urlunsplit
 from unittest import skipIf
@@ -30,8 +31,7 @@ from mitmproxy.tools.main import mitmdump
 sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
-        cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                 'keys', 'mitmproxy-ca.pem')
+        cert_path = Path(__file__).resolve() / 'keys' / 'mitmproxy-ca.pem'
         self.proc = Popen([sys.executable,
                            '-c', script,
                            '--listen-host', '127.0.0.1',

@@ -1,7 +1,5 @@
-import os
 import json
 import logging
-from os.path import join, exists
 
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
@@ -153,18 +151,17 @@ class Scheduler:
     def _dqdir(self, jobdir):
         """ Return a folder name to keep disk queue state at """
         if jobdir:
-            dqdir = join(jobdir, 'requests.queue')
-            if not exists(dqdir):
-                os.makedirs(dqdir)
+            dqdir = jobdir / 'requests.queue'
+            dqdir.mkdir(parents=True, exist_ok=True)
             return dqdir
 
     def _read_dqs_state(self, dqdir):
-        path = join(dqdir, 'active.json')
-        if not exists(path):
+        path = dqdir / 'active.json'
+        if not path.exists():
             return ()
-        with open(path) as f:
+        with path.open() as f:
             return json.load(f)
 
     def _write_dqs_state(self, dqdir, state):
-        with open(join(dqdir, 'active.json'), 'w') as f:
+        with (dqdir / 'active.json').open('w') as f:
             json.dump(state, f)

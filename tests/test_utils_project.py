@@ -1,8 +1,9 @@
-import unittest
-import os
-import tempfile
-import shutil
 import contextlib
+import os
+import shutil
+import tempfile
+import unittest
+from pathlib import Path
 
 from pytest import warns
 
@@ -17,9 +18,8 @@ def inside_a_project():
 
     try:
         os.chdir(project_dir)
-        with open('scrapy.cfg', 'w') as f:
-            # create an empty scrapy.cfg
-            f.close()
+        # create an empty scrapy.cfg
+        Path('scrapy.cfg').write_text('')
 
         yield project_dir
     finally:
@@ -29,21 +29,15 @@ def inside_a_project():
 
 class ProjectUtilsTest(unittest.TestCase):
     def test_data_path_outside_project(self):
-        self.assertEqual(
-            os.path.join('.scrapy', 'somepath'),
-            data_path('somepath')
-        )
-        abspath = os.path.join(os.path.sep, 'absolute', 'path')
+        self.assertEqual(Path('.scrapy') / 'somepath', data_path('somepath'))
+        abspath = Path.root / 'absolute' / 'path'
         self.assertEqual(abspath, data_path(abspath))
 
     def test_data_path_inside_project(self):
         with inside_a_project() as proj_path:
-            expected = os.path.join(proj_path, '.scrapy', 'somepath')
-            self.assertEqual(
-                os.path.realpath(expected),
-                os.path.realpath(data_path('somepath'))
-            )
-            abspath = os.path.join(os.path.sep, 'absolute', 'path')
+            expected = proj_path / '.scrapy' / 'somepath'
+            self.assertEqual(expected.resolve(), data_path('somepath').resolve())
+            abspath = Path.root / 'absolute' / 'path'
             self.assertEqual(abspath, data_path(abspath))
 
 

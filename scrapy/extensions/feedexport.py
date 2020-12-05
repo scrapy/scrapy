@@ -5,7 +5,6 @@ See documentation in docs/topics/feed-exports.rst
 """
 
 import logging
-import os
 import re
 import sys
 import warnings
@@ -66,8 +65,8 @@ class BlockingFeedStorage:
 
     def open(self, spider):
         path = spider.crawler.settings['FEED_TEMPDIR']
-        if path and not os.path.isdir(path):
-            raise OSError('Not a Directory: ' + str(path))
+        if path and not path.is_dir():
+            raise OSError(f'Not a Directory: {path}')
 
         return NamedTemporaryFile(prefix='feed-', dir=path)
 
@@ -107,10 +106,8 @@ class FileFeedStorage:
         self.write_mode = 'wb' if feed_options.get('overwrite', False) else 'ab'
 
     def open(self, spider):
-        dirname = os.path.dirname(self.path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
-        return open(self.path, self.write_mode)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        return self.path.open(self.write_mode)
 
     def store(self, file):
         file.close()

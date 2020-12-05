@@ -433,7 +433,7 @@ See here the methods that you can override in your custom Files Pipeline:
       approach to download all files into the ``files`` folder with their
       original filenames (e.g. ``files/foo.png``)::
 
-        import os
+        from pathlib import Path
         from urllib.parse import urlparse
 
         from scrapy.pipelines.files import FilesPipeline
@@ -441,7 +441,7 @@ See here the methods that you can override in your custom Files Pipeline:
         class MyFilesPipeline(FilesPipeline):
 
             def file_path(self, request, response=None, info=None, *, item=None):
-                return 'files/' + os.path.basename(urlparse(request.url).path)
+                return Path('files') / Path(urlparse(request.url).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.
@@ -572,7 +572,7 @@ See here the methods that you can override in your custom Images Pipeline:
       approach to download all files into the ``files`` folder with their
       original filenames (e.g. ``files/foo.png``)::
 
-        import os
+        from pathlib import Path
         from urllib.parse import urlparse
 
         from scrapy.pipelines.images import ImagesPipeline
@@ -580,7 +580,7 @@ See here the methods that you can override in your custom Images Pipeline:
         class MyImagesPipeline(ImagesPipeline):
 
             def file_path(self, request, response=None, info=None, *, item=None):
-                return 'files/' + os.path.basename(urlparse(request.url).path)
+                return Path('files') / Path(urlparse(request.url).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.

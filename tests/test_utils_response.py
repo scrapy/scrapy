@@ -1,5 +1,5 @@
-import os
 import unittest
+from pathlib import Path
 from urllib.parse import urlparse
 
 from scrapy.http import Response, TextResponse, HtmlResponse
@@ -29,11 +29,10 @@ class ResponseUtilsTest(unittest.TestCase):
         body = b"<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
 
         def browser_open(burl):
-            path = urlparse(burl).path
-            if not os.path.exists(path):
-                path = burl.replace('file://', '')
-            with open(path, "rb") as f:
-                bbody = f.read()
+            path = Path(urlparse(burl).path)
+            if not path.exists():
+                path = Path(burl.replace('file://', ''))
+            bbody = path.read_bytes()
             self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
             return True
         response = HtmlResponse(url, body=body)

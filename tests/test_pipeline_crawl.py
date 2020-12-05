@@ -1,5 +1,5 @@
-import os
 import shutil
+from pathlib import Path
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -61,8 +61,8 @@ class FileDownloadCrawlTestCase(TestCase):
         self.mockserver.__enter__()
 
         # prepare a directory for storing files
-        self.tmpmediastore = self.mktemp()
-        os.mkdir(self.tmpmediastore)
+        self.tmpmediastore = Path(self.mktemp())
+        self.tmpmediastore.mkdir()
         self.settings = {
             'ITEM_PIPELINES': {self.pipeline_class: 1},
             self.store_setting_key: self.tmpmediastore,
@@ -108,9 +108,7 @@ class FileDownloadCrawlTestCase(TestCase):
         # check that the image files where actually written to the media store
         for item in items:
             for i in item[self.media_key]:
-                self.assertTrue(
-                    os.path.exists(
-                        os.path.join(self.tmpmediastore, i['path'])))
+                self.assertTrue((self.tmpmediastore / i['path']).exists())
 
     def _assert_files_download_failure(self, crawler, items, code, logs):
 
@@ -130,7 +128,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(logs.count(file_dl_failure), 3)
 
         # check that no files were written to the media store
-        self.assertEqual(os.listdir(self.tmpmediastore), [])
+        self.assertEqual(list(self.tmpmediastore.iterdir()), [])
 
     @defer.inlineCallbacks
     def test_download_media(self):

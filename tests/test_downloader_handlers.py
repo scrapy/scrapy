@@ -2,6 +2,7 @@ import contextlib
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -101,14 +102,13 @@ class LoadTestCase(unittest.TestCase):
 class FileTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        with open(self.tmpname + '^', 'w') as f:
-            f.write('0123456789')
+        self.tmpname = Path(self.mktemp() + '^')
+        self.tmpname.write_text('0123456789')
         handler = create_instance(FileDownloadHandler, None, get_crawler())
         self.download_request = handler.download_request
 
     def tearDown(self):
-        os.unlink(self.tmpname + '^')
+        self.tmpname.unlink()
 
     def test_download(self):
         def _test(response):
@@ -116,7 +116,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.body, b'0123456789')
 
-        request = Request(path_to_file_uri(self.tmpname + '^'))
+        request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith('%5E')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
@@ -918,10 +918,9 @@ class BaseFTPTestCase(unittest.TestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dirs and test file
-        self.directory = self.mktemp()
-        os.mkdir(self.directory)
-        userdir = os.path.join(self.directory, self.username)
-        os.mkdir(userdir)
+        self.directory = Path(self.mktemp())
+        userdir = self.directory / self.username
+        userdir.mkdir(parents=True)
         fp = FilePath(userdir)
         fp.child('file.txt').setContent(b"I have the power!")
         fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
@@ -1000,10 +999,9 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.body, local_fname)
             self.assertEqual(r.headers, {b'Local Filename': [local_fname],
                                          b'Size': [b'17']})
-            self.assertTrue(os.path.exists(local_fname))
-            with open(local_fname, "rb") as f:
-                self.assertEqual(f.read(), b"I have the power!")
-            os.remove(local_fname)
+            self.assertTrue(Path(local_fname).exists())
+            self.assertEqual(Path(local_fname).read_bytes(), b"I have the power!")
+            Path(local_fname).unlink()
         return self._add_test_callbacks(d, _test)
 
 

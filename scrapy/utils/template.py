@@ -1,23 +1,20 @@
 """Helper functions for working with templates"""
 
-import os
 import re
 import string
 
 
 def render_templatefile(path, **kwargs):
-    with open(path, 'rb') as fp:
-        raw = fp.read().decode('utf8')
+    raw = path.read_text(encoding='utf8')
 
     content = string.Template(raw).substitute(**kwargs)
 
-    render_path = path[:-len('.tmpl')] if path.endswith('.tmpl') else path
+    render_path = path.with_suffix('')
 
-    if path.endswith('.tmpl'):
-        os.rename(path, render_path)
+    if path.suffix == '.tmpl':
+        path.rename(path, render_path)
 
-    with open(render_path, 'wb') as fp:
-        fp.write(content.encode('utf8'))
+    render_path.write_text(content, encoding='utf8')
 
 
 CAMELCASE_INVALID_CHARS = re.compile(r'[^a-zA-Z\d]')

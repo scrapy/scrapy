@@ -27,8 +27,7 @@ def main():
 
     # Read lines from the linkcheck output file
     try:
-        with open("build/linkcheck/output.txt") as out:
-            output_lines = out.readlines()
+        output_lines = Path("build/linkcheck/output.txt").read_text().splitlines()
     except IOError:
         print("linkcheck output not found; please run linkcheck first.")
         exit(1)
@@ -51,14 +50,12 @@ def main():
 
                     # Update the previous file
                     if _filename:
-                        with open(_filename, "w") as _file:
-                            _file.write(_contents)
+                        _filename.write_text(_contents)
 
                     _filename = newfilename
 
                     # Read the new file to memory
-                    with open(_filename) as _file:
-                        _contents = _file.read()
+                    _contents = _filename.read_text()
 
                 _contents = _contents.replace(match.group(3), match.group(4))
         else:

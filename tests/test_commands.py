@@ -8,7 +8,6 @@ import sys
 import tempfile
 from contextlib import contextmanager
 from itertools import chain
-from os.path import exists, join, abspath, getmtime
 from pathlib import Path
 from shutil import rmtree, copytree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
@@ -54,8 +53,8 @@ class ProjectTest(unittest.TestCase):
     def setUp(self):
         self.temp_path = mkdtemp()
         self.cwd = self.temp_path
-        self.proj_path = join(self.temp_path, self.project_name)
-        self.proj_mod_path = join(self.proj_path, self.project_name)
+        self.proj_path = self.temp_path / self.project_name
+        self.proj_mod_path = self.proj_path / self.project_name
         self.env = get_testenv()
 
     def tearDown(self):
@@ -93,29 +92,29 @@ class StartprojectTest(ProjectTest):
     def test_startproject(self):
         self.assertEqual(0, self.call('startproject', self.project_name))
 
-        assert exists(join(self.proj_path, 'scrapy.cfg'))
-        assert exists(join(self.proj_path, 'testproject'))
-        assert exists(join(self.proj_mod_path, '__init__.py'))
-        assert exists(join(self.proj_mod_path, 'items.py'))
-        assert exists(join(self.proj_mod_path, 'pipelines.py'))
-        assert exists(join(self.proj_mod_path, 'settings.py'))
-        assert exists(join(self.proj_mod_path, 'spiders', '__init__.py'))
+        assert (self.proj_path / 'scrapy.cfg').exists()
+        assert (self.proj_path / 'testproject').exists()
+        assert (self.proj_mod_path / '__init__.py').exists()
+        assert (self.proj_mod_path / 'items.py').exists()
+        assert (self.proj_mod_path / 'pipelines.py').exists()
+        assert (self.proj_mod_path / 'settings.py').exists()
+        assert (self.proj_mod_path / 'spiders' / '__init__.py').exists()
 
         self.assertEqual(1, self.call('startproject', self.project_name))
         self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
         self.assertEqual(1, self.call('startproject', 'sys'))
 
     def test_startproject_with_project_dir(self):
-        project_dir = mkdtemp()
+        project_dir = Path(mkdtemp()).resolve()
         self.assertEqual(0, self.call('startproject', self.project_name, project_dir))
 
-        assert exists(join(abspath(project_dir), 'scrapy.cfg'))
-        assert exists(join(abspath(project_dir), 'testproject'))
-        assert exists(join(join(abspath(project_dir), self.project_name), '__init__.py'))
-        assert exists(join(join(abspath(project_dir), self.project_name), 'items.py'))
-        assert exists(join(join(abspath(project_dir), self.project_name), 'pipelines.py'))
-        assert exists(join(join(abspath(project_dir), self.project_name), 'settings.py'))
-        assert exists(join(join(abspath(project_dir), self.project_name), 'spiders', '__init__.py'))
+        assert (project_dir / 'scrapy.cfg').exists()
+        assert (project_dir / 'testproject').exists()
+        assert (project_dir / self.project_name / '__init__.py').exists()
+        assert (project_dir / self.project_name / 'items.py').exists()
+        assert (project_dir / self.project_name / 'pipelines.py').exists()
+        assert (project_dir / self.project_name / 'settings.py').exists()
+        assert (project_dir / self.project_name / 'spiders' / '__init__.py').exists()
 
         self.assertEqual(0, self.call('startproject', self.project_name, project_dir + '2'))
 
@@ -130,25 +129,27 @@ class StartprojectTest(ProjectTest):
 def get_permissions_dict(path, renamings=None, ignore=None):
 
     def get_permissions(path):
-        return oct(os.stat(path).st_mode)
+        return oct(path.stat().st_mode)
 
     renamings = renamings or tuple()
     permissions_dict = {
         '.': get_permissions(path),
     }
-    for root, dirs, files in os.walk(path):
+
+    # TODO: changing this to pathlib.Path.rglob would involve changing the `ignore` logic
+    for root, dirs, files in os.walk(str(path)):
         nodes = list(chain(dirs, files))
         if ignore:
             ignored_names = ignore(root, nodes)
             nodes = [node for node in nodes if node not in ignored_names]
         for node in nodes:
-            absolute_path = os.path.join(root, node)
-            relative_path = os.path.relpath(absolute_path, path)
+            absolute_path = Path(root) / node
+            relative_path = path.relative_to(absolute_path)
             for search_string, replacement in renamings:
-                relative_path = relative_path.replace(
+                relative_path = Path(str(relative_path).replace(
                     search_string,
                     replacement
-                )
+                ))
             permissions = get_permissions(absolute_path)
             permissions_dict[relative_path] = permissions
     return permissions_dict
@@ -160,28 +161,27 @@ class StartprojectTemplatesTest(ProjectTest):
 
     def setUp(self):
         super().setUp()
-        self.tmpl = join(self.temp_path, 'templates')
-        self.tmpl_proj = join(self.tmpl, 'project')
+        self.tmpl = self.temp_path / 'templates'
+        self.tmpl_proj = self.tmpl / 'project'
 
     def test_startproject_template_override(self):
-        copytree(join(scrapy.__path__[0], 'templates'), self.tmpl)
-        with open(join(self.tmpl_proj, 'root_template'), 'w'):
-            pass
-        assert exists(join(self.tmpl_proj, 'root_template'))
+        copytree(Path(scrapy.__path__[0]) / 'templates', self.tmpl)
+        (self.tmpl_proj / 'root_template').write_text('')
+        assert (self.tmpl_proj / 'root_template').exists()
 
         args = ['--set', f'TEMPLATES_DIR={self.tmpl}']
         p, out, err = self.proc('startproject', self.project_name, *args)
         self.assertIn(f"New Scrapy project '{self.project_name}', "
                       "using template directory", out)
         self.assertIn(self.tmpl_proj, out)
-        assert exists(join(self.proj_path, 'root_template'))
+        assert (self.proj_path / 'root_template').exists()
 
     def test_startproject_permissions_from_writable(self):
         """Check that generated files have the right permissions when the
         template folder has the same permissions as in the project, i.e.
         everything is writable."""
-        scrapy_path = scrapy.__path__[0]
-        project_template = os.path.join(scrapy_path, 'templates', 'project')
+        scrapy_path = Path(scrapy.__path__[0])
+        project_template = scrapy_path / 'templates' / 'project'
         project_name = 'startproject1'
         renamings = (
             ('module', project_name),
@@ -193,7 +193,7 @@ class StartprojectTemplatesTest(ProjectTest):
             IGNORE,
         )
 
-        destination = mkdtemp()
+        destination = Path(mkdtemp())
         process = subprocess.Popen(
             (
                 sys.executable,
@@ -207,7 +207,7 @@ class StartprojectTemplatesTest(ProjectTest):
         )
         process.wait()
 
-        project_dir = os.path.join(destination, project_name)
+        project_dir = destination / project_name
         actual_permissions = get_permissions_dict(project_dir)
 
         self.assertEqual(actual_permissions, expected_permissions)
@@ -219,9 +219,9 @@ class StartprojectTemplatesTest(ProjectTest):
 
         See https://github.com/scrapy/scrapy/pull/4604
         """
-        scrapy_path = scrapy.__path__[0]
-        templates_dir = os.path.join(scrapy_path, 'templates')
-        project_template = os.path.join(templates_dir, 'project')
+        scrapy_path = Path(scrapy.__path__[0])
+        templates_dir = scrapy_path / 'templates'
+        project_template = templates_dir / 'project'
         project_name = 'startproject2'
         renamings = (
             ('module', project_name),
@@ -234,17 +234,16 @@ class StartprojectTemplatesTest(ProjectTest):
         )
 
         def _make_read_only(path):
-            current_permissions = os.stat(path).st_mode
-            os.chmod(path, current_permissions & ~ANYONE_WRITE_PERMISSION)
+            current_permissions = path.stat().st_mode
+            path.chmod(current_permissions & ~ANYONE_WRITE_PERMISSION)
 
-        read_only_templates_dir = str(Path(mkdtemp()) / 'templates')
+        read_only_templates_dir = Path(mkdtemp()) / 'templates'
         copytree(templates_dir, read_only_templates_dir)
 
-        for root, dirs, files in os.walk(read_only_templates_dir):
-            for node in chain(dirs, files):
-                _make_read_only(os.path.join(root, node))
+        for node in read_only_templates_dir.rglob('*'):
+            _make_read_only(node)
 
-        destination = mkdtemp()
+        destination = Path(mkdtemp())
         process = subprocess.Popen(
             (
                 sys.executable,
@@ -260,7 +259,7 @@ class StartprojectTemplatesTest(ProjectTest):
         )
         process.wait()
 
-        project_dir = os.path.join(destination, project_name)
+        project_dir = destination / project_name
         actual_permissions = get_permissions_dict(project_dir)
 
         self.assertEqual(actual_permissions, expected_permissions)
@@ -268,8 +267,8 @@ class StartprojectTemplatesTest(ProjectTest):
     def test_startproject_permissions_unchanged_in_destination(self):
         """Check that pre-existing folders and files in the destination folder
         do not see their permissions modified."""
-        scrapy_path = scrapy.__path__[0]
-        project_template = os.path.join(scrapy_path, 'templates', 'project')
+        scrapy_path = Path(scrapy.__path__[0])
+        project_template = scrapy_path / 'templates' / 'project'
         project_name = 'startproject3'
         renamings = (
             ('module', project_name),
@@ -281,8 +280,8 @@ class StartprojectTemplatesTest(ProjectTest):
             IGNORE,
         )
 
-        destination = mkdtemp()
-        project_dir = os.path.join(destination, project_name)
+        destination = Path(mkdtemp())
+        project_dir = destination / project_name
 
         existing_nodes = {
             oct(permissions)[2:] + extension: permissions
@@ -291,11 +290,10 @@ class StartprojectTemplatesTest(ProjectTest):
                 0o444, 0o555, 0o644, 0o666, 0o755, 0o777,
             )
         }
-        os.mkdir(project_dir)
-        project_dir_path = Path(project_dir)
+        project_dir.mkdir()
         for node, permissions in existing_nodes.items():
-            path = project_dir_path / node
-            if node.endswith('.d'):
+            path = project_dir / node
+            if node.suffix == '.d':
                 path.mkdir(mode=permissions)
             else:
                 path.touch(mode=permissions)
@@ -329,12 +327,8 @@ class StartprojectTemplatesTest(ProjectTest):
             yield
             os.umask(cur_mask)
 
-        scrapy_path = scrapy.__path__[0]
-        project_template = os.path.join(
-            scrapy_path,
-            'templates',
-            'project'
-        )
+        scrapy_path = Path(scrapy.__path__[0])
+        project_template = scrapy_path / 'templates' / 'project'
         project_name = 'umaskproject'
         renamings = (
             ('module', project_name),
@@ -347,7 +341,7 @@ class StartprojectTemplatesTest(ProjectTest):
         )
 
         with umask(0o002):
-            destination = mkdtemp()
+            destination = Path(mkdtemp())
             process = subprocess.Popen(
                 (
                     sys.executable,
@@ -361,7 +355,7 @@ class StartprojectTemplatesTest(ProjectTest):
             )
             process.wait()
 
-            project_dir = os.path.join(destination, project_name)
+            project_dir = destination / project_name
             actual_permissions = get_permissions_dict(project_dir)
 
             self.assertEqual(actual_permissions, expected_permissions)
@@ -372,7 +366,7 @@ class CommandTest(ProjectTest):
     def setUp(self):
         super().setUp()
         self.call('startproject', self.project_name)
-        self.cwd = join(self.temp_path, self.project_name)
+        self.cwd = self.temp_path / self.project_name
         self.env['SCRAPY_SETTINGS_MODULE'] = f'{self.project_name}.settings'
 
 
@@ -381,10 +375,10 @@ class GenspiderCommandTest(CommandTest):
     def test_arguments(self):
         # only pass one argument. spider script shouldn't be created
         self.assertEqual(2, self.call('genspider', 'test_name'))
-        assert not exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
+        assert not (self.proj_mod_path / 'spiders' / 'test_name.py').exists()
         # pass two arguments <name> <domain>. spider script should be created
         self.assertEqual(0, self.call('genspider', 'test_name', 'test.com'))
-        assert exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
+        assert (self.proj_mod_path / 'spiders' / 'test_name.py').exists()
 
     def test_template(self, tplname='crawl'):
         args = [f'--template={tplname}'] if tplname else []
@@ -392,11 +386,11 @@ class GenspiderCommandTest(CommandTest):
         spmodule = f"{self.project_name}.spiders.{spname}"
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn(f"Created spider {spname!r} using template {tplname!r} in module:{os.linesep}  {spmodule}", out)
-        self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
-        modify_time_before = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
+        self.assertTrue((self.proj_mod_path / 'spiders' / 'test_spider.py').exists())
+        modify_time_before = (self.proj_mod_path / 'spiders' / 'test_spider.py').stat().st_mtime
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
         self.assertIn(f"Spider {spname!r} already exists in module", out)
-        modify_time_after = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
+        modify_time_after = (self.proj_mod_path / 'spiders' / 'test_spider.py').stat().st_mtime
         self.assertEqual(modify_time_after, modify_time_before)
 
     def test_template_basic(self):
@@ -417,37 +411,37 @@ class GenspiderCommandTest(CommandTest):
 
     def test_same_name_as_project(self):
         self.assertEqual(2, self.call('genspider', self.project_name))
-        assert not exists(join(self.proj_mod_path, 'spiders', f'{self.project_name}.py'))
+        assert not (self.proj_mod_path / 'spiders' / f'{self.project_name}.py').exists()
 
     def test_same_filename_as_existing_spider(self, force=False):
         file_name = 'example'
-        file_path = join(self.proj_mod_path, 'spiders', f'{file_name}.py')
+        file_path = self.proj_mod_path / 'spiders' / f'{file_name}.py'
         self.assertEqual(0, self.call('genspider', file_name, 'example.com'))
-        assert exists(file_path)
+        assert file_path.exists()
 
         # change name of spider but not its file name
-        with open(file_path, 'r+') as spider_file:
+        with file_path.open('r+') as spider_file:
             file_data = spider_file.read()
             file_data = file_data.replace("name = \'example\'", "name = \'renamed\'")
             spider_file.seek(0)
             spider_file.write(file_data)
             spider_file.truncate()
-        modify_time_before = getmtime(file_path)
+        modify_time_before = file_path.stat().st_mtime
         file_contents_before = file_data
 
         if force:
             p, out, err = self.proc('genspider', '--force', file_name, 'example.com')
             self.assertIn(f"Created spider {file_name!r} using template \'basic\' in module", out)
-            modify_time_after = getmtime(file_path)
+            modify_time_after = file_path.stat().st_mtime
             self.assertNotEqual(modify_time_after, modify_time_before)
-            file_contents_after = open(file_path, 'r').read()
+            file_contents_after = file_path.read_text()
             self.assertNotEqual(file_contents_after, file_contents_before)
         else:
             p, out, err = self.proc('genspider', file_name, 'example.com')
             self.assertIn(f"{file_path} already exists", out)
-            modify_time_after = getmtime(file_path)
+            modify_time_after = file_path.stat().st_mtime
             self.assertEqual(modify_time_after, modify_time_before)
-            file_contents_after = open(file_path, 'r').read()
+            file_contents_after = file_path.read_text()
             self.assertEqual(file_contents_after, file_contents_before)
 
     def test_same_filename_as_existing_spider_force(self):
@@ -458,31 +452,31 @@ class GenspiderStandaloneCommandTest(ProjectTest):
 
     def test_generate_standalone_spider(self):
         self.call('genspider', 'example', 'example.com')
-        assert exists(join(self.temp_path, 'example.py'))
+        assert (self.temp_path / 'example.py').exists()
 
     def test_same_name_as_existing_file(self, force=False):
         file_name = 'example'
-        file_path = join(self.temp_path, file_name + '.py')
+        file_path = self.temp_path / f'{file_name}.py'
         p, out, err = self.proc('genspider', file_name, 'example.com')
         self.assertIn(f"Created spider {file_name!r} using template \'basic\' ", out)
-        assert exists(file_path)
-        modify_time_before = getmtime(file_path)
-        file_contents_before = open(file_path, 'r').read()
+        assert file_path.exists()
+        modify_time_before = file_path.stat().st_mtime
+        file_contents_before = file_path.read_text()
 
         if force:
             # use different template to ensure contents were changed
             p, out, err = self.proc('genspider', '--force', '-t', 'crawl', file_name, 'example.com')
             self.assertIn(f"Created spider {file_name!r} using template \'crawl\' ", out)
-            modify_time_after = getmtime(file_path)
+            modify_time_after = file_path.stat().st_mtime
             self.assertNotEqual(modify_time_after, modify_time_before)
-            file_contents_after = open(file_path, 'r').read()
+            file_contents_after = file_path.read_text()
             self.assertNotEqual(file_contents_after, file_contents_before)
         else:
             p, out, err = self.proc('genspider', file_name, 'example.com')
-            self.assertIn(f"{join(self.temp_path, file_name + '.py')} already exists", out)
-            modify_time_after = getmtime(file_path)
+            self.assertIn(f"{self.temp_path / file_name}.py already exists", out)
+            modify_time_after = file_path.stat().st_mtime
             self.assertEqual(modify_time_after, modify_time_before)
-            file_contents_after = open(file_path, 'r').read()
+            file_contents_after = file_path.read_text()
             self.assertEqual(file_contents_after, file_contents_before)
 
     def test_same_name_as_existing_file_force(self):
@@ -521,14 +515,13 @@ class BadSpider(scrapy.Spider):
 
     @contextmanager
     def _create_file(self, content, name=None):
-        tmpdir = self.mktemp()
-        os.mkdir(tmpdir)
+        tmpdir = Path(self.mktemp())
+        tmpdir.mkdir()
         if name:
-            fname = abspath(join(tmpdir, name))
+            fname = tmpdir.resolve() / name
         else:
-            fname = abspath(join(tmpdir, self.spider_filename))
-        with open(fname, 'w') as f:
-            f.write(content)
+            fname = tmpdir.resolve() / self.spider_filename
+        fname.write_text(content)
         try:
             yield fname
         finally:
@@ -681,12 +674,11 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
-        with open(os.path.join(self.cwd, "example.json"), "w") as f1:
-            f1.write("not empty")
+        (self.cwd / 'example.json').write_text('not empty')
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
-        with open(os.path.join(self.cwd, "example.json")) as f2:
+        with (self.cwd / "example.json").open() as f2:
             first_line = f2.readline()
         self.assertNotEqual(first_line, "not empty")
 
@@ -765,9 +757,8 @@ class BenchCommandTest(CommandTest):
 class CrawlCommandTest(CommandTest):
 
     def crawl(self, code, args=()):
-        fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
-        with open(fname, 'w') as f:
-            f.write(code)
+        fname = self.proj_mod_path.resolve() / 'spiders' / 'myspider.py'
+        fname.write_text(code)
         return self.proc('crawl', 'myspider', *args)
 
     def get_log(self, code, args=()):
@@ -819,12 +810,11 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
-        with open(os.path.join(self.cwd, "example.json"), "w") as f1:
-            f1.write("not empty")
+        (self.cwd / 'example.json').write_text('not empty')
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
-        with open(os.path.join(self.cwd, "example.json")) as f2:
+        with (self.cwd / 'example.json').open() as f2:
             first_line = f2.readline()
         self.assertNotEqual(first_line, "not empty")
 
