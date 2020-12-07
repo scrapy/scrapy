@@ -18,9 +18,9 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None, cb_kwargs=None):
+                 dont_filter=False, errback=None, flags=None, cb_kwargs=None, dont_encode=False):
 
-        self._encoding = encoding  # this one has to be set first
+        self._encoding = '' if dont_encode else encoding # this one has to be set first
         self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
@@ -62,8 +62,11 @@ class Request(object_ref):
         if not isinstance(url, str):
             raise TypeError(f'Request url must be str or unicode, got {type(url).__name__}')
 
-        s = safe_url_string(url, self.encoding)
-        self._url = escape_ajax(s)
+        if(self.encoding):
+            s = safe_url_string(url, self.encoding)
+            self._url = escape_ajax(s)
+        else:
+            self._url = escape_ajax(url)
 
         if (
             '://' not in self._url
