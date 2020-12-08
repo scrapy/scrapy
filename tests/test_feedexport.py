@@ -306,6 +306,7 @@ class S3FeedStorageTest(unittest.TestCase):
             )
 
     def test_init_without_acl(self):
+        skip_if_no_boto()
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -316,6 +317,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.acl, None)
 
     def test_init_with_acl(self):
+        skip_if_no_boto()
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -327,6 +329,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.acl, 'custom-acl')
 
     def test_from_crawler_without_acl(self):
+        skip_if_no_boto()
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -341,6 +344,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.acl, None)
 
     def test_from_crawler_with_acl(self):
+        skip_if_no_boto()
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -392,6 +396,7 @@ class S3FeedStorageTest(unittest.TestCase):
         )
 
     def test_overwrite_default(self):
+        skip_if_no_boto()
         with LogCapture() as log:
             S3FeedStorage(
                 's3://mybucket/export.csv',
@@ -402,6 +407,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertNotIn('S3 does not support appending to files', str(log))
 
     def test_overwrite_false(self):
+        skip_if_no_boto()
         with LogCapture() as log:
             S3FeedStorage(
                 's3://mybucket/export.csv',
@@ -796,6 +802,7 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_stats_multiple_file(self):
+        skip_if_no_boto()
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -1468,7 +1475,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
             self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
         ]
-        rows = [
+        ows = [
             {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
             {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'},
             {'foo': 'bar3', 'baz': 'quux3', 'egg': ''}
@@ -1856,6 +1863,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
             )
 
     def test_from_crawler(self):
+        skip_if_no_boto()
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
@@ -1905,6 +1913,7 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
     maxDiff = None
 
     def test_init(self):
+        skip_if_no_boto()
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {

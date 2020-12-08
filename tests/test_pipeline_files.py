@@ -177,6 +177,8 @@ class FilesPipelineTestCase(unittest.TestCase):
 class FilesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
+        skip_if_no_boto()
+
         url = 'http://www.example.com/files/1.txt'
         item = self.item_class(name='item1', file_urls=[url])
         pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
@@ -189,6 +191,8 @@ class FilesPipelineTestCaseFieldsMixin:
         self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
+        skip_if_no_boto()
+
         url = 'http://www.example.com/files/1.txt'
         item = self.item_class(name='item1', custom_file_urls=[url])
         pipeline = FilesPipeline.from_settings(Settings({

@@ -138,6 +138,8 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 class ImagesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
+        skip_if_no_boto()
+
         url = 'http://www.example.com/images/1.jpg'
         item = self.item_class(name='item1', image_urls=[url])
         pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
@@ -150,6 +152,8 @@ class ImagesPipelineTestCaseFieldsMixin:
         self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
+        skip_if_no_boto()
+
         url = 'http://www.example.com/images/1.jpg'
         item = self.item_class(name='item1', custom_image_urls=[url])
         pipeline = ImagesPipeline.from_settings(Settings({
