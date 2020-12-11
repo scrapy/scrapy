@@ -43,6 +43,7 @@ jobs:
           python-version: pypy3
           env:
             TOXENV: pypy3
+            PYPY_VERSION: 3.6-v7.3.1
 
         # windows tests
         - os: windows-latest
@@ -67,6 +68,11 @@ jobs:
         #   python-version: 3.6
         #   env:
         #     TOXENV: windows-pinned
+        # - os: ubuntu-18.04
+        #   python-version: pypy3
+        #   env:
+        #     TOXENV: pypy3-pinned
+        #     PYPY_VERSION: 3.6-v7.2.0
 
         # extras
         - os: ubuntu-18.04
@@ -91,6 +97,16 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
+
+    - name: Download pypy
+      if: matrix.env.TOXENV == 'pypy3' || matrix.env.TOXENV == 'pypy3-pinned'
+      env: ${{ matrix.env }}
+      run: |
+        export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+        wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
+        tar -jxf ${PYPY_VERSION}.tar.bz2
+        virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
+        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
 
     - name: Run check
       env: ${{ matrix.env }}
