@@ -39,6 +39,10 @@ jobs:
           python-version: 3.8
           env:
             TOXENV: py
+        - os: ubuntu-18.04
+          python-version: pypy3
+          env:
+            TOXENV: pypy3
 
         # windows tests
         - os: windows-latest
@@ -51,14 +55,14 @@ jobs:
             TOXENV: py
 
         # pinned deps
-        - os: ubuntu-18.04
-          python-version: 3.6.12
-          env:
-            TOXENV: pinned
-        - os: ubuntu-18.04
-          python-version: 3.6.12
-          env:
-            TOXENV: asyncio-pinned
+        # - os: ubuntu-18.04
+        #   python-version: 3.6.12
+        #   env:
+        #     TOXENV: pinned
+        # - os: ubuntu-18.04
+        #   python-version: 3.6.12
+        #   env:
+        #     TOXENV: asyncio-pinned
         # - os: windows-latest
         #   python-version: 3.6
         #   env:

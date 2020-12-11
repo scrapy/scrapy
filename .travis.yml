@@ -10,8 +10,6 @@ matrix:
 
     - env: TOXENV=pypy3-pinned PYPY_VERSION=3.6-v7.2.0
 
-    - env: TOXENV=pypy3 PYPY_VERSION=3.6-v7.3.1
-
     - env: TOXENV=py PYPI_RELEASE_JOB=true
       python: 3.8
       dist: bionic
