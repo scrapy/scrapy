@@ -105,7 +105,7 @@ jobs:
         export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
         wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
         tar -jxf ${PYPY_VERSION}.tar.bz2
-        virtualenv --python="$PYPY_VERSION/bin/pypy3" "$HOME/virtualenvs/$PYPY_VERSION"
+        $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
 
     - name: Run check
