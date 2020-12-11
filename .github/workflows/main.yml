@@ -87,7 +87,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install libraries
-      if: ${{ env.TOXENV == 'pypy3' }}
+      if: env.TOXENV == 'pypy3'
       run: apt-get update && apt-get install libxml2-dev libxslt-dev
 
     - name: Run check
