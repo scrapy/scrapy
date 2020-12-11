@@ -88,7 +88,9 @@ jobs:
 
     - name: Install libraries
       if: matrix.env.TOXENV == 'pypy3'
-      run: apt-get update && apt-get install libxml2-dev libxslt-dev
+      run: |
+        sudo apt-get update
+        sudo apt-get install libxml2-dev libxslt-dev
 
     - name: Run check
       env: ${{ matrix.env }}
