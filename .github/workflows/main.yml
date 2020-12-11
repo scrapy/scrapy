@@ -1,4 +1,4 @@
-name: Run test suite
+name: Build
 on: [push, pull_request]
 
 jobs:
@@ -82,12 +82,16 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Run test suite
+    - name: Install libraries
+      if: ${{ env.TOXENV == 'pypy3' }}
+      run: apt-get update && apt-get install libxml2-dev libxslt-dev
+
+    - name: Run check
       env: ${{ matrix.env }}
       run: |
-        pip install -U tox twine wheel codecov
+        pip install -U tox
         tox
