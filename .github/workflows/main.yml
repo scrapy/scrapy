@@ -52,11 +52,11 @@ jobs:
 
         # pinned deps
         - os: ubuntu-18.04
-          python-version: 3.6.1
+          python-version: 3.6.12
           env:
             TOXENV: pinned
         - os: ubuntu-18.04
-          python-version: 3.6.1
+          python-version: 3.6.12
           env:
             TOXENV: asyncio-pinned
         # - os: windows-latest
