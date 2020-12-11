@@ -2,19 +2,77 @@ name: Run test suite
 on: [push, pull_request]
 
 jobs:
-  test-windows:
-    name: "Windows Tests"
+  build:
+    name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
-        python-version: [3.7, 3.8]
-        env: [TOXENV: py]
         include:
-        - os: windows-latest
-          python-version: 3.6
+        # non-testing jobs
+        - os: ubuntu-18.04
+          python-version: 3.8
           env:
-            TOXENV: windows-pinned
+            TOXENV: security
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: flake8
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: pylint
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: typing
+        - os: ubuntu-18.04
+          python-version: 3.7  # Keep in sync with .readthedocs.yml
+          env:
+            TOXENV: docs
+
+        # tests
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: py
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: py
+
+        # windows tests
+        - os: windows-latest
+          python-version: 3.7
+          env:
+            TOXENV: py
+        - os: windows-latest
+          python-version: 3.8
+          env:
+            TOXENV: py
+
+        # pinned deps
+        - os: ubuntu-18.04
+          python-version: 3.6.1
+          env:
+            TOXENV: pinned
+        - os: ubuntu-18.04
+          python-version: 3.6.1
+          env:
+            TOXENV: asyncio-pinned
+        # - os: windows-latest
+        #   python-version: 3.6
+        #   env:
+        #     TOXENV: windows-pinned
+
+        # extras
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: extra-deps
+        - os: ubuntu-18.04
+          python-version: 3.8
+          env:
+            TOXENV: asyncio
 
     steps:
     - uses: actions/checkout@v2
