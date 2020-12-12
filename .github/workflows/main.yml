@@ -93,23 +93,20 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install libraries
-      if: matrix.env.TOXENV == 'pypy3'
+      if: matrix.python-version == 'pypy3'
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
 
-    - name: Download pypy
-      if: matrix.env.TOXENV == 'pypy3' || matrix.env.TOXENV == 'pypy3-pinned'
-      env: ${{ matrix.env }}
-      run: |
-        export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
-        wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
-        tar -jxf ${PYPY_VERSION}.tar.bz2
-        $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
-        source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-
     - name: Run check
       env: ${{ matrix.env }}
       run: |
+        if [[ ! -z "$PYPY_VERSION" ]]; then
+          export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+          wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
+          tar -jxf ${PYPY_VERSION}.tar.bz2
+          $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
+          source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+        fi
         pip install -U tox
         tox
