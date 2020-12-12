@@ -88,9 +88,9 @@ class FTPDownloadHandler:
                                                   self.passive_mode)) else 0
         creator = ClientCreator(reactor, FTPClient, user, password, passive=passive_mode)
         dfd = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
-        return dfd.addCallback(self.gotClient, request, unquote(parsed_url.path))
+        return dfd.addCallback(self.got_client, request, unquote(parsed_url.path))
 
-    def gotClient(self, client, request, filepath):
+    def got_client(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         return client.retrieveFile(filepath, protocol).addCallbacks(
