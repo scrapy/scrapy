@@ -61,9 +61,9 @@ class HostResolution:
 
 @provider(IResolutionReceiver)
 class _CachingResolutionReceiver:
-    def __init__(self, resolutionReceiver, hostName):
-        self.resolutionReceiver = resolutionReceiver
-        self.hostName = hostName
+    def __init__(self, resolution_receiver, host_name):
+        self.resolutionReceiver = resolution_receiver
+        self.hostName = host_name
         self.addresses = []
 
     def resolutionBegan(self, resolution):
@@ -104,21 +104,21 @@ class CachingHostnameResolver:
         self.reactor.installNameResolver(self)
 
     def resolveHostName(
-        self, resolutionReceiver, hostName, portNumber=0, addressTypes=None, transportSemantics="TCP"
+        self, resolution_receiver, host_name, port_number=0, address_types=None, transport_semantics="TCP"
     ):
         try:
-            addresses = dnscache[hostName]
+            addresses = dnscache[host_name]
         except KeyError:
             return self.original_resolver.resolveHostName(
-                _CachingResolutionReceiver(resolutionReceiver, hostName),
-                hostName,
-                portNumber,
-                addressTypes,
-                transportSemantics,
+                _CachingResolutionReceiver(resolution_receiver, host_name),
+                host_name,
+                port_number,
+                address_types,
+                transport_semantics,
             )
         else:
-            resolutionReceiver.resolutionBegan(HostResolution(hostName))
+            resolution_receiver.resolutionBegan(HostResolution(host_name))
             for addr in addresses:
-                resolutionReceiver.addressResolved(addr)
-            resolutionReceiver.resolutionComplete()
-            return resolutionReceiver
+                resolution_receiver.addressResolved(addr)
+            resolution_receiver.resolutionComplete()
+            return resolution_receiver
