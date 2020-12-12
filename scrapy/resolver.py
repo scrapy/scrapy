@@ -103,13 +103,13 @@ class CachingHostnameResolver:
     def install_on_reactor(self):
         self.reactor.installNameResolver(self)
 
-    def resolveHostName(
+    def resolve_host_name(
         self, resolution_receiver, host_name, port_number=0, address_types=None, transport_semantics="TCP"
     ):
         try:
             addresses = dnscache[host_name]
         except KeyError:
-            return self.original_resolver.resolveHostName(
+            return self.original_resolver.resolve_host_name(
                 _CachingResolutionReceiver(resolution_receiver, host_name),
                 host_name,
                 port_number,
