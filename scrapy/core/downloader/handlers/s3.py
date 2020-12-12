@@ -36,8 +36,8 @@ class S3DownloadHandler:
         if kw:
             raise TypeError(f'Unexpected keyword arguments: {kw}')
         if not self.anon:
-            SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
-            self._signer = SignerCls(botocore.credentials.Credentials(
+            signer_cls = botocore.auth.AUTH_TYPE_MAPS['s3']
+            self._signer = signer_cls(botocore.credentials.Credentials(
                 aws_access_key_id, aws_secret_access_key))
 
         _http_handler = create_instance(
