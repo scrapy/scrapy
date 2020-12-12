@@ -98,10 +98,18 @@ jobs:
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
 
-    - name: Run check
+    - name: Run check (windows)
+      if: startsWith(matrix.os, 'windows')
       env: ${{ matrix.env }}
       run: |
-        if ([[ ! -z "$PYPY_VERSION" ]]); then
+        pip install -U tox
+        tox
+
+    - name: Run check (ubuntu)
+      if: startsWith(matrix.os, 'ubuntu')
+      env: ${{ matrix.env }}
+      run: |
+        if [[ ! -z "$PYPY_VERSION" ]]; then
           export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
           wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
           tar -jxf ${PYPY_VERSION}.tar.bz2
