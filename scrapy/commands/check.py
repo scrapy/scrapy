@@ -9,7 +9,7 @@ from scrapy.utils.conf import build_component_list
 
 
 class TextTestResult(_TextTestResult):
-    def printSummary(self, start, stop):
+    def print_summary(self, start, stop):
         write = self.stream.write
         writeln = self.stream.writeln
 
@@ -92,5 +92,5 @@ class Command(ScrapyCommand):
                 stop = time.time()
 
                 result.printErrors()
-                result.printSummary(start, stop)
+                result.print_summary(start, stop)
                 self.exitcode = int(not result.wasSuccessful())
