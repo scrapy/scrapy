@@ -34,7 +34,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         tls_ciphers = settings['DOWNLOADER_CLIENT_TLS_CIPHERS']
         return cls(method=method, tls_verbose_logging=tls_verbose_logging, tls_ciphers=tls_ciphers, *args, **kwargs)
 
-    def getCertificateOptions(self):
+    def get_certificate_options(self):
         # setting verify=True will require you to provide CAs
         # to verify against; in other words: it's not that simple
 
@@ -55,11 +55,11 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
-    def getContext(self, hostname=None, port=None):
-        return self.getCertificateOptions().getContext()
+    def get_context(self, hostname=None, port=None):
+        return self.get_certificate_options().getContext()
 
     def creatorForNetloc(self, hostname, port):
-        return ScrapyClientTLSOptions(hostname.decode("ascii"), self.getContext(),
+        return ScrapyClientTLSOptions(hostname.decode("ascii"), self.get_context(),
                                       verbose_logging=self.tls_verbose_logging)
 
 
