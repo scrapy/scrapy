@@ -92,8 +92,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install libraries
-      if: matrix.python-version == 'pypy3'
+    - name: Install system libraries
+      if: matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned')
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
