@@ -93,7 +93,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install system libraries
-      if: matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned')
+      if: startsWith(matrix.os, 'ubuntu') && (matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned'))
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
