@@ -1,8 +1,8 @@
 # Tests requirements
 attrs
 dataclasses; python_version == '3.6'
-mitmproxy; python_version >= '3.7'
 mitmproxy >= 4.0.4, < 5; python_version >= '3.6' and python_version < '3.7'
+mitmproxy >= 4.0.4; python_version >= '3.7'
 pyftpdlib
 # https://github.com/pytest-dev/pytest-twisted/issues/93
 pytest != 5.4, != 5.4.1
@@ -14,8 +14,10 @@ testfixtures
 uvloop; platform_system != "Windows"
 
 # optional for shell wrapper tests
-bpython
-brotlipy  # optional for HTTP compress downloader middleware tests
-zstandard  # optional for HTTP compress downloader middleware tests
-ipython
+bpython >= 0.20.1
+brotlipy >= 0.7.0  # optional for HTTP compress downloader middleware tests
+zstandard >= 0.14.1  # optional for HTTP compress downloader middleware tests
+jedi >= 0.17.2  # from ipython
+ipython >= 7.16.1; python_version == '3.6'
+ipython >= 7.19.0; python_version >= '3.7'
 pywin32; sys_platform == "win32"
