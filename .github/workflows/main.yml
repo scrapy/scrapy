@@ -9,80 +9,80 @@ jobs:
       matrix:
         include:
         # non-testing jobs
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: security
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: flake8
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: pylint
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: typing
-        - os: ubuntu-18.04
-          python-version: 3.7  # Keep in sync with .readthedocs.yml
-          env:
-            TOXENV: docs
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: security
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: flake8
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: pylint
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: typing
+        # - os: ubuntu-18.04
+        #   python-version: 3.7  # Keep in sync with .readthedocs.yml
+        #   env:
+        #     TOXENV: docs
 
-        # tests
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: py
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: py
+        # # tests
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: py
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: py
         - os: ubuntu-18.04
           python-version: pypy3
           env:
             TOXENV: pypy3
             PYPY_VERSION: 3.6-v7.3.1
 
-        # windows tests
-        - os: windows-latest
-          python-version: 3.7
-          env:
-            TOXENV: py
-        - os: windows-latest
-          python-version: 3.8
-          env:
-            TOXENV: py
+        # # windows tests
+        # - os: windows-latest
+        #   python-version: 3.7
+        #   env:
+        #     TOXENV: py
+        # - os: windows-latest
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: py
 
-        # pinned deps
-        - os: ubuntu-18.04
-          python-version: 3.6.12
-          env:
-            TOXENV: pinned
-        - os: ubuntu-18.04
-          python-version: 3.6.12
-          env:
-            TOXENV: asyncio-pinned
-        - os: windows-latest
-          python-version: 3.6
-          env:
-            TOXENV: windows-pinned
-        - os: ubuntu-18.04
-          python-version: pypy3
-          env:
-            TOXENV: pypy3-pinned
-            PYPY_VERSION: 3.6-v7.2.0
+        # # pinned deps
+        # - os: ubuntu-18.04
+        #   python-version: 3.6.12
+        #   env:
+        #     TOXENV: pinned
+        # - os: ubuntu-18.04
+        #   python-version: 3.6.12
+        #   env:
+        #     TOXENV: asyncio-pinned
+        # - os: windows-latest
+        #   python-version: 3.6
+        #   env:
+        #     TOXENV: windows-pinned
+        # - os: ubuntu-18.04
+        #   python-version: pypy3
+        #   env:
+        #     TOXENV: pypy3-pinned
+        #     PYPY_VERSION: 3.6-v7.2.0
 
-        # extras
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: extra-deps
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: asyncio
+        # # extras
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: extra-deps
+        # - os: ubuntu-18.04
+        #   python-version: 3.8
+        #   env:
+        #     TOXENV: asyncio
 
     steps:
     - uses: actions/checkout@v2
@@ -109,12 +109,5 @@ jobs:
       if: startsWith(matrix.os, 'ubuntu')
       env: ${{ matrix.env }}
       run: |
-        if [[ ! -z "$PYPY_VERSION" ]]; then
-          export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
-          wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
-          tar -jxf ${PYPY_VERSION}.tar.bz2
-          $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
-          source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-        fi
         pip install -U tox
         tox
