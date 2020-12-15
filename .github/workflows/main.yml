@@ -110,4 +110,4 @@ jobs:
       env: ${{ matrix.env }}
       run: |
         pip install -U tox
-        tox
+        tox -- tests/test_closespider.py
