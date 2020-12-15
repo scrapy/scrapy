@@ -16,3 +16,4 @@ bpython
 brotlipy  # optional for HTTP compress downloader middleware tests
 zstandard  # optional for HTTP compress downloader middleware tests
 ipython
+pywin32; sys_platform == "win32"
