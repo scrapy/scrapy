@@ -24,7 +24,6 @@ install_requires = [
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
-    'PyDispatcher>=2.0.5',
     'pyOpenSSL>=17.5.0',
     'queuelib>=1.4.2',
     'service_identity>=16.0.0',
@@ -34,11 +33,12 @@ install_requires = [
     'itemadapter>=0.1.0',
 ]
 extras_require = {}
-
+cpython_dependencies = [
+    'lxml>=3.5.0',
+    'PyDispatcher>=2.0.5',
+]
 if has_environment_marker_platform_impl_support():
-    extras_require[':platform_python_implementation == "CPython"'] = [
-        'lxml>=3.5.0',
-    ]
+    extras_require[':platform_python_implementation == "CPython"'] = cpython_dependencies
     extras_require[':platform_python_implementation == "PyPy"'] = [
         # Earlier lxml versions are affected by
         # https://foss.heptapod.net/pypy/pypy/-/issues/2498,
@@ -49,7 +49,7 @@ if has_environment_marker_platform_impl_support():
         'PyPyDispatcher>=2.1.0',
     ]
 else:
-    install_requires.append('lxml>=3.5.0')
+    install_requires.extend(cpython_dependencies)
 
 
 setup(
