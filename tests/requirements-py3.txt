@@ -12,10 +12,7 @@ testfixtures
 uvloop; platform_system != "Windows"
 
 # optional for shell wrapper tests
-bpython >= 0.20.1
-brotlipy >= 0.7.0  # optional for HTTP compress downloader middleware tests
-zstandard >= 0.14.1  # optional for HTTP compress downloader middleware tests
-jedi >= 0.17.2  # from ipython
-ipython >= 7.16.1; python_version == '3.6'
-ipython >= 7.19.0; python_version >= '3.7'
-pywin32; sys_platform == "win32"
+bpython
+brotlipy  # optional for HTTP compress downloader middleware tests
+zstandard  # optional for HTTP compress downloader middleware tests
+ipython
