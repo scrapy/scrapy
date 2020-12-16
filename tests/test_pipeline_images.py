@@ -15,6 +15,8 @@ from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
+from scrapy.utils.test import skip_if_no_boto
+
 
 try:
     from dataclasses import make_dataclass, field as dataclass_field

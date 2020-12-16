@@ -1475,7 +1475,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
             self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
         ]
-        ows = [
+        rows = [
             {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
             {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'},
             {'foo': 'bar3', 'baz': 'quux3', 'egg': ''}
