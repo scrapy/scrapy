@@ -17,8 +17,18 @@ from scrapy.utils.trackref import object_ref
 
 class Response(object_ref):
 
-    def __init__(self, url, status=200, headers=None, body=b'', flags=None,
-                 request=None, certificate=None, ip_address=None):
+    def __init__(
+        self,
+        url,
+        status=200,
+        headers=None,
+        body=b"",
+        flags=None,
+        request=None,
+        certificate=None,
+        ip_address=None,
+        protocol=None,
+    ):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
@@ -27,6 +37,7 @@ class Response(object_ref):
         self.flags = [] if flags is None else list(flags)
         self.certificate = certificate
         self.ip_address = ip_address
+        self.protocol = protocol
 
     @property
     def cb_kwargs(self):
@@ -89,8 +100,9 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body',
-                  'request', 'flags', 'certificate', 'ip_address']:
+        for x in [
+            "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
+        ]:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
