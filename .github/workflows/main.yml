@@ -106,6 +106,7 @@ jobs:
         tox
 
     - name: Run check (ubuntu)
+      id: ubuntu-tests
       if: startsWith(matrix.os, 'ubuntu')
       env: ${{ matrix.env }}
       run: |
@@ -118,6 +119,13 @@ jobs:
         fi
         pip install -U tox
         tox
+        if [ -f "coverage.xml" ]; then
+          echo ::set-output name=upload_coverage_report::true
+        fi
+
+    - name: Upload coverage report
+      if: steps.ubuntu-tests.outputs.upload_coverage_report == 'true'
+      run: bash <(curl -s https://codecov.io/bash)
 
   publish:
     name: "Publish package to PyPI"
