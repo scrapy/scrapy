@@ -271,7 +271,6 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_store(self):
         skip_if_no_boto()
 
-
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -1877,7 +1876,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
 
     def test_from_crawler(self):
         skip_if_no_boto()
-        
+
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
