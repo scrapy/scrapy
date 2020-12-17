@@ -243,6 +243,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_parse_credentials(self):
         skip_if_no_boto()
+
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
                            'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
         crawler = get_crawler(settings_dict=aws_credentials)
@@ -269,6 +270,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         skip_if_no_boto()
+
 
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
@@ -307,6 +309,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_init_without_acl(self):
         skip_if_no_boto()
+
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -318,6 +321,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_init_with_acl(self):
         skip_if_no_boto()
+
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -330,6 +334,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_from_crawler_without_acl(self):
         skip_if_no_boto()
+
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -345,6 +350,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_from_crawler_with_acl(self):
         skip_if_no_boto()
+
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -362,6 +368,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
         skip_if_no_boto()
+
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -378,6 +385,7 @@ class S3FeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
         skip_if_no_boto()
+
         storage = S3FeedStorage(
             's3://mybucket/export.csv',
             'access_key',
@@ -397,6 +405,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_overwrite_default(self):
         skip_if_no_boto()
+
         with LogCapture() as log:
             S3FeedStorage(
                 's3://mybucket/export.csv',
@@ -408,6 +417,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
     def test_overwrite_false(self):
         skip_if_no_boto()
+
         with LogCapture() as log:
             S3FeedStorage(
                 's3://mybucket/export.csv',
@@ -803,6 +813,7 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_stats_multiple_file(self):
         skip_if_no_boto()
+
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
@@ -1835,6 +1846,8 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
     maxDiff = None
 
     def test_init(self):
+        skip_if_no_boto()
+
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
@@ -1864,6 +1877,7 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
 
     def test_from_crawler(self):
         skip_if_no_boto()
+        
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
@@ -1914,6 +1928,7 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
     def test_init(self):
         skip_if_no_boto()
+
         settings_dict = {
             'FEED_URI': 'file:///tmp/foobar',
             'FEED_STORAGES': {
