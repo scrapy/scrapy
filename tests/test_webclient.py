@@ -2,10 +2,10 @@
 from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
-import os
 import shutil
 import sys
 from pkg_resources import parse_version
+from pathlib import Path
 
 import cryptography
 import OpenSSL.SSL
@@ -234,7 +234,7 @@ class WebClientTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        Path(self.tmpname).mkdir()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -383,7 +383,7 @@ class WebClientSSLTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        Path(self.tmpname).mkdir()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         r.putChild(b"payload", PayloadResource())

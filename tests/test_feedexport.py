@@ -520,8 +520,8 @@ class DummyBlockingFeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         dirname = os.path.dirname(self.path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
+        if dirname:
+            Path(dirname).mkdir(parents=True, exist_ok=True)
         with open(self.path, 'ab') as output_file:
             output_file.write(file.read())
 

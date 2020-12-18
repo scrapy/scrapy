@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -62,7 +63,7 @@ class FileDownloadCrawlTestCase(TestCase):
 
         # prepare a directory for storing files
         self.tmpmediastore = self.mktemp()
-        os.mkdir(self.tmpmediastore)
+        Path(self.tmpmediastore).mkdir()
         self.settings = {
             'ITEM_PIPELINES': {self.pipeline_class: 1},
             self.store_setting_key: self.tmpmediastore,

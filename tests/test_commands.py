@@ -291,8 +291,8 @@ class StartprojectTemplatesTest(ProjectTest):
                 0o444, 0o555, 0o644, 0o666, 0o755, 0o777,
             )
         }
-        os.mkdir(project_dir)
         project_dir_path = Path(project_dir)
+        project_dir_path.mkdir()
         for node, permissions in existing_nodes.items():
             path = project_dir_path / node
             if node.endswith('.d'):
@@ -522,7 +522,7 @@ class BadSpider(scrapy.Spider):
     @contextmanager
     def _create_file(self, content, name=None):
         tmpdir = self.mktemp()
-        os.mkdir(tmpdir)
+        Path(tmpdir).mkdir()
         if name:
             fname = abspath(join(tmpdir, name))
         else:

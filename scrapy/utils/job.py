@@ -1,8 +1,8 @@
-import os
+from pathlib import Path
 
 
 def job_dir(settings):
     path = settings['JOBDIR']
-    if path and not os.path.exists(path):
-        os.makedirs(path)
+    if path:
+        Path(path).mkdir(parents=True, exist_ok=True)
     return path

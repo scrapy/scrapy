@@ -3,6 +3,7 @@ import os
 import string
 from importlib import import_module
 from os.path import join, exists, abspath
+from pathlib import Path
 from shutil import ignore_patterns, move, copy2, copystat
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
 
@@ -70,8 +71,7 @@ class Command(ScrapyCommand):
         names = os.listdir(src)
         ignored_names = ignore(src, names)
 
-        if not os.path.exists(dst):
-            os.makedirs(dst)
+        Path(dst).mkdir(parents=True, exist_ok=True)
 
         for name in names:
             if name in ignored_names:

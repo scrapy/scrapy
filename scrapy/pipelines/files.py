@@ -13,6 +13,7 @@ from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -71,8 +72,7 @@ class FSFilesStore:
     def _mkdir(self, dirname, domain=None):
         seen = self.created_directories[domain] if domain else set()
         if dirname not in seen:
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
+            Path(dirname).mkdir(parents=True, exist_ok=True)
             seen.add(dirname)
 
 
