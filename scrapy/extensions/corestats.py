@@ -33,6 +33,10 @@ class CoreStats:
         self.stats.set_value('elapsed_time_seconds', elapsed_time_seconds, spider=spider)
         self.stats.set_value('finish_time', finish_time, spider=spider)
         self.stats.set_value('finish_reason', reason, spider=spider)
+        self.stats.set_value('avrage_response_time',
+                             self.stats.get_value(
+                                 'total_response_time') / self.stats.get_value('downloader/request_count'),
+                             spider=spider)
 
     def item_scraped(self, item, spider):
         self.stats.inc_value('item_scraped_count', spider=spider)
