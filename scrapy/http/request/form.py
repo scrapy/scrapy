@@ -160,7 +160,7 @@ def _select_value(ele, n, v):
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
-        # And for select tags wihout options
+        # And for select tags without options
         o = ele.value_options
         return (n, o[0]) if o else (None, None)
     elif v is not None and multiple:
