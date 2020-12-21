@@ -227,7 +227,8 @@ def is_generator_with_return_value(callable):
         return value is None or isinstance(value, ast.NameConstant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
-        tree = ast.parse(dedent(inspect.getsource(callable)))
+        code = re.sub(r"^\s+", "", inspect.getsource(callable))
+        tree = ast.parse(code)
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
                 _generator_callbacks_cache[callable] = True
@@ -242,7 +243,11 @@ def warn_on_generator_with_return_value(spider, callable):
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
-    if is_generator_with_return_value(callable):
+    try:
+        should_warn = is_generator_with_return_value(callable)
+    except SyntaxError:  # includes IndentationError
+        should_warn = False
+    if should_warn:
         warnings.warn(
             f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
             'a generator and includes a "return" statement with a value '

@@ -3,6 +3,28 @@ import unittest
 from scrapy.utils.misc import is_generator_with_return_value
 
 
+def top_level_function_with():
+    """
+docstring
+    """
+    url = """
+https://example.org
+"""
+    yield 1
+    return 2
+
+
+def top_level_function_without():
+    """
+docstring
+    """
+    url = """
+https://example.org
+"""
+    yield 1
+    return
+
+
 class UtilsMiscPy3TestCase(unittest.TestCase):
 
     def test_generators_with_return_statements(self):
@@ -46,6 +68,29 @@ class UtilsMiscPy3TestCase(unittest.TestCase):
             yield helper()
             return 2
 
+        def o():
+            """
+docstring
+            """
+            url = """
+https://example.org
+        """
+            yield 1
+            return 2
+
+
+        def p():
+            """
+docstring
+            """
+            url = """
+https://example.org
+        """
+            yield 1
+            return
+
+        assert is_generator_with_return_value(top_level_function_with)
+        assert not is_generator_with_return_value(top_level_function_without)
         assert is_generator_with_return_value(f)
         assert is_generator_with_return_value(g)
         assert not is_generator_with_return_value(h)
@@ -54,3 +99,5 @@ class UtilsMiscPy3TestCase(unittest.TestCase):
         assert not is_generator_with_return_value(k)  # not recursive
         assert not is_generator_with_return_value(m)
         assert is_generator_with_return_value(n)
+        assert is_generator_with_return_value(o)
+        assert not is_generator_with_return_value(p)
