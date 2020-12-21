@@ -98,7 +98,7 @@ class Command(ScrapyCommand):
         print(f"Created spider {name!r} using template {template_name!r} ",
               end=('' if spiders_module else '\n'))
         if spiders_module:
-            print("in module:\n  {spiders_module.__name__}.{module}")
+            print(f"in module:\n  {spiders_module.__name__}.{module}")
 
     def _find_template(self, template):
         template_file = join(self.templates_dir, f'{template}.tmpl')

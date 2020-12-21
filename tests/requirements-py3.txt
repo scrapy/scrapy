@@ -4,7 +4,6 @@ dataclasses; python_version == '3.6'
 pyftpdlib
 # https://github.com/pytest-dev/pytest-twisted/issues/93
 pytest != 5.4, != 5.4.1
-pytest-azurepipelines
 pytest-cov
 pytest-twisted >= 1.11
 pytest-xdist
@@ -14,6 +13,7 @@ uvloop; platform_system != "Windows"
 
 # optional for shell wrapper tests
 bpython
-brotlipy
+brotlipy  # optional for HTTP compress downloader middleware tests
+zstandard  # optional for HTTP compress downloader middleware tests
 ipython
 pywin32; sys_platform == "win32"

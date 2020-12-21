@@ -65,7 +65,11 @@ class Request(object_ref):
         s = safe_url_string(url, self.encoding)
         self._url = escape_ajax(s)
 
-        if ('://' not in self._url) and (not self._url.startswith('data:')):
+        if (
+            '://' not in self._url
+            and not self._url.startswith('about:')
+            and not self._url.startswith('data:')
+        ):
             raise ValueError(f'Missing scheme in request url: {self._url}')
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))

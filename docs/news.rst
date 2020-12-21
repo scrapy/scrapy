@@ -3,6 +3,333 @@
 Release notes
 =============
 
+.. _release-2.4.1:
+
+Scrapy 2.4.1 (2020-11-17)
+-------------------------
+
+-   Fixed :ref:`feed exports <topics-feed-exports>` overwrite support (:issue:`4845`, :issue:`4857`, :issue:`4859`)
+
+-   Fixed the AsyncIO event loop handling, which could make code hang
+    (:issue:`4855`, :issue:`4872`)
+
+-   Fixed the IPv6-capable DNS resolver
+    :class:`~scrapy.resolver.CachingHostnameResolver` for download handlers
+    that call
+    :meth:`reactor.resolve <twisted.internet.interfaces.IReactorCore.resolve>`
+    (:issue:`4802`, :issue:`4803`)
+
+-   Fixed the output of the :command:`genspider` command showing placeholders
+    instead of the import path of the generated spider module (:issue:`4874`)
+
+-   Migrated Windows CI from Azure Pipelines to GitHub Actions (:issue:`4869`,
+    :issue:`4876`)
+
+
+.. _release-2.4.0:
+
+Scrapy 2.4.0 (2020-10-11)
+-------------------------
+
+Highlights:
+
+*   Python 3.5 support has been dropped.
+
+*   The ``file_path`` method of :ref:`media pipelines <topics-media-pipeline>`
+    can now access the source :ref:`item <topics-items>`.
+
+    This allows you to set a download file path based on item data.
+
+*   The new ``item_export_kwargs`` key of the :setting:`FEEDS` setting allows
+    to define keyword parameters to pass to :ref:`item exporter classes
+    <topics-exporters>`
+
+*   You can now choose whether :ref:`feed exports <topics-feed-exports>`
+    overwrite or append to the output file.
+
+    For example, when using the :command:`crawl` or :command:`runspider`
+    commands, you can use the ``-O`` option instead of ``-o`` to overwrite the
+    output file.
+
+*   Zstd-compressed responses are now supported if zstandard_ is installed.
+
+*   In settings, where the import path of a class is required, it is now
+    possible to pass a class object instead.
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+*   Python 3.6 or greater is now required; support for Python 3.5 has been
+    dropped
+
+    As a result:
+
+    -   When using PyPy, PyPy 7.2.0 or greater :ref:`is now required
+        <faq-python-versions>`
+
+    -   For Amazon S3 storage support in :ref:`feed exports
+        <topics-feed-storage-s3>` or :ref:`media pipelines
+        <media-pipelines-s3>`, botocore_ 1.4.87 or greater is now required
+
+    -   To use the :ref:`images pipeline <images-pipeline>`, Pillow_ 4.0.0 or
+        greater is now required
+
+    (:issue:`4718`, :issue:`4732`, :issue:`4733`, :issue:`4742`, :issue:`4743`,
+    :issue:`4764`)
+
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` once again
+    discards cookies defined in :attr:`Request.headers
+    <scrapy.http.Request.headers>`.
+
+    We decided to revert this bug fix, introduced in Scrapy 2.2.0, because it
+    was reported that the current implementation could break existing code.
+
+    If you need to set cookies for a request, use the :class:`Request.cookies
+    <scrapy.http.Request>` parameter.
+
+    A future version of Scrapy will include a new, better implementation of the
+    reverted bug fix.
+
+    (:issue:`4717`, :issue:`4823`)
+
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+*   :class:`scrapy.extensions.feedexport.S3FeedStorage` no longer reads the
+    values of ``access_key`` and ``secret_key`` from the running project
+    settings when they are not passed to its ``__init__`` method; you must
+    either pass those parameters to its ``__init__`` method or use
+    :class:`S3FeedStorage.from_crawler
+    <scrapy.extensions.feedexport.S3FeedStorage.from_crawler>`
+    (:issue:`4356`, :issue:`4411`, :issue:`4688`)
+
+*   :attr:`Rule.process_request <scrapy.spiders.crawl.Rule.process_request>`
+    no longer admits callables which expect a single ``request`` parameter,
+    rather than both ``request`` and ``response`` (:issue:`4818`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+*   In custom :ref:`media pipelines <topics-media-pipeline>`, signatures that
+    do not accept a keyword-only ``item`` parameter in any of the  methods that
+    :ref:`now support this parameter <media-pipeline-item-parameter>` are now
+    deprecated (:issue:`4628`, :issue:`4686`)
+
+*   In custom :ref:`feed storage backend classes <topics-feed-storage>`,
+    ``__init__`` method signatures that do not accept a keyword-only
+    ``feed_options`` parameter are now deprecated (:issue:`547`, :issue:`716`,
+    :issue:`4512`)
+
+*   The :class:`scrapy.utils.python.WeakKeyCache` class is now deprecated
+    (:issue:`4684`, :issue:`4701`)
+
+*   The :func:`scrapy.utils.boto.is_botocore` function is now deprecated, use
+    :func:`scrapy.utils.boto.is_botocore_available` instead (:issue:`4734`,
+    :issue:`4776`)
+
+
+New features
+~~~~~~~~~~~~
+
+.. _media-pipeline-item-parameter:
+
+*   The following methods of :ref:`media pipelines <topics-media-pipeline>` now
+    accept an ``item`` keyword-only parameter containing the source
+    :ref:`item <topics-items>`:
+
+    -   In :class:`scrapy.pipelines.files.FilesPipeline`:
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.file_downloaded`
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.file_path`
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.media_downloaded`
+
+        -   :meth:`~scrapy.pipelines.files.FilesPipeline.media_to_download`
+
+    -   In :class:`scrapy.pipelines.images.ImagesPipeline`:
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.file_downloaded`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.file_path`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.get_images`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.image_downloaded`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.media_downloaded`
+
+        -   :meth:`~scrapy.pipelines.images.ImagesPipeline.media_to_download`
+
+    (:issue:`4628`, :issue:`4686`)
+
+*   The new ``item_export_kwargs`` key of the :setting:`FEEDS` setting allows
+    to define keyword parameters to pass to :ref:`item exporter classes
+    <topics-exporters>` (:issue:`4606`, :issue:`4768`)
+
+*   :ref:`Feed exports <topics-feed-exports>` gained overwrite support:
+
+    *   When using the :command:`crawl` or :command:`runspider` commands, you
+        can use the ``-O`` option instead of ``-o`` to overwrite the output
+        file
+
+    *   You can use the ``overwrite`` key in the :setting:`FEEDS` setting to
+        configure whether to overwrite the output file (``True``) or append to
+        its content (``False``)
+
+    *   The ``__init__`` and ``from_crawler`` methods of :ref:`feed storage
+        backend classes <topics-feed-storage>` now receive a new keyword-only
+        parameter, ``feed_options``, which is a dictionary of :ref:`feed
+        options <feed-options>`
+
+    (:issue:`547`, :issue:`716`, :issue:`4512`)
+
+*   Zstd-compressed responses are now supported if zstandard_ is installed
+    (:issue:`4831`)
+
+*   In settings, where the import path of a class is required, it is now
+    possible to pass a class object instead (:issue:`3870`, :issue:`3873`).
+
+    This includes also settings where only part of its value is made of an
+    import path, such as :setting:`DOWNLOADER_MIDDLEWARES` or
+    :setting:`DOWNLOAD_HANDLERS`.
+
+*   :ref:`Downloader middlewares <topics-downloader-middleware>` can now
+    override :class:`response.request <scrapy.http.Response.request>`.
+
+    If a :ref:`downloader middleware <topics-downloader-middleware>` returns
+    a :class:`~scrapy.http.Response` object from
+    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+    or
+    :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
+    with a custom :class:`~scrapy.http.Request` object assigned to
+    :class:`response.request <scrapy.http.Response.request>`:
+
+    -   The response is handled by the callback of that custom
+        :class:`~scrapy.http.Request` object, instead of being handled by the
+        callback of the original :class:`~scrapy.http.Request` object
+
+    -   That custom :class:`~scrapy.http.Request` object is now sent as the
+        ``request`` argument to the :signal:`response_received` signal, instead
+        of the original :class:`~scrapy.http.Request` object
+
+    (:issue:`4529`, :issue:`4632`)
+
+*   When using the :ref:`FTP feed storage backend <topics-feed-storage-ftp>`:
+
+    -   It is now possible to set the new ``overwrite`` :ref:`feed option
+        <feed-options>` to ``False`` to append to an existing file instead of
+        overwriting it
+
+    -   The FTP password can now be omitted if it is not necessary
+
+    (:issue:`547`, :issue:`716`, :issue:`4512`)
+
+*   The ``__init__`` method of :class:`~scrapy.exporters.CsvItemExporter` now
+    supports an ``errors`` parameter to indicate how to handle encoding errors
+    (:issue:`4755`)
+
+*   When :ref:`using asyncio <using-asyncio>`, it is now possible to
+    :ref:`set a custom asyncio loop <using-custom-loops>` (:issue:`4306`,
+    :issue:`4414`)
+
+*   Serialized requests (see :ref:`topics-jobs`) now support callbacks that are
+    spider methods that delegate on other callable (:issue:`4756`)
+
+*   When a response is larger than :setting:`DOWNLOAD_MAXSIZE`, the logged
+    message is now a warning, instead of an error (:issue:`3874`,
+    :issue:`3886`, :issue:`4752`)
+
+
+Bug fixes
+~~~~~~~~~
+
+*   The :command:`genspider` command no longer overwrites existing files
+    unless the ``--force`` option is used (:issue:`4561`, :issue:`4616`,
+    :issue:`4623`)
+
+*   Cookies with an empty value are no longer considered invalid cookies
+    (:issue:`4772`)
+
+*   The :command:`runspider` command now supports files with the ``.pyw`` file
+    extension (:issue:`4643`, :issue:`4646`)
+
+*   The :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`
+    middleware now simply ignores unsupported proxy values (:issue:`3331`,
+    :issue:`4778`)
+
+*   Checks for generator callbacks with a ``return`` statement no longer warn
+    about ``return`` statements in nested functions (:issue:`4720`,
+    :issue:`4721`)
+
+*   The system file mode creation mask no longer affects the permissions of
+    files generated using the :command:`startproject` command (:issue:`4722`)
+
+*   :func:`scrapy.utils.iterators.xmliter` now supports namespaced node names
+    (:issue:`861`, :issue:`4746`)
+
+*   :class:`~scrapy.Request` objects can now have ``about:`` URLs, which can
+    work when using a headless browser (:issue:`4835`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+*   The :setting:`FEED_URI_PARAMS` setting is now documented (:issue:`4671`,
+    :issue:`4724`)
+
+*   Improved the documentation of
+    :ref:`link extractors <topics-link-extractors>` with an usage example from
+    a spider callback and reference documentation for the
+    :class:`~scrapy.link.Link` class (:issue:`4751`, :issue:`4775`)
+
+*   Clarified the impact of :setting:`CONCURRENT_REQUESTS` when using the
+    :class:`~scrapy.extensions.closespider.CloseSpider` extension
+    (:issue:`4836`)
+
+*   Removed references to Python 2’s ``unicode`` type (:issue:`4547`,
+    :issue:`4703`)
+
+*   We now have an :ref:`official deprecation policy <deprecation-policy>`
+    (:issue:`4705`)
+
+*   Our :ref:`documentation policies <documentation-policies>` now cover usage
+    of Sphinx’s :rst:dir:`versionadded` and :rst:dir:`versionchanged`
+    directives, and we have removed usages referencing Scrapy 1.4.0 and earlier
+    versions (:issue:`3971`, :issue:`4310`)
+
+*   Other documentation cleanups (:issue:`4090`, :issue:`4782`, :issue:`4800`,
+    :issue:`4801`, :issue:`4809`, :issue:`4816`, :issue:`4825`)
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+*   Extended typing hints (:issue:`4243`, :issue:`4691`)
+
+*   Added tests for the :command:`check` command (:issue:`4663`)
+
+*   Fixed test failures on Debian (:issue:`4726`, :issue:`4727`, :issue:`4735`)
+
+*   Improved Windows test coverage (:issue:`4723`)
+
+*   Switched to :ref:`formatted string literals <f-strings>` where possible
+    (:issue:`4307`, :issue:`4324`, :issue:`4672`)
+
+*   Modernized :func:`super` usage (:issue:`4707`)
+
+*   Other code and test cleanups (:issue:`1790`, :issue:`3288`, :issue:`4165`,
+    :issue:`4564`, :issue:`4651`, :issue:`4714`, :issue:`4738`, :issue:`4745`,
+    :issue:`4747`, :issue:`4761`, :issue:`4765`, :issue:`4804`, :issue:`4817`,
+    :issue:`4820`, :issue:`4822`, :issue:`4839`)
+
+
 .. _release-2.3.0:
 
 Scrapy 2.3.0 (2020-08-04)
@@ -4008,9 +4335,9 @@ First release of Scrapy.
 .. _six: https://six.readthedocs.io/
 .. _tox: https://pypi.org/project/tox/
 .. _Twisted: https://twistedmatrix.com/trac/
-.. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
 .. _w3lib: https://github.com/scrapy/w3lib
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _What is cacheable: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
 .. _zope.interface: https://zopeinterface.readthedocs.io/en/latest/
 .. _Zsh: https://www.zsh.org/
+.. _zstandard: https://pypi.org/project/zstandard/
