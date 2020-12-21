@@ -23,6 +23,7 @@ matrix:
     - env: TOXENV=asyncio-pinned
       python: 3.6.1
     - env: TOXENV=pypy3-pinned PYPY_VERSION=3.6-v7.2.0
+      dist: bionic
 
     - env: TOXENV=py
       python: 3.6
@@ -42,7 +43,6 @@ matrix:
       python: 3.8
       dist: bionic
 install:
-  - sudo apt-get -y remove libssl-dev
   - |
       if [[ ! -z "$PYPY_VERSION" ]]; then
         export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
