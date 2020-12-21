@@ -42,7 +42,7 @@ matrix:
       python: 3.8
       dist: bionic
 install:
-  - apt-get -y remove libssl-dev
+  - sudo apt-get -y remove libssl-dev
   - |
       if [[ ! -z "$PYPY_VERSION" ]]; then
         export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
