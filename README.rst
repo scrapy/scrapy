@@ -10,8 +10,8 @@ Scrapy
    :target: https://pypi.python.org/pypi/Scrapy
    :alt: Supported Python Versions
 
-.. image:: https://img.shields.io/travis/scrapy/scrapy/master.svg
-   :target: https://travis-ci.org/scrapy/scrapy
+.. image:: https://github.com/scrapy/scrapy/workflows/Build/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions
    :alt: Build Status
 
 .. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
