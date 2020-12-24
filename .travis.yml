@@ -23,10 +23,12 @@ matrix:
     - env: TOXENV=asyncio-pinned
       python: 3.6.1
     - env: TOXENV=pypy3-pinned PYPY_VERSION=3.6-v7.2.0
+      dist: bionic
 
     - env: TOXENV=py
       python: 3.6
     - env: TOXENV=pypy3 PYPY_VERSION=3.6-v7.3.1
+      dist: bionic
 
     - env: TOXENV=py
       python: 3.7
