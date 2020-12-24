@@ -53,8 +53,8 @@ else:
 
 
 setup(
-    name='Scrapy',
-    version=version,
+    name='Scrapy-Test',
+    version="2.4.2.dev0",
     url='https://scrapy.org',
     project_urls={
         'Documentation': 'https://docs.scrapy.org/',

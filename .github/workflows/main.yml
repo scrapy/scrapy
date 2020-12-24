@@ -1,136 +1,136 @@
 name: Build
-on: [push, pull_request]
+on: [push]
 
 jobs:
-  build:
-    name: Build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-        # non-testing jobs
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: security
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: flake8
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: pylint
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: typing
-        - os: ubuntu-18.04
-          python-version: 3.7  # Keep in sync with .readthedocs.yml
-          env:
-            TOXENV: docs
+  # build:
+  #   name: Build
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #       # non-testing jobs
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: security
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: flake8
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: pylint
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: typing
+  #       - os: ubuntu-18.04
+  #         python-version: 3.7  # Keep in sync with .readthedocs.yml
+  #         env:
+  #           TOXENV: docs
 
-        # tests
-        - os: ubuntu-18.04
-          python-version: 3.7
-          env:
-            TOXENV: py
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: py
-        - os: ubuntu-18.04
-          python-version: pypy3
-          env:
-            TOXENV: pypy3
-            PYPY_VERSION: 3.6-v7.3.1
+  #       # tests
+  #       - os: ubuntu-18.04
+  #         python-version: 3.7
+  #         env:
+  #           TOXENV: py
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: py
+  #       - os: ubuntu-18.04
+  #         python-version: pypy3
+  #         env:
+  #           TOXENV: pypy3
+  #           PYPY_VERSION: 3.6-v7.3.1
 
-        # windows tests
-        - os: windows-latest
-          python-version: 3.7
-          env:
-            TOXENV: py
-        - os: windows-latest
-          python-version: 3.8
-          env:
-            TOXENV: py
+  #       # windows tests
+  #       - os: windows-latest
+  #         python-version: 3.7
+  #         env:
+  #           TOXENV: py
+  #       - os: windows-latest
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: py
 
-        # pinned deps
-        - os: ubuntu-18.04
-          python-version: 3.6.12
-          env:
-            TOXENV: pinned
-        - os: ubuntu-18.04
-          python-version: 3.6.12
-          env:
-            TOXENV: asyncio-pinned
-        - os: windows-latest
-          python-version: 3.6
-          env:
-            TOXENV: windows-pinned
-        - os: ubuntu-18.04
-          python-version: pypy3
-          env:
-            TOXENV: pypy3-pinned
-            PYPY_VERSION: 3.6-v7.2.0
+  #       # pinned deps
+  #       - os: ubuntu-18.04
+  #         python-version: 3.6.12
+  #         env:
+  #           TOXENV: pinned
+  #       - os: ubuntu-18.04
+  #         python-version: 3.6.12
+  #         env:
+  #           TOXENV: asyncio-pinned
+  #       - os: windows-latest
+  #         python-version: 3.6
+  #         env:
+  #           TOXENV: windows-pinned
+  #       - os: ubuntu-18.04
+  #         python-version: pypy3
+  #         env:
+  #           TOXENV: pypy3-pinned
+  #           PYPY_VERSION: 3.6-v7.2.0
 
-        # extras
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: extra-deps
-        - os: ubuntu-18.04
-          python-version: 3.8
-          env:
-            TOXENV: asyncio
+  #       # extras
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: extra-deps
+  #       - os: ubuntu-18.04
+  #         python-version: 3.8
+  #         env:
+  #           TOXENV: asyncio
 
-    steps:
-    - uses: actions/checkout@v2
+  #   steps:
+  #   - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+  #   - name: Set up Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
 
-    - name: Install system libraries
-      if: startsWith(matrix.os, 'ubuntu') && (matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned'))
-      run: |
-        sudo apt-get update
-        sudo apt-get install libxml2-dev libxslt-dev
+  #   - name: Install system libraries
+  #     if: startsWith(matrix.os, 'ubuntu') && (matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned'))
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get install libxml2-dev libxslt-dev
 
-    - name: Run check (windows)
-      if: startsWith(matrix.os, 'windows')
-      env: ${{ matrix.env }}
-      run: |
-        pip install -U tox
-        tox
+  #   - name: Run check (windows)
+  #     if: startsWith(matrix.os, 'windows')
+  #     env: ${{ matrix.env }}
+  #     run: |
+  #       pip install -U tox
+  #       tox
 
-    - name: Run check (ubuntu)
-      id: ubuntu-tests
-      if: startsWith(matrix.os, 'ubuntu')
-      env: ${{ matrix.env }}
-      run: |
-        if [[ ! -z "$PYPY_VERSION" ]]; then
-          export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
-          wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
-          tar -jxf ${PYPY_VERSION}.tar.bz2
-          $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
-          source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
-        fi
-        pip install -U tox
-        tox
-        if [ -f "coverage.xml" ]; then
-          echo ::set-output name=upload_coverage_report::true
-        fi
+  #   - name: Run check (ubuntu)
+  #     id: ubuntu-tests
+  #     if: startsWith(matrix.os, 'ubuntu')
+  #     env: ${{ matrix.env }}
+  #     run: |
+  #       if [[ ! -z "$PYPY_VERSION" ]]; then
+  #         export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+  #         wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
+  #         tar -jxf ${PYPY_VERSION}.tar.bz2
+  #         $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
+  #         source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+  #       fi
+  #       pip install -U tox
+  #       tox
+  #       if [ -f "coverage.xml" ]; then
+  #         echo ::set-output name=upload_coverage_report::true
+  #       fi
 
-    - name: Upload coverage report
-      if: steps.ubuntu-tests.outputs.upload_coverage_report == 'true'
-      run: bash <(curl -s https://codecov.io/bash)
+  #   - name: Upload coverage report
+  #     if: steps.ubuntu-tests.outputs.upload_coverage_report == 'true'
+  #     run: bash <(curl -s https://codecov.io/bash)
 
   publish:
     name: "Publish package to PyPI"
     runs-on: ubuntu-18.04
-    needs: [build]
+    # needs: [build]
     if: startsWith(github.event.ref, 'refs/tags/')
 
     steps:
@@ -155,4 +155,4 @@ jobs:
         python setup.py sdist bdist_wheel
         export TWINE_USERNAME=__token__
         export TWINE_PASSWORD=${{ secrets.PYPI_TOKEN }}
-        twine upload dist/*
+        twine upload --repository=testpypi dist/*
