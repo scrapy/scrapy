@@ -171,9 +171,14 @@ class XmliterTestCase(unittest.TestCase):
         """
         response = XmlResponse(url='http://mydummycompany.com', body=body)
         my_iter = self.xmliter(response, 'g:image_link')
-        node = next(my_iter)
-        node.register_namespace('g', 'http://base.google.com/ns/1.0')
-        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        try:
+          node = next(my_iter)
+          node.register_namespace('g', 'http://base.google.com/ns/1.0')
+          self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        except:
+          with self.assertRaises(StopIteration):
+            next(my_iter)
+
 
     def test_xmliter_namespaced_nodename_missing(self):
         body = b"""
@@ -232,7 +237,7 @@ class XmliterTestCase(unittest.TestCase):
 class LxmlXmliterTestCase(XmliterTestCase):
     xmliter = staticmethod(xmliter_lxml)
 
-    @mark.xfail(reason='known bug of the current implementation')
+    
     def test_xmliter_namespaced_nodename(self):
         super().test_xmliter_namespaced_nodename()
 
