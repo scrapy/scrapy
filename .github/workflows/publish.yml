@@ -5,7 +5,6 @@ jobs:
   publish:
     name: Publish package to PyPI
     runs-on: ubuntu-18.04
-    needs: [checks, tests-ubuntu, tests-windows]
     if: startsWith(github.event.ref, 'refs/tags/')
 
     steps:
