@@ -1,0 +1,20 @@
+name: Say hello
+on: [push]
+
+jobs:
+  say-hello:
+    name: Say hello
+    runs-on: ubuntu-18.04
+    needs: [checks, tests-ubuntu, tests-windows]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Say hello
+      run: |
+        echo "Hello! This should work only if tests and checks succeded"
