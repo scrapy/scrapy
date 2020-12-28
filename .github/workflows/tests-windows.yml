@@ -1,4 +1,3 @@
-name: Tests - Windows
 on: [push, pull_request]
 
 jobs:
