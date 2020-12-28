@@ -3,7 +3,6 @@ on: [push]
 
 jobs:
   publish:
-    name: Publish package to PyPI
     runs-on: ubuntu-18.04
     if: startsWith(github.event.ref, 'refs/tags/')
 

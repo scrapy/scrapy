@@ -3,7 +3,6 @@ on: [push, pull_request]
 
 jobs:
   checks:
-    name: Checks
     runs-on: ubuntu-18.04
     strategy:
       matrix:

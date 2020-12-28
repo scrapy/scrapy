@@ -3,7 +3,6 @@ on: [push, pull_request]
 
 jobs:
   tests-windows:
-    name: Tests - Windows
     runs-on: windows-latest
     strategy:
       matrix:
