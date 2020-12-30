@@ -10,9 +10,13 @@ Scrapy
    :target: https://pypi.python.org/pypi/Scrapy
    :alt: Supported Python Versions
 
-.. image:: https://github.com/scrapy/scrapy/workflows/Build/badge.svg
-   :target: https://github.com/scrapy/scrapy/actions
-   :alt: Build Status
+.. image:: https://github.com/scrapy/scrapy/workflows/Ubuntu%20Tests/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3A%22Ubuntu+Tests%22
+   :alt: Ubuntu Tests
+
+.. image:: https://github.com/scrapy/scrapy/workflows/Windows%20Tests/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3A%22Windows+Tests%22
+   :alt: Windows Tests
 
 .. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
    :target: https://pypi.python.org/pypi/Scrapy
