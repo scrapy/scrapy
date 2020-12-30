@@ -1,8 +1,8 @@
-name: macOS Tests
+name: macOS
 on: [push, pull_request]
 
 jobs:
-  tests-macos:
+  tests:
     runs-on: macos-10.15
     strategy:
       matrix:

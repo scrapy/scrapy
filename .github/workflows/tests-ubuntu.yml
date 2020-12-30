@@ -1,8 +1,8 @@
-name: Ubuntu Tests
+name: Ubuntu
 on: [push, pull_request]
 
 jobs:
-  tests-ubuntu:
+  tests:
     runs-on: ubuntu-18.04
     strategy:
       matrix:

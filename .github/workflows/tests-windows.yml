@@ -1,8 +1,8 @@
-name: Windows Tests
+name: Windows
 on: [push, pull_request]
 
 jobs:
-  tests-windows:
+  tests:
     runs-on: windows-latest
     strategy:
       matrix:
