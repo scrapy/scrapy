@@ -123,7 +123,7 @@ Example::
           def serialize_field(self, field, name, value):
               if field == 'price':
                   return f'$ {str(value)}'
-              return super(Product, self).serialize_field(field, name, value)
+              return super().serialize_field(field, name, value)
 
 .. _topics-exporters-reference:
 

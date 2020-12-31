@@ -114,6 +114,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.status, 200)
             self.assertEqual(response.body, b'0123456789')
+            self.assertEqual(response.protocol, None)
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
@@ -368,6 +369,13 @@ class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
     download_handler_cls: Type = HTTP10DownloadHandler
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.0")
+        return d
+
 
 class Https10TestCase(Http10TestCase):
     scheme = 'https'
@@ -496,6 +504,13 @@ class Http11TestCase(HttpTestCase):
 
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
         return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
+
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.1")
+        return d
 
 
 class Https11TestCase(Http11TestCase):
@@ -971,7 +986,7 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, b'I have the power!')
             self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
-
+            self.assertIsNone(r.protocol)
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
@@ -1132,4 +1147,11 @@ class DataURITestCase(unittest.TestCase):
             self.assertEqual(response.text, 'Hello, world.')
 
         request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_protocol(self):
+        def _test(response):
+            self.assertIsNone(response.protocol)
+
+        request = Request("data:,")
         return self.download_request(request, self.spider).addCallback(_test)

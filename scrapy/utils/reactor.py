@@ -60,8 +60,9 @@ def install_reactor(reactor_path, event_loop_path=None):
             if event_loop_path is not None:
                 event_loop_class = load_object(event_loop_path)
                 event_loop = event_loop_class()
+                asyncio.set_event_loop(event_loop)
             else:
-                event_loop = asyncio.new_event_loop()
+                event_loop = asyncio.get_event_loop()
             asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")

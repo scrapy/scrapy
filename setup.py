@@ -24,7 +24,6 @@ install_requires = [
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
-    'PyDispatcher>=2.0.5',
     'pyOpenSSL>=16.2.0',
     'queuelib>=1.4.2',
     'service_identity>=16.0.0',
@@ -35,11 +34,12 @@ install_requires = [
     'h2>=3.2.0',
 ]
 extras_require = {}
-
+cpython_dependencies = [
+    'lxml>=3.5.0',
+    'PyDispatcher>=2.0.5',
+]
 if has_environment_marker_platform_impl_support():
-    extras_require[':platform_python_implementation == "CPython"'] = [
-        'lxml>=3.5.0',
-    ]
+    extras_require[':platform_python_implementation == "CPython"'] = cpython_dependencies
     extras_require[':platform_python_implementation == "PyPy"'] = [
         # Earlier lxml versions are affected by
         # https://foss.heptapod.net/pypy/pypy/-/issues/2498,
@@ -50,14 +50,14 @@ if has_environment_marker_platform_impl_support():
         'PyPyDispatcher>=2.1.0',
     ]
 else:
-    install_requires.append('lxml>=3.5.0')
+    install_requires.extend(cpython_dependencies)
 
 
 setup(
     name='Scrapy',
     version=version,
     url='https://scrapy.org',
-    project_urls = {
+    project_urls={
         'Documentation': 'https://docs.scrapy.org/',
         'Source': 'https://github.com/scrapy/scrapy',
         'Tracker': 'https://github.com/scrapy/scrapy/issues',
