@@ -694,7 +694,7 @@ Response objects
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
     :param protocol: The protocol that was used to download the response.
-        For instance: "HTTP/1.0", "HTTP/1.1"
+        For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
 
     .. versionadded:: 2.0.0

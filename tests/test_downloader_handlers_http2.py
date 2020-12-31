@@ -22,6 +22,13 @@ class Https2TestCase(Https11TestCase):
     download_handler_cls = H2DownloadHandler
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "h2")
+        return d
+
     @defer.inlineCallbacks
     def test_download_with_maxsize_very_large_file(self):
         with mock.patch('scrapy.core.http2.stream.logger') as logger:
