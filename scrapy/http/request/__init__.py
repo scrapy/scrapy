@@ -4,17 +4,56 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+import inspect
+
 from w3lib.url import safe_url_string
 
+from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
-from scrapy.utils.python import to_bytes
+from scrapy.utils.curl import curl_to_request_kwargs
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
-from scrapy.http.common import obsolete_setter
-from scrapy.utils.curl import curl_to_request_kwargs
 
 
 class Request(object_ref):
+
+    _attributes = [
+        "url", "method", "headers", "body", "cookies", "meta", "flags",
+        "encoding", "priority", "dont_filter", "callback", "errback", "cb_kwargs",
+    ]
+
+    @classmethod
+    def from_dict(cls, d, spider=None):
+        """
+        Create Request object from a dict.
+
+        If a spider is given, it will try to resolve the callbacks looking at the
+        spider for methods with the same name.
+        """
+        cb = d["callback"]
+        if cb and spider:
+            cb = _get_method(spider, cb)
+        eb = d["errback"]
+        if eb and spider:
+            eb = _get_method(spider, eb)
+        request_cls = load_object(d["_class"]) if "_class" in d else cls
+        return request_cls(
+            url=to_unicode(d["url"]),
+            callback=cb,
+            errback=eb,
+            method=d["method"],
+            headers=d["headers"],
+            body=d["body"],
+            cookies=d["cookies"],
+            meta=d["meta"],
+            encoding=d["_encoding"],
+            priority=d["priority"],
+            dont_filter=d["dont_filter"],
+            flags=d.get("flags"),
+            cb_kwargs=d.get("cb_kwargs"),
+        )
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
@@ -102,8 +141,7 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback', 'cb_kwargs']:
+        for x in self._attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -141,3 +179,61 @@ class Request(object_ref):
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+    def to_dict(self, spider=None):
+        """
+        Convert Request object to a dict.
+
+        If a spider is given, it will try to find out the name of the spider method
+        used in the callback and store that as the callback.
+        """
+        cb = self.callback
+        if callable(cb):
+            cb = _find_method(spider, cb)
+        eb = self.errback
+        if callable(eb):
+            eb = _find_method(spider, eb)
+        d = {
+            "url": to_unicode(self.url),  # urls should be safe (safe_string_url)
+            "callback": cb,
+            "errback": eb,
+            "headers": dict(self.headers),
+            "_encoding": self._encoding,
+        }
+        for attr in self._attributes:
+            if attr not in d:
+                d[attr] = getattr(self, attr)
+        if type(self) is not Request:
+            d["_class"] = self.__module__ + '.' + self.__class__.__name__
+        return d
+
+
+def _find_method(obj, func):
+    """
+    Helper function for Request.to_dict
+    """
+    # Only instance methods contain ``__func__``
+    if obj and hasattr(func, '__func__'):
+        members = inspect.getmembers(obj, predicate=inspect.ismethod)
+        for name, obj_func in members:
+            # We need to use __func__ to access the original
+            # function object because instance method objects
+            # are generated each time attribute is retrieved from
+            # instance.
+            #
+            # Reference: The standard type hierarchy
+            # https://docs.python.org/3/reference/datamodel.html
+            if obj_func.__func__ is func.__func__:
+                return name
+    raise ValueError(f"Function {func} is not an instance method in: {obj}")
+
+
+def _get_method(obj, name):
+    """
+    Helper function for Request.from_dict
+    """
+    name = str(name)
+    try:
+        return getattr(obj, name)
+    except AttributeError:
+        raise ValueError(f"Method {name!r} not found in: {obj}")
