@@ -2,7 +2,11 @@ import unittest
 
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+
+
+
+class CustomRequest(Request):
+    pass
 
 
 class RequestSerializationTest(unittest.TestCase):
@@ -27,7 +31,8 @@ class RequestSerializationTest(unittest.TestCase):
             priority=20,
             meta={'a': 'b'},
             cb_kwargs={'k': 'v'},
-            flags=['testFlag'])
+            flags=['testFlag'],
+        )
         self._assert_serializes_ok(r, spider=self.spider)
 
     def test_latin1_body(self):
@@ -39,8 +44,8 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(r)
 
     def _assert_serializes_ok(self, request, spider=None):
-        d = request_to_dict(request, spider=spider)
-        request2 = request_from_dict(d, spider=spider)
+        d = request.to_dict(spider=spider)
+        request2 = Request.from_dict(d, spider=spider)
         self._assert_same_request(request, request2)
 
     def _assert_same_request(self, r1, r2):
@@ -75,7 +80,7 @@ class RequestSerializationTest(unittest.TestCase):
                     callback=self.spider.parse_item_reference,
                     errback=self.spider.handle_error_reference)
         self._assert_serializes_ok(r, spider=self.spider)
-        request_dict = request_to_dict(r, self.spider)
+        request_dict = r.to_dict(self.spider)
         self.assertEqual(request_dict['callback'], 'parse_item_reference')
         self.assertEqual(request_dict['errback'], 'handle_error_reference')
 
@@ -84,7 +89,7 @@ class RequestSerializationTest(unittest.TestCase):
                     callback=self.spider._TestSpider__parse_item_reference,
                     errback=self.spider._TestSpider__handle_error_reference)
         self._assert_serializes_ok(r, spider=self.spider)
-        request_dict = request_to_dict(r, self.spider)
+        request_dict = r.to_dict(self.spider)
         self.assertEqual(request_dict['callback'],
                          '_TestSpider__parse_item_reference')
         self.assertEqual(request_dict['errback'],
@@ -110,18 +115,17 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
-        self.assertRaises(ValueError, request_to_dict, r)
-        self.assertRaises(ValueError, request_to_dict, r, spider=self.spider)
+        self.assertRaises(ValueError, r.to_dict)
+        self.assertRaises(ValueError, r.to_dict, spider=self.spider)
 
     def test_unserializable_callback2(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
-        self.assertRaises(ValueError, request_to_dict, r)
+        self.assertRaises(ValueError, r.to_dict)
 
     def test_unserializable_callback3(self):
         """Parser method is removed or replaced dynamically."""
 
         class MySpider(Spider):
-
             name = 'my_spider'
 
             def parse(self, response):
@@ -130,7 +134,7 @@ class RequestSerializationTest(unittest.TestCase):
         spider = MySpider()
         r = Request("http://www.example.com", callback=spider.parse)
         setattr(spider, 'parse', None)
-        self.assertRaises(ValueError, request_to_dict, r, spider=spider)
+        self.assertRaises(ValueError, r.to_dict, spider=spider)
 
 
 class TestSpiderMixin:
@@ -177,7 +181,3 @@ class TestSpider(Spider, TestSpiderMixin):
 
     def __parse_item_private(self, response):
         pass
-
-
-class CustomRequest(Request):
-    pass

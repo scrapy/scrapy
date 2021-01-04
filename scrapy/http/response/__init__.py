@@ -6,6 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 from ipaddress import ip_address
 from typing import Generator
+from typing import Type, TypeVar
 from urllib.parse import urljoin
 
 from twisted.internet.ssl import Certificate
@@ -18,6 +19,9 @@ from scrapy.link import Link
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import  to_unicode
 from scrapy.utils.trackref import object_ref
+
+
+ResponseType = TypeVar("ResponseType", bound="Response")
 
 
 class Response(object_ref):
@@ -49,7 +53,7 @@ class Response(object_ref):
         self.protocol = protocol
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: Type[ResponseType], d: dict) -> ResponseType:
         response_cls = load_object(d["_class"]) if "_class" in d else cls
         return response_cls(
             url=d["url"],
@@ -229,11 +233,10 @@ class Response(object_ref):
             for url in urls
         )
 
-    def to_dict(self, request=None):
+    def to_dict(self) -> dict:
         d = {
             "url": to_unicode(self.url),  # urls should be safe (safe_string_url)
             "headers": dict(self.headers),
-            "request": request,
             "ip_address": str(self.ip_address) if self.ip_address is not None else None,
             "certificate": self.certificate.dumpPEM() if self.certificate is not None else None,
         }

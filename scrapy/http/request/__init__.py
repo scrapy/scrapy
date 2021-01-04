@@ -5,9 +5,11 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import inspect
+from typing import Optional, Type, TypeVar
 
 from w3lib.url import safe_url_string
 
+import scrapy
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
@@ -15,6 +17,10 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
+
+
+RequestType = TypeVar("RequestType", bound="Request")
+SpiderType = TypeVar("SpiderType", bound="scrapy.spiders.Spider")
 
 
 class Request(object_ref):
@@ -52,7 +58,7 @@ class Request(object_ref):
         self.flags = [] if flags is None else list(flags)
 
     @classmethod
-    def from_dict(cls, d, spider=None):
+    def from_dict(cls: Type[RequestType], d: dict, spider: Optional[SpiderType] = None) -> RequestType:
         """
         Create Request object from a dict.
 
@@ -180,7 +186,7 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, spider=None):
+    def to_dict(self, spider: Optional[SpiderType] = None) -> dict:
         """
         Convert Request object to a dict.
 
