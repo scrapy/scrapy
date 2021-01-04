@@ -8,7 +8,7 @@ import pickle
 
 from queuelib import queue
 
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.http.request import Request
 
 
 def _with_mkdir(queue_class):
@@ -54,17 +54,14 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key)
 
         def push(self, request):
-            request = request_to_dict(request, self.spider)
-            return super().push(request)
+            request_dict = request.to_dict(self.spider)
+            return super().push(request_dict)
 
         def pop(self):
-            request = super().pop()
-
-            if not request:
+            request_dict = super().pop()
+            if not request_dict:
                 return None
-
-            request = request_from_dict(request, self.spider)
-            return request
+            return Request.from_dict(request_dict, self.spider)
 
     return ScrapyRequestQueue
 
