@@ -4,18 +4,27 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+from ipaddress import ip_address
 from typing import Generator
 from urllib.parse import urljoin
+
+from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import NotSupported
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import  to_unicode
 from scrapy.utils.trackref import object_ref
 
 
 class Response(object_ref):
+
+    _attributes = (
+        "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
+    )
 
     def __init__(
         self,
@@ -38,6 +47,21 @@ class Response(object_ref):
         self.certificate = certificate
         self.ip_address = ip_address
         self.protocol = protocol
+
+    @classmethod
+    def from_dict(cls, d):
+        response_cls = load_object(d["_class"]) if "_class" in d else cls
+        return response_cls(
+            url=d["url"],
+            status=d["status"],
+            headers=d["headers"],
+            body=d["body"],
+            flags=d["flags"],
+            request=d["request"],
+            certificate=Certificate.loadPEM(d["certificate"]) if d["certificate"] else None,
+            ip_address=ip_address(d["ip_address"]) if d["ip_address"] else None,
+            protocol=d["protocol"],
+        )
 
     @property
     def cb_kwargs(self):
@@ -100,9 +124,7 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in [
-            "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
-        ]:
+        for x in self._attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -206,3 +228,18 @@ class Response(object_ref):
             )
             for url in urls
         )
+
+    def to_dict(self, request=None):
+        d = {
+            "url": to_unicode(self.url),  # urls should be safe (safe_string_url)
+            "headers": dict(self.headers),
+            "request": request,
+            "ip_address": str(self.ip_address) if self.ip_address is not None else None,
+            "certificate": self.certificate.dumpPEM() if self.certificate is not None else None,
+        }
+        for attr in self._attributes:
+            if attr not in d:
+                d[attr] = getattr(self, attr)
+        if type(self) is not Response:
+            d["_class"] = self.__module__ + '.' + self.__class__.__name__
+        return d
