@@ -1,11 +1,14 @@
 import asyncio
+from unittest import SkipTest
 
+from pydispatch import dispatcher
 from pytest import mark
 from testfixtures import LogCapture
-from twisted.trial import unittest
-from twisted.python.failure import Failure
+from twisted import version as twisted_version
 from twisted.internet import defer, reactor
-from pydispatch import dispatcher
+from twisted.python.failure import Failure
+from twisted.python.versions import Version
+from twisted.trial import unittest
 
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy.utils.test import get_from_asyncio_queue
@@ -68,6 +71,7 @@ class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
         return d
 
 
+@mark.usefixtures('reactor_pytest')
 class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
 
     async def ok_handler(self, arg, handlers_called):
@@ -75,6 +79,19 @@ class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
         assert arg == 'test'
         await defer.succeed(42)
         return "OK"
+
+    def test_send_catch_log(self):
+        if (
+            self.reactor_pytest == 'asyncio'
+            and twisted_version < Version('twisted', 18, 4, 0)
+        ):
+            raise SkipTest(
+                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
+                'fails due to a timeout when using AsyncIO and Twisted '
+                'versions lower than 18.4.0'
+            )
+
+        return super().test_send_catch_log()
 
 
 @mark.only_asyncio()
@@ -85,6 +102,16 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
         assert arg == 'test'
         await asyncio.sleep(0.2)
         return await get_from_asyncio_queue("OK")
+
+    def test_send_catch_log(self):
+        if twisted_version < Version('twisted', 18, 4, 0):
+            raise SkipTest(
+                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
+                'fails due to a timeout when using Twisted versions lower '
+                'than 18.4.0'
+            )
+
+        return super().test_send_catch_log()
 
 
 class SendCatchLogTest2(unittest.TestCase):
