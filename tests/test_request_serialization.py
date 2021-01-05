@@ -4,7 +4,6 @@ from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
 
 
-
 class CustomRequest(Request):
     pass
 
