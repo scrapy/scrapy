@@ -175,8 +175,8 @@ class Request(object_ref):
         """
         Return a dictionary containing the Request's data.
 
-        If a spider is given, it will try to find out the name of the spider method
-        used in the callback and store that as the callback.
+        If a spider is given, this method will try to find out the name of the spider method used
+        as callback and include it in the output dict, raising an exception if it cannot be found.
         """
         cb = self.callback
         if callable(cb):
