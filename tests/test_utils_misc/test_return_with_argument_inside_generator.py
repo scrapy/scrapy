@@ -10,8 +10,8 @@ docstring
     url = """
 https://example.org
 """
-    yield 1
-    return 2
+    yield url
+    return 1
 
 
 def top_level_function_without():
@@ -21,7 +21,7 @@ docstring
     url = """
 https://example.org
 """
-    yield 1
+    yield url
     return
 
 
@@ -75,9 +75,8 @@ docstring
             url = """
 https://example.org
         """
-            yield 1
-            return 2
-
+            yield url
+            return 1
 
         def p():
             """
@@ -86,7 +85,7 @@ docstring
             url = """
 https://example.org
         """
-            yield 1
+            yield url
             return
 
         assert is_generator_with_return_value(top_level_function_with)

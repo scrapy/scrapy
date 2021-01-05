@@ -9,7 +9,6 @@ from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
-from textwrap import dedent
 
 from w3lib.html import replace_entities
 
