@@ -65,28 +65,13 @@ class Request(object_ref):
         If a spider is given, and the passed dict contains a callback name, this method
         will try to resolve the Request callback to a spider method with the same name.
         """
-        cb = d["callback"]
-        if cb and spider:
-            cb = _get_method(spider, cb)
-        eb = d["errback"]
-        if eb and spider:
-            eb = _get_method(spider, eb)
+        kwargs = {key: value for key, value in d.items() if key in cls._attributes}
+        if d.get("callback") and spider:
+            kwargs["callback"] = _get_method(spider, d["callback"])
+        if d.get("errback") and spider:
+            kwargs["errback"] = _get_method(spider, d["errback"])
         request_cls = load_object(d["_class"]) if "_class" in d else cls
-        return request_cls(
-            url=to_unicode(d["url"]),
-            callback=cb,
-            errback=eb,
-            method=d["method"],
-            headers=d["headers"],
-            body=d["body"],
-            cookies=d["cookies"],
-            meta=d["meta"],
-            encoding=d["_encoding"],
-            priority=d["priority"],
-            dont_filter=d["dont_filter"],
-            flags=d.get("flags"),
-            cb_kwargs=d.get("cb_kwargs"),
-        )
+        return request_cls(**kwargs)
 
     @property
     def cb_kwargs(self):

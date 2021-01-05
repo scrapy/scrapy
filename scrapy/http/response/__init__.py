@@ -58,17 +58,10 @@ class Response(object_ref):
         Create a Response object from a dict which keys match a Response's ``__init__`` parameters.
         """
         response_cls = load_object(d["_class"]) if "_class" in d else cls
-        return response_cls(
-            url=d["url"],
-            status=d["status"],
-            headers=d["headers"],
-            body=d["body"],
-            flags=d["flags"],
-            request=d["request"],
-            certificate=Certificate.loadPEM(d["certificate"]) if d["certificate"] else None,
-            ip_address=ip_address(d["ip_address"]) if d["ip_address"] else None,
-            protocol=d["protocol"],
-        )
+        kwargs = {key: value for key, value in d.items() if key in cls._attributes}
+        kwargs["certificate"] = Certificate.loadPEM(d["certificate"]) if d["certificate"] else None
+        kwargs["ip_address"] = ip_address(d["ip_address"]) if d["ip_address"] else None
+        return response_cls(**kwargs)
 
     @property
     def cb_kwargs(self):
