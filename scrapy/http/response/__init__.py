@@ -17,7 +17,7 @@ from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import  to_unicode
+from scrapy.utils.python import to_unicode
 from scrapy.utils.trackref import object_ref
 
 

@@ -9,7 +9,7 @@ from typing import Optional, Type, TypeVar
 
 from w3lib.url import safe_url_string
 
-import scrapy
+import scrapy  # noqa: F401, needed for type hinting
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
