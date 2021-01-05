@@ -42,7 +42,7 @@ class TextResponse(Response):
         """
         Create a Response object from a dict which keys match a Response's ``__init__`` parameters.
         """
-        response = super(TextResponse, cls).from_dict(d)
+        response = super().from_dict(d)  # type: ignore
         response._encoding = d["_encoding"]
         return response
 
