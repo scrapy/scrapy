@@ -220,6 +220,10 @@ Request objects
 
     .. automethod:: from_curl
 
+    .. automethod:: from_dict
+
+    .. automethod:: to_dict
+
 .. _topics-request-response-ref-request-callback-arguments:
 
 Passing additional data to callback functions
@@ -841,6 +845,10 @@ Response objects
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
+
+    .. automethod:: Response.from_dict
+
+    .. automethod:: Response.to_dict
 
 
 .. _topics-request-response-ref-response-subclasses:

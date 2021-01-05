@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 import json
 import warnings
 from contextlib import suppress
-from typing import Generator
+from typing import Generator, Type
 from urllib.parse import urljoin
 
 import parsel
@@ -18,7 +18,7 @@ from w3lib.html import strip_html5_whitespace
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
-from scrapy.http.response import Response
+from scrapy.http.response import Response, ResponseType
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
@@ -36,6 +36,15 @@ class TextResponse(Response):
         self._cached_ubody = None
         self._cached_selector = None
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def from_dict(cls: Type[ResponseType], d: dict) -> ResponseType:
+        """
+        Create a Response object from a dict which keys match a Response's ``__init__`` parameters.
+        """
+        response = super(TextResponse, cls).from_dict(d)
+        response._encoding = d["_encoding"]
+        return response
 
     def _set_url(self, url):
         if isinstance(url, str):
@@ -241,6 +250,14 @@ class TextResponse(Response):
             cb_kwargs=cb_kwargs,
             flags=flags,
         )
+
+    def to_dict(self) -> dict:
+        """
+        Return a dictionary containing the Response's data.
+        """
+        d = super().to_dict()
+        d["_encoding"] = self._encoding
+        return d
 
 
 class _InvalidSelector(ValueError):

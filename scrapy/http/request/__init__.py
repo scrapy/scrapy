@@ -60,10 +60,10 @@ class Request(object_ref):
     @classmethod
     def from_dict(cls: Type[RequestType], d: dict, spider: Optional[SpiderType] = None) -> RequestType:
         """
-        Create Request object from a dict.
+        Create a Request object from a dict which keys match a Request's ``__init__`` parameters.
 
-        If a spider is given, it will try to resolve the callbacks looking at the
-        spider for methods with the same name.
+        If a spider is given, and the passed dict contains a callback name, this method
+        will try to resolve the Request callback to a spider method with the same name.
         """
         cb = d["callback"]
         if cb and spider:
@@ -188,7 +188,7 @@ class Request(object_ref):
 
     def to_dict(self, spider: Optional[SpiderType] = None) -> dict:
         """
-        Convert Request object to a dict.
+        Return a dictionary containing the Request's data.
 
         If a spider is given, it will try to find out the name of the spider method
         used in the callback and store that as the callback.

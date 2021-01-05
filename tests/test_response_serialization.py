@@ -4,7 +4,7 @@ from pathlib import Path
 
 from scrapy.http.request import Request
 from scrapy.http.response import Response
-from scrapy.http.response.html import HtmlResponse
+from scrapy.http.response.html import TextResponse
 
 from twisted.internet.ssl import Certificate
 
@@ -53,7 +53,11 @@ class ResponseSerializationTest(unittest.TestCase):
         self._assert_serializes_ok(response)
 
     def test_request_class(self):
-        r = HtmlResponse("http://www.example.com")
-        self._assert_serializes_ok(r)
-        r = CustomResponse("http://www.example.com")
-        self._assert_serializes_ok(r)
+        custom = CustomResponse("http://www.example.com")
+        self._assert_serializes_ok(custom)
+
+        text = TextResponse("http://www.example.com", encoding="utf8")
+        self._assert_serializes_ok(text)
+        # check encoding
+        text2 = TextResponse.from_dict(text.to_dict())
+        self.assertEqual(text._encoding, text2._encoding)
