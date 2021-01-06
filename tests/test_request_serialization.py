@@ -1,7 +1,5 @@
 import unittest
-import warnings
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
 
@@ -146,14 +144,6 @@ class RequestSerializationTest(unittest.TestCase):
 
 
 class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
-    @classmethod
-    def setUpClass(cls):
-        with warnings.catch_warnings(record=True) as w:
-            from scrapy.utils.reqser import request_from_dict, request_to_dict  # noqa: F401
-            assert len(w) == 1
-            assert issubclass(w[0].category, ScrapyDeprecationWarning)
-            assert "Module `scrapy.utils.reqser` is deprecated" in str(w[0].message)
-
     def _assert_serializes_ok(self, request, spider=None):
         from scrapy.utils.reqser import request_from_dict, request_to_dict
         d = request_to_dict(request, spider=spider)
