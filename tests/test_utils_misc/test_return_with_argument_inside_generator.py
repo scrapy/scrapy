@@ -1,9 +1,10 @@
 import unittest
+import warnings
 
-from scrapy.utils.misc import is_generator_with_return_value
+from scrapy.utils.misc import is_generator_with_return_value, warn_on_generator_with_return_value
 
 
-def top_level_function_with():
+def top_level_return_something():
     """
 docstring
     """
@@ -14,7 +15,7 @@ https://example.org
     return 1
 
 
-def top_level_function_without():
+def top_level_return_none():
     """
 docstring
     """
@@ -25,41 +26,24 @@ https://example.org
     return
 
 
+def generator_that_returns_stuff():
+    yield 1
+    yield 2
+    return 3
+
+
 class UtilsMiscPy3TestCase(unittest.TestCase):
 
-    def test_generators_with_return_statements(self):
-        def f():
+    def test_generators_return_something(self):
+        def f1():
             yield 1
             return 2
 
-        def g():
+        def g1():
             yield 1
-            return 'asdf'
+            return "asdf"
 
-        def h():
-            yield 1
-            return None
-
-        def i():
-            yield 1
-            return
-
-        def j():
-            yield 1
-
-        def k():
-            yield 1
-            yield from g()
-
-        def m():
-            yield 1
-
-            def helper():
-                return 0
-
-            yield helper()
-
-        def n():
+        def h1():
             yield 1
 
             def helper():
@@ -68,7 +52,7 @@ class UtilsMiscPy3TestCase(unittest.TestCase):
             yield helper()
             return 2
 
-        def o():
+        def i1():
             """
 docstring
             """
@@ -78,7 +62,58 @@ https://example.org
             yield url
             return 1
 
-        def p():
+        assert is_generator_with_return_value(top_level_return_something)
+        assert is_generator_with_return_value(f1)
+        assert is_generator_with_return_value(g1)
+        assert is_generator_with_return_value(h1)
+        assert is_generator_with_return_value(i1)
+
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, top_level_return_something)
+            self.assertEqual(len(w), 1)
+            self.assertIn('The "NoneType.top_level_return_something" method is a generator', str(w[0].message))
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, f1)
+            self.assertEqual(len(w), 1)
+            self.assertIn('The "NoneType.f1" method is a generator', str(w[0].message))
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, g1)
+            self.assertEqual(len(w), 1)
+            self.assertIn('The "NoneType.g1" method is a generator', str(w[0].message))
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, h1)
+            self.assertEqual(len(w), 1)
+            self.assertIn('The "NoneType.h1" method is a generator', str(w[0].message))
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, i1)
+            self.assertEqual(len(w), 1)
+            self.assertIn('The "NoneType.i1" method is a generator', str(w[0].message))
+
+    def test_generators_return_none(self):
+        def f2():
+            yield 1
+            return None
+
+        def g2():
+            yield 1
+            return
+
+        def h2():
+            yield 1
+
+        def i2():
+            yield 1
+            yield from generator_that_returns_stuff()
+
+        def j2():
+            yield 1
+
+            def helper():
+                return 0
+
+            yield helper()
+
+        def k2():
             """
 docstring
             """
@@ -88,15 +123,39 @@ https://example.org
             yield url
             return
 
-        assert is_generator_with_return_value(top_level_function_with)
-        assert not is_generator_with_return_value(top_level_function_without)
-        assert is_generator_with_return_value(f)
-        assert is_generator_with_return_value(g)
-        assert not is_generator_with_return_value(h)
-        assert not is_generator_with_return_value(i)
-        assert not is_generator_with_return_value(j)
-        assert not is_generator_with_return_value(k)  # not recursive
-        assert not is_generator_with_return_value(m)
-        assert is_generator_with_return_value(n)
-        assert is_generator_with_return_value(o)
-        assert not is_generator_with_return_value(p)
+        def l2():
+            return
+
+        assert not is_generator_with_return_value(top_level_return_none)
+        assert not is_generator_with_return_value(f2)
+        assert not is_generator_with_return_value(g2)
+        assert not is_generator_with_return_value(h2)
+        assert not is_generator_with_return_value(i2)
+        assert not is_generator_with_return_value(j2)  # not recursive
+        assert not is_generator_with_return_value(k2)  # not recursive
+        assert not is_generator_with_return_value(l2)
+
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, top_level_return_none)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, f2)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, g2)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, h2)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, i2)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, j2)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, k2)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, l2)
+            self.assertEqual(len(w), 0)
