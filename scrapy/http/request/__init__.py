@@ -60,7 +60,7 @@ class Request(object_ref):
     @classmethod
     def from_dict(cls: Type[RequestType], d: dict, spider: Optional[SpiderType] = None) -> RequestType:
         """
-        Create a Request object from a dict which keys match a Request's ``__init__`` parameters.
+        Create a Request object from a dict whose keys match a Request's ``__init__`` parameters.
 
         If a spider is given, and the passed dict contains a callback name, this method
         will try to resolve the Request callback to a spider method with the same name.
