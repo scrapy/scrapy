@@ -1,5 +1,7 @@
 import unittest
+import warnings
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, FormRequest
 from scrapy.spiders import Spider
 
@@ -134,6 +136,29 @@ class RequestSerializationTest(unittest.TestCase):
         r = Request("http://www.example.com", callback=spider.parse)
         setattr(spider, 'parse', None)
         self.assertRaises(ValueError, r.to_dict, spider=spider)
+
+    def test_callback_not_available(self):
+        """Callback method is not available in the spider passed to from_dict"""
+        spider = TestSpiderDelegation()
+        r = Request("http://www.example.com", callback=spider.delegated_callback)
+        d = r.to_dict(spider=spider)
+        self.assertRaises(ValueError, Request.from_dict, d, spider=Spider("foo"))
+
+
+class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
+    @classmethod
+    def setUpClass(cls):
+        with warnings.catch_warnings(record=True) as w:
+            from scrapy.utils.reqser import request_from_dict, request_to_dict  # noqa: F401
+            assert len(w) == 1
+            assert issubclass(w[0].category, ScrapyDeprecationWarning)
+            assert "Module `scrapy.utils.reqser` is deprecated" in str(w[0].message)
+
+    def _assert_serializes_ok(self, request, spider=None):
+        from scrapy.utils.reqser import request_from_dict, request_to_dict
+        d = request_to_dict(request, spider=spider)
+        request2 = request_from_dict(d, spider=spider)
+        self._assert_same_request(request, request2)
 
 
 class TestSpiderMixin:
