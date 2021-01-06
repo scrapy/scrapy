@@ -54,14 +54,14 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key)
 
         def push(self, request):
-            request_dict = request.to_dict(self.spider)
-            return super().push(request_dict)
+            request = request.to_dict(self.spider)
+            return super().push(request)
 
         def pop(self):
-            request_dict = super().pop()
-            if not request_dict:
+            request = super().pop()
+            if not request:
                 return None
-            return Request.from_dict(request_dict, self.spider)
+            return Request.from_dict(request, self.spider)
 
     return ScrapyRequestQueue
 
