@@ -70,12 +70,7 @@ class Request(object_ref):
             kwargs["callback"] = _get_method(spider, d["callback"])
         if d.get("errback") and spider:
             kwargs["errback"] = _get_method(spider, d["errback"])
-        if cls is not Request:
-            request_cls = cls
-        elif "_class" in d:
-            request_cls = load_object(d["_class"])
-        else:
-            request_cls = Request
+        request_cls = load_object(d["_class"]) if cls is Request and "_class" in d else cls
         return request_cls(**kwargs)
 
     @property
