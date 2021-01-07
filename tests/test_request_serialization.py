@@ -13,6 +13,28 @@ class RequestSerializationTest(unittest.TestCase):
     def setUp(self):
         self.spider = TestSpider()
 
+    def _assert_serializes_ok(self, request, spider=None):
+        d = request.to_dict(spider=spider)
+        request2 = Request.from_dict(d, spider=spider)
+        self._assert_same_request(request, request2)
+
+    def _assert_same_request(self, r1, r2, check_request_class=True):
+        if check_request_class:
+            self.assertEqual(r1.__class__, r2.__class__)
+        self.assertEqual(r1.url, r2.url)
+        self.assertEqual(r1.callback, r2.callback)
+        self.assertEqual(r1.errback, r2.errback)
+        self.assertEqual(r1.method, r2.method)
+        self.assertEqual(r1.body, r2.body)
+        self.assertEqual(r1.headers, r2.headers)
+        self.assertEqual(r1.cookies, r2.cookies)
+        self.assertEqual(r1.meta, r2.meta)
+        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
+        self.assertEqual(r1._encoding, r2._encoding)
+        self.assertEqual(r1.priority, r2.priority)
+        self.assertEqual(r1.dont_filter, r2.dont_filter)
+        self.assertEqual(r1.flags, r2.flags)
+
     def test_basic(self):
         r = Request("http://www.example.com")
         self._assert_serializes_ok(r)
@@ -42,32 +64,18 @@ class RequestSerializationTest(unittest.TestCase):
         r = Request("http://www.example.com", body=b"\xc2\xa3")
         self._assert_serializes_ok(r)
 
-    def _assert_serializes_ok(self, request, spider=None):
-        d = request.to_dict(spider=spider)
-        request2 = Request.from_dict(d, spider=spider)
-        self._assert_same_request(request, request2)
-
-    def _assert_same_request(self, r1, r2):
-        self.assertEqual(r1.__class__, r2.__class__)
-        self.assertEqual(r1.url, r2.url)
-        self.assertEqual(r1.callback, r2.callback)
-        self.assertEqual(r1.errback, r2.errback)
-        self.assertEqual(r1.method, r2.method)
-        self.assertEqual(r1.body, r2.body)
-        self.assertEqual(r1.headers, r2.headers)
-        self.assertEqual(r1.cookies, r2.cookies)
-        self.assertEqual(r1.meta, r2.meta)
-        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
-        self.assertEqual(r1._encoding, r2._encoding)
-        self.assertEqual(r1.priority, r2.priority)
-        self.assertEqual(r1.dont_filter, r2.dont_filter)
-        self.assertEqual(r1.flags, r2.flags)
-
-    def test_request_class(self):
+    def test_request_subclass(self):
         r = FormRequest("http://www.example.com")
         self._assert_serializes_ok(r, spider=self.spider)
         r = CustomRequest("http://www.example.com")
         self._assert_serializes_ok(r, spider=self.spider)
+
+    def test_different_request_subclass(self):
+        r1 = FormRequest("http://www.example.com")
+        d = r1.to_dict()
+        r2 = CustomRequest.from_dict(d)
+        self.assertIsInstance(r2, CustomRequest)
+        self._assert_same_request(r1, r2, check_request_class=False)
 
     def test_callback_serialization(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item,
