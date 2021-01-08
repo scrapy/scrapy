@@ -178,18 +178,11 @@ class Request(object_ref):
         If a spider is given, this method will try to find out the name of the spider method used
         as callback and include it in the output dict, raising an exception if it cannot be found.
         """
-        cb = self.callback
-        if callable(cb):
-            cb = _find_method(spider, cb)
-        eb = self.errback
-        if callable(eb):
-            eb = _find_method(spider, eb)
         d = {
             "url": to_unicode(self.url),  # urls should be safe (safe_string_url)
-            "callback": cb,
-            "errback": eb,
+            "callback": _find_method(spider, self.callback) if callable(self.callback) else self.callback,
+            "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
             "headers": dict(self.headers),
-            "_encoding": self._encoding,
         }
         for attr in self._attributes:
             if attr not in d:
