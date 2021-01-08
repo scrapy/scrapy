@@ -75,7 +75,7 @@ class TelnetConsole(protocol.ServerFactory):
         class Portal:
             """An implementation of IPortal"""
             @defers
-            def login(self_, credentials, mind, *interfaces):
+            def login(self, credentials, mind, *interfaces):
                 if not (
                     credentials.username == self.username.encode('utf8')
                     and credentials.checkPassword(self.password.encode('utf8'))
