@@ -693,8 +693,18 @@ Response objects
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
+    :param protocol: The protocol that was used to download the response.
+        For instance: "HTTP/1.0", "HTTP/1.1"
+    :type protocol: :class:`str`
+
+    .. versionadded:: 2.0.0
+       The ``certificate`` parameter.
+
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
+
+    .. versionadded:: VERSION
+       The ``protocol`` parameter.
 
     .. attribute:: Response.url
 
@@ -780,6 +790,8 @@ Response objects
 
     .. attribute:: Response.certificate
 
+        .. versionadded:: 2.0.0
+
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
 
@@ -794,6 +806,17 @@ Response objects
         This attribute is currently only populated by the HTTP 1.1 download
         handler, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
+
+    .. attribute:: Response.protocol
+
+        .. versionadded:: VERSION
+
+        The protocol that was used to download the response.
+        For instance: "HTTP/1.0", "HTTP/1.1"
+
+        This attribute is currently only populated by the HTTP download
+        handlers, i.e. for ``http(s)`` responses. For other handlers,
+        :attr:`protocol` is always ``None``.
 
     .. method:: Response.copy()
 
