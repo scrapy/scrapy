@@ -12,7 +12,6 @@ from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
-from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
 
 
@@ -27,8 +26,7 @@ class FormRequest(Request):
         super().__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.items() if isinstance(formdata, dict) else formdata
-            querystr = _urlencode(items, self.encoding)
+            querystr = urlencode(formdata, doseq=1, encoding=self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(querystr)
@@ -65,13 +63,6 @@ def _get_form_url(form, url):
             return form.base_url
         return urljoin(form.base_url, strip_html5_whitespace(action))
     return urljoin(form.base_url, url)
-
-
-def _urlencode(seq, enc):
-    values = [(to_bytes(k, enc), to_bytes(v, enc))
-              for k, vs in seq
-              for v in (vs if is_listlike(vs) else [vs])]
-    return urlencode(values, doseq=1)
 
 
 def _get_form(response, formname, formid, formnumber, formxpath):
