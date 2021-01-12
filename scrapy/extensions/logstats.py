@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 class LogStats:
     """Log basic scraping stats periodically"""
 
-    def __init__(self, stats, interval=60.0):
+    def __init__(self, stats, interval=60):
         self.stats = stats
         self.interval = interval
-        self.multiplier = 60.0 / self.interval
+        self.multiplier = 60 / self.interval
         self.task = None
 
     @classmethod
