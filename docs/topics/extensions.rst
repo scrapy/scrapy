@@ -372,6 +372,8 @@ This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
 CheckSettings extension
 ~~~~~~~~~~~~~~~~~~~~~~~
+.. module:: scrapy.extensions.checksettings
+   :synopsis: Extension to find not used settings.
 
 .. class:: CheckSettings
 

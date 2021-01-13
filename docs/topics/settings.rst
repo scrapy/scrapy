@@ -282,10 +282,8 @@ CHECK_SETTINGS_ENABLED
 
 Default: ``True``
 
-Scope: ``scrapy.extensions.checksettings.CheckSettings``
-
-Whether to enable Check Settings. Optionally a list of variables to ignore
-can be specified (see :setting:`CHECK_SETTINGS_IGNORED`).
+Whether to enable the :class:`~scrapy.extensions.checksettings.CheckSettings`
+extension. Optionally a list of variables to ignore.
 
 .. setting:: CHECK_SETTINGS_IGNORED
 
@@ -293,8 +291,6 @@ CHECK_SETTINGS_IGNORED
 ----------------------
 
 Default: ``[]``
-
-Scope: ``scrapy.extensions.checksettings.CheckSettings``
 
 List of settings variables to ignore by Check Settings extension.
 

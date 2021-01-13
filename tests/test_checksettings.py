@@ -1,3 +1,4 @@
+from unittest import mock
 from testfixtures import LogCapture
 from tests.mockserver import MockServer
 from tests.spiders import ItemSpider
@@ -5,6 +6,7 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.utils.test import get_crawler
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions.checksettings import CheckSettings
 
 
@@ -16,6 +18,22 @@ class TestCheckSettings(TestCase):
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_checksettings_not_enabled(self):
+        settings = {
+            "CHECK_SETTINGS_ENABLED": False,
+        }
+        crawler = get_crawler(ItemSpider, settings)
+        yield crawler.crawl(mockserver=self.mockserver)
+        with self.assertRaises(NotConfigured):
+            CheckSettings.from_crawler(crawler)
+
+    def test_check_settings_enabled(self):
+        crawler = mock.Mock()
+        crawler.settings.getbool.return_value = True
+        CheckSettings.from_crawler(crawler)
+        crawler.signals.connect.assert_called_once()
 
     @defer.inlineCallbacks
     def test_checksettings_not_used_settings(self):
