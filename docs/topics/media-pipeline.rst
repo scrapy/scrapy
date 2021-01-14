@@ -651,12 +651,13 @@ Content-Based Image Filtering Pipeline
 This example overrides the ``get_images()`` method of Images Pipeline for content-based filtering. 
 With a TensorFlow_ image classifier, we can build up a dataset featuring target labels through a broad crawl.::
 
+    import numpy as np
+    from PIL import Image
+    from io import BytesIO
+
     import scrapy
     from scrapy.pipelines.images import ImagesPipeline, ImageException
 
-    import numpy as np
-    from io import BytesIO
-    from PIL import Image
     import tensorflow as tf
     import tensorflow_hub as hub
 
@@ -664,7 +665,7 @@ With a TensorFlow_ image classifier, we can build up a dataset featuring target 
         def __init__(self, store_uri, download_func=None, settings=None):
             super().__init__(store_uri, settings=settings, download_func=download_func)
 
-            self.labels = [int(label.strip()) for label in settings.get("IMAGE_LABELS").split(",")]
+            self.label = settings.getint("IMAGE_LABEL")
 
             # Initializing model
             self.image_size = 224
@@ -674,46 +675,21 @@ With a TensorFlow_ image classifier, we can build up a dataset featuring target 
                 ])
             self.model.build([None, self.image_size, self.image_size, 3])
 
-        def check_image(self, image):
-            """
-            Returns boolean whether to download image or not
-            based on labels found from classifier
-            """
-            # Preprocess image for inference
-            img = image.resize([self.image_size]*2, Image.NEAREST)
-            img = np.expand_dims(np.array(img), axis=0)
-
-            # Filter top 3 prediction for an image
-            preds = self.model.predict(img)
-            top_preds = preds[0].argsort()[-3:][::-1]
-
-            if any(lbl in top_preds for lbl in self.labels):
-                return True
-            return False
-
         def get_images(self, response, request, info, *, item=None):
             path = self.file_path(request, response=response, info=info, item=item)
             orig_image = Image.open(BytesIO(response.body))
 
-            width, height = orig_image.size
-            if width < self.min_width or height < self.min_height:
-                raise ImageException("Image too small "
-                                     f"({width}x{height} < "
-                                     f"{self.min_width}x{self.min_height})")
+            # Prepare image for inference
+            img = np.expand_dims(np.array(orig_image.resize([self.image_size]*2, Image.NEAREST)), axis=0)
 
-            image_classifier_flag = self.check_image(orig_image)
+            # Get top predicted label
+            prediction = self.model.predict(img)[0].argsort()[::-1][0]
 
-            if image_classifier_flag == False:
-                raise ImageException("Image not in labels list")
+            if prediction != self.label:
+                raise ImageException("Image does not match label")
 
             image, buf = self.convert_image(orig_image)
             yield path, image, buf
-
-            for thumb_id, size in self.thumbs.items():
-                thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
-                thumb_image, thumb_buf = self.convert_image(image, size)
-                yield thumb_path, thumb_image, thumb_buf
-
 
 Similar to the first example, add its class import path to the
 :setting:`ITEM_PIPELINES` setting. Also, specify the label_ for filtering.::
@@ -721,7 +697,7 @@ Similar to the first example, add its class import path to the
    ITEM_PIPELINES = {
        'myproject.pipelines.ImageClassifierPipeline': 300
    }
-   IMAGE_LABELS = "2"  # Look for goldfish
+   IMAGE_LABEL = 2  # Look for goldfish
 
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5
 .. _TensorFlow: https://tensorflow.org
