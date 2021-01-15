@@ -76,9 +76,9 @@ class ExecutionEngine:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
-        yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
         self._closewait = defer.Deferred()
+        yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         yield self._closewait
 
     def stop(self):
