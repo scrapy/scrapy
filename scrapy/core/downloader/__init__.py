@@ -73,7 +73,7 @@ class Downloader:
     def __init__(self, crawler):
         self.settings = crawler.settings
         self.signals = crawler.signals
-        self.slots = {}
+        self.slots = dict()
         self.active = set()
         self.handlers = DownloadHandlers(crawler)
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')

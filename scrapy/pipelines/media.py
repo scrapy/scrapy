@@ -26,12 +26,12 @@ class MediaPipeline:
         def __init__(self, spider):
             self.spider = spider
             self.downloading = set()
-            self.downloaded = {}
+            self.downloaded = dict()
             self.waiting = defaultdict(list)
 
     def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
-        self._expects_item = {}
+        self._expects_item = dict()
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
