@@ -242,7 +242,7 @@ e.g. in the spider's ``__init__`` method::
 If you run this spider again then INFO messages from
 ``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
-You can also filter messages by content using a substring or
+You can also filter log records by :class:`~logging.LogRecord` data. For example, you can filter log records by message content using a substring or
 a regular expression. Create a :class:`logging.Filter` subclass 
 and equip it with a regular expression pattern to
 filter out unwanted messages::
