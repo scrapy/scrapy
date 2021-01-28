@@ -252,8 +252,8 @@ filter out unwanted messages::
     
     class ContentFilter(logging.Filter):
         def filter(self, record):
-            m = re.search (r'.*\d\d\d [Ee]rror, retrying.+', record.msg)
-            if m.group(0) is not None:
+            match = re.search(r'\d{3} [Ee]rror, retrying', record.message)
+            if match:
                 return False
                 
 A project-level filter may be attached to the root 
