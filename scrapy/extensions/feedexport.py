@@ -485,4 +485,4 @@ class FeedExporter:
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
         uripar_function(params, spider)
-        return params
+        return uripar_function(params, spider)
