@@ -283,6 +283,7 @@ and hide it without affecting other loggers::
         def __init__(self, *args, **kwargs):
             logger = logging.getLogger('my_logger')
             logger.addFilter(ContentFilter())
+            
 scrapy.utils.log module
 =======================
 
