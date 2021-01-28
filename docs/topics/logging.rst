@@ -243,7 +243,7 @@ If you run this spider again then INFO messages from
 ``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
 You can also filter messages by content using a substring or
-a regular expression. Create a ``logging.Filter`` subclass 
+a regular expression. Create a :class:`logging.Filter` subclass 
 and equip it with a regular expression pattern to
 filter out unwanted messages::
 
