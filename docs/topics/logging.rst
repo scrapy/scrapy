@@ -259,9 +259,7 @@ filter out unwanted messages::
 A project-level filter may be attached to the root 
 handler created by Scrapy, this is a wieldy way to 
 filter all loggers in different parts of the project
-(middlewares, spider, etc.). Alternatively, you may 
-choose a specific logger and filter it without
-affecting other loggers::
+(middlewares, spider, etc.)::
 
     import logging
     import scrapy
