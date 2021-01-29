@@ -484,5 +484,5 @@ class FeedExporter:
         params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
-        uripar_function(params, spider)
-        return uripar_function(params, spider)
+        new_params = uripar_function(params, spider)
+        return new_params if new_params is not None else params
