@@ -102,7 +102,7 @@ module and documented in the :ref:`topics-settings-ref` section.
 Import paths and classes
 ========================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.4.0
 
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
@@ -249,18 +249,24 @@ ASYNCIO_EVENT_LOOP
 
 Default: ``None``
 
-Import path of a given asyncio event loop class.
+Import path of a given ``asyncio`` event loop class.
 
-If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the 
-asyncio event loop to be used with it. Set the setting to the import path of the 
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the
+asyncio event loop to be used with it. Set the setting to the import path of the
 desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
 event loop will be used.
 
 If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
-function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop 
-class to be used.  
+function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop
+class to be used.
 
 Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
+
+.. caution:: Please be aware that, when using a non-default event loop
+    (either defined via :setting:`ASYNCIO_EVENT_LOOP` or installed with
+    :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
+    :func:`asyncio.set_event_loop`, which will set the specified event loop
+    as the current loop for the current OS thread.
 
 .. setting:: BOT_NAME
 
@@ -351,6 +357,11 @@ Default::
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
+
+.. caution:: Cookies set via the ``Cookie`` header are not considered by the
+    :ref:`cookies-mw`. If you need to set cookies for a request, use the
+    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
 

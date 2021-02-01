@@ -115,6 +115,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.status, 200)
             self.assertEqual(response.body, b'0123456789')
+            self.assertEqual(response.protocol, None)
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
@@ -360,6 +361,13 @@ class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
     download_handler_cls = HTTP10DownloadHandler
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.0")
+        return d
+
 
 class Https10TestCase(Http10TestCase):
     scheme = 'https'
@@ -488,6 +496,13 @@ class Http11TestCase(HttpTestCase):
 
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
         return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
+
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.1")
+        return d
 
 
 class Https11TestCase(Http11TestCase):
@@ -868,29 +883,6 @@ class S3TestCase(unittest.TestCase):
         self.assertEqual(httpreq.headers['Authorization'],
                          b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
-    def test_request_signing5(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            pass
-        else:
-            raise unittest.SkipTest(
-                'botocore does not support overriding date with x-amz-date')
-        # deletes an object from the 'johnsmith' bucket using the
-        # path-style and Date alternative.
-        date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request(
-            's3://johnsmith/photos/puppy.jpg', method='DELETE', headers={
-                'Date': date,
-                'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-            })
-        with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
-        # botocore does not override Date with x-amz-date
-        self.assertEqual(
-            httpreq.headers['Authorization'],
-            b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
-
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = 'Tue, 27 Mar 2007 21:06:08 +0000'
@@ -985,6 +977,7 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, b'I have the power!')
             self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
+            self.assertIsNone(r.protocol)
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
@@ -1142,4 +1135,11 @@ class DataURITestCase(unittest.TestCase):
             self.assertEqual(response.text, 'Hello, world.')
 
         request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_protocol(self):
+        def _test(response):
+            self.assertIsNone(response.protocol)
+
+        request = Request("data:,")
         return self.download_request(request, self.spider).addCallback(_test)

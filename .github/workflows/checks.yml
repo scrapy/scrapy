@@ -1,0 +1,38 @@
+name: Checks
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        include:
+        - python-version: 3.8
+          env:
+            TOXENV: security
+        - python-version: 3.8
+          env:
+            TOXENV: flake8
+        - python-version: 3.8
+          env:
+            TOXENV: pylint
+        - python-version: 3.8
+          env:
+            TOXENV: typing
+        - python-version: 3.7  # Keep in sync with .readthedocs.yml
+          env:
+            TOXENV: docs
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run check
+      env: ${{ matrix.env }}
+      run: |
+        pip install -U tox
+        tox
