@@ -434,7 +434,7 @@ class ErrorEmitter(SchedulerHandler, unittest.TestCase):
 
 
 class FifoWithCrawlerAccess(queue.FifoDiskQueue):
-    def __init__(self, path, crawler, *_, **__):
+    def __init__(self, crawler, path, *_, **__):
         self.hello_message = crawler.settings.get('HELLO_MESSAGE')
         self.logger = logging.getLogger(__name__)
         super().__init__(path)

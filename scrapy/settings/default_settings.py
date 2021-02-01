@@ -258,6 +258,7 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.ScrapyPriorityQueue'
+SCHEDULER_DISK_QUEUE_CHUNKSIZE = 100000
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 

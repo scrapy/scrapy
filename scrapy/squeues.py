@@ -14,16 +14,17 @@ from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 def _with_mkdir(queue_class):
 
-    class DirectoriesCreated(queue_class):
+    class DirectoriesCreatedForKey(queue_class):
 
-        def __init__(self, path, *args, **kwargs):
+        def __init__(self, _, key, *args, **kwargs):
+            path = key
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
 
-            super().__init__(path, *args, **kwargs)
+            super().__init__(_, path, *args, **kwargs)
 
-    return DirectoriesCreated
+    return DirectoriesCreatedForKey
 
 
 def _serializable_queue(queue_class, serialize, deserialize):
@@ -48,7 +49,7 @@ def _scrapy_serialization_queue(queue_class):
 
         def __init__(self, crawler, key, *args, **kwargs):
             self.spider = crawler.spider
-            super().__init__(key, crawler, *args, **kwargs)
+            super().__init__(crawler, key, *args, **kwargs)
 
         @classmethod
         def from_crawler(cls, crawler, key, *args, **kwargs):
@@ -89,44 +90,53 @@ def _pickle_serialize(obj):
         raise SerializationError(str(e)) from e
 
 
-def _ignore_args_kwargs_passed_to_constructor(queue_class, used_kwargs):
-    class AcceptingQueue(queue_class):
-        def __init__(self, path, *_, **kwargs):
-            new_kwargs = {k: kwargs[k] for k in used_kwargs if k in kwargs}
-            super().__init__(path, **new_kwargs)
+def _chunked_file_queue(queue_class):
+    class ChunckedFileQueue(queue_class):
 
-    return AcceptingQueue
+        def __init__(self, crawler, key, *args, **kwargs):
+            chunksize = crawler.settings.getint(
+                'SCHEDULER_DISK_QUEUE_CHUNKSIZE',
+                100000,
+            )
+            super().__init__(key, chunksize=chunksize)
+
+        @classmethod
+        def from_crawler(cls, crawler, key, *args, **kwargs):
+            return cls(crawler, key, *args, **kwargs)
+
+    return ChunckedFileQueue
+
+
+def _file_queue(queue_class):
+    class FileQueue(queue_class):
+
+        def __init__(self, _, key, *args, **kwargs):
+            super().__init__(key)
+
+        @classmethod
+        def from_crawler(cls, crawler, key, *args, **kwargs):
+            return cls(crawler, key, *args, **kwargs)
+
+    return FileQueue
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
-        queue.FifoDiskQueue,
-        ['chunksize'],
-    )),
+    _with_mkdir(_chunked_file_queue(queue.FifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
 PickleLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
-        queue.LifoDiskQueue,
-        ['chunksize'],
-    )),
+    _with_mkdir(_file_queue(queue.LifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
 MarshalFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
-        queue.FifoDiskQueue,
-        ['chunksize'],
-    )),
+    _with_mkdir(_chunked_file_queue(queue.FifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
 MarshalLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_ignore_args_kwargs_passed_to_constructor(
-        queue.LifoDiskQueue,
-        ['chunksize'],
-    )),
+    _with_mkdir(_file_queue(queue.LifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
