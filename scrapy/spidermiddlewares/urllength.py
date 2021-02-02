@@ -8,6 +8,7 @@ import logging
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.middlewares import process_iterable_helper
 
 logger = logging.getLogger(__name__)
 
@@ -34,4 +35,4 @@ class UrlLengthMiddleware:
             else:
                 return True
 
-        return (r for r in result or () if _filter(r))
+        return process_iterable_helper(result or (), in_predicate=_filter)

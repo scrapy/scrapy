@@ -3,10 +3,10 @@ Depth Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-
 import logging
 
 from scrapy.http import Request
+from scrapy.utils.middlewares import process_iterable_helper
 
 logger = logging.getLogger(__name__)
 
@@ -55,4 +55,4 @@ class DepthMiddleware:
             if self.verbose_stats:
                 self.stats.inc_value('request_depth_count/0', spider=spider)
 
-        return (r for r in result or () if _filter(r))
+        return process_iterable_helper(result or (), in_predicate=_filter)
