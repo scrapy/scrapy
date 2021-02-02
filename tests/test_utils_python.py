@@ -2,15 +2,18 @@ import functools
 import gc
 import operator
 import platform
-import unittest
 from datetime import datetime
 from itertools import count
 from warnings import catch_warnings
 
+from twisted.trial import unittest
+
+from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
+from scrapy.utils.defer import deferred_f_from_coro_f, aiter_errback
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
     WeakKeyCache, get_func_args, to_bytes, to_unicode,
-    without_none_values, MutableChain)
+    without_none_values, MutableChain, MutableAsyncChain)
 
 
 __doctests__ = ['scrapy.utils.python']
@@ -30,6 +33,57 @@ class MutableChainTest(unittest.TestCase):
             self.assertIn('scrapy.utils.python.MutableChain.__next__',
                           str(warnings[0].message))
         self.assertEqual(list(m), list(range(3, 13)))
+
+
+class MutableAsyncChainTest(unittest.TestCase):
+    @staticmethod
+    async def g1():
+        for i in range(3):
+            yield i
+
+    @staticmethod
+    async def g2():
+        return
+        yield
+
+    @staticmethod
+    async def g3():
+        for i in range(7, 10):
+            yield i
+
+    @staticmethod
+    async def g4():
+        for i in range(3, 5):
+            yield i
+        1 / 0
+        for i in range(5, 7):
+            yield i
+
+    @staticmethod
+    async def collect_asyncgen_exc(asyncgen):
+        results = []
+        async for x in asyncgen:
+            results.append(x)
+        return results
+
+    @deferred_f_from_coro_f
+    async def test_mutableasyncchain(self):
+        m = MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
+        m.extend(self.g2())
+        m.extend(self.g3())
+
+        self.assertEqual(await m.__anext__(), 0)
+        results = await collect_asyncgen(m)
+        self.assertEqual(results, list(range(1, 10)))
+
+    @deferred_f_from_coro_f
+    async def test_mutableasyncchain_exc(self):
+        m = MutableAsyncChain(self.g1())
+        m.extend(self.g4())
+        m.extend(self.g3())
+
+        results = await collect_asyncgen(aiter_errback(m, lambda _: None))
+        self.assertEqual(results, list(range(5)))
 
 
 class ToUnicodeTest(unittest.TestCase):

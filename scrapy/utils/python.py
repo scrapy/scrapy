@@ -12,6 +12,7 @@ from functools import partial, wraps
 from itertools import chain
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.decorators import deprecated
 
 
@@ -355,3 +356,27 @@ class MutableChain:
     @deprecated("scrapy.utils.python.MutableChain.__next__")
     def next(self):
         return self.__next__()
+
+
+async def _async_chain(*iterables):
+    for it in iterables:
+        async for o in as_async_generator(it):
+            yield o
+
+
+class MutableAsyncChain:
+    """
+    Similar to MutableChain but for async iterables
+    """
+
+    def __init__(self, *args):
+        self.data = _async_chain(*args)
+
+    def extend(self, *aiterables):
+        self.data = _async_chain(self.data, _async_chain(*aiterables))
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return await self.data.__anext__()
