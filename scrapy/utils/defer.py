@@ -124,6 +124,20 @@ def iter_errback(iterable, errback, *a, **kw):
             errback(failure.Failure(), *a, **kw)
 
 
+async def aiter_errback(aiterable, errback, *a, **kw):
+    """Wraps an async iterable calling an errback if an error is caught while
+    iterating it. Similar to scrapy.utils.defer.iter_errback()
+    """
+    it = aiterable.__aiter__()
+    while True:
+        try:
+            yield await it.__anext__()
+        except StopAsyncIteration:
+            break
+        except Exception:
+            errback(failure.Failure(), *a, **kw)
+
+
 def deferred_from_coro(o):
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, defer.Deferred):

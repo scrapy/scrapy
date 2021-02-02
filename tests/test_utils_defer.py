@@ -2,12 +2,15 @@ from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
+from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import (
     iter_errback,
+    aiter_errback,
     mustbe_deferred,
     process_chain,
     process_chain_both,
     process_parallel,
+    deferred_f_from_coro_f,
 )
 
 
@@ -114,6 +117,34 @@ class IterErrbackTest(unittest.TestCase):
 
         errors = []
         out = list(iter_errback(iterbad(), errors.append))
+        self.assertEqual(out, [0, 1, 2, 3, 4])
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0].value, ZeroDivisionError)
+
+
+class AiterErrbackTest(unittest.TestCase):
+
+    @deferred_f_from_coro_f
+    async def test_aiter_errback_good(self):
+        async def itergood():
+            for x in range(10):
+                yield x
+
+        errors = []
+        out = await collect_asyncgen(aiter_errback(itergood(), errors.append))
+        self.assertEqual(out, list(range(10)))
+        self.assertFalse(errors)
+
+    @deferred_f_from_coro_f
+    async def test_iter_errback_bad(self):
+        async def iterbad():
+            for x in range(10):
+                if x == 5:
+                    1 / 0
+                yield x
+
+        errors = []
+        out = await collect_asyncgen(aiter_errback(iterbad(), errors.append))
         self.assertEqual(out, [0, 1, 2, 3, 4])
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0].value, ZeroDivisionError)
