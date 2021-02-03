@@ -684,21 +684,28 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
         'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
     }
 
+.. warning::
+
+    HTTP/2 support in Scrapy is experimental, and not yet recommended for
+    production environments. Future Scrapy versions may introduce related
+    changes without a deprecation period or warning.
+
 .. note::
 
-    Scrapy currently does not support HTTP/2 Cleartext (h2c) since none
-    of the major browsers support HTTP/2 unencrypted (refer `http2 faq`_).
+    Known limitations of the current HTTP/2 implementation of Scrapy include:
 
-    Also, Scrapy does not currently support specifying a maximum `frame size`_
-    larger than the default value, 16384. Connections to servers that send a
-    larger frame will fail.
+    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
+        HTTP/2 unencrypted (refer `http2 faq`_).
 
-.. warning:: HTTP/2 support in Scrapy is experimental, and not yet recommended
-             for production environments. Future Scrapy versions may introduce
-             related changes without a deprecation period or warning.
+    -   No setting to specify a maximum `frame size`_ larger than the default
+        value, 16384. Connections to servers that send a larger frame will
+        fail.
+
+    -   No support for `server pushes`_, which are ignored.
 
 .. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
+.. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_TIMEOUT
 
