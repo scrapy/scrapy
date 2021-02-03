@@ -13,7 +13,9 @@ jobs:
         - python-version: 3.9
           env:
             TOXENV: flake8
-        - python-version: 3.9
+        # Pylint requires installing reppy, which does not support Python 3.9
+        # https://github.com/seomoz/reppy/issues/122
+        - python-version: 3.8
           env:
             TOXENV: pylint
         - python-version: 3.9

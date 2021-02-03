@@ -34,7 +34,9 @@ jobs:
             PYPY_VERSION: 3.6-v7.2.0
 
         # extras
-        - python-version: 3.9
+        # extra-deps includes reppy, which does not support Python 3.9
+        # https://github.com/seomoz/reppy/issues/122
+        - python-version: 3.8
           env:
             TOXENV: extra-deps
         - python-version: 3.9
