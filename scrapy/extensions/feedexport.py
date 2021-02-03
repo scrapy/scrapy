@@ -483,6 +483,14 @@ class FeedExporter:
         params['time'] = utc_now.replace(microsecond=0).isoformat().replace(':', '-')
         params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
-        uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
+        uripar_function = load_object(uri_params) if uri_params else lambda x, y: x
         new_params = uripar_function(params, spider)
+        if new_params is None:
+            warnings.warn(
+                'Modifying the params dictionary in-place in the function defined in '
+                'the FEED_URI_PARAMS setting or in the uri_params key of the FEEDS '
+                'setting is deprecated. The function must return a new dictionary '
+                'instead.',
+                category=ScrapyDeprecationWarning
+            )
         return new_params if new_params is not None else params
