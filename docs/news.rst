@@ -2428,7 +2428,7 @@ Bug fixes
 - Fix compatibility with Twisted 17+ (:issue:`2496`, :issue:`2528`).
 - Fix ``scrapy.Item`` inheritance on Python 3.6 (:issue:`2511`).
 - Enforce numeric values for components order in ``SPIDER_MIDDLEWARES``,
-  ``DOWNLOADER_MIDDLEWARES``, ``EXTENIONS`` and ``SPIDER_CONTRACTS`` (:issue:`2420`).
+  ``DOWNLOADER_MIDDLEWARES``, ``EXTENSIONS`` and ``SPIDER_CONTRACTS`` (:issue:`2420`).
 
 Documentation
 ~~~~~~~~~~~~~
