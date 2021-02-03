@@ -218,7 +218,6 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.setTimeout(self.IDLE_TIMEOUT)
 
         destination = self.transport.getPeer()
-        logger.debug('Connection made to {}'.format(destination))
         self.metadata['ip_address'] = ipaddress.ip_address(destination.host)
 
         # Initiate H2 Connection
@@ -347,7 +346,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
             elif isinstance(event, UnknownFrameReceived):
-                logger.debug('UnknownFrameReceived: frame={}'.format(event.frame))
+                logger.warning(f'Unknown frame received: {event.frame}')
 
     # Event handler functions starts here
     def connection_terminated(self, event: ConnectionTerminated) -> None:
@@ -357,15 +356,19 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def data_received(self, event: DataReceived) -> None:
         try:
-            self.streams[event.stream_id].receive_data(event.data, event.flow_controlled_length)
+            stream = self.streams[event.stream_id]
         except KeyError:
-            logger.debug(f'Ignoring server-initiated event {event}')
+            pass  # We ignore server-initiated events
+        else:
+            stream.receive_data(event.data, event.flow_controlled_length)
 
     def response_received(self, event: ResponseReceived) -> None:
         try:
-            self.streams[event.stream_id].receive_headers(event.headers)
+            stream = self.streams[event.stream_id]
         except KeyError:
-            logger.debug(f'Ignoring server-initiated event {event}')
+            pass  # We ignore server-initiated events
+        else:
+            stream.receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata['settings_acknowledged'] = True
@@ -381,7 +384,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         try:
             stream = self.pop_stream(event.stream_id)
         except KeyError:
-            logger.debug(f'Ignoring server-initiated event {event}')
+            pass  # We ignore server-initiated events
         else:
             stream.close(StreamCloseReason.ENDED, from_protocol=True)
 
@@ -389,7 +392,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         try:
             stream = self.pop_stream(event.stream_id)
         except KeyError:
-            logger.debug(f'Ignoring server-initiated event {event}')
+            pass  # We ignore server-initiated events
         else:
             stream.close(StreamCloseReason.RESET, from_protocol=True)
 
