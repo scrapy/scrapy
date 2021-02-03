@@ -303,11 +303,14 @@ class ScrapyAgent:
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
-                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
-                              "If you use Crawlera, it doesn't require this mode anymore, "
-                              "so you should update scrapy-crawlera to 1.3.0+ "
-                              "and remove '?noconnect' from the Crawlera URL.",
-                              ScrapyDeprecationWarning)
+                warnings.warn(
+                    "Using HTTPS proxies in the noconnect mode is deprecated. "
+                    "If you use Zyte Smart Proxy Manager (formerly Crawlera), "
+                    "it doesn't require this mode anymore, so you should "
+                    "update scrapy-crawlera to 1.3.0+ and remove '?noconnect' "
+                    "from the Zyte Smart Proxy Manager URL.",
+                    ScrapyDeprecationWarning,
+                )
             if scheme == b'https' and not omitConnectTunnel:
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
@@ -434,6 +437,11 @@ class ScrapyAgent:
     def _cb_bodydone(self, result, request, url):
         headers = Headers(result["txresponse"].headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
+        try:
+            version = result["txresponse"].version
+            protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
+        except (AttributeError, TypeError, IndexError):
+            protocol = None
         response = respcls(
             url=url,
             status=int(result["txresponse"].code),
@@ -442,6 +450,7 @@ class ScrapyAgent:
             flags=result["flags"],
             certificate=result["certificate"],
             ip_address=result["ip_address"],
+            protocol=protocol,
         )
         if result.get("failure"):
             result["failure"].value.response = response

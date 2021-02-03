@@ -3,6 +3,29 @@
 Release notes
 =============
 
+.. _release-2.4.1:
+
+Scrapy 2.4.1 (2020-11-17)
+-------------------------
+
+-   Fixed :ref:`feed exports <topics-feed-exports>` overwrite support (:issue:`4845`, :issue:`4857`, :issue:`4859`)
+
+-   Fixed the AsyncIO event loop handling, which could make code hang
+    (:issue:`4855`, :issue:`4872`)
+
+-   Fixed the IPv6-capable DNS resolver
+    :class:`~scrapy.resolver.CachingHostnameResolver` for download handlers
+    that call
+    :meth:`reactor.resolve <twisted.internet.interfaces.IReactorCore.resolve>`
+    (:issue:`4802`, :issue:`4803`)
+
+-   Fixed the output of the :command:`genspider` command showing placeholders
+    instead of the import path of the generated spider module (:issue:`4874`)
+
+-   Migrated Windows CI from Azure Pipelines to GitHub Actions (:issue:`4869`,
+    :issue:`4876`)
+
+
 .. _release-2.4.0:
 
 Scrapy 2.4.0 (2020-10-11)
@@ -2405,7 +2428,7 @@ Bug fixes
 - Fix compatibility with Twisted 17+ (:issue:`2496`, :issue:`2528`).
 - Fix ``scrapy.Item`` inheritance on Python 3.6 (:issue:`2511`).
 - Enforce numeric values for components order in ``SPIDER_MIDDLEWARES``,
-  ``DOWNLOADER_MIDDLEWARES``, ``EXTENIONS`` and ``SPIDER_CONTRACTS`` (:issue:`2420`).
+  ``DOWNLOADER_MIDDLEWARES``, ``EXTENSIONS`` and ``SPIDER_CONTRACTS`` (:issue:`2420`).
 
 Documentation
 ~~~~~~~~~~~~~

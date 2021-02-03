@@ -63,7 +63,7 @@ project as example.
     process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
-    process.crawl('followall', domain='scrapinghub.com')
+    process.crawl('followall', domain='scrapy.org')
     process.start() # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
@@ -244,7 +244,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
   super proxy that you can attach your own proxies to.
 * use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such downloaders is
-  `Crawlera`_
+  `Zyte Smart Proxy Manager`_
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
@@ -254,5 +254,5 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _ProxyMesh: https://proxymesh.com/
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Crawlera: https://scrapinghub.com/crawlera
 .. _scrapoxy: https://scrapoxy.io/
+.. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/

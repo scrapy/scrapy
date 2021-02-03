@@ -389,8 +389,9 @@ class GenspiderCommandTest(CommandTest):
     def test_template(self, tplname='crawl'):
         args = [f'--template={tplname}'] if tplname else []
         spname = 'test_spider'
+        spmodule = f"{self.project_name}.spiders.{spname}"
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
-        self.assertIn(f"Created spider {spname!r} using template {tplname!r} in module", out)
+        self.assertIn(f"Created spider {spname!r} using template {tplname!r} in module:{os.linesep}  {spmodule}", out)
         self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
         modify_time_before = getmtime(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
         p, out, err = self.proc('genspider', spname, 'test.com', *args)
@@ -680,9 +681,14 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
+        with open(os.path.join(self.cwd, "example.json"), "w") as f1:
+            f1.write("not empty")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+        with open(os.path.join(self.cwd, "example.json")) as f2:
+            first_line = f2.readline()
+        self.assertNotEqual(first_line, "not empty")
 
     def test_output_and_overwrite_output(self):
         spider_code = """
@@ -813,9 +819,14 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
+        with open(os.path.join(self.cwd, "example.json"), "w") as f1:
+            f1.write("not empty")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
+        with open(os.path.join(self.cwd, "example.json")) as f2:
+            first_line = f2.readline()
+        self.assertNotEqual(first_line, "not empty")
 
     def test_output_and_overwrite_output(self):
         spider_code = """
