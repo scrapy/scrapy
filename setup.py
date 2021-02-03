@@ -19,7 +19,7 @@ def has_environment_marker_platform_impl_support():
 
 
 install_requires = [
-    'Twisted>=17.9.0',
+    'Twisted[http2]>=17.9.0',
     'cryptography>=2.0',
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
