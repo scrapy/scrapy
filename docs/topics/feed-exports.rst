@@ -21,10 +21,10 @@ Serialization formats
 For serializing the scraped data, the feed exports use the :ref:`Item exporters
 <topics-exporters>`. These formats are supported out of the box:
 
- * :ref:`topics-feed-format-json`
- * :ref:`topics-feed-format-jsonlines`
- * :ref:`topics-feed-format-csv`
- * :ref:`topics-feed-format-xml`
+-   :ref:`topics-feed-format-json`
+-   :ref:`topics-feed-format-jsonlines`
+-   :ref:`topics-feed-format-csv`
+-   :ref:`topics-feed-format-xml`
 
 But you can also extend the supported format through the
 :setting:`FEED_EXPORTERS` setting.
@@ -34,54 +34,58 @@ But you can also extend the supported format through the
 JSON
 ----
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``json``
- * Exporter used: :class:`~scrapy.exporters.JsonItemExporter`
- * See :ref:`this warning <json-with-large-data>` if you're using JSON with
-   large feeds.
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``json``
+
+-   Exporter used: :class:`~scrapy.exporters.JsonItemExporter`
+
+-   See :ref:`this warning <json-with-large-data>` if you're using JSON with
+    large feeds.
 
 .. _topics-feed-format-jsonlines:
 
 JSON lines
 ----------
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``jsonlines``
- * Exporter used: :class:`~scrapy.exporters.JsonLinesItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``jsonlines``
+-   Exporter used: :class:`~scrapy.exporters.JsonLinesItemExporter`
 
 .. _topics-feed-format-csv:
 
 CSV
 ---
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``csv``
- * Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
- * To specify columns to export and their order use
-   :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
-   option, but it is important for CSV because unlike many other export
-   formats CSV uses a fixed header.
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``csv``
+
+-   Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
+
+-   To specify columns to export and their order use
+    :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
+    option, but it is important for CSV because unlike many other export
+    formats CSV uses a fixed header.
 
 .. _topics-feed-format-xml:
 
 XML
 ---
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``xml``
- * Exporter used: :class:`~scrapy.exporters.XmlItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``xml``
+-   Exporter used: :class:`~scrapy.exporters.XmlItemExporter`
 
 .. _topics-feed-format-pickle:
 
 Pickle
 ------
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``pickle``
- * Exporter used: :class:`~scrapy.exporters.PickleItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``pickle``
+-   Exporter used: :class:`~scrapy.exporters.PickleItemExporter`
 
 .. _topics-feed-format-marshal:
 
 Marshal
 -------
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
- * Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
+-   Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
 
 
 .. _topics-feed-storage:
@@ -95,11 +99,11 @@ storage backend types which are defined by the URI scheme.
 
 The storages backends supported out of the box are:
 
- * :ref:`topics-feed-storage-fs`
- * :ref:`topics-feed-storage-ftp`
- * :ref:`topics-feed-storage-s3` (requires botocore_)
- * :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
- * :ref:`topics-feed-storage-stdout`
+-   :ref:`topics-feed-storage-fs`
+-   :ref:`topics-feed-storage-ftp`
+-   :ref:`topics-feed-storage-s3` (requires botocore_)
+-   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
+-   :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
 not available. For example, the S3 backend is only available if the botocore_
@@ -114,8 +118,8 @@ Storage URI parameters
 The storage URI can also contain parameters that get replaced when the feed is
 being created. These parameters are:
 
- * ``%(time)s`` - gets replaced by a timestamp when the feed is being created
- * ``%(name)s`` - gets replaced by the spider name
+-   ``%(time)s`` - gets replaced by a timestamp when the feed is being created
+-   ``%(name)s`` - gets replaced by the spider name
 
 Any other named parameter gets replaced by the spider attribute of the same
 name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
@@ -123,13 +127,13 @@ attribute the moment the feed is being created.
 
 Here are some examples to illustrate:
 
- * Store in FTP using one directory per spider:
+-   Store in FTP using one directory per spider:
 
-   * ``ftp://user:password@ftp.example.com/scraping/feeds/%(name)s/%(time)s.json``
+    -   ``ftp://user:password@ftp.example.com/scraping/feeds/%(name)s/%(time)s.json``
 
- * Store in S3 using one directory per spider:
+-   Store in S3 using one directory per spider:
 
-   * ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
+    -   ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
 
 
 .. _topics-feed-storage-backends:
@@ -144,9 +148,9 @@ Local filesystem
 
 The feeds are stored in the local filesystem.
 
- * URI scheme: ``file``
- * Example URI: ``file:///tmp/export.csv``
- * Required external libraries: none
+-   URI scheme: ``file``
+-   Example URI: ``file:///tmp/export.csv``
+-   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme if
 you specify an absolute path like ``/tmp/export.csv``. This only works on Unix
@@ -159,9 +163,9 @@ FTP
 
 The feeds are stored in a FTP server.
 
- * URI scheme: ``ftp``
- * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
- * Required external libraries: none
+-   URI scheme: ``ftp``
+-   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
+-   Required external libraries: none
 
 FTP supports two different connection modes: `active or passive
 <https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
@@ -178,23 +182,25 @@ S3
 
 The feeds are stored on `Amazon S3`_.
 
- * URI scheme: ``s3``
- * Example URIs:
+-   URI scheme: ``s3``
 
-   * ``s3://mybucket/path/to/export.csv``
-   * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
+-   Example URIs:
 
- * Required external libraries: `botocore`_ >= 1.4.87
+    -   ``s3://mybucket/path/to/export.csv``
+
+    -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
+
+-   Required external libraries: `botocore`_ >= 1.4.87
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
 
- * :setting:`AWS_ACCESS_KEY_ID`
- * :setting:`AWS_SECRET_ACCESS_KEY`
+-   :setting:`AWS_ACCESS_KEY_ID`
+-   :setting:`AWS_SECRET_ACCESS_KEY`
 
 You can also define a custom ACL for exported feeds using this setting:
 
- * :setting:`FEED_STORAGE_S3_ACL`
+-   :setting:`FEED_STORAGE_S3_ACL`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -208,19 +214,20 @@ Google Cloud Storage (GCS)
 
 The feeds are stored on `Google Cloud Storage`_.
 
- * URI scheme: ``gs``
- * Example URIs:
+-   URI scheme: ``gs``
 
-   * ``gs://mybucket/path/to/export.csv``
+-   Example URIs:
 
- * Required external libraries: `google-cloud-storage`_.
+    -   ``gs://mybucket/path/to/export.csv``
+
+-   Required external libraries: `google-cloud-storage`_.
 
 For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
- * :setting:`FEED_STORAGE_GCS_ACL`
- * :setting:`GCS_PROJECT_ID`
+-   :setting:`FEED_STORAGE_GCS_ACL`
+-   :setting:`GCS_PROJECT_ID`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -234,9 +241,9 @@ Standard output
 
 The feeds are written to the standard output of the Scrapy process.
 
- * URI scheme: ``stdout``
- * Example URI: ``stdout:``
- * Required external libraries: none
+-   URI scheme: ``stdout``
+-   Example URI: ``stdout:``
+-   Required external libraries: none
 
 
 .. _delayed-file-delivery:
@@ -264,16 +271,16 @@ Settings
 
 These are the settings used for configuring the feed exports:
 
- * :setting:`FEEDS` (mandatory)
- * :setting:`FEED_EXPORT_ENCODING`
- * :setting:`FEED_STORE_EMPTY`
- * :setting:`FEED_EXPORT_FIELDS`
- * :setting:`FEED_EXPORT_INDENT`
- * :setting:`FEED_STORAGES`
- * :setting:`FEED_STORAGE_FTP_ACTIVE`
- * :setting:`FEED_STORAGE_S3_ACL`
- * :setting:`FEED_EXPORTERS`
- * :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
+-   :setting:`FEEDS` (mandatory)
+-   :setting:`FEED_EXPORT_ENCODING`
+-   :setting:`FEED_STORE_EMPTY`
+-   :setting:`FEED_EXPORT_FIELDS`
+-   :setting:`FEED_EXPORT_INDENT`
+-   :setting:`FEED_STORAGES`
+-   :setting:`FEED_STORAGE_FTP_ACTIVE`
+-   :setting:`FEED_STORAGE_S3_ACL`
+-   :setting:`FEED_EXPORTERS`
+-   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
