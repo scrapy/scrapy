@@ -459,7 +459,7 @@ class Stream:
             request=self._request,
             certificate=self._protocol.metadata['certificate'],
             ip_address=self._protocol.metadata['ip_address'],
-            protocol=to_unicode(self._protocol.transport.negotiatedProtocol),
+            protocol='h2',
         )
 
         self._deferred_response.callback(response)
