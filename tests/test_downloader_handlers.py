@@ -930,6 +930,12 @@ class BaseFTPTestCase(unittest.TestCase):
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
 
+    test_files = (
+        ('file.txt', b"I have the power!"),
+        ('file with spaces.txt', b"Moooooooooo power!"),
+        ('html-file-without-extension', b"<!DOCTYPE html>\n<title>.</title>"),
+    )
+
     def setUp(self):
         from twisted.protocols.ftp import FTPRealm, FTPFactory
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -940,9 +946,8 @@ class BaseFTPTestCase(unittest.TestCase):
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
         fp = FilePath(userdir)
-        fp.child('file.txt').setContent(b"I have the power!")
-        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
-        fp.child('html-file-without-extension').setContent(b"<!DOCTYPE html>\n<title>.</title>")
+        for filename, content in self.test_files:
+            fp.child(filename).setContent(content)
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -1076,8 +1081,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         os.mkdir(self.directory)
 
         fp = FilePath(self.directory)
-        fp.child('file.txt').setContent(b"I have the power!")
-        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
+        for filename, content in self.test_files:
+            fp.child(filename).setContent(content)
 
         # setup server for anonymous access
         realm = FTPRealm(anonymousRoot=self.directory)
