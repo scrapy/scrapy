@@ -355,6 +355,23 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(self.assertEqual, body)
         return d
 
+    def _test_response_class(self, filename, body, response_class):
+        def _test(response):
+            self.assertEqual(type(response), response_class)
+
+        request = Request(self.getURL(filename), body=body)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
+    def test_response_class_from_url(self):
+        return self._test_response_class('foo.html', b'', HtmlResponse)
+
+    def test_response_class_from_body(self):
+        return self._test_response_class(
+            'foo',
+            b"<!DOCTYPE html>\n<title>.</title>",
+            HtmlResponse,
+        )
+
 
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
