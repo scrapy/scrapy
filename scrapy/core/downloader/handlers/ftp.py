@@ -102,11 +102,11 @@ class FTPDownloadHandler:
 
     def _build_response(self, result, request, protocol):
         self.result = result
-        respcls = responsetypes.from_args(url=request.url)
         protocol.close()
-        body = protocol.filename or protocol.body.read()
         headers = {"local filename": protocol.filename or '', "size": protocol.size}
-        return respcls(url=request.url, status=200, body=to_bytes(body), headers=headers)
+        body = to_bytes(protocol.filename or protocol.body.read())
+        respcls = responsetypes.from_args(url=request.url, body=body)
+        return respcls(url=request.url, status=200, body=body, headers=headers)
 
     def _failed(self, result, request):
         message = result.getErrorMessage()
