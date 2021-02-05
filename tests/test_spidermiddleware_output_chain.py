@@ -51,15 +51,6 @@ class RecoveryAsyncGenSpider(RecoverySpider):
             yield r
 
 
-class RecoveryMiddleware:
-    def process_spider_exception(self, response, exception, spider):
-        spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
-        return [
-            {'from': 'process_spider_exception'},
-            Request(response.url, meta={'dont_fail': True}, dont_filter=True),
-        ]
-
-
 # ================================================================================
 # (1) exceptions from a spider middleware's process_spider_input method
 class FailProcessSpiderInputMiddleware:
