@@ -290,3 +290,22 @@ def maybeDeferred_coro(f, *args, **kw):
         return defer.fail(result)
     else:
         return defer.succeed(result)
+
+
+def deferred_to_future(d):
+    """ Wraps a Deferred into a Future. Requires the asyncio reactor.
+    """
+    return d.asFuture(asyncio.get_event_loop())
+
+
+def maybe_deferred_to_future(d):
+    """ Converts a Deferred to something that can be awaited in a callback or other user coroutine.
+
+    If the asyncio reactor is installed, coroutines are wrapped into Futures, and only Futures can be
+    awaited inside them. Otherwise, coroutines are wrapped into Deferreds and Deferreds can be awaited
+    directly inside them.
+    """
+    if not is_asyncio_reactor_installed():
+        return d
+    else:
+        return deferred_to_future(d)

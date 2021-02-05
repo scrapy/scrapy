@@ -20,12 +20,16 @@ from scrapy.utils.python import to_unicode
 from tests.mockserver import MockServer
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
+    AsyncDefAsyncioGenExcSpider,
     AsyncDefAsyncioGenLoopSpider,
     AsyncDefAsyncioGenSpider,
     AsyncDefAsyncioReqsReturnSpider,
     AsyncDefAsyncioReturnSingleElementSpider,
     AsyncDefAsyncioReturnSpider,
     AsyncDefAsyncioSpider,
+    AsyncDefDeferredDirectSpider,
+    AsyncDefDeferredMaybeWrappedSpider,
+    AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
     BrokenStartRequestsSpider,
     BytesReceivedCallbackSpider,
@@ -432,6 +436,18 @@ class CrawlSpiderTestCase(TestCase):
 
     @mark.only_asyncio()
     @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_exc(self):
+        log, items, stats = yield self._run_spider(AsyncDefAsyncioGenExcSpider)
+        log = str(log)
+        self.assertIn("Spider error processing", log)
+        self.assertIn("ValueError", log)
+        itemcount = stats.get_value('item_scraped_count')
+        self.assertEqual(itemcount, 7)
+        for i in range(7):
+            self.assertIn({'foo': i}, items)
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_complex(self):
         _, items, stats = yield self._run_spider(AsyncDefAsyncioGenComplexSpider)
         itemcount = stats.get_value('item_scraped_count')
@@ -448,6 +464,23 @@ class CrawlSpiderTestCase(TestCase):
         log, *_ = yield self._run_spider(AsyncDefAsyncioReqsReturnSpider)
         for req_id in range(3):
             self.assertIn(f"Got response 200, req_id {req_id}", str(log))
+
+    @mark.only_not_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_deferred_direct(self):
+        _, items, _ = yield self._run_spider(AsyncDefDeferredDirectSpider)
+        self.assertEqual(items, [{'code': 200}])
+
+    @mark.only_asyncio()
+    @defer.inlineCallbacks
+    def test_async_def_deferred_wrapped(self):
+        log, items, _ = yield self._run_spider(AsyncDefDeferredWrappedSpider)
+        self.assertEqual(items, [{'code': 200}])
+
+    @defer.inlineCallbacks
+    def test_async_def_deferred_maybe_wrapped(self):
+        _, items, _ = yield self._run_spider(AsyncDefDeferredMaybeWrappedSpider)
+        self.assertEqual(items, [{'code': 200}])
 
     @defer.inlineCallbacks
     def test_response_ssl_certificate_none(self):

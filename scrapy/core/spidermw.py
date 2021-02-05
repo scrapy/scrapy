@@ -3,6 +3,7 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
+import inspect
 from itertools import islice
 
 from twisted.python.failure import Failure
@@ -11,11 +12,11 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import mustbe_deferred
-from scrapy.utils.python import MutableChain
+from scrapy.utils.python import MutableAsyncChain, MutableChain
 
 
 def _isiterable(possible_iterator):
-    return hasattr(possible_iterator, '__iter__')
+    return hasattr(possible_iterator, '__iter__') or hasattr(possible_iterator, '__aiter__')
 
 
 def _fname(f):
@@ -58,14 +59,30 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return scrape_func(response, request, spider)
 
         def _evaluate_iterable(iterable, exception_processor_index, recover_to):
-            try:
-                for r in iterable:
-                    yield r
-            except Exception as ex:
+            def _process_exception(ex):
                 exception_result = process_spider_exception(Failure(ex), exception_processor_index)
                 if isinstance(exception_result, Failure):
                     raise
                 recover_to.extend(exception_result)
+
+            def _evaluate_normal_iterable(iterable):
+                try:
+                    for r in iterable:
+                        yield r
+                except Exception as ex:
+                    _process_exception(ex)
+
+            async def _evaluate_async_iterable(iterable):
+                try:
+                    async for r in iterable:
+                        yield r
+                except Exception as ex:
+                    _process_exception(ex)
+
+            if inspect.isasyncgen(iterable):
+                return _evaluate_async_iterable(iterable)
+            else:
+                return _evaluate_normal_iterable(iterable)
 
         def process_spider_exception(_failure, start_index=0):
             exception = _failure.value
@@ -92,7 +109,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
         def process_spider_output(result, start_index=0):
             # items in this iterable do not need to go through the process_spider_output
             # chain, they went through it already from the process_spider_exception method
-            recovered = MutableChain()
+            if inspect.isasyncgen(result):
+                iter_class = MutableAsyncChain
+            else:
+                iter_class = MutableChain
+            recovered = iter_class()
 
             method_list = islice(self.methods['process_spider_output'], start_index, None)
             for method_index, method in enumerate(method_list, start=start_index):
@@ -113,12 +134,16 @@ class SpiderMiddlewareManager(MiddlewareManager):
                            f"iterable, got {type(result)}")
                     raise _InvalidOutput(msg)
 
-            return MutableChain(result, recovered)
+            return iter_class(result, recovered)
 
         def process_callback_output(result):
-            recovered = MutableChain()
+            if inspect.isasyncgen(result):
+                iter_class = MutableAsyncChain
+            else:
+                iter_class = MutableChain
+            recovered = iter_class()
             result = _evaluate_iterable(result, 0, recovered)
-            return MutableChain(process_spider_output(result), recovered)
+            return iter_class(process_spider_output(result), recovered)
 
         dfd = mustbe_deferred(process_spider_input, response)
         dfd.addCallbacks(callback=process_callback_output, errback=process_spider_exception)

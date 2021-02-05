@@ -110,3 +110,10 @@ def mock_google_cloud_storage():
     bucket_mock.blob.return_value = blob_mock
 
     return (client_mock, bucket_mock, blob_mock)
+
+
+def get_web_client_agent_req(url):
+    from twisted.internet import reactor
+    from twisted.web.client import Agent  # imports twisted.internet.reactor
+    agent = Agent(reactor)
+    return agent.request(b'GET', url.encode('utf-8'))

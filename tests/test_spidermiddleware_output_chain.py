@@ -43,6 +43,23 @@ class RecoverySpider(Spider):
             raise TabError()
 
 
+class RecoveryAsyncGenSpider(RecoverySpider):
+    name = 'RecoveryAsyncGenSpider'
+
+    async def parse(self, response):
+        for r in super().parse(response):
+            yield r
+
+
+class RecoveryMiddleware:
+    def process_spider_exception(self, response, exception, spider):
+        spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
+        return [
+            {'from': 'process_spider_exception'},
+            Request(response.url, meta={'dont_fail': True}, dont_filter=True),
+        ]
+
+
 # ================================================================================
 # (1) exceptions from a spider middleware's process_spider_input method
 class FailProcessSpiderInputMiddleware:
@@ -303,6 +320,16 @@ class TestSpiderMiddleware(TestCase):
         was enqueued from the recovery middleware)
         """
         log = yield self.crawl_log(RecoverySpider)
+        self.assertIn("Middleware: TabError exception caught", str(log))
+        self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
+        self.assertIn("'item_scraped_count': 3", str(log))
+
+    @defer.inlineCallbacks
+    def test_recovery_asyncgen(self):
+        """
+        Same as test_recovery but with an async callback.
+        """
+        log = yield self.crawl_log(RecoveryAsyncGenSpider)
         self.assertIn("Middleware: TabError exception caught", str(log))
         self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
         self.assertIn("'item_scraped_count': 3", str(log))
