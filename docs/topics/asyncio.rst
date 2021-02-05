@@ -39,4 +39,28 @@ You can also use custom asyncio event loops with the asyncio reactor. Set the
 use it instead of the default asyncio event loop.
 
 
+.. _asyncio-await-dfd:
 
+Awaiting on Deferreds
+=====================
+
+When the asyncio reactor isn't installed, you can await on Deferreds in the
+coroutines directly. When it is installed, this is not possible anymore, due to
+specifics of the Scrapy coroutine integration (the coroutines are wrapped into
+asyncio Futures, not into Deferreds directly), and you need to wrap them into
+Futures. Scrapy provides two helpers for this:
+
+.. autofunction:: scrapy.utils.defer.deferred_to_future
+.. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
+
+If you want to write universal code that works on any reactors,
+you should use ``maybe_deferred_to_future`` on all Deferreds::
+
+    from scrapy.utils.defer import maybe_deferred_to_future
+
+    class MySpider(Spider):
+        # ...
+        async def parse_with_deferred(self, response):
+            additional_response = await maybe_deferred_to_future(treq.get('https://additional.url'))
+            additional_data = await maybe_deferred_to_future(treq.content(additional_response))
+            # ... use response and additional_data to yield items and requests

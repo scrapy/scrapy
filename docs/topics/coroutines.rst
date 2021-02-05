@@ -17,15 +17,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   :class:`~scrapy.http.Request` callbacks.
 
-    .. note:: The callback output is not processed until the whole callback
-        finishes.
-
-        As a side effect, if the callback raises an exception, none of its
-        output is processed.
-
-        This is a known caveat of the current implementation that we aim to
-        address in a future version of Scrapy.
-
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
 
@@ -91,6 +82,9 @@ This means you can use many useful Python libraries providing such code::
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
           :mod:`asyncio` loop and to use them you need to
           :doc:`enable asyncio support in Scrapy<asyncio>`.
+
+.. note:: If you want to ``await`` on Deferreds, you may need to
+          :ref:`wrap them<asyncio-await-dfd>`.
 
 Common use cases for asynchronous code include:
 
