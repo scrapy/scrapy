@@ -15,7 +15,6 @@ from twisted.web.client import ResponseFailed
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
