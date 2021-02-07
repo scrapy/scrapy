@@ -150,9 +150,17 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, deferred = slot.queue.popleft()
+
+            # Handling request delay set to individual requests
             if request.meta.get('request_delay'):
                 request_delay = request.meta.get('request_delay')
-                reactor.callLater(request_delay, self._handle_request_delay, slot, request, spider, deferred)
+                reactor.callLater(
+                    request_delay,
+                    self._handle_request_delay,
+                    slot,
+                    request,
+                    spider,
+                    deferred)
                 continue
 
             dfd = self._download(slot, request, spider)
