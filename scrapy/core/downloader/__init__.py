@@ -150,12 +150,21 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, deferred = slot.queue.popleft()
+            if request.meta.get('request_delay'):
+                request_delay = request.meta.get('request_delay')
+                reactor.callLater(request_delay, self._handle_request_delay, slot, request, spider, deferred)
+                continue
+
             dfd = self._download(slot, request, spider)
             dfd.chainDeferred(deferred)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(spider, slot)
                 break
+
+    def _handle_request_delay(self, slot, request, spider, deferred):
+        dfd = self._download(slot, request, spider)
+        dfd.chainDeferred(deferred)
 
     def _download(self, slot, request, spider):
         # The order is very important for the following deferreds. Do not change!
