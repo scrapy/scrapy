@@ -1,1 +1,8 @@
-Twisted!=18.4.0
+# Request the latest known version or newer of some dependencies to prevent the
+# pip dependency resolver from spending too much time backtracking.
+attrs>=20.2.0
+Pillow>=8.0.1
+pytest>=6.2.1
+pytest-twisted>=1.13.1
+sybil>=2.0.0
+Twisted>=19.10.0
