@@ -319,17 +319,25 @@ class FeedExporter:
         # Use `largs=log_args` to copy log_args into function's scope
         # instead of using `log_args` from the outer scope
         d.addCallback(
-            lambda _, largs=log_args: logger.info(
-                logfmt % "Stored", largs, extra={'spider': spider}
-            )
+            self._handle_store_success, log_args, logfmt, spider, type(slot.storage).__name__
         )
         d.addErrback(
-            lambda f, largs=log_args: logger.error(
-                logfmt % "Error storing", largs,
-                exc_info=failure_to_exc_info(f), extra={'spider': spider}
-            )
+            self._handle_store_error, log_args, logfmt, spider, type(slot.storage).__name__
         )
         return d
+
+    def _handle_store_error(self, f, largs, logfmt, spider, slot_type):
+        logger.error(
+            logfmt % "Error storing", largs,
+            exc_info=failure_to_exc_info(f), extra={'spider': spider}
+        )
+        self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
+
+    def _handle_store_success(self, f, largs, logfmt, spider, slot_type):
+        logger.info(
+            logfmt % "Stored", largs, extra={'spider': spider}
+        )
+        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
         """

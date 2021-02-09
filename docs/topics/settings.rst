@@ -249,18 +249,24 @@ ASYNCIO_EVENT_LOOP
 
 Default: ``None``
 
-Import path of a given asyncio event loop class.
+Import path of a given ``asyncio`` event loop class.
 
-If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the 
-asyncio event loop to be used with it. Set the setting to the import path of the 
+If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the
+asyncio event loop to be used with it. Set the setting to the import path of the
 desired asyncio event loop class. If the setting is set to ``None`` the default asyncio
 event loop will be used.
 
 If you are installing the asyncio reactor manually using the :func:`~scrapy.utils.reactor.install_reactor`
-function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop 
-class to be used.  
+function, you can use the ``event_loop_path`` parameter to indicate the import path of the event loop
+class to be used.
 
 Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
+
+.. caution:: Please be aware that, when using a non-default event loop
+    (either defined via :setting:`ASYNCIO_EVENT_LOOP` or installed with
+    :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
+    :func:`asyncio.set_event_loop`, which will set the specified event loop
+    as the current loop for the current OS thread.
 
 .. setting:: BOT_NAME
 

@@ -8,6 +8,7 @@ import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
@@ -47,6 +48,21 @@ from scrapy.utils.test import (
 )
 
 from tests.mockserver import MockFTPServer, MockServer
+from tests.spiders import ItemSpider
+
+
+def path_to_url(path):
+    return urljoin('file:', pathname2url(str(path)))
+
+
+def printf_escape(string):
+    return string.replace('%', '%%')
+
+
+def build_url(path):
+    if path[0] != '/':
+        path = '/' + path
+    return urljoin('file:', path)
 
 
 class FileFeedStorageTest(unittest.TestCase):
@@ -620,12 +636,6 @@ class FeedExportTest(FeedExportTestBase):
     def run_and_export(self, spider_cls, settings):
         """ Run spider with specified settings; return exported data. """
 
-        def path_to_url(path):
-            return urljoin('file:', pathname2url(str(path)))
-
-        def printf_escape(string):
-            return string.replace('%', '%%')
-
         FEEDS = settings.get('FEEDS') or {}
         settings['FEEDS'] = {
             printf_escape(path_to_url(file_path)): feed_options
@@ -747,6 +757,69 @@ class FeedExportTest(FeedExportTestBase):
         import marshal
         result = self._load_until_eof(data['marshal'], load_func=marshal.load)
         self.assertEqual(expected, result)
+
+    @defer.inlineCallbacks
+    def test_stats_file_success(self):
+        settings = {
+            "FEEDS": {
+                printf_escape(path_to_url(self._random_temp_filename())): {
+                    "format": "json",
+                }
+            },
+        }
+        crawler = get_crawler(ItemSpider, settings)
+        with MockServer() as mockserver:
+            yield crawler.crawl(mockserver=mockserver)
+        self.assertIn("feedexport/success_count/FileFeedStorage", crawler.stats.get_stats())
+        self.assertEqual(crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1)
+
+    @defer.inlineCallbacks
+    def test_stats_file_failed(self):
+        settings = {
+            "FEEDS": {
+                printf_escape(path_to_url(self._random_temp_filename())): {
+                    "format": "json",
+                }
+            },
+        }
+        crawler = get_crawler(ItemSpider, settings)
+        with ExitStack() as stack:
+            mockserver = stack.enter_context(MockServer())
+            stack.enter_context(
+                mock.patch(
+                    "scrapy.extensions.feedexport.FileFeedStorage.store",
+                    side_effect=KeyError("foo"))
+            )
+            yield crawler.crawl(mockserver=mockserver)
+        self.assertIn("feedexport/failed_count/FileFeedStorage", crawler.stats.get_stats())
+        self.assertEqual(crawler.stats.get_value("feedexport/failed_count/FileFeedStorage"), 1)
+
+    @defer.inlineCallbacks
+    def test_stats_multiple_file(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+            "FEEDS": {
+                printf_escape(path_to_url(self._random_temp_filename())): {
+                    "format": "json",
+                },
+                "s3://bucket/key/foo.csv": {
+                    "format": "csv",
+                },
+                "stdout:": {
+                    "format": "xml",
+                }
+            },
+        }
+        crawler = get_crawler(ItemSpider, settings)
+        with MockServer() as mockserver, mock.patch.object(S3FeedStorage, "store"):
+            yield crawler.crawl(mockserver=mockserver)
+        self.assertIn("feedexport/success_count/FileFeedStorage", crawler.stats.get_stats())
+        self.assertIn("feedexport/success_count/S3FeedStorage", crawler.stats.get_stats())
+        self.assertIn("feedexport/success_count/StdoutFeedStorage", crawler.stats.get_stats())
+        self.assertEqual(crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1)
+        self.assertEqual(crawler.stats.get_value("feedexport/success_count/S3FeedStorage"), 1)
+        self.assertEqual(crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage"), 1)
 
     @defer.inlineCallbacks
     def test_export_items(self):
@@ -1256,11 +1329,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def run_and_export(self, spider_cls, settings):
         """ Run spider with specified settings; return exported data. """
 
-        def build_url(path):
-            if path[0] != '/':
-                path = '/' + path
-            return urljoin('file:', path)
-
         FEEDS = settings.get('FEEDS') or {}
         settings['FEEDS'] = {
             build_url(file_path): feed
@@ -1549,6 +1617,22 @@ class BatchDeliveriesTest(FeedExportTestBase):
         }
         data = yield self.exported_data(items, settings)
         self.assertEqual(len(items) + 1, len(data['json']))
+
+    @defer.inlineCallbacks
+    def test_stats_batch_file_success(self):
+        settings = {
+            "FEEDS": {
+                build_url(os.path.join(self._random_temp_filename(), "json", self._file_mark)): {
+                    "format": "json",
+                }
+            },
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+        }
+        crawler = get_crawler(ItemSpider, settings)
+        with MockServer() as mockserver:
+            yield crawler.crawl(total=2, mockserver=mockserver)
+        self.assertIn("feedexport/success_count/FileFeedStorage", crawler.stats.get_stats())
+        self.assertEqual(crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12)
 
     @defer.inlineCallbacks
     def test_s3_export(self):
