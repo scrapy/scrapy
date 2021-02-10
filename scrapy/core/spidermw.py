@@ -61,7 +61,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             exception_result = self._process_spider_exception(response, spider, Failure(ex),
                                                               exception_processor_index)
             if isinstance(exception_result, Failure):
-                raise
+                raise  # pylint: disable=E0704
             recover_to.extend(exception_result)
 
         def _evaluate_normal_iterable(iterable):
