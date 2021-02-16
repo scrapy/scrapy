@@ -392,7 +392,8 @@ class ScrapyAgent:
             if isinstance(result, Failure) and isinstance(result.value, StopDownload):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": request, "handler": handler.__qualname__})
-                txresponse._transport._producer.loseConnection()
+                with suppress(AttributeError):
+                    txresponse._transport._producer.loseConnection()
                 return {
                     "txresponse": txresponse,
                     "body": b"",
