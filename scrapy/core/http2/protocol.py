@@ -233,13 +233,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     def handshakeCompleted(self) -> None:
         """We close the connection with InvalidNegotiatedProtocol exception
         when the connection was not made via h2 protocol"""
-        negotiated_protocol = self.transport.negotiatedProtocol
-        if isinstance(negotiated_protocol, bytes):
-            negotiated_protocol = str(self.transport.negotiatedProtocol, 'utf-8')
-        if negotiated_protocol != 'h2':
+        protocol = self.transport.negotiatedProtocol
+        if protocol is not None and protocol != b"h2":
             # Here we have not initiated the connection yet
             # So, no need to send a GOAWAY frame to the remote
-            self._lose_connection_with_error([InvalidNegotiatedProtocol(negotiated_protocol)])
+            self._lose_connection_with_error([InvalidNegotiatedProtocol(protocol.decode("utf-8"))])
 
     def _check_received_data(self, data: bytes) -> None:
         """Checks for edge cases where the connection to remote fails
