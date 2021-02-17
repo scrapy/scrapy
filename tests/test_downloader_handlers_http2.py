@@ -3,6 +3,7 @@ from unittest import mock
 from twisted.internet import defer, error, reactor
 from twisted.trial import unittest
 from twisted.web import server
+from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
 from scrapy.http import Request
@@ -47,6 +48,12 @@ class Https2TestCase(Https11TestCase):
             d.addCallback(check)
             reactor.callLater(.1, d.callback, logger)
             yield d
+
+    @defer.inlineCallbacks
+    def test_unsupported_scheme(self):
+        request = Request("ftp://unsupported.scheme")
+        d = self.download_request(request, Spider("foo"))
+        yield self.assertFailure(d, SchemeNotSupported)
 
     def test_download_broken_content_cause_data_loss(self, url='broken'):
         raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
