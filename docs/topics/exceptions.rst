@@ -85,7 +85,7 @@ StopDownload
 
 .. exception:: StopDownload(fail=True)
 
-Raised from a :class:`~scrapy.signals.bytes_received`/:class:`~scrapy.signals.headers_received`
+Raised from a :class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
 signal handler to indicate that no further bytes should be downloaded for a response.
 
 The ``fail`` boolean parameter controls which method will handle the resulting
