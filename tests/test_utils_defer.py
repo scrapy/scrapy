@@ -5,14 +5,13 @@ from twisted.python.failure import Failure
 
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import (
+    aiter_errback,
     deferred_f_from_coro_f,
     iter_errback,
-    aiter_errback,
     mustbe_deferred,
     process_chain,
     process_chain_both,
     process_parallel,
-    deferred_f_from_coro_f,
 )
 
 
