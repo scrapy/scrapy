@@ -41,11 +41,12 @@ class RetryMiddleware:
     SETTING_PREFIX = ""
     META_PREFIX = ""
     STATS_PREFIX = ""
+    LOGGER_NAME = __name__
 
     def __init__(self, settings):
         if not settings.getbool(f"{self.SETTING_PREFIX}RETRY_ENABLED"):
             raise NotConfigured
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.LOGGER_NAME)
         self.max_retry_times = settings.getint(f"{self.SETTING_PREFIX}RETRY_TIMES")
         self.retry_http_codes = set(int(x) for x in settings.getlist(f"{self.SETTING_PREFIX}RETRY_HTTP_CODES"))
         self.priority_adjust = settings.getint(f"{self.SETTING_PREFIX}RETRY_PRIORITY_ADJUST")
