@@ -23,12 +23,10 @@ from twisted.internet.error import (
 )
 from twisted.web.client import ResponseFailed
 
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.response import response_status_message
 from scrapy.core.downloader.handlers.http11 import TunnelError
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.python import global_object_name
-
-logger = logging.getLogger(__name__)
+from scrapy.utils.response import response_status_message
 
 
 class RetryMiddleware:
@@ -40,19 +38,24 @@ class RetryMiddleware:
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError, TunnelError)
 
+    SETTING_PREFIX = ""
+    META_PREFIX = ""
+    STATS_PREFIX = ""
+
     def __init__(self, settings):
-        if not settings.getbool('RETRY_ENABLED'):
+        if not settings.getbool(f"{self.SETTING_PREFIX}RETRY_ENABLED"):
             raise NotConfigured
-        self.max_retry_times = settings.getint('RETRY_TIMES')
-        self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
-        self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
+        self.logger = logging.getLogger(__name__)
+        self.max_retry_times = settings.getint(f"{self.SETTING_PREFIX}RETRY_TIMES")
+        self.retry_http_codes = set(int(x) for x in settings.getlist(f"{self.SETTING_PREFIX}RETRY_HTTP_CODES"))
+        self.priority_adjust = settings.getint(f"{self.SETTING_PREFIX}RETRY_PRIORITY_ADJUST")
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
-        if request.meta.get('dont_retry', False):
+        if request.meta.get(f"{self.META_PREFIX}dont_retry", False):
             return response
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
@@ -62,36 +65,35 @@ class RetryMiddleware:
     def process_exception(self, request, exception, spider):
         if (
             isinstance(exception, self.EXCEPTIONS_TO_RETRY)
-            and not request.meta.get('dont_retry', False)
+            and not request.meta.get(f"{self.META_PREFIX}dont_retry", False)
         ):
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):
-        retries = request.meta.get('retry_times', 0) + 1
+        retries = request.meta.get(f"{self.META_PREFIX}retry_times", 0) + 1
 
         retry_times = self.max_retry_times
 
-        if 'max_retry_times' in request.meta:
-            retry_times = request.meta['max_retry_times']
+        if f"{self.META_PREFIX}max_retry_times" in request.meta:
+            retry_times = request.meta[f"{self.META_PREFIX}max_retry_times"]
 
-        stats = spider.crawler.stats
         if retries <= retry_times:
-            logger.debug("Retrying %(request)s (failed %(retries)d times): %(reason)s",
-                         {'request': request, 'retries': retries, 'reason': reason},
-                         extra={'spider': spider})
+            self.logger.debug("Retrying %(request)s (failed %(retries)d times): %(reason)s",
+                              {'request': request, 'retries': retries, 'reason': reason},
+                              extra={'spider': spider})
             retryreq = request.copy()
-            retryreq.meta['retry_times'] = retries
+            retryreq.meta[f"{self.META_PREFIX}retry_times"] = retries
             retryreq.dont_filter = True
             retryreq.priority = request.priority + self.priority_adjust
 
             if isinstance(reason, Exception):
                 reason = global_object_name(reason.__class__)
 
-            stats.inc_value('retry/count')
-            stats.inc_value(f'retry/reason_count/{reason}')
+            spider.crawler.stats.inc_value(f"{self.STATS_PREFIX}retry/count")
+            spider.crawler.stats.inc_value(f"{self.STATS_PREFIX}retry/reason_count/{reason}")
             return retryreq
         else:
-            stats.inc_value('retry/max_reached')
-            logger.error("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
-                         {'request': request, 'retries': retries, 'reason': reason},
-                         extra={'spider': spider})
+            spider.crawler.stats.inc_value(f"{self.STATS_PREFIX}retry/max_reached")
+            self.logger.error("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
+                              {'request': request, 'retries': retries, 'reason': reason},
+                              extra={'spider': spider})
