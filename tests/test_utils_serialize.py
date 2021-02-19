@@ -82,3 +82,7 @@ class JsonEncoderTestCase(unittest.TestCase):
             encoded,
             '{"name": "Product", "price": 1, "url": "http://product.org"}'
         )
+
+    def test_encode_none_raises_type_error(self):
+        with self.assertRaises(TypeError):
+        self.encoder.encode(None) 
