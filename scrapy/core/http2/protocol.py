@@ -33,13 +33,17 @@ from scrapy.spiders import Spider
 logger = logging.getLogger(__name__)
 
 
+ACCEPTABLE_PROTOCOL = b"h2"
+
+
 class InvalidNegotiatedProtocol(H2Error):
 
-    def __init__(self, negotiated_protocol: str) -> None:
+    def __init__(self, negotiated_protocol: bytes) -> None:
         self.negotiated_protocol = negotiated_protocol
 
     def __str__(self) -> str:
-        return f'InvalidNegotiatedProtocol: Expected h2 as negotiated protocol, received {self.negotiated_protocol!r}'
+        return (f"Expected {ACCEPTABLE_PROTOCOL.decode('utf-8')} as negotiated protocol,"
+                f" received {self.negotiated_protocol.decode('utf-8')}")
 
 
 class RemoteTerminatedConnection(H2Error):
@@ -52,7 +56,7 @@ class RemoteTerminatedConnection(H2Error):
         self.terminate_event = event
 
     def __str__(self) -> str:
-        return f'RemoteTerminatedConnection: Received GOAWAY frame from {self.remote_ip_address!r}'
+        return f'Received GOAWAY frame from {self.remote_ip_address!r}'
 
 
 class MethodNotAllowed405(H2Error):
@@ -60,7 +64,7 @@ class MethodNotAllowed405(H2Error):
         self.remote_ip_address = remote_ip_address
 
     def __str__(self) -> str:
-        return f"MethodNotAllowed405: Received 'HTTP/2.0 405 Method Not Allowed' from {self.remote_ip_address!r}"
+        return f"Received 'HTTP/2.0 405 Method Not Allowed' from {self.remote_ip_address!r}"
 
 
 @implementer(IHandshakeListener)
@@ -234,7 +238,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """We close the connection with InvalidNegotiatedProtocol exception
         when the connection was not made via h2 protocol"""
         protocol = self.transport.negotiatedProtocol
-        if protocol is not None and protocol != b"h2":
+        if protocol is not None and protocol != ACCEPTABLE_PROTOCOL:
             # Here we have not initiated the connection yet
             # So, no need to send a GOAWAY frame to the remote
             self._lose_connection_with_error([InvalidNegotiatedProtocol(protocol.decode("utf-8"))])
@@ -414,4 +418,4 @@ class H2ClientFactory(Factory):
         return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
 
     def acceptableProtocols(self) -> List[bytes]:
-        return [b'h2']
+        return [ACCEPTABLE_PROTOCOL]
