@@ -10,7 +10,6 @@ from w3lib.url import safe_url_string
 from scrapy.http import Request, Response
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
-from scrapy.utils.middlewares import process_iterable_helper
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 from scrapy.utils.url import strip_url
@@ -338,7 +337,7 @@ class RefererMiddleware:
                 if referrer is not None:
                     r.headers.setdefault('Referer', referrer)
             return r
-        return process_iterable_helper(result or (), processor=_set_referer)
+        return (_set_referer(r) for r in result or ())
 
     def request_scheduled(self, request, spider):
         # check redirected request to patch "Referer" header if necessary

@@ -10,7 +10,6 @@ import warnings
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.middlewares import process_iterable_helper
 
 logger = logging.getLogger(__name__)
 
@@ -27,22 +26,21 @@ class OffsiteMiddleware:
         return o
 
     def process_spider_output(self, response, result, spider):
-        def in_predicate(x):
-            if not isinstance(x, Request):
-                return True
-            if x.dont_filter or self.should_follow(x, spider):
-                return True
-            domain = urlparse_cached(x).hostname
-            if domain and domain not in self.domains_seen:
-                self.domains_seen.add(domain)
-                logger.debug(
-                    "Filtered offsite request to %(domain)r: %(request)s",
-                    {'domain': domain, 'request': x}, extra={'spider': spider})
-                self.stats.inc_value('offsite/domains', spider=spider)
-            self.stats.inc_value('offsite/filtered', spider=spider)
-            return False
-
-        return process_iterable_helper(result or (), in_predicate=in_predicate)
+        for x in result:
+            if isinstance(x, Request):
+                if x.dont_filter or self.should_follow(x, spider):
+                    yield x
+                else:
+                    domain = urlparse_cached(x).hostname
+                    if domain and domain not in self.domains_seen:
+                        self.domains_seen.add(domain)
+                        logger.debug(
+                            "Filtered offsite request to %(domain)r: %(request)s",
+                            {'domain': domain, 'request': x}, extra={'spider': spider})
+                        self.stats.inc_value('offsite/domains', spider=spider)
+                    self.stats.inc_value('offsite/filtered', spider=spider)
+            else:
+                yield x
 
     def should_follow(self, request, spider):
         regex = self.host_regex
