@@ -404,7 +404,7 @@ class ScrapyAgent:
 
             logger.warning(warning_msg, warning_args)
 
-            txresponse._transport._producer.loseConnection()
+            txresponse._transport.loseConnection()
             raise defer.CancelledError(warning_msg % warning_args)
 
         if warnsize and expected_size > warnsize:
