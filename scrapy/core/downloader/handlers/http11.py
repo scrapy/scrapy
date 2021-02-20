@@ -529,7 +529,7 @@ class _ResponseReader(protocol.Protocol):
             if isinstance(result, Failure) and isinstance(result.value, StopDownload):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": self._request, "handler": handler.__qualname__})
-                self.transport._producer.loseConnection()
+                self.transport.loseConnection()
                 failure = result if result.value.fail else None
                 self._finish_response(flags=["download_stopped"], failure=failure)
 
