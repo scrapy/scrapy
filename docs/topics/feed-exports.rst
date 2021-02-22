@@ -195,7 +195,7 @@ passed through the following settings:
 You can also define a custom ACL and custom endpoint for exported feeds using this setting:
 
  * :setting:`FEED_STORAGE_S3_ACL`
- * :setting:`AWS_ENPOINT_URL`
+ * :setting:`AWS_ENDPOINT_URL`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
