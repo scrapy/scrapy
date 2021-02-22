@@ -384,7 +384,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
     @inlineCallbacks
     def test_invalid_negotiated_protocol(self):
-        with mock.patch("scrapy.core.http2.protocol.ACCEPTABLE_PROTOCOL", return_value=b"not-h2"):
+        with mock.patch("scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"):
             request = Request(url=self.get_url('/status?n=200'))
             with self.assertRaises(ResponseFailed):
                 yield self.make_request(request)
