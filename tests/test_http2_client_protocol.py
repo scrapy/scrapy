@@ -5,6 +5,7 @@ import re
 import shutil
 import string
 from ipaddress import IPv4Address
+from unittest import mock
 from urllib.parse import urlencode
 
 from h2.exceptions import InvalidBodyLengthError
@@ -380,6 +381,13 @@ class Https2ClientProtocolTestCase(TestCase):
             Data.EXTRA_LARGE,
             200
         )
+
+    @inlineCallbacks
+    def test_invalid_negotiated_protocol(self):
+        with mock.patch("scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"):
+            request = Request(url=self.get_url('/status?n=200'))
+            with self.assertRaises(ResponseFailed):
+                yield self.make_request(request)
 
     def test_cancel_request(self):
         request = Request(url=self.get_url('/get-data-html-large'))
