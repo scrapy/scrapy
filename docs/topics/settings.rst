@@ -1188,20 +1188,6 @@ Adjust redirect request priority relative to original request:
 - **a positive priority adjust (default) means higher priority.**
 - a negative priority adjust means lower priority.
 
-.. setting:: RETRY_PRIORITY_ADJUST
-
-RETRY_PRIORITY_ADJUST
----------------------
-
-Default: ``-1``
-
-Scope: ``scrapy.downloadermiddlewares.retry.RetryMiddleware``
-
-Adjust retry request priority relative to original request:
-
-- a positive priority adjust means higher priority.
-- **a negative priority adjust (default) means lower priority.**
-
 .. setting:: ROBOTSTXT_OBEY
 
 ROBOTSTXT_OBEY
