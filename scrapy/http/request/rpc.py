@@ -4,7 +4,7 @@ This module implements the XmlRpcRequest class which is a more convenient class
 
 See documentation in docs/topics/request-response.rst
 """
-from six.moves import xmlrpc_client as xmlrpclib
+import xmlrpc.client as xmlrpclib
 
 from scrapy.http.request import Request
 from scrapy.utils.python import get_func_args
@@ -31,5 +31,5 @@ class XmlRpcRequest(Request):
         if encoding is not None:
             kwargs['encoding'] = encoding
 
-        super(XmlRpcRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.headers.setdefault('Content-Type', 'text/xml')

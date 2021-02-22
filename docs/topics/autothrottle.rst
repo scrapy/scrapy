@@ -11,7 +11,7 @@ Design goals
 ============
 
 1. be nicer to sites instead of using default download delay of zero
-2. automatically adjust scrapy to the optimum crawling speed, so the user
+2. automatically adjust Scrapy to the optimum crawling speed, so the user
    doesn't have to tune the download delays to find the optimum one.
    The user only needs to specify the maximum concurrent requests
    it allows, and the extension does the rest.
@@ -127,8 +127,6 @@ The maximum download delay (in seconds) to be set in case of high latencies.
 
 AUTOTHROTTLE_TARGET_CONCURRENCY
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 1.1
 
 Default: ``1.0``
 

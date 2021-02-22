@@ -6,8 +6,6 @@
 Command line tool
 =================
 
-.. versionadded:: 0.10
-
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
@@ -29,7 +27,7 @@ in standard locations:
 1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
 2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
    for global (user-wide) settings, and
-3. ``scrapy.cfg`` inside a scrapy project's root (see next section).
+3. ``scrapy.cfg`` inside a Scrapy project's root (see next section).
 
 Settings from these files are merged in the listed order of preference:
 user-defined values have higher priority than system-wide defaults
@@ -468,7 +466,7 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
@@ -490,6 +488,10 @@ Supported options:
   recursively (default: 1)
 
 * ``--verbose`` or ``-v``: display information for each depth level
+
+* ``--output`` or ``-o``: dump scraped items to a file
+
+  .. versionadded:: 2.3
 
 .. skip: start
 
@@ -561,8 +563,6 @@ and Platform info, which is useful for bug reports.
 
 bench
 -----
-
-.. versionadded:: 0.17
 
 * Syntax: ``scrapy bench``
 * Requires project: *no*

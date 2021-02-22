@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
 import sys
 import logging
 import unittest
@@ -17,7 +15,7 @@ class FailureToExcInfoTest(unittest.TestCase):
 
     def test_failure(self):
         try:
-            0/0
+            0 / 0
         except ZeroDivisionError:
             exc_info = sys.exc_info()
             failure = Failure()
@@ -36,31 +34,27 @@ class TopLevelFormatterTest(unittest.TestCase):
 
     def test_top_level_logger(self):
         logger = logging.getLogger('test')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('test', 'WARNING', 'test log msg'))
+        log.check(('test', 'WARNING', 'test log msg'))
 
     def test_children_logger(self):
         logger = logging.getLogger('test.test1')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('test', 'WARNING', 'test log msg'))
+        log.check(('test', 'WARNING', 'test log msg'))
 
     def test_overlapping_name_logger(self):
         logger = logging.getLogger('test2')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('test2', 'WARNING', 'test log msg'))
+        log.check(('test2', 'WARNING', 'test log msg'))
 
     def test_different_name_logger(self):
         logger = logging.getLogger('different')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('different', 'WARNING', 'test log msg'))
+        log.check(('different', 'WARNING', 'test log msg'))
 
 
 class LogCounterHandlerTest(unittest.TestCase):
@@ -109,6 +103,6 @@ class StreamLoggerTest(unittest.TestCase):
         sys.stdout = self.stdout
 
     def test_redirect(self):
-        with LogCapture() as l:
+        with LogCapture() as log:
             print('test log msg')
-        l.check(('test', 'ERROR', 'test log msg'))
+        log.check(('test', 'ERROR', 'test log msg'))

@@ -5,8 +5,7 @@ from gzip import GzipFile
 
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
-from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, \
-    ACCEPTED_ENCODINGS
+from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, ACCEPTED_ENCODINGS
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from tests import tests_datadir
@@ -16,12 +15,18 @@ from w3lib.encoding import resolve_encoding
 SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
-        'gzip': ('html-gzip.bin', 'gzip'),
-        'x-gzip': ('html-gzip.bin', 'gzip'),
-        'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
-        'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
-        'br': ('html-br.bin', 'br')
-        }
+    'gzip': ('html-gzip.bin', 'gzip'),
+    'x-gzip': ('html-gzip.bin', 'gzip'),
+    'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
+    'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
+    'br': ('html-br.bin', 'br'),
+    # $ zstd raw.html --content-size -o html-zstd-static-content-size.bin
+    'zstd-static-content-size': ('html-zstd-static-content-size.bin', 'zstd'),
+    # $ zstd raw.html --no-content-size -o html-zstd-static-no-content-size.bin
+    'zstd-static-no-content-size': ('html-zstd-static-no-content-size.bin', 'zstd'),
+    # $ cat raw.html | zstd -o html-zstd-streaming-no-content-size.bin
+    'zstd-streaming-no-content-size': ('html-zstd-streaming-no-content-size.bin', 'zstd'),
+}
 
 
 class HttpCompressionTest(TestCase):
@@ -40,15 +45,15 @@ class HttpCompressionTest(TestCase):
             body = sample.read()
 
         headers = {
-                'Server': 'Yaws/1.49 Yet Another Web Server',
-                'Date': 'Sun, 08 Mar 2009 00:41:03 GMT',
-                'Content-Length': len(body),
-                'Content-Type': 'text/html',
-                'Content-Encoding': contentencoding,
-                }
+            'Server': 'Yaws/1.49 Yet Another Web Server',
+            'Date': 'Sun, 08 Mar 2009 00:41:03 GMT',
+            'Content-Length': len(body),
+            'Content-Type': 'text/html',
+            'Content-Encoding': contentencoding,
+        }
 
         response = Response('http://scrapytest.org/', body=body, headers=headers)
-        response.request = Request('http://scrapytest.org', headers={'Accept-Encoding': 'gzip,deflate'})
+        response.request = Request('http://scrapytest.org', headers={'Accept-Encoding': 'gzip, deflate'})
         return response
 
     def test_process_request(self):
@@ -56,7 +61,7 @@ class HttpCompressionTest(TestCase):
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
         self.assertEqual(request.headers.get('Accept-Encoding'),
-                         b','.join(ACCEPTED_ENCODINGS))
+                         b', '.join(ACCEPTED_ENCODINGS))
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')
@@ -70,7 +75,7 @@ class HttpCompressionTest(TestCase):
 
     def test_process_response_br(self):
         try:
-            import brotli
+            import brotli  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         response = self._getresponse('br')
@@ -80,6 +85,27 @@ class HttpCompressionTest(TestCase):
         assert newresponse is not response
         assert newresponse.body.startswith(b"<!DOCTYPE")
         assert 'Content-Encoding' not in newresponse.headers
+
+    def test_process_response_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
+        raw_content = None
+        for check_key in FORMAT:
+            if not check_key.startswith('zstd-'):
+                continue
+            response = self._getresponse(check_key)
+            request = response.request
+            self.assertEqual(response.headers['Content-Encoding'], b'zstd')
+            newresponse = self.mw.process_response(request, response, self.spider)
+            if raw_content is None:
+                raw_content = newresponse.body
+            else:
+                assert raw_content == newresponse.body
+            assert newresponse is not response
+            assert newresponse.body.startswith(b"<!DOCTYPE")
+            assert 'Content-Encoding' not in newresponse.headers
 
     def test_process_response_rawdeflate(self):
         response = self._getresponse('rawdeflate')
@@ -124,7 +150,8 @@ class HttpCompressionTest(TestCase):
             'Content-Encoding': 'gzip',
         }
         f = BytesIO()
-        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        plainbody = (b'<html><head><title>Some page</title>'
+                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -142,7 +169,8 @@ class HttpCompressionTest(TestCase):
             'Content-Encoding': 'gzip',
         }
         f = BytesIO()
-        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        plainbody = (b'<html><head><title>Some page</title>'
+                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -158,7 +186,8 @@ class HttpCompressionTest(TestCase):
         headers = {
             'Content-Encoding': 'identity',
         }
-        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        plainbody = (b'<html><head><title>Some page</title>'
+                     b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
         respcls = responsetypes.from_args(url="http://www.example.com/index", headers=headers, body=plainbody)
         response = respcls("http://www.example.com/index", headers=headers, body=plainbody)
         request = Request("http://www.example.com/index")
@@ -245,7 +274,7 @@ class HttpCompressionTest(TestCase):
         response.headers['Content-Type'] = 'application/gzip'
         request = response.request
         request.method = 'HEAD'
-        response = response.replace(body = None)
+        response = response.replace(body=None)
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
         self.assertEqual(response.body, b'')

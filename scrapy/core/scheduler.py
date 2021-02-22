@@ -1,20 +1,16 @@
 import os
 import json
 import logging
-import warnings
 from os.path import join, exists
-
-from queuelib import PriorityQueue
 
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 
 
 logger = logging.getLogger(__name__)
 
 
-class Scheduler(object):
+class Scheduler:
     """
     Scrapy Scheduler. It allows to enqueue requests and then get
     a next request to download. Scheduler is also handling duplication
@@ -56,18 +52,9 @@ class Scheduler(object):
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
-        if pqclass is PriorityQueue:
-            warnings.warn("SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue'"
-                          " is no longer supported because of API changes; "
-                          "please use 'scrapy.pqueues.ScrapyPriorityQueue'",
-                          ScrapyDeprecationWarning)
-            from scrapy.pqueues import ScrapyPriorityQueue
-            pqclass = ScrapyPriorityQueue
-
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
-        logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS',
-                                    settings.getbool('SCHEDULER_DEBUG'))
+        logunser = settings.getbool('SCHEDULER_DEBUG')
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
                    mqclass=mqclass, crawler=crawler)
@@ -119,7 +106,7 @@ class Scheduler(object):
         if self.dqs is None:
             return
         try:
-            self.dqs.push(request, -request.priority)
+            self.dqs.push(request)
         except ValueError as e:  # non serializable request
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
@@ -135,35 +122,29 @@ class Scheduler(object):
             return True
 
     def _mqpush(self, request):
-        self.mqs.push(request, -request.priority)
+        self.mqs.push(request)
 
     def _dqpop(self):
         if self.dqs:
             return self.dqs.pop()
 
-    def _newmq(self, priority):
-        """ Factory for creating memory queues. """
-        return self.mqclass()
-
-    def _newdq(self, priority):
-        """ Factory for creating disk queues. """
-        path = join(self.dqdir, 'p%s' % (priority, ))
-        return self.dqclass(path)
-
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
-        return create_instance(self.pqclass, None, self.crawler, self._newmq,
-                               serialize=False)
+        return create_instance(self.pqclass,
+                               settings=None,
+                               crawler=self.crawler,
+                               downstream_queue_cls=self.mqclass,
+                               key='')
 
     def _dq(self):
         """ Create a new priority queue instance, with disk storage """
         state = self._read_dqs_state(self.dqdir)
         q = create_instance(self.pqclass,
-                            None,
-                            self.crawler,
-                            self._newdq,
-                            state,
-                            serialize=True)
+                            settings=None,
+                            crawler=self.crawler,
+                            downstream_queue_cls=self.dqclass,
+                            key=self.dqdir,
+                            startprios=state)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})
