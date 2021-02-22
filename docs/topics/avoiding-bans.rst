@@ -245,17 +245,18 @@ Smart proxies
 An increasing number of websites use solutions that apply many of the above
 filters and challenges at the same time.
 
-There are paid proxy services, like Crawlera_, that automatically bypass
-website filters and challenges, so that your spider only gets successful
-responses. They also allow managing sessions to simulating user behavior.
+There are paid proxy services, like `Zyte Smart Proxy Manager`_, that
+automatically bypass website filters and challenges, so that your spider only
+gets successful responses. They also allow managing sessions to simulating user
+behavior.
 
-For Crawlera, installing scrapy-crawlera_ will ofter advanced
+For Zyte Smart Proxy Manager, installing scrapy-crawlera_ will ofter advanced
 integration with Scrapy. For other services, use the
 :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` middleware
 or implement your own :ref:`downloader middleware
 <topics-downloader-middleware>`.
 
-.. _Crawlera: https://scrapinghub.com/crawlera
+.. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/
 
 
 .. _rotating-proxy:
