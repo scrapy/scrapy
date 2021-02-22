@@ -398,7 +398,7 @@ class GetRetryRequestTest(unittest.TestCase):
     def test_no_spider(self):
         request = Request('https://example.com')
         with self.assertRaises(TypeError):
-            get_retry_request(request)
+            get_retry_request(request)  # pylint: disable=missing-kwoa
 
     def test_max_retry_times_setting(self):
         max_retry_times = 0
