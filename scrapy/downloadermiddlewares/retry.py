@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 def get_retry_request(
     request,
     *,
-    reason,
     spider,
+    reason='unspecified',
     max_retry_times=None,
     priority_adjust=None,
 ):
