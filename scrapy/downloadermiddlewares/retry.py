@@ -88,7 +88,7 @@ class RetryMiddleware:
                 reason = global_object_name(reason.__class__)
 
             stats.inc_value('retry/count')
-            stats.inc_value('retry/reason_count/%s' % reason)
+            stats.inc_value(f'retry/reason_count/{reason}')
             return retryreq
         else:
             stats.inc_value('retry/max_reached')

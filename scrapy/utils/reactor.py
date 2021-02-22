@@ -10,7 +10,7 @@ def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
     if len(portrange) > 2:
-        raise ValueError("invalid portrange: %s" % portrange)
+        raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
     if not hasattr(portrange, '__iter__'):
@@ -60,8 +60,9 @@ def install_reactor(reactor_path, event_loop_path=None):
             if event_loop_path is not None:
                 event_loop_class = load_object(event_loop_path)
                 event_loop = event_loop_class()
+                asyncio.set_event_loop(event_loop)
             else:
-                event_loop = asyncio.new_event_loop()
+                event_loop = asyncio.get_event_loop()
             asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")
@@ -78,9 +79,9 @@ def verify_installed_reactor(reactor_path):
     from twisted.internet import reactor
     reactor_class = load_object(reactor_path)
     if not isinstance(reactor, reactor_class):
-        msg = "The installed reactor ({}.{}) does not match the requested one ({})".format(
-            reactor.__module__, reactor.__class__.__name__, reactor_path
-        )
+        msg = ("The installed reactor "
+               f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
+               f"match the requested one ({reactor_path})")
         raise Exception(msg)
 
 

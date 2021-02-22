@@ -115,13 +115,14 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.status, 200)
             self.assertEqual(response.body, b'0123456789')
+            self.assertEqual(response.protocol, None)
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request('file://%s' % self.mktemp())
+        request = Request(f'file://{self.mktemp()}')
         d = self.download_request(request, Spider('foo'))
         return self.assertFailure(d, IOError)
 
@@ -249,7 +250,7 @@ class HttpTestCase(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -300,7 +301,7 @@ class HttpTestCase(unittest.TestCase):
     def test_host_header_not_in_request_headers(self):
         def _test(response):
             self.assertEqual(
-                response.body, to_bytes('%s:%d' % (self.host, self.portno)))
+                response.body, to_bytes(f'{self.host}:{self.portno}'))
             self.assertEqual(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -359,6 +360,13 @@ class HttpTestCase(unittest.TestCase):
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
     download_handler_cls = HTTP10DownloadHandler
+
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.0")
+        return d
 
 
 class Https10TestCase(Http10TestCase):
@@ -489,6 +497,13 @@ class Http11TestCase(HttpTestCase):
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
         return self.test_download_broken_content_allow_data_loss_via_setting('broken-chunked')
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "HTTP/1.1")
+        return d
+
 
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
@@ -583,7 +598,7 @@ class Https11CustomCiphers(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "%s://%s:%d/%s" % (self.scheme, self.host, self.portno, path)
+        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -678,7 +693,7 @@ class HttpProxyTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"http://127.0.0.1:{self.portno}/{path}"
 
     def test_download_with_proxy(self):
         def _test(response):
@@ -696,7 +711,7 @@ class HttpProxyTestCase(unittest.TestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.body, b'https://example.com')
 
-        http_proxy = '%s?noconnect' % self.getURL('')
+        http_proxy = f'{self.getURL("")}?noconnect'
         request = Request('https://example.com', meta={'proxy': http_proxy})
         with self.assertWarnsRegex(ScrapyDeprecationWarning,
                                    r'Using HTTPS proxies in the noconnect mode is deprecated'):
@@ -868,29 +883,6 @@ class S3TestCase(unittest.TestCase):
         self.assertEqual(httpreq.headers['Authorization'],
                          b'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
-    def test_request_signing5(self):
-        try:
-            import botocore  # noqa: F401
-        except ImportError:
-            pass
-        else:
-            raise unittest.SkipTest(
-                'botocore does not support overriding date with x-amz-date')
-        # deletes an object from the 'johnsmith' bucket using the
-        # path-style and Date alternative.
-        date = 'Tue, 27 Mar 2007 21:20:27 +0000'
-        req = Request(
-            's3://johnsmith/photos/puppy.jpg', method='DELETE', headers={
-                'Date': date,
-                'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-            })
-        with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
-        # botocore does not override Date with x-amz-date
-        self.assertEqual(
-            httpreq.headers['Authorization'],
-            b'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
-
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = 'Tue, 27 Mar 2007 21:06:08 +0000'
@@ -977,7 +969,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return deferred
 
     def test_ftp_download_success(self):
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
@@ -985,11 +977,12 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, b'I have the power!')
             self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'17']})
+            self.assertIsNone(r.protocol)
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_path_with_spaces(self):
         request = Request(
-            url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
+            url=f"ftp://127.0.0.1:{self.portNum}/file with spaces.txt",
             meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
@@ -1001,7 +994,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
-        request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/notexist.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1015,7 +1008,7 @@ class BaseFTPTestCase(unittest.TestCase):
         os.close(f)
         meta = {"ftp_local_filename": local_fname}
         meta.update(self.req_meta)
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1037,7 +1030,7 @@ class FTPTestCase(BaseFTPTestCase):
 
         meta = dict(self.req_meta)
         meta.update({"ftp_password": 'invalid'})
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 
@@ -1142,4 +1135,11 @@ class DataURITestCase(unittest.TestCase):
             self.assertEqual(response.text, 'Hello, world.')
 
         request = Request('data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D')
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_protocol(self):
+        def _test(response):
+            self.assertIsNone(response.protocol)
+
+        request = Request("data:,")
         return self.download_request(request, self.spider).addCallback(_test)

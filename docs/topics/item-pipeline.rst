@@ -96,7 +96,7 @@ contain a price::
                     adapter['price'] = adapter['price'] * self.vat_factor
                 return item
             else:
-                raise DropItem("Missing price in %s" % item)
+                raise DropItem(f"Missing price in {item}")
 
 
 Write items to a JSON file
@@ -211,7 +211,7 @@ item.
             # Save screenshot to file, filename will be hash of url.
             url = adapter["url"]
             url_hash = hashlib.md5(url.encode("utf8")).hexdigest()
-            filename = "{}.png".format(url_hash)
+            filename = f"{url_hash}.png"
             with open(filename, "wb") as f:
                 f.write(response.body)
 
@@ -240,7 +240,7 @@ returns multiples items with the same id::
         def process_item(self, item, spider):
             adapter = ItemAdapter(item)
             if adapter['id'] in self.ids_seen:
-                raise DropItem("Duplicate item found: %r" % item)
+                raise DropItem(f"Duplicate item found: {item!r}")
             else:
                 self.ids_seen.add(adapter['id'])
                 return item

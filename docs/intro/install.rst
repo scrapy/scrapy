@@ -69,10 +69,9 @@ In case of any trouble related to these dependencies,
 please refer to their respective installation instructions:
 
 * `lxml installation`_
-* `cryptography installation`_
+* :doc:`cryptography installation <cryptography:installation>`
 
 .. _lxml installation: https://lxml.de/installation.html
-.. _cryptography installation: https://cryptography.io/en/latest/installation/
 
 
 .. _intro-using-virtualenv:
@@ -211,8 +210,8 @@ PyPy
 We recommend using the latest PyPy version. The version tested is 5.9.0.
 For PyPy3, only Linux installation was tested.
 
-Most Scrapy dependencides now have binary wheels for CPython, but not for PyPy.
-This means that these dependecies will be built during installation.
+Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
+This means that these dependencies will be built during installation.
 On macOS, you are likely to face an issue with building Cryptography dependency,
 solution to this problem is described
 `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
@@ -265,10 +264,8 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
 .. _setuptools: https://pypi.python.org/pypi/setuptools
-.. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
-.. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: https://docs.anaconda.com/anaconda/
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
 .. _conda-forge: https://conda-forge.org/

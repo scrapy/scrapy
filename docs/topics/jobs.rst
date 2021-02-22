@@ -65,7 +65,7 @@ Cookies expiration
 ------------------
 
 Cookies may expire. So, if you don't resume your spider quickly the requests
-scheduled may no longer work. This won't be an issue if you spider doesn't rely
+scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
 
 

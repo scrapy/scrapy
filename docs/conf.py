@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Scrapy'
-copyright = '2008–{}, Scrapy developers'.format(datetime.now().year)
+copyright = f'2008–{datetime.now().year}, Scrapy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -283,6 +283,7 @@ coverage_ignore_pyobjects = [
 intersphinx_mapping = {
     'attrs': ('https://www.attrs.org/en/stable/', None),
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'cryptography' : ('https://cryptography.io/en/latest/', None),
     'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
     'itemloaders': ('https://itemloaders.readthedocs.io/en/latest/', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),

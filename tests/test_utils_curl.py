@@ -16,7 +16,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         try:
             Request(**result)
         except TypeError as e:
-            self.fail("Request kwargs are not correct {}".format(e))
+            self.fail(f"Request kwargs are not correct {e}")
 
     def test_get(self):
         curl_command = "curl http://example.org/"

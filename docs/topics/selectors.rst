@@ -328,8 +328,9 @@ too. Here's an example:
  '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
 >>> for index, link in enumerate(links):
-...     args = (index, link.xpath('@href').get(), link.xpath('img/@src').get())
-...     print('Link number %d points to url %r and image %r' % args)
+...     href_xpath = link.xpath('@href').get()
+...     img_xpath = link.xpath('img/@src').get()
+...     print(f'Link number {index} points to url {href_xpath!r} and image {img_xpath!r}')
 Link number 0 points to url 'image1.html' and image 'image1_thumb.jpg'
 Link number 1 points to url 'image2.html' and image 'image2_thumb.jpg'
 Link number 2 points to url 'image3.html' and image 'image3_thumb.jpg'
@@ -463,10 +464,10 @@ effectively. If you are not much familiar with XPath yet,
 you may want to take a look first at this `XPath tutorial`_.
 
 .. note::
-    Some of the tips are based on `this post from ScrapingHub's blog`_.
+    Some of the tips are based on `this post from Zyte's blog`_.
 
 .. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
-.. _`this post from ScrapingHub's blog`: https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+.. _this post from Zyte's blog: https://www.zyte.com/blog/xpath-tips-from-the-web-scraping-trenches/
 
 
 .. _topics-selectors-relative-xpaths:
@@ -822,7 +823,7 @@ with groups of itemscopes and corresponding itemprops::
     ...     props = scope.xpath('''
     ...                 set:difference(./descendant::*/@itemprop,
     ...                                .//*[@itemscope]/*/@itemprop)''')
-    ...     print("    properties: %s" % (props.getall()))
+    ...     print(f"    properties: {props.getall()}")
     ...     print("")
 
     current scope: ['http://schema.org/Product']

@@ -60,11 +60,11 @@ class HTTP11DownloadHandler:
                 settings=settings,
                 crawler=crawler,
             )
-            msg = """
- '%s' does not accept `method` argument (type OpenSSL.SSL method,\
- e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
- Please upgrade your context factory class to handle them or ignore them.""" % (
-                settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)
+            msg = f"""
+ '{settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]}' does not accept `method` \
+ argument (type OpenSSL.SSL method, e.g. OpenSSL.SSL.SSLv23_METHOD) and/or \
+ `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
+ Please upgrade your context factory class to handle them or ignore them."""
             warnings.warn(msg)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
@@ -169,8 +169,9 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             else:
                 extra = rcvd_bytes[:32]
             self._tunnelReadyDeferred.errback(
-                TunnelError('Could not open CONNECT tunnel with proxy %s:%s [%r]' % (
-                    self._host, self._port, extra)))
+                TunnelError('Could not open CONNECT tunnel with proxy '
+                            f'{self._host}:{self._port} [{extra!r}]')
+            )
 
     def connectFailed(self, reason):
         """Propagates the errback to the appropriate deferred."""
@@ -302,11 +303,14 @@ class ScrapyAgent:
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
-                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
-                              "If you use Crawlera, it doesn't require this mode anymore, "
-                              "so you should update scrapy-crawlera to 1.3.0+ "
-                              "and remove '?noconnect' from the Crawlera URL.",
-                              ScrapyDeprecationWarning)
+                warnings.warn(
+                    "Using HTTPS proxies in the noconnect mode is deprecated. "
+                    "If you use Zyte Smart Proxy Manager (formerly Crawlera), "
+                    "it doesn't require this mode anymore, so you should "
+                    "update scrapy-crawlera to 1.3.0+ and remove '?noconnect' "
+                    "from the Zyte Smart Proxy Manager URL.",
+                    ScrapyDeprecationWarning,
+                )
             if scheme == b'https' and not omitConnectTunnel:
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
@@ -371,7 +375,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
+        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result, request, start_time):
         request.meta['download_latency'] = time() - start_time
@@ -433,6 +437,11 @@ class ScrapyAgent:
     def _cb_bodydone(self, result, request, url):
         headers = Headers(result["txresponse"].headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
+        try:
+            version = result["txresponse"].version
+            protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
+        except (AttributeError, TypeError, IndexError):
+            protocol = None
         response = respcls(
             url=url,
             status=int(result["txresponse"].code),
@@ -441,6 +450,7 @@ class ScrapyAgent:
             flags=result["flags"],
             certificate=result["certificate"],
             ip_address=result["ip_address"],
+            protocol=protocol,
         )
         if result.get("failure"):
             result["failure"].value.response = response

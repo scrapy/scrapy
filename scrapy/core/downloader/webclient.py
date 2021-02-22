@@ -7,7 +7,7 @@ from twisted.internet.protocol import ClientFactory
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.responsetypes import responsetypes
 
 
@@ -88,8 +88,8 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.stopProducing()
 
         self.factory.noPage(
-            defer.TimeoutError("Getting %s took longer than %s seconds."
-                               % (self.factory.url, self.factory.timeout)))
+            defer.TimeoutError(f"Getting {self.factory.url} took longer "
+                               f"than {self.factory.timeout} seconds."))
 
 
 # This class used to inherit from Twisted’s
@@ -110,7 +110,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self._url)
-        return respcls(url=self._url, status=status, headers=headers, body=body)
+        return respcls(url=self._url, status=status, headers=headers, body=body, protocol=to_unicode(self.version))
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
@@ -155,7 +155,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
             self.headers['Content-Length'] = 0
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.url)
+        return f"<{self.__class__.__name__}: {self.url}>"
 
     def _cancelTimeout(self, result, timeoutCall):
         if timeoutCall.active():

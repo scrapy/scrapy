@@ -11,7 +11,6 @@ import os
 import time
 from collections import defaultdict
 from contextlib import suppress
-from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
 from io import BytesIO
 from urllib.parse import urlparse
@@ -23,7 +22,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.boto import is_botocore
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -91,86 +90,54 @@ class S3FilesStore:
     }
 
     def __init__(self, uri):
-        self.is_botocore = is_botocore()
-        if self.is_botocore:
-            import botocore.session
-            session = botocore.session.get_session()
-            self.s3_client = session.create_client(
-                's3',
-                aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
-                endpoint_url=self.AWS_ENDPOINT_URL,
-                region_name=self.AWS_REGION_NAME,
-                use_ssl=self.AWS_USE_SSL,
-                verify=self.AWS_VERIFY
-            )
-        else:
-            from boto.s3.connection import S3Connection
-            self.S3Connection = S3Connection
+        if not is_botocore_available():
+            raise NotConfigured('missing botocore library')
+        import botocore.session
+        session = botocore.session.get_session()
+        self.s3_client = session.create_client(
+            's3',
+            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+            endpoint_url=self.AWS_ENDPOINT_URL,
+            region_name=self.AWS_REGION_NAME,
+            use_ssl=self.AWS_USE_SSL,
+            verify=self.AWS_VERIFY
+        )
         if not uri.startswith("s3://"):
-            raise ValueError("Incorrect URI scheme in %s, expected 's3'" % uri)
+            raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
         def _onsuccess(boto_key):
-            if self.is_botocore:
-                checksum = boto_key['ETag'].strip('"')
-                last_modified = boto_key['LastModified']
-                modified_stamp = time.mktime(last_modified.timetuple())
-            else:
-                checksum = boto_key.etag.strip('"')
-                last_modified = boto_key.last_modified
-                modified_tuple = parsedate_tz(last_modified)
-                modified_stamp = int(mktime_tz(modified_tuple))
+            checksum = boto_key['ETag'].strip('"')
+            last_modified = boto_key['LastModified']
+            modified_stamp = time.mktime(last_modified.timetuple())
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
         return self._get_boto_key(path).addCallback(_onsuccess)
 
-    def _get_boto_bucket(self):
-        # disable ssl (is_secure=False) because of this python bug:
-        # https://bugs.python.org/issue5103
-        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
-        return c.get_bucket(self.bucket, validate=False)
-
     def _get_boto_key(self, path):
-        key_name = '%s%s' % (self.prefix, path)
-        if self.is_botocore:
-            return threads.deferToThread(
-                self.s3_client.head_object,
-                Bucket=self.bucket,
-                Key=key_name)
-        else:
-            b = self._get_boto_bucket()
-            return threads.deferToThread(b.get_key, key_name)
+        key_name = f'{self.prefix}{path}'
+        return threads.deferToThread(
+            self.s3_client.head_object,
+            Bucket=self.bucket,
+            Key=key_name)
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         """Upload file to S3 storage"""
-        key_name = '%s%s' % (self.prefix, path)
+        key_name = f'{self.prefix}{path}'
         buf.seek(0)
-        if self.is_botocore:
-            extra = self._headers_to_botocore_kwargs(self.HEADERS)
-            if headers:
-                extra.update(self._headers_to_botocore_kwargs(headers))
-            return threads.deferToThread(
-                self.s3_client.put_object,
-                Bucket=self.bucket,
-                Key=key_name,
-                Body=buf,
-                Metadata={k: str(v) for k, v in (meta or {}).items()},
-                ACL=self.POLICY,
-                **extra)
-        else:
-            b = self._get_boto_bucket()
-            k = b.new_key(key_name)
-            if meta:
-                for metakey, metavalue in meta.items():
-                    k.set_metadata(metakey, str(metavalue))
-            h = self.HEADERS.copy()
-            if headers:
-                h.update(headers)
-            return threads.deferToThread(
-                k.set_contents_from_string, buf.getvalue(),
-                headers=h, policy=self.POLICY)
+        extra = self._headers_to_botocore_kwargs(self.HEADERS)
+        if headers:
+            extra.update(self._headers_to_botocore_kwargs(headers))
+        return threads.deferToThread(
+            self.s3_client.put_object,
+            Bucket=self.bucket,
+            Key=key_name,
+            Body=buf,
+            Metadata={k: str(v) for k, v in (meta or {}).items()},
+            ACL=self.POLICY,
+            **extra)
 
     def _headers_to_botocore_kwargs(self, headers):
         """ Convert headers to botocore keyword agruments.
@@ -208,8 +175,7 @@ class S3FilesStore:
             try:
                 kwarg = mapping[key]
             except KeyError:
-                raise TypeError(
-                    'Header "%s" is not supported by botocore' % key)
+                raise TypeError(f'Header "{key}" is not supported by botocore')
             else:
                 extra[kwarg] = value
         return extra
@@ -283,7 +249,7 @@ class FTPFilesStore:
 
     def __init__(self, uri):
         if not uri.startswith("ftp://"):
-            raise ValueError("Incorrect URI scheme in %s, expected 'ftp'" % uri)
+            raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
         u = urlparse(uri)
         self.port = u.port
         self.host = u.hostname
@@ -293,7 +259,7 @@ class FTPFilesStore:
         self.basedir = u.path.rstrip('/')
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        path = '%s/%s' % (self.basedir, path)
+        path = f'{self.basedir}/{path}'
         return threads.deferToThread(
             ftp_store_file, path=path, file=buf,
             host=self.host, port=self.port, username=self.username,
@@ -308,10 +274,10 @@ class FTPFilesStore:
                 ftp.login(self.username, self.password)
                 if self.USE_ACTIVE_MODE:
                     ftp.set_pasv(False)
-                file_path = "%s/%s" % (self.basedir, path)
-                last_modified = float(ftp.voidcmd("MDTM %s" % file_path)[4:].strip())
+                file_path = f"{self.basedir}/{path}"
+                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
                 m = hashlib.md5()
-                ftp.retrbinary('RETR %s' % file_path, m.update)
+                ftp.retrbinary(f'RETR {file_path}', m.update)
                 return {'last_modified': last_modified, 'checksum': m.hexdigest()}
             # The file doesn't exist
             except Exception:
@@ -515,7 +481,7 @@ class FilesPipeline(MediaPipeline):
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
-        spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
+        spider.crawler.stats.inc_value(f'file_status_count/{status}', spider=spider)
 
     # Overridable Interface
     def get_media_requests(self, item, info):
@@ -545,4 +511,4 @@ class FilesPipeline(MediaPipeline):
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
                 media_ext = mimetypes.guess_extension(media_type)
-        return 'full/%s%s' % (media_guid, media_ext)
+        return f'full/{media_guid}{media_ext}'

@@ -50,8 +50,9 @@ class BuildComponentListTest(unittest.TestCase):
 
     def test_duplicate_components_in_list(self):
         duplicate_list = ['a', 'b', 'a']
-        self.assertRaises(ValueError, build_component_list, None,
-                          duplicate_list, convert=lambda x: x)
+        with self.assertRaises(ValueError) as cm:
+            build_component_list(None, duplicate_list, convert=lambda x: x)
+        self.assertIn(str(duplicate_list), str(cm.exception))
 
     def test_duplicate_components_in_basesettings(self):
         # Higher priority takes precedence
@@ -175,6 +176,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "store_empty": True,
             "uri_params": (1, 2, 3, 4),
             "batch_item_count": 2,
+            "item_export_kwargs": dict(),
         })
 
     def test_feed_complete_default_values_from_settings_non_empty(self):
@@ -197,6 +199,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "store_empty": True,
             "uri_params": None,
             "batch_item_count": 2,
+            "item_export_kwargs": dict(),
         })
 
 

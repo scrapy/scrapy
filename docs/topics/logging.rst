@@ -101,7 +101,7 @@ instance, which can be accessed and used like this::
     class MySpider(scrapy.Spider):
 
         name = 'myspider'
-        start_urls = ['https://scrapinghub.com']
+        start_urls = ['https://scrapy.org']
 
         def parse(self, response):
             self.logger.info('Parse function called on %s', response.url)
@@ -117,7 +117,7 @@ Python logger you want. For example::
     class MySpider(scrapy.Spider):
 
         name = 'myspider'
-        start_urls = ['https://scrapinghub.com']
+        start_urls = ['https://scrapy.org']
 
         def parse(self, response):
             logger.info('Parse function called on %s', response.url)

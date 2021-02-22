@@ -10,12 +10,19 @@ The ``__init__`` method of
 :class:`~scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor` takes settings that
 determine which links may be extracted. :class:`LxmlLinkExtractor.extract_links
 <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links>` returns a
-list of matching :class:`scrapy.link.Link` objects from a
+list of matching :class:`~scrapy.link.Link` objects from a
 :class:`~scrapy.http.Response` object.
 
 Link extractors are used in :class:`~scrapy.spiders.CrawlSpider` spiders
-through a set of :class:`~scrapy.spiders.Rule` objects. You can also use link
-extractors in regular spiders.
+through a set of :class:`~scrapy.spiders.Rule` objects.
+
+You can also use link extractors in regular spiders. For example, you can instantiate
+:class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` into a class
+variable in your spider, and use it from your spider callbacks::
+
+    def parse(self, response):
+        for link in self.link_extractor.extract_links(response):
+            yield Request(link.url, callback=self.parse)
 
 .. _topics-link-extractors-ref:
 
@@ -144,5 +151,13 @@ LxmlLinkExtractor
     :type strip: bool
 
     .. automethod:: extract_links
+
+Link
+----
+
+.. module:: scrapy.link
+   :synopsis: Link from link extractors
+
+.. autoclass:: Link
 
 .. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

@@ -2,6 +2,10 @@ from pathlib import Path
 
 import pytest
 
+from scrapy.utils.reactor import install_reactor
+
+from tests.keys import generate_keys
+
 
 def _py_files(folder):
     return (str(p) for p in Path(folder).rglob('*.py'))
@@ -14,8 +18,6 @@ collect_ignore = [
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
-    # Py36-only parts of respective tests
-    *_py_files("tests/py36"),
 ]
 
 for line in open('tests/ignores.txt'):
@@ -40,6 +42,14 @@ def pytest_collection_modifyitems(session, config, items):
         pass
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--reactor",
+        default="default",
+        choices=["default", "asyncio"],
+    )
+
+
 @pytest.fixture(scope='class')
 def reactor_pytest(request):
     if not request.cls:
@@ -53,3 +63,12 @@ def reactor_pytest(request):
 def only_asyncio(request, reactor_pytest):
     if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
         pytest.skip('This test is only run with --reactor=asyncio')
+
+
+def pytest_configure(config):
+    if config.getoption("--reactor") == "asyncio":
+        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
+
+# Generate localhost certificate files, needed by some tests
+generate_keys()

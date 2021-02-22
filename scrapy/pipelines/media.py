@@ -60,7 +60,7 @@ class MediaPipeline:
         'MYPIPE_IMAGES'
         """
         class_name = self.__class__.__name__
-        formatted_key = "{}_{}".format(class_name.upper(), key)
+        formatted_key = f"{class_name.upper()}_{key}"
         if (
             not base_class_name
             or class_name == base_class_name
@@ -86,7 +86,7 @@ class MediaPipeline:
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]
-        dfd = DeferredList(dlist, consumeErrors=1)
+        dfd = DeferredList(dlist, consumeErrors=True)
         return dfd.addCallback(self.item_completed, item, info)
 
     def _process_request(self, request, info, item):
@@ -151,9 +151,8 @@ class MediaPipeline:
         if 'item' not in sig.parameters:
             old_params = str(sig)[1:-1]
             new_params = old_params + ", *, item=None"
-            warn('%s(self, %s) is deprecated, '
-                 'please use %s(self, %s)'
-                 % (func.__name__, old_params, func.__name__, new_params),
+            warn(f'{func.__name__}(self, {old_params}) is deprecated, '
+                 f'please use {func.__name__}(self, {new_params})',
                  ScrapyDeprecationWarning, stacklevel=2)
             self._expects_item[func.__name__] = False
 

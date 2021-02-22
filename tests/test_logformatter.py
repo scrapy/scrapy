@@ -20,7 +20,7 @@ class CustomItem(Item):
     name = Field()
 
     def __str__(self):
-        return "name: %s" % self['name']
+        return f"name: {self['name']}"
 
 
 class LogFormatterTestCase(unittest.TestCase):
@@ -193,7 +193,7 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
         self.base_settings = {
             'LOG_LEVEL': 'DEBUG',
             'ITEM_PIPELINES': {
-                __name__ + '.DropSomeItemsPipeline': 300,
+                DropSomeItemsPipeline: 300,
             },
         }
 
@@ -212,7 +212,7 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
     @defer.inlineCallbacks
     def test_skip_messages(self):
         settings = self.base_settings.copy()
-        settings['LOG_FORMATTER'] = __name__ + '.SkipMessagesLogFormatter'
+        settings['LOG_FORMATTER'] = SkipMessagesLogFormatter
         crawler = CrawlerRunner(settings).create_crawler(ItemSpider)
         with LogCapture() as lc:
             yield crawler.crawl(mockserver=self.mockserver)

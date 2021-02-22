@@ -61,15 +61,15 @@ class OffsiteMiddleware:
                 continue
             elif url_pattern.match(domain):
                 message = ("allowed_domains accepts only domains, not URLs. "
-                           "Ignoring URL entry %s in allowed_domains." % domain)
+                           f"Ignoring URL entry {domain} in allowed_domains.")
                 warnings.warn(message, URLWarning)
             elif port_pattern.search(domain):
                 message = ("allowed_domains accepts only domains without ports. "
-                           "Ignoring entry %s in allowed_domains." % domain)
+                           f"Ignoring entry {domain} in allowed_domains.")
                 warnings.warn(message, PortWarning)
             else:
                 domains.append(re.escape(domain))
-        regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
+        regex = fr'^(.*\.)?({"|".join(domains)})$'
         return re.compile(regex)
 
     def spider_opened(self, spider):

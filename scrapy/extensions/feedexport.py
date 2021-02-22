@@ -19,7 +19,7 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.utils.boto import is_botocore
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -120,22 +120,19 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, access_key=None, secret_key=None, acl=None, *,
                  feed_options=None):
+        if not is_botocore_available():
+            raise NotConfigured('missing botocore library')
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
-        self.is_botocore = is_botocore()
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
-        if self.is_botocore:
-            import botocore.session
-            session = botocore.session.get_session()
-            self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key)
-        else:
-            import boto
-            self.connect_s3 = boto.connect_s3
+        import botocore.session
+        session = botocore.session.get_session()
+        self.s3_client = session.create_client(
+            's3', aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key)
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
                            'suppress this warning, remove the overwrite '
@@ -154,18 +151,10 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         file.seek(0)
-        if self.is_botocore:
-            kwargs = {'ACL': self.acl} if self.acl else {}
-            self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file,
-                **kwargs)
-        else:
-            conn = self.connect_s3(self.access_key, self.secret_key)
-            bucket = conn.get_bucket(self.bucketname, validate=False)
-            key = bucket.new_key(self.keyname)
-            kwargs = {'policy': self.acl} if self.acl else {}
-            key.set_contents_from_file(file, **kwargs)
-            key.close()
+        kwargs = {'ACL': self.acl} if self.acl else {}
+        self.s3_client.put_object(
+            Bucket=self.bucketname, Key=self.keyname, Body=file,
+            **kwargs)
         file.close()
 
 
@@ -330,17 +319,25 @@ class FeedExporter:
         # Use `largs=log_args` to copy log_args into function's scope
         # instead of using `log_args` from the outer scope
         d.addCallback(
-            lambda _, largs=log_args: logger.info(
-                logfmt % "Stored", largs, extra={'spider': spider}
-            )
+            self._handle_store_success, log_args, logfmt, spider, type(slot.storage).__name__
         )
         d.addErrback(
-            lambda f, largs=log_args: logger.error(
-                logfmt % "Error storing", largs,
-                exc_info=failure_to_exc_info(f), extra={'spider': spider}
-            )
+            self._handle_store_error, log_args, logfmt, spider, type(slot.storage).__name__
         )
         return d
+
+    def _handle_store_error(self, f, largs, logfmt, spider, slot_type):
+        logger.error(
+            logfmt % "Error storing", largs,
+            exc_info=failure_to_exc_info(f), extra={'spider': spider}
+        )
+        self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
+
+    def _handle_store_success(self, f, largs, logfmt, spider, slot_type):
+        logger.info(
+            logfmt % "Stored", largs, extra={'spider': spider}
+        )
+        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
         """
@@ -360,6 +357,7 @@ class FeedExporter:
             fields_to_export=feed_options['fields'],
             encoding=feed_options['encoding'],
             indent=feed_options['indent'],
+            **feed_options['item_export_kwargs'],
         )
         slot = _FeedSlot(
             file=file,
@@ -462,7 +460,7 @@ class FeedExporter:
         crawler = getattr(self, 'crawler', None)
 
         def build_instance(builder, *preargs):
-            return build_storage(builder, uri, preargs=preargs)
+            return build_storage(builder, uri, feed_options=feed_options, preargs=preargs)
 
         if crawler and hasattr(feedcls, 'from_crawler'):
             instance = build_instance(feedcls.from_crawler, crawler)

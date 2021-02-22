@@ -73,7 +73,7 @@ class Follow(LeafResource):
         for nl in nlist:
             args[b"n"] = [to_bytes(str(nl))]
             argstr = urlencode(args, doseq=True)
-            s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
+            s += f"<a href='/follow?{argstr}'>follow {nl}</a><br>"
         s += """</body>"""
         request.write(to_bytes(s))
         request.finish()
@@ -91,7 +91,7 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request, n):
-        request.write(to_bytes("Response delayed for %0.3f seconds\n" % n))
+        request.write(to_bytes(f"Response delayed for {n:.3f} seconds\n"))
         request.finish()
 
 
@@ -310,8 +310,8 @@ if __name__ == "__main__":
         def print_listening():
             httpHost = httpPort.getHost()
             httpsHost = httpsPort.getHost()
-            httpAddress = "http://%s:%d" % (httpHost.host, httpHost.port)
-            httpsAddress = "https://%s:%d" % (httpsHost.host, httpsHost.port)
+            httpAddress = f'http://{httpHost.host}:{httpHost.port}'
+            httpsAddress = f'https://{httpsHost.host}:{httpsHost.port}'
             print(httpAddress)
             print(httpsAddress)
 
@@ -323,7 +323,7 @@ if __name__ == "__main__":
 
         def print_listening():
             host = listener.getHost()
-            print("%s:%s" % (host.host, host.port))
+            print(f"{host.host}:{host.port}")
 
     reactor.callWhenRunning(print_listening)
     reactor.run()

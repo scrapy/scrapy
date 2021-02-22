@@ -207,6 +207,11 @@ CookiesMiddleware
       a warning. Refer to :ref:`topics-logging-advanced-customization`
       to customize the logging behaviour.
 
+   .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+      :ref:`cookies-mw`. If you need to set cookies for a request, use the
+      :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+      current limitation that is being worked on.
+
 The following settings can be used to configure the cookie middleware:
 
 * :setting:`COOKIES_ENABLED`
@@ -684,11 +689,14 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
-   This middleware also supports decoding `brotli-compressed`_ responses,
-   provided `brotlipy`_ is installed.
+   This middleware also supports decoding `brotli-compressed`_ as well as
+   `zstd-compressed`_ responses, provided that `brotlipy`_ or `zstandard`_ is
+   installed, respectively.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
 .. _brotlipy: https://pypi.org/project/brotlipy/
+.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
+.. _zstandard: https://pypi.org/project/zstandard/
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
