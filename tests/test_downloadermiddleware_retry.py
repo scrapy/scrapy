@@ -357,7 +357,7 @@ class GetRetryRequestTest(unittest.TestCase):
             self.assertIsInstance(new_request, Request)
             self.assertNotEqual(new_request, request)
             self.assertEqual(new_request.dont_filter, True)
-            expected_retry_times = index+1
+            expected_retry_times = index + 1
             self.assertEqual(new_request.meta['retry_times'], expected_retry_times)
             self.assertEqual(new_request.priority, -expected_retry_times)
             expected_reason = "unspecified"
@@ -445,7 +445,7 @@ class GetRetryRequestTest(unittest.TestCase):
 
     def test_priority_adjust_argument(self):
         priority_adjust = 1
-        spider = self.get_spider({'RETRY_PRIORITY_ADJUST': priority_adjust+1})
+        spider = self.get_spider({'RETRY_PRIORITY_ADJUST': priority_adjust + 1})
         request = Request('https://example.com')
         new_request = get_retry_request(
             request,
@@ -458,7 +458,7 @@ class GetRetryRequestTest(unittest.TestCase):
         request = Request('https://example.com')
         spider = self.get_spider()
         with LogCapture(attributes=('spider',)) as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
             )
@@ -468,7 +468,7 @@ class GetRetryRequestTest(unittest.TestCase):
         request = Request('https://example.com')
         spider = self.get_spider()
         with LogCapture(attributes=('spider',)) as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
                 max_retry_times=0,
@@ -480,7 +480,7 @@ class GetRetryRequestTest(unittest.TestCase):
         spider = self.get_spider()
         expected_reason = 'because'
         with LogCapture() as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
@@ -503,7 +503,7 @@ class GetRetryRequestTest(unittest.TestCase):
         expected_reason = NotImplementedError()
         expected_reason_string = 'builtins.NotImplementedError'
         with LogCapture() as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
@@ -528,7 +528,7 @@ class GetRetryRequestTest(unittest.TestCase):
         expected_reason = NotImplementedError
         expected_reason_string = 'builtins.NotImplementedError'
         with LogCapture() as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
@@ -553,7 +553,7 @@ class GetRetryRequestTest(unittest.TestCase):
         expected_reason = IgnoreRequest()
         expected_reason_string = 'scrapy.exceptions.IgnoreRequest'
         with LogCapture() as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
@@ -578,7 +578,7 @@ class GetRetryRequestTest(unittest.TestCase):
         expected_reason = IgnoreRequest
         expected_reason_string = 'scrapy.exceptions.IgnoreRequest'
         with LogCapture() as log:
-            new_request = get_retry_request(
+            get_retry_request(
                 request,
                 spider=spider,
                 reason=expected_reason,
