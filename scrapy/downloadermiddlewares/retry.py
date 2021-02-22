@@ -10,6 +10,7 @@ Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
 import logging
+from inspect import isclass
 
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -81,8 +82,8 @@ def get_retry_request(
     retry_times = request.meta.get('retry_times', 0) + 1
     if max_retry_times is None:
         max_retry_times = request.meta.get('max_retry_times')
-    if max_retry_times is None:
-        max_retry_times = settings.getint('RETRY_TIMES')
+        if max_retry_times is None:
+            max_retry_times = settings.getint('RETRY_TIMES')
     if retry_times <= max_retry_times:
         logger.debug(
             "Retrying %(request)s (failed %(retry_times)d times): %(reason)s",
@@ -96,6 +97,8 @@ def get_retry_request(
             priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
         new_request.priority = request.priority + priority_adjust
 
+        if isclass(reason):
+            reason = reason()
         if isinstance(reason, Exception):
             reason = global_object_name(reason.__class__)
 
@@ -149,10 +152,12 @@ class RetryMiddleware:
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):
+        max_retry_times = request.meta.get('max_retry_times', self.max_retry_times)
+        priority_adjust = request.meta.get('priority_adjust', self.priority_adjust)
         return get_retry_request(
             request,
             reason=reason,
             spider=spider,
-            max_retry_times=self.max_retry_times,
-            priority_adjust=self.priority_adjust,
+            max_retry_times=max_retry_times,
+            priority_adjust=priority_adjust,
         )
