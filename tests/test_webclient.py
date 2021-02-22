@@ -4,7 +4,10 @@ Tests borrowed from the twisted.web.client tests.
 """
 import os
 import shutil
+import sys
+from pkg_resources import parse_version
 
+import cryptography
 import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
@@ -414,6 +417,8 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         ).addCallback(self.assertEqual, to_bytes(s))
 
     def testPayloadDisabledCipher(self):
+        if sys.implementation.name == "pypy" and parse_version(cryptography.__version__) <= parse_version("2.3.1"):
+            self.skipTest("This does work in PyPy with cryptography<=2.3.1")
         s = "0123456789" * 10
         settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'ECDHE-RSA-AES256-GCM-SHA384'})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
