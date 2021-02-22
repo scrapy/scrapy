@@ -75,61 +75,6 @@ def get_retry_request(
         return None
 
 
-def retry_request(
-    request,
-    *,
-    reason,
-    spider,
-    max_retry_times=None,
-    priority_adjust=None,
-):
-    new_request = get_retry_request(
-        request,
-        reason=reason,
-        spider=spider,
-        max_retry_times=max_retry_times,
-        priority_adjust=priority_adjust,
-    )
-    if new_request:
-        return [new_request]
-    return []
-
-
-class RetrySpiderMixin:
-
-    def get_retry_request(
-        self,
-        request,
-        *,
-        reason,
-        max_retry_times=None,
-        priority_adjust=None,
-    ):
-        return get_retry_request(
-            request,
-            reason=reason,
-            spider=self,
-            max_retry_times=max_retry_times,
-            priority_adjust=priority_adjust,
-        )
-
-    def retry_request(
-        self,
-        request,
-        *,
-        reason,
-        max_retry_times=None,
-        priority_adjust=None,
-    ):
-        return retry_request(
-            request,
-            reason=reason,
-            spider=self,
-            max_retry_times=max_retry_times,
-            priority_adjust=priority_adjust,
-        )
-
-
 class RetryMiddleware:
 
     # IOError is raised by the HttpCompression middleware when trying to
