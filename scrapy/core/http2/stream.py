@@ -431,7 +431,8 @@ class Stream:
             errors.insert(0, InactiveStreamClosed(self._request))
             self._deferred_response.errback(ResponseFailed(errors))
 
-        elif reason is StreamCloseReason.INVALID_HOSTNAME:
+        else:
+            assert reason is StreamCloseReason.INVALID_HOSTNAME
             self._deferred_response.errback(InvalidHostname(
                 self._request,
                 str(self._protocol.metadata['uri'].host, 'utf-8'),
