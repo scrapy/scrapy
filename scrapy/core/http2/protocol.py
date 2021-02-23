@@ -70,7 +70,7 @@ class MethodNotAllowed405(H2Error):
 class H2ClientProtocol(Protocol, TimeoutMixin):
     IDLE_TIMEOUT = 240
 
-    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
+    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Deferred) -> None:
         """
         Arguments:
             uri -- URI of the base url to which HTTP/2 Connection will be made.
@@ -308,8 +308,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         if not reason.check(connectionDone):
             self._conn_lost_errors.append(reason)
 
-        if self._conn_lost_deferred:
-            self._conn_lost_deferred.callback(self._conn_lost_errors)
+        self._conn_lost_deferred.callback(self._conn_lost_errors)
 
         for stream in self.streams.values():
             if stream.metadata['request_sent']:
@@ -407,7 +406,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
 @implementer(IProtocolNegotiationFactory)
 class H2ClientFactory(Factory):
-    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
+    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Deferred) -> None:
         self.uri = uri
         self.settings = settings
         self.conn_lost_deferred = conn_lost_deferred
