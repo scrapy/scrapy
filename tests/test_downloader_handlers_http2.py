@@ -73,6 +73,21 @@ class Https2TestCase(Https11TestCase):
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
         raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
 
+    def test_concurrent_requests_same_domain(self):
+        spider = Spider('foo')
+
+        request1 = Request(self.getURL('file'))
+        d1 = self.download_request(request1, spider)
+        d1.addCallback(lambda r: r.body)
+        d1.addCallback(self.assertEqual, b"0123456789")
+
+        request2 = Request(self.getURL('echo'), method='POST')
+        d2 = self.download_request(request2, spider)
+        d2.addCallback(lambda r: r.headers['Content-Length'])
+        d2.addCallback(self.assertEqual, b"79")
+
+        return defer.DeferredList([d1, d2])
+
 
 class Https2WrongHostnameTestCase(Https2TestCase):
     tls_log_message = (
