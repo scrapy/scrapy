@@ -5,6 +5,7 @@ For more information see docs/topics/architecture.rst
 
 """
 import logging
+from collections import deque
 from time import time
 
 from twisted.internet import defer, task
@@ -19,6 +20,11 @@ from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
 logger = logging.getLogger(__name__)
+
+
+# https://stackoverflow.com/a/50938015
+def _consume(iterator):
+    deque(iterator, maxlen=0)
 
 
 class Slot:
@@ -102,8 +108,7 @@ class ExecutionEngine:
             # Will also close downloader
             return self._close_all_spiders()
         else:
-            for _ in self.downloader.stop():
-                pass
+            _consume(self.downloader.stop())
             self.downloader.close()
             return defer.succeed(None)
 
