@@ -189,8 +189,14 @@ class Downloader:
 
         return dfd.addBoth(finish_transferring)
 
-    def close(self):
+    def stop(self):
         self._slot_gc_loop.stop()
+        for slot in self.slots.values():
+            while slot.queue:
+                request, _ = slot.queue.popleft()
+                yield request
+
+    def close(self):
         for slot in self.slots.values():
             slot.close()
 

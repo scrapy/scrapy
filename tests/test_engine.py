@@ -135,7 +135,7 @@ def start_test_site(debug=False):
 class CrawlerRun:
     """A class to run the crawler and keep track of events occurred"""
 
-    def __init__(self, spider_class):
+    def __init__(self, spider_class, paths=None):
         self.spider = None
         self.respplug = []
         self.reqplug = []
@@ -146,17 +146,17 @@ class CrawlerRun:
         self.bytes = defaultdict(lambda: list())
         self.signals_caught = {}
         self.spider_class = spider_class
+        default_paths = [
+            "/",
+            "/redirect",
+            "/redirect",  # duplicate
+            "/numbers",
+        ]
+        self.paths = paths or default_paths
 
     def run(self):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
-
-        start_urls = [
-            self.geturl("/"),
-            self.geturl("/redirect"),
-            self.geturl("/redirect"),  # duplicate
-            self.geturl("/numbers"),
-        ]
 
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
@@ -170,7 +170,7 @@ class CrawlerRun:
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.request_reached, signals.request_reached_downloader)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
-        self.crawler.crawl(start_urls=start_urls)
+        self.crawler.crawl(start_urls=[self.geturl(path) for path in self.paths])
         self.spider = self.crawler.spider
 
         self.deferred = defer.Deferred()
@@ -401,6 +401,39 @@ class EngineTest(unittest.TestCase):
         yield e.close()
         self.assertFalse(e.running)
         self.assertEqual(len(e.open_spiders), 0)
+
+    @defer.inlineCallbacks
+    def test_close_engine_dropped_requests(self):
+        """Test that when the engine is stopped while there is 1 request being
+        processed and other requests pending due to
+        CONCURRENT_REQUESTS_PER_DOMAIN, the pending request is processed but
+        the enqueued ones are dropped."""
+
+        # If this test fails, try increasing this value. We should aim for the
+        # lowest value that allows the test to consistently pass.
+        concurrency = 60
+
+        class DropRequestsSpider(TestSpider):
+            """Spider that targets a single domain, with high concurrency but no domain
+            concurrency, causing many requests for the same domain to be enqueued in
+            the downloader, even though only one of them can be downloaded at a
+            time."""
+            custom_settings = {
+                'CONCURRENT_REQUESTS': concurrency,
+                'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+            }
+            stopped = False
+
+            def parse(self, response):
+                if not self.stopped:
+                    self.crawler.stop()
+                    self.stopped = True
+
+        paths = ['/'] * concurrency
+        self.run = CrawlerRun(DropRequestsSpider, paths)
+        yield self.run.run()
+        stat = 'downloader/dropped_request_count'
+        self.assertGreater(self.run.crawler.stats.get_value(stat), 0)
 
 
 class StopDownloadEngineTest(EngineTest):

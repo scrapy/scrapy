@@ -308,6 +308,22 @@ class ExecutionEngine:
                     {'reason': reason},
                     extra={'spider': spider})
 
+        dropped_request_count = 0
+        for request in self.downloader.stop():
+            slot.remove_request(request)
+            dropped_request_count += 1
+        if dropped_request_count:
+            logger.info(
+                "Dropped %(dropped_request_count)s requests from the "
+                "downloader.",
+                {'dropped_request_count': dropped_request_count},
+                extra={'spider': spider},
+            )
+            self.crawler.stats.set_value(
+                'downloader/dropped_request_count',
+                dropped_request_count
+            )
+
         dfd = slot.close()
 
         def log_failure(msg):
