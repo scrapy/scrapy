@@ -102,7 +102,10 @@ class ExecutionEngine:
             # Will also close downloader
             return self._close_all_spiders()
         else:
-            return defer.succeed(self.downloader.close())
+            for _ in self.downloader.stop():
+                pass
+            self.downloader.close()
+            return defer.succeed(None)
 
     def pause(self):
         """Pause the execution engine"""
