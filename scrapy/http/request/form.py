@@ -115,7 +115,6 @@ def _get_form(response, formname, formid, formnumber, formxpath):
         else:
             return form
 
-
 def _get_inputs(form, formdata, dont_click, clickdata, response):
     try:
         formdata_keys = dict(formdata or ()).keys()
