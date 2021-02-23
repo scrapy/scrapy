@@ -94,20 +94,31 @@ class FilteringLinkExtractor:
     def _link_allowed(self, link):
         if not _is_valid_url(link.url):
             return False
-        if self.allow_res and not _matches(link.url, self.allow_res):
-            return False
-        if self.deny_res and _matches(link.url, self.deny_res):
+        if not self._check_link_res(link, self.allow_res, self.deny_res):
             return False
         parsed_url = urlparse(link.url)
-        if self.allow_domains and not url_is_from_any_domain(parsed_url, self.allow_domains):
-            return False
-        if self.deny_domains and url_is_from_any_domain(parsed_url, self.deny_domains):
+        if not self._check_link_domains(parsed_url, self.allow_domains, self.deny_domains):
             return False
         if self.deny_extensions and url_has_any_extension(parsed_url, self.deny_extensions):
             return False
         if self.restrict_text and not _matches(link.text, self.restrict_text):
             return False
         return True
+    
+    def _check_link_res(self, link, allow_res, deny_res):
+        if allow_res and not _matches(link.url, allow_res):
+            return False
+        if deny_res and _matches(link.url, deny_res):
+            return False
+        return True
+
+    def _check_link_domains(self, parsed_url, allow_domains, deny_domains):
+        if allow_domains and not url_is_from_any_domain(parsed_url, allow_domains):
+            return False
+        if deny_domains and url_is_from_any_domain(parsed_url, deny_domains):
+            return False
+        return True
+
 
     def matches(self, url):
 
