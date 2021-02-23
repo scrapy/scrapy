@@ -211,6 +211,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(object), [])
 
+        # GROUP 12 ADDED TEST CASE
+        self.assertRaises(TypeError, get_func_args, "")
+
         if platform.python_implementation() == 'CPython':
             # TODO: how do we fix this to return the actual argument names?
             self.assertEqual(get_func_args(str.split), [])
