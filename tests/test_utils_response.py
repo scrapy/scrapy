@@ -42,6 +42,24 @@ class ResponseUtilsTest(unittest.TestCase):
         resp = Response(url, body=body)
         self.assertRaises(TypeError, open_in_browser, resp, debug=True)
 
+
+    # GROUP 12 ADDED TEST CASE
+    def test_open_in_browser_custom(self):
+        url = "http:///www.example.com/some/page.html"
+        body = b"dummy dummy"
+
+        def browser_open(burl):
+            path = urlparse(burl).path
+            if not os.path.exists(path):
+                path = burl.replace('file://', '')
+            with open(path, "rb") as f:
+                bbody = f.read()
+                self.assertEqual(bbody, b"dummy dummy")
+            return True
+        response = TextResponse(url, body=body)
+        assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
+        
+
     def test_get_meta_refresh(self):
         r1 = HtmlResponse("http://www.example.com", body=b"""
         <html>
