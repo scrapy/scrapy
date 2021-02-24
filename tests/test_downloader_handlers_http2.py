@@ -111,7 +111,7 @@ class Https2TestCase(Https11TestCase):
     def test_custom_content_length_bad(self):
         request = Request(self.getURL('contentlength'))
         actual_content_length = str(len(request.body))
-        bad_content_length = str(len(request.body)+1)
+        bad_content_length = str(len(request.body) + 1)
         request.headers['Content-Length'] = bad_content_length
         log = LogCapture()
         d = self.download_request(request, Spider('foo'))
