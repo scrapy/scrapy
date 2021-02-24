@@ -220,11 +220,24 @@ class Stream:
                 (':path', path),
             ]
 
-        for name, value in self._request.headers.items():
-            headers.append((str(name, 'utf-8'), str(value[0], 'utf-8')))
+        content_length = str(len(self._request.body))
+        headers.append(('Content-Length', content_length))
 
-        if b'Content-Length' not in self._request.headers.keys():
-            headers.append(('Content-Length', str(len(self._request.body))))
+        content_length_name = self._request.headers.normkey(b'Content-Length')
+        for name, values in self._request.headers.items():
+            for value in values:
+                value = str(value, 'utf-8')
+                if name == content_length_name:
+                    if value != content_length:
+                        logger.warning(
+                            'Ignoring bad Content-Length header %r of request %r, '
+                            'sending %r instead',
+                            value,
+                            self._request,
+                            content_length,
+                        )
+                    continue
+                headers.append((str(name, 'utf-8'), value))
 
         return headers
 

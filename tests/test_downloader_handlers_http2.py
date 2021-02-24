@@ -1,6 +1,8 @@
+import json
 from unittest import mock
 
 from pytest import mark
+from testfixtures import LogCapture
 from twisted.internet import defer, error, reactor
 from twisted.trial import unittest
 from twisted.web import server
@@ -95,6 +97,50 @@ class Https2TestCase(Https11TestCase):
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEqual, b'')
+        return d
+
+    def test_custom_content_length_good(self):
+        request = Request(self.getURL('contentlength'))
+        custom_content_length = str(len(request.body))
+        request.headers['Content-Length'] = custom_content_length
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.text)
+        d.addCallback(self.assertEqual, custom_content_length)
+        return d
+
+    def test_custom_content_length_bad(self):
+        request = Request(self.getURL('contentlength'))
+        actual_content_length = str(len(request.body))
+        bad_content_length = str(len(request.body)+1)
+        request.headers['Content-Length'] = bad_content_length
+        log = LogCapture()
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.text)
+        d.addCallback(self.assertEqual, actual_content_length)
+        d.addCallback(
+            lambda _: log.check_present(
+                (
+                    'scrapy.core.http2.stream',
+                    'WARNING',
+                    f'Ignoring bad Content-Length header '
+                    f'{bad_content_length!r} of request {request}, sending '
+                    f'{actual_content_length!r} instead',
+                )
+            )
+        )
+        d.addCallback(
+            lambda _: log.uninstall()
+        )
+        return d
+
+    def test_duplicate_header(self):
+        request = Request(self.getURL('echo'))
+        header, value1, value2 = 'Custom-Header', 'foo', 'bar'
+        request.headers.appendlist(header, value1)
+        request.headers.appendlist(header, value2)
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: json.loads(r.text)['headers'][header])
+        d.addCallback(self.assertEqual, [value1, value2])
         return d
 
 
