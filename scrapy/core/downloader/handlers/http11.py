@@ -122,7 +122,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
-    _responseMatcher = re.compile(br'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,32})')
+    _responseMatcher = re.compile(br'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,64})')
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory, timeout=30, bindAddress=None):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
@@ -167,7 +167,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
                 extra = {'status': int(respm.group('status')),
                          'reason': respm.group('reason').strip()}
             else:
-                extra = rcvd_bytes[:32]
+                extra = rcvd_bytes[:64]
             self._tunnelReadyDeferred.errback(
                 TunnelError('Could not open CONNECT tunnel with proxy '
                             f'{self._host}:{self._port} [{extra!r}]')
