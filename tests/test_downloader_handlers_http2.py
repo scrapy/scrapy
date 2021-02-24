@@ -1,5 +1,6 @@
 from unittest import mock
 
+from pytest import mark
 from twisted.internet import defer, error, reactor
 from twisted.trial import unittest
 from twisted.web import server
@@ -87,6 +88,14 @@ class Https2TestCase(Https11TestCase):
         d2.addCallback(self.assertEqual, b"79")
 
         return defer.DeferredList([d1, d2])
+
+    @mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
+    def test_connect_request(self):
+        request = Request(self.getURL('file'), method='CONNECT')
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEqual, b'')
+        return d
 
 
 class Https2WrongHostnameTestCase(Https2TestCase):
