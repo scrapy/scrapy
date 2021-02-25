@@ -160,9 +160,10 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class GCSFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, project_id, acl):
+    def __init__(self, uri, project_id, acl, timeout):
         self.project_id = project_id
         self.acl = acl
+        self.timeout = timeout
         u = urlparse(uri)
         self.bucket_name = u.hostname
         self.blob_name = u.path[1:]  # remove first "/"
@@ -172,7 +173,8 @@ class GCSFeedStorage(BlockingFeedStorage):
         return cls(
             uri,
             crawler.settings['GCS_PROJECT_ID'],
-            crawler.settings['FEED_STORAGE_GCS_ACL'] or None
+            crawler.settings['FEED_STORAGE_GCS_ACL'] or None,
+            crawler.settings['FEED_STORAGE_TIMEOUT'] or 60
         )
 
     def _store_in_thread(self, file):
@@ -181,7 +183,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         client = Client(project=self.project_id)
         bucket = client.get_bucket(self.bucket_name)
         blob = bucket.blob(self.blob_name)
-        blob.upload_from_file(file, predefined_acl=self.acl)
+        blob.upload_from_file(file, predefined_acl=self.acl, timeout=self.timeout)
 
 
 class FTPFeedStorage(BlockingFeedStorage):

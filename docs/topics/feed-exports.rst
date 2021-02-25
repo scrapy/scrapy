@@ -217,10 +217,11 @@ The feeds are stored on `Google Cloud Storage`_.
 
 For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
 
-You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
+You can set a *Project ID*, *Access Control List (ACL)*, and the *Timeout* through the following settings:
 
  * :setting:`FEED_STORAGE_GCS_ACL`
  * :setting:`GCS_PROJECT_ID`
+ * :setting:`FEED_STORAGE_TIMEOUT`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -272,6 +273,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORAGES`
  * :setting:`FEED_STORAGE_FTP_ACTIVE`
  * :setting:`FEED_STORAGE_S3_ACL`
+ * :setting:`FEED_STORAGE_TIMEOUT`
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 

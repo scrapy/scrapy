@@ -421,11 +421,12 @@ class GCSFeedStorageTest(unittest.TestCase):
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
-        settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': 'publicRead'}
+        settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_GCS_ACL': 'publicRead', 'timeout': 60}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
         assert storage.project_id == '123'
         assert storage.acl == 'publicRead'
+        assert storage.timeout == 60
         assert storage.bucket_name == 'mybucket'
         assert storage.blob_name == 'export.csv'
 
@@ -444,6 +445,22 @@ class GCSFeedStorageTest(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
         assert storage.acl is None
+
+    def test_parse_empty_timeout(self):
+        try:
+            from google.cloud.storage import Client  # noqa
+        except ImportError:
+            raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
+
+        settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_TIMEOUT': ''}
+        crawler = get_crawler(settings_dict=settings)
+        storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
+        assert storage.acl == 60
+
+        settings = {'GCS_PROJECT_ID': '123', 'FEED_STORAGE_TIMEOUT': None}
+        crawler = get_crawler(settings_dict=settings)
+        storage = GCSFeedStorage.from_crawler(crawler, 'gs://mybucket/export.csv')
+        assert storage.acl == 60
 
     @defer.inlineCallbacks
     def test_store(self):
