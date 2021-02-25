@@ -385,6 +385,7 @@ class ScrapyAgent:
         headers_received_result = self._crawler.signals.send_catch_log(
             signal=signals.headers_received,
             headers=Headers(txresponse.headers.getAllRawHeaders()),
+            body_length=txresponse.length,
             request=request,
             spider=self._crawler.spider,
         )

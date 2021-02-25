@@ -409,13 +409,13 @@ class HeadersReceivedCallbackSpider(MetaSpider):
     def errback(self, failure):
         self.meta["failure"] = failure
 
-    def headers_received(self, headers, request, spider):
+    def headers_received(self, headers, body_length, request, spider):
         self.meta["headers_received"] = headers
         raise StopDownload(fail=False)
 
 
 class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
 
-    def headers_received(self, headers, request, spider):
+    def headers_received(self, headers, body_length, request, spider):
         self.meta["headers_received"] = headers
         raise StopDownload(fail=True)

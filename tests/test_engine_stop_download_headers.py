@@ -14,8 +14,8 @@ from tests.test_engine import (
 
 
 class HeadersReceivedCrawlerRun(CrawlerRun):
-    def headers_received(self, headers, request, spider):
-        super().headers_received(headers, request, spider)
+    def headers_received(self, headers, body_length, request, spider):
+        super().headers_received(headers, body_length, request, spider)
         raise StopDownload(fail=False)
 
 

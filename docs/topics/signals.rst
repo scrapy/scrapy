@@ -421,6 +421,9 @@ headers_received
     :param headers: the headers received by the download handler
     :type headers: :class:`scrapy.http.headers.Headers` object
 
+    :param body_length: expected size of the response body, in bytes
+    :type body_length: `int`
+
     :param request: the request that generated the download
     :type request: :class:`~scrapy.http.Request` object
 

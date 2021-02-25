@@ -198,7 +198,7 @@ class CrawlerRun:
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
 
-    def headers_received(self, headers, request, spider):
+    def headers_received(self, headers, body_length, request, spider):
         self.headers[request] = headers
 
     def bytes_received(self, data, request, spider):
