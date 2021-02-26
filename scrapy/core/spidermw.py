@@ -10,6 +10,7 @@ from twisted.python.failure import Failure
 
 from scrapy.exceptions import _InvalidOutput
 from scrapy.middleware import MiddlewareManager
+from scrapy.utils.asyncgen import _process_iterable_universal
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.python import MutableAsyncChain, MutableChain
@@ -57,31 +58,18 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return scrape_func(response, request, spider)
 
     def _evaluate_iterable(self, response, spider, iterable, exception_processor_index, recover_to):
-        def _process_exception(ex):
-            exception_result = self._process_spider_exception(response, spider, Failure(ex),
-                                                              exception_processor_index)
-            if isinstance(exception_result, Failure):
-                raise  # pylint: disable=E0704
-            recover_to.extend(exception_result)
-
-        def _evaluate_normal_iterable(iterable):
-            try:
-                for r in iterable:
-                    yield r
-            except Exception as ex:
-                _process_exception(ex)
-
+        @_process_iterable_universal
         async def _evaluate_async_iterable(iterable):
             try:
                 async for r in iterable:
                     yield r
             except Exception as ex:
-                _process_exception(ex)
-
-        if inspect.isasyncgen(iterable):
-            return _evaluate_async_iterable(iterable)
-        else:
-            return _evaluate_normal_iterable(iterable)
+                exception_result = self._process_spider_exception(response, spider, Failure(ex),
+                                                                  exception_processor_index)
+                if isinstance(exception_result, Failure):
+                    raise
+                recover_to.extend(exception_result)
+        return _evaluate_async_iterable(iterable)
 
     def _process_spider_exception(self, response, spider, _failure, start_index=0):
         exception = _failure.value

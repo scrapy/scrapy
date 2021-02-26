@@ -7,6 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 import logging
 
 from scrapy.http import Request
+from scrapy.utils.asyncgen import _process_iterable_universal
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +50,15 @@ class DepthMiddleware:
                                          spider=spider)
             return True
 
-        # base case (depth=0)
-        if 'depth' not in response.meta:
-            response.meta['depth'] = 0
-            if self.verbose_stats:
-                self.stats.inc_value('request_depth_count/0', spider=spider)
+        @_process_iterable_universal
+        async def process(result):
+            # base case (depth=0)
+            if 'depth' not in response.meta:
+                response.meta['depth'] = 0
+                if self.verbose_stats:
+                    self.stats.inc_value('request_depth_count/0', spider=spider)
 
-        return (r for r in result or () if _filter(r))
+            async for r in result or ():
+                if _filter(r):
+                    yield r
+        return process(result)

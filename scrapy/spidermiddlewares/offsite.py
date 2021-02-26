@@ -9,6 +9,7 @@ import warnings
 
 from scrapy import signals
 from scrapy.http import Request
+from scrapy.utils.asyncgen import _process_iterable_universal
 from scrapy.utils.httpobj import urlparse_cached
 
 logger = logging.getLogger(__name__)
@@ -26,21 +27,24 @@ class OffsiteMiddleware:
         return o
 
     def process_spider_output(self, response, result, spider):
-        for x in result:
-            if isinstance(x, Request):
-                if x.dont_filter or self.should_follow(x, spider):
-                    yield x
+        @_process_iterable_universal
+        async def process(result):
+            async for x in result:
+                if isinstance(x, Request):
+                    if x.dont_filter or self.should_follow(x, spider):
+                        yield x
+                    else:
+                        domain = urlparse_cached(x).hostname
+                        if domain and domain not in self.domains_seen:
+                            self.domains_seen.add(domain)
+                            logger.debug(
+                                "Filtered offsite request to %(domain)r: %(request)s",
+                                {'domain': domain, 'request': x}, extra={'spider': spider})
+                            self.stats.inc_value('offsite/domains', spider=spider)
+                        self.stats.inc_value('offsite/filtered', spider=spider)
                 else:
-                    domain = urlparse_cached(x).hostname
-                    if domain and domain not in self.domains_seen:
-                        self.domains_seen.add(domain)
-                        logger.debug(
-                            "Filtered offsite request to %(domain)r: %(request)s",
-                            {'domain': domain, 'request': x}, extra={'spider': spider})
-                        self.stats.inc_value('offsite/domains', spider=spider)
-                    self.stats.inc_value('offsite/filtered', spider=spider)
-            else:
-                yield x
+                    yield x
+        return process(result)
 
     def should_follow(self, request, spider):
         regex = self.host_regex

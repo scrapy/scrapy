@@ -8,6 +8,7 @@ import logging
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncgen import _process_iterable_universal
 
 logger = logging.getLogger(__name__)
 
@@ -34,4 +35,10 @@ class UrlLengthMiddleware:
             else:
                 return True
 
-        return (r for r in result or () if _filter(r))
+        @_process_iterable_universal
+        async def process(result):
+            async for r in result or ():
+                if _filter(r):
+                    yield r
+
+        return process(result)
