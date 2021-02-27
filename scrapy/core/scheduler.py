@@ -36,10 +36,12 @@ class Scheduler:
     Also, it handles dupefilters.
     """
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None, crawler=None):
+                 logunser=False, stats=None, pqclass=None, tspqclass=None,
+                 crawler=None):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
+        self.tspqclass = tspqclass
         self.dqclass = dqclass
         self.mqclass = mqclass
         self.logunser = logunser
@@ -52,12 +54,13 @@ class Scheduler:
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
+        tspqclass = load_object(settings['SCHEDULER_TIMESTAMP_PRIORITY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
-                   stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
-                   mqclass=mqclass, crawler=crawler)
+                   stats=crawler.stats, pqclass=pqclass, tspqclass=tspqclass,
+                   dqclass=dqclass, mqclass=mqclass, crawler=crawler)
 
     def has_pending_requests(self):
         return len(self) > 0
@@ -66,6 +69,7 @@ class Scheduler:
         self.spider = spider
         self.mqs = self._mq()
         self.dqs = self._dq() if self.dqdir else None
+        self.tspqs = self._tspq()
         return self.df.open()
 
     def close(self, reason):
@@ -78,6 +82,11 @@ class Scheduler:
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
+        if request.meta.get('per_request_delay'):
+            self._tspqpush(request)
+            self.stats.inc_value('scheduler/enqueued/ts_memory', spider=self.spider)
+            self.stats.inc_value('scheduler/enqueued', spider=self.spider)
+            return True
         dqok = self._dqpush(request)
         if dqok:
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
@@ -88,7 +97,13 @@ class Scheduler:
         return True
 
     def next_request(self):
-        request = self.mqs.pop()
+        delayed_request = self.tspqs.pop()
+        if delayed_request:
+            self.stats.inc_value('scheduler/dequeued/timestamp_memory', spider=self.spider)
+            self.stats.inc_value('scheduler/dequeued', spider=self.spider)
+            return delayed_request
+
+        request = self.mqsmqs.pop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
         else:
@@ -100,7 +115,7 @@ class Scheduler:
         return request
 
     def __len__(self):
-        return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
+        return len(self.dqs) + len(self.mqs) + len(self.tspqs) if self.dqs else len(self.mqs) + len(self.tspqs)
 
     def _dqpush(self, request):
         if self.dqs is None:
@@ -123,6 +138,9 @@ class Scheduler:
 
     def _mqpush(self, request):
         self.mqs.push(request)
+
+    def _tspqpush(self, request):
+        self.tspqs.push(request)
 
     def _dqpop(self):
         if self.dqs:
@@ -149,6 +167,14 @@ class Scheduler:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})
         return q
+
+    def _tspq(self):
+        """ Create a new timestamp priority queue instance, with in-memory storage """
+        return create_instance(self.tspqclass,
+                               settings=None,
+                               crawler=self.crawler,
+                               downstream_queue_cls=self.mqclass,
+                               key='')
 
     def _dqdir(self, jobdir):
         """ Return a folder name to keep disk queue state at """

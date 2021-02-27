@@ -1,5 +1,6 @@
 import hashlib
 import logging
+from datetime import datetime
 
 from scrapy.utils.misc import create_instance
 
@@ -108,6 +109,22 @@ class ScrapyPriorityQueue:
 
     def __len__(self):
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
+
+
+class ScrapyTimestampPriorityQueue(ScrapyPriorityQueue):
+
+    def priority(self, request):
+        now = datetime.now().timestamp()
+        per_request_delay = request.mata.get('per_request_delay', 0)
+        return now + per_request_delay
+
+    def pop(self):
+        if self.curprio is None:
+            return
+
+        if datetime.now().timestamp() < self.curprio:
+            return
+        return super().pop()
 
 
 class DownloaderInterface:
