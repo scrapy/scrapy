@@ -115,7 +115,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
             self.scheduler.enqueue_request(Request(url))
 
         for url in _DELAYED_URLS:
-            self.scheduler.enqueue_request(Request(url, meta={'per_request_delay': 10}))
+            self.scheduler.enqueue_request(Request(url, meta={'request_delay': 10}))
 
         self.assertTrue(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), len(_URLS) + len(_DELAYED_URLS))
@@ -147,7 +147,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
 
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 19, 47)) as frozen_datetime:
             for url, per_request_delay in _DELAYED_REQUESTS_DELAYS:
-                self.scheduler.enqueue_request(Request(url, meta={'per_request_delay': per_request_delay}))
+                self.scheduler.enqueue_request(Request(url, meta={'request_delay': per_request_delay}))
             priorities = list()
             while self.scheduler.has_pending_requests():
                 request = self.scheduler.next_request()

@@ -111,11 +111,11 @@ class ScrapyPriorityQueue:
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
 
 
-class ScrapyTimestampPriorityQueue(ScrapyPriorityQueue):
+class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
 
     def priority(self, request):
         now = int(datetime.now().timestamp())
-        per_request_delay = request.meta.get('per_request_delay', 0)
+        per_request_delay = request.meta.get('request_delay', 0)
         return now + per_request_delay
 
     def pop(self):

@@ -36,12 +36,12 @@ class Scheduler:
     Also, it handles dupefilters.
     """
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None, tspqclass=None,
+                 logunser=False, stats=None, pqclass=None, dpqclass=None,
                  crawler=None):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
-        self.tspqclass = tspqclass
+        self.dpqclass = dpqclass
         self.dqclass = dqclass
         self.mqclass = mqclass
         self.logunser = logunser
@@ -54,12 +54,12 @@ class Scheduler:
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
-        tspqclass = load_object(settings['SCHEDULER_TIMESTAMP_PRIORITY_QUEUE'])
+        dpqclass = load_object(settings['SCHEDULER_DELAYED_REQUESTS_PRIORITY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
-                   stats=crawler.stats, pqclass=pqclass, tspqclass=tspqclass,
+                   stats=crawler.stats, pqclass=pqclass, dpqclass=dpqclass,
                    dqclass=dqclass, mqclass=mqclass, crawler=crawler)
 
     def has_pending_requests(self):
@@ -69,7 +69,7 @@ class Scheduler:
         self.spider = spider
         self.mqs = self._mq()
         self.dqs = self._dq() if self.dqdir else None
-        self.tspqs = self._tspq()
+        self.dpqs = self._dpq()
         return self.df.open()
 
     def close(self, reason):
@@ -82,9 +82,9 @@ class Scheduler:
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
-        if request.meta.get('per_request_delay'):
-            self._tspqpush(request)
-            self.stats.inc_value('scheduler/enqueued/ts_memory', spider=self.spider)
+        if request.meta.get('request_delay'):
+            self._dpqpush(request)
+            self.stats.inc_value('scheduler/enqueued/delayed/memory', spider=self.spider)
             self.stats.inc_value('scheduler/enqueued', spider=self.spider)
             return True
         dqok = self._dqpush(request)
@@ -97,9 +97,9 @@ class Scheduler:
         return True
 
     def next_request(self):
-        delayed_request = self.tspqs.pop()
+        delayed_request = self.dpqs.pop()
         if delayed_request:
-            self.stats.inc_value('scheduler/dequeued/timestamp_memory', spider=self.spider)
+            self.stats.inc_value('scheduler/dequeued/delayed/memory', spider=self.spider)
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
             return delayed_request
 
@@ -115,7 +115,7 @@ class Scheduler:
         return request
 
     def __len__(self):
-        return len(self.dqs) + len(self.mqs) + len(self.tspqs) if self.dqs else len(self.mqs) + len(self.tspqs)
+        return len(self.dqs) + len(self.mqs) + len(self.dpqs) if self.dqs else len(self.mqs) + len(self.dpqs)
 
     def _dqpush(self, request):
         if self.dqs is None:
@@ -139,8 +139,8 @@ class Scheduler:
     def _mqpush(self, request):
         self.mqs.push(request)
 
-    def _tspqpush(self, request):
-        self.tspqs.push(request)
+    def _dpqpush(self, request):
+        self.dpqs.push(request)
 
     def _dqpop(self):
         if self.dqs:
@@ -168,9 +168,9 @@ class Scheduler:
                         {'queuesize': len(q)}, extra={'spider': self.spider})
         return q
 
-    def _tspq(self):
-        """ Create a new timestamp priority queue instance, with in-memory storage """
-        return create_instance(self.tspqclass,
+    def _dpq(self):
+        """ Create a new delayed requests priority queue instance, with in-memory storage """
+        return create_instance(self.dpqclass,
                                settings=None,
                                crawler=self.crawler,
                                downstream_queue_cls=self.mqclass,
