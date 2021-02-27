@@ -114,14 +114,13 @@ class ScrapyPriorityQueue:
 class ScrapyTimestampPriorityQueue(ScrapyPriorityQueue):
 
     def priority(self, request):
-        now = datetime.now().timestamp()
+        now = int(datetime.now().timestamp())
         per_request_delay = request.meta.get('per_request_delay', 0)
         return now + per_request_delay
 
     def pop(self):
         if self.curprio is None:
             return
-
         if datetime.now().timestamp() < self.curprio:
             return
         return super().pop()

@@ -1,6 +1,7 @@
 # Tests requirements
 attrs
 dataclasses; python_version == '3.6'
+freezegun
 pyftpdlib
 pytest
 pytest-cov

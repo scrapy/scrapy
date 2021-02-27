@@ -1,7 +1,9 @@
+import datetime
 import shutil
 import tempfile
 import unittest
 import collections
+from freezegun import freeze_time
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -85,8 +87,13 @@ _PRIORITIES = [("http://foo.com/a", -2),
                ("http://foo.com/c", 0),
                ("http://foo.com/e", 2)]
 
+_DELAYED_REQUESTS_DELAYS = [("http://foo.com/f", 10),
+                            ("http://foo.com/g", 20)]
+
 
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
+
+_DELAYED_URLS = {"http://foo.com/d", "http://foo.com/e"}
 
 
 class BaseSchedulerInMemoryTester(SchedulerHandler):
@@ -99,6 +106,19 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
 
         self.assertTrue(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), len(_URLS))
+
+    def test_length_of_delayed_requests(self):
+        self.assertFalse(self.scheduler.has_pending_requests())
+        self.assertEqual(len(self.scheduler), 0)
+
+        for url in _URLS:
+            self.scheduler.enqueue_request(Request(url))
+
+        for url in _DELAYED_URLS:
+            self.scheduler.enqueue_request(Request(url, meta={'per_request_delay': 10}))
+
+        self.assertTrue(self.scheduler.has_pending_requests())
+        self.assertEqual(len(self.scheduler), len(_URLS) + len(_DELAYED_URLS))
 
     def test_dequeue(self):
         for url in _URLS:
@@ -121,6 +141,28 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(priorities,
                          sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
+    def test_dequeue_of_delayed_requests(self):
+        for url, priority in _PRIORITIES:
+            self.scheduler.enqueue_request(Request(url, priority=priority))
+
+        with freeze_time(datetime.datetime(2021, 2, 27, 17, 19, 47)) as frozen_datetime:
+            for url, per_request_delay in _DELAYED_REQUESTS_DELAYS:
+                self.scheduler.enqueue_request(Request(url, meta={'per_request_delay': per_request_delay}))
+            priorities = list()
+            while self.scheduler.has_pending_requests():
+                request = self.scheduler.next_request()
+                if request:
+                    priorities.append(request.url)
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=5))
+
+        self.assertEqual(priorities,
+                         ['http://foo.com/e',
+                          'http://foo.com/d',
+                          'http://foo.com/f',
+                          'http://foo.com/c',
+                          'http://foo.com/g',
+                          'http://foo.com/b',
+                          'http://foo.com/a'])
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
 
