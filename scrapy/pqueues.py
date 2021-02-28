@@ -112,6 +112,13 @@ class ScrapyPriorityQueue:
 
 
 class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
+    """This priority queue has the similar implementation as default ScrapyPriorityQueue
+    but it uses timestamps as priority. It allows to easily add per request delays and
+    doesn't touch the default queue.
+    If this priority queue doesn't contain any requests to process or the current time is less than
+    the next time when request should be processed it returns None and request from the main priority queue
+    will be taken.
+    """
 
     def priority(self, request):
         now = int(datetime.now().timestamp())
