@@ -187,6 +187,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
                           'http://foo.com/e',
                           'http://foo.com/a'])
 
+
 class BaseSchedulerOnDiskTester(SchedulerHandler):
 
     def setUp(self):
