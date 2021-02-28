@@ -87,12 +87,17 @@ _PRIORITIES = [("http://foo.com/a", -2),
                ("http://foo.com/c", 0),
                ("http://foo.com/e", 2)]
 
-_DELAYED_REQUESTS_DELAYS = [("http://foo.com/f", 10),
-                            ("http://foo.com/g", 20)]
+_REQUESTS_WITH_DELAY = [("http://foo.com/f", 10),
+                        ("http://foo.com/g", 20)]
+
+_REQUESTS_WITH_DELAY_TO_SORT = [("http://foo.com/a", 120),
+                                ("http://foo.com/d", 30),
+                                ("http://foo.com/b", 60),
+                                ("http://foo.com/c", 10),
+                                ("http://foo.com/e", 100)]
 
 
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
-
 _DELAYED_URLS = {"http://foo.com/d", "http://foo.com/e"}
 
 
@@ -141,12 +146,12 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         self.assertEqual(priorities,
                          sorted([x[1] for x in _PRIORITIES], key=lambda x: -x))
 
-    def test_dequeue_of_delayed_requests(self):
+    def test_dequeue_with_delayed_requests(self):
         for url, priority in _PRIORITIES:
             self.scheduler.enqueue_request(Request(url, priority=priority))
 
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 19, 47)) as frozen_datetime:
-            for url, per_request_delay in _DELAYED_REQUESTS_DELAYS:
+            for url, per_request_delay in _REQUESTS_WITH_DELAY:
                 self.scheduler.enqueue_request(Request(url, meta={'request_delay': per_request_delay}))
             priorities = list()
             while self.scheduler.has_pending_requests():
@@ -162,6 +167,24 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
                           'http://foo.com/c',
                           'http://foo.com/g',
                           'http://foo.com/b',
+                          'http://foo.com/a'])
+
+    def test_dequeue_with_delayed_requests_only(self):
+        with freeze_time(datetime.datetime(2021, 2, 27, 17, 19, 47)) as frozen_datetime:
+            for url, per_request_delay in _REQUESTS_WITH_DELAY_TO_SORT:
+                self.scheduler.enqueue_request(Request(url, meta={'request_delay': per_request_delay}))
+            priorities = list()
+            while self.scheduler.has_pending_requests():
+                request = self.scheduler.next_request()
+                if request:
+                    priorities.append(request.url)
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=20))
+
+        self.assertEqual(priorities,
+                         ['http://foo.com/c',
+                          'http://foo.com/d',
+                          'http://foo.com/b',
+                          'http://foo.com/e',
                           'http://foo.com/a'])
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
