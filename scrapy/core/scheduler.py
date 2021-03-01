@@ -36,8 +36,8 @@ class Scheduler:
     Also, it handles dupefilters.
     """
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None, dpqclass=None,
-                 crawler=None):
+                 logunser=False, stats=None, pqclass=None, crawler=None,
+                 dpqclass=None):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
@@ -59,8 +59,8 @@ class Scheduler:
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
-                   stats=crawler.stats, pqclass=pqclass, dpqclass=dpqclass,
-                   dqclass=dqclass, mqclass=mqclass, crawler=crawler)
+                   stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
+                   mqclass=mqclass, crawler=crawler, dpqclass=dpqclass)
 
     def has_pending_requests(self):
         return len(self) > 0
