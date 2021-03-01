@@ -422,6 +422,14 @@ class FormRequestTest(RequestTest):
         self.assertQueryEqual(r2.body, b'price=%A3+100&%C2+one=two')
         self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
 
+    def test_variable_type_data(self):
+        data = {b'one': 2, 'price': 100.0}
+        r2 = self.request_class("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertQueryEqual(r2.body, b'price=100.0&one=2')
+        self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
+
     def test_custom_encoding_bytes(self):
         data = {b'\xb5 one': b'two', b'price': b'\xa3 100'}
         r2 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
