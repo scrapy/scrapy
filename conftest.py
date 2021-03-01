@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from scrapy.utils.reactor import install_reactor
+
 from tests.keys import generate_keys
 
 
@@ -40,6 +42,14 @@ def pytest_collection_modifyitems(session, config, items):
         pass
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--reactor",
+        default="default",
+        choices=["default", "asyncio"],
+    )
+
+
 @pytest.fixture(scope='class')
 def reactor_pytest(request):
     if not request.cls:
@@ -53,6 +63,11 @@ def reactor_pytest(request):
 def only_asyncio(request, reactor_pytest):
     if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
         pytest.skip('This test is only run with --reactor=asyncio')
+
+
+def pytest_configure(config):
+    if config.getoption("--reactor") == "asyncio":
+        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
 
 # Generate localhost certificate files, needed by some tests
