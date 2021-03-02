@@ -81,5 +81,6 @@ follow links, any custom spider you write will probably do more stuff which
 results in slower crawl rates. How slower depends on how much your spider does
 and how well it's written.
 
-To use it as a project for more complex Scrapy benchmarking:
-https://github.com/scrapy/scrapy-bench
+.. _scrapy-bench: https://github.com/scrapy/scrapy-bench
+
+Use scrapy-bench_ for more complex benchmarking.
