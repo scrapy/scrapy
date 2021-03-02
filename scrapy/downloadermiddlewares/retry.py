@@ -29,7 +29,8 @@ from scrapy.utils.response import response_status_message
 from scrapy.core.downloader.handlers.http11 import TunnelError
 from scrapy.utils.python import global_object_name
 
-logger = logging.getLogger(__name__)
+
+retry_logger = logging.getLogger(__name__)
 
 
 def get_retry_request(
@@ -39,6 +40,8 @@ def get_retry_request(
     reason='unspecified',
     max_retry_times=None,
     priority_adjust=None,
+    logger=retry_logger,
+    stats_base_key='retry',
 ):
     """
     Returns a new :class:`~scrapy.Request` object to retry the specified
@@ -76,6 +79,11 @@ def get_retry_request(
     *priority_adjust* is a number that determines how the priority of the new
     request changes in relation to *request*. If not specified, the number is
     read from the :setting:`RETRY_PRIORITY_ADJUST` setting.
+
+    *logger* is the logging.Logger object to be used when logging messages
+
+    *stats_base_key* is a string to be used as the base key for the
+    retry-related job stats
     """
     settings = spider.crawler.settings
     stats = spider.crawler.stats
@@ -102,11 +110,11 @@ def get_retry_request(
         if isinstance(reason, Exception):
             reason = global_object_name(reason.__class__)
 
-        stats.inc_value('retry/count')
-        stats.inc_value(f'retry/reason_count/{reason}')
+        stats.inc_value(f'{stats_base_key}/count')
+        stats.inc_value(f'{stats_base_key}/reason_count/{reason}')
         return new_request
     else:
-        stats.inc_value('retry/max_reached')
+        stats.inc_value(f'{stats_base_key}/max_reached')
         logger.error(
             "Gave up retrying %(request)s (failed %(retry_times)d times): "
             "%(reason)s",
