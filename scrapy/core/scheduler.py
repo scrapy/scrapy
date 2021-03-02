@@ -102,7 +102,6 @@ class Scheduler:
             self.stats.inc_value('scheduler/dequeued/delayed/memory', spider=self.spider)
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
             return delayed_request
-
         request = self.mqs.pop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
