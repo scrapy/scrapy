@@ -9,6 +9,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import os
+import time
 import sys
 from datetime import datetime
 from os import path
@@ -49,7 +51,10 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Scrapy'
-copyright = f'2008–{datetime.now().year}, Scrapy developers'
+build_date = datetime.utcfromtimestamp(
+    int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
+)
+copyright = f'2008\u2013{build_date.year}, Scrapy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
