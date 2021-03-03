@@ -118,7 +118,6 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
 
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
-
         for url in _DELAYED_URLS:
             self.scheduler.enqueue_request(Request(url, meta={'request_delay': 10}))
 
