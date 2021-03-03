@@ -1,4 +1,7 @@
+import logging
 import unittest
+
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.error import (
     ConnectError,
@@ -9,16 +12,11 @@ from twisted.internet.error import (
 )
 from twisted.web.client import ResponseFailed
 
-from scrapy.downloadermiddlewares.retry import (
-    get_retry_request,
-    RetryMiddleware,
-)
+from scrapy.downloadermiddlewares.retry import get_retry_request, RetryMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-
-from testfixtures import LogCapture
 
 
 class RetryTest(unittest.TestCase):
@@ -596,6 +594,40 @@ class GetRetryRequestTest(unittest.TestCase):
                 f"{expected_reason}",
             )
         )
+
+    def test_custom_logger(self):
+        logger = logging.getLogger("custom-logger")
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        expected_reason = "because"
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+                reason=expected_reason,
+                logger=logger,
+            )
+        log.check_present(
+            (
+                "custom-logger",
+                "DEBUG",
+                f"Retrying {request} (failed 1 times): {expected_reason}",
+            )
+        )
+
+    def test_custom_stats_key(self):
+        request = Request("https://example.com")
+        spider = self.get_spider()
+        expected_reason = "because"
+        stats_key = "custom_retry"
+        get_retry_request(
+            request,
+            spider=spider,
+            reason=expected_reason,
+            stats_base_key=stats_key,
+        )
+        for stat in (f"{stats_key}/count", f"{stats_key}/reason_count/{expected_reason}"):
+            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
 
 
 if __name__ == "__main__":
