@@ -17,6 +17,8 @@ from threading import Timer
 from unittest import skipIf
 
 from pytest import mark
+from twisted import version as twisted_version
+from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
@@ -630,6 +632,7 @@ class MySpider(scrapy.Spider):
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    @mark.skipif(twisted_version == Version('twisted', 21, 2, 0), reason='https://twistedmatrix.com/trac/ticket/10106')
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s',
