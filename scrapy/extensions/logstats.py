@@ -31,14 +31,13 @@ class LogStats:
         self.pagesprev = 0
         self.itemsprev = 0
         self.bandwidthprev = 0.0
-        
         self.task = task.LoopingCall(self.log, spider)
         self.task.start(self.interval)
 
     def log(self, spider):
         items = self.stats.get_value('item_scraped_count', 0)
         pages = self.stats.get_value('response_received_count', 0)
-        bandwidth = self.stats.get_value('downloader/response_bytes', 0)/float(1000)
+        bandwidth = self.stats.get_value('downloader/response_bytes', 0) / float(1000)
         irate = (items - self.itemsprev) * self.multiplier
         prate = (pages - self.pagesprev) * self.multiplier
         brate = (bandwidth - self.bandwidthprev)
