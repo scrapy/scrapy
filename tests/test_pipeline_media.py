@@ -9,12 +9,21 @@ from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.request import request_fingerprint
-from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy import signals
+
+
+try:
+    from PIL import Image
+except ImportError:
+    ImagesPipeline = object
+    skip_pillow = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+else:
+    from scrapy.pipelines.images import ImagesPipeline
+    skip_pillow = None
 
 
 def _mocked_download_func(request, info):
@@ -379,6 +388,7 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
 
 class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
+    skip = skip_pillow
 
     def setUp(self):
         self.pipe = MockedMediaPipelineDeprecatedMethods(store_uri='store-uri', download_func=_mocked_download_func)

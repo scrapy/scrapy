@@ -22,17 +22,18 @@ except ImportError:
     dataclass_field = None
 
 
-skip = None
 try:
     from PIL import Image
 except ImportError:
-    skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
     ImagesPipeline = object
+    skip_pillow = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
     from scrapy.pipelines.images import ImagesPipeline
     encoders = {'jpeg_encoder', 'jpeg_decoder'}
     if not encoders.issubset(set(Image.core.__dict__)):
-        skip = 'Missing JPEG encoders'
+        skip_pillow = 'Missing JPEG encoders'
+    else:
+        skip_pillow = None
 
 
 def _mocked_download_func(request, info):
@@ -42,7 +43,7 @@ def _mocked_download_func(request, info):
 
 class ImagesPipelineTestCase(unittest.TestCase):
 
-    skip = skip
+    skip = skip_pillow
 
     def setUp(self):
         self.tempdir = mkdtemp()
@@ -138,6 +139,8 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
 class ImagesPipelineTestCaseFieldsMixin:
 
+    skip = skip_pillow
+
     def test_item_fields_default(self):
         url = 'http://www.example.com/images/1.jpg'
         item = self.item_class(name='item1', image_urls=[url])
@@ -222,6 +225,9 @@ class ImagesPipelineTestCaseFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin, u
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
+
+    skip = skip_pillow
+
     img_cls_attribute_names = [
         # Pipeline attribute names with corresponding setting names.
         ("EXPIRES", "IMAGES_EXPIRES"),
