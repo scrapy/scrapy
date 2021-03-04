@@ -11,7 +11,6 @@ from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
@@ -28,7 +27,9 @@ try:
     from PIL import Image
 except ImportError:
     skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+    ImagesPipeline = object
 else:
+    from scrapy.pipelines.images import ImagesPipeline
     encoders = {'jpeg_encoder', 'jpeg_decoder'}
     if not encoders.issubset(set(Image.core.__dict__)):
         skip = 'Missing JPEG encoders'
