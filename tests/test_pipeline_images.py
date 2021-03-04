@@ -23,7 +23,7 @@ except ImportError:
     dataclass_field = None
 
 
-skip = False
+skip = None
 try:
     from PIL import Image
 except ImportError:
