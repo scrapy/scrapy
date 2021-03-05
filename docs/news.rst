@@ -3,6 +3,85 @@
 Release notes
 =============
 
+.. _release-2.5.0:
+
+Scrapy 2.5.0 (2021-03-NN)
+-------------------------
+
+Highlights:
+
+-   New :class:`Response.protocol <scrapy.http.Response.protocol>` attribute
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed all code that :ref:`was deprecated in 1.7.0 <1.7-deprecations>` and
+    had not :ref:`already been removed in 2.4.0 <2.4-deprecation-removals>`.
+    (:issue:`4901`)
+
+-   Removed support for the ``SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE`` environment
+    variable, :ref:`deprecated in 1.8.0 <1.8-deprecations>`. (:issue:`4912`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The :mod:`scrapy.utils.py36` module is now deprecated in favor of
+    :mod:`scrapy.utils.asyncgen`. (:issue:`4900`)
+
+
+New features
+~~~~~~~~~~~~
+
+-   The new :attr:`Response.protocol <scrapy.http.Response.protocol>`
+    attribute gives access to the string that identifies the protocol used to
+    download a response (:issue:`4878`)
+
+-   :ref:`Stats <topics-stats>` now include the following entries that indicate
+    the number of successes and failures in storing
+    :ref:`feeds <topics-feed-exports>`::
+
+        feedexport/success_count/<storage type>
+        feedexport/failed_count/<storage type>
+
+    Where ``<storage type>`` is the feed storage backend class name, such as
+    :class:`~scrapy.extensions.feedexport.FileFeedStorage` or
+    :class:`~scrapy.extensions.feedexport.FTPFeedStorage`.
+
+    (:issue:`3947`, :issue:`4850`)
+
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed installation on PyPy installing PyDispatcher in addition to
+    PyPyDispatcher, which could prevent Scrapy from working depending on which
+    package got imported. (:issue:`4710`, :issue:`4814`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Fixed some errors in examples. (:issue:`4907`, :issue:`4909`)
+
+-   Fixed some external links. (:issue:`4892`, :issue:`4899`)
+
+-   Fixed some typos. (:issue:`4936`)
+
+
+Quality Assurance
+~~~~~~~~~~~~~~~~~
+
+-   Migrated from Travis CI to GitHub Actions. (:issue:`4924`)
+
+-   Made our tests run with the new pip resolver.
+    (:issue:`4710`, :issue:`4814`)
+
+-   Fixed deprecated uses of the Twisted API. (:issue:`4940`)
+
+-   Coding style fixes. (:issue:`4911`)
+
+
 .. _release-2.4.1:
 
 Scrapy 2.4.1 (2020-11-17)
@@ -96,6 +175,8 @@ Backward-incompatible changes
 
     (:issue:`4717`, :issue:`4823`)
 
+
+.. _2.4-deprecation-removals:
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
@@ -1433,6 +1514,8 @@ Deprecation removals
 *   ``scrapy.xlib`` has been removed (:issue:`4015`)
 
 
+.. _1.8-deprecations:
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -1788,6 +1871,8 @@ The following deprecated settings have also been removed (:issue:`3578`):
 
 *   ``SPIDER_MANAGER_CLASS`` (use :setting:`SPIDER_LOADER_CLASS`)
 
+
+.. _1.7-deprecations:
 
 Deprecations
 ~~~~~~~~~~~~
