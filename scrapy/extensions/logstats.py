@@ -30,25 +30,24 @@ class LogStats:
     def spider_opened(self, spider):
         self.pagesprev = 0
         self.itemsprev = 0
-        self.bandwidthprev = 0.0
+        self.response_bytesprev = 0.0
         self.task = task.LoopingCall(self.log, spider)
         self.task.start(self.interval)
 
     def log(self, spider):
         items = self.stats.get_value('item_scraped_count', 0)
         pages = self.stats.get_value('response_received_count', 0)
-        bandwidth = self.stats.get_value('downloader/response_bytes', 0) / float(1000)
+        response_bytes = self.stats.get_value('downloader/response_bytes', 0) / float(1000)
         irate = (items - self.itemsprev) * self.multiplier
         prate = (pages - self.pagesprev) * self.multiplier
-        brate = (bandwidth - self.bandwidthprev)
-        self.pagesprev, self.itemsprev, self.bandwidthprev = pages, items, bandwidth
-
+        brate = (response_bytes - self.response_bytesprev)
+        self.pagesprev, self.itemsprev, self.response_bytesprev = pages, items, response_bytes
         msg = ("Crawled %(pages)d pages (at %(pagerate)d pages/min), "
                "scraped %(items)d items (at %(itemrate)d items/min), "
-               "used %(bandwidth)d KB of bandwidth (at %(brate)d KB/s)")
+               "received %(response_bytes)d KB of response bytes (at %(brate)d KB/s)")
         log_args = {'pages': pages, 'pagerate': prate,
                     'items': items, 'itemrate': irate,
-                    'bandwidth': bandwidth, 'brate': brate}
+                    'response_bytes': response_bytes, 'brate': brate}
         logger.info(msg, log_args, extra={'spider': spider})
 
     def spider_closed(self, spider, reason):
