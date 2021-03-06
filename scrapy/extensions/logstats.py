@@ -43,8 +43,9 @@ class LogStats:
         brate = (response_bytes - self.response_bytesprev)
         self.pagesprev, self.itemsprev, self.response_bytesprev = pages, items, response_bytes
         msg = ("Crawled %(pages)d pages (at %(pagerate)d pages/min), "
-               "scraped %(items)d items (at %(itemrate)d items/min), "
-               "received %(response_bytes)d KB of response bytes (at %(brate)d KB/s)")
+               "scraped %(items)d items (at %(itemrate)d items/min)")
+        if self.stats.get_value('downloader/response_bytes') is not None:
+            msg = msg + ", received %(response_bytes)d KB of response bytes (at %(brate)d KB/s)"
         log_args = {'pages': pages, 'pagerate': prate,
                     'items': items, 'itemrate': irate,
                     'response_bytes': response_bytes, 'brate': brate}
