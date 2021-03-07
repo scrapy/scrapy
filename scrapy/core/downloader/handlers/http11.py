@@ -158,6 +158,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             return
         self._protocol.dataReceived = self._protocolDataReceived
         respm = TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
+        _truncatedLength = 1000
         if respm and int(respm.group('status')) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(self._tunneledHost, self._tunneledPort)
