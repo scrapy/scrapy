@@ -121,8 +121,9 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     with this endpoint comes from the pool and a CONNECT has already been issued
     for it.
     """
-
-    _responseMatcher = re.compile(br'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,64})')
+    _truncatedLength = 1000
+    _responseAnswer = 'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,'+str(_truncatedLength)+'})'
+    _responseMatcher = re.compile(fr'{_responseAnswer}'.encode('utf-8'))
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory, timeout=30, bindAddress=None):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
@@ -167,7 +168,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
                 extra = {'status': int(respm.group('status')),
                          'reason': respm.group('reason').strip()}
             else:
-                extra = rcvd_bytes[:64]
+                extra = rcvd_bytes[:_truncatedLength]
             self._tunnelReadyDeferred.errback(
                 TunnelError('Could not open CONNECT tunnel with proxy '
                             f'{self._host}:{self._port} [{extra!r}]')
