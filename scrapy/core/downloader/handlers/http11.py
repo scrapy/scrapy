@@ -122,7 +122,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
     _truncatedLength = 1000
-    _responseAnswer = 'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,'+str(_truncatedLength)+'})'
+    _responseAnswer = 'HTTP/1\\.. (?P<status>\\d{3})(?P<reason>.{,' + str(_truncatedLength) + '})'
     _responseMatcher = re.compile(fr'{_responseAnswer}'.encode('utf-8'))
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory, timeout=30, bindAddress=None):
@@ -158,6 +158,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             return
         self._protocol.dataReceived = self._protocolDataReceived
         respm = TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
+        _truncatedLength = 1000
         if respm and int(respm.group('status')) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(self._tunneledHost, self._tunneledPort)
