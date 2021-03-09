@@ -10,13 +10,28 @@ from time import time
 from urllib.parse import urldefrag
 
 from twisted.internet import defer, protocol, ssl
+from twisted.internet.defer import CancelledError, Deferred, fail, maybeDeferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
-from twisted.web.client import Agent, HTTPConnectionPool, ResponseDone, ResponseFailed, URI
+from twisted.web.client import (
+    Agent,
+    _HTTP11ClientFactory,
+    HTTPConnectionPool,
+    ResponseDone,
+    ResponseFailed,
+    URI,
+)
 from twisted.web.http import _DataLoss, PotentialDataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
+from twisted.web._newclient import (
+    HTTP11ClientProtocol,
+    HTTPClientParser,
+    RequestGenerationFailed,
+    RequestNotSent,
+    TransportProxyProducer,
+)
 from zope.interface import implementer
 
 from scrapy import signals
@@ -32,6 +47,73 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
+class _Parser(HTTPClientParser):
+
+    def headerReceived(self, name, value):
+        name = name.lower()
+        self.headers.addRawHeader(name, value)
+        if self.isConnectionControlHeader(name):
+            self.connHeaders.addRawHeader(name, value)
+
+
+class _Protocol(HTTP11ClientProtocol):
+
+    # Overridden to replace the parser class, everything else has been copied
+    # from Twisted 21.2.0.
+    def request(self, request):
+        if self._state != "QUIESCENT":
+            return fail(RequestNotSent())
+
+        self._state = "TRANSMITTING"
+        _requestDeferred = maybeDeferred(request.writeTo, self.transport)
+
+        def cancelRequest(ign):
+            if self._state in ("TRANSMITTING", "TRANSMITTING_AFTER_RECEIVING_RESPONSE"):
+                _requestDeferred.cancel()
+            else:
+                self.transport.abortConnection()
+                self._disconnectParser(Failure(CancelledError()))
+
+        self._finishedRequest = Deferred(cancelRequest)
+        self._currentRequest = request
+        self._transportProxy = TransportProxyProducer(self.transport)
+        self._parser = _Parser(request, self._finishResponse)
+        self._parser.makeConnection(self._transportProxy)
+        self._responseDeferred = self._parser._responseDeferred
+
+        def cbRequestWritten(ignored):
+            if self._state == "TRANSMITTING":
+                self._state = "WAITING"
+                self._responseDeferred.chainDeferred(self._finishedRequest)
+
+        def ebRequestWriting(err):
+            if self._state == "TRANSMITTING":
+                self._state = "GENERATION_FAILED"
+                self.transport.abortConnection()
+                self._finishedRequest.errback(Failure(RequestGenerationFailed([err])))
+            else:
+                self._log.failure(
+                    "Error writing request, but not in valid state "
+                    "to finalize request: {state}",
+                    failure=err,
+                    state=self._state,
+                )
+
+        _requestDeferred.addCallbacks(cbRequestWritten, ebRequestWriting)
+
+        return self._finishedRequest
+
+
+class _Factory(_HTTP11ClientFactory):
+
+    def buildProtocol(self, addr):
+        return _Protocol(self._quiescentCallback)
+
+
+class _ConnectionPool(HTTPConnectionPool):
+    _factory = _Factory
+
+
 class HTTP11DownloadHandler:
     lazy = False
 
@@ -39,7 +121,7 @@ class HTTP11DownloadHandler:
         self._crawler = crawler
 
         from twisted.internet import reactor
-        self._pool = HTTPConnectionPool(reactor, persistent=True)
+        self._pool = _ConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
 

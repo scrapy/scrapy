@@ -504,6 +504,13 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(self.assertEqual, "HTTP/1.1")
         return d
 
+    def test_response_header_content_length(self):
+        request = Request(self.getURL("file"), method=b"GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.headers[b'content-length'])
+        d.addCallback(self.assertEqual, b'159')
+        return d
+
 
 class Https11TestCase(Http11TestCase):
     scheme = 'https'
