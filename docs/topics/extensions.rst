@@ -162,7 +162,7 @@ Log Stats extension
 
 .. class:: LogStats
 
-Log basic stats like crawled pages, scraped items and received responde bytes.
+Log basic stats like crawled pages, scraped items, and received response bytes.
 
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
