@@ -1,4 +1,4 @@
-name: macOS
+name: macOS (new)
 on: [push, pull_request]
 
 jobs:
