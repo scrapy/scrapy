@@ -362,14 +362,6 @@ class Stream:
         self._protocol.conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
         self.close(reason)
 
-    def _is_data_lost(self) -> bool:
-        assert self.metadata['stream_closed_server']
-
-        expected_size = self._response['flow_controlled_size']
-        received_body_size = int(self._response['headers'][b'Content-Length'])
-
-        return expected_size != received_body_size
-
     def close(
         self,
         reason: StreamCloseReason,
