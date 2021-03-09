@@ -62,22 +62,39 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
--   Fixed some errors in examples. (:issue:`4907`, :issue:`4909`)
+-   Covered how to deal with long lists of allowed domains in the :ref:`FAQ
+    <faq>`. (:issue:`2263`, :issue:`3667`)
+
+-   Fixed some errors in examples.
+    (:issue:`4829`, :issue:`4830`, :issue:`4907`, :issue:`4909`,
+    :issues:`5008`)
 
 -   Fixed some external links. (:issue:`4892`, :issue:`4899`)
 
--   Fixed some typos. (:issue:`4936`)
+-   Fixed some typos. (:issue:`4936`, :issue:`4942`, :issue:`5005`)
+
+-   Updated references to Scrapinghub, which is now called Zyte.
+    (:issue:`4973`)
+
+-   Added a mention to contributors in the README. (:issue:`4956`)
 
 
 Quality Assurance
 ~~~~~~~~~~~~~~~~~
 
--   Migrated from Travis CI to GitHub Actions. (:issue:`4924`)
+-   Fixed deprecated uses of the Twisted API. (:issue:`4940`)
 
 -   Made our tests run with the new pip resolver.
     (:issue:`4710`, :issue:`4814`)
 
--   Fixed deprecated uses of the Twisted API. (:issue:`4940`)
+-   Added tests to ensure that :ref:`coroutine support <coroutine-support>`
+    is tested. (:issue:`4987`)
+
+-   Migrated from Travis CI to GitHub Actions. (:issue:`4924`)
+
+-   Fixed CI issues. (:issue:`4986`, :issue:`5020`, :issue:`5022`)
+
+-   Refactored complex code (:issue:`4982`, :issue:`5001`, :issue:`5002`)
 
 -   Coding style fixes. (:issue:`4911`)
 
