@@ -226,7 +226,7 @@ def is_generator_with_return_value(callable):
         return value is None or isinstance(value, ast.NameConstant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
-        code = re.sub(r"^\s+", "", inspect.getsource(callable))
+        code = re.sub(r"^[\t ]+", "", inspect.getsource(callable))
         tree = ast.parse(code)
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
@@ -244,7 +244,7 @@ def warn_on_generator_with_return_value(spider, callable):
     """
     try:
         should_warn = is_generator_with_return_value(callable)
-    except SyntaxError:  # includes IndentationError
+    except IndentationError:
         should_warn = False
     if should_warn:
         warnings.warn(

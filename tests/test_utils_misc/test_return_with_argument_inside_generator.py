@@ -5,8 +5,8 @@ from unittest import mock
 from scrapy.utils.misc import is_generator_with_return_value, warn_on_generator_with_return_value
 
 
-def _syntax_error(*args, **kwargs):
-    raise SyntaxError()
+def _indentation_error(*args, **kwargs):
+    raise IndentationError()
 
 
 def top_level_return_something():
@@ -165,8 +165,8 @@ https://example.org
             warn_on_generator_with_return_value(None, l2)
             self.assertEqual(len(w), 0)
 
-    @mock.patch("scrapy.utils.misc.is_generator_with_return_value", new=_syntax_error)
-    def test_syntax_error(self):
+    @mock.patch("scrapy.utils.misc.is_generator_with_return_value", new=_indentation_error)
+    def test_indentation_error(self):
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, top_level_return_none)
             self.assertEqual(len(w), 0)
