@@ -169,4 +169,5 @@ https://example.org
     def test_indentation_error(self):
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, top_level_return_none)
-            self.assertEqual(len(w), 0)
+            self.assertEqual(len(w), 1)
+            self.assertIn('Unable to determine', str(w[0].message))

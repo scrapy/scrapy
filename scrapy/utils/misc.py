@@ -242,16 +242,24 @@ def warn_on_generator_with_return_value(spider, callable):
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
+    callable_name = spider.__class__.__name__ + "." + callable.__name__
     try:
         should_warn = is_generator_with_return_value(callable)
     except IndentationError:
-        should_warn = False
-    if should_warn:
         warnings.warn(
-            f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
-            'a generator and includes a "return" statement with a value '
-            'different than None. This could lead to unexpected behaviour. Please see '
-            'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
-            'for details about the semantics of the "return" statement within generators',
+            f'Unable to determine whether or not "{callable_name}" is a generator with a return value. '
+            'This will not prevent your code from working, but it prevents Scrapy from detecting '
+            f'potential issues in your implementation of "{callable_name}". Please, report this in the '
+            'Scrapy issue tracker (https://github.com/scrapy/scrapy/issues), '
+            f'including the code of "{callable_name}"',
             stacklevel=2,
         )
+    else:
+        if should_warn:
+            warnings.warn(
+                f'The "{callable_name}" method is a generator and includes a "return" '
+                'statement with a value different than None. This could lead to unexpected behaviour. '
+                'Please see https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
+                'for details about the semantics of the "return" statement within generators',
+                stacklevel=2,
+            )
