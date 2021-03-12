@@ -9,8 +9,8 @@ RETRY_HTTP_CODES - which HTTP response codes to retry
 Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
-import logging
-from inspect import isclass
+from logging import getLogger, Logger
+from typing import Optional, Union
 
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -24,24 +24,26 @@ from twisted.internet.error import (
 )
 from twisted.web.client import ResponseFailed
 
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.response import response_status_message
 from scrapy.core.downloader.handlers.http11 import TunnelError
+from scrapy.exceptions import NotConfigured
+from scrapy.http.request import Request
+from scrapy.spiders import Spider
 from scrapy.utils.python import global_object_name
+from scrapy.utils.response import response_status_message
 
 
-retry_logger = logging.getLogger(__name__)
+retry_logger = getLogger(__name__)
 
 
 def get_retry_request(
-    request,
+    request: Request,
     *,
-    spider,
-    reason='unspecified',
-    max_retry_times=None,
-    priority_adjust=None,
-    logger=retry_logger,
-    stats_base_key='retry',
+    spider: Spider,
+    reason: Union[str, Exception] = 'unspecified',
+    max_retry_times: Optional[int] = None,
+    priority_adjust: Union[int, float, None] = None,
+    logger: Logger = retry_logger,
+    stats_base_key: str = 'retry',
 ):
     """
     Returns a new :class:`~scrapy.Request` object to retry the specified
@@ -105,7 +107,7 @@ def get_retry_request(
             priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
         new_request.priority = request.priority + priority_adjust
 
-        if isclass(reason):
+        if callable(reason):
             reason = reason()
         if isinstance(reason, Exception):
             reason = global_object_name(reason.__class__)
