@@ -67,7 +67,7 @@ Documentation
 
 -   Fixed some errors in examples.
     (:issue:`4829`, :issue:`4830`, :issue:`4907`, :issue:`4909`,
-    :issues:`5008`)
+    :issue:`5008`)
 
 -   Fixed some external links. (:issue:`4892`, :issue:`4899`)
 
