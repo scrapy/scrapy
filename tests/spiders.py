@@ -390,3 +390,32 @@ class BytesReceivedErrbackSpider(BytesReceivedCallbackSpider):
     def bytes_received(self, data, request, spider):
         self.meta["bytes_received"] = data
         raise StopDownload(fail=True)
+
+
+class HeadersReceivedCallbackSpider(MetaSpider):
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.headers_received, signals.headers_received)
+        return spider
+
+    def start_requests(self):
+        yield Request(self.mockserver.url("/status"), errback=self.errback)
+
+    def parse(self, response):
+        self.meta["response"] = response
+
+    def errback(self, failure):
+        self.meta["failure"] = failure
+
+    def headers_received(self, headers, body_length, request, spider):
+        self.meta["headers_received"] = headers
+        raise StopDownload(fail=False)
+
+
+class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
+
+    def headers_received(self, headers, body_length, request, spider):
+        self.meta["headers_received"] = headers
+        raise StopDownload(fail=True)
