@@ -432,9 +432,9 @@ The meta key is used set retry times per request. When initialized, the
 Stopping the download of a Response
 ===================================
 
-Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
-:class:`~scrapy.signals.bytes_received` signal handler will stop the
-download of a given response. See the following example::
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a handler for the
+:class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
+signals will stop the download of a given response. See the following example::
 
     import scrapy
 
