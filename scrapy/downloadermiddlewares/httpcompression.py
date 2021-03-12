@@ -15,7 +15,7 @@ try:
     import brotli
     ACCEPTED_ENCODINGS.append(b'br')
 except ImportError:
-    logger.error("brotil not installed")
+    logger.error("brotli not installed")
 
 try:
     import zstandard
@@ -78,7 +78,7 @@ class HttpCompressionMiddleware:
             try:
                 body = brotli.decompress(body)
             except ImportError:
-                logger.error("brotil not installed")
+                logger.error("brotli not installed")
 
         if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
