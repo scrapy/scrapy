@@ -14,17 +14,15 @@ logger = logging.getLogger(__name__)
 
 class UrlLengthMiddleware:
 
-    def __init__(self, maxlength, stats):
+    def __init__(self, maxlength):
         self.maxlength = maxlength
-        self.stats = stats
 
     @classmethod
-    def from_crawler(cls, crawler):
-        settings = crawler.settings
+    def from_settings(cls, settings):
         maxlength = settings.getint('URLLENGTH_LIMIT')
         if not maxlength:
             raise NotConfigured
-        return cls(maxlength, crawler.stats)
+        return cls(maxlength)
 
     def process_spider_output(self, response, result, spider):
         def _filter(request):
@@ -34,7 +32,7 @@ class UrlLengthMiddleware:
                     {'maxlength': self.maxlength, 'url': request.url},
                     extra={'spider': spider}
                 )
-                self.stats.inc_value('urllength/request_ignored_count', spider=spider)
+                spider.crawler.stats.inc_value('urllength/request_ignored_count', spider=spider)
                 return False
             else:
                 return True
