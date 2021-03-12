@@ -5,12 +5,11 @@ import logging
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import NotConfigured
 
 
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
 logger = logging.getLogger(__name__)
-
 
 try:
     import brotli
