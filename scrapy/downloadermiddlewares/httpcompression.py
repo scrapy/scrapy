@@ -80,6 +80,7 @@ class HttpCompressionMiddleware:
                 body = brotli.decompress(body)
             else:
                 print("brotli not installed")
+                
         if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame
