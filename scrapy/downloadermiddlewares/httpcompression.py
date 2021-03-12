@@ -10,10 +10,13 @@ from scrapy.exceptions import NotConfigured
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
 
 try:
+    flag=0
     import brotli
     ACCEPTED_ENCODINGS.append(b'br')
 except ImportError:
     pass
+else:
+    flag=1
 
 try:
     import zstandard
@@ -73,7 +76,10 @@ class HttpCompressionMiddleware:
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
         if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
-            body = brotli.decompress(body)
+            if (flag):
+                body = brotli.decompress(body)
+            else:
+                print("brotli not installed")
         if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame
