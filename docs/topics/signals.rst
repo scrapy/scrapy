@@ -403,7 +403,7 @@ bytes_received
 headers_received
 ~~~~~~~~~~~~~~~~
 
-.. versionadded:: VERSION
+.. versionadded:: 2.5
 
 .. signal:: headers_received
 .. function:: headers_received(headers, request, spider)

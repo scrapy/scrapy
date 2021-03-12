@@ -10,6 +10,9 @@ Scrapy 2.5.0 (2021-03-NN)
 
 Highlights:
 
+-   New :class:`~scrapy.signals.headers_received` signal that allows stopping
+    downloads early
+
 -   New :class:`Response.protocol <scrapy.http.Response.protocol>` attribute
 
 Deprecation removals
@@ -32,6 +35,12 @@ Deprecations
 
 New features
 ~~~~~~~~~~~~
+
+-   The new :class:`~scrapy.signals.headers_received` signal gives early access
+    to response headers and allows :ref:`stopping downloads
+    <topics-stop-response-download>`.
+
+    (:issue:`1772`, :issue:`4897`)
 
 -   The new :attr:`Response.protocol <scrapy.http.Response.protocol>`
     attribute gives access to the string that identifies the protocol used to
@@ -64,6 +73,9 @@ Documentation
 
 -   Covered how to deal with long lists of allowed domains in the :ref:`FAQ
     <faq>`. (:issue:`2263`, :issue:`3667`)
+
+-   Covered scrapy-bench_ in :ref:`benchmarking`.
+    (:issue:`4996`, :issue:`5016`)
 
 -   Fixed some errors in examples.
     (:issue:`4829`, :issue:`4830`, :issue:`4907`, :issue:`4909`,
@@ -4433,6 +4445,7 @@ First release of Scrapy.
 .. _resource: https://docs.python.org/2/library/resource.html
 .. _robots.txt: https://www.robotstxt.org/
 .. _scrapely: https://github.com/scrapy/scrapely
+.. _scrapy-bench: https://github.com/scrapy/scrapy-bench
 .. _service_identity: https://service-identity.readthedocs.io/en/stable/
 .. _six: https://six.readthedocs.io/
 .. _tox: https://pypi.org/project/tox/
