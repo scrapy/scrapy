@@ -70,8 +70,6 @@ class H2ConnectionPool:
             d = pending_requests.popleft()
             d.callback(conn)
 
-        del pending_requests
-
         return conn
 
     def _remove_connection(self, errors: List[BaseException], key: Tuple) -> None:
