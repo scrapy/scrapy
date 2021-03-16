@@ -132,6 +132,7 @@ EXTENSIONS_BASE = {
     'scrapy.extensions.logstats.LogStats': 0,
     'scrapy.extensions.spiderstate.SpiderState': 0,
     'scrapy.extensions.throttle.AutoThrottle': 0,
+    'scrapy.extensions.progress.ProgressBar': 0,
 }
 
 FEED_TEMPDIR = None
@@ -233,6 +234,9 @@ METAREFRESH_IGNORE_TAGS = []
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
+
+PROGRESS_BAR_ENABLED = False
+PROGRESS_BAR_THRESHOLD = 5 * 1024 * 1024  # 5 MB
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 
