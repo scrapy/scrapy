@@ -1,19 +1,25 @@
 """Helper functions which don't fit anywhere else"""
+import ast
+import inspect
 import os
 import re
 import hashlib
+import warnings
+from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
+from textwrap import dedent
 
-import six
 from w3lib.html import replace_entities
 
+from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.python import flatten, to_unicode
-from scrapy.item import BaseItem
+from scrapy.item import _BaseItem
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 
 
-_ITERABLE_SINGLE_VALUES = dict, BaseItem, six.text_type, bytes
+_ITERABLE_SINGLE_VALUES = dict, _BaseItem, str, bytes
 
 
 def arg_to_iter(arg):
@@ -33,22 +39,32 @@ def arg_to_iter(arg):
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
-    object can be a class, function, variable or an instance.
-    path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
+    The object can be the import path of a class, function, variable or an
+    instance, e.g. 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'.
+
+    If ``path`` is not a string, but is a callable object, such as a class or
+    a function, then return it as is.
     """
+
+    if not isinstance(path, str):
+        if callable(path):
+            return path
+        else:
+            raise TypeError("Unexpected argument type, expected string "
+                            "or object, got: %s" % type(path))
 
     try:
         dot = path.rindex('.')
     except ValueError:
-        raise ValueError("Error loading object '%s': not a full path" % path)
+        raise ValueError(f"Error loading object '{path}': not a full path")
 
-    module, name = path[:dot], path[dot+1:]
+    module, name = path[:dot], path[dot + 1:]
     mod = import_module(module)
 
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError("Module '%s' doesn't define any object named '%s'" % (module, name))
+        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
 
     return obj
 
@@ -82,8 +98,13 @@ def extract_regex(regex, text, encoding='utf-8'):
     * if the regex contains multiple numbered groups, all those will be returned (flattened)
     * if the regex doesn't contain any group the entire regex matching is returned
     """
+    warnings.warn(
+        "scrapy.utils.misc.extract_regex has moved to parsel.utils.extract_regex.",
+        ScrapyDeprecationWarning,
+        stacklevel=2
+    )
 
-    if isinstance(regex, six.string_types):
+    if isinstance(regex, str):
         regex = re.compile(regex, re.UNICODE)
 
     try:
@@ -92,7 +113,7 @@ def extract_regex(regex, text, encoding='utf-8'):
         strings = regex.findall(text)    # full regex or numbered groups
     strings = flatten(strings)
 
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
@@ -133,17 +154,27 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     ``*args`` and ``**kwargs`` are forwarded to the constructors.
 
     Raises ``ValueError`` if both ``settings`` and ``crawler`` are ``None``.
+
+    .. versionchanged:: 2.2
+       Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
+       extension has not been implemented correctly).
     """
     if settings is None:
         if crawler is None:
             raise ValueError("Specify at least one of settings and crawler.")
         settings = crawler.settings
     if crawler and hasattr(objcls, 'from_crawler'):
-        return objcls.from_crawler(crawler, *args, **kwargs)
+        instance = objcls.from_crawler(crawler, *args, **kwargs)
+        method_name = 'from_crawler'
     elif hasattr(objcls, 'from_settings'):
-        return objcls.from_settings(settings, *args, **kwargs)
+        instance = objcls.from_settings(settings, *args, **kwargs)
+        method_name = 'from_settings'
     else:
-        return objcls(*args, **kwargs)
+        instance = objcls(*args, **kwargs)
+        method_name = '__new__'
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+    return instance
 
 
 @contextmanager
@@ -162,3 +193,61 @@ def set_environ(**kwargs):
                 del os.environ[k]
             else:
                 os.environ[k] = v
+
+
+def walk_callable(node):
+    """Similar to ``ast.walk``, but walks only function body and skips nested
+    functions defined within the node.
+    """
+    todo = deque([node])
+    walked_func_def = False
+    while todo:
+        node = todo.popleft()
+        if isinstance(node, ast.FunctionDef):
+            if walked_func_def:
+                continue
+            walked_func_def = True
+        todo.extend(ast.iter_child_nodes(node))
+        yield node
+
+
+_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+
+
+def is_generator_with_return_value(callable):
+    """
+    Returns True if a callable is a generator function which includes a
+    'return' statement with a value different than None, False otherwise
+    """
+    if callable in _generator_callbacks_cache:
+        return _generator_callbacks_cache[callable]
+
+    def returns_none(return_node):
+        value = return_node.value
+        return value is None or isinstance(value, ast.NameConstant) and value.value is None
+
+    if inspect.isgeneratorfunction(callable):
+        tree = ast.parse(dedent(inspect.getsource(callable)))
+        for node in walk_callable(tree):
+            if isinstance(node, ast.Return) and not returns_none(node):
+                _generator_callbacks_cache[callable] = True
+                return _generator_callbacks_cache[callable]
+
+    _generator_callbacks_cache[callable] = False
+    return _generator_callbacks_cache[callable]
+
+
+def warn_on_generator_with_return_value(spider, callable):
+    """
+    Logs a warning if a callable is a generator function and includes
+    a 'return' statement with a value different than None
+    """
+    if is_generator_with_return_value(callable):
+        warnings.warn(
+            f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
+            'a generator and includes a "return" statement with a value '
+            'different than None. This could lead to unexpected behaviour. Please see '
+            'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
+            'for details about the semantics of the "return" statement within generators',
+            stacklevel=2,
+        )

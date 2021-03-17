@@ -1,8 +1,8 @@
 import random
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
+
 from twisted.web.server import Site
 from twisted.web.resource import Resource
-from twisted.internet import reactor
 
 
 class Root(Resource):
@@ -21,24 +21,24 @@ class Root(Resource):
         for nl in nlist:
             args['n'] = nl
             argstr = urlencode(args, doseq=True)
-            request.write("<a href='/follow?{0}'>follow {1}</a><br>"
-                          .format(argstr, nl).encode('utf8'))
+            request.write(f"<a href='/follow?{argstr}'>follow {nl}</a><br>"
+                          .encode('utf8'))
         request.write(b"</body></html>")
         return b''
 
 
 def _getarg(request, name, default=None, type=str):
-    return type(request.args[name][0]) \
-        if name in request.args else default
+    return type(request.args[name][0]) if name in request.args else default
 
 
 if __name__ == '__main__':
+    from twisted.internet import reactor
     root = Root()
     factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))
 
     def _print_listening():
         httpHost = httpPort.getHost()
-        print("Bench server at http://{}:{}".format(httpHost.host, httpHost.port))
+        print(f"Bench server at http://{httpHost.host}:{httpHost.port}")
     reactor.callWhenRunning(_print_listening)
     reactor.run()

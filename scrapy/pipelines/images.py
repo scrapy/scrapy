@@ -5,18 +5,19 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+from contextlib import suppress
 from io import BytesIO
-import six
 
+from itemadapter import ItemAdapter
 from PIL import Image
 
+from scrapy.exceptions import DropItem
+from scrapy.http import Request
+from scrapy.pipelines.files import FileException, FilesPipeline
+# TODO: from scrapy.pipelines.media import MediaPipeline
+from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
-from scrapy.http import Request
-from scrapy.settings import Settings
-from scrapy.exceptions import DropItem
-#TODO: from scrapy.pipelines.media import MediaPipeline
-from scrapy.pipelines.files import FileException, FilesPipeline
 
 
 class NoimagesDrop(DropItem):
@@ -44,8 +45,7 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
-        super(ImagesPipeline, self).__init__(store_uri, settings=settings,
-                                             download_func=download_func)
+        super().__init__(store_uri, settings=settings, download_func=download_func)
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -95,15 +95,20 @@ class ImagesPipeline(FilesPipeline):
         gcs_store.GCS_PROJECT_ID = settings['GCS_PROJECT_ID']
         gcs_store.POLICY = settings['IMAGES_STORE_GCS_ACL'] or None
 
+        ftp_store = cls.STORE_SCHEMES['ftp']
+        ftp_store.FTP_USERNAME = settings['FTP_USER']
+        ftp_store.FTP_PASSWORD = settings['FTP_PASSWORD']
+        ftp_store.USE_ACTIVE_MODE = settings.getbool('FEED_STORAGE_FTP_ACTIVE')
+
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri, settings=settings)
 
-    def file_downloaded(self, response, request, info):
-        return self.image_downloaded(response, request, info)
+    def file_downloaded(self, response, request, info, *, item=None):
+        return self.image_downloaded(response, request, info, item=item)
 
-    def image_downloaded(self, response, request, info):
+    def image_downloaded(self, response, request, info, *, item=None):
         checksum = None
-        for path, image, buf in self.get_images(response, request, info):
+        for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
@@ -114,19 +119,20 @@ class ImagesPipeline(FilesPipeline):
                 headers={'Content-Type': 'image/jpeg'})
         return checksum
 
-    def get_images(self, response, request, info):
-        path = self.file_path(request, response=response, info=info)
+    def get_images(self, response, request, info, *, item=None):
+        path = self.file_path(request, response=response, info=info, item=item)
         orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
         if width < self.min_width or height < self.min_height:
-            raise ImageException("Image too small (%dx%d < %dx%d)" %
-                                 (width, height, self.min_width, self.min_height))
+            raise ImageException("Image too small "
+                                 f"({width}x{height} < "
+                                 f"{self.min_width}x{self.min_height})")
 
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
 
-        for thumb_id, size in six.iteritems(self.thumbs):
+        for thumb_id, size in self.thumbs.items():
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
@@ -153,17 +159,18 @@ class ImagesPipeline(FilesPipeline):
         return image, buf
 
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get(self.images_urls_field, [])]
+        urls = ItemAdapter(item).get(self.images_urls_field, [])
+        return [Request(u) for u in urls]
 
     def item_completed(self, results, item, info):
-        if isinstance(item, dict) or self.images_result_field in item.fields:
-            item[self.images_result_field] = [x for ok, x in results if ok]
+        with suppress(KeyError):
+            ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
         return item
 
-    def file_path(self, request, response=None, info=None):
+    def file_path(self, request, response=None, info=None, *, item=None):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        return 'full/%s.jpg' % (image_guid)
+        return f'full/{image_guid}.jpg'
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
+        return f'thumbs/{thumb_id}/{thumb_guid}.jpg'

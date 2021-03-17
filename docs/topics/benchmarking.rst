@@ -4,8 +4,6 @@
 Benchmarking
 ============
 
-.. versionadded:: 0.17
-
 Scrapy comes with a simple benchmarking suite that spawns a local HTTP server
 and crawls it at the maximum possible speed. The goal of this benchmarking is
 to get an idea of how Scrapy performs in your hardware, in order to have a
@@ -83,5 +81,6 @@ follow links, any custom spider you write will probably do more stuff which
 results in slower crawl rates. How slower depends on how much your spider does
 and how well it's written.
 
-In the future, more cases will be added to the benchmarking suite to cover
-other common scenarios.
+Use scrapy-bench_ for more complex benchmarking.
+
+.. _scrapy-bench: https://github.com/scrapy/scrapy-bench

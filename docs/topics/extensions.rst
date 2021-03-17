@@ -63,7 +63,7 @@ but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
 Disabling an extension
 ======================
 
-In order to disable an extension that comes enabled by default (ie. those
+In order to disable an extension that comes enabled by default (i.e. those
 included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 ``None``. For example::
 
@@ -107,7 +107,7 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
+    class SpiderOpenCloseLogging:
 
         def __init__(self, item_count):
             self.item_count = item_count
@@ -257,6 +257,12 @@ settings:
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
+.. note::
+
+   When a certain closing condition is met, requests which are 
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS` 
+   requests) are still processed.
+
 .. setting:: CLOSESPIDER_TIMEOUT
 
 CLOSESPIDER_TIMEOUT
@@ -279,16 +285,12 @@ Default: ``0``
 An integer which specifies a number of items. If the spider scrapes more than
 that amount and those items are passed by the item pipeline, the
 spider will be closed with the reason ``closespider_itemcount``.
-Requests which  are currently in the downloader queue (up to
-:setting:`CONCURRENT_REQUESTS` requests) are still processed.
 If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
 CLOSESPIDER_PAGECOUNT
 """""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -301,8 +303,6 @@ number of crawled responses.
 
 CLOSESPIDER_ERRORCOUNT
 """"""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -345,7 +345,7 @@ signal is received. The information dumped is the following:
 After the stack trace and engine status is dumped, the Scrapy process continues
 running normally.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows),
+This extension only works on POSIX-compliant platforms (i.e. not Windows),
 because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
 
 There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
@@ -364,13 +364,12 @@ Debugger extension
 
 .. class:: Debugger
 
-Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
 For more info see `Debugging in Python`_.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows).
+This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
-.. _Python debugger: https://docs.python.org/2/library/pdb.html
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

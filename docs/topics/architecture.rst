@@ -104,7 +104,7 @@ Spiders
 -------
 
 Spiders are custom classes written by Scrapy users to parse responses and
-extract items (aka scraped items) from them or additional requests to
+extract :ref:`items <topics-items>` from them or additional requests to
 follow. For more information see :ref:`topics-spiders`.
 
 .. _component-pipelines:
@@ -166,11 +166,10 @@ for concurrency.
 For more information about asynchronous programming and Twisted see these
 links:
 
-* `Introduction to Deferreds in Twisted`_
+* :doc:`twisted:core/howto/defer-intro`
 * `Twisted - hello, asynchronous programming`_
 * `Twisted Introduction - Krondo`_
 
 .. _Twisted: https://twistedmatrix.com/trac/
-.. _Introduction to Deferreds in Twisted: https://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
 .. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/

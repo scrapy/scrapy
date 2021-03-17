@@ -1,7 +1,7 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
-import six
+import inspect
 
 from scrapy.http import Request
 from scrapy.utils.python import to_unicode
@@ -70,33 +70,21 @@ def request_from_dict(d, spider=None):
     )
 
 
-def _is_private_method(name):
-    return name.startswith('__') and not name.endswith('__')
-
-
-def _mangle_private_name(obj, func, name):
-    qualname = getattr(func, '__qualname__', None)
-    if qualname is None:
-        classname = obj.__class__.__name__.lstrip('_')
-        return '_%s%s' % (classname, name)
-    else:
-        splits = qualname.split('.')
-        return '_%s%s' % (splits[-2], splits[-1])
-
-
 def _find_method(obj, func):
-    if obj:
-        try:
-            func_self = six.get_method_self(func)
-        except AttributeError:  # func has no __self__
-            pass
-        else:
-            if func_self is obj:
-                name = six.get_method_function(func).__name__
-                if _is_private_method(name):
-                    return _mangle_private_name(obj, func, name)
+    # Only instance methods contain ``__func__``
+    if obj and hasattr(func, '__func__'):
+        members = inspect.getmembers(obj, predicate=inspect.ismethod)
+        for name, obj_func in members:
+            # We need to use __func__ to access the original
+            # function object because instance method objects
+            # are generated each time attribute is retrieved from
+            # instance.
+            #
+            # Reference: The standard type hierarchy
+            # https://docs.python.org/3/reference/datamodel.html
+            if obj_func.__func__ is func.__func__:
                 return name
-    raise ValueError("Function %s is not a method of: %s" % (func, obj))
+    raise ValueError(f"Function {func} is not an instance method in: {obj}")
 
 
 def _get_method(obj, name):
@@ -104,4 +92,4 @@ def _get_method(obj, name):
     try:
         return getattr(obj, name)
     except AttributeError:
-        raise ValueError("Method %r not found in: %s" % (name, obj))
+        raise ValueError(f"Method {name!r} not found in: {obj}")

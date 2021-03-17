@@ -20,7 +20,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     """
 
     def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
-        super(ScrapyClientContextFactory, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._ssl_method = method
         self.tls_verbose_logging = tls_verbose_logging
         if tls_ciphers:
@@ -45,12 +45,13 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         #   (https://github.com/scrapy/scrapy/issues/1429#issuecomment-131782133)
         #
         # * getattr() for `_ssl_method` attribute for context factories
-        #   not calling super(..., self).__init__
-        return CertificateOptions(verify=False,
-                    method=getattr(self, 'method',
-                                   getattr(self, '_ssl_method', None)),
-                    fixBrokenPeers=True,
-                    acceptableCiphers=self.tls_ciphers)
+        #   not calling super().__init__
+        return CertificateOptions(
+            verify=False,
+            method=getattr(self, 'method', getattr(self, '_ssl_method', None)),
+            fixBrokenPeers=True,
+            acceptableCiphers=self.tls_ciphers,
+        )
 
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
@@ -67,15 +68,18 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
     """
     Twisted-recommended context factory for web clients.
 
-    Quoting https://twistedmatrix.com/documents/current/api/twisted.web.client.Agent.html:
-    "The default is to use a BrowserLikePolicyForHTTPS,
-    so unless you have special requirements you can leave this as-is."
+    Quoting the documentation of the :class:`~twisted.web.client.Agent` class:
 
-    creatorForNetloc() is the same as BrowserLikePolicyForHTTPS
-    except this context factory allows setting the TLS/SSL method to use.
+        The default is to use a
+        :class:`~twisted.web.client.BrowserLikePolicyForHTTPS`, so unless you
+        have special requirements you can leave this as-is.
 
-    Default OpenSSL method is TLS_METHOD (also called SSLv23_METHOD)
-    which allows TLS protocol negotiation.
+    :meth:`creatorForNetloc` is the same as
+    :class:`~twisted.web.client.BrowserLikePolicyForHTTPS` except this context
+    factory allows setting the TLS/SSL method to use.
+
+    The default OpenSSL method is ``TLS_METHOD`` (also called
+    ``SSLv23_METHOD``) which allows TLS protocol negotiation.
     """
     def creatorForNetloc(self, hostname, port):
 
@@ -83,8 +87,8 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
         #
         # This means that a website like https://www.cacert.org will be rejected
         # by default, since CAcert.org CA certificate is seldom shipped.
-        return optionsForClientTLS(hostname.decode("ascii"),
-                                   trustRoot=platformTrust(),
-                                   extraCertificateOptions={
-                                        'method': self._ssl_method,
-                                   })
+        return optionsForClientTLS(
+            hostname=hostname.decode("ascii"),
+            trustRoot=platformTrust(),
+            extraCertificateOptions={'method': self._ssl_method},
+        )

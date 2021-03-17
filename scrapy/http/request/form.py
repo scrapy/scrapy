@@ -5,8 +5,7 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import six
-from six.moves.urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode
 
 import lxml.html
 from parsel.selector import create_root_node
@@ -25,7 +24,7 @@ class FormRequest(Request):
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
-        super(FormRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
@@ -81,15 +80,15 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                             base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
-        raise ValueError("No <form> element found in %s" % response)
+        raise ValueError(f"No <form> element found in {response}")
 
     if formname is not None:
-        f = root.xpath('//form[@name="%s"]' % formname)
+        f = root.xpath(f'//form[@name="{formname}"]')
         if f:
             return f[0]
 
     if formid is not None:
-        f = root.xpath('//form[@id="%s"]' % formid)
+        f = root.xpath(f'//form[@id="{formid}"]')
         if f:
             return f[0]
 
@@ -104,7 +103,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                 el = el.getparent()
                 if el is None:
                     break
-        raise ValueError('No <form> element found with %s' % formxpath)
+        raise ValueError(f'No <form> element found with {formxpath}')
 
     # If we get here, it means that either formname was None
     # or invalid
@@ -112,8 +111,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
         try:
             form = forms[formnumber]
         except IndexError:
-            raise IndexError("Form number %d not found in %s" %
-                             (formnumber, response))
+            raise IndexError(f"Form number {formnumber} not found in {response}")
         else:
             return form
 
@@ -134,7 +132,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
                         namespaces={
                             "re": "http://exslt.org/regular-expressions"})
-    values = [(k, u'' if v is None else v)
+    values = [(k, '' if v is None else v)
               for k, v in (_value(e) for e in inputs)
               if k and k not in formdata_keys]
 
@@ -162,14 +160,14 @@ def _select_value(ele, n, v):
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
-        # And for select tags wihout options
+        # And for select tags without options
         o = ele.value_options
         return (n, o[0]) if o else (None, None)
     elif v is not None and multiple:
         # This is a workround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath('.//option[@selected]')
-        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+        v = [(o.get('value') or o.text or '').strip() for o in selected_options]
     return n, v
 
 
@@ -179,12 +177,11 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [
-        el for el in form.xpath(
-            'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
-            '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
-            namespaces={"re": "http://exslt.org/regular-expressions"})
-        ]
+    clickables = list(form.xpath(
+        'descendant::input[re:test(@type, "^(submit|image)$", "i")]'
+        '|descendant::button[not(@type) or re:test(@type, "^submit$", "i")]',
+        namespaces={"re": "http://exslt.org/regular-expressions"}
+    ))
     if not clickables:
         return
 
@@ -207,13 +204,12 @@ def _get_clickable(clickdata, form):
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
-    xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
+    xpath = './/*' + ''.join(f'[@{k}="{v}"]' for k, v in clickdata.items())
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].get('name'), el[0].get('value') or '')
     elif len(el) > 1:
-        raise ValueError("Multiple elements found (%r) matching the criteria "
-                         "in clickdata: %r" % (el, clickdata))
+        raise ValueError(f"Multiple elements found ({el!r}) matching the "
+                         f"criteria in clickdata: {clickdata!r}")
     else:
-        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))
+        raise ValueError(f'No clickable element matching clickdata: {clickdata!r}')

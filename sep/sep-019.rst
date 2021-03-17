@@ -185,7 +185,7 @@ These ideas translate to the following changes on the ``SpiderManager`` class:
   will return a spider class, not an instance. It's basically a ``__get__``
   to ``self._spiders``.
 
-- All remaining functions should be deprecated or remove accordantly, since a
+- All remaining functions should be deprecated or remove accordingly, since a
   crawler reference is no longer needed.
 
 - New helper ``get_spider_manager_class_from_scrapycfg`` in
