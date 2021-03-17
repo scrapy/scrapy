@@ -505,7 +505,10 @@ class _ResponseReader(protocol.Protocol):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
-        self._bodybuf = BytesIO()
+        if self._request.meta.get('streaming_download'):
+            self._bodybuf = self._request.meta.get('file')
+        else:
+            self._bodybuf = BytesIO()
         self._maxsize = maxsize
         self._warnsize = warnsize
         self._fail_on_dataloss = fail_on_dataloss
@@ -517,9 +520,14 @@ class _ResponseReader(protocol.Protocol):
         self._crawler = crawler
 
     def _finish_response(self, flags=None, failure=None):
+        if self._request.meta.get('streaming_download'):
+            self._bodybuf.close()
+            body = b''
+        else:
+            body = self._bodybuf.getvalue()
         self._finished.callback({
             "txresponse": self._txresponse,
-            "body": self._bodybuf.getvalue(),
+            "body": body,
             "flags": flags,
             "certificate": self._certificate,
             "ip_address": self._ip_address,
