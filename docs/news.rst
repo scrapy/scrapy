@@ -10,6 +10,8 @@ Scrapy 2.5.0 (2021-03-NN)
 
 Highlights:
 
+-   Official Python 3.9 support
+
 -   New :class:`~scrapy.signals.headers_received` signal that allows stopping
     downloads early
 
@@ -93,6 +95,8 @@ Documentation
 
 Quality Assurance
 ~~~~~~~~~~~~~~~~~
+
+-   Made Python 3.9 support official (:issue:`4757`, :issue:`4759`)
 
 -   Fixed deprecated uses of the Twisted API. (:issue:`4940`)
 
