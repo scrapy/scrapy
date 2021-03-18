@@ -1,6 +1,6 @@
-import os
 from datetime import datetime
 import shutil
+from pathlib import Path
 from twisted.trial import unittest
 
 from scrapy.extensions.spiderstate import SpiderState
@@ -13,7 +13,7 @@ class SpiderStateTest(unittest.TestCase):
 
     def test_store_load(self):
         jobdir = self.mktemp()
-        os.mkdir(jobdir)
+        Path(jobdir).mkdir()
         try:
             spider = Spider(name='default')
             dt = datetime.now()

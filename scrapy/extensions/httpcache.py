@@ -4,6 +4,7 @@ import os
 import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
+from pathlib import Path
 from time import time
 from weakref import WeakKeyDictionary
 
@@ -306,8 +307,7 @@ class FilesystemCacheStorage:
     def store_response(self, spider, request, response):
         """Store the given response in the cache."""
         rpath = self._get_request_path(spider, request)
-        if not os.path.exists(rpath):
-            os.makedirs(rpath)
+        Path(rpath).mkdir(parents=True, exist_ok=True)
         metadata = {
             'url': request.url,
             'method': request.method,

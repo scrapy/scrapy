@@ -10,6 +10,7 @@ import re
 import sys
 import warnings
 from datetime import datetime
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from urllib.parse import unquote, urlparse
 
@@ -108,8 +109,8 @@ class FileFeedStorage:
 
     def open(self, spider):
         dirname = os.path.dirname(self.path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
+        if dirname:
+            Path(dirname).mkdir(parents=True, exist_ok=True)
         return open(self.path, self.write_mode)
 
     def store(self, file):

@@ -1,7 +1,7 @@
-import os
 import json
 import logging
 from os.path import join, exists
+from pathlib import Path
 
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
@@ -154,8 +154,7 @@ class Scheduler:
         """ Return a folder name to keep disk queue state at """
         if jobdir:
             dqdir = join(jobdir, 'requests.queue')
-            if not exists(dqdir):
-                os.makedirs(dqdir)
+            Path(dqdir).mkdir(parents=True, exist_ok=True)
             return dqdir
 
     def _read_dqs_state(self, dqdir):

@@ -2,6 +2,7 @@ import contextlib
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -213,7 +214,7 @@ class HttpTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        Path(self.tmpname).mkdir()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -576,7 +577,7 @@ class Https11CustomCiphers(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        Path(self.tmpname).mkdir()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         self.site = server.Site(r, timeout=None)
@@ -934,9 +935,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         # setup dirs and test file
         self.directory = self.mktemp()
-        os.mkdir(self.directory)
         userdir = os.path.join(self.directory, self.username)
-        os.mkdir(userdir)
+        Path(userdir).mkdir(parents=True)
         fp = FilePath(userdir)
         fp.child('file.txt').setContent(b"I have the power!")
         fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
@@ -1050,7 +1050,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 
         # setup dir and test file
         self.directory = self.mktemp()
-        os.mkdir(self.directory)
+        Path(self.directory).mkdir()
 
         fp = FilePath(self.directory)
         fp.child('file.txt').setContent(b"I have the power!")
