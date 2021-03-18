@@ -55,14 +55,12 @@ def get_retry_request(
 
         def parse(self, response):
             if not response.text:
-                new_request = get_retry_request(
+                new_request_or_none = get_retry_request(
                     response.request,
                     spider=self,
                     reason='empty',
                 )
-                if new_request:
-                    yield new_request
-                return
+                return new_request_or_none
 
     *spider* is the :class:`~scrapy.Spider` instance which is asking for the
     retry request. It is used to access the :ref:`settings <topics-settings>`
