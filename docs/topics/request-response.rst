@@ -728,6 +728,11 @@ Response objects
 
             response.headers.getlist('Set-Cookie')
 
+        .. note:: When using HTTP/1.1 (default, see
+            :setting:`DOWNLOAD_HANDLERS`), connection headers such as
+            ``Content-Length`` are not included among response headers. See
+            `Twisted #10126 <https://twistedmatrix.com/trac/ticket/10126>`_.
+
     .. attribute:: Response.body
 
         The response body as bytes.
