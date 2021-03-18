@@ -598,8 +598,6 @@ Example:
 Register commands via setup.py entry points
 -------------------------------------------
 
-.. note:: This is an experimental feature, use with caution.
-
 You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``
 file.
