@@ -1,10 +1,16 @@
-import os
 import json
 import logging
+import os
 from os.path import join, exists
+from typing import Optional
 
-from scrapy.utils.misc import load_object, create_instance
+from twisted.internet.defer import Deferred
+
+from scrapy.crawler import Crawler
+from scrapy.http.request import Request
+from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir
+from scrapy.utils.misc import load_object, create_instance
 
 
 logger = logging.getLogger(__name__)
@@ -12,9 +18,8 @@ logger = logging.getLogger(__name__)
 
 class Scheduler:
     """
-    Scrapy Scheduler. It allows to enqueue requests and then get
-    a next request to download. Scheduler is also handling duplication
-    filtering, via dupefilter.
+    Enqueues requests and gets the next request to be downloaded.
+    It also handles duplication filtering, via the :setting:`dupefilter <DUPEFILTER_CLASS>`.
 
     Prioritization and queueing is not performed by the Scheduler.
     User sets ``priority`` field for each Request, and a PriorityQueue
@@ -34,9 +39,27 @@ class Scheduler:
     Overall, Scheduler is an object which holds several PriorityQueue instances
     (in-memory and on-disk) and implements fallback logic for them.
     Also, it handles dupefilters.
+
+    :param dupefilter: An object responsible for checking and filtering duplicate requests.
+        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
+    :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
+        any class that implements the `BaseDupeFilter` interface
+
+    :param jobdir: The path of a directory to be used for persisting the crawl's state.
+        The value for the :setting:`JOBDIR` setting is used by default. See :ref:`topics-jobs`.
+    :type jobdir: :class:`str` or ``None``
     """
-    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None, crawler=None):
+    def __init__(
+        self,
+        dupefilter,
+        jobdir: Optional[str] = None,
+        dqclass=None,
+        mqclass=None,
+        logunser: bool = False,
+        stats=None,
+        pqclass=None,
+        crawler: Optional[Crawler] = None,
+    ):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
@@ -48,33 +71,72 @@ class Scheduler:
 
     @classmethod
     def from_crawler(cls, crawler):
-        settings = crawler.settings
-        dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
-        dupefilter = create_instance(dupefilter_cls, settings, crawler)
-        pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
-        dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
-        mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
-        logunser = settings.getbool('SCHEDULER_DEBUG')
-        return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
-                   stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
-                   mqclass=mqclass, crawler=crawler)
+        """
+        Called from the Engine to create the Scheduler instance.
+        The default implementation takes care of reading the relevant settings
+        and loading the necessary classes and objects from them.
+        """
+        dupefilter_cls = load_object(crawler.settings['DUPEFILTER_CLASS'])
+        return cls(
+            dupefilter=create_instance(dupefilter_cls, crawler.settings, crawler),
+            jobdir=job_dir(crawler.settings),
+            dqclass=load_object(crawler.settings['SCHEDULER_DISK_QUEUE']),
+            mqclass=load_object(crawler.settings['SCHEDULER_MEMORY_QUEUE']),
+            logunser=crawler.settings.getbool('SCHEDULER_DEBUG'),
+            stats=crawler.stats,
+            pqclass=load_object(crawler.settings['SCHEDULER_PRIORITY_QUEUE']),
+            crawler=crawler,
+        )
 
-    def has_pending_requests(self):
+    def has_pending_requests(self) -> bool:
+        """
+        A predicate that is ``True`` if the Scheduler still has enqueued requests, ``False`` otherwise
+        """
         return len(self) > 0
 
-    def open(self, spider):
+    def open(self, spider: Spider) -> Optional[Deferred]:
+        """
+        Called when the Spider is opened by the Engine. It receives the Spider instance as
+        argument and it's useful to execute initialization code.
+
+        The default implementation: (1) initializes the memory queue, (2) initializes the disk queue
+        if the ``jobdir`` argument passed to ``__init__`` was a valid directory, (3) returns the
+        result of the dupefilter's ``open`` method.
+
+        :param spider: the Spider object for the current crawl
+        :type spider: :class:`~scrapy.spiders.Spider`
+        """
         self.spider = spider
         self.mqs = self._mq()
         self.dqs = self._dq() if self.dqdir else None
         return self.df.open()
 
-    def close(self, reason):
+    def close(self, reason: str) -> Optional[Deferred]:
+        """
+        Called when the Spider is closed by the Engine. It receives the reason why the crawl
+        finished as argument and it's useful to execute cleaning code.
+
+        The default implementation: (1) dumps pending requests to disk if the ``jobdir`` argument passed
+        to ``__init__`` was a valid directory, (2) returns the result of the dupefilter's ``close`` method.
+
+        :param reason: a string which describes the reason why the spider was closed
+        :type reason: :class:`str`
+        """
         if self.dqs:
             state = self.dqs.close()
             self._write_dqs_state(self.dqdir, state)
         return self.df.close(reason)
 
-    def enqueue_request(self, request):
+    def enqueue_request(self, request: Request) -> bool:
+        """
+        If the received request is valid (i.e. it should not be filtered out by the Dupefilter)
+        tries to push it into the disk queue, falling back to pushing it into the memory queue.
+
+        This method is responsible for incrementing the appropriate stats (``scheduler/enqueued``,
+        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``).
+
+        Returns ``True`` if the request was scheduled, ``False`` otherwise.
+        """
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
@@ -87,7 +149,16 @@ class Scheduler:
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
         return True
 
-    def next_request(self):
+    def next_request(self) -> Optional[Request]:
+        """
+        Get a request from the memory queue. If there are no more requests stored in memory,
+        fall back to getting a request from the disk queue.
+
+        This method is responsible for incrementing the appropriate stats (``scheduler/dequeued``,
+        ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``).
+
+        Returns a :class:`~scrapy.http.Request` object, or ``None`` if there are no more enqueued requests.
+        """
         request = self.mqs.pop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
