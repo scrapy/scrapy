@@ -11,6 +11,7 @@ from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.request import request_fingerprint
+from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
@@ -346,52 +347,51 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             ['get_media_requests', 'media_to_download', 'item_completed'])
 
 
+class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
+
+    def __init__(self, *args, **kwargs):
+        super(MockedMediaPipelineDeprecatedMethods, self).__init__(*args, **kwargs)
+        self._mockcalled = []
+
+    def get_media_requests(self, item, info):
+        item_url = item['image_urls'][0]
+        return Request(
+            item_url,
+            meta={'response': Response(item_url, status=200, body=b'data')}
+        )
+
+    def inc_stats(self, *args, **kwargs):
+        return True
+
+    def media_to_download(self, request, info):
+        self._mockcalled.append('media_to_download')
+        return super(MockedMediaPipelineDeprecatedMethods, self).media_to_download(request, info)
+
+    def media_downloaded(self, response, request, info):
+        self._mockcalled.append('media_downloaded')
+        return super(MockedMediaPipelineDeprecatedMethods, self).media_downloaded(response, request, info)
+
+    def file_downloaded(self, response, request, info):
+        self._mockcalled.append('file_downloaded')
+        return super(MockedMediaPipelineDeprecatedMethods, self).file_downloaded(response, request, info)
+
+    def file_path(self, request, response=None, info=None):
+        self._mockcalled.append('file_path')
+        return super(MockedMediaPipelineDeprecatedMethods, self).file_path(request, response, info)
+
+    def get_images(self, response, request, info):
+        self._mockcalled.append('get_images')
+        return []
+
+    def image_downloaded(self, response, request, info):
+        self._mockcalled.append('image_downloaded')
+        return super(MockedMediaPipelineDeprecatedMethods, self).image_downloaded(response, request, info)
+
+
 class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
     skip = skip_pillow
 
     def setUp(self):
-        from scrapy.pipelines.images import ImagesPipeline
-
-        class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
-
-            def __init__(self, *args, **kwargs):
-                super(MockedMediaPipelineDeprecatedMethods, self).__init__(*args, **kwargs)
-                self._mockcalled = []
-
-            def get_media_requests(self, item, info):
-                item_url = item['image_urls'][0]
-                return Request(
-                    item_url,
-                    meta={'response': Response(item_url, status=200, body=b'data')}
-                )
-
-            def inc_stats(self, *args, **kwargs):
-                return True
-
-            def media_to_download(self, request, info):
-                self._mockcalled.append('media_to_download')
-                return super(MockedMediaPipelineDeprecatedMethods, self).media_to_download(request, info)
-
-            def media_downloaded(self, response, request, info):
-                self._mockcalled.append('media_downloaded')
-                return super(MockedMediaPipelineDeprecatedMethods, self).media_downloaded(response, request, info)
-
-            def file_downloaded(self, response, request, info):
-                self._mockcalled.append('file_downloaded')
-                return super(MockedMediaPipelineDeprecatedMethods, self).file_downloaded(response, request, info)
-
-            def file_path(self, request, response=None, info=None):
-                self._mockcalled.append('file_path')
-                return super(MockedMediaPipelineDeprecatedMethods, self).file_path(request, response, info)
-
-            def get_images(self, response, request, info):
-                self._mockcalled.append('get_images')
-                return []
-
-            def image_downloaded(self, response, request, info):
-                self._mockcalled.append('image_downloaded')
-                return super(MockedMediaPipelineDeprecatedMethods, self).image_downloaded(response, request, info)
-
         self.pipe = MockedMediaPipelineDeprecatedMethods(store_uri='store-uri', download_func=_mocked_download_func)
         self.pipe.open_spider(None)
         self.item = dict(image_urls=['http://picsum.photos/id/1014/200/300'], images=[])
