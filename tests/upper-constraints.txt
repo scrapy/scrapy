@@ -2,7 +2,7 @@
 # pip dependency resolver from spending too much time backtracking.
 attrs>=20.2.0
 Automat>=0.8.0
-botocore>=1.20.3
+botocore>=1.20.30
 itemadapter>=0.1.1
 itemloaders>=1.0.3
 lxml>=4.6.1
