@@ -398,11 +398,12 @@ How can I cancel the download of a given response?
 --------------------------------------------------
 
 In some situations, it might be useful to stop the download of a certain response.
-For instance, if you only need the first part of a large response and you would like
-to save resources by avoiding the download of the whole body.
-In that case, you could attach a handler to the :class:`~scrapy.signals.bytes_received`
-signal and raise a :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to
-the :ref:`topics-stop-response-download` topic for additional information and examples.
+For instance, sometimes you can determine whether or not you need the full contents
+of a response by inspecting its headers or the first bytes of its body. In that case,
+you could save resources by attaching a handler to the :class:`~scrapy.signals.bytes_received`
+or :class:`~scrapy.signals.headers_received` signals and raising a
+:exc:`~scrapy.exceptions.StopDownload` exception. Please refer to the
+:ref:`topics-stop-response-download` topic for additional information and examples.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
