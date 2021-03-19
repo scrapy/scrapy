@@ -12,6 +12,8 @@ Highlights:
 
 -   Official Python 3.9 support
 
+-   Experimental :ref:`HTTP/2 support <http2>`
+
 -   New :class:`~scrapy.signals.headers_received` signal that allows stopping
     downloads early
 
@@ -37,6 +39,11 @@ Deprecations
 
 New features
 ~~~~~~~~~~~~
+
+-   Experimental :ref:`HTTP/2 support <http2>` through a new download handler
+    that can be assigned to the ``https`` protocol in the
+    :setting:`DOWNLOAD_HANDLERS` setting.
+    (:issue:`1854`, :issue:`4769`)
 
 -   The new :class:`~scrapy.signals.headers_received` signal gives early access
     to response headers and allows :ref:`stopping downloads
@@ -108,7 +115,8 @@ Quality Assurance
 
 -   Migrated from Travis CI to GitHub Actions. (:issue:`4924`)
 
--   Fixed CI issues. (:issue:`4986`, :issue:`5020`, :issue:`5022`)
+-   Fixed CI issues.
+    (:issue:`4986`, :issue:`5020`, :issue:`5022`, :issue:`5052`, :issue:`5053`)
 
 -   Refactored complex code (:issue:`4982`, :issue:`5001`, :issue:`5002`)
 

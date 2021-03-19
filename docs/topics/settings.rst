@@ -677,6 +677,8 @@ handler (without replacement), place this in your ``settings.py``::
         'ftp': None,
     }
 
+.. _http2:
+
 The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
 :setting:`DOWNLOAD_HANDLERS` as follows::
 
@@ -703,7 +705,8 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
 
     -   No support for `server pushes`_, which are ignored.
 
-    -   No support for the :signal:`bytes_received` signal.
+    -   No support for the :signal:`bytes_received` and
+        :signal:`headers_received` signals.
 
 .. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
