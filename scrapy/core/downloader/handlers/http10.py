@@ -1,5 +1,7 @@
 """Download handlers for http and https schemes
 """
+from weakref import WeakSet
+
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import to_unicode
 
@@ -12,6 +14,7 @@ class HTTP10DownloadHandler:
         self.ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._settings = settings
         self._crawler = crawler
+        self._connections = WeakSet()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -20,7 +23,8 @@ class HTTP10DownloadHandler:
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
         factory = self.HTTPClientFactory(request)
-        self._connect(factory)
+        connection = self._connect(factory)
+        self._connections.add(connection)
         return factory.deferred
 
     def _connect(self, factory):
@@ -35,3 +39,7 @@ class HTTP10DownloadHandler:
             return reactor.connectSSL(host, port, factory, client_context_factory)
         else:
             return reactor.connectTCP(host, port, factory)
+
+    def close(self):
+        for connection in self._connections:
+            connection.disconnect()
