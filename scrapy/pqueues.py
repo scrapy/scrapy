@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import datetime
+import time
 
 from scrapy.utils.misc import create_instance
 
@@ -121,14 +121,14 @@ class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
     """
 
     def priority(self, request):
-        now = int(datetime.now().timestamp())
+        now = int(time.time())
         per_request_delay = request.meta.get('request_delay', 0)
         return now + per_request_delay
 
     def pop(self):
         if self.curprio is None:
             return
-        if datetime.now().timestamp() < self.curprio:
+        if time.time() < self.curprio:
             return
         return super().pop()
 
