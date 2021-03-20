@@ -377,6 +377,7 @@ Those are:
 * :reqmeta:`download_timeout`
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_latency`
+* :reqmeta:`download_slot`
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`proxy`
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
@@ -408,6 +409,20 @@ The amount of time spent to fetch the response, since the request has been
 started, i.e. HTTP message sent over the network. This meta key only becomes
 available when the response has been downloaded. While most other meta keys are
 used to control Scrapy behavior, this one is supposed to be read-only.
+
+.. reqmeta:: download_slot
+
+download_slot
+----------------
+
+By default, it stores the hostname of the website to which request is destined.
+Scrapy uses slots as queues to process requests and `download_slot` represent the slot
+in which that request is going to process. If a slot doesn't exist then Scrapy creates
+it and uses it to process requests associated with it. A slot adds different constraints
+to the requests to tune up the concurrency and add delays e.g. :setting:`DOWNLOAD_DELAY`,
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, :setting:`CONCURRENT_REQUESTS_PER_IP` etc.
+By default all the requests related to a domain are processed in single slot.
+But you can set this key to whatever you like when sending the request.
 
 .. reqmeta:: download_fail_on_dataloss
 
