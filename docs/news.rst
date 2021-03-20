@@ -68,6 +68,16 @@ New features
 
     (:issue:`3947`, :issue:`4850`)
 
+-   The :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` spider
+    middleware now logs ignored URLs with ``INFO`` :ref:`logging level
+    <levels>` instead of ``DEBUG``, and it now includes the following entry
+    into :ref:`stats <topics-stats>` to keep track of the number of ignored
+    URLs:
+
+        urllength/request_ignored_count
+
+    (:issue:`5036`)
+
 
 Bug fixes
 ~~~~~~~~~
@@ -116,7 +126,8 @@ Quality Assurance
 -   Migrated from Travis CI to GitHub Actions. (:issue:`4924`)
 
 -   Fixed CI issues.
-    (:issue:`4986`, :issue:`5020`, :issue:`5022`, :issue:`5052`, :issue:`5053`)
+    (:issue:`4986`, :issue:`5020`, :issue:`5022`, :issue:`5027`, :issue:`5052`,
+    :issue:`5053`)
 
 -   Refactored complex code (:issue:`4982`, :issue:`5001`, :issue:`5002`)
 
