@@ -358,10 +358,19 @@ class ScrapyAgent:
         request.meta['download_latency'] = time() - start_time
         return result
 
+    @staticmethod
+    def _headers_from_twisted_response(response):
+        headers = Headers()
+        if response.length is not None:
+            headers[b'Content-Length'] = str(response.length).encode()
+        for key, value in response.headers.getAllRawHeaders():
+            headers[key] = value
+        return headers
+
     def _cb_bodyready(self, txresponse, request):
         headers_received_result = self._crawler.signals.send_catch_log(
             signal=signals.headers_received,
-            headers=Headers(txresponse.headers.getAllRawHeaders()),
+            headers=self._headers_from_twisted_response(txresponse),
             body_length=txresponse.length,
             request=request,
             spider=self._crawler.spider,
@@ -435,7 +444,7 @@ class ScrapyAgent:
         return d
 
     def _cb_bodydone(self, result, request, url):
-        headers = Headers(result["txresponse"].headers.getAllRawHeaders())
+        headers = self._headers_from_twisted_response(result["txresponse"])
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
         try:
             version = result["txresponse"].version

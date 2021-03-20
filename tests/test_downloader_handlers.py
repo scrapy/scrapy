@@ -364,6 +364,13 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(self.assertEqual, body)
         return d
 
+    def test_response_header_content_length(self):
+        request = Request(self.getURL("file"), method=b"GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.headers[b'content-length'])
+        d.addCallback(self.assertEqual, b'159')
+        return d
+
 
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
