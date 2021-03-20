@@ -58,9 +58,12 @@ class Scheduler:
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
-        return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
-                   stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
-                   mqclass=mqclass, crawler=crawler, dpqclass=dpqclass)
+
+        scheduler = cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
+                        stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
+                        mqclass=mqclass, crawler=crawler)
+        scheduler.dpqclass = dpqclass
+        return scheduler
 
     def has_pending_requests(self):
         return len(self) > 0
