@@ -365,6 +365,7 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(self.assertEqual, body)
         return d
 
+    @mark.xfail(reason="https://twistedmatrix.com/trac/ticket/10126", strict=True)
     def test_response_header_content_length(self):
         request = Request(self.getURL("file"), method=b"GET")
         d = self.download_request(request, Spider("foo"))
@@ -382,6 +383,13 @@ class Http10TestCase(HttpTestCase):
         d = self.download_request(request, Spider("foo"))
         d.addCallback(lambda r: r.protocol)
         d.addCallback(self.assertEqual, "HTTP/1.0")
+        return d
+
+    def test_response_header_content_length(self):
+        request = Request(self.getURL("file"), method=b"GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.headers[b'content-length'])
+        d.addCallback(self.assertEqual, b'159')
         return d
 
 
@@ -519,10 +527,6 @@ class Http11TestCase(HttpTestCase):
         d.addCallback(lambda r: r.protocol)
         d.addCallback(self.assertEqual, "HTTP/1.1")
         return d
-
-    @mark.xfail(reason="https://twistedmatrix.com/trac/ticket/10126", strict=True)
-    def test_response_header_content_length(self):
-        super().test_response_header_content_length()
 
 
 class Https11TestCase(Http11TestCase):
