@@ -967,7 +967,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
     def _add_test_callbacks(self, deferred, callback=None, errback=None):
         def _clean(data):
-            self.download_handler.client.transport.loseConnection()
+            self.download_handler.close()
             return data
 
         deferred.addCallback(_clean)

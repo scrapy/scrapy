@@ -31,6 +31,7 @@ In case of status 200 request, response.headers will come with two keys:
 import re
 from io import BytesIO
 from urllib.parse import unquote
+from weakref import WeakSet
 
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
@@ -74,6 +75,7 @@ class FTPDownloadHandler:
         self.default_user = settings['FTP_USER']
         self.default_password = settings['FTP_PASSWORD']
         self.passive_mode = settings['FTP_PASSIVE_MODE']
+        self._clients = WeakSet()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -92,6 +94,7 @@ class FTPDownloadHandler:
 
     def gotClient(self, client, request, filepath):
         self.client = client
+        self._clients.add(client)
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         return client.retrieveFile(filepath, protocol).addCallbacks(
             callback=self._build_response,
@@ -117,3 +120,7 @@ class FTPDownloadHandler:
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=to_bytes(message))
         raise result.type(result.value)
+
+    def close(self):
+        for client in self._clients:
+            client.transport.loseConnection()
