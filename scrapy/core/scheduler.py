@@ -54,7 +54,7 @@ class Scheduler:
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
-        dpqclass = load_object(settings['SCHEDULER_DELAYED_REQUESTS_PRIORITY_QUEUE'])
+        dpqclass = load_object(settings['SCHEDULER_DELAY_QUEUE'])
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
