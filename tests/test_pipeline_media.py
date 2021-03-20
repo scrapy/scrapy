@@ -1,3 +1,5 @@
+from typing import Optional
+
 from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
@@ -15,6 +17,14 @@ from scrapy.pipelines.files import FileException
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy import signals
+
+
+try:
+    from PIL import Image  # noqa: imported just to check for the import error
+except ImportError:
+    skip_pillow: Optional[str] = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+else:
+    skip_pillow = None
 
 
 def _mocked_download_func(request, info):
@@ -379,6 +389,7 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
 
 class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
+    skip = skip_pillow
 
     def setUp(self):
         self.pipe = MockedMediaPipelineDeprecatedMethods(store_uri='store-uri', download_func=_mocked_download_func)
