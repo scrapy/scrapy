@@ -67,6 +67,7 @@ jobs:
           $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
           source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
         fi
+        pip install -U pip
         pip install -U tox
         tox
 

@@ -32,5 +32,6 @@ jobs:
     - name: Run tests
       env: ${{ matrix.env }}
       run: |
+        pip install -U pip
         pip install -U tox
         tox
