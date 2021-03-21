@@ -426,6 +426,14 @@ The meta key is used set retry times per request. When initialized, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
 
+.. reqmeta:: request_delay
+
+request_delay
+-------------
+
+The amount of time (in secs) that the scheduler will keep a request in the queue
+before the dequeuing.
+
 
 .. _topics-stop-response-download:
 
