@@ -1310,7 +1310,7 @@ SCHEDULER_DELAY_QUEUE
 Default: ``'scrapy.pqueues.ScrapyDelayedRequestsPriorityQueue'``
 
 Type of priority queue used by the scheduler for delayed requests. The default class is
-a sublcass of the ``scrapy.pqueues.ScrapyPriorityQueue``, so the chosen class must have
+a sublcass of the :class:`scrapy.pqueues.ScrapyPriorityQueue`, so the chosen class must have
 the same API required for the priority queue setting :setting:`SCHEDULER_PRIORITY_QUEUE`.
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
