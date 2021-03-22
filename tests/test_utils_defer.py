@@ -1,14 +1,18 @@
+import random
+
 from pytest import mark
 from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.asyncgen import collect_asyncgen, as_async_generator
 from scrapy.utils.defer import (
     aiter_errback,
     deferred_f_from_coro_f,
     iter_errback,
+    maybe_deferred_to_future,
     mustbe_deferred,
+    parallel_async,
     process_chain,
     process_chain_both,
     process_parallel,
@@ -164,3 +168,65 @@ class AsyncDefTestsuiteTest(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f_xfail(self):
         raise Exception("This is expected to be raised")
+
+
+class AsyncCooperatorTest(unittest.TestCase):
+    """ This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
+
+    parallel_async is called with the results of a callback (so an iterable of items, requests and None,
+    with arbitrary delays between values), and it uses Scraper._process_spidermw_output as the callable
+    (so a callable that returns a Deferred for an item, which will fire after pipelines process it, and
+    None for everything else). The concurrent task count is the CONCURRENT_ITEMS setting.
+
+    We want to test different concurrency values compared to the iterable length.
+    We also want to simulate the real usage, with arbitrary delays between getting the values
+    from the iterable. We also want to simulate sync and async results from the callable.
+    """
+    CONCURRENT_ITEMS = 50
+
+    @staticmethod
+    def callable(o, results):
+        if random.random() < 0.4:
+            # simulate async processing
+            dfd = defer.Deferred()
+            dfd.addCallback(lambda _: results.append(o))
+            delay = random.random() / 8
+            reactor.callLater(delay, dfd.callback, None)
+            return dfd
+        else:
+            # simulate trivial sync processing
+            results.append(o)
+
+    @staticmethod
+    def get_async_iterable(length):
+        # simulate a simple callback without delays between results
+        return as_async_generator(range(length))
+
+    @staticmethod
+    async def get_async_iterable_with_delays(length):
+        # simulate a callback with delays between some of the results
+        for i in range(length):
+            if random.random() < 0.1:
+                dfd = defer.Deferred()
+                delay = random.random() / 20
+                reactor.callLater(delay, dfd.callback, None)
+                await maybe_deferred_to_future(dfd)
+            yield i
+
+    @defer.inlineCallbacks
+    def test_simple(self):
+        for length in [20, 50, 100]:
+            results = []
+            ait = self.get_async_iterable(length)
+            dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
+            yield dl
+            self.assertEqual(list(range(length)), sorted(results))
+
+    @defer.inlineCallbacks
+    def test_delays(self):
+        for length in [20, 50, 100]:
+            results = []
+            ait = self.get_async_iterable_with_delays(length)
+            dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
+            yield dl
+            self.assertEqual(list(range(length)), sorted(results))
