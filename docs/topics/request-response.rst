@@ -383,6 +383,7 @@ Those are:
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
 * :reqmeta:`max_retry_times`
+* :reqmeta:`request_delay`
 
 .. reqmeta:: bindaddress
 
