@@ -375,14 +375,15 @@ Those are:
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_timeout`
 * :reqmeta:`handle_httpstatus_all`
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+
 
 
 .. reqmeta:: bindaddress
