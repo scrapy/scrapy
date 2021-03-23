@@ -384,8 +384,6 @@ Those are:
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
 
-
-
 .. reqmeta:: bindaddress
 
 bindaddress
