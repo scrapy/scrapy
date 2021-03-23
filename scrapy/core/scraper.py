@@ -16,7 +16,6 @@ from scrapy.utils.defer import (
     aiter_errback,
     defer_fail,
     defer_succeed,
-    deferred_from_coro,
     iter_errback,
     parallel,
     parallel_async,
@@ -191,8 +190,8 @@ class Scraper:
             return defer_succeed(None)
         if isinstance(result, collections.abc.AsyncIterable):
             it = aiter_errback(result, self.handle_spider_error, request, response, spider)
-            dfd = deferred_from_coro(parallel_async(it, self.concurrent_items, self._process_spidermw_output,
-                                     request, response, spider))
+            dfd = parallel_async(it, self.concurrent_items, self._process_spidermw_output,
+                                 request, response, spider)
         else:
             it = iter_errback(result, self.handle_spider_error, request, response, spider)
             dfd = parallel(it, self.concurrent_items, self._process_spidermw_output,
