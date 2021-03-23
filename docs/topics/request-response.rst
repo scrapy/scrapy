@@ -374,9 +374,9 @@ Those are:
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_timeout`
-* :reqmeta:`handle_httpstatus_all`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
