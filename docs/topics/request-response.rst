@@ -363,9 +363,6 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
-
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
@@ -384,6 +381,8 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
 
 
 .. reqmeta:: bindaddress
