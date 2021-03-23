@@ -19,14 +19,12 @@ from urllib.parse import urlparse
 import attr
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
-from testfixtures import LogCapture
 from twisted.internet import defer, reactor
 from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import StopDownload
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
@@ -143,6 +141,7 @@ class CrawlerRun:
         self.reqreached = []
         self.itemerror = []
         self.itemresp = []
+        self.headers = {}
         self.bytes = defaultdict(lambda: list())
         self.signals_caught = {}
         self.spider_class = spider_class
@@ -165,6 +164,7 @@ class CrawlerRun:
         self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.item_error, signals.item_error)
+        self.crawler.signals.connect(self.headers_received, signals.headers_received)
         self.crawler.signals.connect(self.bytes_received, signals.bytes_received)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
@@ -183,6 +183,7 @@ class CrawlerRun:
             if not name.startswith('_'):
                 disconnect_all(signal)
         self.deferred.callback(None)
+        return self.crawler.stop()
 
     def geturl(self, path):
         return f"http://localhost:{self.portno}{path}"
@@ -196,6 +197,9 @@ class CrawlerRun:
 
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
+
+    def headers_received(self, headers, body_length, request, spider):
+        self.headers[request] = headers
 
     def bytes_received(self, data, request, spider):
         self.bytes[request].append(data)
@@ -220,18 +224,7 @@ class CrawlerRun:
         self.signals_caught[sig] = signalargs
 
 
-class StopDownloadCrawlerRun(CrawlerRun):
-    """
-    Make sure raising the StopDownload exception stops the download of the response body
-    """
-
-    def bytes_received(self, data, request, spider):
-        super().bytes_received(data, request, spider)
-        raise StopDownload(fail=False)
-
-
 class EngineTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def test_crawler(self):
 
@@ -241,8 +234,8 @@ class EngineTest(unittest.TestCase):
             self.run = CrawlerRun(spider)
             yield self.run.run()
             self._assert_visited_urls()
-            self._assert_scheduled_requests(urls_to_visit=9)
-            self._assert_downloaded_responses()
+            self._assert_scheduled_requests(count=9)
+            self._assert_downloaded_responses(count=9)
             self._assert_scraped_items()
             self._assert_signals_caught()
             self._assert_bytes_received()
@@ -251,7 +244,7 @@ class EngineTest(unittest.TestCase):
     def test_crawler_dupefilter(self):
         self.run = CrawlerRun(TestDupeFilterSpider)
         yield self.run.run()
-        self._assert_scheduled_requests(urls_to_visit=8)
+        self._assert_scheduled_requests(count=8)
         self._assert_dropped_requests()
 
     @defer.inlineCallbacks
@@ -267,8 +260,8 @@ class EngineTest(unittest.TestCase):
         urls_expected = {self.run.geturl(p) for p in must_be_visited}
         assert urls_expected <= urls_visited, f"URLs not visited: {list(urls_expected - urls_visited)}"
 
-    def _assert_scheduled_requests(self, urls_to_visit=None):
-        self.assertEqual(urls_to_visit, len(self.run.reqplug))
+    def _assert_scheduled_requests(self, count=None):
+        self.assertEqual(count, len(self.run.reqplug))
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
@@ -286,10 +279,10 @@ class EngineTest(unittest.TestCase):
     def _assert_dropped_requests(self):
         self.assertEqual(len(self.run.reqdropped), 1)
 
-    def _assert_downloaded_responses(self):
+    def _assert_downloaded_responses(self, count):
         # response tests
-        self.assertEqual(9, len(self.run.respplug))
-        self.assertEqual(9, len(self.run.reqreached))
+        self.assertEqual(count, len(self.run.respplug))
+        self.assertEqual(count, len(self.run.reqreached))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':
@@ -322,6 +315,13 @@ class EngineTest(unittest.TestCase):
             if 'item2.html' in item['url']:
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
+
+    def _assert_headers_received(self):
+        for headers in self.run.headers.values():
+            self.assertIn(b"Server", headers)
+            self.assertIn(b"TwistedWeb", headers[b"Server"])
+            self.assertIn(b"Date", headers)
+            self.assertIn(b"Content-Type", headers)
 
     def _assert_bytes_received(self):
         self.assertEqual(9, len(self.run.bytes))
@@ -371,6 +371,7 @@ class EngineTest(unittest.TestCase):
         assert signals.spider_opened in self.run.signals_caught
         assert signals.spider_idle in self.run.signals_caught
         assert signals.spider_closed in self.run.signals_caught
+        assert signals.headers_received in self.run.signals_caught
 
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_caught[signals.spider_opened])
@@ -401,48 +402,6 @@ class EngineTest(unittest.TestCase):
         yield e.close()
         self.assertFalse(e.running)
         self.assertEqual(len(e.open_spiders), 0)
-
-
-class StopDownloadEngineTest(EngineTest):
-
-    @defer.inlineCallbacks
-    def test_crawler(self):
-        for spider in TestSpider, DictItemsSpider:
-            self.run = StopDownloadCrawlerRun(spider)
-            with LogCapture() as log:
-                yield self.run.run()
-                log.check_present(("scrapy.core.downloader.handlers.http11",
-                                   "DEBUG",
-                                   f"Download stopped for <GET http://localhost:{self.run.portno}/redirected> "
-                                   "from signal handler"
-                                   " StopDownloadCrawlerRun.bytes_received"))
-                log.check_present(("scrapy.core.downloader.handlers.http11",
-                                   "DEBUG",
-                                   f"Download stopped for <GET http://localhost:{self.run.portno}/> "
-                                   "from signal handler"
-                                   " StopDownloadCrawlerRun.bytes_received"))
-                log.check_present(("scrapy.core.downloader.handlers.http11",
-                                   "DEBUG",
-                                   f"Download stopped for <GET http://localhost:{self.run.portno}/numbers> "
-                                   "from signal handler"
-                                   " StopDownloadCrawlerRun.bytes_received"))
-            self._assert_visited_urls()
-            self._assert_scheduled_requests(urls_to_visit=9)
-            self._assert_downloaded_responses()
-            self._assert_signals_caught()
-            self._assert_bytes_received()
-
-    def _assert_bytes_received(self):
-        self.assertEqual(9, len(self.run.bytes))
-        for request, data in self.run.bytes.items():
-            joined_data = b"".join(data)
-            self.assertTrue(len(data) == 1)  # signal was fired only once
-            if self.run.getpath(request.url) == "/numbers":
-                # Received bytes are not the complete response. The exact amount depends
-                # on the buffer size, which can vary, so we only check that the amount
-                # of received bytes is strictly less than the full response.
-                numbers = [str(x).encode("utf8") for x in range(2**18)]
-                self.assertTrue(len(joined_data) < len(b"".join(numbers)))
 
 
 if __name__ == "__main__":
