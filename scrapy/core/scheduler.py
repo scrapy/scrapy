@@ -90,9 +90,9 @@ class Scheduler:
 
     def has_pending_requests(self) -> bool:
         """
-        A predicate that is ``True`` if the Scheduler still has enqueued requests, ``False`` otherwise
+        ``True`` if the scheduler has enqueued requests, ``False`` otherwise
         """
-        return len(self) > 0
+        return len(self.mqs) > 0 if self.dqs is None else len(self.dqs) + len(self.mqs) > 0
 
     def open(self, spider: Spider) -> Optional[Deferred]:
         """
@@ -169,9 +169,6 @@ class Scheduler:
         if request:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
         return request
-
-    def __len__(self):
-        return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
 
     def _dqpush(self, request):
         if self.dqs is None:
