@@ -14,7 +14,7 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
@@ -271,7 +271,7 @@ class ExecutionEngine:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={'spider': spider})
         nextcall = CallLaterOnce(self._next_request, spider)
-        scheduler = self.scheduler_cls.from_crawler(self.crawler)
+        scheduler = create_instance(self.scheduler_cls, settings=None, crawler=self.crawler)
         start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
         slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.slot = slot
