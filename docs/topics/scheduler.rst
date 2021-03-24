@@ -4,26 +4,40 @@
 Scheduler
 =========
 
-The Scheduler receives requests from the :ref:`Engine <component-engine>`
-and enqueues them into disk and/or disk queues
-(:meth:`scrapy.core.scheduler.Scheduler.enqueue_request`).
-It also gets those requests and feeds them back when the engine requests
-them (:meth:`scrapy.core.scheduler.Scheduler.next_request`).
+The scheduler component receives requests from the :ref:`engine <component-engine>`
+and stores them into persistent and/or non-persistent data structures.
+It also gets those requests and feeds them back to the engine when the it
+asks for a next request to be downloaded.
 
-Overriding the default Scheduler
+
+Overriding the default scheduler
 ================================
 
-You can use your own custom `Scheduler` class by supplying the full
-Python path in the :setting:`SCHEDULER` setting
+You can use your own custom scheduler class by supplying its full
+Python path in the :setting:`SCHEDULER` setting.
 
 
-Scheduler interface
-===================
-
-This is the basic Scheduler API, i.e. the methods that are defined in the default Scheduler.
+Minimal scheduler interface
+===========================
 
 .. module:: scrapy.core.scheduler
+.. autoclass:: BaseScheduler
 
+   .. automethod:: open
+
+   .. automethod:: close
+
+   .. automethod:: has_pending_requests
+
+   .. automethod:: enqueue_request
+
+   .. automethod:: next_request
+
+
+Default Scrapy scheduler
+========================
+
+.. module:: scrapy.core.scheduler
 .. autoclass:: Scheduler
 
    .. automethod:: from_crawler
@@ -37,3 +51,5 @@ This is the basic Scheduler API, i.e. the methods that are defined in the defaul
    .. automethod:: enqueue_request
 
    .. automethod:: next_request
+
+   .. automethod:: __len__

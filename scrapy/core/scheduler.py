@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from abc import abstractmethod
 from os.path import join, exists
 from typing import Optional
 
@@ -16,17 +17,75 @@ from scrapy.utils.misc import load_object, create_instance
 logger = logging.getLogger(__name__)
 
 
-class Scheduler:
+class BaseScheduler:
     """
-    Enqueues requests and gets the next request to be downloaded.
-    It also handles duplication filtering, via the :setting:`dupefilter <DUPEFILTER_CLASS>`.
+    The scheduler component is responsible for storing requests received from
+    the engine, and feeding them back upon request (also to the engine).
 
-    Prioritization and queueing is not performed by the Scheduler.
+    The methods defined in this class constitute the minimal
+    interface that the Scrapy engine will interact with.
+    """
+
+    @abstractmethod
+    def has_pending_requests(self) -> bool:
+        """
+        ``True`` if the scheduler has enqueued requests, ``False`` otherwise
+        """
+        pass
+
+    @abstractmethod
+    def open(self, spider: Spider) -> Optional[Deferred]:
+        """
+        Called when the spider is opened by the engine. It receives the spider
+        instance as argument and it's useful to execute initialization code.
+
+        :param spider: the spider object for the current crawl
+        :type spider: :class:`~scrapy.spiders.Spider`
+        """
+        pass
+
+    @abstractmethod
+    def close(self, reason: str) -> Optional[Deferred]:
+        """
+        Called when the spider is closed by the engine. It receives the reason why the crawl
+        finished as argument and it's useful to execute cleaning code.
+
+        :param reason: a string which describes the reason why the spider was closed
+        :type reason: :class:`str`
+        """
+        pass
+
+    @abstractmethod
+    def enqueue_request(self, request: Request) -> bool:
+        """
+        Process a request received by the engine.
+
+        Return ``True`` if the request is to be considered scheduled, ``False`` otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def next_request(self) -> Optional[Request]:
+        """
+        Return a previously enqueued request.
+
+        Return a :class:`~scrapy.http.Request` object, or ``None`` if there are
+        no more enqueued requests, i.e. if ``has_pending_requests`` is ``False``.
+        """
+        pass
+
+
+class Scheduler(BaseScheduler):
+    """
+    Default Scrapy scheduler. This implementation also handles duplication
+    filtering via the :setting:`dupefilter <DUPEFILTER_CLASS>`.
+
+    Prioritization and queueing is not performed by the scheduler.
     User sets ``priority`` field for each Request, and a PriorityQueue
     (defined by :setting:`SCHEDULER_PRIORITY_QUEUE`) uses these priorities
     to dequeue requests in a desired order.
 
-    Scheduler uses two PriorityQueue instances, configured to work in-memory
+    This scheduler uses two PriorityQueue instances, configured to work in-memory
     and on-disk (optional). When on-disk queue is present, it is used by
     default, and an in-memory queue is used as a fallback for cases where
     a disk queue can't handle a request (can't serialize it).
@@ -36,7 +95,7 @@ class Scheduler:
     which PriorityQueue instances would be instantiated with, to keep requests
     on disk and in memory respectively.
 
-    Overall, Scheduler is an object which holds several PriorityQueue instances
+    Overall, this scheduler is an object which holds several PriorityQueue instances
     (in-memory and on-disk) and implements fallback logic for them.
     Also, it handles dupefilters.
 
@@ -97,8 +156,8 @@ class Scheduler:
     @classmethod
     def from_crawler(cls, crawler):
         """
-        Called from the Engine to create the Scheduler instance.
-        The default implementation takes care of reading the relevant settings
+        Called from the engine to create the scheduler instance.
+        This implementation takes care of reading the relevant settings
         and loading the necessary classes and objects from them.
         """
         dupefilter_cls = load_object(crawler.settings['DUPEFILTER_CLASS'])
@@ -114,22 +173,15 @@ class Scheduler:
         )
 
     def has_pending_requests(self) -> bool:
-        """
-        A predicate that is ``True`` if the Scheduler still has enqueued requests, ``False`` otherwise
-        """
         return len(self) > 0
 
     def open(self, spider: Spider) -> Optional[Deferred]:
         """
-        Called when the Spider is opened by the Engine. It receives the Spider instance as
-        argument and it's useful to execute initialization code.
-
-        The default implementation: (1) initializes the memory queue, (2) initializes the disk queue
-        if the ``jobdir`` argument passed to ``__init__`` was a valid directory, (3) returns the
-        result of the dupefilter's ``open`` method.
-
-        :param spider: the Spider object for the current crawl
-        :type spider: :class:`~scrapy.spiders.Spider`
+        This implementation:
+        (1) initializes the memory queue
+        (2) initializes the disk queue if the ``jobdir`` argument
+            passed to ``__init__`` is a valid directory
+        (3) returns the result of the dupefilter's ``open`` method.
         """
         self.spider = spider
         self.mqs = self._mq()
@@ -138,14 +190,10 @@ class Scheduler:
 
     def close(self, reason: str) -> Optional[Deferred]:
         """
-        Called when the Spider is closed by the Engine. It receives the reason why the crawl
-        finished as argument and it's useful to execute cleaning code.
-
-        The default implementation: (1) dumps pending requests to disk if the ``jobdir`` argument passed
-        to ``__init__`` was a valid directory, (2) returns the result of the dupefilter's ``close`` method.
-
-        :param reason: a string which describes the reason why the spider was closed
-        :type reason: :class:`str`
+        This implementation:
+        (1) dumps pending requests to disk if the ``jobdir`` argument
+            passed to ``__init__`` is a valid directory
+        (2) returns the result of the dupefilter's ``close`` method.
         """
         if self.dqs:
             state = self.dqs.close()
@@ -157,10 +205,10 @@ class Scheduler:
         If the received request is valid (i.e. it should not be filtered out by the Dupefilter)
         tries to push it into the disk queue, falling back to pushing it into the memory queue.
 
-        This method is responsible for incrementing the appropriate stats (``scheduler/enqueued``,
-        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``).
+        This method increments the appropriate stats: ``scheduler/enqueued``,
+        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.
 
-        Returns ``True`` if the request was scheduled, ``False`` otherwise.
+        Returns ``True`` if the request was stored successfully, ``False`` otherwise.
         """
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
@@ -195,7 +243,10 @@ class Scheduler:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
         return request
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """
+        Return the current amount of enqueued requests
+        """
         return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
 
     def _dqpush(self, request):
