@@ -86,6 +86,16 @@ Bug fixes
     PyPyDispatcher, which could prevent Scrapy from working depending on which
     package got imported. (:issue:`4710`, :issue:`4814`)
 
+-   When inspecting a callback to check if it is a generator that also returns
+    a value, an exception is no longer raised if the callback has a docstring
+    with lower indentation than the following code.
+    (:issue:`4477`, :issue:`4935`)
+
+-   The `Content-Length <https://tools.ietf.org/html/rfc2616#section-14.13>`_
+    header is no longer omitted from responses when using the default, HTTP/1.1
+    download handler (see :setting:`DOWNLOAD_HANDLERS`).
+    (:issue:`5009`, :issue:`5034`, :issue:`5045`, :issue:`5057`)
+
 
 Documentation
 ~~~~~~~~~~~~~
@@ -95,6 +105,10 @@ Documentation
 
 -   Covered scrapy-bench_ in :ref:`benchmarking`.
     (:issue:`4996`, :issue:`5016`)
+
+-   The :ref:`list of Request.meta keys <topics-request-meta>` is now sorted
+    alphabetically.
+    (:issue:`5061`, :issue:`5065`)
 
 -   Fixed some errors in examples.
     (:issue:`4829`, :issue:`4830`, :issue:`4907`, :issue:`4909`,
