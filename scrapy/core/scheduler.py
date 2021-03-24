@@ -41,13 +41,38 @@ class Scheduler:
     Also, it handles dupefilters.
 
     :param dupefilter: An object responsible for checking and filtering duplicate requests.
-        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
+                       The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
     :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
-        any class that implements the `BaseDupeFilter` interface
+                      any class that implements the `BaseDupeFilter` interface
 
     :param jobdir: The path of a directory to be used for persisting the crawl's state.
-        The value for the :setting:`JOBDIR` setting is used by default. See :ref:`topics-jobs`.
+                   The value for the :setting:`JOBDIR` setting is used by default.
+                   See :ref:`topics-jobs`.
     :type jobdir: :class:`str` or ``None``
+
+    :param dqclass: A class to be used as persistent request queue.
+                    The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.
+    :type dqclass: class
+
+    :param mqclass: A class to be used as non-persistent request queue.
+                    The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.
+    :type mqclass: class
+
+    :param logunser: A boolean that indicates whether or not unserializable requests should be logged.
+                     The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.
+    :type logunser: bool
+
+    :param stats: A stats collector object to record stats about the request scheduling process.
+                  The value for the :setting:`STATS_CLASS` setting is used by default.
+    :type stats: :class:`scrapy.statscollectors.StatsCollector` instance or similar:
+                 any class that implements the `StatsCollector` interface
+
+    :param pqclass: A class to be used as priority queue for requests.
+                    The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.
+    :type pqclass: class
+
+    :param crawler: The crawler object corresponding to the current crawl.
+    :type crawler: :class:`scrapy.crawler.Crawler`
     """
     def __init__(
         self,

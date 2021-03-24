@@ -26,26 +26,6 @@ This is the basic Scheduler API, i.e. the methods that are defined in the defaul
 
 .. autoclass:: Scheduler
 
-   :param dqclass: The class to be used as disk queue to store requests.
-                   :setting:`SCHEDULER_DISK_QUEUE` is used by default.
-   :type dqclass: class
-
-   :param mqclass: The class to be used as memory queue to store requests.
-                   :setting:`SCHEDULER_MEMORY_QUEUE` is used by default.
-   :type mqclass: class
-
-   :param logunser: A boolean flag indicating whether or not unserializable requests should be logged.
-                    See :setting:`SCHEDULER_DEBUG`.
-   :type logunser: bool
-
-   :param stats: The class to be used to collect stats.
-                 :setting:`STATS_CLASS` is used by default.
-   :type stats: class
-
-   :param pqclass: The class to be used as priority queue to store requests.
-                   :setting:`SCHEDULER_PRIORITY_QUEUE` is used by default.
-   :type pqclass: class
-
    .. automethod:: from_crawler
 
    .. automethod:: open
