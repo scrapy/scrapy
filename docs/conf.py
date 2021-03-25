@@ -10,8 +10,8 @@
 # serve to show the default.
 
 import os
-import time
 import sys
+import time
 from datetime import datetime
 from os import path
 
