@@ -98,20 +98,25 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_spider_output(response, result, spider)
 
+        .. versionchanged:: VERSION
+           Since VERSION this can take and return an :term:`python:asynchronous
+           iterable`.
+
         This method is called with the results returned from the Spider, after
         it has processed the response.
 
-        :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request` objects and :ref:`item object
-        <topics-items>`.
+        :meth:`process_spider_output` must return an iterable (normal or
+        asynchronous) of :class:`~scrapy.http.Request` objects and 
+        :ref:`item objects <topics-items>`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request` objects and
-          :ref:`item object <topics-items>`
+        :type result: an iterable (normal or asynchronous) of
+          :class:`~scrapy.http.Request` objects and :ref:`item objects
+          <topics-items>`
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
@@ -122,7 +127,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request` objects and :ref:`item object
+        iterable of :class:`~scrapy.http.Request` objects and :ref:`item objects
         <topics-items>`.
 
         If it returns ``None``, Scrapy will continue processing this exception,

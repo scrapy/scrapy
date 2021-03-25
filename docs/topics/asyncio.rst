@@ -38,7 +38,6 @@ You can also use custom asyncio event loops with the asyncio reactor. Set the
 :setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event loop class to
 use it instead of the default asyncio event loop.
 
-
 .. _asyncio-await-dfd:
 
 Awaiting on Deferreds

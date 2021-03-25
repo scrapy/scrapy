@@ -17,6 +17,10 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   :class:`~scrapy.http.Request` callbacks.
 
+    .. versionchanged:: VERSION
+       Output of async callbacks is now processed asynchronously instead of collecting
+       all of it first.
+
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
 
@@ -29,6 +33,13 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
+
+-   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
+    method of :ref:`spider middlewares <custom-spider-middleware>`.
+
+    .. versionadded:: VERSION
+    .. note:: This method needs to be an async generator, not just a coroutine that
+              returns an iterable.
 
 Usage
 =====
@@ -76,7 +87,7 @@ This means you can use many useful Python libraries providing such code::
         async def parse_with_asyncio(self, response):
             async with aiohttp.ClientSession() as session:
                 async with session.get('https://additional.url') as additional_response:
-                    additional_data = await r.text()
+                    additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
