@@ -1,0 +1,17 @@
+# Request the latest known version or newer of some dependencies to prevent the
+# pip dependency resolver from spending too much time backtracking.
+attrs>=20.2.0
+Automat>=0.8.0
+botocore>=1.20.30
+itemadapter>=0.1.1
+itemloaders>=1.0.3
+lxml>=4.6.1
+parsel>=1.5.2
+Pillow>=8.0.1
+pyOpenSSL>=17.5  # mitmproxy 4.0.4
+pytest>=6.2.1
+pytest-twisted>=1.13.1
+service_identity>=17.0.0
+six>=1.14.0
+sybil>=2.0.0
+Twisted>=19.10.0

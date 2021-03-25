@@ -1,0 +1,3 @@
+# In pip 20.3-21.0, the default dependency resolver causes the build in
+# ReadTheDocs to fail due to memory exhaustion or timeout.
+pip<20.3

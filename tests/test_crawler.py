@@ -8,7 +8,9 @@ from unittest import skipIf
 
 from pytest import raises, mark
 from testfixtures import LogCapture
+from twisted import version as twisted_version
 from twisted.internet import defer
+from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
@@ -358,6 +360,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    @mark.skipif(twisted_version == Version('twisted', 21, 2, 0), reason='https://twistedmatrix.com/trac/ticket/10106')
     def test_custom_loop_asyncio(self):
         log = self.run_script("asyncio_custom_loop.py")
         self.assertIn("Spider closed (finished)", log)
@@ -366,6 +369,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     @mark.skipif(sys.implementation.name == "pypy", reason="uvloop does not support pypy properly")
     @mark.skipif(platform.system() == "Windows", reason="uvloop does not support Windows")
+    @mark.skipif(twisted_version == Version('twisted', 21, 2, 0), reason='https://twistedmatrix.com/trac/ticket/10106')
     def test_custom_loop_asyncio_deferred_signal(self):
         log = self.run_script("asyncio_deferred_signal.py", "uvloop.Loop")
         self.assertIn("Spider closed (finished)", log)
