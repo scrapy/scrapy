@@ -220,7 +220,7 @@ class Scheduler(BaseScheduler):
         Return a request from the memory queue, falling back to the disk queue if the
         memory queue is empty.
 
-        Increment the appropriate stats, such as : ``scheduler/dequeued``,
+        Increment the appropriate stats, such as: ``scheduler/dequeued``,
         ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
 
         Return a :class:`~scrapy.http.Request` object, or ``None`` if there are no more enqueued requests.

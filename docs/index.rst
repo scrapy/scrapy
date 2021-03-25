@@ -250,7 +250,7 @@ Extending Scrapy
     See all available signals and how to work with them.
 
 :doc:`topics/scheduler`
-    Understand the Scheduler interface.
+    Understand the scheduler component.
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
