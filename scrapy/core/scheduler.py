@@ -187,8 +187,9 @@ class Scheduler(BaseScheduler):
         (1) dump pending requests to disk if there is a disk queue
         (2) return the result of the dupefilter's ``close`` method
         """
-        if self.dqs:
+        if self.dqs is not None:
             state = self.dqs.close()
+            assert isinstance(self.dqdir, str)
             self._write_dqs_state(self.dqdir, state)
         return self.df.close(reason)
 
@@ -239,11 +240,11 @@ class Scheduler(BaseScheduler):
         """
         Return the total amount of enqueued requests
         """
-        return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
+        return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
 
-    def _dqpush(self, request):
+    def _dqpush(self, request: Request) -> bool:
         if self.dqs is None:
-            return
+            return False
         try:
             self.dqs.push(request)
         except ValueError as e:  # non serializable request
@@ -255,16 +256,17 @@ class Scheduler(BaseScheduler):
                                exc_info=True, extra={'spider': self.spider})
                 self.logunser = False
             self.stats.inc_value('scheduler/unserializable', spider=self.spider)
-            return
+            return False
         else:
             return True
 
-    def _mqpush(self, request):
+    def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)
 
-    def _dqpop(self):
+    def _dqpop(self) -> Optional[Request]:
         if self.dqs:
             return self.dqs.pop()
+        return None
 
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
@@ -288,21 +290,22 @@ class Scheduler(BaseScheduler):
                         {'queuesize': len(q)}, extra={'spider': self.spider})
         return q
 
-    def _dqdir(self, jobdir):
+    def _dqdir(self, jobdir: Optional[str]) -> Optional[str]:
         """ Return a folder name to keep disk queue state at """
-        if jobdir:
+        if jobdir is not None:
             dqdir = join(jobdir, 'requests.queue')
             if not exists(dqdir):
                 os.makedirs(dqdir)
             return dqdir
+        return None
 
-    def _read_dqs_state(self, dqdir):
+    def _read_dqs_state(self, dqdir: str) -> list:
         path = join(dqdir, 'active.json')
         if not exists(path):
-            return ()
+            return []
         with open(path) as f:
             return json.load(f)
 
-    def _write_dqs_state(self, dqdir, state):
+    def _write_dqs_state(self, dqdir: str, state: list) -> None:
         with open(join(dqdir, 'active.json'), 'w') as f:
             json.dump(state, f)

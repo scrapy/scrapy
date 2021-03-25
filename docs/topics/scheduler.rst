@@ -8,7 +8,7 @@ Scheduler
 
 The scheduler component receives requests from the :ref:`engine <component-engine>`
 and stores them into persistent and/or non-persistent data structures.
-It also gets those requests and feeds them back to the engine when the it
+It also gets those requests and feeds them back to the engine when it
 asks for a next request to be downloaded.
 
 
