@@ -26,14 +26,6 @@ class BaseScheduler:
     interface that the Scrapy engine will interact with.
     """
 
-    @abstractmethod
-    def has_pending_requests(self) -> bool:
-        """
-        ``True`` if the scheduler has enqueued requests, ``False`` otherwise
-        """
-        pass
-
-    @abstractmethod
     def open(self, spider: Spider) -> Optional[Deferred]:
         """
         Called when the spider is opened by the engine. It receives the spider
@@ -44,7 +36,6 @@ class BaseScheduler:
         """
         pass
 
-    @abstractmethod
     def close(self, reason: str) -> Optional[Deferred]:
         """
         Called when the spider is closed by the engine. It receives the reason why the crawl
@@ -56,13 +47,20 @@ class BaseScheduler:
         pass
 
     @abstractmethod
+    def has_pending_requests(self) -> bool:
+        """
+        ``True`` if the scheduler has enqueued requests, ``False`` otherwise
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     def enqueue_request(self, request: Request) -> bool:
         """
         Process a request received by the engine.
 
         Return ``True`` if the request is to be considered scheduled, ``False`` otherwise.
         """
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     def next_request(self) -> Optional[Request]:
@@ -72,7 +70,7 @@ class BaseScheduler:
         Return a :class:`~scrapy.http.Request` object, or ``None`` if there are
         no more enqueued requests, i.e. if ``has_pending_requests`` is ``False``.
         """
-        pass
+        raise NotImplementedError()
 
 
 class Scheduler(BaseScheduler):

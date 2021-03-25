@@ -276,7 +276,8 @@ class ExecutionEngine:
         slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.slot = slot
         self.spider = spider
-        yield scheduler.open(spider)
+        if hasattr(scheduler, "open"):
+            yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
@@ -325,7 +326,7 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log_failure('Scraper close failure'))
 
-        dfd.addBoth(lambda _: slot.scheduler.close(reason))
+        dfd.addBoth(lambda _: slot.scheduler.close(reason) if hasattr(slot.scheduler, "close") else None)
         dfd.addErrback(log_failure('Scheduler close failure'))
 
         dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(
