@@ -677,6 +677,38 @@ handler (without replacement), place this in your ``settings.py``::
         'ftp': None,
     }
 
+The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
+:setting:`DOWNLOAD_HANDLERS` as follows::
+
+    DOWNLOAD_HANDLERS = {
+        'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+    }
+
+.. warning::
+
+    HTTP/2 support in Scrapy is experimental, and not yet recommended for
+    production environments. Future Scrapy versions may introduce related
+    changes without a deprecation period or warning.
+
+.. note::
+
+    Known limitations of the current HTTP/2 implementation of Scrapy include:
+
+    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
+        HTTP/2 unencrypted (refer `http2 faq`_).
+
+    -   No setting to specify a maximum `frame size`_ larger than the default
+        value, 16384. Connections to servers that send a larger frame will
+        fail.
+
+    -   No support for `server pushes`_, which are ignored.
+
+    -   No support for the :signal:`bytes_received` signal.
+
+.. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
+.. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
+.. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -753,6 +785,15 @@ Optionally, this can be set per-request basis by using the
   broken responses considering they may contain partial or incomplete content.
   If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+
+.. warning::
+
+    This setting is ignored by the
+    :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
+    download handler (see :setting:`DOWNLOAD_HANDLERS`). In case of a data loss
+    error, the corresponding HTTP/2 connection may be corrupted, affecting other
+    requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
+    failure is always raised for every request that was using that connection.
 
 .. setting:: DUPEFILTER_CLASS
 

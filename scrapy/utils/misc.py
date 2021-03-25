@@ -9,7 +9,6 @@ from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
-from textwrap import dedent
 
 from w3lib.html import replace_entities
 
@@ -227,7 +226,8 @@ def is_generator_with_return_value(callable):
         return value is None or isinstance(value, ast.NameConstant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
-        tree = ast.parse(dedent(inspect.getsource(callable)))
+        code = re.sub(r"^[\t ]+", "", inspect.getsource(callable))
+        tree = ast.parse(code)
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
                 _generator_callbacks_cache[callable] = True
@@ -242,12 +242,23 @@ def warn_on_generator_with_return_value(spider, callable):
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
-    if is_generator_with_return_value(callable):
+    try:
+        if is_generator_with_return_value(callable):
+            warnings.warn(
+                f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
+                'a generator and includes a "return" statement with a value '
+                'different than None. This could lead to unexpected behaviour. Please see '
+                'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
+                'for details about the semantics of the "return" statement within generators',
+                stacklevel=2,
+            )
+    except IndentationError:
+        callable_name = spider.__class__.__name__ + "." + callable.__name__
         warnings.warn(
-            f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
-            'a generator and includes a "return" statement with a value '
-            'different than None. This could lead to unexpected behaviour. Please see '
-            'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
-            'for details about the semantics of the "return" statement within generators',
+            f'Unable to determine whether or not "{callable_name}" is a generator with a return value. '
+            'This will not prevent your code from working, but it prevents Scrapy from detecting '
+            f'potential issues in your implementation of "{callable_name}". Please, report this in the '
+            'Scrapy issue tracker (https://github.com/scrapy/scrapy/issues), '
+            f'including the code of "{callable_name}"',
             stacklevel=2,
         )
