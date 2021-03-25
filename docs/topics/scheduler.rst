@@ -1,5 +1,7 @@
 .. _topics-scheduler:
 
+.. module:: scrapy.core.scheduler
+
 =========
 Scheduler
 =========
@@ -20,7 +22,6 @@ Python path in the :setting:`SCHEDULER` setting.
 Minimal scheduler interface
 ===========================
 
-.. module:: scrapy.core.scheduler
 .. autoclass:: BaseScheduler
 
    .. automethod:: open
@@ -37,7 +38,6 @@ Minimal scheduler interface
 Default Scrapy scheduler
 ========================
 
-.. module:: scrapy.core.scheduler
 .. autoclass:: Scheduler
 
    .. automethod:: from_crawler
