@@ -154,9 +154,7 @@ class Scheduler(BaseScheduler):
     @classmethod
     def from_crawler(cls, crawler):
         """
-        Called from the engine to create the scheduler instance.
-        This implementation takes care of reading the relevant settings
-        and loading the necessary classes and objects from them.
+        Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
         dupefilter_cls = load_object(crawler.settings['DUPEFILTER_CLASS'])
         return cls(
@@ -175,11 +173,9 @@ class Scheduler(BaseScheduler):
 
     def open(self, spider: Spider) -> Optional[Deferred]:
         """
-        This implementation:
-        (1) initializes the memory queue
-        (2) initializes the disk queue if the ``jobdir`` argument
-            passed to ``__init__`` is a valid directory
-        (3) returns the result of the dupefilter's ``open`` method.
+        (1) initialize the memory queue
+        (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
+        (3) return the result of the dupefilter's ``open`` method
         """
         self.spider = spider
         self.mqs = self._mq()
@@ -188,10 +184,8 @@ class Scheduler(BaseScheduler):
 
     def close(self, reason: str) -> Optional[Deferred]:
         """
-        This implementation:
-        (1) dumps pending requests to disk if the ``jobdir`` argument
-            passed to ``__init__`` is a valid directory
-        (2) returns the result of the dupefilter's ``close`` method.
+        (1) dump pending requests to disk if there is a disk queue
+        (2) return the result of the dupefilter's ``close`` method
         """
         if self.dqs:
             state = self.dqs.close()
@@ -200,13 +194,13 @@ class Scheduler(BaseScheduler):
 
     def enqueue_request(self, request: Request) -> bool:
         """
-        If the received request is valid (i.e. it should not be filtered out by the Dupefilter)
-        tries to push it into the disk queue, falling back to pushing it into the memory queue.
+        Unless the received request is filtered out by the Dupefilter, attempt to push
+        it into the disk queue, falling back to pushing it into the memory queue.
 
-        This method increments the appropriate stats: ``scheduler/enqueued``,
+        Increment the appropriate stats, such as: ``scheduler/enqueued``,
         ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.
 
-        Returns ``True`` if the request was stored successfully, ``False`` otherwise.
+        Return ``True`` if the request was stored successfully, ``False`` otherwise.
         """
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
@@ -222,13 +216,13 @@ class Scheduler(BaseScheduler):
 
     def next_request(self) -> Optional[Request]:
         """
-        Get a request from the memory queue. If there are no more requests stored in memory,
-        fall back to getting a request from the disk queue.
+        Return a request from the memory queue, falling back to the disk queue if the
+        memory queue is empty.
 
-        This method is responsible for incrementing the appropriate stats (``scheduler/dequeued``,
-        ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``).
+        Increment the appropriate stats, such as : ``scheduler/dequeued``,
+        ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
 
-        Returns a :class:`~scrapy.http.Request` object, or ``None`` if there are no more enqueued requests.
+        Return a :class:`~scrapy.http.Request` object, or ``None`` if there are no more enqueued requests.
         """
         request = self.mqs.pop()
         if request:
@@ -243,7 +237,7 @@ class Scheduler(BaseScheduler):
 
     def __len__(self) -> int:
         """
-        Return the current amount of enqueued requests
+        Return the total amount of enqueued requests
         """
         return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
 
@@ -260,8 +254,7 @@ class Scheduler(BaseScheduler):
                 logger.warning(msg, {'request': request, 'reason': e},
                                exc_info=True, extra={'spider': self.spider})
                 self.logunser = False
-            self.stats.inc_value('scheduler/unserializable',
-                                 spider=self.spider)
+            self.stats.inc_value('scheduler/unserializable', spider=self.spider)
             return
         else:
             return True
