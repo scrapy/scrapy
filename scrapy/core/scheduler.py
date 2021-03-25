@@ -103,7 +103,9 @@ class Scheduler:
         delayed_request = self.dpqs.pop()
         if delayed_request:
             self.stats.inc_value('scheduler/dequeued/delayed/memory', spider=self.spider)
-            self._mqpush(delayed_request)
+            dqok = self._dqpush(delayed_request)
+            if not dqok:
+                self._mqpush(delayed_request)
         request = self.mqs.pop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
