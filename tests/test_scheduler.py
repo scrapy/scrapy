@@ -186,6 +186,54 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
                           'http://foo.com/e',
                           'http://foo.com/a'])
 
+    def test_dequeue_delayed_with_same_priority(self):
+        with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 0}))
+            self.scheduler.enqueue_request(Request('http://foo.com/b'))
+            self.scheduler.enqueue_request(Request('http://foo.com/c'))
+            priorities = list()
+            while self.scheduler.has_pending_requests():
+                request = self.scheduler.next_request()
+                if request:
+                    priorities.append(request.url)
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=1))
+        self.assertEqual(priorities,
+                         ['http://foo.com/c',
+                          'http://foo.com/b',
+                          'http://foo.com/a'])
+
+    def test_dequeue_delayed_with_higher_priority(self):
+        with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 0}, priority=10))
+            self.scheduler.enqueue_request(Request('http://foo.com/b'))
+            self.scheduler.enqueue_request(Request('http://foo.com/c'))
+            priorities = list()
+            while self.scheduler.has_pending_requests():
+                request = self.scheduler.next_request()
+                if request:
+                    priorities.append(request.url)
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=1))
+        self.assertEqual(priorities,
+                         ['http://foo.com/a',
+                          'http://foo.com/c',
+                          'http://foo.com/b'])
+
+    def test_dequeue_delayed_with_lower_priority(self):
+        with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 0}, priority=10))
+            self.scheduler.enqueue_request(Request('http://foo.com/b', priority=20))
+            self.scheduler.enqueue_request(Request('http://foo.com/c'))
+            priorities = list()
+            while self.scheduler.has_pending_requests():
+                request = self.scheduler.next_request()
+                if request:
+                    priorities.append(request.url)
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=1))
+        self.assertEqual(priorities,
+                         ['http://foo.com/b',
+                          'http://foo.com/a',
+                          'http://foo.com/c'])
+
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
 
