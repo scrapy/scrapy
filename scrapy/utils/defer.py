@@ -136,8 +136,6 @@ class _AsyncCooperatorAdapter:
         self.anext_deferred = None
         result = self.callable(result, *self.callable_args, **self.callable_kwargs)
         d = self.waiting_deferreds.pop(0)
-        if d.called:
-            raise ValueError('Deferred in waiting_deferreds already called')
         if isinstance(result, defer.Deferred):
             result.chainDeferred(d)
         else:
@@ -152,8 +150,6 @@ class _AsyncCooperatorAdapter:
         failure.trap(StopAsyncIteration)
         self.finished = True
         for d in self.waiting_deferreds:
-            if d.called:
-                raise ValueError('Deferred in waiting_deferreds already called')
             d.callback(None)
 
     def _call_anext(self):
@@ -161,9 +157,6 @@ class _AsyncCooperatorAdapter:
         # If aiterator is exhausted, _errback will be called.
         self.anext_deferred = deferred_from_coro(self.aiterator.__anext__())
         self.anext_deferred.addCallbacks(self._callback, self._errback)
-
-    def __iter__(self):
-        return self
 
     def __next__(self):
         # This puts a new Deferred into self.waiting_deferreds and returns it.
