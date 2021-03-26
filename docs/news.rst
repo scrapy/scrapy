@@ -94,7 +94,7 @@ Bug fixes
 -   The `Content-Length <https://tools.ietf.org/html/rfc2616#section-14.13>`_
     header is no longer omitted from responses when using the default, HTTP/1.1
     download handler (see :setting:`DOWNLOAD_HANDLERS`).
-    (:issue:`5009`, :issue:`5034`, :issue:`5045`, :issue:`5057`)
+    (:issue:`5009`, :issue:`5034`, :issue:`5045`, :issue:`5057`, :issue:`5062`)
 
 
 Documentation
