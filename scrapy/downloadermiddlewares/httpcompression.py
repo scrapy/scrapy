@@ -25,18 +25,22 @@ except ImportError:
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
+
+    def __init__(self, settings):
+        self.keep_encoding_header = settings.getbool(
+            'COMPRESSION_KEEP_ENCODING_HEADERS')
+
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
-        return cls()
+        return cls(crawler.settings)
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
                                    b", ".join(ACCEPTED_ENCODINGS))
 
     def process_response(self, request, response, spider):
-
         if request.method == 'HEAD':
             return response
         if isinstance(response, Response):
@@ -52,10 +56,11 @@ class HttpCompressionMiddleware:
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
                     kwargs['encoding'] = None
+                if self.keep_encoding_header:
+                    kwargs['flags'] = response.flags + [b'decoded']
                 response = response.replace(**kwargs)
-                if not content_encoding:
+                if not self.keep_encoding_header and not content_encoding:
                     del response.headers['Content-Encoding']
-
         return response
 
     def _decode(self, body, encoding):

@@ -10,7 +10,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
-
+from scrapy.utils.test import get_crawler
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
 
@@ -28,12 +28,18 @@ FORMAT = {
     'zstd-streaming-no-content-size': ('html-zstd-streaming-no-content-size.bin', 'zstd'),
 }
 
-
 class HttpCompressionTest(TestCase):
 
+    def create_spider_mw(self, compression_enabled=True, compression_header=False):
+        settings = {'COMPRESSION_ENABLED': compression_enabled,
+                    'COMPRESSION_KEEP_ENCODING_HEADERS': compression_header}
+        crawler = get_crawler(Spider, settings)
+        spider = crawler._create_spider('foo')
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        return spider, mw
+                            
     def setUp(self):
-        self.spider = Spider('foo')
-        self.mw = HttpCompressionMiddleware()
+        self.spider, self.mw = self.create_spider_mw()
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
@@ -278,3 +284,33 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         self.assertIs(newresponse, response)
         self.assertEqual(response.body, b'')
+
+    def test_process_response_gzip_keep_headers(self):
+        test_spider, test_mw = self.create_spider_mw(
+            compression_enabled=True,
+            compression_header=True)
+        response = self._getresponse('gzip')
+        request = response.request
+
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
+        newresponse = test_mw.process_response(request, response, test_spider)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b'<!DOCTYPE')
+        assert 'Content-Encoding' in newresponse.headers
+        assert b'decoded' in newresponse.flags
+
+    def test_process_response_gzip_binary_octetstream_contenttype(self):
+        test_spider, test_mw = self.create_spider_mw(
+            compression_enabled=True,
+            compression_header=True)
+        response = self._getresponse('x-gzip')
+        response.headers['Content-Type'] = 'binary/octet-stream'
+        request = response.request
+
+        newresponse = test_mw.process_response(request, response, test_spider)
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
+        self.assertIn('Content-Encoding', newresponse.headers)
+        self.assertIn(b'decoded',newresponse.flags)
+
+
