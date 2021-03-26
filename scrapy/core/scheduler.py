@@ -81,6 +81,14 @@ class Scheduler:
             self._write_dqs_state(self.dqdir, state)
         return self.df.close(reason)
 
+    def _enqueue_request(self, request):
+        dqok = self._dqpush(request)
+        if dqok:
+            self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
+        else:
+            self._mqpush(request)
+            self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
+
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
@@ -90,12 +98,7 @@ class Scheduler:
             self.stats.inc_value('scheduler/enqueued/delayed/memory', spider=self.spider)
             self.stats.inc_value('scheduler/enqueued', spider=self.spider)
             return True
-        dqok = self._dqpush(request)
-        if dqok:
-            self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
-        else:
-            self._mqpush(request)
-            self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
+        self._enqueue_request(request)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
         return True
 
@@ -103,9 +106,7 @@ class Scheduler:
         delayed_request = self.dpqs.pop()
         if delayed_request:
             self.stats.inc_value('scheduler/dequeued/delayed/memory', spider=self.spider)
-            dqok = self._dqpush(delayed_request)
-            if not dqok:
-                self._mqpush(delayed_request)
+            self._enqueue_request(delayed_request)
         request = self.mqs.pop()
         if request:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
