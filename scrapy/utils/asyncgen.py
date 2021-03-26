@@ -57,6 +57,6 @@ def _process_iterable_universal(process_async):
         if hasattr(iterable, '__iter__'):
             # convert process_async to process_sync
             return process_sync(iterable, *args, **kwargs)
-        raise ValueError(f"Wrong iterable type {type(iterable)}")
+        raise TypeError(f"Wrong iterable type {type(iterable)}")
 
     return process
