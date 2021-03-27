@@ -506,7 +506,10 @@ class _ResponseReader(protocol.Protocol):
         self._txresponse = txresponse
         self._request = request
         if self._request.meta.get('streaming_download'):
-            self._bodybuf = self._request.meta.get('file')
+            if self._request.meta.get('file'):
+                self._bodybuf = self._request.meta.get('file')
+            else:
+                self._bodybuf = None
         else:
             self._bodybuf = BytesIO()
         self._maxsize = maxsize
@@ -521,7 +524,8 @@ class _ResponseReader(protocol.Protocol):
 
     def _finish_response(self, flags=None, failure=None):
         if self._request.meta.get('streaming_download'):
-            self._bodybuf.close()
+            if self._request.meta.get('file'):
+                self._bodybuf.close()
             body = b''
         else:
             body = self._bodybuf.getvalue()
@@ -546,8 +550,8 @@ class _ResponseReader(protocol.Protocol):
         # This maybe called several times after cancel was called with buffered data.
         if self._finished.called:
             return
-
-        self._bodybuf.write(bodyBytes)
+        if self._bodybuf:
+            self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
 
         bytes_received_result = self._crawler.signals.send_catch_log(
@@ -572,7 +576,8 @@ class _ResponseReader(protocol.Protocol):
                             'maxsize': self._maxsize,
                             'request': self._request})
             # Clear buffer earlier to avoid keeping data in memory for a long time.
-            self._bodybuf.truncate(0)
+            if self._bodybuf:
+                self._bodybuf.truncate(0)
             self._finished.cancel()
 
         if self._warnsize and self._bytes_received > self._warnsize and not self._reached_warnsize:
