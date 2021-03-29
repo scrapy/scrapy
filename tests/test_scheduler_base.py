@@ -13,15 +13,9 @@ from scrapy.utils.request import request_fingerprint
 _URLS = ["http://foo.com/a", "http://foo.com/b", "http://foo.com/c"]
 
 
-class DummyScheduler(BaseScheduler):
+class MinimalScheduler:
     def __init__(self) -> None:
         self.requests: Dict[str, Request] = {}
-
-    def open(self, spider: Spider) -> Optional[defer.Deferred]:
-        return defer.succeed("open")
-
-    def close(self, reason: str) -> Optional[defer.Deferred]:
-        return defer.succeed("close")
 
     def has_pending_requests(self) -> bool:
         return bool(self.requests)
@@ -39,11 +33,25 @@ class DummyScheduler(BaseScheduler):
             return request
         return None
 
+
+class SimpleScheduler(MinimalScheduler):
+    def open(self, spider: Spider) -> Optional[defer.Deferred]:
+        return defer.succeed("open")
+
+    def close(self, reason: str) -> Optional[defer.Deferred]:
+        return defer.succeed("close")
+
     def __len__(self) -> int:
         return len(self.requests)
 
 
-class BaseSchedulerTest(TestCase):
+class InterfaceCheckMixin:
+    def test_scheduler_class(self):
+        self.assertTrue(isinstance(self.scheduler, BaseScheduler))
+        self.assertTrue(issubclass(self.scheduler.__class__, BaseScheduler))
+
+
+class BaseSchedulerTest(TestCase, InterfaceCheckMixin):
     def setUp(self):
         self.scheduler = BaseScheduler()
 
@@ -55,9 +63,40 @@ class BaseSchedulerTest(TestCase):
         self.assertRaises(NotImplementedError, self.scheduler.next_request)
 
 
-class DummySchedulerTest(TwistedTestCase):
+class MinimalSchedulerTest(TestCase, InterfaceCheckMixin):
     def setUp(self):
-        self.scheduler = DummyScheduler()
+        self.scheduler = MinimalScheduler()
+
+    def test_open_close(self):
+        with self.assertRaises(AttributeError):
+            self.scheduler.open(Spider("foo"))
+        with self.assertRaises(AttributeError):
+            self.scheduler.close("finished")
+
+    def test_len(self):
+        with self.assertRaises(AttributeError):
+            self.scheduler.__len__()
+        with self.assertRaises(TypeError):
+            len(self.scheduler)
+
+    def test_enqueue_dequeue(self):
+        self.assertFalse(self.scheduler.has_pending_requests())
+        for url in _URLS:
+            self.assertTrue(self.scheduler.enqueue_request(Request(url)))
+            self.assertFalse(self.scheduler.enqueue_request(Request(url)))
+        self.assertTrue(self.scheduler.has_pending_requests)
+
+        dequeued = []
+        while self.scheduler.has_pending_requests():
+            request = self.scheduler.next_request()
+            dequeued.append(request.url)
+        self.assertEqual(set(dequeued), set(_URLS))
+        self.assertFalse(self.scheduler.has_pending_requests())
+
+
+class SimpleSchedulerTest(TwistedTestCase, InterfaceCheckMixin):
+    def setUp(self):
+        self.scheduler = SimpleScheduler()
 
     @defer.inlineCallbacks
     def test_methods(self):
@@ -69,7 +108,7 @@ class DummySchedulerTest(TwistedTestCase):
             self.assertTrue(self.scheduler.enqueue_request(Request(url)))
             self.assertFalse(self.scheduler.enqueue_request(Request(url)))
 
-        self.assertTrue(self.scheduler.has_pending_requests)
+        self.assertTrue(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), len(_URLS))
 
         dequeued = []
