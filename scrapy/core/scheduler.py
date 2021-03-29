@@ -38,6 +38,13 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     interface that the Scrapy engine will interact with.
     """
 
+    @classmethod
+    def from_crawler(cls, crawler: Crawler):
+        """
+        Factory method which receives the current Crawler object as argument.
+        """
+        return cls()
+
     def open(self, spider: Spider) -> Optional[Deferred]:
         """
         Called when the spider is opened by the engine. It receives the spider

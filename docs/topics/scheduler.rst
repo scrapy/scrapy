@@ -1,10 +1,10 @@
 .. _topics-scheduler:
 
-.. module:: scrapy.core.scheduler
-
 =========
 Scheduler
 =========
+
+.. module:: scrapy.core.scheduler
 
 The scheduler component receives requests from the :ref:`engine <component-engine>`
 and stores them into persistent and/or non-persistent data structures.
@@ -23,6 +23,8 @@ Minimal scheduler interface
 ===========================
 
 .. autoclass:: BaseScheduler
+
+   .. automethod:: from_crawler
 
    .. automethod:: open
 

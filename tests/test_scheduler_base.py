@@ -35,10 +35,10 @@ class MinimalScheduler:
 
 
 class SimpleScheduler(MinimalScheduler):
-    def open(self, spider: Spider) -> Optional[defer.Deferred]:
+    def open(self, spider: Spider) -> defer.Deferred:
         return defer.succeed("open")
 
-    def close(self, reason: str) -> Optional[defer.Deferred]:
+    def close(self, reason: str) -> defer.Deferred:
         return defer.succeed("close")
 
     def __len__(self) -> int:
@@ -99,7 +99,7 @@ class SimpleSchedulerTest(TwistedTestCase, InterfaceCheckMixin):
         self.scheduler = SimpleScheduler()
 
     @defer.inlineCallbacks
-    def test_methods(self):
+    def test_enqueue_dequeue(self):
         open_result = yield self.scheduler.open(Spider("foo"))
         self.assertEqual(open_result, "open")
         self.assertFalse(self.scheduler.has_pending_requests())

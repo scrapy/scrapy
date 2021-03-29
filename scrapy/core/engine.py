@@ -14,9 +14,10 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
+from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.reactor import CallLaterOnce
-from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +65,21 @@ class ExecutionEngine:
         self.spider = None
         self.running = False
         self.paused = False
-        self.scheduler_cls = load_object(self.settings['SCHEDULER'])
+        self.scheduler_cls = self._get_scheduler_class(crawler.settings)
         downloader_cls = load_object(self.settings['DOWNLOADER'])
         self.downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._spider_closed_callback = spider_closed_callback
+
+    def _get_scheduler_class(self, settings):
+        from scrapy.core.scheduler import BaseScheduler
+        scheduler_cls = load_object(settings["SCHEDULER"])
+        if not issubclass(scheduler_cls, BaseScheduler):
+            raise TypeError(
+                f"The provided scheduler class ({settings['SCHEDULER']})"
+                " does not fully implement the scheduler interface"
+            )
+        return scheduler_cls
 
     @defer.inlineCallbacks
     def start(self):
