@@ -118,6 +118,7 @@ Here is an example that runs multiple spiders simultaneously:
 ::
 
     import scrapy
+    from scrapy.utils.project import get_project_settings
     from scrapy.crawler import CrawlerProcess
 
     class MySpider1(scrapy.Spider):
@@ -128,7 +129,8 @@ Here is an example that runs multiple spiders simultaneously:
         # Your second spider definition
         ...
 
-    process = CrawlerProcess()
+    settings = get_project_settings()
+    process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start() # the script will block here until all crawling jobs are finished
