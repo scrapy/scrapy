@@ -1,16 +1,22 @@
 from typing import Dict, Optional
 from unittest import TestCase
+from urllib.parse import urljoin, urlparse
 
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
 
 from scrapy.core.scheduler import BaseScheduler
+from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 
+from tests.mockserver import MockServer
 
-_URLS = ["http://foo.com/a", "http://foo.com/b", "http://foo.com/c"]
+
+PATHS = ["/a", "/b", "/c"]
+URLS = [urljoin("https://example.org", p) for p in PATHS]
 
 
 class MinimalScheduler:
@@ -43,6 +49,17 @@ class SimpleScheduler(MinimalScheduler):
 
     def __len__(self) -> int:
         return len(self.requests)
+
+
+class TestSpider(Spider):
+    name = "test"
+
+    def __init__(self, mockserver, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.start_urls = map(mockserver.url, PATHS)
+
+    def parse(self, response):
+        return {"path": urlparse(response.url).path}
 
 
 class InterfaceCheckMixin:
@@ -81,7 +98,7 @@ class MinimalSchedulerTest(TestCase, InterfaceCheckMixin):
 
     def test_enqueue_dequeue(self):
         self.assertFalse(self.scheduler.has_pending_requests())
-        for url in _URLS:
+        for url in URLS:
             self.assertTrue(self.scheduler.enqueue_request(Request(url)))
             self.assertFalse(self.scheduler.enqueue_request(Request(url)))
         self.assertTrue(self.scheduler.has_pending_requests)
@@ -90,7 +107,7 @@ class MinimalSchedulerTest(TestCase, InterfaceCheckMixin):
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             dequeued.append(request.url)
-        self.assertEqual(set(dequeued), set(_URLS))
+        self.assertEqual(set(dequeued), set(URLS))
         self.assertFalse(self.scheduler.has_pending_requests())
 
 
@@ -104,21 +121,39 @@ class SimpleSchedulerTest(TwistedTestCase, InterfaceCheckMixin):
         self.assertEqual(open_result, "open")
         self.assertFalse(self.scheduler.has_pending_requests())
 
-        for url in _URLS:
+        for url in URLS:
             self.assertTrue(self.scheduler.enqueue_request(Request(url)))
             self.assertFalse(self.scheduler.enqueue_request(Request(url)))
 
         self.assertTrue(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), len(_URLS))
+        self.assertEqual(len(self.scheduler), len(URLS))
 
         dequeued = []
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             dequeued.append(request.url)
-        self.assertEqual(set(dequeued), set(_URLS))
+        self.assertEqual(set(dequeued), set(URLS))
 
         self.assertFalse(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), 0)
 
         close_result = yield self.scheduler.close("")
         self.assertEqual(close_result, "close")
+
+
+class MinimalSchedulerCrawlTest(TwistedTestCase):
+    scheduler_cls = MinimalScheduler
+
+    @defer.inlineCallbacks
+    def test_crawl(self):
+        with MockServer() as mockserver:
+            settings = {"SCHEDULER": self.scheduler_cls}
+            with LogCapture() as log:
+                yield CrawlerRunner(settings).crawl(TestSpider, mockserver)
+            for path in PATHS:
+                self.assertIn(f"{{'path': '{path}'}}", str(log))
+            self.assertIn(f"'item_scraped_count': {len(PATHS)}", str(log))
+
+
+class SimpleSchedulerCrawlTest(MinimalSchedulerCrawlTest):
+    scheduler_cls = SimpleScheduler
