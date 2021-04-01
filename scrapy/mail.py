@@ -9,7 +9,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
-from email.utils import COMMASPACE, formatdate
+from email.utils import formatdate
 from io import BytesIO
 
 from twisted.internet import defer, ssl
@@ -19,6 +19,11 @@ from scrapy.utils.python import to_bytes
 
 
 logger = logging.getLogger(__name__)
+
+
+# Defined in the email.utils module, but undocumented:
+# https://github.com/python/cpython/blob/v3.9.0/Lib/email/utils.py#L42
+COMMASPACE = ", "
 
 
 def _to_bytes_or_none(text):

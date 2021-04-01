@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict
 
 from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
@@ -10,6 +11,7 @@ from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,8 +19,8 @@ class Command(BaseRunSpiderCommand):
     requires_project = True
 
     spider = None
-    items = {}
-    requests = {}
+    items: Dict[int, list] = {}
+    requests: Dict[int, list] = {}
 
     first_response = None
 
