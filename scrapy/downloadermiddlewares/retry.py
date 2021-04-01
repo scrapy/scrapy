@@ -41,7 +41,7 @@ def get_retry_request(
     spider: Spider,
     reason: Union[str, Exception] = 'unspecified',
     max_retry_times: Optional[int] = None,
-    priority_adjust: Union[int, float, None] = None,
+    priority_adjust: Optional[int] = None,
     logger: Logger = retry_logger,
     stats_base_key: str = 'retry',
 ):
