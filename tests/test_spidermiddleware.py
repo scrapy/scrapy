@@ -122,11 +122,6 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
         result = yield self.mwman.scrape_response(self._scrape_func, self.response, self.request, self.spider)
         return result
 
-    def assertAsyncGeneratorNotIterable(self, o):
-        with self.assertRaisesRegex(TypeError,
-                                    "'(async_generator|MutableAsyncChain)' object is not iterable"):
-            list(o)
-
     @defer.inlineCallbacks
     def _test_simple_base(self, *mw_classes):
         result = yield self._get_middleware_result(*mw_classes)
@@ -145,9 +140,8 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
 
     @defer.inlineCallbacks
     def _test_asyncgen_fail(self, *mw_classes):
-        result = yield self._get_middleware_result(*mw_classes)
-        self.assertIsInstance(result, collections.abc.Iterable)
-        self.assertAsyncGeneratorNotIterable(result)
+        with self.assertRaisesRegex(TypeError, "Synchronous .+ called with an async iterable"):
+            yield self._get_middleware_result(*mw_classes)
 
 
 class ProcessSpiderOutputSimpleMiddleware:
@@ -238,14 +232,10 @@ class ProcessSpiderOutputAsyncGen(ProcessSpiderOutputSimple):
         """ Simple mw; cannot work """
         return self._test_asyncgen_fail(self.MW_SIMPLE)
 
-    @defer.inlineCallbacks
     def test_simple_asyncgen(self):
         """ Simple mw -> asyncgen mw; cannot work """
-        result = yield self._get_middleware_result(
-            self.MW_ASYNCGEN,
-            self.MW_SIMPLE)
-        self.assertIsInstance(result, collections.abc.AsyncIterable)
-        self.assertAsyncGeneratorNotIterable(result)
+        return self._test_asyncgen_fail(self.MW_ASYNCGEN,
+                                        self.MW_SIMPLE)
 
     def test_universal(self):
         """ Universal mw """

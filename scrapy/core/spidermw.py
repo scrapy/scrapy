@@ -20,10 +20,6 @@ def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__') or hasattr(possible_iterator, '__aiter__')
 
 
-def _fname(f):
-    return f"{f.__self__.__class__.__name__}.{f.__func__.__name__}"
-
-
 class SpiderMiddlewareManager(MiddlewareManager):
 
     component_name = 'spider middleware'
@@ -48,7 +44,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             try:
                 result = method(response=response, spider=spider)
                 if result is not None:
-                    msg = (f"Middleware {_fname(method)} must return None "
+                    msg = (f"Middleware {method.__qualname__} must return None "
                            f"or raise an exception, got {type(result)}")
                     raise _InvalidOutput(msg)
             except _InvalidOutput:
@@ -88,7 +84,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             elif result is None:
                 continue
             else:
-                msg = (f"Middleware {_fname(method)} must return None "
+                msg = (f"Middleware {method.__qualname__} must return None "
                        f"or an iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
         return _failure
@@ -96,7 +92,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _process_spider_output(self, response, spider, result, start_index=0):
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
-        if isinstance(result, collections.abc.AsyncIterator):
+        result_async = isinstance(result, collections.abc.AsyncIterator)
+        if result_async:
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
@@ -116,9 +113,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if _isiterable(result):
                 result = self._evaluate_iterable(response, spider, result, method_index + 1, recovered)
             else:
-                msg = (f"Middleware {_fname(method)} must return an "
+                msg = (f"Middleware {method.__qualname__} must return an "
                        f"iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
+            if result_async and isinstance(result, collections.abc.Iterator):
+                raise TypeError(f"Synchronous {method.__qualname__} called with an async iterable")
 
         # check this again as the middlewares could change "result" from sync to async
         if isinstance(result, collections.abc.AsyncIterator):
