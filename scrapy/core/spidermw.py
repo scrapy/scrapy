@@ -92,8 +92,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _process_spider_output(self, response, spider, result, start_index=0):
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
-        result_async = isinstance(result, collections.abc.AsyncIterator)
-        if result_async:
+        last_result_async = isinstance(result, collections.abc.AsyncIterator)
+        if last_result_async:
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
@@ -116,11 +116,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 msg = (f"Middleware {method.__qualname__} must return an "
                        f"iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
-            if result_async and isinstance(result, collections.abc.Iterator):
+            if last_result_async and isinstance(result, collections.abc.Iterator):
                 raise TypeError(f"Synchronous {method.__qualname__} called with an async iterable")
+            last_result_async = isinstance(result, collections.abc.AsyncIterator)
 
-        # check this again as the middlewares could change "result" from sync to async
-        if isinstance(result, collections.abc.AsyncIterator):
+        if last_result_async:
             return MutableAsyncChain(result, recovered)
         else:
             return MutableChain(result, recovered)
