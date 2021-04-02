@@ -108,3 +108,68 @@ Common use cases for asynchronous code include:
   :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
+
+.. _async-spider-middlewares:
+
+Asynchronous spider middlewares
+===============================
+
+.. versionadded:: VERSION
+.. note:: This currently applies to
+          :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`.
+
+Middleware methods discussed here can take and return async iterables. They can
+return the same type of iterable or they can take a normal one and return an
+async one. If such method needs to return an async iterable it must be an async
+generator, not just a coroutine that returns an iterable.
+
+.. autofunction:: scrapy.utils.asyncgen.as_async_generator
+
+In the simplest form that supports both sync and async input it can be written
+like this::
+
+    from scrapy.utils.asyncgen import as_async_generator
+
+    class ProcessSpiderOutputAsyncGenMiddleware:
+        async def process_spider_output(self, response, result, spider):
+            async for r in as_async_generator(result):
+                # ... do something with r
+                yield r
+
+If the middleware input (the callback result for ``process_spider_output``) is
+an async iterable, all middlewares that process it must support it. The
+built-in ones do, but the ones in your project and 3rd-party ones will need to
+be updated to support it, as the code that expects a normal iterable will break
+on an async one. If these middlewares receive an async iterable, they must
+return one as well. On the other hand, if they receive a normal iterable, they
+shouldn't break and ideally should return a normal iterable too. There can be
+several possible implementations of this.
+
+The simplest one, always converting normal iterables to async ones, is provided
+above. Because a result of a middleware method is passed to the same method of
+the next middleware, it's only possible to mix middlewares with synchronous and
+asynchronous implementations of the same method if all synchronous ones are
+called first (which isn't always possible).
+
+Another option is to make separate methods for normal and async iterables and
+choose one at run time::
+
+    from inspect import isasyncgen
+
+    class ProcessSpiderOutputAsyncGenMiddleware:
+        def _normal_process_spider_output(self, response, result, spider):
+            # ... do something with normal result
+
+        async def _async_process_spider_output(self, response, result, spider):
+            # ... do the same with async result
+
+        def process_spider_output(self, response, result, spider):
+            if isasyncgen(result):
+                return self._async_process_spider_output(self, response, result, spider)
+            else:
+                return self._normal_process_spider_output(self, response, result, spider)
+
+If you are writing a middleware that you intend to publish or to use in many
+projects, this is likely the best way to implement it. It may be possible to
+extract common code from both methods to reduce code duplication, as in the
+simplest case the only difference between them will be ``for`` vs ``async for``.

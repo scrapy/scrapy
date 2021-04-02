@@ -11,6 +11,7 @@ async def collect_asyncgen(result):
 
 
 async def as_async_generator(it):
+    """ Wraps an iterator (sync or async) into an async generator. """
     if isinstance(it, collections.abc.AsyncIterator):
         async for r in it:
             yield r

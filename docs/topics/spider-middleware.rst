@@ -105,18 +105,20 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         This method is called with the results returned from the Spider, after
         it has processed the response.
 
-        :meth:`process_spider_output` must return an iterable (normal or
-        asynchronous) of :class:`~scrapy.http.Request` objects and 
-        :ref:`item objects <topics-items>`.
+        :meth:`process_spider_output` must return an iterable of
+        :class:`~scrapy.http.Request` objects and :ref:`item objects
+        <topics-items>`.
+
+        .. note:: When defined as a :ref:`coroutine <async>`, this method needs
+                  to be an async generator, not just return an iterable.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable (normal or asynchronous) of
-          :class:`~scrapy.http.Request` objects and :ref:`item objects
-          <topics-items>`
+        :type result: an iterable of :class:`~scrapy.http.Request` objects and
+          :ref:`item objects <topics-items>`
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
