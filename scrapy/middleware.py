@@ -1,6 +1,7 @@
-from collections import defaultdict, deque
 import logging
 import pprint
+from collections import defaultdict, deque
+from typing import Callable
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import create_instance, load_object
@@ -16,7 +17,7 @@ class MiddlewareManager:
 
     def __init__(self, *middlewares):
         self.middlewares = middlewares
-        self.methods = defaultdict(deque)
+        self.methods: dict[str, deque[Callable]] = defaultdict(deque)
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -58,13 +59,13 @@ class MiddlewareManager:
         if hasattr(mw, 'close_spider'):
             self.methods['close_spider'].appendleft(mw.close_spider)
 
-    def _process_parallel(self, methodname, obj, *args):
+    def _process_parallel(self, methodname: str, obj, *args):
         return process_parallel(self.methods[methodname], obj, *args)
 
-    def _process_chain(self, methodname, obj, *args):
+    def _process_chain(self, methodname: str, obj, *args):
         return process_chain(self.methods[methodname], obj, *args)
 
-    def _process_chain_both(self, cb_methodname, eb_methodname, obj, *args):
+    def _process_chain_both(self, cb_methodname: str, eb_methodname: str, obj, *args):
         return process_chain_both(self.methods[cb_methodname],
                                   self.methods[eb_methodname], obj, *args)
 

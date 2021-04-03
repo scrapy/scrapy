@@ -3,21 +3,35 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
+from collections.abc import Iterable, AsyncIterable
 from itertools import islice
+from typing import Callable, Union, Any
 
 from twisted.python.failure import Failure
 
+from scrapy import Request, Spider
 from scrapy.exceptions import _InvalidOutput
+from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.python import MutableChain
 
 
-def _isiterable(possible_iterator):
-    return hasattr(possible_iterator, '__iter__')
+def _isiterable(o):
+    return isinstance(o, Iterable)
 
 
+<<<<<<< HEAD
+=======
+def _fname(f):
+    return f"{f.__self__.__class__.__name__}.{f.__func__.__name__}"
+
+
+ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
+
+
+>>>>>>> a9e96f99... Add typing for middleware and coroutine related code.
 class SpiderMiddlewareManager(MiddlewareManager):
 
     component_name = 'spider middleware'
@@ -37,7 +51,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         process_spider_exception = getattr(mw, 'process_spider_exception', None)
         self.methods['process_spider_exception'].appendleft(process_spider_exception)
 
-    def _process_spider_input(self, scrape_func, response, request, spider):
+    def _process_spider_input(self, scrape_func: ScrapeFunc, response: Response, request: Request, spider: Spider):
         for method in self.methods['process_spider_input']:
             try:
                 result = method(response=response, spider=spider)
@@ -51,7 +65,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 return scrape_func(Failure(), request, spider)
         return scrape_func(response, request, spider)
 
-    def _evaluate_iterable(self, response, spider, iterable, exception_processor_index, recover_to):
+    def _evaluate_iterable(self, response: Response, spider: Spider, iterable: Iterable,
+                           exception_processor_index: int, recover_to: MutableChain):
         try:
             for r in iterable:
                 yield r
@@ -62,7 +77,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 raise
             recover_to.extend(exception_result)
 
-    def _process_spider_exception(self, response, spider, _failure, start_index=0):
+    def _process_spider_exception(self, response: Response, spider: Spider, _failure: Failure, start_index=0):
         exception = _failure.value
         # don't handle _InvalidOutput exception
         if isinstance(exception, _InvalidOutput):
@@ -84,7 +99,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 raise _InvalidOutput(msg)
         return _failure
 
-    def _process_spider_output(self, response, spider, result, start_index=0):
+    def _process_spider_output(self, response: Response, spider: Spider,
+                               result: Iterable, start_index=0):
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
         recovered = MutableChain()
@@ -110,21 +126,21 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         return MutableChain(result, recovered)
 
-    def _process_callback_output(self, response, spider, result):
+    def _process_callback_output(self, response: Response, spider: Spider, result: Iterable):
         recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         return MutableChain(self._process_spider_output(response, spider, result), recovered)
 
-    def scrape_response(self, scrape_func, response, request, spider):
-        def process_callback_output(result):
+    def scrape_response(self, scrape_func: ScrapeFunc, response: Response, request: Request, spider: Spider):
+        def process_callback_output(result: Iterable):
             return self._process_callback_output(response, spider, result)
 
-        def process_spider_exception(_failure):
+        def process_spider_exception(_failure: Failure):
             return self._process_spider_exception(response, spider, _failure)
 
         dfd = mustbe_deferred(self._process_spider_input, scrape_func, response, request, spider)
         dfd.addCallbacks(callback=process_callback_output, errback=process_spider_exception)
         return dfd
 
-    def process_start_requests(self, start_requests, spider):
+    def process_start_requests(self, start_requests, spider: Spider):
         return self._process_chain('process_start_requests', start_requests, spider)
