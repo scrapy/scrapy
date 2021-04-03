@@ -892,6 +892,11 @@ settings (see the settings documentation for more info):
 If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
 set to True, the request will be ignored by this middleware.
 
+To retry requests from a spider callback, you can use the
+:func:`get_retry_request` function:
+
+.. autofunction:: get_retry_request
+
 RetryMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -931,6 +936,18 @@ connections lost, etc) are always retried.
 In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
+
+.. setting:: RETRY_PRIORITY_ADJUST
+
+RETRY_PRIORITY_ADJUST
+---------------------
+
+Default: ``-1``
+
+Adjust retry request priority relative to original request:
+
+- a positive priority adjust means higher priority.
+- **a negative priority adjust (default) means lower priority.**
 
 
 .. _topics-dlmw-robots:

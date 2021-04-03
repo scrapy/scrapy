@@ -7,8 +7,7 @@ Extensions
 The extensions framework provides a mechanism for inserting your own
 custom functionality into Scrapy.
 
-Extensions are just regular classes that are instantiated at Scrapy startup,
-when extensions are initialized.
+Extensions are just regular classes.
 
 Extension settings
 ==================
@@ -27,8 +26,8 @@ Loading & activating extensions
 ===============================
 
 Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class ``__init__`` method.
+instance of the extension class per spider being run. All the extension
+initialization code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented

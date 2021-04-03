@@ -20,12 +20,11 @@ from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from zope.interface import implementer
 
 from scrapy import signals
-from scrapy.core.downloader.tls import openssl_methods
+from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
 from scrapy.exceptions import ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -43,29 +42,7 @@ class HTTP11DownloadHandler:
         self._pool.maxPersistentPerHost = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self._pool._factory.noisy = False
 
-        self._sslMethod = openssl_methods[settings.get('DOWNLOADER_CLIENT_TLS_METHOD')]
-        self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
-        # try method-aware context factory
-        try:
-            self._contextFactory = create_instance(
-                objcls=self._contextFactoryClass,
-                settings=settings,
-                crawler=crawler,
-                method=self._sslMethod,
-            )
-        except TypeError:
-            # use context factory defaults
-            self._contextFactory = create_instance(
-                objcls=self._contextFactoryClass,
-                settings=settings,
-                crawler=crawler,
-            )
-            msg = f"""
- '{settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]}' does not accept `method` \
- argument (type OpenSSL.SSL method, e.g. OpenSSL.SSL.SSLv23_METHOD) and/or \
- `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
- Please upgrade your context factory class to handle them or ignore them."""
-            warnings.warn(msg)
+        self._contextFactory = load_context_factory_from_settings(settings, crawler)
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
         self._fail_on_dataloss = settings.getbool('DOWNLOAD_FAIL_ON_DATALOSS')
@@ -381,7 +358,38 @@ class ScrapyAgent:
         request.meta['download_latency'] = time() - start_time
         return result
 
+    @staticmethod
+    def _headers_from_twisted_response(response):
+        headers = Headers()
+        if response.length != UNKNOWN_LENGTH:
+            headers[b'Content-Length'] = str(response.length).encode()
+        headers.update(response.headers.getAllRawHeaders())
+        return headers
+
     def _cb_bodyready(self, txresponse, request):
+        headers_received_result = self._crawler.signals.send_catch_log(
+            signal=signals.headers_received,
+            headers=self._headers_from_twisted_response(txresponse),
+            body_length=txresponse.length,
+            request=request,
+            spider=self._crawler.spider,
+        )
+        for handler, result in headers_received_result:
+            if isinstance(result, Failure) and isinstance(result.value, StopDownload):
+                logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
+                             {"request": request, "handler": handler.__qualname__})
+                txresponse._transport.stopProducing()
+                with suppress(AttributeError):
+                    txresponse._transport._producer.loseConnection()
+                return {
+                    "txresponse": txresponse,
+                    "body": b"",
+                    "flags": ["download_stopped"],
+                    "certificate": None,
+                    "ip_address": None,
+                    "failure": result if result.value.fail else None,
+                }
+
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
             return {
@@ -435,7 +443,7 @@ class ScrapyAgent:
         return d
 
     def _cb_bodydone(self, result, request, url):
-        headers = Headers(result["txresponse"].headers.getAllRawHeaders())
+        headers = self._headers_from_twisted_response(result["txresponse"])
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
         try:
             version = result["txresponse"].version
@@ -529,6 +537,7 @@ class _ResponseReader(protocol.Protocol):
             if isinstance(result, Failure) and isinstance(result.value, StopDownload):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": self._request, "handler": handler.__qualname__})
+                self.transport.stopProducing()
                 self.transport._producer.loseConnection()
                 failure = result if result.value.fail else None
                 self._finish_response(flags=["download_stopped"], failure=failure)

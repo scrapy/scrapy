@@ -1,10 +1,12 @@
 import io
+import warnings
 import zlib
 
-from scrapy.utils.gz import gunzip
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.exceptions import NotConfigured
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.gz import gunzip
 
 
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
@@ -25,11 +27,25 @@ except ImportError:
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
+    def __init__(self, stats=None):
+        self.stats = stats
+
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
-        return cls()
+        try:
+            return cls(stats=crawler.stats)
+        except TypeError:
+            warnings.warn(
+                "HttpCompressionMiddleware subclasses must either modify "
+                "their '__init__' method to support a 'stats' parameter or "
+                "reimplement the 'from_crawler' method.",
+                ScrapyDeprecationWarning,
+            )
+            result = cls()
+            result.stats = crawler.stats
+            return result
 
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding',
@@ -44,6 +60,9 @@ class HttpCompressionMiddleware:
             if content_encoding:
                 encoding = content_encoding.pop()
                 decoded_body = self._decode(response.body, encoding.lower())
+                if self.stats:
+                    self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
+                    self.stats.inc_value('httpcompression/response_count', spider=spider)
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )

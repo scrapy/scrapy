@@ -45,7 +45,7 @@ class FollowAllSpider(MetaSpider):
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
-        url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=1)}")
+        url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=True)}")
         self.start_urls = [url]
 
     def parse(self, response):
@@ -245,7 +245,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
         for s in range(100):
             qargs = {'total': 10, 'seed': s}
-            url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=1)}")
+            url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=True)}")
             yield Request(url, meta={'seed': s})
             if self.fail_yielding:
                 2 / 0
@@ -389,4 +389,33 @@ class BytesReceivedErrbackSpider(BytesReceivedCallbackSpider):
 
     def bytes_received(self, data, request, spider):
         self.meta["bytes_received"] = data
+        raise StopDownload(fail=True)
+
+
+class HeadersReceivedCallbackSpider(MetaSpider):
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.headers_received, signals.headers_received)
+        return spider
+
+    def start_requests(self):
+        yield Request(self.mockserver.url("/status"), errback=self.errback)
+
+    def parse(self, response):
+        self.meta["response"] = response
+
+    def errback(self, failure):
+        self.meta["failure"] = failure
+
+    def headers_received(self, headers, body_length, request, spider):
+        self.meta["headers_received"] = headers
+        raise StopDownload(fail=False)
+
+
+class HeadersReceivedErrbackSpider(HeadersReceivedCallbackSpider):
+
+    def headers_received(self, headers, body_length, request, spider):
+        self.meta["headers_received"] = headers
         raise StopDownload(fail=True)
