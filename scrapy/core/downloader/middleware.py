@@ -3,8 +3,12 @@ Downloader Middleware manager
 
 See documentation in docs/topics/downloader-middleware.rst
 """
-from twisted.internet import defer
+from typing import Callable, Union
 
+from twisted.internet import defer
+from twisted.python.failure import Failure
+
+from scrapy import Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
@@ -29,9 +33,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, 'process_exception'):
             self.methods['process_exception'].appendleft(mw.process_exception)
 
-    def download(self, download_func, request, spider):
+    def download(self, download_func: Callable, request: Request, spider: Spider):
         @defer.inlineCallbacks
-        def process_request(request):
+        def process_request(request: Request):
             for method in self.methods['process_request']:
                 response = yield deferred_from_coro(method(request=request, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
@@ -45,7 +49,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             return (yield download_func(request=request, spider=spider))
 
         @defer.inlineCallbacks
-        def process_response(response):
+        def process_response(response: Union[Response, Request]):
             if response is None:
                 raise TypeError("Received None in process_response")
             elif isinstance(response, Request):
@@ -64,7 +68,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             return response
 
         @defer.inlineCallbacks
-        def process_exception(failure):
+        def process_exception(failure: Failure):
             exception = failure.value
             for method in self.methods['process_exception']:
                 response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
