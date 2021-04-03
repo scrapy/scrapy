@@ -3,7 +3,7 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
-from collections.abc import Iterable, AsyncIterable
+from collections.abc import Iterable
 from itertools import islice
 from typing import Callable, Union, Any
 
