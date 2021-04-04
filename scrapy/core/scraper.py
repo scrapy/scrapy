@@ -3,12 +3,14 @@ extracts information from them"""
 
 import logging
 from collections import deque
+from collections.abc import Iterable
+from typing import Union
 
 from itemadapter import is_item
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
-from scrapy import signals
+from scrapy import signals, Spider
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
@@ -118,7 +120,7 @@ class Scraper:
             response, request, deferred = self.slot.next_response_request_deferred()
             self._scrape(response, request, spider).chainDeferred(deferred)
 
-    def _scrape(self, result, request, spider):
+    def _scrape(self, result: Union[Response, Failure], request: Request, spider: Spider):
         """
         Handle the downloaded response or failure through the spider callback/errback
         """
@@ -129,7 +131,7 @@ class Scraper:
         dfd.addCallback(self.handle_spider_output, request, result, spider)
         return dfd
 
-    def _scrape2(self, result, request, spider):
+    def _scrape2(self, result: Union[Response, Failure], request: Request, spider: Spider):
         """
         Handle the different cases of request's result been a Response or a Failure
         """
@@ -139,7 +141,7 @@ class Scraper:
             dfd = self.call_spider(result, request, spider)
             return dfd.addErrback(self._log_download_errors, result, request, spider)
 
-    def call_spider(self, result, request, spider):
+    def call_spider(self, result: Union[Response, Failure], request: Request, spider: Spider):
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
                 result.request = request
@@ -154,7 +156,7 @@ class Scraper:
             dfd.addErrback(request.errback)
         return dfd.addCallback(iterate_spider_output)
 
-    def handle_spider_error(self, _failure, request, response, spider):
+    def handle_spider_error(self, _failure: Failure, request: Request, response: Response, spider: Spider):
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
@@ -175,7 +177,7 @@ class Scraper:
             spider=spider
         )
 
-    def handle_spider_output(self, result, request, response, spider):
+    def handle_spider_output(self, result: Iterable, request: Request, response: Response, spider: Spider):
         if not result:
             return defer_succeed(None)
         it = iter_errback(result, self.handle_spider_error, request, response, spider)
