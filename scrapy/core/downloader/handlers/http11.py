@@ -7,7 +7,7 @@ import warnings
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -239,6 +239,11 @@ class ScrapyProxyAgent(Agent):
         """
         Issue a new request via the configured proxy.
         """
+        # Check if URL contains scheme, if not add http
+        parsedUrl = urlparse(self._proxyURI)
+        if not parsedUrl.scheme:
+            parsedUrl._replace(scheme='http')
+        self._proxyURI = urlunparse(parsedUrl)
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
