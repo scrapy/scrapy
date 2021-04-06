@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.5.0:
 
-Scrapy 2.5.0 (2021-04-NN)
+Scrapy 2.5.0 (2021-04-06)
 -------------------------
 
 Highlights:
