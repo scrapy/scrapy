@@ -118,8 +118,8 @@ Here is an example that runs multiple spiders simultaneously:
 ::
 
     import scrapy
-    from scrapy.utils.project import get_project_settings
     from scrapy.crawler import CrawlerProcess
+    from scrapy.utils.project import get_project_settings
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -143,6 +143,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -153,7 +154,8 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
         ...
 
     configure_logging()
-    runner = CrawlerRunner()
+    settings = get_project_settings()
+    runner = CrawlerRunner(settings)
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
@@ -168,6 +170,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -178,7 +181,8 @@ Same example but running the spiders sequentially by chaining the deferreds:
         ...
 
     configure_logging()
-    runner = CrawlerRunner()
+    settings = get_project_settings()
+    runner = CrawlerRunner(settings)
 
     @defer.inlineCallbacks
     def crawl():
