@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.5.0:
 
-Scrapy 2.5.0 (2021-03-NN)
+Scrapy 2.5.0 (2021-04-NN)
 -------------------------
 
 Highlights:
@@ -13,6 +13,9 @@ Highlights:
 -   Official Python 3.9 support
 
 -   Experimental :ref:`HTTP/2 support <http2>`
+
+-   New :func:`~scrapy.downloadermiddlewares.retry.get_retry_request` function
+    to retry requests from spider callbacks
 
 -   New :class:`~scrapy.signals.headers_received` signal that allows stopping
     downloads early
@@ -43,17 +46,22 @@ New features
 -   Experimental :ref:`HTTP/2 support <http2>` through a new download handler
     that can be assigned to the ``https`` protocol in the
     :setting:`DOWNLOAD_HANDLERS` setting.
-    (:issue:`1854`, :issue:`4769`)
+    (:issue:`1854`, :issue:`4769`, :issue:`5058`, :issue:`5059`, :issue:`5066`)
+
+-   The new :func:`scrapy.downloadermiddlewares.retry.get_retry_request`
+    function may be used from spider callbacks or middlewares to handle the
+    retrying of a request beyond the scenarios that
+    :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` supports.
+    (:issue:`3590`, :issue:`3685`, :issue:`4902`)
 
 -   The new :class:`~scrapy.signals.headers_received` signal gives early access
     to response headers and allows :ref:`stopping downloads
     <topics-stop-response-download>`.
-
     (:issue:`1772`, :issue:`4897`)
 
 -   The new :attr:`Response.protocol <scrapy.http.Response.protocol>`
     attribute gives access to the string that identifies the protocol used to
-    download a response (:issue:`4878`)
+    download a response. (:issue:`4878`)
 
 -   :ref:`Stats <topics-stats>` now include the following entries that indicate
     the number of successes and failures in storing
@@ -72,11 +80,21 @@ New features
     middleware now logs ignored URLs with ``INFO`` :ref:`logging level
     <levels>` instead of ``DEBUG``, and it now includes the following entry
     into :ref:`stats <topics-stats>` to keep track of the number of ignored
-    URLs:
+    URLs::
 
         urllength/request_ignored_count
 
     (:issue:`5036`)
+
+-   The
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    downloader middleware now logs the number of decompressed responses and the
+    total count of resulting bytes::
+
+        httpcompression/response_bytes
+        httpcompression/response_count
+
+    (:issue:`4797`, :issue:`4799`)
 
 
 Bug fixes
@@ -96,9 +114,22 @@ Bug fixes
     download handler (see :setting:`DOWNLOAD_HANDLERS`).
     (:issue:`5009`, :issue:`5034`, :issue:`5045`, :issue:`5057`, :issue:`5062`)
 
+-   Setting the :reqmeta:`handle_httpstatus_all` request meta key to ``False``
+    now has the same effect as not setting it at all, instead of having the
+    same effect as setting it to ``True``.
+    (:issue:`3851`, :issue:`4694`)
+
 
 Documentation
 ~~~~~~~~~~~~~
+
+-   Added instructions to :ref:`install Scrapy in Windows using pip
+    <intro-install-windows>`.
+    (:issue:`4715`, :issue:`4736`)
+
+-   Logging documentation now includes :ref:`additional ways to filter logs
+    <topics-logging-advanced-customization>`.
+    (:issue:`4216`, :issue:`4257`, :issue:`4965`)
 
 -   Covered how to deal with long lists of allowed domains in the :ref:`FAQ
     <faq>`. (:issue:`2263`, :issue:`3667`)
@@ -106,22 +137,28 @@ Documentation
 -   Covered scrapy-bench_ in :ref:`benchmarking`.
     (:issue:`4996`, :issue:`5016`)
 
--   The :ref:`list of Request.meta keys <topics-request-meta>` is now sorted
-    alphabetically.
-    (:issue:`5061`, :issue:`5065`)
+-   Clarified that one :ref:`extension <topics-extensions>` instance is created
+    per crawler.
+    (:issue:`5014`)
 
 -   Fixed some errors in examples.
     (:issue:`4829`, :issue:`4830`, :issue:`4907`, :issue:`4909`,
     :issue:`5008`)
 
--   Fixed some external links. (:issue:`4892`, :issue:`4899`)
+-   Fixed some external links, typos, and so on.
+    (:issue:`4892`, :issue:`4899`, :issue:`4936`, :issue:`4942`, :issue:`5005`,
+    :issue:`5063`)
 
--   Fixed some typos. (:issue:`4936`, :issue:`4942`, :issue:`5005`)
+-   The :ref:`list of Request.meta keys <topics-request-meta>` is now sorted
+    alphabetically.
+    (:issue:`5061`, :issue:`5065`)
 
 -   Updated references to Scrapinghub, which is now called Zyte.
-    (:issue:`4973`)
+    (:issue:`4973`, :issue:`5072`)
 
 -   Added a mention to contributors in the README. (:issue:`4956`)
+
+-   Reduced the top margin of lists. (:issue:`4974`)
 
 
 Quality Assurance
@@ -129,7 +166,10 @@ Quality Assurance
 
 -   Made Python 3.9 support official (:issue:`4757`, :issue:`4759`)
 
--   Fixed deprecated uses of the Twisted API. (:issue:`4940`)
+-   Extended typing hints (:issue:`4895`)
+
+-   Fixed deprecated uses of the Twisted API.
+    (:issue:`4940`, :issue:`4950`, :issue:`5073`)
 
 -   Made our tests run with the new pip resolver.
     (:issue:`4710`, :issue:`4814`)
@@ -143,9 +183,8 @@ Quality Assurance
     (:issue:`4986`, :issue:`5020`, :issue:`5022`, :issue:`5027`, :issue:`5052`,
     :issue:`5053`)
 
--   Refactored complex code (:issue:`4982`, :issue:`5001`, :issue:`5002`)
-
--   Coding style fixes. (:issue:`4911`)
+-   Implemented code refactorings, style fixes and cleanups.
+    (:issue:`4911`, :issue:`4982`, :issue:`5001`, :issue:`5002`, :issue:`5076`)
 
 
 .. _release-2.4.1:
@@ -4335,7 +4374,7 @@ API changes
 - ``url`` and ``body`` attributes of Request objects are now read-only (#230)
 - ``Request.copy()`` and ``Request.replace()`` now also copies their ``callback`` and ``errback`` attributes (#231)
 - Removed ``UrlFilterMiddleware`` from ``scrapy.contrib`` (already disabled by default)
-- Offsite middelware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
+- Offsite middleware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
 - Removed Spider Manager ``load()`` method. Now spiders are loaded in the ``__init__`` method itself.
 - Changes to Scrapy Manager (now called "Crawler"):
    - ``scrapy.core.manager.ScrapyManager`` class renamed to ``scrapy.crawler.Crawler``
