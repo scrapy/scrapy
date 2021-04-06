@@ -18,10 +18,6 @@ def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')
 
 
-def _fname(f):
-    return f"{f.__self__.__class__.__name__}.{f.__func__.__name__}"
-
-
 class SpiderMiddlewareManager(MiddlewareManager):
 
     component_name = 'spider middleware'
@@ -46,7 +42,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             try:
                 result = method(response=response, spider=spider)
                 if result is not None:
-                    msg = (f"Middleware {_fname(method)} must return None "
+                    msg = (f"Middleware {method.__qualname__} must return None "
                            f"or raise an exception, got {type(result)}")
                     raise _InvalidOutput(msg)
             except _InvalidOutput:
@@ -83,7 +79,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             elif result is None:
                 continue
             else:
-                msg = (f"Middleware {_fname(method)} must return None "
+                msg = (f"Middleware {method.__qualname__} must return None "
                        f"or an iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
         return _failure
@@ -108,7 +104,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if _isiterable(result):
                 result = self._evaluate_iterable(response, spider, result, method_index + 1, recovered)
             else:
-                msg = (f"Middleware {_fname(method)} must return an "
+                msg = (f"Middleware {method.__qualname__} must return an "
                        f"iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
 
