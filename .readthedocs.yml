@@ -12,6 +12,5 @@ python:
   # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-image
   version: 3.8  # Keep in sync with .github/workflows/checks.yml
   install:
-    - requirements: docs/pip.txt
     - requirements: docs/requirements.txt
     - path: .
