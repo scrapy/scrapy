@@ -3,7 +3,7 @@ import logging
 import os
 from abc import abstractmethod
 from os.path import join, exists
-from typing import Optional
+from typing import Optional, Type, TypeVar
 
 from twisted.internet.defer import Deferred
 
@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSchedulerMeta(type):
+    """
+    Metaclass to check scheduler classes against the necessary interface
+    """
     def __instancecheck__(cls, instance):
         return cls.__subclasscheck__(type(instance))
 
@@ -41,7 +44,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     @classmethod
     def from_crawler(cls, crawler: Crawler):
         """
-        Factory method which receives the current Crawler object as argument.
+        Factory method which receives the current :class:`~scrapy.crawler.Crawler` object as argument.
         """
         return cls()
 
@@ -84,12 +87,13 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     @abstractmethod
     def next_request(self) -> Optional[Request]:
         """
-        Return a previously enqueued request.
-
-        Return a :class:`~scrapy.http.Request` object, or ``None`` if there are
-        no more enqueued requests, i.e. if ``has_pending_requests`` is ``False``.
+        Return the next :class:`~scrapy.http.Request` to be processed, or ``None``
+        to indicate that there are no requests to be considered ready at the moment.
         """
         raise NotImplementedError()
+
+
+SchedulerTV = TypeVar("SchedulerTV", bound="Scheduler")
 
 
 class Scheduler(BaseScheduler):
@@ -171,7 +175,7 @@ class Scheduler(BaseScheduler):
         self.crawler = crawler
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls: Type[SchedulerTV], crawler) -> SchedulerTV:
         """
         Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
@@ -236,22 +240,21 @@ class Scheduler(BaseScheduler):
 
     def next_request(self) -> Optional[Request]:
         """
-        Return a request from the memory queue, falling back to the disk queue if the
-        memory queue is empty.
+        Return a :class:`~scrapy.http.Request` object from the memory queue,
+        falling back to the disk queue if the memory queue is empty.
+        Return ``None`` if there are no more enqueued requests.
 
         Increment the appropriate stats, such as: ``scheduler/dequeued``,
         ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
-
-        Return a :class:`~scrapy.http.Request` object, or ``None`` if there are no more enqueued requests.
         """
         request = self.mqs.pop()
-        if request:
+        if request is not None:
             self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
         else:
             request = self._dqpop()
-            if request:
+            if request is not None:
                 self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
-        if request:
+        if request is not None:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
         return request
 
@@ -283,7 +286,7 @@ class Scheduler(BaseScheduler):
         self.mqs.push(request)
 
     def _dqpop(self) -> Optional[Request]:
-        if self.dqs:
+        if self.dqs is not None:
             return self.dqs.pop()
         return None
 
