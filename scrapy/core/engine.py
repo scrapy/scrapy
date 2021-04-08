@@ -207,7 +207,7 @@ class ExecutionEngine:
         return [self.spider] if self.spider is not None else []
 
     def has_capacity(self) -> bool:
-        """Does the engine have capacity to handle more spiders"""
+        warnings.warn("ExecutionEngine.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
         return not bool(self.slot)
 
     def crawl(self, request: Request, spider: Spider) -> None:
@@ -266,7 +266,7 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def open_spider(self, spider: Spider, start_requests: Iterable = (), close_if_idle: bool = True):
-        if not self.has_capacity():
+        if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={'spider': spider})
         nextcall = CallLaterOnce(self._next_request, spider)

@@ -110,7 +110,6 @@ using the telnet console::
     Execution engine status
 
     time()-engine.start_time                        : 8.62972998619
-    engine.has_capacity()                           : False
     len(engine.downloader.active)                   : 16
     engine.scraper.is_idle()                        : False
     engine.spider.name                              : followall
