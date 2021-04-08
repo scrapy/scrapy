@@ -316,7 +316,7 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log_failure('Scraper close failure'))
 
-        dfd.addBoth(lambda _: self.slot.scheduler.close(reason) if hasattr(self.slot.scheduler, "close") else None)
+        dfd.addBoth(lambda _: self.slot.scheduler.close(reason))
         dfd.addErrback(log_failure('Scheduler close failure'))
 
         dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(
