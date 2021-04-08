@@ -5,16 +5,17 @@ For more information see docs/topics/architecture.rst
 
 """
 import logging
+import warnings
 from time import time
 from typing import Callable, Iterable, Iterator, Optional, Set, Union
 
-from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks, succeed as defer_succeed
+from twisted.internet.defer import Deferred, inlineCallbacks, succeed as defer_succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import DontCloseSpider
+from scrapy.exceptions import DontCloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
@@ -26,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 class Slot:
-
     def __init__(
         self,
         start_requests: Iterable,
@@ -35,7 +35,7 @@ class Slot:
         scheduler,
     ) -> None:
         self.closing: Optional[Deferred] = None
-        self.inprogress: Set[Request] = set()  # requests in progress
+        self.inprogress: Set[Request] = set()
         self.start_requests: Optional[Iterator] = iter(start_requests)
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
@@ -64,7 +64,6 @@ class Slot:
 
 
 class ExecutionEngine:
-
     def __init__(self, crawler, spider_closed_callback: Callable) -> None:
         self.crawler = crawler
         self.settings = crawler.settings
@@ -95,7 +94,7 @@ class ExecutionEngine:
         if not self.running:
             raise RuntimeError("Engine not running")
         self.running = False
-        dfd = self._close_all_spiders()
+        dfd = self.close_spider(self.spider, reason="shutdown") if self.spider is not None else defer_succeed(None)
         return dfd.addBoth(lambda _: self._finish_stopping_engine())
 
     def close(self) -> Deferred:
@@ -104,11 +103,9 @@ class ExecutionEngine:
         If it has already been started, stop it. In all cases, close all spiders and the downloader.
         """
         if self.running:
-            # Will also close spiders and downloader
-            return self.stop()
-        elif self.open_spiders:
-            # Will also close downloader
-            return self._close_all_spiders()
+            return self.stop()  # will also close spiders and downloader
+        elif self.spider is not None:
+            return self.close_spider(self.spider, reason="shutdown")  # will also close downloader
         else:
             return defer_succeed(self.downloader.close())
 
@@ -200,14 +197,19 @@ class ExecutionEngine:
 
     @property
     def open_spiders(self) -> list:
-        return [self.spider] if self.spider else []
+        warnings.warn(
+            "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return [self.spider] if self.spider is not None else []
 
     def has_capacity(self) -> bool:
         """Does the engine have capacity to handle more spiders"""
         return not bool(self.slot)
 
     def crawl(self, request: Request, spider: Spider) -> None:
-        if spider not in self.open_spiders:
+        if spider is not self.spider:
             raise RuntimeError(f"Spider {spider.name!r} not opened when crawling: {request}")
         self.schedule(request, spider)
         if self.slot is not None:
@@ -337,11 +339,6 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
 
         return dfd
-
-    def _close_all_spiders(self) -> DeferredList:
-        dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
-        dlist = DeferredList(dfds)
-        return dlist
 
     @inlineCallbacks
     def _finish_stopping_engine(self) -> Deferred:

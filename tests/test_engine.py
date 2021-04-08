@@ -13,6 +13,7 @@ module with the ``runserver`` argument::
 import os
 import re
 import sys
+import warnings
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -25,6 +26,7 @@ from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
@@ -387,21 +389,33 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
-        yield e.open_spider(TestSpider(), [])
-        self.assertEqual(len(e.open_spiders), 1)
-        yield e.close()
-        self.assertEqual(len(e.open_spiders), 0)
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            yield e.open_spider(TestSpider(), [])
+            self.assertEqual(len(e.open_spiders), 1)
+            yield e.close()
+            self.assertEqual(len(e.open_spiders), 0)
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            )
 
     @defer.inlineCallbacks
     def test_close_engine_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
-        yield e.open_spider(TestSpider(), [])
-        e.start()
-        self.assertTrue(e.running)
-        yield e.close()
-        self.assertFalse(e.running)
-        self.assertEqual(len(e.open_spiders), 0)
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            yield e.open_spider(TestSpider(), [])
+            e.start()
+            self.assertTrue(e.running)
+            yield e.close()
+            self.assertFalse(e.running)
+            self.assertEqual(len(e.open_spiders), 0)
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            )
 
 
 if __name__ == "__main__":
