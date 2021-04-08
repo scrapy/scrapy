@@ -28,7 +28,8 @@ logger = logging.getLogger(__name__)
 class Slot:
 
     def __init__(
-        self, start_requests: Iterable,
+        self,
+        start_requests: Iterable,
         close_if_idle: bool,
         nextcall: CallLaterOnce,
         scheduler,
