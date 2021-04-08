@@ -118,7 +118,7 @@ class FileFeedStorage:
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, access_key=None, secret_key=None, acl=None, *,
+    def __init__(self, uri, region_name=None, endpoint_url=None, access_key=None, secret_key=None, acl=None, *,
                  feed_options=None):
         if not is_botocore_available():
             raise NotConfigured('missing botocore library')
@@ -131,7 +131,10 @@ class S3FeedStorage(BlockingFeedStorage):
         import botocore.session
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
-            's3', aws_access_key_id=self.access_key,
+            's3',
+            region_name=region_name, 
+            endpoint_url=endpoint_url, 
+            aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key)
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
@@ -143,6 +146,8 @@ class S3FeedStorage(BlockingFeedStorage):
         return build_storage(
             cls,
             uri,
+            region_name=crawler.settings['AWS_REGION_NAME'],
+            endpoint_url=crawler.settings['AWS_ENDPOINT_URL'],
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
             acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
