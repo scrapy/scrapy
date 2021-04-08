@@ -1,8 +1,11 @@
 import functools
 import logging
+import hashlib
 from collections import defaultdict
 from inspect import signature
 from warnings import warn
+import os
+import mimetypes
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
@@ -14,6 +17,7 @@ from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -247,5 +251,11 @@ class MediaPipeline:
         return item
 
     def file_path(self, request, response=None, info=None, *, item=None):
-        """Returns the path where downloaded media should be stored"""
-        pass
+        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        media_ext = os.path.splitext(request.url)[1]
+        if media_ext not in mimetypes.types_map:
+            media_ext = ''
+            media_type = mimetypes.guess_type(request.url)[0]
+            if media_type:
+                media_ext = mimetypes.guess_extension(media_type)
+        return f'full/{media_guid}{media_ext}'
