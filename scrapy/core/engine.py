@@ -272,8 +272,7 @@ class ExecutionEngine:
         start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.spider = spider
-        if hasattr(scheduler, "open"):
-            yield scheduler.open(spider)
+        yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
