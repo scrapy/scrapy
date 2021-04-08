@@ -140,19 +140,21 @@ class ExecutionEngine:
             self._spider_idle(spider)
 
     def _needs_backout(self, spider: Spider) -> bool:
+        assert self.slot is not None  # typing
         return (
             not self.running
-            or self.slot is not None and self.slot.closing
+            or self.slot.closing
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
         )
 
     def _next_request_from_scheduler(self, spider: Spider) -> Optional[Deferred]:
-        if self.slot is None:
-            return None
+        assert self.slot is not None  # typing
+
         request = self.slot.scheduler.next_request()
         if request is None:
             return None
+
         d = self._download(request, spider)
         d.addBoth(self._handle_downloader_output, request, spider)
         d.addErrback(lambda f: logger.info('Error while handling downloader output',
