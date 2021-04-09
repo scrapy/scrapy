@@ -139,7 +139,7 @@ class ExecutionEngine:
                 self.slot.start_requests = None
                 logger.error('Error while obtaining start requests', exc_info=True, extra={'spider': self.spider})
             else:
-                self.crawl(request, self.spider)
+                self.crawl(request)
 
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
@@ -185,7 +185,7 @@ class ExecutionEngine:
 
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
-            self.crawl(result, self.spider)
+            self.crawl(result)
             return None
 
         d = self.scraper.enqueue_scrape(result, request, self.spider)
@@ -201,7 +201,7 @@ class ExecutionEngine:
     def spider_is_idle(self, spider: Optional[Spider] = None) -> bool:
         if spider is not None:
             warnings.warn(
-                f"Passing a 'spider' argument to ""{self.__class__.__name__}.spider_is_idle is deprecated",
+                f"Passing a 'spider' argument to {self.__class__.__name__}.spider_is_idle is deprecated",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -217,12 +217,19 @@ class ExecutionEngine:
             return False
         return True
 
-    def crawl(self, request: Request, spider: Spider) -> None:
+    def crawl(self, request: Request, spider: Optional[Spider] = None) -> None:
+        """Inject the request into the spider <-> downloader pipeline"""
+        if spider is not None:
+            warnings.warn(
+                f"Passing a 'spider' argument to {self.__class__.__name__}.crawl is deprecated",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         if self.slot is None:
             raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
-        if spider is not self.spider:
-            raise RuntimeError(f"Spider {spider.name!r} not opened when crawling: {request}")
-        self.schedule(request, spider)
+        if self.spider is None:
+            raise RuntimeError(f"Spider not opened when crawling: {request}")
+        self.schedule(request, self.spider)
         self.slot.nextcall.schedule()
 
     def schedule(self, request: Request, spider: Spider) -> None:
