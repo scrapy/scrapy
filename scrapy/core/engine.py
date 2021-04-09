@@ -229,15 +229,14 @@ class ExecutionEngine:
             raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
         if self.spider is None:
             raise RuntimeError(f"Spider not opened when crawling: {request}")
-        self.schedule(request, self.spider)
+        self._schedule_request(request)
         self.slot.nextcall.schedule()
 
-    def schedule(self, request: Request, spider: Spider) -> None:
-        if self.slot is None:
-            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
-        self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
+    def _schedule_request(self, request: Request) -> None:
+        assert self.slot is not None  # typing
+        self.signals.send_catch_log(signals.request_scheduled, request=request, spider=self.spider)
         if not self.slot.scheduler.enqueue_request(request):
-            self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
+            self.signals.send_catch_log(signals.request_dropped, request=request, spider=self.spider)
 
     def download(self, request: Request, spider: Optional[Spider] = None) -> Deferred:
         """Return a Deferred which fires with a Response as result, only download middlewares are applied"""
@@ -379,3 +378,14 @@ class ExecutionEngine:
     def has_capacity(self) -> bool:
         warnings.warn(f"{self.__class__.__name__}.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
         return not bool(self.slot)
+
+    def schedule(self, request: Request, spider: Spider) -> None:
+        warnings.warn(
+            f"{self.__class__.__name__}._schedule is deprecated, "
+            f"please use {self.__class__.__name__}.crawl or {self.__class__.__name__}.download instead",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        if self.slot is None:
+            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
+        self._schedule_request(request)
