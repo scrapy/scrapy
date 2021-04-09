@@ -90,24 +90,31 @@ class ExecutionEngine:
         yield self._closewait
 
     def stop(self) -> Deferred:
-        """Stop the execution engine gracefully"""
+        """
+        Gracefully stop the execution engine
+        """
+        @inlineCallbacks
+        def _finish_stopping_engine(_) -> Deferred:
+            yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+            self._closewait.callback(None)
+
         if not self.running:
             raise RuntimeError("Engine not running")
+
         self.running = False
         dfd = self.close_spider(self.spider, reason="shutdown") if self.spider is not None else defer_succeed(None)
-        return dfd.addBoth(lambda _: self._finish_stopping_engine())
+        return dfd.addBoth(_finish_stopping_engine)
 
     def close(self) -> Deferred:
-        """Close the execution engine gracefully.
-
+        """
+        Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close all spiders and the downloader.
         """
         if self.running:
             return self.stop()  # will also close spiders and downloader
         elif self.spider is not None:
             return self.close_spider(self.spider, reason="shutdown")  # will also close downloader
-        else:
-            return defer_succeed(self.downloader.close())
+        return defer_succeed(self.downloader.close())
 
     def pause(self) -> None:
         self.paused = True
@@ -340,8 +347,3 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
 
         return dfd
-
-    @inlineCallbacks
-    def _finish_stopping_engine(self) -> Deferred:
-        yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
-        self._closewait.callback(None)
