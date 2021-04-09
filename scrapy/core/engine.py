@@ -199,7 +199,8 @@ class ExecutionEngine:
         return d
 
     def spider_is_idle(self, spider: Spider) -> bool:
-        assert self.slot is not None  # typing
+        if self.slot is None:
+            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
         if not self.scraper.slot.is_idle():
             return False
         if self.downloader.active:  # downloader has pending requests
@@ -211,14 +212,16 @@ class ExecutionEngine:
         return True
 
     def crawl(self, request: Request, spider: Spider) -> None:
-        assert self.slot is not None  # typing
+        if self.slot is None:
+            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
         if spider is not self.spider:
             raise RuntimeError(f"Spider {spider.name!r} not opened when crawling: {request}")
         self.schedule(request, spider)
         self.slot.nextcall.schedule()
 
     def schedule(self, request: Request, spider: Spider) -> None:
-        assert self.slot is not None  # typing
+        if self.slot is None:
+            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
         self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
         if not self.slot.scheduler.enqueue_request(request):
             self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
@@ -346,12 +349,13 @@ class ExecutionEngine:
     @property
     def open_spiders(self) -> list:
         warnings.warn(
-            "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            f"{self.__class__.__name__}.open_spiders is deprecated, "
+            f"please use {self.__class__.__name__}.spider instead",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
         return [self.spider] if self.spider is not None else []
 
     def has_capacity(self) -> bool:
-        warnings.warn("ExecutionEngine.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
+        warnings.warn(f"{self.__class__.__name__}.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
         return not bool(self.slot)
