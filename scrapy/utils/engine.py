@@ -11,7 +11,7 @@ def get_engine_status(engine):
         "len(engine.downloader.active)",
         "engine.scraper.is_idle()",
         "engine.spider.name",
-        "engine.spider_is_idle(engine.spider)",
+        "engine.spider_is_idle()",
         "engine.slot.closing",
         "len(engine.slot.inprogress)",
         "len(engine.slot.scheduler.dqs or [])",

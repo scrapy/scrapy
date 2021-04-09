@@ -141,7 +141,7 @@ class ExecutionEngine:
             else:
                 self.crawl(request, self.spider)
 
-        if self.spider_is_idle(self.spider) and self.slot.close_if_idle:
+        if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
 
     def _needs_backout(self) -> bool:
@@ -198,7 +198,13 @@ class ExecutionEngine:
         )
         return d
 
-    def spider_is_idle(self, spider: Spider) -> bool:
+    def spider_is_idle(self, spider: Optional[Spider] = None) -> bool:
+        if spider is not None:
+            warnings.warn(
+                f"Passing a 'spider' argument to ""{self.__class__.__name__}.spider_is_idle is deprecated",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         if self.slot is None:
             raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
         if not self.scraper.slot.is_idle():
@@ -298,7 +304,7 @@ class ExecutionEngine:
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return None
 
-        if self.spider_is_idle(self.spider):
+        if self.spider_is_idle():
             self.close_spider(self.spider, reason='finished')
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
