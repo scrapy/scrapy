@@ -239,7 +239,14 @@ class ExecutionEngine:
         if not self.slot.scheduler.enqueue_request(request):
             self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
 
-    def download(self, request: Request, spider: Spider) -> Deferred:
+    def download(self, request: Request, spider: Optional[Spider] = None) -> Deferred:
+        """Return a Deferred which fires with a Response as result, only download middlewares are applied"""
+        if spider is not None:
+            warnings.warn(
+                f"Passing a 'spider' argument to {self.__class__.__name__}.download is deprecated",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return self._download(request).addBoth(self._downloaded, request)
 
     def _downloaded(
@@ -248,7 +255,7 @@ class ExecutionEngine:
         assert self.slot is not None  # typing
         assert self.spider is not None  # typing
         self.slot.remove_request(request)
-        return self.download(result, self.spider) if isinstance(result, Request) else result
+        return self.download(result) if isinstance(result, Request) else result
 
     def _download(self, request: Request) -> Deferred:
         assert self.slot is not None  # typing
