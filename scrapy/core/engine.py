@@ -1,5 +1,5 @@
 """
-This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
+This is the Scrapy engine which controls the Scheduler, Downloader and Spider.
 
 For more information see docs/topics/architecture.rst
 
@@ -9,7 +9,7 @@ import warnings
 from time import time
 from typing import Callable, Iterable, Iterator, Optional, Set, Union
 
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed as defer_succeed
+from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
@@ -100,19 +100,19 @@ class ExecutionEngine:
             raise RuntimeError("Engine not running")
 
         self.running = False
-        dfd = self.close_spider(self.spider, reason="shutdown") if self.spider is not None else defer_succeed(None)
+        dfd = self.close_spider(self.spider, reason="shutdown") if self.spider is not None else succeed(None)
         return dfd.addBoth(_finish_stopping_engine)
 
     def close(self) -> Deferred:
         """
         Gracefully close the execution engine.
-        If it has already been started, stop it. In all cases, close all spiders and the downloader.
+        If it has already been started, stop it. In all cases, close the spider and the downloader.
         """
         if self.running:
-            return self.stop()  # will also close spiders and downloader
+            return self.stop()  # will also close spider and downloader
         if self.spider is not None:
             return self.close_spider(self.spider, reason="shutdown")  # will also close downloader
-        return defer_succeed(self.downloader.close())
+        return succeed(self.downloader.close())
 
     def pause(self) -> None:
         self.paused = True
