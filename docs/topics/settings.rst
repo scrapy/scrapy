@@ -943,6 +943,29 @@ Default: ``None``
 
 The Project ID that will be used when storing data on `Google Cloud Storage`_.
 
+.. setting:: ITEM_PIPELINE_CLOSE_SPIDER_ORDER
+
+ITEM_PIPELINE_CLOSE_SPIDER_ORDER
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``'desc'``
+
+Determines the order in which the ``close_spider`` methods of
+:ref:`item pipelines <topics-item-pipeline>` are called:
+
+-   ``'asc'``
+
+    From lower to higher values of :setting:`ITEM_PIPELINES`.
+
+-   ``'desc'``
+
+    From higher to lower values of :setting:`ITEM_PIPELINES`.
+
+In a future version of Scrapy, this setting will be removed and the call order
+will always be from lower to higher values of :setting:`ITEM_PIPELINES`
+(``asc``). Because of that, Scrapy logs a warning unless this setting is
+explicitly set as ``asc``.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
