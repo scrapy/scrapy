@@ -56,7 +56,7 @@ class TestSpider(Spider):
     name_re = re.compile(r"<h1>(.*?)</h1>", re.M)
     price_re = re.compile(r">Price: \$(.*?)<", re.M)
 
-    item_cls = TestItem
+    item_cls: type = TestItem
 
     def parse(self, response):
         xlink = LinkExtractor()
@@ -66,15 +66,15 @@ class TestSpider(Spider):
                 yield Request(url=link.url, callback=self.parse_item)
 
     def parse_item(self, response):
-        item = self.item_cls()
+        adapter = ItemAdapter(self.item_cls())
         m = self.name_re.search(response.text)
         if m:
-            item['name'] = m.group(1)
-        item['url'] = response.url
+            adapter['name'] = m.group(1)
+        adapter['url'] = response.url
         m = self.price_re.search(response.text)
         if m:
-            item['price'] = m.group(1)
-        return item
+            adapter['price'] = m.group(1)
+        return adapter.item
 
 
 class TestDupeFilterSpider(TestSpider):
@@ -87,7 +87,7 @@ class DictItemsSpider(TestSpider):
 
 
 class AttrsItemsSpider(TestSpider):
-    item_class = AttrsItem
+    item_cls = AttrsItem
 
 
 try:
@@ -97,14 +97,12 @@ except ImportError:
 else:
     TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
 
-    class DataClassItemsSpider(DictItemsSpider):
+    class _dataclass_spider(DictItemsSpider):
         def parse_item(self, response):
             item = super().parse_item(response)
-            return TestDataClass(
-                name=item.get('name'),
-                url=item.get('url'),
-                price=item.get('price'),
-            )
+            return TestDataClass(**item)
+
+    DataClassItemsSpider = _dataclass_spider
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
