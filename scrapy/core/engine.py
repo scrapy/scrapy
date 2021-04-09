@@ -191,7 +191,7 @@ class ExecutionEngine:
         d = self.scraper.enqueue_scrape(result, request, self.spider)
         d.addErrback(
             lambda f: logger.error(
-                'Error while enqueuing downloader output',
+                "Error while enqueuing downloader output",
                 exc_info=failure_to_exc_info(f),
                 extra={'spider': self.spider},
             )
@@ -201,12 +201,12 @@ class ExecutionEngine:
     def spider_is_idle(self, spider: Optional[Spider] = None) -> bool:
         if spider is not None:
             warnings.warn(
-                f"Passing a 'spider' argument to {self.__class__.__name__}.spider_is_idle is deprecated",
+                "Passing a 'spider' argument to ExecutionEngine.spider_is_idle is deprecated",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
         if self.slot is None:
-            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
+            raise RuntimeError("Engine slot not assigned")
         if not self.scraper.slot.is_idle():
             return False
         if self.downloader.active:  # downloader has pending requests
@@ -221,12 +221,12 @@ class ExecutionEngine:
         """Inject the request into the spider <-> downloader pipeline"""
         if spider is not None:
             warnings.warn(
-                f"Passing a 'spider' argument to {self.__class__.__name__}.crawl is deprecated",
+                "Passing a 'spider' argument to ExecutionEngine.crawl is deprecated",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
         if self.slot is None:
-            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
+            raise RuntimeError("Engine slot not assigned")
         if self.spider is None:
             raise RuntimeError(f"Spider not opened when crawling: {request}")
         self._schedule_request(request)
@@ -239,10 +239,10 @@ class ExecutionEngine:
             self.signals.send_catch_log(signals.request_dropped, request=request, spider=self.spider)
 
     def download(self, request: Request, spider: Optional[Spider] = None) -> Deferred:
-        """Return a Deferred which fires with a Response as result, only download middlewares are applied"""
+        """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
         if spider is not None:
             warnings.warn(
-                f"Passing a 'spider' argument to {self.__class__.__name__}.download is deprecated",
+                "Passing a 'spider' argument to ExecutionEngine.download is deprecated",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -307,8 +307,8 @@ class ExecutionEngine:
     def _spider_idle(self) -> None:
         """
         Called when a spider gets idle, i.e. when there are no remaining requests to download or schedule.
-        It can be called multiple times. If some handler for the spider_idle signal raises a DontCloseSpider
-        exception the spider is not closed until the next loop and this function is guaranteed to be called
+        It can be called multiple times. If a handler for the spider_idle signal raises a DontCloseSpider
+        exception, the spider is not closed until the next loop and this function is guaranteed to be called
         (at least) once again.
         """
         assert self.spider is not None  # typing
@@ -322,7 +322,8 @@ class ExecutionEngine:
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
-        assert self.slot is not None  # typing
+        if self.slot is None:
+            raise RuntimeError("Engine slot not assigned")
 
         if self.slot.closing is not None:
             return self.slot.closing
@@ -368,24 +369,23 @@ class ExecutionEngine:
     @property
     def open_spiders(self) -> list:
         warnings.warn(
-            f"{self.__class__.__name__}.open_spiders is deprecated, "
-            f"please use {self.__class__.__name__}.spider instead",
+            "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
         return [self.spider] if self.spider is not None else []
 
     def has_capacity(self) -> bool:
-        warnings.warn(f"{self.__class__.__name__}.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
+        warnings.warn("ExecutionEngine.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
         return not bool(self.slot)
 
     def schedule(self, request: Request, spider: Spider) -> None:
         warnings.warn(
-            f"{self.__class__.__name__}._schedule is deprecated, "
-            f"please use {self.__class__.__name__}.crawl or {self.__class__.__name__}.download instead",
+            "ExecutionEngine.schedule is deprecated, please use "
+            "ExecutionEngine.crawl or ExecutionEngine.download instead",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
         if self.slot is None:
-            raise RuntimeError(f"{self.__class__.__name__}.slot is not assigned")
+            raise RuntimeError("Engine slot not assigned")
         self._schedule_request(request)
