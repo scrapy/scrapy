@@ -90,9 +90,7 @@ class ExecutionEngine:
         yield self._closewait
 
     def stop(self) -> Deferred:
-        """
-        Gracefully stop the execution engine
-        """
+        """Gracefully stop the execution engine"""
         @inlineCallbacks
         def _finish_stopping_engine(_) -> Deferred:
             yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
@@ -112,7 +110,7 @@ class ExecutionEngine:
         """
         if self.running:
             return self.stop()  # will also close spiders and downloader
-        elif self.spider is not None:
+        if self.spider is not None:
             return self.close_spider(self.spider, reason="shutdown")  # will also close downloader
         return defer_succeed(self.downloader.close())
 
@@ -285,12 +283,11 @@ class ExecutionEngine:
         self.slot.heartbeat.start(5)
 
     def _spider_idle(self) -> None:
-        """Called when a spider gets idle. This function is called when there
-        are no remaining pages to download or schedule. It can be called
-        multiple times. If some extension raises a DontCloseSpider exception
-        (in the spider_idle signal handler) the spider is not closed until the
-        next loop and this function is guaranteed to be called (at least) once
-        again for this spider.
+        """
+        Called when a spider gets idle, i.e. when there are no remaining requests to download or schedule.
+        It can be called multiple times. If some handler for the spider_idle signal raises a DontCloseSpider
+        exception the spider is not closed until the next loop and this function is guaranteed to be called
+        (at least) once again.
         """
         assert self.spider is not None  # typing
 
