@@ -122,31 +122,31 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    def _next_request(self, spider: Spider) -> None:
-        if self.slot is None:
-            return None
+    def _next_request(self) -> None:
+        assert self.slot is not None  # typing
+        assert self.spider is not None  # typing
 
         if self.paused:
             return None
 
-        while not self._needs_backout(spider) and self._next_request_from_scheduler(spider) is not None:
+        while not self._needs_backout() and self._next_request_from_scheduler() is not None:
             pass
 
-        if self.slot.start_requests is not None and not self._needs_backout(spider):
+        if self.slot.start_requests is not None and not self._needs_backout():
             try:
                 request = next(self.slot.start_requests)
             except StopIteration:
                 self.slot.start_requests = None
             except Exception:
                 self.slot.start_requests = None
-                logger.error('Error while obtaining start requests', exc_info=True, extra={'spider': spider})
+                logger.error('Error while obtaining start requests', exc_info=True, extra={'spider': self.spider})
             else:
-                self.crawl(request, spider)
+                self.crawl(request, self.spider)
 
-        if self.spider_is_idle(spider) and self.slot.close_if_idle:
-            self._spider_idle(spider)
+        if self.spider_is_idle(self.spider) and self.slot.close_if_idle:
+            self._spider_idle()
 
-    def _needs_backout(self, spider: Spider) -> bool:
+    def _needs_backout(self) -> bool:
         assert self.slot is not None  # typing
         return (
             not self.running
@@ -155,92 +155,88 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
-    def _next_request_from_scheduler(self, spider: Spider) -> Optional[Deferred]:
+    def _next_request_from_scheduler(self) -> Optional[Deferred]:
         assert self.slot is not None  # typing
 
         request = self.slot.scheduler.next_request()
         if request is None:
             return None
 
-        d = self._download(request, spider)
-        d.addBoth(self._handle_downloader_output, request, spider)
+        d = self._download(request)
+        d.addBoth(self._handle_downloader_output, request)
         d.addErrback(lambda f: logger.info('Error while handling downloader output',
                                            exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+                                           extra={'spider': self.spider}))
         d.addBoth(lambda _: self.slot.remove_request(request))
         d.addErrback(lambda f: logger.info('Error while removing request from slot',
                                            exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+                                           extra={'spider': self.spider}))
         d.addBoth(lambda _: self.slot.nextcall.schedule())
         d.addErrback(lambda f: logger.info('Error while scheduling new request',
                                            exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+                                           extra={'spider': self.spider}))
         return d
 
     def _handle_downloader_output(
-        self, result: Union[Request, Response, Failure], request: Request, spider: Spider
+        self, result: Union[Request, Response, Failure], request: Request
     ) -> Optional[Deferred]:
+        assert self.spider is not None  # typing
+
         if not isinstance(result, (Request, Response, Failure)):
             raise TypeError(f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}")
+
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
-            self.crawl(result, spider)
+            self.crawl(result, self.spider)
             return None
-        d = self.scraper.enqueue_scrape(result, request, spider)
-        d.addErrback(lambda f: logger.error('Error while enqueuing downloader output',
-                                            exc_info=failure_to_exc_info(f),
-                                            extra={'spider': spider}))
+
+        d = self.scraper.enqueue_scrape(result, request, self.spider)
+        d.addErrback(
+            lambda f: logger.error(
+                'Error while enqueuing downloader output',
+                exc_info=failure_to_exc_info(f),
+                extra={'spider': self.spider},
+            )
+        )
         return d
 
     def spider_is_idle(self, spider: Spider) -> bool:
+        assert self.slot is not None  # typing
         if not self.scraper.slot.is_idle():
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self.slot is not None:
-            if self.slot.start_requests is not None:  # not all start requests are handled
-                return False
-            if self.slot.scheduler.has_pending_requests():
-                return False
+        if self.slot.start_requests is not None:  # not all start requests are handled
+            return False
+        if self.slot.scheduler.has_pending_requests():
+            return False
         return True
 
-    @property
-    def open_spiders(self) -> list:
-        warnings.warn(
-            "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return [self.spider] if self.spider is not None else []
-
-    def has_capacity(self) -> bool:
-        warnings.warn("ExecutionEngine.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
-        return not bool(self.slot)
-
     def crawl(self, request: Request, spider: Spider) -> None:
+        assert self.slot is not None  # typing
         if spider is not self.spider:
             raise RuntimeError(f"Spider {spider.name!r} not opened when crawling: {request}")
         self.schedule(request, spider)
-        if self.slot is not None:
-            self.slot.nextcall.schedule()
+        self.slot.nextcall.schedule()
 
     def schedule(self, request: Request, spider: Spider) -> None:
+        assert self.slot is not None  # typing
         self.signals.send_catch_log(signals.request_scheduled, request=request, spider=spider)
-        if self.slot is not None and not self.slot.scheduler.enqueue_request(request):
+        if not self.slot.scheduler.enqueue_request(request):
             self.signals.send_catch_log(signals.request_dropped, request=request, spider=spider)
 
     def download(self, request: Request, spider: Spider) -> Deferred:
-        d = self._download(request, spider)
-        d.addBoth(self._downloaded, self.slot, request, spider)
-        return d
+        return self._download(request).addBoth(self._downloaded, request)
 
     def _downloaded(
-        self, result: Union[Response, Request], slot: Slot, request: Request, spider: Spider
+        self, result: Union[Response, Request], request: Request
     ) -> Union[Deferred, Response]:
-        slot.remove_request(request)
-        return self.download(result, spider) if isinstance(result, Request) else result
+        assert self.slot is not None  # typing
+        assert self.spider is not None  # typing
+        self.slot.remove_request(request)
+        return self.download(result, self.spider) if isinstance(result, Request) else result
 
-    def _download(self, request: Request, spider: Spider) -> Deferred:
+    def _download(self, request: Request) -> Deferred:
         assert self.slot is not None  # typing
 
         self.slot.add_request(request)
@@ -251,14 +247,14 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
-                logkws = self.logformatter.crawled(result.request, result, spider)
+                logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
-                    logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
+                    logger.log(*logformatter_adapter(logkws), extra={"spider": self.spider})
                 self.signals.send_catch_log(
                     signal=signals.response_received,
                     response=result,
                     request=result.request,
-                    spider=spider,
+                    spider=self.spider,
                 )
             return result
 
@@ -266,7 +262,7 @@ class ExecutionEngine:
             self.slot.nextcall.schedule()
             return _
 
-        dwld = self.downloader.fetch(request, spider)
+        dwld = self.downloader.fetch(request, self.spider)
         dwld.addCallbacks(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
@@ -276,7 +272,7 @@ class ExecutionEngine:
         if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={'spider': spider})
-        nextcall = CallLaterOnce(self._next_request, spider)
+        nextcall = CallLaterOnce(self._next_request)
         scheduler = create_instance(self.scheduler_cls, settings=None, crawler=self.crawler)
         start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
@@ -288,7 +284,7 @@ class ExecutionEngine:
         self.slot.nextcall.schedule()
         self.slot.heartbeat.start(5)
 
-    def _spider_idle(self, spider: Spider) -> None:
+    def _spider_idle(self) -> None:
         """Called when a spider gets idle. This function is called when there
         are no remaining pages to download or schedule. It can be called
         multiple times. If some extension raises a DontCloseSpider exception
@@ -296,14 +292,16 @@ class ExecutionEngine:
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signals.spider_idle, spider=spider, dont_log=DontCloseSpider)
+        assert self.spider is not None  # typing
+
+        res = self.signals.send_catch_log(signals.spider_idle, spider=self.spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return None
 
-        if self.spider_is_idle(spider):
-            self.close_spider(spider, reason='finished')
+        if self.spider_is_idle(self.spider):
+            self.close_spider(self.spider, reason='finished')
 
-    def close_spider(self, spider: Spider, reason: str = 'cancelled') -> Deferred:
+    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
         assert self.slot is not None  # typing
 
@@ -347,3 +345,16 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
 
         return dfd
+
+    @property
+    def open_spiders(self) -> list:
+        warnings.warn(
+            "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return [self.spider] if self.spider is not None else []
+
+    def has_capacity(self) -> bool:
+        warnings.warn("ExecutionEngine.has_capacity is deprecated", ScrapyDeprecationWarning, stacklevel=2)
+        return not bool(self.slot)
