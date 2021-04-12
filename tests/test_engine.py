@@ -97,12 +97,10 @@ except ImportError:
 else:
     TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
 
-    class _dataclass_spider(DictItemsSpider):
+    class DataClassItemsSpider(DictItemsSpider):  # type: ignore[no-redef]
         def parse_item(self, response):
             item = super().parse_item(response)
             return TestDataClass(**item)
-
-    DataClassItemsSpider = _dataclass_spider
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
