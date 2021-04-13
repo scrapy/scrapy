@@ -5,7 +5,7 @@ import asyncio
 import inspect
 from collections.abc import Coroutine
 from functools import wraps
-from typing import Callable, Iterable, Any, Generator
+from typing import Any, Callable, Generator, Iterable
 
 from twisted.internet import defer, task
 from twisted.python import failure
