@@ -1,7 +1,7 @@
 import logging
 import pprint
 from collections import defaultdict, deque
-from typing import Callable, Dict, Deque
+from typing import Callable, Deque, Dict
 
 from twisted.internet import defer
 
