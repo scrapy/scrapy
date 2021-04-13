@@ -120,10 +120,11 @@ class ImagesPipeline(FilesPipeline):
         while True:
             try:
                 path, image, buf = next(image_stream)
-            except StopIteration:
+            except OSError as e:
+                logger.exception('Could not process image')
+            except Exception as e:
+                logger.exception('Stopped processing images')
                 break
-            except Exception:
-                continue
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)

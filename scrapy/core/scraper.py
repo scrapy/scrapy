@@ -82,28 +82,26 @@ class Scraper:
 
     def close_spider(self, spider):
         """Close a spider being scraped and release its resources"""
-        slot = self.slot
-        slot.closing = defer.Deferred()
-        slot.closing.addCallback(self.itemproc.close_spider)
-        self._check_if_closing(spider, slot)
-        return slot.closing
+        self.slot.closing = defer.Deferred()
+        self.slot.closing.addCallback(self.itemproc.close_spider)
+        self._check_if_closing(spider)
+        return self.slot.closing
 
     def is_idle(self):
         """Return True if there isn't any more spiders to process"""
         return not self.slot
 
-    def _check_if_closing(self, spider, slot):
-        if slot.closing and slot.is_idle():
-            slot.closing.callback(spider)
+    def _check_if_closing(self, spider):
+        if self.slot.closing and self.slot.is_idle():
+            self.slot.closing.callback(spider)
 
     def enqueue_scrape(self, response, request, spider):
-        slot = self.slot
-        dfd = slot.add_response_request(response, request)
+        dfd = self.slot.add_response_request(response, request)
 
         def finish_scraping(_):
-            slot.finish_response(response, request)
-            self._check_if_closing(spider, slot)
-            self._scrape_next(spider, slot)
+            self.slot.finish_response(response, request)
+            self._check_if_closing(spider)
+            self._scrape_next(spider)
             return _
 
         dfd.addBoth(finish_scraping)
@@ -112,12 +110,12 @@ class Scraper:
                                    {'request': request},
                                    exc_info=failure_to_exc_info(f),
                                    extra={'spider': spider}))
-        self._scrape_next(spider, slot)
+        self._scrape_next(spider)
         return dfd
 
-    def _scrape_next(self, spider, slot):
-        while slot.queue:
-            response, request, deferred = slot.next_response_request_deferred()
+    def _scrape_next(self, spider):
+        while self.slot.queue:
+            response, request, deferred = self.slot.next_response_request_deferred()
             self._scrape(response, request, spider).chainDeferred(deferred)
 
     def _scrape(self, result, request, spider):
