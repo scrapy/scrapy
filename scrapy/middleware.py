@@ -3,7 +3,7 @@ import pprint
 from collections import defaultdict, deque
 from typing import Callable, Deque, Dict
 
-from twisted.internet import defer
+from twisted.internet.defer import Deferred
 
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured
@@ -63,18 +63,18 @@ class MiddlewareManager:
         if hasattr(mw, 'close_spider'):
             self.methods['close_spider'].appendleft(mw.close_spider)
 
-    def _process_parallel(self, methodname: str, obj, *args) -> defer.Deferred:
+    def _process_parallel(self, methodname: str, obj, *args) -> Deferred:
         return process_parallel(self.methods[methodname], obj, *args)
 
-    def _process_chain(self, methodname: str, obj, *args) -> defer.Deferred:
+    def _process_chain(self, methodname: str, obj, *args) -> Deferred:
         return process_chain(self.methods[methodname], obj, *args)
 
-    def _process_chain_both(self, cb_methodname: str, eb_methodname: str, obj, *args) -> defer.Deferred:
+    def _process_chain_both(self, cb_methodname: str, eb_methodname: str, obj, *args) -> Deferred:
         return process_chain_both(self.methods[cb_methodname],
                                   self.methods[eb_methodname], obj, *args)
 
-    def open_spider(self, spider: Spider) -> defer.Deferred:
+    def open_spider(self, spider: Spider) -> Deferred:
         return self._process_parallel('open_spider', spider)
 
-    def close_spider(self, spider: Spider) -> defer.Deferred:
+    def close_spider(self, spider: Spider) -> Deferred:
         return self._process_parallel('close_spider', spider)
