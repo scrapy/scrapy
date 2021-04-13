@@ -114,16 +114,24 @@ class ImagesPipeline(FilesPipeline):
         return self.image_downloaded(response, request, info, item=item)
 
     def image_downloaded(self, response, request, info, *, item=None):
+        
         checksum = None
-        for path, image, buf in self.get_images(response, request, info, item=item):
+        image_stream = self.get_images(response, request, info, item=item)
+        while True:
+            try:
+                path, image, buf = next(image_stream)
+            except StopIteration:
+                break
+            except Exception:
+                continue
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
             width, height = image.size
             self.store.persist_file(
-                path, buf, info,
-                meta={'width': width, 'height': height},
-                headers={'Content-Type': 'image/jpeg'})
+                    path, buf, info,
+                    meta={'width': width, 'height': height},
+                    headers={'Content-Type': 'image/jpeg'})
         return checksum
 
     def get_images(self, response, request, info, *, item=None):
