@@ -1,7 +1,6 @@
-import collections
 import functools
 import inspect
-from collections.abc import AsyncIterable
+from typing import AsyncGenerator, AsyncIterable, Callable, Generator, Iterable, Union
 
 
 async def collect_asyncgen(result: AsyncIterable):
@@ -11,9 +10,9 @@ async def collect_asyncgen(result: AsyncIterable):
     return results
 
 
-async def as_async_generator(it):
-    """ Wraps an iterator (sync or async) into an async generator. """
-    if isinstance(it, collections.abc.AsyncIterator):
+async def as_async_generator(it: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
+    """ Wraps an iterable (sync or async) into an async generator. """
+    if isinstance(it, AsyncIterable):
         async for r in it:
             yield r
     else:
@@ -22,7 +21,7 @@ async def as_async_generator(it):
 
 
 # https://stackoverflow.com/a/66170760/113586
-def _process_iterable_universal(process_async):
+def _process_iterable_universal(process_async: Callable):
     """ Takes a function that takes an async iterable, args and kwargs. Returns
     a function that takes any iterable, args and kwargs.
 
@@ -33,7 +32,7 @@ def _process_iterable_universal(process_async):
     # If this stops working, all internal uses can be just replaced with manually-written
     # process_sync functions.
 
-    def process_sync(iterable, *args, **kwargs):
+    def process_sync(iterable: Iterable, *args, **kwargs) -> Generator:
         agen = process_async(as_async_generator(iterable), *args, **kwargs)
         if not inspect.isasyncgen(agen):
             raise ValueError(f"process_async returned wrong type {type(agen)}")
@@ -52,11 +51,11 @@ def _process_iterable_universal(process_async):
                           f"you can't use {_process_iterable_universal.__name__} with it.")
 
     @functools.wraps(process_async)
-    def process(iterable, *args, **kwargs):
-        if inspect.isasyncgen(iterable):
+    def process(iterable: Union[Iterable, AsyncIterable], *args, **kwargs) -> Union[Generator, AsyncGenerator]:
+        if isinstance(iterable, AsyncIterable):
             # call process_async directly
             return process_async(iterable, *args, **kwargs)
-        if hasattr(iterable, '__iter__'):
+        if isinstance(iterable, Iterable):
             # convert process_async to process_sync
             return process_sync(iterable, *args, **kwargs)
         raise TypeError(f"Wrong iterable type {type(iterable)}")

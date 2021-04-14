@@ -1,10 +1,8 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
-import collections
 import logging
 from collections import deque
-from collections.abc import Iterable
-from typing import Union
+from typing import AsyncGenerator, AsyncIterable, Generator, Iterable, Union
 
 from itemadapter import is_item
 from twisted.internet import defer
@@ -188,7 +186,8 @@ class Scraper:
     def handle_spider_output(self, result: Iterable, request: Request, response: Response, spider: Spider):
         if not result:
             return defer_succeed(None)
-        if isinstance(result, collections.abc.AsyncIterable):
+        it: Union[Generator, AsyncGenerator]
+        if isinstance(result, AsyncIterable):
             it = aiter_errback(result, self.handle_spider_error, request, response, spider)
             dfd = parallel_async(it, self.concurrent_items, self._process_spidermw_output,
                                  request, response, spider)

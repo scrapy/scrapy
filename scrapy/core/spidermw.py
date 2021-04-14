@@ -3,9 +3,8 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
-import collections.abc
 from itertools import islice
-from typing import Any, Callable, Generator, Iterable, Union, AsyncIterable
+from typing import Any, Callable, Generator, Iterable, Union, AsyncIterable, AsyncGenerator
 
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -61,8 +60,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 return scrape_func(Failure(), request, spider)
         return scrape_func(response, request, spider)
 
-    def _evaluate_iterable(self, response: Response, spider: Spider, iterable: Iterable,
-                           exception_processor_index: int, recover_to: MutableChain) -> Generator:
+    def _evaluate_iterable(self, response: Response, spider: Spider, iterable: Union[Iterable, AsyncIterable],
+                           exception_processor_index: int, recover_to: Union[MutableChain, MutableAsyncChain]
+                           ) -> Union[Generator, AsyncGenerator]:
         @_process_iterable_universal
         async def _evaluate_async_iterable(iterable):
             try:
@@ -100,11 +100,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return _failure
 
     def _process_spider_output(self, response: Response, spider: Spider,
-                               result: Iterable, start_index: int = 0) -> MutableChain:
+                               result: Union[Iterable, AsyncIterable], start_index: int = 0
+                               ) -> Union[MutableChain, MutableAsyncChain]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
-        last_result_async = isinstance(result, collections.abc.AsyncIterator)
-        if last_result_async:
+        recovered: Union[MutableChain, MutableAsyncChain]
+        last_result_is_async = isinstance(result, AsyncIterable)
+        if last_result_is_async:
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
@@ -127,30 +129,32 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 msg = (f"Middleware {method.__qualname__} must return an "
                        f"iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
-            if last_result_async and isinstance(result, collections.abc.Iterator):
+            if last_result_is_async and isinstance(result, Iterable):
                 raise TypeError(f"Synchronous {method.__qualname__} called with an async iterable")
-            last_result_async = isinstance(result, collections.abc.AsyncIterator)
+            last_result_is_async = isinstance(result, AsyncIterable)
 
-        if last_result_async:
+        if last_result_is_async:
             return MutableAsyncChain(result, recovered)
         else:
-            return MutableChain(result, recovered)
+            return MutableChain(result, recovered)  # type: ignore[arg-type]
 
-    def _process_callback_output(self, response: Response, spider: Spider, result: Iterable) -> MutableChain:
-        if isinstance(result, collections.abc.AsyncIterator):
+    def _process_callback_output(self, response: Response, spider: Spider, result: Union[Iterable, AsyncIterable]
+                                 ) -> Union[MutableChain, MutableAsyncChain]:
+        recovered: Union[MutableChain, MutableAsyncChain]
+        if isinstance(result, AsyncIterable):
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         result = self._process_spider_output(response, spider, result)
-        if isinstance(result, collections.abc.AsyncIterator):
+        if isinstance(result, AsyncIterable):
             return MutableAsyncChain(result, recovered)
         else:
-            return MutableChain(result, recovered)
+            return MutableChain(result, recovered)  # type: ignore[arg-type]
 
     def scrape_response(self, scrape_func: ScrapeFunc, response: Response, request: Request,
                         spider: Spider) -> Deferred:
-        def process_callback_output(result: Iterable) -> MutableChain:
+        def process_callback_output(result: Union[Iterable, AsyncIterable]) -> Union[MutableChain, MutableAsyncChain]:
             return self._process_callback_output(response, spider, result)
 
         def process_spider_exception(_failure: Failure) -> Union[Failure, MutableChain]:
