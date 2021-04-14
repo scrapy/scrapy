@@ -4,7 +4,7 @@ Spider Middleware manager
 See documentation in docs/topics/spider-middleware.rst
 """
 from itertools import islice
-from typing import Any, Callable, Generator, Iterable, Union, AsyncIterable, AsyncGenerator
+from typing import Any, AsyncGenerator, AsyncIterable, Callable, Generator, Iterable, Union
 
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
