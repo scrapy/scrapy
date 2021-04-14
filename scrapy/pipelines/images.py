@@ -19,6 +19,9 @@ from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 import logging
 
+logger = logging.getLogger(__name__)
+
+
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
 
@@ -114,7 +117,6 @@ class ImagesPipeline(FilesPipeline):
         return self.image_downloaded(response, request, info, item=item)
 
     def image_downloaded(self, response, request, info, *, item=None):
-        logger = logging.getLogger()
         checksum = None
         image_stream = self.get_images(response, request, info, item=item)
         while True:
@@ -122,6 +124,7 @@ class ImagesPipeline(FilesPipeline):
                 path, image, buf = next(image_stream)
             except OSError:
                 logger.exception('Could not process image')
+                continue
             except Exception:
                 logger.exception('Stopped processing images')
                 break
