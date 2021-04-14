@@ -71,7 +71,7 @@ def _urlencode(seq, enc):
     values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
               for v in (vs if is_listlike(vs) else [vs])]
-    return urlencode(values, doseq=1)
+    return urlencode(values, doseq=True)
 
 
 def _get_form(response, formname, formid, formnumber, formxpath):

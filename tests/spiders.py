@@ -46,7 +46,7 @@ class FollowAllSpider(MetaSpider):
         self.urls_visited = []
         self.times = []
         qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
-        url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=1)}")
+        url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=True)}")
         self.start_urls = [url]
 
     def parse(self, response):
@@ -281,7 +281,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
         for s in range(100):
             qargs = {'total': 10, 'seed': s}
-            url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=1)}")
+            url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=True)}")
             yield Request(url, meta={'seed': s})
             if self.fail_yielding:
                 2 / 0

@@ -3,19 +3,23 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 import os
-import weakref
 import webbrowser
 import tempfile
+from typing import Any, Callable, Iterable, Optional, Tuple, Union
+from weakref import WeakKeyDictionary
+
+import scrapy
+from scrapy.http.response import Response
 
 from twisted.web import http
 from scrapy.utils.python import to_bytes, to_unicode
 from w3lib import html
 
 
-_baseurl_cache = weakref.WeakKeyDictionary()
+_baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
 
 
-def get_base_url(response):
+def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
         text = response.text[0:4096]
@@ -23,10 +27,13 @@ def get_base_url(response):
     return _baseurl_cache[response]
 
 
-_metaref_cache = weakref.WeakKeyDictionary()
+_metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]" = WeakKeyDictionary()
 
 
-def get_meta_refresh(response, ignore_tags=('script', 'noscript')):
+def get_meta_refresh(
+    response: "scrapy.http.response.text.TextResponse",
+    ignore_tags: Optional[Iterable[str]] = ('script', 'noscript'),
+) -> Union[Tuple[None, None], Tuple[float, str]]:
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
@@ -35,14 +42,15 @@ def get_meta_refresh(response, ignore_tags=('script', 'noscript')):
     return _metaref_cache[response]
 
 
-def response_status_message(status):
+def response_status_message(status: Union[bytes, float, int, str]) -> str:
     """Return status code plus status text descriptive message
     """
-    message = http.RESPONSES.get(int(status), "Unknown Status")
-    return f'{status} {to_unicode(message)}'
+    status_int = int(status)
+    message = http.RESPONSES.get(status_int, "Unknown Status")
+    return f'{status_int} {to_unicode(message)}'
 
 
-def response_httprepr(response):
+def response_httprepr(response: Response) -> bytes:
     """Return raw HTTP representation (as bytes) of the given response. This
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
@@ -60,7 +68,10 @@ def response_httprepr(response):
     return b"".join(values)
 
 
-def open_in_browser(response, _openfunc=webbrowser.open):
+def open_in_browser(
+    response: Union["scrapy.http.response.html.HtmlResponse", "scrapy.http.response.text.TextResponse"],
+    _openfunc: Callable[[str], Any] = webbrowser.open,
+) -> Any:
     """Open the given response in a local web browser, populating the <base>
     tag for external links to work
     """

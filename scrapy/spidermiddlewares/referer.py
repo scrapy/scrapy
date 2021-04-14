@@ -3,16 +3,17 @@ RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
 import warnings
+from typing import Tuple
 from urllib.parse import urlparse
 
 from w3lib.url import safe_url_string
 
-from scrapy.http import Request, Response
-from scrapy.exceptions import NotConfigured
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
+from scrapy.http import Request, Response
 from scrapy.utils.asyncgen import _process_iterable_universal
-from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
 
 
@@ -31,7 +32,8 @@ POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 class ReferrerPolicy:
 
-    NOREFERRER_SCHEMES = LOCAL_SCHEMES
+    NOREFERRER_SCHEMES: Tuple[str, ...] = LOCAL_SCHEMES
+    name: str
 
     def referrer(self, response_url, request_url):
         raise NotImplementedError()
@@ -89,7 +91,7 @@ class NoReferrerPolicy(ReferrerPolicy):
     is to be sent along with requests made from a particular request client to any origin.
     The header will be omitted entirely.
     """
-    name = POLICY_NO_REFERRER
+    name: str = POLICY_NO_REFERRER
 
     def referrer(self, response_url, request_url):
         return None
@@ -109,7 +111,7 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
 
     This is a user agent's default behavior, if no policy is otherwise specified.
     """
-    name = POLICY_NO_REFERRER_WHEN_DOWNGRADE
+    name: str = POLICY_NO_REFERRER_WHEN_DOWNGRADE
 
     def referrer(self, response_url, request_url):
         if not self.tls_protected(response_url) or self.tls_protected(request_url):
@@ -126,7 +128,7 @@ class SameOriginPolicy(ReferrerPolicy):
     Cross-origin requests, on the other hand, will contain no referrer information.
     A Referer HTTP header will not be sent.
     """
-    name = POLICY_SAME_ORIGIN
+    name: str = POLICY_SAME_ORIGIN
 
     def referrer(self, response_url, request_url):
         if self.origin(response_url) == self.origin(request_url):
@@ -142,7 +144,7 @@ class OriginPolicy(ReferrerPolicy):
     when making both same-origin requests and cross-origin requests
     from a particular request client.
     """
-    name = POLICY_ORIGIN
+    name: str = POLICY_ORIGIN
 
     def referrer(self, response_url, request_url):
         return self.origin_referrer(response_url)
@@ -161,7 +163,7 @@ class StrictOriginPolicy(ReferrerPolicy):
     on the other hand, will contain no referrer information.
     A Referer HTTP header will not be sent.
     """
-    name = POLICY_STRICT_ORIGIN
+    name: str = POLICY_STRICT_ORIGIN
 
     def referrer(self, response_url, request_url):
         if (
@@ -182,7 +184,7 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
     is sent as referrer information when making cross-origin requests
     from a particular request client.
     """
-    name = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
+    name: str = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
 
     def referrer(self, response_url, request_url):
         origin = self.origin(response_url)
@@ -209,7 +211,7 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
     on the other hand, will contain no referrer information.
     A Referer HTTP header will not be sent.
     """
-    name = POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN
+    name: str = POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN
 
     def referrer(self, response_url, request_url):
         origin = self.origin(response_url)
@@ -235,7 +237,7 @@ class UnsafeUrlPolicy(ReferrerPolicy):
     to insecure origins.
     Carefully consider the impact of setting such a policy for potentially sensitive documents.
     """
-    name = POLICY_UNSAFE_URL
+    name: str = POLICY_UNSAFE_URL
 
     def referrer(self, response_url, request_url):
         return self.stripped_referrer(response_url)
@@ -247,8 +249,8 @@ class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
     with the addition that "Referer" is not sent if the parent request was
     using ``file://`` or ``s3://`` scheme.
     """
-    NOREFERRER_SCHEMES = LOCAL_SCHEMES + ('file', 's3')
-    name = POLICY_SCRAPY_DEFAULT
+    NOREFERRER_SCHEMES: Tuple[str, ...] = LOCAL_SCHEMES + ('file', 's3')
+    name: str = POLICY_SCRAPY_DEFAULT
 
 
 _policy_classes = {p.name: p for p in (

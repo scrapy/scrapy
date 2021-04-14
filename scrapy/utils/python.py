@@ -8,6 +8,7 @@ import re
 import sys
 import warnings
 import weakref
+from collections.abc import Iterable
 from functools import partial, wraps
 from itertools import chain
 
@@ -336,15 +337,15 @@ else:
         gc.collect()
 
 
-class MutableChain:
+class MutableChain(Iterable):
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args: Iterable):
         self.data = chain.from_iterable(args)
 
-    def extend(self, *iterables):
+    def extend(self, *iterables: Iterable):
         self.data = chain(self.data, chain.from_iterable(iterables))
 
     def __iter__(self):

@@ -32,7 +32,7 @@ class HttpErrorMiddleware:
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
-        if 'handle_httpstatus_all' in meta:
+        if meta.get('handle_httpstatus_all', False):
             return
         if 'handle_httpstatus_list' in meta:
             allowed_statuses = meta['handle_httpstatus_list']
