@@ -3,7 +3,7 @@ extracts information from them"""
 
 import logging
 from collections import deque
-from typing import Union, Optional, Tuple, Set, Deque, Any, Iterable
+from typing import Any, Deque, Iterable, Optional, Set, Tuple, Union
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -19,7 +19,7 @@ from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
 
 
-QUEUE_TUPLE = Tuple[Union[Response, Failure], Request, Deferred]
+QueueTuple = Tuple[Union[Response, Failure], Request, Deferred]
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class Slot:
 
     def __init__(self, max_active_size: int = 5000000):
         self.max_active_size = max_active_size
-        self.queue: Deque[QUEUE_TUPLE] = deque()
+        self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
         self.active_size: int = 0
         self.itemproc_size: int = 0
@@ -47,7 +47,7 @@ class Slot:
             self.active_size += self.MIN_RESPONSE_SIZE
         return deferred
 
-    def next_response_request_deferred(self) -> QUEUE_TUPLE:
+    def next_response_request_deferred(self) -> QueueTuple:
         response, request, deferred = self.queue.popleft()
         self.active.add(request)
         return response, request, deferred
