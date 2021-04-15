@@ -413,6 +413,22 @@ class EngineTest(unittest.TestCase):
                 "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
             )
 
+    @defer.inlineCallbacks
+    def test_deprecated_schedule(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            spider = TestSpider()
+            yield e.open_spider(spider, [])
+            e.start()
+            e.schedule(Request("http://localhost"), spider)
+            yield e.close()
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "ExecutionEngine.schedule is deprecated, please use "
+                "ExecutionEngine.crawl or ExecutionEngine.download instead",
+            )
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
