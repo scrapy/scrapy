@@ -145,12 +145,11 @@ class ExecutionEngine:
             self._spider_idle()
 
     def _needs_backout(self) -> bool:
-        assert self.slot is not None  # typing
         return (
             not self.running
-            or self.slot.closing
+            or self.slot.closing  # type: ignore[union-attr]
             or self.downloader.needs_backout()
-            or self.scraper.slot.needs_backout()
+            or self.scraper.slot.needs_backout()  # type: ignore[union-attr]
         )
 
     def _next_request_from_scheduler(self) -> Optional[Deferred]:
@@ -206,7 +205,7 @@ class ExecutionEngine:
             )
         if self.slot is None:
             raise RuntimeError("Engine slot not assigned")
-        if not self.scraper.slot.is_idle():
+        if not self.scraper.slot.is_idle():  # type: ignore[union-attr]
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
