@@ -120,13 +120,14 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    def _next_request(self, spider: Spider) -> None:
+    def _next_request(self) -> None:
         assert self.slot is not None  # typing
+        assert self.spider is not None  # typing
 
         if self.paused:
             return None
 
-        while not self._needs_backout() and self._next_request_from_scheduler(spider) is not None:
+        while not self._needs_backout() and self._next_request_from_scheduler() is not None:
             pass
 
         if self.slot.start_requests is not None and not self._needs_backout():
@@ -136,12 +137,12 @@ class ExecutionEngine:
                 self.slot.start_requests = None
             except Exception:
                 self.slot.start_requests = None
-                logger.error('Error while obtaining start requests', exc_info=True, extra={'spider': spider})
+                logger.error('Error while obtaining start requests', exc_info=True, extra={'spider': self.spider})
             else:
                 self.crawl(request)
 
         if self.spider_is_idle() and self.slot.close_if_idle:
-            self._spider_idle(spider)
+            self._spider_idle()
 
     def _needs_backout(self) -> bool:
         assert self.slot is not None  # typing
@@ -152,26 +153,27 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
-    def _next_request_from_scheduler(self, spider: Spider) -> Optional[Deferred]:
+    def _next_request_from_scheduler(self) -> Optional[Deferred]:
         assert self.slot is not None  # typing
+        assert self.spider is not None  # typing
 
         request = self.slot.scheduler.next_request()
         if request is None:
             return None
 
-        d = self._download(request, spider)
-        d.addBoth(self._handle_downloader_output, request, spider)
+        d = self._download(request, self.spider)
+        d.addBoth(self._handle_downloader_output, request, self.spider)
         d.addErrback(lambda f: logger.info('Error while handling downloader output',
                                            exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+                                           extra={'spider': self.spider}))
         d.addBoth(lambda _: self.slot.remove_request(request))
         d.addErrback(lambda f: logger.info('Error while removing request from slot',
                                            exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+                                           extra={'spider': self.spider}))
         d.addBoth(lambda _: self.slot.nextcall.schedule())
         d.addErrback(lambda f: logger.info('Error while scheduling new request',
                                            exc_info=failure_to_exc_info(f),
-                                           extra={'spider': spider}))
+                                           extra={'spider': self.spider}))
         return d
 
     def _handle_downloader_output(
@@ -294,7 +296,7 @@ class ExecutionEngine:
         if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={'spider': spider})
-        nextcall = CallLaterOnce(self._next_request, spider)
+        nextcall = CallLaterOnce(self._next_request)
         scheduler = create_instance(self.scheduler_cls, settings=None, crawler=self.crawler)
         start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
@@ -306,18 +308,19 @@ class ExecutionEngine:
         self.slot.nextcall.schedule()
         self.slot.heartbeat.start(5)
 
-    def _spider_idle(self, spider: Spider) -> None:
+    def _spider_idle(self) -> None:
         """
         Called when a spider gets idle, i.e. when there are no remaining requests to download or schedule.
         It can be called multiple times. If a handler for the spider_idle signal raises a DontCloseSpider
         exception, the spider is not closed until the next loop and this function is guaranteed to be called
         (at least) once again.
         """
-        res = self.signals.send_catch_log(signals.spider_idle, spider=spider, dont_log=DontCloseSpider)
+        assert self.spider is not None  # typing
+        res = self.signals.send_catch_log(signals.spider_idle, spider=self.spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) for _, x in res):
             return None
         if self.spider_is_idle():
-            self.close_spider(spider, reason='finished')
+            self.close_spider(self.spider, reason='finished')
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
