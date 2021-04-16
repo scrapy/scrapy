@@ -41,6 +41,13 @@ class NegotiationTestCase(Https11TestCase):
             reactor.callLater(.1, d.callback, logger)
             yield d
 
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "h2")
+        return d
+
     def test_download_broken_content_cause_data_loss(self, url='broken'):
         raise SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
 
@@ -133,7 +140,7 @@ class ProtocolsSite(Site):
 
 class NegotiationHttp11TestCase(TestCase):
     server_acceptable_protocols = [b'http/1.1']
-    expected_negotiated_protocol = 'http/1.1'
+    expected_negotiated_protocol = 'HTTP/1.1'
     settings_dict = {
         'DOWNLOAD_HANDLERS': {
             'https': 'scrapy.core.downloader.handlers.negotiation.HTTPNegotiateDownloadHandler'
@@ -179,12 +186,12 @@ class NegotiationHttp11TestCase(TestCase):
 
         self.assertGreater(len(crawler.spider.meta['responses']), 0)
         for response in crawler.spider.meta['responses']:
-            self.assertEqual(response._protocol, expected_protocol)
+            self.assertEqual(response.protocol, expected_protocol)
 
     def test_insecure_request_uses_http11(self):
         return self._check_request_protocol(
             Request(url=self.get_url('', is_secure=False)),
-            'http/1.1'
+            'HTTP/1.1'
         )
 
     def test_secure_request(self):
