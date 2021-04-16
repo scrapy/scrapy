@@ -246,7 +246,7 @@ class ExecutionEngine:
                 stacklevel=2,
             )
             if spider is not self.spider:
-                logger.warning(f"The spider {spider.name!r} does not match the open spider")
+                logger.warning("The spider '{}' does not match the open spider", spider.name)
         if spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         return self._download(request, spider).addBoth(self._downloaded, request, spider)
