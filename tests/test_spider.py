@@ -1,8 +1,8 @@
 import gzip
 import inspect
-from unittest import mock
 import warnings
 from io import BytesIO
+from unittest import mock
 
 from testfixtures import LogCapture
 from twisted.trial import unittest
@@ -20,7 +20,6 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.linkextractors import LinkExtractor
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.test import get_crawler
 
 
@@ -280,7 +279,7 @@ class CrawlSpiderTest(SpiderTest):
 
         response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
-        def process_request_change_domain(request):
+        def process_request_change_domain(request, response):
             return request.replace(url=request.url.replace('.org', '.com'))
 
         class _CrawlSpider(self.spider_class):
@@ -290,17 +289,14 @@ class CrawlSpiderTest(SpiderTest):
                 Rule(LinkExtractor(), process_request=process_request_change_domain),
             )
 
-        with warnings.catch_warnings(record=True) as cw:
-            spider = _CrawlSpider()
-            output = list(spider._requests_to_follow(response))
-            self.assertEqual(len(output), 3)
-            self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-            self.assertEqual([r.url for r in output],
-                             ['http://example.com/somepage/item/12.html',
-                              'http://example.com/about.html',
-                              'http://example.com/nofollow.html'])
-            self.assertEqual(len(cw), 1)
-            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.com/somepage/item/12.html',
+                          'http://example.com/about.html',
+                          'http://example.com/nofollow.html'])
 
     def test_process_request_with_response(self):
 
@@ -339,20 +335,17 @@ class CrawlSpiderTest(SpiderTest):
                 Rule(LinkExtractor(), process_request='process_request_upper'),
             )
 
-            def process_request_upper(self, request):
+            def process_request_upper(self, request, response):
                 return request.replace(url=request.url.upper())
 
-        with warnings.catch_warnings(record=True) as cw:
-            spider = _CrawlSpider()
-            output = list(spider._requests_to_follow(response))
-            self.assertEqual(len(output), 3)
-            self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-            self.assertEqual([r.url for r in output],
-                             ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
-                              'http://EXAMPLE.ORG/ABOUT.HTML',
-                              'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
-            self.assertEqual(len(cw), 1)
-            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
+                          'http://EXAMPLE.ORG/ABOUT.HTML',
+                          'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
 
     def test_process_request_instance_method_with_response(self):
 

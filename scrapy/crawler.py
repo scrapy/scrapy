@@ -180,9 +180,9 @@ class CrawlerRunner:
         :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
             :class:`~scrapy.spiders.Spider` subclass or string
 
-        :param list args: arguments to initialize the spider
+        :param args: arguments to initialize the spider
 
-        :param dict kwargs: keyword arguments to initialize the spider
+        :param kwargs: keyword arguments to initialize the spider
         """
         if isinstance(crawler_or_spidercls, Spider):
             raise ValueError(

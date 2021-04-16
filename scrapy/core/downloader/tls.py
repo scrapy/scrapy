@@ -5,7 +5,6 @@ from service_identity.exceptions import CertificateError
 from twisted.internet._sslverify import ClientTLSOptions, verifyHostname, VerificationError
 from twisted.internet.ssl import AcceptableCiphers
 
-from scrapy import twisted_version
 from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
 
 
@@ -28,13 +27,6 @@ openssl_methods = {
 }
 
 
-if twisted_version < (17, 0, 0):
-    from twisted.internet._sslverify import _maybeSetHostNameIndication as set_tlsext_host_name
-else:
-    def set_tlsext_host_name(connection, hostNameBytes):
-        connection.set_tlsext_host_name(hostNameBytes)
-
-
 class ScrapyClientTLSOptions(ClientTLSOptions):
     """
     SSL Client connection creator ignoring certificate verification errors
@@ -52,21 +44,14 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
 
     def _identityVerifyingInfoCallback(self, connection, where, ret):
         if where & SSL.SSL_CB_HANDSHAKE_START:
-            set_tlsext_host_name(connection, self._hostnameBytes)
+            connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
             if self.verbose_logging:
-                if hasattr(connection, 'get_cipher_name'):  # requires pyOPenSSL 0.15
-                    if hasattr(connection, 'get_protocol_version_name'):  # requires pyOPenSSL 16.0.0
-                        logger.debug('SSL connection to %s using protocol %s, cipher %s',
-                                     self._hostnameASCII,
-                                     connection.get_protocol_version_name(),
-                                     connection.get_cipher_name(),
-                                     )
-                    else:
-                        logger.debug('SSL connection to %s using cipher %s',
-                                     self._hostnameASCII,
-                                     connection.get_cipher_name(),
-                                     )
+                logger.debug('SSL connection to %s using protocol %s, cipher %s',
+                             self._hostnameASCII,
+                             connection.get_protocol_version_name(),
+                             connection.get_cipher_name(),
+                             )
                 server_cert = connection.get_peer_certificate()
                 logger.debug('SSL connection certificate: issuer "%s", subject "%s"',
                              x509name_to_string(server_cert.get_issuer()),

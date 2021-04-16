@@ -145,3 +145,10 @@ class TestHttpProxyMiddleware(TestCase):
         req = Request('http://noproxy.com', meta={'proxy': 'http://proxy.com'})
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.meta, {'proxy': 'http://proxy.com'})
+
+    def test_no_proxy_invalid_values(self):
+        os.environ['no_proxy'] = '/var/run/docker.sock'
+        mw = HttpProxyMiddleware()
+        # '/var/run/docker.sock' may be used by the user for
+        # no_proxy value but is not parseable and should be skipped
+        assert 'no' not in mw.proxies

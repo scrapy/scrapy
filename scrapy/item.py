@@ -8,6 +8,7 @@ from abc import ABCMeta
 from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
+from typing import Dict
 from warnings import warn
 
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
@@ -75,7 +76,7 @@ class ItemMeta(_BaseItemMeta):
 
 class DictItem(MutableMapping, BaseItem):
 
-    fields = {}
+    fields: Dict[str, Field] = {}
 
     def __new__(cls, *args, **kwargs):
         if issubclass(cls, DictItem) and not issubclass(cls, Item):

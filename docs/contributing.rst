@@ -140,7 +140,7 @@ original pull request author hasn't had time to address them.
 In this case consider picking up this pull request: open
 a new pull request with all commits from the original pull request, as well as
 additional changes to address the raised issues. Doing so helps a lot; it is
-not considered rude as soon as the original author is acknowledged by keeping
+not considered rude as long as the original author is acknowledged by keeping
 his/her commits.
 
 You can pull an existing pull request to a local branch

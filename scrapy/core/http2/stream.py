@@ -220,11 +220,24 @@ class Stream:
                 (':path', path),
             ]
 
-        for name, value in self._request.headers.items():
-            headers.append((str(name, 'utf-8'), str(value[0], 'utf-8')))
+        content_length = str(len(self._request.body))
+        headers.append(('Content-Length', content_length))
 
-        if b'Content-Length' not in self._request.headers.keys():
-            headers.append(('Content-Length', str(len(self._request.body))))
+        content_length_name = self._request.headers.normkey(b'Content-Length')
+        for name, values in self._request.headers.items():
+            for value in values:
+                value = str(value, 'utf-8')
+                if name == content_length_name:
+                    if value != content_length:
+                        logger.warning(
+                            'Ignoring bad Content-Length header %r of request %r, '
+                            'sending %r instead',
+                            value,
+                            self._request,
+                            content_length,
+                        )
+                    continue
+                headers.append((str(name, 'utf-8'), value))
 
         return headers
 
@@ -349,14 +362,6 @@ class Stream:
         self._protocol.conn.reset_stream(self.stream_id, ErrorCodes.REFUSED_STREAM)
         self.close(reason)
 
-    def _is_data_lost(self) -> bool:
-        assert self.metadata['stream_closed_server']
-
-        expected_size = self._response['flow_controlled_size']
-        received_body_size = int(self._response['headers'][b'Content-Length'])
-
-        return expected_size != received_body_size
-
     def close(
         self,
         reason: StreamCloseReason,
@@ -431,7 +436,8 @@ class Stream:
             errors.insert(0, InactiveStreamClosed(self._request))
             self._deferred_response.errback(ResponseFailed(errors))
 
-        elif reason is StreamCloseReason.INVALID_HOSTNAME:
+        else:
+            assert reason is StreamCloseReason.INVALID_HOSTNAME
             self._deferred_response.errback(InvalidHostname(
                 self._request,
                 str(self._protocol.metadata['uri'].host, 'utf-8'),
@@ -458,7 +464,7 @@ class Stream:
             request=self._request,
             certificate=self._protocol.metadata['certificate'],
             ip_address=self._protocol.metadata['ip_address'],
-            protocol='h2'
+            protocol='h2',
         )
 
         self._deferred_response.callback(response)

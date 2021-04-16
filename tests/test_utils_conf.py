@@ -176,6 +176,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "store_empty": True,
             "uri_params": (1, 2, 3, 4),
             "batch_item_count": 2,
+            "item_export_kwargs": dict(),
         })
 
     def test_feed_complete_default_values_from_settings_non_empty(self):
@@ -198,6 +199,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "store_empty": True,
             "uri_params": None,
             "batch_item_count": 2,
+            "item_export_kwargs": dict(),
         })
 
 

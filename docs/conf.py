@@ -122,7 +122,6 @@ html_theme = 'sphinx_rtd_theme'
 import sphinx_rtd_theme
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
@@ -182,6 +181,10 @@ html_copy_source = True
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Scrapydoc'
+
+html_css_files = [
+    'custom.css',
+]
 
 
 # Options for LaTeX output
@@ -283,6 +286,7 @@ coverage_ignore_pyobjects = [
 intersphinx_mapping = {
     'attrs': ('https://www.attrs.org/en/stable/', None),
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'cryptography' : ('https://cryptography.io/en/latest/', None),
     'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
     'itemloaders': ('https://itemloaders.readthedocs.io/en/latest/', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),

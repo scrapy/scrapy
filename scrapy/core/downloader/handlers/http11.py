@@ -284,11 +284,14 @@ class ScrapyAgent:
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
-                warnings.warn("Using HTTPS proxies in the noconnect mode is deprecated. "
-                              "If you use Crawlera, it doesn't require this mode anymore, "
-                              "so you should update scrapy-crawlera to 1.3.0+ "
-                              "and remove '?noconnect' from the Crawlera URL.",
-                              ScrapyDeprecationWarning)
+                warnings.warn(
+                    "Using HTTPS proxies in the noconnect mode is deprecated. "
+                    "If you use Zyte Smart Proxy Manager (formerly Crawlera), "
+                    "it doesn't require this mode anymore, so you should "
+                    "update scrapy-crawlera to 1.3.0+ and remove '?noconnect' "
+                    "from the Zyte Smart Proxy Manager URL.",
+                    ScrapyDeprecationWarning,
+                )
             if scheme == b'https' and not omitConnectTunnel:
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
@@ -359,7 +362,38 @@ class ScrapyAgent:
         request.meta['download_latency'] = time() - start_time
         return result
 
+    @staticmethod
+    def _headers_from_twisted_response(response):
+        headers = Headers()
+        if response.length != UNKNOWN_LENGTH:
+            headers[b'Content-Length'] = str(response.length).encode()
+        headers.update(response.headers.getAllRawHeaders())
+        return headers
+
     def _cb_bodyready(self, txresponse, request):
+        headers_received_result = self._crawler.signals.send_catch_log(
+            signal=signals.headers_received,
+            headers=self._headers_from_twisted_response(txresponse),
+            body_length=txresponse.length,
+            request=request,
+            spider=self._crawler.spider,
+        )
+        for handler, result in headers_received_result:
+            if isinstance(result, Failure) and isinstance(result.value, StopDownload):
+                logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
+                             {"request": request, "handler": handler.__qualname__})
+                txresponse._transport.stopProducing()
+                with suppress(AttributeError):
+                    txresponse._transport._producer.loseConnection()
+                return {
+                    "txresponse": txresponse,
+                    "body": b"",
+                    "flags": ["download_stopped"],
+                    "certificate": None,
+                    "ip_address": None,
+                    "failure": result if result.value.fail else None,
+                }
+
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
             return {
@@ -413,8 +447,13 @@ class ScrapyAgent:
         return d
 
     def _cb_bodydone(self, result, request, url):
-        headers = Headers(result["txresponse"].headers.getAllRawHeaders())
+        headers = self._headers_from_twisted_response(result["txresponse"])
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
+        try:
+            version = result["txresponse"].version
+            protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
+        except (AttributeError, TypeError, IndexError):
+            protocol = None
         response = respcls(
             url=url,
             status=int(result["txresponse"].code),
@@ -423,7 +462,7 @@ class ScrapyAgent:
             flags=result["flags"],
             certificate=result["certificate"],
             ip_address=result["ip_address"],
-            protocol='http/1.1'
+            protocol=protocol,
         )
         if result.get("failure"):
             result["failure"].value.response = response
@@ -502,6 +541,7 @@ class _ResponseReader(protocol.Protocol):
             if isinstance(result, Failure) and isinstance(result.value, StopDownload):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": self._request, "handler": handler.__qualname__})
+                self.transport.stopProducing()
                 self.transport._producer.loseConnection()
                 failure = result if result.value.fail else None
                 self._finish_response(flags=["download_stopped"], failure=failure)

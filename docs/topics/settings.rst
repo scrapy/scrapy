@@ -102,7 +102,7 @@ module and documented in the :ref:`topics-settings-ref` section.
 Import paths and classes
 ========================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.4.0
 
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
@@ -249,7 +249,7 @@ ASYNCIO_EVENT_LOOP
 
 Default: ``None``
 
-Import path of a given asyncio event loop class.
+Import path of a given ``asyncio`` event loop class.
 
 If the asyncio reactor is enabled (see :setting:`TWISTED_REACTOR`) this setting can be used to specify the
 asyncio event loop to be used with it. Set the setting to the import path of the
@@ -261,6 +261,12 @@ function, you can use the ``event_loop_path`` parameter to indicate the import p
 class to be used.
 
 Note that the event loop class must inherit from :class:`asyncio.AbstractEventLoop`.
+
+.. caution:: Please be aware that, when using a non-default event loop
+    (either defined via :setting:`ASYNCIO_EVENT_LOOP` or installed with
+    :func:`~scrapy.utils.reactor.install_reactor`), Scrapy will call
+    :func:`asyncio.set_event_loop`, which will set the specified event loop
+    as the current loop for the current OS thread.
 
 .. setting:: BOT_NAME
 
@@ -351,6 +357,11 @@ Default::
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
+
+.. caution:: Cookies set via the ``Cookie`` header are not considered by the
+    :ref:`cookies-mw`. If you need to set cookies for a request, use the
+    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
 
@@ -646,6 +657,7 @@ DOWNLOAD_HANDLERS_BASE
 Default::
 
     {
+        'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',
         'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
         'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
         'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
@@ -666,12 +678,20 @@ handler (without replacement), place this in your ``settings.py``::
         'ftp': None,
     }
 
+.. _http2:
+
 The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
 :setting:`DOWNLOAD_HANDLERS` as follows::
 
     DOWNLOAD_HANDLERS = {
         'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
     }
+
+.. warning::
+
+    HTTP/2 support in Scrapy is experimental, and not yet recommended for
+    production environments. Future Scrapy versions may introduce related
+    changes without a deprecation period or warning.
 
 To use both HTTP/1.1 and HTTP/2 based on the protocol negotiated update
 :setting:`DOWNLOAD_HANDLERS` as follows::
@@ -683,14 +703,23 @@ To use both HTTP/1.1 and HTTP/2 based on the protocol negotiated update
 
 .. note::
 
-    Scrapy currently does not support HTTP/2 Cleartext (h2c) since none
-    of the major browsers support HTTP/2 unencrypted (refer `http2 faq`_).
+    Known limitations of the current HTTP/2 implementation of Scrapy include:
 
-.. warning:: HTTP/2 support in Scrapy is experimental, and not yet recommended
-             for production environments. Future Scrapy versions may introduce
-             related changes without a deprecation period or warning.
+    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
+        HTTP/2 unencrypted (refer `http2 faq`_).
 
+    -   No setting to specify a maximum `frame size`_ larger than the default
+        value, 16384. Connections to servers that send a larger frame will
+        fail.
+
+    -   No support for `server pushes`_, which are ignored.
+
+    -   No support for the :signal:`bytes_received` and
+        :signal:`headers_received` signals.
+
+.. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
+.. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_TIMEOUT
 
@@ -1211,20 +1240,6 @@ Adjust redirect request priority relative to original request:
 
 - **a positive priority adjust (default) means higher priority.**
 - a negative priority adjust means lower priority.
-
-.. setting:: RETRY_PRIORITY_ADJUST
-
-RETRY_PRIORITY_ADJUST
----------------------
-
-Default: ``-1``
-
-Scope: ``scrapy.downloadermiddlewares.retry.RetryMiddleware``
-
-Adjust retry request priority relative to original request:
-
-- a positive priority adjust means higher priority.
-- **a negative priority adjust (default) means lower priority.**
 
 .. setting:: ROBOTSTXT_OBEY
 

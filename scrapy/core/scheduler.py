@@ -1,14 +1,10 @@
 import os
 import json
 import logging
-import warnings
 from os.path import join, exists
-
-from queuelib import PriorityQueue
 
 from scrapy.utils.misc import load_object, create_instance
 from scrapy.utils.job import job_dir
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 
 
 logger = logging.getLogger(__name__)
@@ -56,14 +52,6 @@ class Scheduler:
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = create_instance(dupefilter_cls, settings, crawler)
         pqclass = load_object(settings['SCHEDULER_PRIORITY_QUEUE'])
-        if pqclass is PriorityQueue:
-            warnings.warn("SCHEDULER_PRIORITY_QUEUE='queuelib.PriorityQueue'"
-                          " is no longer supported because of API changes; "
-                          "please use 'scrapy.pqueues.ScrapyPriorityQueue'",
-                          ScrapyDeprecationWarning)
-            from scrapy.pqueues import ScrapyPriorityQueue
-            pqclass = ScrapyPriorityQueue
-
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')

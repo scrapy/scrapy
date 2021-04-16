@@ -10,17 +10,7 @@ from unittest import mock
 from importlib import import_module
 from twisted.trial.unittest import SkipTest
 
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.boto import is_botocore
-
-
-def assert_aws_environ():
-    """Asserts the current environment is suitable for running AWS testsi.
-    Raises SkipTest with the reason if it's not.
-    """
-    skip_if_no_boto()
-    if 'AWS_ACCESS_KEY_ID' not in os.environ:
-        raise SkipTest("AWS keys not found")
+from scrapy.utils.boto import is_botocore_available
 
 
 def assert_gcs_environ():
@@ -29,30 +19,8 @@ def assert_gcs_environ():
 
 
 def skip_if_no_boto():
-    try:
-        is_botocore()
-    except NotConfigured as e:
-        raise SkipTest(e)
-
-
-def get_s3_content_and_delete(bucket, path, with_key=False):
-    """ Get content from s3 key, and delete key afterwards.
-    """
-    if is_botocore():
-        import botocore.session
-        session = botocore.session.get_session()
-        client = session.create_client('s3')
-        key = client.get_object(Bucket=bucket, Key=path)
-        content = key['Body'].read()
-        client.delete_object(Bucket=bucket, Key=path)
-    else:
-        import boto
-        # assuming boto=2.2.2
-        bucket = boto.connect_s3().get_bucket(bucket, validate=False)
-        key = bucket.get_key(path)
-        content = key.get_contents_as_string()
-        bucket.delete_key(path)
-    return (content, key) if with_key else content
+    if not is_botocore_available():
+        raise SkipTest('missing botocore library')
 
 
 def get_gcs_content_and_delete(bucket, path):

@@ -78,7 +78,6 @@ Basic concepts
    topics/settings
    topics/exceptions
 
-
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
 

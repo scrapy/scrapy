@@ -1,8 +1,12 @@
+import json
 from unittest import mock
 
+from pytest import mark
+from testfixtures import LogCapture
 from twisted.internet import defer, error, reactor
 from twisted.trial import unittest
 from twisted.web import server
+from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
 from scrapy.http import Request
@@ -21,6 +25,13 @@ class Https2TestCase(Https11TestCase):
     scheme = 'https'
     download_handler_cls = H2DownloadHandler
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
+
+    def test_protocol(self):
+        request = Request(self.getURL("host"), method="GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.protocol)
+        d.addCallback(self.assertEqual, "h2")
+        return d
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_very_large_file(self):
@@ -41,6 +52,12 @@ class Https2TestCase(Https11TestCase):
             reactor.callLater(.1, d.callback, logger)
             yield d
 
+    @defer.inlineCallbacks
+    def test_unsupported_scheme(self):
+        request = Request("ftp://unsupported.scheme")
+        d = self.download_request(request, Spider("foo"))
+        yield self.assertFailure(d, SchemeNotSupported)
+
     def test_download_broken_content_cause_data_loss(self, url='broken'):
         raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
 
@@ -58,6 +75,73 @@ class Https2TestCase(Https11TestCase):
 
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
         raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_concurrent_requests_same_domain(self):
+        spider = Spider('foo')
+
+        request1 = Request(self.getURL('file'))
+        d1 = self.download_request(request1, spider)
+        d1.addCallback(lambda r: r.body)
+        d1.addCallback(self.assertEqual, b"0123456789")
+
+        request2 = Request(self.getURL('echo'), method='POST')
+        d2 = self.download_request(request2, spider)
+        d2.addCallback(lambda r: r.headers['Content-Length'])
+        d2.addCallback(self.assertEqual, b"79")
+
+        return defer.DeferredList([d1, d2])
+
+    @mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
+    def test_connect_request(self):
+        request = Request(self.getURL('file'), method='CONNECT')
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEqual, b'')
+        return d
+
+    def test_custom_content_length_good(self):
+        request = Request(self.getURL('contentlength'))
+        custom_content_length = str(len(request.body))
+        request.headers['Content-Length'] = custom_content_length
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.text)
+        d.addCallback(self.assertEqual, custom_content_length)
+        return d
+
+    def test_custom_content_length_bad(self):
+        request = Request(self.getURL('contentlength'))
+        actual_content_length = str(len(request.body))
+        bad_content_length = str(len(request.body) + 1)
+        request.headers['Content-Length'] = bad_content_length
+        log = LogCapture()
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.text)
+        d.addCallback(self.assertEqual, actual_content_length)
+        d.addCallback(
+            lambda _: log.check_present(
+                (
+                    'scrapy.core.http2.stream',
+                    'WARNING',
+                    f'Ignoring bad Content-Length header '
+                    f'{bad_content_length!r} of request {request}, sending '
+                    f'{actual_content_length!r} instead',
+                )
+            )
+        )
+        d.addCallback(
+            lambda _: log.uninstall()
+        )
+        return d
+
+    def test_duplicate_header(self):
+        request = Request(self.getURL('echo'))
+        header, value1, value2 = 'Custom-Header', 'foo', 'bar'
+        request.headers.appendlist(header, value1)
+        request.headers.appendlist(header, value2)
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: json.loads(r.text)['headers'][header])
+        d.addCallback(self.assertEqual, [value1, value2])
+        return d
 
 
 class Https2WrongHostnameTestCase(Https2TestCase):

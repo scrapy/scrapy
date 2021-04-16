@@ -13,7 +13,7 @@ from h2.events import (
     SettingsAcknowledged, StreamEnded, StreamReset, UnknownFrameReceived,
     WindowUpdated
 )
-from h2.exceptions import H2Error
+from h2.exceptions import FrameTooLargeError, H2Error
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
@@ -33,13 +33,16 @@ from scrapy.spiders import Spider
 logger = logging.getLogger(__name__)
 
 
+PROTOCOL_NAME = b"h2"
+
+
 class InvalidNegotiatedProtocol(H2Error):
 
-    def __init__(self, negotiated_protocol: str) -> None:
+    def __init__(self, negotiated_protocol: bytes) -> None:
         self.negotiated_protocol = negotiated_protocol
 
     def __str__(self) -> str:
-        return f'InvalidNegotiatedProtocol: Expected h2 as negotiated protocol, received {self.negotiated_protocol!r}'
+        return (f"Expected {PROTOCOL_NAME!r}, received {self.negotiated_protocol!r}")
 
 
 class RemoteTerminatedConnection(H2Error):
@@ -52,7 +55,7 @@ class RemoteTerminatedConnection(H2Error):
         self.terminate_event = event
 
     def __str__(self) -> str:
-        return f'RemoteTerminatedConnection: Received GOAWAY frame from {self.remote_ip_address!r}'
+        return f'Received GOAWAY frame from {self.remote_ip_address!r}'
 
 
 class MethodNotAllowed405(H2Error):
@@ -60,14 +63,14 @@ class MethodNotAllowed405(H2Error):
         self.remote_ip_address = remote_ip_address
 
     def __str__(self) -> str:
-        return f"MethodNotAllowed405: Received 'HTTP/2.0 405 Method Not Allowed' from {self.remote_ip_address!r}"
+        return f"Received 'HTTP/2.0 405 Method Not Allowed' from {self.remote_ip_address!r}"
 
 
 @implementer(IHandshakeListener)
 class H2ClientProtocol(Protocol, TimeoutMixin):
     IDLE_TIMEOUT = 240
 
-    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
+    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Deferred) -> None:
         """
         Arguments:
             uri -- URI of the base url to which HTTP/2 Connection will be made.
@@ -218,7 +221,6 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.setTimeout(self.IDLE_TIMEOUT)
 
         destination = self.transport.getPeer()
-        logger.debug('Connection made to {}'.format(destination))
         self.metadata['ip_address'] = ipaddress.ip_address(destination.host)
 
         # Initiate H2 Connection
@@ -232,15 +234,12 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.transport.loseConnection()
 
     def handshakeCompleted(self) -> None:
-        """We close the connection with InvalidNegotiatedProtocol exception
-        when the connection was not made via h2 protocol"""
-        negotiated_protocol = self.transport.negotiatedProtocol
-        if isinstance(negotiated_protocol, bytes):
-            negotiated_protocol = str(self.transport.negotiatedProtocol, 'utf-8')
-        if negotiated_protocol != 'h2':
-            # Here we have not initiated the connection yet
-            # So, no need to send a GOAWAY frame to the remote
-            self._lose_connection_with_error([InvalidNegotiatedProtocol(negotiated_protocol)])
+        """
+        Close the connection if it's not made via the expected protocol
+        """
+        if self.transport.negotiatedProtocol is not None and self.transport.negotiatedProtocol != PROTOCOL_NAME:
+            # we have not initiated the connection yet, no need to send a GOAWAY frame to the remote peer
+            self._lose_connection_with_error([InvalidNegotiatedProtocol(self.transport.negotiatedProtocol)])
 
     def _check_received_data(self, data: bytes) -> None:
         """Checks for edge cases where the connection to remote fails
@@ -261,6 +260,13 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             events = self.conn.receive_data(data)
             self._handle_events(events)
         except H2Error as e:
+            if isinstance(e, FrameTooLargeError):
+                # hyper-h2 does not drop the connection in this scenario, we
+                # need to abort the connection manually.
+                self._conn_lost_errors += [e]
+                self.transport.abortConnection()
+                return
+
             # Save this error as ultimately the connection will be dropped
             # internally by hyper-h2. Saved error will be passed to all the streams
             # closed with the connection.
@@ -302,8 +308,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         if not reason.check(connectionDone):
             self._conn_lost_errors.append(reason)
 
-        if self._conn_lost_deferred:
-            self._conn_lost_deferred.callback(self._conn_lost_errors)
+        self._conn_lost_deferred.callback(self._conn_lost_errors)
 
         for stream in self.streams.values():
             if stream.metadata['request_sent']:
@@ -340,7 +345,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             elif isinstance(event, SettingsAcknowledged):
                 self.settings_acknowledged(event)
             elif isinstance(event, UnknownFrameReceived):
-                logger.debug('UnknownFrameReceived: frame={}'.format(event.frame))
+                logger.warning('Unknown frame received: %s', event.frame)
 
     # Event handler functions starts here
     def connection_terminated(self, event: ConnectionTerminated) -> None:
@@ -349,10 +354,20 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         ])
 
     def data_received(self, event: DataReceived) -> None:
-        self.streams[event.stream_id].receive_data(event.data, event.flow_controlled_length)
+        try:
+            stream = self.streams[event.stream_id]
+        except KeyError:
+            pass  # We ignore server-initiated events
+        else:
+            stream.receive_data(event.data, event.flow_controlled_length)
 
     def response_received(self, event: ResponseReceived) -> None:
-        self.streams[event.stream_id].receive_headers(event.headers)
+        try:
+            stream = self.streams[event.stream_id]
+        except KeyError:
+            pass  # We ignore server-initiated events
+        else:
+            stream.receive_headers(event.headers)
 
     def settings_acknowledged(self, event: SettingsAcknowledged) -> None:
         self.metadata['settings_acknowledged'] = True
@@ -365,12 +380,20 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.metadata['certificate'] = Certificate(self.transport.getPeerCertificate())
 
     def stream_ended(self, event: StreamEnded) -> None:
-        stream = self.pop_stream(event.stream_id)
-        stream.close(StreamCloseReason.ENDED, from_protocol=True)
+        try:
+            stream = self.pop_stream(event.stream_id)
+        except KeyError:
+            pass  # We ignore server-initiated events
+        else:
+            stream.close(StreamCloseReason.ENDED, from_protocol=True)
 
     def stream_reset(self, event: StreamReset) -> None:
-        stream = self.pop_stream(event.stream_id)
-        stream.close(StreamCloseReason.RESET, from_protocol=True)
+        try:
+            stream = self.pop_stream(event.stream_id)
+        except KeyError:
+            pass  # We ignore server-initiated events
+        else:
+            stream.close(StreamCloseReason.RESET, from_protocol=True)
 
     def window_updated(self, event: WindowUpdated) -> None:
         if event.stream_id != 0:
@@ -383,7 +406,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
 @implementer(IProtocolNegotiationFactory)
 class H2ClientFactory(Factory):
-    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Optional[Deferred] = None) -> None:
+    def __init__(self, uri: URI, settings: Settings, conn_lost_deferred: Deferred) -> None:
         self.uri = uri
         self.settings = settings
         self.conn_lost_deferred = conn_lost_deferred
@@ -392,4 +415,4 @@ class H2ClientFactory(Factory):
         return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
 
     def acceptableProtocols(self) -> List[bytes]:
-        return [b'h2']
+        return [PROTOCOL_NAME]
