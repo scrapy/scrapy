@@ -39,9 +39,9 @@ class NegotiateProtocol(Protocol):
 @implementer(IProtocolNegotiationFactory)
 class NegotiateProtocolFactory(Factory):
     def __init__(
-            self,
-            acceptable_protocols: List[bytes],
-            negotiated_protocol_deferred: Deferred
+        self,
+        acceptable_protocols: List[bytes],
+        negotiated_protocol_deferred: Deferred
     ) -> None:
         self.acceptable_protocols = acceptable_protocols
         self.negotiated_protocol_deferred = negotiated_protocol_deferred
@@ -55,10 +55,10 @@ class NegotiateProtocolFactory(Factory):
 
 class NegotiateAgent:
     def __init__(
-            self, reactor: ReactorBase,
-            acceptable_protocols: List,
-            context_factory=BrowserLikePolicyForHTTPS(),
-            connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
+        self, reactor: ReactorBase,
+        acceptable_protocols: List,
+        context_factory=BrowserLikePolicyForHTTPS(),
+        connect_timeout: Optional[float] = None, bind_address: Optional[bytes] = None
     ) -> None:
         self._reactor = reactor
         self._acceptable_protocols = [
@@ -87,13 +87,9 @@ class HTTPNegotiateDownloadHandler:
         self._settings = settings
         self._crawler = crawler
 
-        self.acceptable_protocols = []
-
-        handlers_base = without_none_values(self._settings.get('HTTP_DOWNLOAD_HANDLERS_BASE'))
+        handlers_base = without_none_values(self._settings.getwithbase('HTTP_DOWNLOAD_HANDLERS'))
         self.handlers: Dict = {}
         for protocol, cls_path in handlers_base.items():
-            self.acceptable_protocols.append(protocol)
-
             dh_cls = load_object(cls_path)
             self.handlers[protocol] = create_instance(
                 objcls=dh_cls,
@@ -174,7 +170,7 @@ class HTTPNegotiateDownloadHandler:
             return self.handlers['http/1.1']
 
         # Check in the order of the acceptable protocols list
-        for protocol in self.acceptable_protocols:
+        for protocol in self.handlers.keys():
             if (
                     key in self.handlers['http/1.1'].pool._connections
                     or key in self.handlers['h2'].pool.established_connections
@@ -193,7 +189,6 @@ class HTTPNegotiateDownloadHandler:
 
         # Create an instance of the connection
         if negotiated_protocol == 'http/1.1':
-            assert isinstance(handler, HTTP11DownloadHandler)
 
             def quiescent_callback(protocol):
                 handler.pool._putConnection(key, protocol)
@@ -203,7 +198,6 @@ class HTTPNegotiateDownloadHandler:
             conn.makeConnection(transport)
             handler.pool._putConnection(key, conn)
         else:  # 'h2' expected
-            assert isinstance(handler, H2DownloadHandler)
 
             conn_lost_deferred = Deferred()
             conn_lost_deferred.addCallback(handler.pool._remove_connection, key)
@@ -250,7 +244,7 @@ class HTTPNegotiateDownloadHandler:
         from twisted.internet import reactor
         agent = NegotiateAgent(
             reactor=reactor,
-            acceptable_protocols=self.acceptable_protocols,
+            acceptable_protocols=list(self.handlers.keys()),
             context_factory=self._context_factory
         )
         conn_d = agent.negotiate(self._parse_uri(request.url))
