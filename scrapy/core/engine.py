@@ -224,7 +224,7 @@ class ExecutionEngine:
                 stacklevel=2,
             )
             if spider is not self.spider:
-                raise RuntimeError(f"The spider '{spider.name!r}' does not match the open spider")
+                raise RuntimeError(f"The spider {spider.name!r} does not match the open spider")
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         self._schedule_request(request, self.spider)
@@ -237,17 +237,19 @@ class ExecutionEngine:
 
     def download(self, request: Request, spider: Optional[Spider] = None) -> Deferred:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
-        if spider is not None:
+        if spider is None:
+            spider = self.spider
+        else:
             warnings.warn(
                 "Passing a 'spider' argument to ExecutionEngine.download is deprecated",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
             if spider is not self.spider:
-                raise RuntimeError(f"The spider '{spider.name!r}' does not match the open spider")
-        if self.spider is None:
+                logger.warning(f"The spider {spider.name!r} does not match the open spider")
+        if spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request, self.spider).addBoth(self._downloaded, request, self.spider)
+        return self._download(request, spider).addBoth(self._downloaded, request, spider)
 
     def _downloaded(
         self, result: Union[Response, Request], request: Request, spider: Spider
