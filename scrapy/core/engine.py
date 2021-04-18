@@ -5,6 +5,7 @@ For more information see docs/topics/architecture.rst
 
 """
 import logging
+from collections import deque
 from time import time
 
 from twisted.internet import defer, task
@@ -19,6 +20,11 @@ from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
 logger = logging.getLogger(__name__)
+
+
+# https://stackoverflow.com/a/50938015
+def _consume(iterator):
+    deque(iterator, maxlen=0)
 
 
 class Slot:
@@ -102,7 +108,9 @@ class ExecutionEngine:
             # Will also close downloader
             return self._close_all_spiders()
         else:
-            return defer.succeed(self.downloader.close())
+            _consume(self.downloader.stop())
+            self.downloader.close()
+            return defer.succeed(None)
 
     def pause(self):
         """Pause the execution engine"""
@@ -307,6 +315,22 @@ class ExecutionEngine:
         logger.info("Closing spider (%(reason)s)",
                     {'reason': reason},
                     extra={'spider': spider})
+
+        dropped_request_count = 0
+        for request in self.downloader.stop():
+            slot.remove_request(request)
+            dropped_request_count += 1
+        if dropped_request_count:
+            logger.info(
+                "Dropped %(dropped_request_count)s requests from the "
+                "downloader.",
+                {'dropped_request_count': dropped_request_count},
+                extra={'spider': spider},
+            )
+            self.crawler.stats.set_value(
+                'downloader/dropped_request_count',
+                dropped_request_count
+            )
 
         dfd = slot.close()
 
