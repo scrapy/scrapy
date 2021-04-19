@@ -259,7 +259,7 @@ respectively), the pipeline will put the results under the respective field
 When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field. For instance, using the :class:`~scrapy.item.Item` class::
+``images`` field. For instance, using the :class:`~scrapy.Item` class::
 
     import scrapy
 
@@ -424,7 +424,7 @@ See here the methods that you can override in your custom Files Pipeline:
       In addition to ``response``, this method receives the original
       :class:`request <scrapy.Request>`,
       :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
-      :class:`item <scrapy.item.Item>`
+      :class:`item <scrapy.Item>`
 
       You can override this method to customize the download path of each file.
 
@@ -563,7 +563,7 @@ See here the methods that you can override in your custom Images Pipeline:
       In addition to ``response``, this method receives the original
       :class:`request <scrapy.Request>`,
       :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
-      :class:`item <scrapy.item.Item>`
+      :class:`item <scrapy.Item>`
 
       You can override this method to customize the download path of each file.
 

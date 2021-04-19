@@ -489,7 +489,6 @@ fields with form data from :class:`Response` objects.
 .. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
 .. class:: scrapy.http.request.form.FormRequest
-.. class:: scrapy.http.request.FormRequest
 .. class:: scrapy.http.FormRequest
 .. class:: scrapy.FormRequest(url, [formdata, ...])
 
