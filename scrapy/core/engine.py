@@ -357,7 +357,7 @@ class ExecutionEngine:
 
         if hasattr(self.slot.scheduler, "close"):
             dfd.addBoth(lambda _: self.slot.scheduler.close(reason))
-            dfd.addErrback(log_failure('Scheduler close failure'))
+            dfd.addErrback(log_failure("Scheduler close failure"))
 
         dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(
             signal=signals.spider_closed, spider=spider, reason=reason,
