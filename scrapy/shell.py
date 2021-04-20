@@ -79,7 +79,7 @@ class Shell:
         spider = self._open_spider(request, spider)
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
-        self.crawler.engine.crawl(request, spider)
+        self.crawler.engine.crawl(request)
         return d
 
     def _open_spider(self, request, spider):
