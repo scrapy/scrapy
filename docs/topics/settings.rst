@@ -657,6 +657,7 @@ DOWNLOAD_HANDLERS_BASE
 Default::
 
     {
+        'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',
         'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
         'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
         'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
@@ -676,6 +677,8 @@ handler (without replacement), place this in your ``settings.py``::
     DOWNLOAD_HANDLERS = {
         'ftp': None,
     }
+
+.. _http2:
 
 The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
 :setting:`DOWNLOAD_HANDLERS` as follows::
@@ -703,7 +706,8 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
 
     -   No support for `server pushes`_, which are ignored.
 
-    -   No support for the :signal:`bytes_received` signal.
+    -   No support for the :signal:`bytes_received` and
+        :signal:`headers_received` signals.
 
 .. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
@@ -1228,20 +1232,6 @@ Adjust redirect request priority relative to original request:
 
 - **a positive priority adjust (default) means higher priority.**
 - a negative priority adjust means lower priority.
-
-.. setting:: RETRY_PRIORITY_ADJUST
-
-RETRY_PRIORITY_ADJUST
----------------------
-
-Default: ``-1``
-
-Scope: ``scrapy.downloadermiddlewares.retry.RetryMiddleware``
-
-Adjust retry request priority relative to original request:
-
-- a positive priority adjust means higher priority.
-- **a negative priority adjust (default) means lower priority.**
 
 .. setting:: ROBOTSTXT_OBEY
 

@@ -64,10 +64,10 @@ NotConfigured
 This exception can be raised by some components to indicate that they will
 remain disabled. Those components include:
 
- * Extensions
- * Item pipelines
- * Downloader middlewares
- * Spider middlewares
+-   Extensions
+-   Item pipelines
+-   Downloader middlewares
+-   Spider middlewares
 
 The exception must be raised in the component's ``__init__`` method.
 
