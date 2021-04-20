@@ -23,18 +23,7 @@ Minimal scheduler interface
 ===========================
 
 .. autoclass:: BaseScheduler
-
-   .. automethod:: from_crawler
-
-   .. automethod:: open
-
-   .. automethod:: close
-
-   .. automethod:: has_pending_requests
-
-   .. automethod:: enqueue_request
-
-   .. automethod:: next_request
+   :members:
 
 
 Default Scrapy scheduler
