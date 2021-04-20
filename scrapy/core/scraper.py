@@ -200,7 +200,7 @@ class Scraper:
         """
         assert self.slot is not None  # typing
         if isinstance(output, Request):
-            self.crawler.engine.crawl(request=output, spider=spider)
+            self.crawler.engine.crawl(request=output)
         elif is_item(output):
             self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)

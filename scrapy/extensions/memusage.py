@@ -88,10 +88,8 @@ class MemoryUsage:
                 self._send_report(self.notify_mails, subj)
                 self.crawler.stats.set_value('memusage/limit_notified', 1)
 
-            open_spiders = self.crawler.engine.open_spiders
-            if open_spiders:
-                for spider in open_spiders:
-                    self.crawler.engine.close_spider(spider, 'memusage_exceeded')
+            if self.crawler.engine.spider is not None:
+                self.crawler.engine.close_spider(self.crawler.engine.spider, 'memusage_exceeded')
             else:
                 self.crawler.stop()
 
