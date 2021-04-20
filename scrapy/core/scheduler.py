@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from abc import abstractmethod
-from os.path import join, exists
+from os.path import exists, join
 from typing import Optional, Type, TypeVar
 
 from twisted.internet.defer import Deferred
@@ -11,7 +11,7 @@ from scrapy.crawler import Crawler
 from scrapy.http.request import Request
 from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir
-from scrapy.utils.misc import load_object, create_instance
+from scrapy.utils.misc import create_instance, load_object
 
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,15 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     The scheduler component is responsible for storing requests received from
     the engine, and feeding them back upon request (also to the engine).
 
-    The methods defined in this class constitute the minimal
-    interface that the Scrapy engine will interact with.
+    The original sources of said requests are:
+    * Spider: ``start_requests`` method, requests created for URLs in the ``start_urls`` attribute, request callbacks
+    * Spider middleware: ``process_spider_output`` and ``process_spider_exception`` methods
+    * Downloader middleware: ``process_request``, ``process_response`` and ``process_exception`` methods
+
+    The order in which the scheduler returns its stored requests (via the ``next_request`` method)
+    plays a great part in determining the order in which those requests are downloaded.
+
+    The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.
     """
 
     @classmethod
@@ -101,24 +108,16 @@ class Scheduler(BaseScheduler):
     Default Scrapy scheduler. This implementation also handles duplication
     filtering via the :setting:`dupefilter <DUPEFILTER_CLASS>`.
 
-    Prioritization and queueing is not performed by the scheduler.
-    User sets ``priority`` field for each Request, and a PriorityQueue
-    (defined by :setting:`SCHEDULER_PRIORITY_QUEUE`) uses these priorities
-    to dequeue requests in a desired order.
+    This scheduler stores requests into several priority queues (defined by the
+    :setting:`SCHEDULER_PRIORITY_QUEUE` setting). In turn, said priority queues
+    are backed by either memory or disk based queues (respectively defined by the
+    :setting:`SCHEDULER_MEMORY_QUEUE` and :setting:`SCHEDULER_DISK_QUEUE` settings).
 
-    This scheduler uses two PriorityQueue instances, configured to work in-memory
-    and on-disk (optional). When on-disk queue is present, it is used by
-    default, and an in-memory queue is used as a fallback for cases where
-    a disk queue can't handle a request (can't serialize it).
-
-    :setting:`SCHEDULER_MEMORY_QUEUE` and
-    :setting:`SCHEDULER_DISK_QUEUE` allow to specify lower-level queue classes
-    which PriorityQueue instances would be instantiated with, to keep requests
-    on disk and in memory respectively.
-
-    Overall, this scheduler is an object which holds several PriorityQueue instances
-    (in-memory and on-disk) and implements fallback logic for them.
-    Also, it handles dupefilters.
+    Request prioritization is almost entirely delegated to the priority queue. The only
+    prioritization performed by this scheduler is using the disk-based queue if present
+    (i.e. if the :setting:`JOBDIR` setting is defined) and falling back to the memory-based
+    queue if a serialization error occurs. If the disk queue is not present, the memory one
+    is used directly.
 
     :param dupefilter: An object responsible for checking and filtering duplicate requests.
                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
