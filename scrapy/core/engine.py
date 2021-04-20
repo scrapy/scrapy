@@ -161,7 +161,7 @@ class ExecutionEngine:
             return None
 
         d = self._download(request, self.spider)
-        d.addBoth(self._handle_downloader_output, request, self.spider)
+        d.addBoth(self._handle_downloader_output, request)
         d.addErrback(lambda f: logger.info('Error while handling downloader output',
                                            exc_info=failure_to_exc_info(f),
                                            extra={'spider': self.spider}))
@@ -176,8 +176,10 @@ class ExecutionEngine:
         return d
 
     def _handle_downloader_output(
-        self, result: Union[Request, Response, Failure], request: Request, spider: Spider
+        self, result: Union[Request, Response, Failure], request: Request
     ) -> Optional[Deferred]:
+        assert self.spider is not None  # typing
+
         if not isinstance(result, (Request, Response, Failure)):
             raise TypeError(f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}")
 
@@ -186,12 +188,12 @@ class ExecutionEngine:
             self.crawl(result)
             return None
 
-        d = self.scraper.enqueue_scrape(result, request, spider)
+        d = self.scraper.enqueue_scrape(result, request, self.spider)
         d.addErrback(
             lambda f: logger.error(
                 "Error while enqueuing downloader output",
                 exc_info=failure_to_exc_info(f),
-                extra={'spider': spider},
+                extra={'spider': self.spider},
             )
         )
         return d
