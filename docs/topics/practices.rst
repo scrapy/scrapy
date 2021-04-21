@@ -379,7 +379,10 @@ Here is an example that runs multiple spiders simultaneously:
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
+<<<<<<< HEAD
     from scrapy.utils.project import get_project_settings
+=======
+>>>>>>> parent of e66fbc4d... Import top-level class paths #2733
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -389,8 +392,12 @@ Here is an example that runs multiple spiders simultaneously:
         # Your second spider definition
         ...
 
+<<<<<<< HEAD
     settings = get_project_settings()
     process = CrawlerProcess(settings)
+=======
+    process = CrawlerProcess()
+>>>>>>> parent of e66fbc4d... Import top-level class paths #2733
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start() # the script will block here until all crawling jobs are finished
@@ -403,7 +410,10 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+<<<<<<< HEAD
     from scrapy.utils.project import get_project_settings
+=======
+>>>>>>> parent of e66fbc4d... Import top-level class paths #2733
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -414,8 +424,12 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
         ...
 
     configure_logging()
+<<<<<<< HEAD
     settings = get_project_settings()
     runner = CrawlerRunner(settings)
+=======
+    runner = CrawlerRunner()
+>>>>>>> parent of e66fbc4d... Import top-level class paths #2733
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
@@ -430,7 +444,10 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+<<<<<<< HEAD
     from scrapy.utils.project import get_project_settings
+=======
+>>>>>>> parent of e66fbc4d... Import top-level class paths #2733
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -441,8 +458,12 @@ Same example but running the spiders sequentially by chaining the deferreds:
         ...
 
     configure_logging()
+<<<<<<< HEAD
     settings = get_project_settings()
     runner = CrawlerRunner(settings)
+=======
+    runner = CrawlerRunner()
+>>>>>>> parent of e66fbc4d... Import top-level class paths #2733
 
     @defer.inlineCallbacks
     def crawl():
