@@ -58,7 +58,7 @@ Requisitos
 Instalar
 =======
 
-A maneira mais rápida:
+A maneira mais rápida::
 
     pip install scrapy
 
