@@ -42,7 +42,8 @@ Item objects
 :class:`Item` provides a :class:`dict`-like API plus additional features that
 make it the most feature-complete item type:
 
-.. class:: Item([arg])
+.. class:: scrapy.item.Item
+.. class:: scrapy.Item([arg])
 
     :class:`Item` objects replicate the standard :class:`dict` API, including
     its ``__init__`` method.
@@ -199,7 +200,8 @@ It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
 
-.. class:: Field([arg])
+.. class:: scrapy.item.Field
+.. class:: scrapy.Field([arg])
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
