@@ -38,6 +38,14 @@ def _serializable_queue(queue_class, serialize, deserialize):
             if s:
                 return deserialize(s)
 
+        def peek(self):
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+            if s:
+                return deserialize(s)
+
     return SerializableQueue
 
 
@@ -59,12 +67,18 @@ def _scrapy_serialization_queue(queue_class):
 
         def pop(self):
             request = super().pop()
-
             if not request:
                 return None
+            return request_from_dict(request, self.spider)
 
-            request = request_from_dict(request, self.spider)
-            return request
+        def peek(self):
+            try:
+                request = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+            if not request:
+                return None
+            return request_from_dict(request, self.spider)
 
     return ScrapyRequestQueue
 
@@ -109,17 +123,9 @@ MarshalLifoDiskQueueNonRequest = _serializable_queue(
     marshal.loads
 )
 
-PickleFifoDiskQueue = _scrapy_serialization_queue(
-    PickleFifoDiskQueueNonRequest
-)
-PickleLifoDiskQueue = _scrapy_serialization_queue(
-    PickleLifoDiskQueueNonRequest
-)
-MarshalFifoDiskQueue = _scrapy_serialization_queue(
-    MarshalFifoDiskQueueNonRequest
-)
-MarshalLifoDiskQueue = _scrapy_serialization_queue(
-    MarshalLifoDiskQueueNonRequest
-)
+PickleFifoDiskQueue = _scrapy_serialization_queue(PickleFifoDiskQueueNonRequest)
+PickleLifoDiskQueue = _scrapy_serialization_queue(PickleLifoDiskQueueNonRequest)
+MarshalFifoDiskQueue = _scrapy_serialization_queue(MarshalFifoDiskQueueNonRequest)
+MarshalLifoDiskQueue = _scrapy_serialization_queue(MarshalLifoDiskQueueNonRequest)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)

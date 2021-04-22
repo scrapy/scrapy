@@ -3,6 +3,7 @@ import logging
 
 from scrapy.utils.misc import create_instance
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +35,9 @@ class ScrapyPriorityQueue:
         * pop()
         * close()
         * __len__()
+
+    Optionally, the queue could provide a ``peek`` method, that should return the
+    next object to be returned by ``pop``, but without removing it from the queue.
 
     ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
     argument, which is a class used to instantiate a new (internal) queue when
@@ -99,6 +103,15 @@ class ScrapyPriorityQueue:
             self.curprio = min(prios) if prios else None
         return m
 
+    def peek(self):
+        if self.curprio is None:
+            return None
+        queue = self.queues[self.curprio]
+        try:
+            return queue.peek()
+        except AttributeError as ex:
+            raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+
     def close(self):
         active = []
         for p, q in self.queues.items():
@@ -116,8 +129,7 @@ class DownloaderInterface:
         self.downloader = crawler.engine.downloader
 
     def stats(self, possible_slots):
-        return [(self._active_downloads(slot), slot)
-                for slot in possible_slots]
+        return [(self._active_downloads(slot), slot) for slot in possible_slots]
 
     def get_slot_key(self, request):
         return self.downloader._get_slot_key(request, None)
@@ -187,9 +199,19 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         queue.push(request)
 
+    def peek(self):
+        stats = self._downloader_interface.stats(self.pqueues)
+        if not stats:
+            return None
+        slot = min(stats)[1]
+        queue = self.pqueues[slot]
+        try:
+            return queue.peek()
+        except AttributeError as ex:
+            raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+
     def close(self):
-        active = {slot: queue.close()
-                  for slot, queue in self.pqueues.items()}
+        active = {slot: queue.close() for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
         return active
 
