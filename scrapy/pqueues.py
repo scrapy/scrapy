@@ -18,8 +18,7 @@ def _path_safe(text):
     >>> _path_safe('some@symbol?').startswith('some_symbol_')
     True
     """
-    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_'
-                             for c in text])
+    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in text])
     # as we replace some letters we can get collision for different slots
     # add we add unique part
     unique_slot = hashlib.md5(text.encode('utf8')).hexdigest()
@@ -74,10 +73,12 @@ class ScrapyPriorityQueue:
         self.curprio = min(startprios)
 
     def qfactory(self, key):
-        return create_instance(self.downstream_queue_cls,
-                               None,
-                               self.crawler,
-                               self.key + '/' + str(key))
+        return create_instance(
+            self.downstream_queue_cls,
+            None,
+            self.crawler,
+            self.key + '/' + str(key),
+        )
 
     def priority(self, request):
         return -request.priority
@@ -174,10 +175,12 @@ class DownloaderAwarePriorityQueue:
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
     def pqfactory(self, slot, startprios=()):
-        return ScrapyPriorityQueue(self.crawler,
-                                   self.downstream_queue_cls,
-                                   self.key + '/' + _path_safe(slot),
-                                   startprios)
+        return ScrapyPriorityQueue(
+            self.crawler,
+            self.downstream_queue_cls,
+            self.key + '/' + _path_safe(slot),
+            startprios,
+        )
 
     def pop(self):
         stats = self._downloader_interface.stats(self.pqueues)
