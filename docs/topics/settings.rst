@@ -680,8 +680,12 @@ handler (without replacement), place this in your ``settings.py``::
 
 .. _http2:
 
-The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
-:setting:`DOWNLOAD_HANDLERS` as follows::
+The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
+
+#.  Install ``Twisted[http2]>=17.9.0`` to install the packages required to
+    enable HTTP/2 support in Twisted.
+
+#.  Update :setting:`DOWNLOAD_HANDLERS` as follows::
 
     DOWNLOAD_HANDLERS = {
         'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
