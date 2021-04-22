@@ -31,3 +31,5 @@ Default Scrapy scheduler
 
 .. autoclass:: Scheduler
    :members:
+
+   .. automethod:: __len__
