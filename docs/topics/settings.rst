@@ -687,9 +687,9 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 
 #.  Update :setting:`DOWNLOAD_HANDLERS` as follows::
 
-    DOWNLOAD_HANDLERS = {
-        'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
-    }
+        DOWNLOAD_HANDLERS = {
+            'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+        }
 
 .. warning::
 
