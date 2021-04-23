@@ -1,6 +1,8 @@
 import tempfile
 import unittest
 
+import queuelib
+
 from scrapy.http.request import Request
 from scrapy.pqueues import ScrapyPriorityQueue
 from scrapy.spiders import Spider
@@ -25,6 +27,39 @@ class PriorityQueueTest(unittest.TestCase):
         self.assertEqual(len(queue), 0)
         self.assertEqual(dequeued.url, req1.url)
         self.assertEqual(dequeued.priority, req1.priority)
+        self.assertEqual(queue.close(), [])
+
+    def test_no_peek_raises(self):
+        if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
+            raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is defined")
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir)
+        queue.push(Request("https://example.org"))
+        with self.assertRaises(NotImplementedError, msg="The underlying queue class does not implement 'peek'"):
+            queue.peek()
+        queue.close()
+
+    def test_peek(self):
+        if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
+            raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is undefined")
+        temp_dir = tempfile.mkdtemp()
+        queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir)
+        self.assertEqual(len(queue), 0)
+        req1 = Request("https://example.org/1")
+        req2 = Request("https://example.org/2")
+        req3 = Request("https://example.org/3")
+        queue.push(req1)
+        queue.push(req2)
+        queue.push(req3)
+        self.assertEqual(len(queue), 3)
+        self.assertEqual(queue.peek().url, req1.url)
+        self.assertEqual(queue.pop().url, req1.url)
+        self.assertEqual(len(queue), 2)
+        self.assertEqual(queue.peek().url, req2.url)
+        self.assertEqual(queue.pop().url, req2.url)
+        self.assertEqual(len(queue), 1)
+        self.assertEqual(queue.peek().url, req3.url)
+        self.assertEqual(queue.pop().url, req3.url)
         self.assertEqual(queue.close(), [])
 
     def test_queue_push_pop_priorities(self):
