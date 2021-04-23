@@ -19,7 +19,6 @@ def _with_mkdir(queue_class):
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
-
             super().__init__(path, *args, **kwargs)
 
     return DirectoriesCreated
@@ -89,6 +88,13 @@ def _scrapy_non_serialization_queue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             return cls()
+
+        def peek(self):
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+            return s
 
     return ScrapyRequestQueue
 
