@@ -4,6 +4,7 @@ import random
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
+import glob
 
 import attr
 from itemadapter import ItemAdapter
@@ -92,6 +93,14 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     response=Response("file:///tmp/some.name/foo"),
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+
+    def test_pipeline_invalid_images(self):
+        urls = ['https://img01.mgo-images.com/image/thumbnail/v2/content/MMV5CEBE0C5DC82A5028E7EA6B91F904DEF3.jpeg',
+                'https://img01.mgo-images.com/image/thumbnail/v2/content/MMVA6B4523491C0B5A88B392024490A44B7C.jpeg',
+                'https://scrapy.org/img/scrapylogo.png']
+        for url in urls:
+            Request(url)
+        self.assertEqual(len(glob.glob(self.pipeline.file_path + "/*")), 1)
 
     def test_convert_image(self):
         SIZE = (100, 100)

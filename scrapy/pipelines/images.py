@@ -115,7 +115,15 @@ class ImagesPipeline(FilesPipeline):
 
     def image_downloaded(self, response, request, info, *, item=None):
         checksum = None
-        for path, image, buf in self.get_images(response, request, info, item=item):
+        image_list = self.get_images(response, request, info, item=item)
+
+        while True:
+            try:
+                path, image, buf = next(image_list)
+            except OSError:
+                continue
+            except Exception:
+                break
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
