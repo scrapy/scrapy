@@ -24,7 +24,7 @@ def request_fingerprint(
     request: Request,
     include_headers: Optional[Iterable[Union[bytes, str]]] = None,
     keep_fragments: bool = False,
-):
+) -> str:
     """
     Return the request fingerprint.
 
