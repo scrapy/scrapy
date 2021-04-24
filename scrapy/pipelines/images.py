@@ -5,6 +5,7 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+import logging
 from contextlib import suppress
 from io import BytesIO
 
@@ -17,7 +18,6 @@ from scrapy.pipelines.files import FileException, FilesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -125,9 +125,11 @@ class ImagesPipeline(FilesPipeline):
             except OSError:
                 logger.exception('Could not process image')
                 continue
+            except StopIteration:
+                break
             except Exception:
                 logger.exception('Stopped processing images')
-                break
+                continue
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
