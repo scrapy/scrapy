@@ -71,10 +71,7 @@ def _scrapy_serialization_queue(queue_class):
             return request_from_dict(request, self.spider)
 
         def peek(self):
-            try:
-                request = super().peek()
-            except AttributeError as ex:
-                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+            request = super().peek()  # NotImplementedError could be raised from the underlying queue
             if not request:
                 return None
             return request_from_dict(request, self.spider)
