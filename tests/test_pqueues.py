@@ -9,6 +9,8 @@ from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue
 from scrapy.utils.test import get_crawler
 
+from tests.test_scheduler import MockDownloader, MockEngine
+
 
 class PriorityQueueTest(unittest.TestCase):
     def setUp(self):
@@ -84,7 +86,7 @@ class PriorityQueueTest(unittest.TestCase):
 class DownloaderAwarePriorityQueueTest(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler(Spider)
-        crawler.engine = crawler._create_engine()
+        crawler.engine = MockEngine(downloader=MockDownloader())
         self.queue = DownloaderAwarePriorityQueue.from_crawler(
             crawler=crawler,
             downstream_queue_cls=FifoMemoryQueue,
