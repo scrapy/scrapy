@@ -21,21 +21,10 @@ from scrapy.utils.python import MutableChain
 ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-def _fname(f):
-    return f"{f.__self__.__class__.__name__}.{f.__func__.__name__}"
-
-
-ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
-=======
 def _isiterable(o) -> bool:
     return isinstance(o, Iterable)
->>>>>>> 76fa2257... Add typing also for return values, other small fixes.
 
 
->>>>>>> a9e96f99... Add typing for middleware and coroutine related code.
 class SpiderMiddlewareManager(MiddlewareManager):
 
     component_name = 'spider middleware'
