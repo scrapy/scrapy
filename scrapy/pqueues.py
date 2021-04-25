@@ -208,10 +208,7 @@ class DownloaderAwarePriorityQueue:
             return None
         slot = min(stats)[1]
         queue = self.pqueues[slot]
-        try:
-            return queue.peek()
-        except AttributeError as ex:
-            raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+        return queue.peek()  # NotImplementedError could be raised from the underlying queue
 
     def close(self):
         active = {slot: queue.close() for slot, queue in self.pqueues.items()}
