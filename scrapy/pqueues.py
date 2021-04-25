@@ -105,10 +105,11 @@ class ScrapyPriorityQueue:
         return m
 
     def peek(self):
+        """NotImplementedError might be raised from the underlying queue"""
         if self.curprio is None:
             return None
         queue = self.queues[self.curprio]
-        return queue.peek()  # NotImplementedError might be raised from the underlying queue
+        return queue.peek()
 
     def close(self):
         active = []
@@ -200,12 +201,13 @@ class DownloaderAwarePriorityQueue:
         queue.push(request)
 
     def peek(self):
+        """NotImplementedError might be raised from the underlying queue"""
         stats = self._downloader_interface.stats(self.pqueues)
         if not stats:
             return None
         slot = min(stats)[1]
         queue = self.pqueues[slot]
-        return queue.peek()  # NotImplementedError might be raised from the underlying queue
+        return queue.peek()
 
     def close(self):
         active = {slot: queue.close() for slot, queue in self.pqueues.items()}
