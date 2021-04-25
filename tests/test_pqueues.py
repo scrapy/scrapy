@@ -47,6 +47,7 @@ class PriorityQueueTest(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir)
         self.assertEqual(len(queue), 0)
+        self.assertIsNone(queue.peek())
         req1 = Request("https://example.org/1")
         req2 = Request("https://example.org/2")
         req3 = Request("https://example.org/3")
