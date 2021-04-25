@@ -108,10 +108,7 @@ class ScrapyPriorityQueue:
         if self.curprio is None:
             return None
         queue = self.queues[self.curprio]
-        try:
-            return queue.peek()
-        except AttributeError as ex:
-            raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+        return queue.peek()  # NotImplementedError might be raised from the underlying queue
 
     def close(self):
         active = []
@@ -208,7 +205,7 @@ class DownloaderAwarePriorityQueue:
             return None
         slot = min(stats)[1]
         queue = self.pqueues[slot]
-        return queue.peek()  # NotImplementedError could be raised from the underlying queue
+        return queue.peek()  # NotImplementedError might be raised from the underlying queue
 
     def close(self):
         active = {slot: queue.close() for slot, queue in self.pqueues.items()}

@@ -71,7 +71,7 @@ def _scrapy_serialization_queue(queue_class):
             return request_from_dict(request, self.spider)
 
         def peek(self):
-            request = super().peek()  # NotImplementedError could be raised from the underlying queue
+            request = super().peek()  # NotImplementedError might be raised from the underlying queue
             if not request:
                 return None
             return request_from_dict(request, self.spider)
