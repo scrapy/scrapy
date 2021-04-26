@@ -1280,7 +1280,8 @@ SCHEDULER
 
 Default: ``'scrapy.core.scheduler.Scheduler'``
 
-The scheduler to use for crawling.
+The scheduler class to be used for crawling.
+See the :ref:`topics-scheduler` topic for details.
 
 .. setting:: SCHEDULER_DEBUG
 
