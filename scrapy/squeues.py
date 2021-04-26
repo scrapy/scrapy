@@ -38,6 +38,12 @@ def _serializable_queue(queue_class, serialize, deserialize):
                 return deserialize(s)
 
         def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
             try:
                 s = super().peek()
             except AttributeError as ex:
@@ -71,7 +77,12 @@ def _scrapy_serialization_queue(queue_class):
             return request_from_dict(request, self.spider)
 
         def peek(self):
-            """NotImplementedError might be raised from the underlying queue"""
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
             request = super().peek()
             if not request:
                 return None
@@ -88,6 +99,12 @@ def _scrapy_non_serialization_queue(queue_class):
             return cls()
 
         def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
             try:
                 s = super().peek()
             except AttributeError as ex:

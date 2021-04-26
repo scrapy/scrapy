@@ -105,10 +105,10 @@ class ScrapyPriorityQueue:
         return m
 
     def peek(self):
-        """Returns the next object to be returned by :meth:`pop`, but without 
-        removing it from the queue.
+        """Returns the next object to be returned by :meth:`pop`,
+        but without removing it from the queue.
 
-        Raises :exc:`NotImplementedError` if the underlying queue class does 
+        Raises :exc:`NotImplementedError` if the underlying queue class does
         not implement a ``peek`` method, which is optional for queues.
         """
         if self.curprio is None:
@@ -206,7 +206,12 @@ class DownloaderAwarePriorityQueue:
         queue.push(request)
 
     def peek(self):
-        """NotImplementedError might be raised from the underlying queue"""
+        """Returns the next object to be returned by :meth:`pop`,
+        but without removing it from the queue.
+
+        Raises :exc:`NotImplementedError` if the underlying queue class does
+        not implement a ``peek`` method, which is optional for queues.
+        """
         stats = self._downloader_interface.stats(self.pqueues)
         if not stats:
             return None
