@@ -19,7 +19,6 @@ def _with_mkdir(queue_class):
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
-
             super().__init__(path, *args, **kwargs)
 
     return DirectoriesCreated
@@ -35,6 +34,20 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
         def pop(self):
             s = super().pop()
+            if s:
+                return deserialize(s)
+
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
             if s:
                 return deserialize(s)
 
@@ -59,12 +72,21 @@ def _scrapy_serialization_queue(queue_class):
 
         def pop(self):
             request = super().pop()
-
             if not request:
                 return None
+            return request_from_dict(request, self.spider)
 
-            request = request_from_dict(request, self.spider)
-            return request
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            request = super().peek()
+            if not request:
+                return None
+            return request_from_dict(request, self.spider)
 
     return ScrapyRequestQueue
 
@@ -75,6 +97,19 @@ def _scrapy_non_serialization_queue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             return cls()
+
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+            return s
 
     return ScrapyRequestQueue
 
@@ -109,17 +144,9 @@ MarshalLifoDiskQueueNonRequest = _serializable_queue(
     marshal.loads
 )
 
-PickleFifoDiskQueue = _scrapy_serialization_queue(
-    PickleFifoDiskQueueNonRequest
-)
-PickleLifoDiskQueue = _scrapy_serialization_queue(
-    PickleLifoDiskQueueNonRequest
-)
-MarshalFifoDiskQueue = _scrapy_serialization_queue(
-    MarshalFifoDiskQueueNonRequest
-)
-MarshalLifoDiskQueue = _scrapy_serialization_queue(
-    MarshalLifoDiskQueueNonRequest
-)
+PickleFifoDiskQueue = _scrapy_serialization_queue(PickleFifoDiskQueueNonRequest)
+PickleLifoDiskQueue = _scrapy_serialization_queue(PickleLifoDiskQueueNonRequest)
+MarshalFifoDiskQueue = _scrapy_serialization_queue(MarshalFifoDiskQueueNonRequest)
+MarshalLifoDiskQueue = _scrapy_serialization_queue(MarshalLifoDiskQueueNonRequest)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
