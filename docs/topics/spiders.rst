@@ -50,7 +50,7 @@ We will talk about those types here.
 scrapy.Spider
 =============
 
-.. class:: scrapy.spiders.Spider
+.. class:: scrapy.spiders.Spider()
 .. class:: scrapy.Spider()
 
    This is the simplest spider, and the one from which every other spider
