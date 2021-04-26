@@ -36,7 +36,8 @@ class Scheduler:
     Also, it handles dupefilters.
     """
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None,
-                 logunser=False, stats=None, pqclass=None, crawler=None):
+                 logunser=False, stats=None, pqclass=None, crawler=None,
+                 prefer_memory_queue=True):
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
@@ -45,6 +46,7 @@ class Scheduler:
         self.logunser = logunser
         self.stats = stats
         self.crawler = crawler
+        self.prefer_memory_queue = prefer_memory_queue
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -55,9 +57,11 @@ class Scheduler:
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
         mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('SCHEDULER_DEBUG')
+        prefer_memory_queue = settings.getbool('SCHEDULER_PREFER_MEMORY_QUEUE')
         return cls(dupefilter, jobdir=job_dir(settings), logunser=logunser,
                    stats=crawler.stats, pqclass=pqclass, dqclass=dqclass,
-                   mqclass=mqclass, crawler=crawler)
+                   mqclass=mqclass, crawler=crawler,
+                   prefer_memory_queue=prefer_memory_queue)
 
     def has_pending_requests(self):
         return len(self) > 0
@@ -88,15 +92,21 @@ class Scheduler:
         return True
 
     def next_request(self):
-        request = self.mqs.pop()
-        if request:
-            self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
+        """
+        Return the next request, according to the preference set by SCHEDULER_PREFER_MEMORY_QUEUE.
+        Note: From the queue's point of view, a lower value means a higher priority.
+        """
+        mprio = self.mqs.curprio
+        dprio = self.dqs.curprio if self.dqs else None
+        if mprio is not None and (self.prefer_memory_queue or dprio is None or mprio <= dprio):
+            request = self.mqs.pop()
+            queue_name = 'memory'
         else:
             request = self._dqpop()
-            if request:
-                self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
+            queue_name = 'disk'
         if request:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
+            self.stats.inc_value('scheduler/dequeued/{}'.format(queue_name), spider=self.spider)
         return request
 
     def __len__(self):

@@ -174,8 +174,13 @@ class DownloaderAwarePriorityQueue:
         self.crawler = crawler
 
         self.pqueues = {}  # slot -> priority queue
+        self.curprio = None
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
+            if self.curprio and startprios:
+                self.curprio = min(self.curprio, min(startprios))
+            elif startprios:
+                self.curprio = min(startprios)
 
     def pqfactory(self, slot, startprios=()):
         return ScrapyPriorityQueue(
@@ -196,6 +201,10 @@ class DownloaderAwarePriorityQueue:
         request = queue.pop()
         if len(queue) == 0:
             del self.pqueues[slot]
+        if self.pqueues:
+            self.curprio = min(pq.curprio for pq in self.pqueues.values())
+        else:
+            self.curprio = None
         return request
 
     def push(self, request):
@@ -204,6 +213,7 @@ class DownloaderAwarePriorityQueue:
             self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]
         queue.push(request)
+        self.curprio = min(pq.curprio for pq in self.pqueues.values())
 
     def peek(self):
         """Returns the next object to be returned by :meth:`pop`,

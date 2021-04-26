@@ -1334,6 +1334,17 @@ Type of priority queue used by the scheduler. Another available type is
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
+.. setting:: SCHEDULER_PREFER_MEMORY_QUEUE
+
+SCHEDULER_PREFER_MEMORY_QUEUE
+-----------------------------
+
+.. versionadded:: VERSION
+
+Default: ``True``
+
+Whether or not the scheduler will try to get the next request from the memory queue even if there
+are higher priority requests in the disk queue. Defaults to ``True`` for backward compatibility.
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
