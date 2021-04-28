@@ -4,8 +4,12 @@ HttpError Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 import logging
+from typing import Union
 
 from scrapy.exceptions import IgnoreRequest
+from scrapy.http.response import Response, ResponseList
+from scrapy.spiders import Spider
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +32,11 @@ class HttpErrorMiddleware:
         self.handle_httpstatus_all = settings.getbool('HTTPERROR_ALLOW_ALL')
         self.handle_httpstatus_list = settings.getlist('HTTPERROR_ALLOWED_CODES')
 
-    def process_spider_input(self, response, spider):
+    def process_spider_input(self, response: Union[Response, ResponseList], spider: Spider) -> None:
+        # FIXME: handle ResponseLists better
+        if isinstance(response, ResponseList):
+            return None
+
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta

@@ -4,6 +4,7 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+from typing import Callable, List, Optional
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
@@ -141,3 +142,23 @@ class Request(object_ref):
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+
+class RequestList(object_ref):
+    def __init__(
+        self,
+        *requests,
+        callback: Optional[Callable] = None,
+        errback: Optional[Callable] = None,
+        priority: int = 0,
+        cb_kwargs: Optional[dict] = None,
+        meta: Optional[dict] = None,
+    ) -> None:
+        self.requests: List[Request] = list(requests)
+        self.callback = callback
+        self.errback = errback
+        self.priority = priority
+        self.cb_kwargs = cb_kwargs or {}
+        self.meta = meta or {}
+        for req in self.requests:
+            req.meta["request_list"] = self

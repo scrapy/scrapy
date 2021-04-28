@@ -115,6 +115,10 @@ class LogFormatter:
 
         .. versionadded:: 2.0
         """
+        # FIXME
+        from scrapy.http.request import RequestList
+        request = request.requests[0] if isinstance(request, RequestList) else request
+
         return {
             'level': logging.ERROR,
             'msg': SPIDERERRORMSG,

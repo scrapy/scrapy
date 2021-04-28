@@ -235,7 +235,8 @@ class Scheduler(BaseScheduler):
 
         Return ``True`` if the request was stored successfully, ``False`` otherwise.
         """
-        if not request.dont_filter and self.df.request_seen(request):
+        # FIXME: handle RequestLists better
+        if isinstance(request, Request) and not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
         dqok = self._dqpush(request)

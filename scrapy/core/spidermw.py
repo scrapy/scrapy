@@ -11,6 +11,7 @@ from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
 from scrapy.exceptions import _InvalidOutput
+from scrapy.http.response import ResponseList
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
@@ -44,8 +45,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
         process_spider_exception = getattr(mw, 'process_spider_exception', None)
         self.methods['process_spider_exception'].appendleft(process_spider_exception)
 
-    def _process_spider_input(self, scrape_func: ScrapeFunc, response: Response, request: Request,
-                              spider: Spider) -> Any:
+    def _process_spider_input(
+        self, scrape_func: ScrapeFunc, response: Union[Response, ResponseList], request: Request, spider: Spider
+    ) -> Any:
         for method in self.methods['process_spider_input']:
             try:
                 result = method(response=response, spider=spider)
