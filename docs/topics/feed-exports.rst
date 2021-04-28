@@ -135,6 +135,34 @@ Here are some examples to illustrate:
 
     -   ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
 
+You can also define other variables.
+To do so, you need to pass the argument to the process with `-a`.
+For example, 
+
+::
+
+   scrapy crawl quotes -a filename=crawled_quotes
+
+Then, you can refer to it as ``%(filename)s`` in your program.
+In addition to that, you can pass explicitly as an argument to ``CrawlerProcess.crawl`` method, as shown below::
+
+::
+
+    from scrapy.crawler import CrawlerProcess
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+    process = CrawlerProcess(settings={
+        "FEEDS": {
+            "%(filename).json": {"format": "json"},
+        },
+    })
+
+    process.crawl(MySpider, filename="crawled_quotes")
+    ...
+
 
 .. _topics-feed-storage-backends:
 
