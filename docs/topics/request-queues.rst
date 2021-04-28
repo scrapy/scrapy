@@ -138,7 +138,7 @@ it has to conform to the following interface:
       If the number of requests cannot be determined (e.g. because of a
       connection problem), the method should neither return 0, which would
       cause the queue to be closed, nor raise an exception, which would halt
-      the crawl.
+      the crawl. Returning 1 is enough in this case.
 
 .. autofunction:: scrapy.utils.reqser.request_from_dict
 
