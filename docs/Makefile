@@ -8,7 +8,7 @@ PYTHON       = python
 SPHINXOPTS   =
 PAPER        =
 SOURCES      =
-SHELL        = /bin/bash
+SHELL        = /usr/bin/env bash
 
 ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees \
                 -D latex_elements.papersize=$(PAPER) \

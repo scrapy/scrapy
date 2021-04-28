@@ -2,6 +2,7 @@ import contextlib
 import os
 import shutil
 import tempfile
+from typing import Optional, Type
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -24,7 +25,6 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Headers, Request
 from scrapy.http.response.text import TextResponse
@@ -33,7 +33,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
-
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
 
@@ -132,6 +131,7 @@ class ContentLengthHeaderResource(resource.Resource):
     A testing resource which renders itself as the value of the Content-Length
     header from the request.
     """
+
     def render(self, request):
         return request.requestHeaders.getRawHeaders(b"content-length")[0]
 
@@ -143,6 +143,7 @@ class ChunkedResource(resource.Resource):
             request.write(b"chunked ")
             request.write(b"content\n")
             request.finish()
+
         reactor.callLater(0, response)
         return server.NOT_DONE_YET
 
@@ -156,6 +157,7 @@ class BrokenChunkedResource(resource.Resource):
             # Disable terminating chunk on finish.
             request.chunked = False
             closeConnection(request)
+
         reactor.callLater(0, response)
         return server.NOT_DONE_YET
 
@@ -187,6 +189,7 @@ class EmptyContentTypeHeaderResource(resource.Resource):
     A testing resource which renders itself as the value of request body
     without content-type header in response.
     """
+
     def render(self, request):
         request.setHeader("content-type", "")
         return request.content.read()
@@ -198,14 +201,14 @@ class LargeChunkedFileResource(resource.Resource):
             for i in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
+
         reactor.callLater(0, response)
         return server.NOT_DONE_YET
 
 
 class HttpTestCase(unittest.TestCase):
-
     scheme = 'http'
-    download_handler_cls = HTTPDownloadHandler
+    download_handler_cls: Type = HTTPDownloadHandler
 
     # only used for HTTPS tests
     keyfile = 'keys/localhost.key'
@@ -233,8 +236,10 @@ class HttpTestCase(unittest.TestCase):
         self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
         if self.scheme == 'https':
+            # Using WrappingFactory do not enable HTTP/2 failing all the
+            # tests with H2DownloadHandler
             self.port = reactor.listenSSL(
-                0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile),
+                0, self.site, ssl_context_factory(self.keyfile, self.certfile),
                 interface=self.host)
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
@@ -284,7 +289,7 @@ class HttpTestCase(unittest.TestCase):
     def test_timeout_download_from_spider_nodata_rcvd(self):
         # client connects but no data is received
         spider = Spider('foo')
-        meta = {'download_timeout': 0.2}
+        meta = {'download_timeout': 0.5}
         request = Request(self.getURL('wait'), meta=meta)
         d = self.download_request(request, spider)
         yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
@@ -293,7 +298,7 @@ class HttpTestCase(unittest.TestCase):
     def test_timeout_download_from_spider_server_hangs(self):
         # client connects, server send headers and some body bytes but hangs
         spider = Spider('foo')
-        meta = {'download_timeout': 0.2}
+        meta = {'download_timeout': 0.5}
         request = Request(self.getURL('hang-after-headers'), meta=meta)
         d = self.download_request(request, spider)
         yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
@@ -308,16 +313,18 @@ class HttpTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_host_header_seted_in_request_headers(self):
-        def _test(response):
-            self.assertEqual(response.body, b'example.com')
-            self.assertEqual(request.headers.get('Host'), b'example.com')
+        host = self.host + ':' + str(self.portno)
 
-        request = Request(self.getURL('host'), headers={'Host': 'example.com'})
+        def _test(response):
+            self.assertEqual(response.body, host.encode())
+            self.assertEqual(request.headers.get('Host'), host.encode())
+
+        request = Request(self.getURL('host'), headers={'Host': host})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEqual, b'example.com')
+        d.addCallback(self.assertEqual, b'localhost')
         return d
 
     def test_content_length_zero_bodyless_post_request_headers(self):
@@ -331,10 +338,11 @@ class HttpTestCase(unittest.TestCase):
         https://github.com/kennethreitz/requests/issues/405
         https://bugs.python.org/issue14721
         """
+
         def _test(response):
             self.assertEqual(response.body, b'0')
 
-        request = Request(self.getURL('contentlength'), method='POST', headers={'Host': 'example.com'})
+        request = Request(self.getURL('contentlength'), method='POST')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_content_length_zero_bodyless_post_only_one(self):
@@ -356,10 +364,17 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(self.assertEqual, body)
         return d
 
+    def test_response_header_content_length(self):
+        request = Request(self.getURL("file"), method=b"GET")
+        d = self.download_request(request, Spider("foo"))
+        d.addCallback(lambda r: r.headers[b'content-length'])
+        d.addCallback(self.assertEqual, b'159')
+        return d
+
 
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
-    download_handler_cls = HTTP10DownloadHandler
+    download_handler_cls: Type = HTTP10DownloadHandler
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -375,7 +390,7 @@ class Https10TestCase(Http10TestCase):
 
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
-    download_handler_cls = HTTP11DownloadHandler
+    download_handler_cls: Type = HTTP11DownloadHandler
 
     def test_download_without_maxsize_limit(self):
         request = Request(self.getURL('file'))
@@ -569,7 +584,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
 
 class Https11CustomCiphers(unittest.TestCase):
     scheme = 'https'
-    download_handler_cls = HTTP11DownloadHandler
+    download_handler_cls: Type = HTTP11DownloadHandler
 
     keyfile = 'keys/localhost.key'
     certfile = 'keys/localhost.crt'
@@ -580,10 +595,9 @@ class Https11CustomCiphers(unittest.TestCase):
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         self.site = server.Site(r, timeout=None)
-        self.wrapper = WrappingFactory(self.site)
         self.host = 'localhost'
         self.port = reactor.listenSSL(
-            0, self.wrapper, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
+            0, self.site, ssl_context_factory(self.keyfile, self.certfile, cipher_string='CAMELLIA256-SHA'),
             interface=self.host)
         self.portno = self.port.getHost().port
         crawler = get_crawler(settings_dict={'DOWNLOADER_CLIENT_TLS_CIPHERS': 'CAMELLIA256-SHA'})
@@ -610,6 +624,7 @@ class Https11CustomCiphers(unittest.TestCase):
 
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
+    settings_dict: Optional[dict] = None
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -620,7 +635,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_with_content_length(self):
-        crawler = get_crawler(SingleRequestSpider)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
         # download it
         yield crawler.crawl(seed=Request(url=self.mockserver.url('/partial'), meta={'download_maxsize': 1000}))
@@ -629,7 +644,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download(self):
-        crawler = get_crawler(SingleRequestSpider)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         yield crawler.crawl(seed=Request(url=self.mockserver.url('')))
         failure = crawler.spider.meta.get('failure')
         self.assertTrue(failure is None)
@@ -638,7 +653,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_gzip_response(self):
-        crawler = get_crawler(SingleRequestSpider)
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         body = b'1' * 100  # PayloadResource requires body length to be 100
         request = Request(self.mockserver.url('/payload'), method='POST',
                           body=body, meta={'download_maxsize': 50})
@@ -676,7 +691,8 @@ class UriResource(resource.Resource):
 
 
 class HttpProxyTestCase(unittest.TestCase):
-    download_handler_cls = HTTPDownloadHandler
+    download_handler_cls: Type = HTTPDownloadHandler
+    expected_http_proxy_request_body = b'http://example.com'
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
@@ -699,7 +715,7 @@ class HttpProxyTestCase(unittest.TestCase):
         def _test(response):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'http://example.com')
+            self.assertEqual(response.body, self.expected_http_proxy_request_body)
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
@@ -728,14 +744,14 @@ class HttpProxyTestCase(unittest.TestCase):
 
 
 class Http10ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls = HTTP10DownloadHandler
+    download_handler_cls: Type = HTTP10DownloadHandler
 
     def test_download_with_proxy_https_noconnect(self):
         raise unittest.SkipTest('noconnect is not supported in HTTP10DownloadHandler')
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls = HTTP11DownloadHandler
+    download_handler_cls: Type = HTTP11DownloadHandler
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
@@ -783,7 +799,7 @@ class S3AnonTestCase(unittest.TestCase):
 
 
 class S3TestCase(unittest.TestCase):
-    download_handler_cls = S3DownloadHandler
+    download_handler_cls: Type = S3DownloadHandler
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
@@ -923,7 +939,6 @@ class S3TestCase(unittest.TestCase):
 
 
 class BaseFTPTestCase(unittest.TestCase):
-
     username = "scrapy"
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
@@ -961,6 +976,7 @@ class BaseFTPTestCase(unittest.TestCase):
         def _clean(data):
             self.download_handler.client.transport.loseConnection()
             return data
+
         deferred.addCallback(_clean)
         if callback:
             deferred.addCallback(callback)
@@ -991,6 +1007,7 @@ class BaseFTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, b'Moooooooooo power!')
             self.assertEqual(r.headers, {b'Local Filename': [b''], b'Size': [b'18']})
+
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
@@ -1000,6 +1017,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.status, 404)
+
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
@@ -1020,6 +1038,7 @@ class BaseFTPTestCase(unittest.TestCase):
             with open(local_fname, "rb") as f:
                 self.assertEqual(f.read(), b"I have the power!")
             os.remove(local_fname)
+
         return self._add_test_callbacks(d, _test)
 
 
@@ -1036,11 +1055,11 @@ class FTPTestCase(BaseFTPTestCase):
 
         def _test(r):
             self.assertEqual(r.type, ConnectionLost)
+
         return self._add_test_callbacks(d, errback=_test)
 
 
 class AnonymousFTPTestCase(BaseFTPTestCase):
-
     username = "anonymous"
     req_meta = {}
 

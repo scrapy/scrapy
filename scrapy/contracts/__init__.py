@@ -1,16 +1,77 @@
-import sys
 import re
+import sys
 from functools import wraps
 from inspect import getmembers
+from typing import Dict
 from unittest import TestCase
 
 from scrapy.http import Request
-from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
+from scrapy.utils.spider import iterate_spider_output
+
+
+class Contract:
+    """ Abstract class for contracts """
+    request_cls = None
+
+    def __init__(self, method, *args):
+        self.testcase_pre = _create_testcase(method, f'@{self.name} pre-hook')
+        self.testcase_post = _create_testcase(method, f'@{self.name} post-hook')
+        self.args = args
+
+    def add_pre_hook(self, request, results):
+        if hasattr(self, 'pre_process'):
+            cb = request.callback
+
+            @wraps(cb)
+            def wrapper(response, **cb_kwargs):
+                try:
+                    results.startTest(self.testcase_pre)
+                    self.pre_process(response)
+                    results.stopTest(self.testcase_pre)
+                except AssertionError:
+                    results.addFailure(self.testcase_pre, sys.exc_info())
+                except Exception:
+                    results.addError(self.testcase_pre, sys.exc_info())
+                else:
+                    results.addSuccess(self.testcase_pre)
+                finally:
+                    return list(iterate_spider_output(cb(response, **cb_kwargs)))
+
+            request.callback = wrapper
+
+        return request
+
+    def add_post_hook(self, request, results):
+        if hasattr(self, 'post_process'):
+            cb = request.callback
+
+            @wraps(cb)
+            def wrapper(response, **cb_kwargs):
+                output = list(iterate_spider_output(cb(response, **cb_kwargs)))
+                try:
+                    results.startTest(self.testcase_post)
+                    self.post_process(output)
+                    results.stopTest(self.testcase_post)
+                except AssertionError:
+                    results.addFailure(self.testcase_post, sys.exc_info())
+                except Exception:
+                    results.addError(self.testcase_post, sys.exc_info())
+                else:
+                    results.addSuccess(self.testcase_post)
+                finally:
+                    return output
+
+            request.callback = wrapper
+
+        return request
+
+    def adjust_request_args(self, args):
+        return args
 
 
 class ContractsManager:
-    contracts = {}
+    contracts: Dict[str, Contract] = {}
 
     def __init__(self, contracts):
         for contract in contracts:
@@ -105,66 +166,6 @@ class ContractsManager:
 
         request.callback = cb_wrapper
         request.errback = eb_wrapper
-
-
-class Contract:
-    """ Abstract class for contracts """
-    request_cls = None
-
-    def __init__(self, method, *args):
-        self.testcase_pre = _create_testcase(method, f'@{self.name} pre-hook')
-        self.testcase_post = _create_testcase(method, f'@{self.name} post-hook')
-        self.args = args
-
-    def add_pre_hook(self, request, results):
-        if hasattr(self, 'pre_process'):
-            cb = request.callback
-
-            @wraps(cb)
-            def wrapper(response, **cb_kwargs):
-                try:
-                    results.startTest(self.testcase_pre)
-                    self.pre_process(response)
-                    results.stopTest(self.testcase_pre)
-                except AssertionError:
-                    results.addFailure(self.testcase_pre, sys.exc_info())
-                except Exception:
-                    results.addError(self.testcase_pre, sys.exc_info())
-                else:
-                    results.addSuccess(self.testcase_pre)
-                finally:
-                    return list(iterate_spider_output(cb(response, **cb_kwargs)))
-
-            request.callback = wrapper
-
-        return request
-
-    def add_post_hook(self, request, results):
-        if hasattr(self, 'post_process'):
-            cb = request.callback
-
-            @wraps(cb)
-            def wrapper(response, **cb_kwargs):
-                output = list(iterate_spider_output(cb(response, **cb_kwargs)))
-                try:
-                    results.startTest(self.testcase_post)
-                    self.post_process(output)
-                    results.stopTest(self.testcase_post)
-                except AssertionError:
-                    results.addFailure(self.testcase_post, sys.exc_info())
-                except Exception:
-                    results.addError(self.testcase_post, sys.exc_info())
-                else:
-                    results.addSuccess(self.testcase_post)
-                finally:
-                    return output
-
-            request.callback = wrapper
-
-        return request
-
-    def adjust_request_args(self, args):
-        return args
 
 
 def _create_testcase(method, desc):

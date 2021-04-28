@@ -3,6 +3,7 @@ import logging
 
 from scrapy.utils.misc import create_instance
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,8 +18,7 @@ def _path_safe(text):
     >>> _path_safe('some@symbol?').startswith('some_symbol_')
     True
     """
-    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_'
-                             for c in text])
+    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in text])
     # as we replace some letters we can get collision for different slots
     # add we add unique part
     unique_slot = hashlib.md5(text.encode('utf8')).hexdigest()
@@ -51,10 +51,12 @@ class ScrapyPriorityQueue:
         self.curprio = min(startprios)
 
     def qfactory(self, key):
-        return create_instance(self.downstream_queue_cls,
-                               None,
-                               self.crawler,
-                               self.key + '/' + str(key))
+        return create_instance(
+            self.downstream_queue_cls,
+            None,
+            self.crawler,
+            self.key + '/' + str(key),
+        )
 
     def priority(self, request):
         return -request.priority
@@ -80,6 +82,18 @@ class ScrapyPriorityQueue:
             self.curprio = min(prios) if prios else None
         return m
 
+    def peek(self):
+        """Returns the next object to be returned by :meth:`pop`,
+        but without removing it from the queue.
+
+        Raises :exc:`NotImplementedError` if the underlying queue class does
+        not implement a ``peek`` method, which is optional for queues.
+        """
+        if self.curprio is None:
+            return None
+        queue = self.queues[self.curprio]
+        return queue.peek()
+
     def close(self):
         active = []
         for p, q in self.queues.items():
@@ -97,8 +111,7 @@ class DownloaderInterface:
         self.downloader = crawler.engine.downloader
 
     def stats(self, possible_slots):
-        return [(self._active_downloads(slot), slot)
-                for slot in possible_slots]
+        return [(self._active_downloads(slot), slot) for slot in possible_slots]
 
     def get_slot_key(self, request):
         return self.downloader._get_slot_key(request, None)
@@ -150,10 +163,12 @@ class DownloaderAwarePriorityQueue:
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
     def pqfactory(self, slot, startprios=()):
-        return ScrapyPriorityQueue(self.crawler,
-                                   self.downstream_queue_cls,
-                                   self.key + '/' + _path_safe(slot),
-                                   startprios)
+        return ScrapyPriorityQueue(
+            self.crawler,
+            self.downstream_queue_cls,
+            self.key + '/' + _path_safe(slot),
+            startprios,
+        )
 
     def pop(self):
         stats = self._downloader_interface.stats(self.pqueues)
@@ -175,9 +190,22 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         queue.push(request)
 
+    def peek(self):
+        """Returns the next object to be returned by :meth:`pop`,
+        but without removing it from the queue.
+
+        Raises :exc:`NotImplementedError` if the underlying queue class does
+        not implement a ``peek`` method, which is optional for queues.
+        """
+        stats = self._downloader_interface.stats(self.pqueues)
+        if not stats:
+            return None
+        slot = min(stats)[1]
+        queue = self.pqueues[slot]
+        return queue.peek()
+
     def close(self):
-        active = {slot: queue.close()
-                  for slot, queue in self.pqueues.items()}
+        active = {slot: queue.close() for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
         return active
 

@@ -464,7 +464,7 @@ The simplest way to store the scraped data is by using :ref:`Feed exports
 
     scrapy crawl quotes -O quotes.json
 
-That will generate an ``quotes.json`` file containing all scraped items,
+That will generate a ``quotes.json`` file containing all scraped items,
 serialized in `JSON`_.
 
 The ``-O`` command-line switch overwrites any existing file; use ``-o`` instead

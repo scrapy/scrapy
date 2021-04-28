@@ -3,10 +3,10 @@ import sys
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
-    MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
-    MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
-    PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
-    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
+    _MarshalFifoSerializationDiskQueue,
+    _MarshalLifoSerializationDiskQueue,
+    _PickleFifoSerializationDiskQueue,
+    _PickleLifoSerializationDiskQueue,
 )
 from scrapy.item import Item, Field
 from scrapy.http import Request
@@ -53,13 +53,15 @@ CRAWLER_MOCK = None
 
 
 class MarshalFifoDiskQueueTest(FifoDiskQueueTestMixin):
+    chunksize = 100000
+
     def queue(self):
-        return MarshalFifoDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _MarshalFifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
 
 
 class PickleFifoDiskQueueTest(FifoDiskQueueTestMixin):
     def queue(self):
-        return PickleFifoDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _PickleFifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -119,15 +121,15 @@ class LifoDiskQueueTestMixin:
 
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
-
     def queue(self):
-        return MarshalLifoDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _MarshalLifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
-        return PickleLifoDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _PickleLifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
+
 
     def test_serialize_item(self):
         q = self.queue()

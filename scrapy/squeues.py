@@ -9,6 +9,7 @@ import pickle
 from queuelib import queue
 
 from scrapy.exceptions import SerializationError
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 
@@ -21,7 +22,6 @@ def _with_mkdir(queue_class):
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
-
             super().__init__(crawler, path, *args, **kwargs)
 
     return DirectoriesCreatedForKey
@@ -37,6 +37,20 @@ def _serializable_queue(queue_class, serialize, deserialize):
 
         def pop(self):
             s = super().pop()
+            if s:
+                return deserialize(s)
+
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
             if s:
                 return deserialize(s)
 
@@ -61,12 +75,21 @@ def _scrapy_serialization_queue(queue_class):
 
         def pop(self):
             request = super().pop()
-
             if not request:
                 return None
+            return request_from_dict(request, self.spider)
 
-            request = request_from_dict(request, self.spider)
-            return request
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            request = super().peek()
+            if not request:
+                return None
+            return request_from_dict(request, self.spider)
 
     return ScrapyRequestQueue
 
@@ -77,6 +100,19 @@ def _scrapy_non_serialization_queue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             return cls()
+
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError("The underlying queue class does not implement 'peek'") from ex
+            return s
 
     return ScrapyRequestQueue
 
@@ -103,38 +139,60 @@ def _file_queue(queue_class):
     return FileQueue
 
 
-PickleFifoDiskQueueNonRequest = _serializable_queue(
+_PickleFifoSerializationDiskQueue = _serializable_queue(
     _with_mkdir(_file_queue(queue.FifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
-PickleLifoDiskQueueNonRequest = _serializable_queue(
+_PickleLifoSerializationDiskQueue = _serializable_queue(
     _with_mkdir(_file_queue(queue.LifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
-MarshalFifoDiskQueueNonRequest = _serializable_queue(
+_MarshalFifoSerializationDiskQueue = _serializable_queue(
     _with_mkdir(_file_queue(queue.FifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
-MarshalLifoDiskQueueNonRequest = _serializable_queue(
+_MarshalLifoSerializationDiskQueue = _serializable_queue(
     _with_mkdir(_file_queue(queue.LifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
 
-PickleFifoDiskQueue = _scrapy_serialization_queue(
-    PickleFifoDiskQueueNonRequest
-)
-PickleLifoDiskQueue = _scrapy_serialization_queue(
-    PickleLifoDiskQueueNonRequest
-)
-MarshalFifoDiskQueue = _scrapy_serialization_queue(
-    MarshalFifoDiskQueueNonRequest
-)
-MarshalLifoDiskQueue = _scrapy_serialization_queue(
-    MarshalLifoDiskQueueNonRequest
-)
+# public queue classes
+PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQueue)
+PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)
+MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDiskQueue)
+MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
+
+
+# deprecated queue classes
+_subclass_warn_message = "{cls} inherits from deprecated class {old}"
+_instance_warn_message = "{cls} is deprecated"
+PickleFifoDiskQueueNonRequest = create_deprecated_class(
+    name="PickleFifoDiskQueueNonRequest",
+    new_class=_PickleFifoSerializationDiskQueue,
+    subclass_warn_message=_subclass_warn_message,
+    instance_warn_message=_instance_warn_message,
+)
+PickleLifoDiskQueueNonRequest = create_deprecated_class(
+    name="PickleLifoDiskQueueNonRequest",
+    new_class=_PickleLifoSerializationDiskQueue,
+    subclass_warn_message=_subclass_warn_message,
+    instance_warn_message=_instance_warn_message,
+)
+MarshalFifoDiskQueueNonRequest = create_deprecated_class(
+    name="MarshalFifoDiskQueueNonRequest",
+    new_class=_MarshalFifoSerializationDiskQueue,
+    subclass_warn_message=_subclass_warn_message,
+    instance_warn_message=_instance_warn_message,
+)
+MarshalLifoDiskQueueNonRequest = create_deprecated_class(
+    name="MarshalLifoDiskQueueNonRequest",
+    new_class=_MarshalLifoSerializationDiskQueue,
+    subclass_warn_message=_subclass_warn_message,
+    instance_warn_message=_instance_warn_message,
+)
