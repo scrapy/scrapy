@@ -139,10 +139,10 @@ class DownloaderAwarePriorityQueue:
     on-going requests per domain (slot).
 
     This queue can reduce the crawl time significantly when targeting multiple
-    domains.
+    domains (slots).
 
     :attr:`~scrapy.http.Request` priority is only taken into account among
-    requests targeting the same domain.
+    requests targeting the same domain (slot).
 
     The :setting:`CONCURRENT_REQUESTS_PER_IP` setting is not supported.
     """
