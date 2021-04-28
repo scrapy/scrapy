@@ -2,6 +2,7 @@
 Helper functions for serializing (and deserializing) requests.
 """
 import inspect
+from typing import Optional
 
 from scrapy.http import Request
 from scrapy.spiders import Spider
@@ -9,7 +10,7 @@ from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 
 
-def request_to_dict(request: Request, spider: Spider = None):
+def request_to_dict(request: Request, spider: Optional[Spider] = None):
     """Convert *request* into a :class:`dict`.
 
     If *spider* is not ``None``, find out the name of the spider methods used
@@ -42,7 +43,7 @@ def request_to_dict(request: Request, spider: Spider = None):
     return d
 
 
-def request_from_dict(d: dict, spider: Spider = None) -> Request:
+def request_from_dict(d: dict, spider: Optional[Spider] = None) -> Request:
     """Create a :class:`~scrapy.http.Request` object from *d*.
 
     If *spider* is not ``None``, resolve the callback and errback attributes
