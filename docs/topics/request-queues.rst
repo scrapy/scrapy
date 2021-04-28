@@ -97,7 +97,7 @@ it has to conform to the following interface:
       If the input data is invalid, raise an exception from this class method
       of from your ``__init__`` method to halt the crawl.
 
-   .. method:: push(self, request: scrapy.http.Request)
+   .. method:: push(self, request: scrapy.http.Request) -> None
 
       Push a request into the queue.
 
