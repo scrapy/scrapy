@@ -130,7 +130,6 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
     def queue(self):
         return _PickleLifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
 
-
     def test_serialize_item(self):
         q = self.queue()
         i = TestItem(name='foo')
