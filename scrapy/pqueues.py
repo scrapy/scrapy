@@ -136,7 +136,7 @@ class DownloaderInterface:
 
 class DownloaderAwarePriorityQueue:
     """:ref:`Priority queue <priority-queues>` that keeps a similar number of
-    on-going requests per domain.
+    on-going requests per domain (slot).
 
     This queue can reduce the crawl time significantly when targeting multiple
     domains.
