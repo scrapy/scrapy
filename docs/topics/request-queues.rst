@@ -116,7 +116,7 @@ it has to conform to the following interface:
         -   :exc:`SerializationError`: indicates that *request* could not be
             serialized
 
-   .. method:: pop(self)
+   .. method:: pop(self) -> Optional[Request]
 
       Pop a request from the queue.
 
