@@ -49,6 +49,9 @@ When crawling multiple domains, setting the :setting:`SCHEDULER_PRIORITY_QUEUE`
 setting to :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` can
 significantly reduce crawl time.
 
+To apply the recommended priority queue use::
+
+    SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
 
 .. _broad-crawls-concurrency:
 
