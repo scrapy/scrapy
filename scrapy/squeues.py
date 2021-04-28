@@ -16,13 +16,13 @@ def _with_mkdir(queue_class):
 
     class DirectoriesCreatedForKey(queue_class):
 
-        def __init__(self, _, key, *args, **kwargs):
+        def __init__(self, crawler, key, *args, **kwargs):
             path = key
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
 
-            super().__init__(_, path, *args, **kwargs)
+            super().__init__(crawler, path, *args, **kwargs)
 
     return DirectoriesCreatedForKey
 
