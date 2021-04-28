@@ -90,23 +90,6 @@ def _pickle_serialize(obj):
         raise SerializationError(str(e)) from e
 
 
-def _chunked_file_queue(queue_class):
-    class ChunckedFileQueue(queue_class):
-
-        def __init__(self, crawler, key, *args, **kwargs):
-            chunksize = crawler.settings.getint(
-                'SCHEDULER_DISK_QUEUE_CHUNKSIZE',
-                100000,
-            )
-            super().__init__(key, chunksize=chunksize)
-
-        @classmethod
-        def from_crawler(cls, crawler, key, *args, **kwargs):
-            return cls(crawler, key, *args, **kwargs)
-
-    return ChunckedFileQueue
-
-
 def _file_queue(queue_class):
     class FileQueue(queue_class):
 
@@ -121,7 +104,7 @@ def _file_queue(queue_class):
 
 
 PickleFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_chunked_file_queue(queue.FifoDiskQueue)),
+    _with_mkdir(_file_queue(queue.FifoDiskQueue)),
     _pickle_serialize,
     pickle.loads
 )
@@ -131,7 +114,7 @@ PickleLifoDiskQueueNonRequest = _serializable_queue(
     pickle.loads
 )
 MarshalFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(_chunked_file_queue(queue.FifoDiskQueue)),
+    _with_mkdir(_file_queue(queue.FifoDiskQueue)),
     marshal.dumps,
     marshal.loads
 )
