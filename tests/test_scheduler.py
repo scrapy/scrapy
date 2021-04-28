@@ -421,16 +421,19 @@ class ErrorEmitter(SchedulerHandler, unittest.TestCase):
             self.caplog,
             'Unable to push request to queue'
         )  # TransientError
+        assert self.scheduler.stats.get_value('scheduler/transient_error') == 1
         self.scheduler.enqueue_request(Request('http://example.com/'))
         assert _find_in_logs(
             self.caplog,
             'Unable to serialize request',
         )  # SerializationError
+        assert self.scheduler.stats.get_value('scheduler/unserializable') == 1
         self.scheduler.enqueue_request(Request('http://example.com/'))
         assert _find_in_logs(
             self.caplog,
             'Usage of "ValueError" exception type for serialization',
         )  # ValueError
+        assert self.scheduler.stats.get_value('scheduler/unserializable') == 2
 
 
 class FifoWithCrawlerAccess(queue.FifoDiskQueue):

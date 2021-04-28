@@ -282,6 +282,7 @@ class Scheduler(BaseScheduler):
         except TransientError as e:
             msg = "Unable to push request to queue: %s"
             logger.warning(msg, e, exc_info=True, extra={'spider': self.spider})
+            self.stats.inc_value('scheduler/transient_error', spider=self.spider)
             return False
         except (ValueError, SerializationError) as e:  # non serializable request
             if not isinstance(e, SerializationError):
