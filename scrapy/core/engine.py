@@ -178,6 +178,8 @@ class ExecutionEngine:
 
         if isinstance(request, RequestList):
             d = DeferredList([self._download(r, self.spider) for r in request.requests])
+            # FIXME: handle other cases (exceptions, redirects, etc)
+            d.addBoth(lambda result: ResponseList(request_list=request, responses=[t[1] for t in result]))
         else:
             d = self._download(request, self.spider)
         d.addBoth(self._handle_downloader_output, request)
@@ -195,16 +197,14 @@ class ExecutionEngine:
         return d
 
     def _handle_downloader_output(
-        self, result: Union[list, Request, Response, Failure], request: Union[Request, RequestList]
+        self, result: Union[Request, Response, ResponseList, Failure], request: Union[Request, RequestList]
     ) -> Optional[Deferred]:
         assert self.spider is not None  # typing
 
-        if not isinstance(result, (Request, list, Response, Failure)):
-            raise TypeError(f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}")
-
-        if isinstance(result, list):
-            assert isinstance(request, RequestList)  # typing
-            result = ResponseList(request_list=request, responses=[t[1] for t in result])
+        if not isinstance(result, (Request, Response, ResponseList, Failure)):
+            raise TypeError(
+                f"Incorrect type: expected Request, Response, ResponseList or Failure, got {type(result)}: {result!r}"
+            )
 
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
