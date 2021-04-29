@@ -216,3 +216,6 @@ class ResponseList(object_ref):
     @property
     def meta(self) -> dict:
         return self.request_list.meta
+
+    def __iter__(self):
+        return iter(self.responses)
