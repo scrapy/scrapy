@@ -156,11 +156,12 @@ In addition to that, you can pass explicitly as an argument to ``CrawlerProcess.
 
     process = CrawlerProcess(settings={
         "FEEDS": {
-            "%(filename).json": {"format": "json"},
+            "%(filename)s.json": {"format": "json"},
         },
     })
 
     process.crawl(MySpider, filename="crawled_quotes")
+    process.start()
     ...
 
 
