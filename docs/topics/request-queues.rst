@@ -121,11 +121,21 @@ it has to conform to the following interface:
       Pop a request from the queue.
 
       In case of a temporary problem, ``None`` is returned. Exceptions raised
-      in this method wouldn't be handled and may lead to halt of the crawler.
+      in this method woudln't be handled and may lead to halt of the crawler.
 
       The helper function :func:`~scrapy.utils.reqser.request_from_dict` can
       be used to convert a deserialized dict back into a
       :class:`~scrapy.http.Request` object.
+
+   .. method:: peek(self) -> Optional[Request]
+
+      Returns the next object to be returned by :meth:`pop`,
+      but without removing it from the queue.
+
+      Raises :exc:`NotImplementedError` if the underlying queue class does
+      not implement a ``peek`` method, which is optional for queues.
+
+      In case of a temporary problem, ``None`` is returned.
 
    .. method:: close(self)
 
