@@ -17,6 +17,7 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Response, Request
+from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
 from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
@@ -73,11 +74,21 @@ class ExecutionEngine:
         self.spider: Optional[Spider] = None
         self.running = False
         self.paused = False
-        self.scheduler_cls = load_object(crawler.settings["SCHEDULER"])
+        self.scheduler_cls = self._get_scheduler_class(crawler.settings)
         downloader_cls = load_object(self.settings['DOWNLOADER'])
         self.downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._spider_closed_callback = spider_closed_callback
+
+    def _get_scheduler_class(self, settings: BaseSettings) -> type:
+        from scrapy.core.scheduler import BaseScheduler
+        scheduler_cls = load_object(settings["SCHEDULER"])
+        if not issubclass(scheduler_cls, BaseScheduler):
+            raise TypeError(
+                f"The provided scheduler class ({settings['SCHEDULER']})"
+                " does not fully implement the scheduler interface"
+            )
+        return scheduler_cls
 
     @inlineCallbacks
     def start(self) -> Deferred:
@@ -301,7 +312,8 @@ class ExecutionEngine:
         start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.spider = spider
-        yield scheduler.open(spider)
+        if hasattr(scheduler, "open"):
+            yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
@@ -345,8 +357,9 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log_failure('Scraper close failure'))
 
-        dfd.addBoth(lambda _: self.slot.scheduler.close(reason))
-        dfd.addErrback(log_failure('Scheduler close failure'))
+        if hasattr(self.slot.scheduler, "close"):
+            dfd.addBoth(lambda _: self.slot.scheduler.close(reason))
+            dfd.addErrback(log_failure("Scheduler close failure"))
 
         dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(
             signal=signals.spider_closed, spider=spider, reason=reason,

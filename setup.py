@@ -31,6 +31,7 @@ install_requires = [
     'zope.interface>=4.1.3',
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
+    'setuptools',
 ]
 extras_require = {}
 cpython_dependencies = [
