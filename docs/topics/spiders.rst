@@ -294,6 +294,22 @@ The above example can also be written as follows::
         def start_requests(self):
             yield scrapy.Request(f'http://www.example.com/categories/{self.category}')
 
+
+In addition to that, you can also explicitly specify the spider attribute in ``crawl`` method of :class:`scrapy.crawler.CrawlerProcess` class.
+Then, they can also be used as :ref:`topics-feed-uri-params`::
+
+    from scrapy.crawler import CrawlerProcess
+    ...
+    
+    process = CrawlerProcess(settings={
+        "FEEDS": {
+            "%(category)s.json": {"format": "json"},
+        },
+    })
+    process.crawl(MySpider, category="electronics")
+
+See :ref:`run-from-script` for more information about :class:`scrapy.crawler.CrawlerProcess`.
+
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
@@ -313,6 +329,7 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
+
 
 .. _builtin-spiders:
 
