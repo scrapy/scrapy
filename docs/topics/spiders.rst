@@ -330,7 +330,6 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
-
 .. _builtin-spiders:
 
 Generic Spiders
