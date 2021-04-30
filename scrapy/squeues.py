@@ -8,6 +8,7 @@ import pickle
 
 from queuelib import queue
 
+from scrapy.http.request import Request, RequestList
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
@@ -67,15 +68,20 @@ def _scrapy_serialization_queue(queue_class):
         def from_crawler(cls, crawler, key, *args, **kwargs):
             return cls(crawler, key)
 
-        def push(self, request):
-            request = request_to_dict(request, self.spider)
-            return super().push(request)
+        def push(self, obj):
+            if isinstance(obj, RequestList):
+                super().push(obj.to_dict(self.spider))
+            elif isinstance(obj, Request):
+                super().push(request_to_dict(obj, self.spider))
 
         def pop(self):
-            request = super().pop()
-            if not request:
+            obj = super().pop()
+            if not obj:
                 return None
-            return request_from_dict(request, self.spider)
+            if obj.get("requests"):
+                return RequestList.from_dict(obj, self.spider)
+            elif obj.get("url"):
+                return request_from_dict(obj, self.spider)
 
         def peek(self):
             """Returns the next object to be returned by :meth:`pop`,
@@ -84,10 +90,13 @@ def _scrapy_serialization_queue(queue_class):
             Raises :exc:`NotImplementedError` if the underlying queue class does
             not implement a ``peek`` method, which is optional for queues.
             """
-            request = super().peek()
-            if not request:
+            obj = super().peek()
+            if not obj:
                 return None
-            return request_from_dict(request, self.spider)
+            if obj.get("requests"):
+                return RequestList.from_dict(obj, self.spider)
+            elif obj.get("url"):
+                return request_from_dict(obj, self.spider)
 
     return ScrapyRequestQueue
 

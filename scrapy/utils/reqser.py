@@ -3,7 +3,6 @@ Helper functions for serializing (and deserializing) requests.
 """
 import inspect
 
-from scrapy.http import Request
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 
@@ -14,6 +13,8 @@ def request_to_dict(request, spider=None):
     If a spider is given, it will try to find out the name of the spider method
     used in the callback and store that as the callback.
     """
+    from scrapy.http import Request
+
     cb = request.callback
     if callable(cb):
         cb = _find_method(spider, cb)
@@ -46,6 +47,8 @@ def request_from_dict(d, spider=None):
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
+    from scrapy.http import Request
+
     cb = d['callback']
     if cb and spider:
         cb = _get_method(spider, cb)

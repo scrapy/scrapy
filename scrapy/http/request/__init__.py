@@ -4,15 +4,17 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Type, TypeVar
 from w3lib.url import safe_url_string
 
+import scrapy
+from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
+from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
+from scrapy.utils.reqser import request_from_dict, request_to_dict, _find_method, _get_method
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
-from scrapy.http.common import obsolete_setter
-from scrapy.utils.curl import curl_to_request_kwargs
 
 
 class Request(object_ref):
@@ -144,6 +146,9 @@ class Request(object_ref):
         return cls(**request_kwargs)
 
 
+RequestListTypeVar = TypeVar("RequestListTypeVar", bound="RequestList")
+
+
 class RequestList(object_ref):
     def __init__(
         self,
@@ -162,3 +167,44 @@ class RequestList(object_ref):
         self.meta = meta or {}
         for req in self.requests:
             req.meta["request_list"] = self
+
+    @classmethod
+    def from_dict(
+        cls: Type[RequestListTypeVar], d: dict, spider: Optional["scrapy.spiders.Spider"] = None
+    ) -> RequestListTypeVar:
+        callback = d["callback"]
+        if callback and spider:
+            callback = _get_method(spider, callback)
+        errback = d["errback"]
+        if errback and spider:
+            errback = _get_method(spider, errback)
+        requests = [request_from_dict(req, spider) for req in d["requests"]]
+        return cls(
+            *requests,
+            callback=callback,
+            errback=errback,
+            priority=d["priority"],
+            cb_kwargs=d["cb_kwargs"],
+            meta=d["meta"],
+        )
+
+    def to_dict(self, spider: Optional["scrapy.spiders.Spider"] = None) -> dict:
+        callback = self.callback
+        if callable(callback):
+            callback = _find_method(spider, callback)
+        errback = self.errback
+        if callable(errback):
+            errback = _find_method(spider, errback)
+        requests = []
+        for req in self.requests:
+            req_dict = request_to_dict(req, spider)
+            req_dict["meta"].pop("request_list", None)
+            requests.append(req_dict)
+        return {
+            "requests": requests,
+            "callback": callback,
+            "errback": errback,
+            "priority": self.priority,
+            "cb_kwargs": self.cb_kwargs,
+            "meta": self.meta,
+        }
