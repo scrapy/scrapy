@@ -54,9 +54,7 @@ class Response(object_ref):
 
     @classmethod
     def from_dict(cls: Type[ResponseType], d: dict) -> ResponseType:
-        """
-        Create a Response object from a dict which keys match a Response's ``__init__`` parameters.
-        """
+        """Create a Response object from a dict which keys match a Response's ``__init__`` parameters"""
         response_cls = load_object(d["_class"]) if "_class" in d else cls
         kwargs = {key: value for key, value in d.items() if key in cls._attributes}
         kwargs["certificate"] = Certificate.loadPEM(d["certificate"]) if d["certificate"] else None
@@ -230,9 +228,7 @@ class Response(object_ref):
         )
 
     def to_dict(self) -> dict:
-        """
-        Return a dictionary containing the Response's data.
-        """
+        """Return a dictionary containing the Response's data"""
         d = {
             "url": to_unicode(self.url),  # urls should be safe (safe_string_url)
             "headers": dict(self.headers),

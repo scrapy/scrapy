@@ -35,6 +35,8 @@ from tests.spiders import (
     DelaySpider,
     DuplicateStartRequestsSpider,
     FollowAllSpider,
+    HeadersReceivedCallbackSpider,
+    HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
 )
@@ -496,7 +498,7 @@ class CrawlSpiderTestCase(TestCase):
         self.assertEqual(str(ip_address), gethostbyname(expected_netloc))
 
     @defer.inlineCallbacks
-    def test_stop_download_callback(self):
+    def test_bytes_received_stop_download_callback(self):
         crawler = self.runner.create_crawler(BytesReceivedCallbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertIsNone(crawler.spider.meta.get("failure"))
@@ -505,7 +507,7 @@ class CrawlSpiderTestCase(TestCase):
         self.assertLess(len(crawler.spider.meta["response"].body), crawler.spider.full_response_length)
 
     @defer.inlineCallbacks
-    def test_stop_download_errback(self):
+    def test_bytes_received_stop_download_errback(self):
         crawler = self.runner.create_crawler(BytesReceivedErrbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertIsNone(crawler.spider.meta.get("response"))
@@ -518,3 +520,23 @@ class CrawlSpiderTestCase(TestCase):
         self.assertLess(
             len(crawler.spider.meta["failure"].value.response.body),
             crawler.spider.full_response_length)
+
+    @defer.inlineCallbacks
+    def test_headers_received_stop_download_callback(self):
+        crawler = self.runner.create_crawler(HeadersReceivedCallbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("failure"))
+        self.assertIsInstance(crawler.spider.meta["response"], Response)
+        self.assertEqual(crawler.spider.meta["response"].headers, crawler.spider.meta.get("headers_received"))
+
+    @defer.inlineCallbacks
+    def test_headers_received_stop_download_errback(self):
+        crawler = self.runner.create_crawler(HeadersReceivedErrbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("response"))
+        self.assertIsInstance(crawler.spider.meta["failure"], Failure)
+        self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
+        self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
+        self.assertEqual(
+            crawler.spider.meta["failure"].value.response.headers,
+            crawler.spider.meta.get("headers_received"))

@@ -59,8 +59,7 @@ class Request(object_ref):
 
     @classmethod
     def from_dict(cls: Type[RequestType], d: dict, spider: Optional[SpiderType] = None) -> RequestType:
-        """
-        Create a Request object from a dict whose keys match a Request's ``__init__`` parameters.
+        """Create a Request object from a dict whose keys match a Request's ``__init__`` parameters.
 
         If a spider is given, and the passed dict contains a callback name, this method
         will try to resolve the Request callback to a spider method with the same name.
@@ -165,15 +164,13 @@ class Request(object_ref):
 
         To translate a cURL command into a Scrapy request,
         you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
-
-       """
+        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
     def to_dict(self, spider: Optional[SpiderType] = None) -> dict:
-        """
-        Return a dictionary containing the Request's data.
+        """Return a dictionary containing the Request's data.
 
         If a spider is given, this method will try to find out the name of the spider method used
         as callback and include it in the output dict, raising an exception if it cannot be found.
@@ -193,9 +190,7 @@ class Request(object_ref):
 
 
 def _find_method(obj, func):
-    """
-    Helper function for Request.to_dict
-    """
+    """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
     if obj and hasattr(func, '__func__'):
         members = inspect.getmembers(obj, predicate=inspect.ismethod)
@@ -213,9 +208,7 @@ def _find_method(obj, func):
 
 
 def _get_method(obj, name):
-    """
-    Helper function for Request.from_dict
-    """
+    """Helper function for Request.from_dict"""
     name = str(name)
     try:
         return getattr(obj, name)

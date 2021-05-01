@@ -1,8 +1,14 @@
+import re
 import time
-from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
+
+
+# Defined in the http.cookiejar module, but undocumented:
+# https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
+IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
 
 class CookieJar:
