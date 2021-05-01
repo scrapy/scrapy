@@ -7,7 +7,7 @@ from scrapy.utils.datatypes import LocalCache
 
 
 # TODO: cache misses
-dnscache = LocalCache(10000)
+dnscache = LocalCache(limit=10000, time_limit=300)
 
 
 @implementer(IResolverSimple)

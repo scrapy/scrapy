@@ -8,6 +8,7 @@ This module must not depend on any module outside the Standard Library.
 import collections
 import weakref
 from collections.abc import Mapping
+from datetime import datetime
 
 
 class CaselessDict(dict):
@@ -69,15 +70,34 @@ class LocalCache(collections.OrderedDict):
     Older items expires first.
     """
 
-    def __init__(self, limit=None):
+    def __init__(self, limit=None, time_limit=None):
         super().__init__()
         self.limit = limit
+        self.time_limit = time_limit
 
     def __setitem__(self, key, value):
-        if self.limit:
+        now = datetime.now()
+        value = (value, now)
+
+        if not self.limit is None:
             while len(self) >= self.limit:
                 self.popitem(last=False)
+            for _, val in self.items():
+                if int((now - val[1]).total_seconds()) > self.time_limit:
+                    self.popitem(last=False)
+                else:
+                    break
         super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        for _, val in self.items():
+            now = datetime.now()
+            if int((now - val[1]).total_seconds()) > self.time_limit:
+                self.popitem(last=False)
+            else:
+                break
+        return super().__getitem__(key)[0]
+
 
 
 class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
