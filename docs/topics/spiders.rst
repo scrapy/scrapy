@@ -294,21 +294,13 @@ The above example can also be written as follows::
         def start_requests(self):
             yield scrapy.Request(f'http://www.example.com/categories/{self.category}')
 
+If you are :ref:`running Scrapy from a script <run-from-script>`, you can 
+specify spider arguments when calling 
+:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`::
 
-In addition to that, you can also explicitly specify the spider attribute in ``crawl`` method of :class:`scrapy.crawler.CrawlerProcess` class.
-Then, they can also be used as :ref:`topics-feed-uri-params`::
-
-    from scrapy.crawler import CrawlerProcess
-    ...
-    
-    process = CrawlerProcess(settings={
-        "FEEDS": {
-            "%(category)s.json": {"format": "json"},
-        },
-    })
+    process = CrawlerProcess()
     process.crawl(MySpider, category="electronics")
-
-See :ref:`run-from-script` for more information about :class:`scrapy.crawler.CrawlerProcess`.
 
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
