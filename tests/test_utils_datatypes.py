@@ -248,7 +248,7 @@ class LocalCacheTest(unittest.TestCase):
         self.assertEqual(cache['c'], 3)
 
     def test_cache_time_limit(self):
-        cache = LocalCache(time_limit=3)
+        cache = LocalCache(time_limit=2)
         cache['a'] = 1
         cache['b'] = 2
         cache['c'] = 3
