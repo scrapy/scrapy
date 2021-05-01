@@ -155,7 +155,7 @@ item_scraped
     :type item: :ref:`item object <item-types>`
 
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
     :param response: the response from where the item was scraped
     :type response: :class:`~scrapy.http.Response` object
@@ -175,7 +175,7 @@ item_dropped
     :type item: :ref:`item object <item-types>`
 
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
     :param response: the response from where the item was dropped
     :type response: :class:`~scrapy.http.Response` object
@@ -203,7 +203,7 @@ item_error
     :type response: :class:`~scrapy.http.Response` object
 
     :param spider: the spider which raised the exception
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
     :param failure: the exception raised
     :type failure: twisted.python.failure.Failure
@@ -223,7 +223,7 @@ spider_closed
     This signal supports returning deferreds from its handlers.
 
     :param spider: the spider which has been closed
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
     :param reason: a string which describes the reason why the spider was closed. If
         it was closed because the spider has completed scraping, the reason
@@ -247,7 +247,7 @@ spider_opened
     This signal supports returning deferreds from its handlers.
 
     :param spider: the spider which has been opened
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 spider_idle
 ~~~~~~~~~~~
@@ -271,7 +271,7 @@ spider_idle
     This signal does not support returning deferreds from its handlers.
 
     :param spider: the spider which has gone idle
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 .. note:: Scheduling some requests in your :signal:`spider_idle` handler does
     **not** guarantee that it can prevent the spider from being closed,
@@ -296,7 +296,7 @@ spider_error
     :type response: :class:`~scrapy.http.Response` object
 
     :param spider: the spider which raised the exception
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 Request signals
 ---------------
@@ -316,7 +316,7 @@ request_scheduled
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 request_dropped
 ~~~~~~~~~~~~~~~
@@ -333,7 +333,7 @@ request_dropped
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 request_reached_downloader
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -349,7 +349,7 @@ request_reached_downloader
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 request_left_downloader
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -368,7 +368,7 @@ request_left_downloader
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider that yielded the request
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 bytes_received
 ~~~~~~~~~~~~~~
@@ -398,7 +398,7 @@ bytes_received
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider associated with the response
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 headers_received
 ~~~~~~~~~~~~~~~~
@@ -428,7 +428,7 @@ headers_received
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider associated with the response
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 Response signals
 ----------------
@@ -451,7 +451,7 @@ response_received
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object
 
 .. note:: The ``request`` argument might not contain the original request that
     reached the downloader, if a :ref:`topics-downloader-middleware` modifies
@@ -475,4 +475,4 @@ response_downloaded
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
-    :type spider: :class:`~scrapy.spiders.Spider` object
+    :type spider: :class:`~scrapy.Spider` object

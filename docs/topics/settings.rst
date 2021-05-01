@@ -67,7 +67,7 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.spiders.Spider.custom_settings` attribute::
+do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute::
 
     class MySpider(scrapy.Spider):
         name = 'myspider'
@@ -142,7 +142,7 @@ In a spider, the settings are available through ``self.settings``::
     The ``settings`` attribute is set in the base Spider class after the spider
     is initialized.  If you want to use the settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
-    :meth:`~scrapy.spiders.Spider.from_crawler` method.
+    :meth:`~scrapy.Spider.from_crawler` method.
 
 Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
