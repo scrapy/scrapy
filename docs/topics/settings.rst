@@ -338,7 +338,7 @@ is non-zero, download delay is enforced per IP, not per domain.
 DEFAULT_ITEM_CLASS
 ------------------
 
-Default: ``'scrapy.item.Item'``
+Default: ``'scrapy.Item'``
 
 The default class that will be used for instantiating items in the :ref:`the
 Scrapy shell <topics-shell>`.
@@ -360,7 +360,7 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
 
 .. caution:: Cookies set via the ``Cookie`` header are not considered by the
     :ref:`cookies-mw`. If you need to set cookies for a request, use the
-    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    :class:`Request.cookies <scrapy.Request>` parameter. This is a known
     current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
@@ -384,8 +384,8 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the :attr:`~scrapy.http.Request.priority` of
-a :class:`~scrapy.http.Request` based on its depth.
+An integer that is used to adjust the :attr:`~scrapy.Request.priority` of
+a :class:`~scrapy.Request` based on its depth.
 
 The priority of a request is adjusted as follows::
 
@@ -812,14 +812,14 @@ The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function. In order to change
 the way duplicates are checked you could subclass ``RFPDupeFilter`` and
 override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.http.Request` object and return its fingerprint
+scrapy :class:`~scrapy.Request` object and return its fingerprint
 (a string).
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
 Be very careful about this however, because you can get into crawling loops.
 It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.http.Request` that should not be
+``True`` on the specific :class:`~scrapy.Request` that should not be
 filtered.
 
 .. setting:: DUPEFILTER_DEBUG
