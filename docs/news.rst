@@ -267,13 +267,13 @@ Backward-incompatible changes
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` once again
     discards cookies defined in :attr:`Request.headers
-    <scrapy.http.Request.headers>`.
+    <scrapy.Request.headers>`.
 
     We decided to revert this bug fix, introduced in Scrapy 2.2.0, because it
     was reported that the current implementation could break existing code.
 
     If you need to set cookies for a request, use the :class:`Request.cookies
-    <scrapy.http.Request>` parameter.
+    <scrapy.Request>` parameter.
 
     A future version of Scrapy will include a new, better implementation of the
     reverted bug fix.
@@ -394,16 +394,16 @@ New features
     :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
     or
     :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
-    with a custom :class:`~scrapy.http.Request` object assigned to
+    with a custom :class:`~scrapy.Request` object assigned to
     :class:`response.request <scrapy.http.Response.request>`:
 
     -   The response is handled by the callback of that custom
-        :class:`~scrapy.http.Request` object, instead of being handled by the
-        callback of the original :class:`~scrapy.http.Request` object
+        :class:`~scrapy.Request` object, instead of being handled by the
+        callback of the original :class:`~scrapy.Request` object
 
-    -   That custom :class:`~scrapy.http.Request` object is now sent as the
+    -   That custom :class:`~scrapy..Request` object is now sent as the
         ``request`` argument to the :signal:`response_received` signal, instead
-        of the original :class:`~scrapy.http.Request` object
+        of the original :class:`~scrapy.Request` object
 
     (:issue:`4529`, :issue:`4632`)
 
@@ -574,7 +574,7 @@ New features
 *   The :command:`parse` command now allows specifying an output file
     (:issue:`4317`, :issue:`4377`)
 
-*   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
+*   :meth:`Request.from_curl <scrapy.Request.from_curl>` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now also support
     ``--data-raw`` (:issue:`4612`)
 
@@ -590,7 +590,7 @@ Bug fixes
     :ref:`dataclass items <dataclass-items>` and :ref:`attr.s items
     <attrs-items>` (:issue:`4667`, :issue:`4668`)
 
-*   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
+*   :meth:`Request.from_curl <scrapy.Request.from_curl>` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now set the request
     method to ``POST`` when a request body is specified and no request method
     is specified (:issue:`4612`)
@@ -681,7 +681,7 @@ Deprecations
     (:issue:`4546`, :issue:`4555`, :issue:`4579`)
 
 *   :class:`scrapy.item.BaseItem` is now deprecated, use
-    :class:`scrapy.item.Item` instead (:issue:`4534`)
+    :class:`scrapy.Item` instead (:issue:`4534`)
 
 
 New features
@@ -716,8 +716,8 @@ New features
 *   :ref:`Link extractors <topics-link-extractors>` are now serializable,
     as long as you do not use :ref:`lambdas <lambda>` for parameters; for
     example, you can now pass link extractors in :attr:`Request.cb_kwargs
-    <scrapy.http.Request.cb_kwargs>` or
-    :attr:`Request.meta <scrapy.http.Request.meta>` when :ref:`persisting
+    <scrapy.Request.cb_kwargs>` or
+    :attr:`Request.meta <scrapy.Request.meta>` when :ref:`persisting
     scheduled requests <topics-jobs>` (:issue:`4554`)
 
 *   Upgraded the :ref:`pickle protocol <pickle-protocols>` that Scrapy uses
@@ -736,20 +736,20 @@ Bug fixes
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` no longer
     discards cookies defined in :attr:`Request.headers
-    <scrapy.http.Request.headers>` (:issue:`1992`, :issue:`2400`)
+    <scrapy.Request.headers>` (:issue:`1992`, :issue:`2400`)
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` no longer
     re-encodes cookies defined as :class:`bytes` in the ``cookies`` parameter
-    of the ``__init__`` method of :class:`~scrapy.http.Request`
+    of the ``__init__`` method of :class:`~scrapy.Request`
     (:issue:`2400`, :issue:`3575`)
 
 *   When :setting:`FEEDS` defines multiple URIs, :setting:`FEED_STORE_EMPTY` is
     ``False`` and the crawl yields no items, Scrapy no longer stops feed
     exports after the first URI (:issue:`4621`, :issue:`4626`)
 
-*   :class:`~scrapy.spiders.Spider` callbacks defined using :doc:`coroutine
+*   :class:`~scrapy.Spider` callbacks defined using :doc:`coroutine
     syntax <topics/coroutines>` no longer need to return an iterable, and may
-    instead return a :class:`~scrapy.http.Request` object, an
+    instead return a :class:`~scrapy.Request` object, an
     :ref:`item <topics-items>`, or ``None`` (:issue:`4609`)
 
 *   The :command:`startproject` command now ensures that the generated project
@@ -791,7 +791,7 @@ Documentation
 
 *   The display-on-hover behavior of internal documentation references now also
     covers links to :ref:`commands <topics-commands>`, :attr:`Request.meta
-    <scrapy.http.Request.meta>` keys, :ref:`settings <topics-settings>` and
+    <scrapy.Request.meta>` keys, :ref:`settings <topics-settings>` and
     :ref:`signals <topics-signals>` (:issue:`4495`, :issue:`4563`)
 
 *   It is again possible to download the documentation for offline reading
@@ -918,7 +918,7 @@ New features
     (:issue:`3903`, :issue:`3940`)
 
 *   A warning is now issued when a value in
-    :attr:`~scrapy.spiders.Spider.allowed_domains` includes a port
+    :attr:`~scrapy.Spider.allowed_domains` includes a port
     (:issue:`50`, :issue:`3198`, :issue:`4413`)
 
 *   Zsh completion now excludes used option aliases from the completion list
@@ -932,7 +932,7 @@ Bug fixes
     callbacks that are spider attributes which are assigned a function with a
     different name (:issue:`4500`)
 
-*   ``None`` values in :attr:`~scrapy.spiders.Spider.allowed_domains` no longer
+*   ``None`` values in :attr:`~scrapy.Spider.allowed_domains` no longer
     cause a :exc:`TypeError` exception (:issue:`4410`)
 
 *   Zsh completion no longer allows options after arguments (:issue:`4438`)
@@ -941,7 +941,7 @@ Bug fixes
     (:issue:`4447`, :issue:`4448`)
 
 *   :meth:`Spider.make_requests_from_url
-    <scrapy.spiders.Spider.make_requests_from_url>`, deprecated in Scrapy
+    <scrapy.Spider.make_requests_from_url>`, deprecated in Scrapy
     1.4.0, now issues a warning when used (:issue:`4412`)
 
 
@@ -1147,10 +1147,10 @@ New features
 
 *   The new :attr:`Response.cb_kwargs <scrapy.http.Response.cb_kwargs>`
     attribute serves as a shortcut for :attr:`Response.request.cb_kwargs
-    <scrapy.http.Request.cb_kwargs>` (:issue:`4331`)
+    <scrapy.Request.cb_kwargs>` (:issue:`4331`)
 
 *   :meth:`Response.follow <scrapy.http.Response.follow>` now supports a
-    ``flags`` parameter, for consistency with :class:`~scrapy.http.Request`
+    ``flags`` parameter, for consistency with :class:`~scrapy.Request`
     (:issue:`4277`, :issue:`4279`)
 
 *   :ref:`Item loader processors <topics-loaders-processors>` can now be
@@ -1159,7 +1159,7 @@ New features
 *   :class:`~scrapy.spiders.Rule` now accepts an ``errback`` parameter
     (:issue:`4000`)
 
-*   :class:`~scrapy.http.Request` no longer requires a ``callback`` parameter
+*   :class:`~scrapy.Request` no longer requires a ``callback`` parameter
     when an ``errback`` parameter is specified (:issue:`3586`, :issue:`4008`)
 
 *   :class:`~scrapy.logformatter.LogFormatter` now supports some additional
@@ -1187,9 +1187,9 @@ New features
     uses ``yield`` but also returns a value, since the returned value would be
     lost (:issue:`3484`, :issue:`3869`)
 
-*   :class:`~scrapy.spiders.Spider` objects now raise an :exc:`AttributeError`
-    exception if they do not have a :class:`~scrapy.spiders.Spider.start_urls`
-    attribute nor reimplement :class:`~scrapy.spiders.Spider.start_requests`,
+*   :class:`~scrapy.Spider` objects now raise an :exc:`AttributeError`
+    exception if they do not have a :class:`~scrapy.Spider.start_urls`
+    attribute nor reimplement :class:`~scrapy.Spider.start_requests`,
     but have a ``start_url`` attribute (:issue:`4133`, :issue:`4170`)
 
 *   :class:`~scrapy.exporters.BaseItemExporter` subclasses may now use
@@ -1231,7 +1231,7 @@ Bug fixes
 *   Redirects to URLs starting with 3 slashes (``///``) are now supported
     (:issue:`4032`, :issue:`4042`)
 
-*   :class:`~scrapy.http.Request` no longer accepts strings as ``url`` simply
+*   :class:`~scrapy.Request` no longer accepts strings as ``url`` simply
     because they have a colon (:issue:`2552`, :issue:`4094`)
 
 *   The correct encoding is now used for attach names in
@@ -1277,7 +1277,7 @@ Documentation
     using :class:`~scrapy.crawler.CrawlerProcess` (:issue:`2149`,
     :issue:`2352`, :issue:`3146`, :issue:`3960`)
 
-*   Clarified the requirements for :class:`~scrapy.http.Request` objects
+*   Clarified the requirements for :class:`~scrapy.Request` objects
     :ref:`when using persistence <request-serialization>` (:issue:`4124`,
     :issue:`4139`)
 
@@ -1463,7 +1463,7 @@ Highlights:
 
 * Dropped Python 3.4 support and updated minimum requirements; made Python 3.8
   support official
-* New :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class method
+* New :meth:`Request.from_curl <scrapy.Request.from_curl>` class method
 * New :setting:`ROBOTSTXT_PARSER` and :setting:`ROBOTSTXT_USER_AGENT` settings
 * New :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
   :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` settings
@@ -1515,7 +1515,7 @@ See also :ref:`1.8-deprecation-removals` below.
 New features
 ~~~~~~~~~~~~
 
-*   A new :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class
+*   A new :meth:`Request.from_curl <scrapy.Request.from_curl>` class
     method allows :ref:`creating a request from a cURL command
     <requests-from-curl>` (:issue:`2985`, :issue:`3862`)
 
@@ -1545,7 +1545,7 @@ New features
     after establishing HTTPS connections (:issue:`2111`, :issue:`3450`)
 
 *   Callbacks that receive keyword arguments
-    (see :attr:`Request.cb_kwargs <scrapy.http.Request.cb_kwargs>`) can now be
+    (see :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>`) can now be
     tested using the new :class:`@cb_kwargs
     <scrapy.contracts.default.CallbackKeywordArgumentsContract>`
     :ref:`spider contract <topics-contracts>` (:issue:`3985`, :issue:`3988`)
@@ -1632,7 +1632,7 @@ Deprecations
 *   Use of the undocumented ``SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE`` environment
     variable is deprecated (:issue:`3910`)
 
-*   ``scrapy.item.DictItem`` is deprecated, use :class:`~scrapy.item.Item`
+*   ``scrapy.item.DictItem`` is deprecated, use :class:`~scrapy.Item`
     instead (:issue:`3999`)
 
 
@@ -1724,18 +1724,18 @@ Backward-incompatible changes
 *   :class:`~scrapy.crawler.Crawler`,
     :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>` and
     :class:`CrawlerRunner.create_crawler <scrapy.crawler.CrawlerRunner.create_crawler>`
-    no longer accept a :class:`~scrapy.spiders.Spider` subclass instance, they
-    only accept a :class:`~scrapy.spiders.Spider` subclass now.
+    no longer accept a :class:`~scrapy.Spider` subclass instance, they
+    only accept a :class:`~scrapy.Spider` subclass now.
 
-    :class:`~scrapy.spiders.Spider` subclass instances were never meant to
+    :class:`~scrapy.Spider` subclass instances were never meant to
     work, and they were not working as one would expect: instead of using the
-    passed :class:`~scrapy.spiders.Spider` subclass instance, their
-    :class:`~scrapy.spiders.Spider.from_crawler` method was called to generate
+    passed :class:`~scrapy.Spider` subclass instance, their
+    :class:`~scrapy.Spider.from_crawler` method was called to generate
     a new instance.
 
 *   Non-default values for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting
     may stop working. Scheduler priority queue classes now need to handle
-    :class:`~scrapy.http.Request` objects instead of arbitrary Python data
+    :class:`~scrapy.Request` objects instead of arbitrary Python data
     structures.
 
 *   An additional ``crawler`` parameter has been added to the ``__init__``
@@ -1757,7 +1757,7 @@ New features
     scheduling improvement on crawls targetting multiple web domains, at the
     cost of no :setting:`CONCURRENT_REQUESTS_PER_IP` support (:issue:`3520`)
 
-*   A new :attr:`Request.cb_kwargs <scrapy.http.Request.cb_kwargs>` attribute
+*   A new :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute
     provides a cleaner way to pass keyword arguments to callback methods
     (:issue:`1138`, :issue:`3563`)
 
@@ -1792,7 +1792,7 @@ New features
     check runs from code <detecting-contract-check-runs>` (:issue:`3704`,
     :issue:`3739`)
 
-*   A new :meth:`Item.deepcopy() <scrapy.item.Item.deepcopy>` method makes it
+*   A new :meth:`Item.deepcopy() <scrapy.Item.deepcopy>` method makes it
     easier to :ref:`deep-copy items <copying-items>` (:issue:`1493`,
     :issue:`3671`)
 
@@ -1806,7 +1806,7 @@ New features
 *   :class:`~scrapy.crawler.Crawler`,
     :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>` and
     :class:`CrawlerRunner.create_crawler <scrapy.crawler.CrawlerRunner.create_crawler>`
-    now fail gracefully if they receive a :class:`~scrapy.spiders.Spider`
+    now fail gracefully if they receive a :class:`~scrapy.Spider`
     subclass instance instead of the subclass itself (:issue:`2283`,
     :issue:`3610`, :issue:`3872`)
 
@@ -1838,7 +1838,7 @@ Bug fixes
 *   Requests with private callbacks are now correctly unserialized from disk
     (:issue:`3790`)
 
-*   :meth:`FormRequest.from_response() <scrapy.http.FormRequest.from_response>`
+*   :meth:`FormRequest.from_response() <scrapy.FormRequest.from_response>`
     now handles invalid methods like major web browsers (:issue:`3777`,
     :issue:`3794`)
 
@@ -1918,13 +1918,13 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
 *   From both ``scrapy.selector`` and ``scrapy.selector.lxmlsel``:
 
-    *   ``HtmlXPathSelector`` (use :class:`~scrapy.selector.Selector`)
+    *   ``HtmlXPathSelector`` (use :class:`~scrapy.Selector`)
 
-    *   ``XmlXPathSelector`` (use :class:`~scrapy.selector.Selector`)
+    *   ``XmlXPathSelector`` (use :class:`~scrapy.Selector`)
 
-    *   ``XPathSelector`` (use :class:`~scrapy.selector.Selector`)
+    *   ``XPathSelector`` (use :class:`~scrapy..Selector`)
 
-    *   ``XPathSelectorList`` (use :class:`~scrapy.selector.Selector`)
+    *   ``XPathSelectorList`` (use :class:`~scrapy.Selector`)
 
 *   From ``scrapy.selector.csstranslator``:
 
@@ -1934,7 +1934,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
     *   ``ScrapyXPathExpr`` (use parsel.csstranslator.XPathExpr_)
 
-*   From :class:`~scrapy.selector.Selector`:
+*   From :class:`~scrapy.Selector`:
 
     *   ``_root`` (both the ``__init__`` method argument and the object property, use
         ``root``)
@@ -1951,14 +1951,14 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
     *   ``x`` (use ``xpath``)
 
-*   ``scrapy.spiders.BaseSpider`` (use :class:`~scrapy.spiders.Spider`)
+*   ``scrapy.spiders.BaseSpider`` (use :class:`~scrapy.Spider`)
 
-*   From :class:`~scrapy.spiders.Spider` (and subclasses):
+*   From :class:`~scrapy.Spider` (and subclasses):
 
     *   ``DOWNLOAD_DELAY`` (use :ref:`download_delay
         <spider-download_delay-attribute>`)
 
-    *   ``set_crawler`` (use :meth:`~scrapy.spiders.Spider.from_crawler`)
+    *   ``set_crawler`` (use :meth:`~scrapy.Spider.from_crawler`)
 
 *   ``scrapy.spiders.spiders`` (use :class:`~scrapy.spiderloader.SpiderLoader`)
 
@@ -2464,7 +2464,7 @@ New Features
   (:issue:`2535`)
 - New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
-- Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
+- Added ``flags`` argument and attribute to :class:`Request <scrapy.Request>`
   objects (:issue:`2047`)
 - Support Anonymous FTP (:issue:`2342`)
 - Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/<reason>``
@@ -2506,7 +2506,7 @@ Bug fixes
 - LinkExtractor now strips leading and trailing whitespaces from attributes
   (:issue:`2547`, fixes :issue:`1614`)
 - Properly handle whitespaces in action attribute in
-  :class:`~scrapy.http.FormRequest` (:issue:`2548`)
+  :class:`~scrapy.FormRequest` (:issue:`2548`)
 - Buffer CONNECT response bytes from proxy until all HTTP headers are received
   (:issue:`2495`, fixes :issue:`2491`)
 - FTP downloader now works on Python 3, provided you use Twisted>=17.1
@@ -2549,7 +2549,7 @@ Documentation
 
 - Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
 - Mention issue with :meth:`FormRequest.from_response
-  <scrapy.http.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+  <scrapy.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
 - Use single quotes uniformly in templates (:issue:`2596`)
 - Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
 - Removed section on deprecated ``contrib/`` (:issue:`2636`)
@@ -3090,7 +3090,7 @@ Bugfixes
 - Support empty password for http_proxy config (:issue:`1274`).
 - Interpret ``application/x-json`` as ``TextResponse`` (:issue:`1333`).
 - Support link rel attribute with multiple values (:issue:`1201`).
-- Fixed ``scrapy.http.FormRequest.from_response`` when there is a ``<base>``
+- Fixed ``scrapy.FormRequest.from_response`` when there is a ``<base>``
   tag (:issue:`1564`).
 - Fixed :setting:`TEMPLATES_DIR` handling (:issue:`1575`).
 - Various ``FormRequest`` fixes (:issue:`1595`, :issue:`1596`, :issue:`1597`).
@@ -3264,7 +3264,7 @@ override any given setting. As an extension of that goal, we included a new
 level of priority for settings that act exclusively for a single spider,
 allowing them to redefine project settings.
 
-Start using it by defining a :attr:`~scrapy.spiders.Spider.custom_settings`
+Start using it by defining a :attr:`~scrapy.Spider.custom_settings`
 class variable in your spider::
 
     class MySpider(scrapy.Spider):
@@ -3298,8 +3298,8 @@ warnings to switch to the Python logging API entirely.
     logging.info('MESSAGE')
 
 Logging with spiders remains the same, but on top of the
-:meth:`~scrapy.spiders.Spider.log` method you’ll have access to a custom
-:attr:`~scrapy.spiders.Spider.logger` created for the spider to issue log
+:meth:`~scrapy.Spider.log` method you’ll have access to a custom
+:attr:`~scrapy.Spider.logger` created for the spider to issue log
 events:
 
 ::
@@ -3806,7 +3806,7 @@ Enhancements
   To restore old backend set ``HTTPCACHE_STORAGE`` to ``scrapy.contrib.httpcache.DbmCacheStorage``
 - Proxy \https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
 - Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
-- Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
+- Rename scrapy.spider.BaseSpider to scrapy.Spider (:issue:`510`, :issue:`519`)
 - Selectors register EXSLT namespaces by default (:issue:`472`)
 - Unify item loaders similar to selectors renaming (:issue:`461`)
 - Make ``RFPDupeFilter`` class easily subclassable (:issue:`533`)
@@ -4017,7 +4017,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Moved persistent (on disk) queues to a separate project (queuelib_) which Scrapy now depends on
 - Add Scrapy commands using external libraries (:issue:`260`)
 - Added ``--pdb`` option to ``scrapy`` command line tool
-- Added :meth:`XPathSelector.remove_namespaces <scrapy.selector.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
+- Added :meth:`XPathSelector.remove_namespaces <scrapy.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
@@ -4465,7 +4465,7 @@ Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Changed ``scrapy.utils.response.get_meta_refresh()`` signature (:rev:`1804`)
-- Removed deprecated ``scrapy.item.ScrapedItem`` class - use ``scrapy.item.Item instead`` (:rev:`1838`)
+- Removed deprecated ``scrapy.item.ScrapedItem`` class - use ``scrapy.Item instead`` (:rev:`1838`)
 - Removed deprecated ``scrapy.xpath`` module - use ``scrapy.selector`` instead. (:rev:`1836`)
 - Removed deprecated ``core.signals.domain_open`` signal - use ``core.signals.domain_opened`` instead (:rev:`1822`)
 - ``log.msg()`` now receives a ``spider`` argument (:rev:`1822`)
