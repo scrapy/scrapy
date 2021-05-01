@@ -83,7 +83,7 @@ class LocalCache(collections.OrderedDict):
             while len(self) >= self.limit:
                 self.popitem(last=False)
             for _, val in self.items():
-                if int((now - val[1]).total_seconds()) > self.time_limit:
+                if not time_limit is None and int((now - val[1]).total_seconds()) > self.time_limit:
                     self.popitem(last=False)
                 else:
                     break
@@ -92,7 +92,7 @@ class LocalCache(collections.OrderedDict):
     def __getitem__(self, key):
         for _, val in self.items():
             now = datetime.now()
-            if int((now - val[1]).total_seconds()) > self.time_limit:
+            if not time_limit is None and int((now - val[1]).total_seconds()) > self.time_limit:
                 self.popitem(last=False)
             else:
                 break
