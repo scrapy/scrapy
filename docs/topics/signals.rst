@@ -307,13 +307,13 @@ request_scheduled
 .. signal:: request_scheduled
 .. function:: request_scheduled(request, spider)
 
-    Sent when the engine schedules a :class:`~scrapy.http.Request`, to be
+    Sent when the engine schedules a :class:`~scrapy.Request`, to be
     downloaded later.
 
     This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the scheduler
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.Spider` object
@@ -324,13 +324,13 @@ request_dropped
 .. signal:: request_dropped
 .. function:: request_dropped(request, spider)
 
-    Sent when a :class:`~scrapy.http.Request`, scheduled by the engine to be
+    Sent when a :class:`~scrapy.Request`, scheduled by the engine to be
     downloaded later, is rejected by the scheduler.
 
     This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the scheduler
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.Spider` object
@@ -341,12 +341,12 @@ request_reached_downloader
 .. signal:: request_reached_downloader
 .. function:: request_reached_downloader(request, spider)
 
-    Sent when a :class:`~scrapy.http.Request` reached downloader.
+    Sent when a :class:`~scrapy.Request` reached downloader.
 
     This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached downloader
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.Spider` object
@@ -359,13 +359,13 @@ request_left_downloader
 
     .. versionadded:: 2.0
 
-    Sent when a :class:`~scrapy.http.Request` leaves the downloader, even in case of
+    Sent when a :class:`~scrapy.Request` leaves the downloader, even in case of
     failure.
 
     This signal does not support returning deferreds from its handlers.
 
     :param request: the request that reached the downloader
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
     :type spider: :class:`~scrapy.Spider` object
@@ -395,7 +395,7 @@ bytes_received
     :type data: :class:`bytes` object
 
     :param request: the request that generated the download
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.Spider` object
@@ -425,7 +425,7 @@ headers_received
     :type body_length: `int`
 
     :param request: the request that generated the download
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.Spider` object
@@ -448,7 +448,7 @@ response_received
     :type response: :class:`~scrapy.http.Response` object
 
     :param request: the request that generated the response
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.Spider` object
@@ -472,7 +472,7 @@ response_downloaded
     :type response: :class:`~scrapy.http.Response` object
 
     :param request: the request that generated the response
-    :type request: :class:`~scrapy.http.Request` object
+    :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.Spider` object
