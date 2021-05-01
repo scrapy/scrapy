@@ -418,7 +418,7 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
 
     def testPayloadDisabledCipher(self):
         if sys.implementation.name == "pypy" and parse_version(cryptography.__version__) <= parse_version("2.3.1"):
-            self.skipTest("This does work in PyPy with cryptography<=2.3.1")
+            self.skipTest("This test expects a failure, but the code does work in PyPy with cryptography<=2.3.1")
         s = "0123456789" * 10
         settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'ECDHE-RSA-AES256-GCM-SHA384'})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)

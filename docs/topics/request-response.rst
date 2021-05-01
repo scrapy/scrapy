@@ -712,7 +712,7 @@ Response objects
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.5.0
        The ``protocol`` parameter.
 
     .. attribute:: Response.url
@@ -818,7 +818,7 @@ Response objects
 
     .. attribute:: Response.protocol
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.5.0
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"

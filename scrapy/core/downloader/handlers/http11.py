@@ -361,10 +361,9 @@ class ScrapyAgent:
     @staticmethod
     def _headers_from_twisted_response(response):
         headers = Headers()
-        if response.length is not None:
+        if response.length != UNKNOWN_LENGTH:
             headers[b'Content-Length'] = str(response.length).encode()
-        for key, value in response.headers.getAllRawHeaders():
-            headers[key] = value
+        headers.update(response.headers.getAllRawHeaders())
         return headers
 
     def _cb_bodyready(self, txresponse, request):
