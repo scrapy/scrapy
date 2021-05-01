@@ -231,7 +231,7 @@ class Scheduler(BaseScheduler):
             self._write_dqs_state(self.dqdir, state)
         return self.df.close(reason)
 
-    def _enqueue_request(self, request: Request):
+    def _enqueue_request(self, request: Request) -> None:
         dqok = self._dqpush(request)
         if dqok:
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
@@ -316,7 +316,7 @@ class Scheduler(BaseScheduler):
     def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)
 
-    def _dpqpush(self, request: Request):
+    def _dpqpush(self, request: Request) -> None:
         self.dpqs.push(request)
 
     def _dqpop(self) -> Optional[Request]:
