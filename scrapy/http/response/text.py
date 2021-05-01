@@ -39,9 +39,7 @@ class TextResponse(Response):
 
     @classmethod
     def from_dict(cls: Type[ResponseType], d: dict) -> ResponseType:
-        """
-        Create a Response object from a dict which keys match a Response's ``__init__`` parameters.
-        """
+        """Create a Response object from a dict which keys match a Response's ``__init__`` parameters"""
         response = super().from_dict(d)  # type: ignore
         response._encoding = d["_encoding"]
         return response
