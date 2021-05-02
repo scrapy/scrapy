@@ -401,7 +401,7 @@ New features
         :class:`~scrapy.Request` object, instead of being handled by the
         callback of the original :class:`~scrapy.Request` object
 
-    -   That custom :class:`~scrapy..Request` object is now sent as the
+    -   That custom :class:`~scrapy.Request` object is now sent as the
         ``request`` argument to the :signal:`response_received` signal, instead
         of the original :class:`~scrapy.Request` object
 
@@ -1922,7 +1922,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
     *   ``XmlXPathSelector`` (use :class:`~scrapy.Selector`)
 
-    *   ``XPathSelector`` (use :class:`~scrapy..Selector`)
+    *   ``XPathSelector`` (use :class:`~scrapy.Selector`)
 
     *   ``XPathSelectorList`` (use :class:`~scrapy.Selector`)
 
