@@ -657,6 +657,7 @@ DOWNLOAD_HANDLERS_BASE
 Default::
 
     {
+        'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',
         'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
         'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
         'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
@@ -1279,7 +1280,8 @@ SCHEDULER
 
 Default: ``'scrapy.core.scheduler.Scheduler'``
 
-The scheduler to use for crawling.
+The scheduler class to be used for crawling.
+See the :ref:`topics-scheduler` topic for details.
 
 .. setting:: SCHEDULER_DEBUG
 
