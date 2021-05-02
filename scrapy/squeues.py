@@ -8,12 +8,8 @@ import pickle
 
 from queuelib import queue
 
-<<<<<<< HEAD
 from scrapy.http.request import Request
-=======
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.reqser import request_to_dict, request_from_dict
->>>>>>> upstream/master
 
 
 def _with_mkdir(queue_class):
