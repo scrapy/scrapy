@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 class HttpError(IgnoreRequest):
     """A non-200 response was filtered"""
 
-    def __init__(self, response, *args, **kwargs):
-        self.response = response
-        super().__init__(*args, **kwargs)
+    def __init__(self, response: Union[Response, ResponseList], *args) -> None:
+        self.response: Union[Response, ResponseList] = response
+        super().__init__(*args)
 
 
 class HttpErrorMiddleware:
@@ -33,24 +33,41 @@ class HttpErrorMiddleware:
         self.handle_httpstatus_list = settings.getlist('HTTPERROR_ALLOWED_CODES')
 
     def process_spider_input(self, response: Union[Response, ResponseList], spider: Spider) -> None:
-        # FIXME: handle ResponseLists better
-        if isinstance(response, ResponseList):
-            return None
+        def process_response(response: Response) -> None:
+            if 200 <= response.status < 300:
+                return None
+            meta = response.meta
+            if meta.get('handle_httpstatus_all', False):
+                return None
+            if 'handle_httpstatus_list' in meta:
+                allowed_statuses = meta['handle_httpstatus_list']
+            elif self.handle_httpstatus_all:
+                return None
+            else:
+                allowed_statuses = getattr(spider, 'handle_httpstatus_list', self.handle_httpstatus_list)
+            if response.status in allowed_statuses:
+                return None
+            raise HttpError(response, 'Ignoring non-200 response')
 
-        if 200 <= response.status < 300:  # common case
-            return
-        meta = response.meta
-        if meta.get('handle_httpstatus_all', False):
-            return
-        if 'handle_httpstatus_list' in meta:
-            allowed_statuses = meta['handle_httpstatus_list']
-        elif self.handle_httpstatus_all:
-            return
-        else:
-            allowed_statuses = getattr(spider, 'handle_httpstatus_list', self.handle_httpstatus_list)
-        if response.status in allowed_statuses:
-            return
-        raise HttpError(response, 'Ignoring non-200 response')
+        if isinstance(response, Response):
+            return process_response(response)
+        elif isinstance(response, ResponseList):
+            error = False
+            responses = []
+            for resp in response.responses:
+                if isinstance(resp, Response):
+                    try:
+                        if process_response(resp) is None:
+                            responses.append(resp)
+                    except HttpError as ex:
+                        error = True
+                        responses.append(ex)
+                else:
+                    responses.append(resp)
+            response.responses = responses
+            if error:
+                raise HttpError(response)
+            return None
 
     def process_spider_exception(self, response, exception, spider):
         if isinstance(exception, HttpError):

@@ -10,14 +10,14 @@ from twisted import version as _txv
 
 # Declare top-level shortcuts
 from scrapy.spiders import Spider
-from scrapy.http import Request, FormRequest
+from scrapy.http import Request, RequestList, FormRequest
 from scrapy.selector import Selector
 from scrapy.item import Item, Field
 
 
 __all__ = [
     '__version__', 'version_info', 'twisted_version', 'Spider',
-    'Request', 'FormRequest', 'Selector', 'Item', 'Field',
+    'Request', 'RequestList', 'FormRequest', 'Selector', 'Item', 'Field',
 ]
 
 
