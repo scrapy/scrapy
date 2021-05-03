@@ -178,8 +178,8 @@ class ExecutionEngine:
 
         if isinstance(request, RequestList):
             d = DeferredList([self._download(r, self.spider) for r in request.requests])
-            # FIXME: handle other cases (exceptions, redirects, etc)
-            d.addBoth(lambda result: ResponseList(request_list=request, responses=[t[1] for t in result]))
+            d.addBoth(self._handle_requestlist_result)
+            d.addBoth(lambda result: ResponseList(request_list=request, responses=result))
         else:
             d = self._download(request, self.spider)
         d.addBoth(self._handle_downloader_output, request)
@@ -221,6 +221,33 @@ class ExecutionEngine:
         )
         return d
 
+    def _handle_requestlist_result(self, result: list, processed: Optional[list] = None) -> Union[DeferredList, list]:
+        """If necessary, re-schedule pending requests within the results of a RequestList (scheduler is bypassed)"""
+        assert self.spider is not None  # typing
+
+        def remove_pending_from_slot(result: list, processed: list, pending: list) -> list:
+            assert self.slot is not None  # typing
+            for p in pending:
+                self.slot.remove_request(p)
+            return result
+
+        processed = processed or []
+        pending = []
+        for _, r in result:
+            if isinstance(r, Request):
+                pending.append(r)
+            else:
+                processed.append(r)
+        if pending:
+            d = DeferredList([self._download(p, self.spider) for p in pending])
+            d.addBoth(self._handle_requestlist_result, processed=processed)
+            d.addBoth(remove_pending_from_slot, processed=processed, pending=pending)
+            d.addErrback(lambda f: logger.info('Error while removing request from slot',
+                                               exc_info=failure_to_exc_info(f),
+                                               extra={'spider': self.spider}))
+            return d
+        return processed
+
     def spider_is_idle(self, spider: Optional[Spider] = None) -> bool:
         if spider is not None:
             warnings.warn(
@@ -240,7 +267,7 @@ class ExecutionEngine:
             return False
         return True
 
-    def crawl(self, request: Request, spider: Optional[Spider] = None) -> None:
+    def crawl(self, request: Union[Request, RequestList], spider: Optional[Spider] = None) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
         if spider is not None:
             warnings.warn(
