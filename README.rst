@@ -68,6 +68,11 @@ The quick way::
 See the install section in the documentation at
 https://docs.scrapy.org/en/latest/intro/install.html for more details.
 
+License
+=============
+
+BSD 3-clause License 
+
 Documentation
 =============
 
