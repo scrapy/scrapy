@@ -125,6 +125,7 @@ def request_from_dict(d: dict, spider: Optional[Spider] = None) -> Request:
 
 
 def _get_method(obj, name):
+    """Helper function for request_from_dict"""
     name = str(name)
     try:
         return getattr(obj, name)
