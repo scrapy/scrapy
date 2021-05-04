@@ -4,7 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator
+from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -12,10 +12,15 @@ from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
+from scrapy.utils.python import to_unicode
 from scrapy.utils.trackref import object_ref
 
 
 class Response(object_ref):
+
+    attributes: Tuple[str, ...] = (
+        "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
+    )
 
     def __init__(
         self,
@@ -97,12 +102,8 @@ class Response(object_ref):
         return self.replace()
 
     def replace(self, *args, **kwargs):
-        """Create a new Response with the same attributes except for those
-        given new values.
-        """
-        for x in [
-            "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
-        ]:
+        """Create a new Response with the same attributes except for those given new values"""
+        for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -206,3 +207,21 @@ class Response(object_ref):
             )
             for url in urls
         )
+
+    def to_dict(self) -> dict:
+        """Return a dictionary containing the Response's data.
+
+        Use :func:`~scrapy.utils.response.response_from_dict` to convert
+        back into a :class:`~scrapy.http.response.Response` object.
+        """
+        d = {
+            "url": to_unicode(self.url),  # urls are safe (safe_string_url)
+            "headers": dict(self.headers),
+            "ip_address": str(self.ip_address) if self.ip_address is not None else None,
+            "certificate": self.certificate.dumpPEM() if self.certificate is not None else None,
+        }
+        for attr in self.attributes:
+            d.setdefault(attr, getattr(self, attr))
+        if type(self) is not Response:
+            d["_class"] = self.__module__ + "." + self.__class__.__name__
+        return d

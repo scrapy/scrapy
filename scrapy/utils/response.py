@@ -3,17 +3,20 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 import os
-import webbrowser
 import tempfile
+import webbrowser
+from ipaddress import ip_address
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
+from twisted.internet.ssl import Certificate
+from twisted.web import http
+from w3lib import html
+
 import scrapy
 from scrapy.http.response import Response
-
-from twisted.web import http
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
-from w3lib import html
 
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
@@ -86,9 +89,19 @@ def open_in_browser(
     elif isinstance(response, TextResponse):
         ext = '.txt'
     else:
-        raise TypeError("Unsupported response type: "
-                        f"{response.__class__.__name__}")
+        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)
     return _openfunc(f"file://{fname}")
+
+
+def response_from_dict(d: dict) -> Response:
+    """Create a :class:`~scrapy.http.response.Response` object from
+    a dict which keys match a Response's ``__init__`` parameters
+    """
+    response_cls = load_object(d["_class"]) if "_class" in d else Response
+    kwargs = {key: value for key, value in d.items() if key in response_cls.attributes}
+    kwargs["certificate"] = Certificate.loadPEM(d["certificate"]) if d["certificate"] else None
+    kwargs["ip_address"] = ip_address(d["ip_address"]) if d["ip_address"] else None
+    return response_cls(**kwargs)

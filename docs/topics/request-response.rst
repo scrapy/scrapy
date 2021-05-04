@@ -229,12 +229,6 @@ Request objects
     .. automethod:: to_dict
 
 
-Other functions related to requests
------------------------------------
-
-.. autofunction:: scrapy.utils.request.request_from_dict
-
-
 .. _topics-request-response-ref-request-callback-arguments:
 
 Passing additional data to callback functions
@@ -669,6 +663,12 @@ Sending a JSON POST request with a JSON payload::
    yield JsonRequest(url='http://www.example.com/post/action', data=data)
 
 
+Other functions related to requests
+-----------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
+
 Response objects
 ================
 
@@ -833,6 +833,12 @@ Response objects
         handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`protocol` is always ``None``.
 
+    .. attribute:: Response.attributes
+
+        A tuple of :class:`str` objects containing all public attribute names (and ``__init__`` parameters)
+        for the class. Currently used by :meth:`Response.replace`, :meth:`Response.to_dict` and
+        :func:`~scrapy.utils.response.response_from_dict`.
+
     .. method:: Response.copy()
 
        Returns a new Response which is a copy of this Response.
@@ -856,6 +862,8 @@ Response objects
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
+
+    .. automethod:: Response.to_dict
 
 
 .. _topics-request-response-ref-response-subclasses:
@@ -975,3 +983,9 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
+
+
+Other functions related to responses
+------------------------------------
+
+.. autofunction:: scrapy.utils.response.response_from_dict
