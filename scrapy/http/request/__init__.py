@@ -20,7 +20,7 @@ from scrapy.utils.url import escape_ajax
 
 class Request(object_ref):
 
-    _attributes: Tuple[str, ...] = (
+    attributes: Tuple[str, ...] = (
         "url", "method", "headers", "body", "cookies", "meta", "flags",
         "encoding", "priority", "dont_filter", "callback", "errback", "cb_kwargs",
     )
@@ -109,7 +109,7 @@ class Request(object_ref):
 
     def replace(self, *args, **kwargs):
         """Create a new Request with the same attributes except for those given new values"""
-        for x in self._attributes:
+        for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -147,10 +147,10 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, spider: Optional["scrapy.Spider"] = None) -> dict:
+    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> dict:
         """Return a dictionary containing the Request's data.
 
-        Use ``scrapy.utils.request.request_from_dict`` to convert back into a full Request object.
+        Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.
 
         If a spider is given, this method will try to find out the name of the spider method used
         as callback and include it in the output dict, raising an exception if it cannot be found.
@@ -161,7 +161,7 @@ class Request(object_ref):
             "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
             "headers": dict(self.headers),
         }
-        for attr in self._attributes:
+        for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
         if type(self) is not Request:
             d["_class"] = self.__module__ + '.' + self.__class__.__name__

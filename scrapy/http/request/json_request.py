@@ -16,7 +16,7 @@ from scrapy.utils.deprecate import create_deprecated_class
 
 class JsonRequest(Request):
 
-    _attributes: Tuple[str, ...] = Request._attributes + ("dumps_kwargs",)
+    attributes: Tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
 
     def __init__(self, *args, **kwargs):
         dumps_kwargs = copy.deepcopy(kwargs.pop('dumps_kwargs', {}))

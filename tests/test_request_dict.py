@@ -85,7 +85,7 @@ class RequestSerializationTest(unittest.TestCase):
                     callback=self.spider.parse_item_reference,
                     errback=self.spider.handle_error_reference)
         self._assert_serializes_ok(r, spider=self.spider)
-        request_dict = r.to_dict(self.spider)
+        request_dict = r.to_dict(spider=self.spider)
         self.assertEqual(request_dict['callback'], 'parse_item_reference')
         self.assertEqual(request_dict['errback'], 'handle_error_reference')
 
@@ -94,7 +94,7 @@ class RequestSerializationTest(unittest.TestCase):
                     callback=self.spider._TestSpider__parse_item_reference,
                     errback=self.spider._TestSpider__handle_error_reference)
         self._assert_serializes_ok(r, spider=self.spider)
-        request_dict = r.to_dict(self.spider)
+        request_dict = r.to_dict(spider=self.spider)
         self.assertEqual(request_dict['callback'],
                          '_TestSpider__parse_item_reference')
         self.assertEqual(request_dict['errback'],
@@ -120,12 +120,11 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
-        self.assertRaises(ValueError, r.to_dict)
         self.assertRaises(ValueError, r.to_dict, spider=self.spider)
 
     def test_unserializable_callback2(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
-        self.assertRaises(ValueError, r.to_dict)
+        self.assertRaises(ValueError, r.to_dict, spider=None)
 
     def test_unserializable_callback3(self):
         """Parser method is removed or replaced dynamically."""

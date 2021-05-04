@@ -68,7 +68,7 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key)
 
         def push(self, request):
-            request = request.to_dict(self.spider)
+            request = request.to_dict(spider=self.spider)
             return super().push(request)
 
         def pop(self):

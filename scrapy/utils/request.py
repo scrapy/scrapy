@@ -110,13 +110,13 @@ def referer_str(request: Request) -> Optional[str]:
 
 
 def request_from_dict(d: dict, spider: Optional[Spider] = None) -> Request:
-    """Create Request object from a dict.
+    """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
     request_cls = load_object(d["_class"]) if "_class" in d else Request
-    kwargs = {key: value for key, value in d.items() if key in request_cls._attributes}
+    kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
     if d.get("callback") and spider:
         kwargs["callback"] = _get_method(spider, d["callback"])
     if d.get("errback") and spider:

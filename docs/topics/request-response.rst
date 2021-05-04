@@ -205,6 +205,12 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+    .. attribute:: Request.attributes
+
+        A tuple of :class:`str` objects containing all public attribute names (and ``__init__`` parameters)
+        for the class. Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+        :func:`~scrapy.utils.request.request_from_dict`.
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -221,6 +227,13 @@ Request objects
     .. automethod:: from_curl
 
     .. automethod:: to_dict
+
+
+Other functions related to requests
+---------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
 
 .. _topics-request-response-ref-request-callback-arguments:
 

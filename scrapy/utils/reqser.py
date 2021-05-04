@@ -15,4 +15,4 @@ warnings.warn(
 
 
 def request_to_dict(request: "scrapy.Request", spider: Optional["scrapy.Spider"] = None) -> dict:
-    return request.to_dict(spider)
+    return request.to_dict(spider=spider)
