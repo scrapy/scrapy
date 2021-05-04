@@ -220,6 +220,8 @@ Request objects
 
     .. automethod:: from_curl
 
+    .. automethod:: to_dict
+
 .. _topics-request-response-ref-request-callback-arguments:
 
 Passing additional data to callback functions

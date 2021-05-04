@@ -9,7 +9,7 @@ import pickle
 from queuelib import queue
 
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.utils.request import request_from_dict
 
 
 def _with_mkdir(queue_class):
@@ -68,7 +68,7 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key)
 
         def push(self, request):
-            request = request_to_dict(request, self.spider)
+            request = request.to_dict(self.spider)
             return super().push(request)
 
         def pop(self):
