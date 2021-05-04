@@ -230,7 +230,7 @@ Request objects
 
 
 Other functions related to requests
----------------------------------
+-----------------------------------
 
 .. autofunction:: scrapy.utils.request.request_from_dict
 
