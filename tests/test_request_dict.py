@@ -1,6 +1,7 @@
 import sys
 import unittest
 import warnings
+from contextlib import suppress
 
 from scrapy import Spider, Request
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -155,6 +156,9 @@ class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
     def _assert_serializes_ok(self, request, spider=None):
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
+            with suppress(KeyError):
+                del sys.modules["scrapy.utils.reqser"]  # delete module to reset the deprecation warning
+
             from scrapy.utils.reqser import request_from_dict as _from_dict, request_to_dict as _to_dict
 
             request_copy = _from_dict(_to_dict(request, spider), spider)
@@ -167,9 +171,6 @@ class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
                 " and/or scrapy.utils.request.request_from_dict instead",
                 str(caught[0].message),
             )
-
-            # delete module to reset the deprecation warning
-            del sys.modules["scrapy.utils.reqser"]
 
 
 class TestSpiderMixin:
