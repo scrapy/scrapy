@@ -65,9 +65,9 @@ class CaselessDict(dict):
 
 
 class LocalCache(collections.OrderedDict):
-    """Dictionary with a finite number of keys.
-
-    Older items expires first.
+    """
+    Dictionary with a finite number of keys.
+    Older items expire first.
     """
 
     def __init__(self, limit=None, time_limit=None):
@@ -79,20 +79,22 @@ class LocalCache(collections.OrderedDict):
         now = datetime.now()
         value = (value, now)
 
-        if not self.limit is None:
+        if self.limit is not None:
             while len(self) >= self.limit:
                 self.popitem(last=False)
-            for _, val in self.items():
-                if not time_limit is None and int((now - val[1]).total_seconds()) > self.time_limit:
+            for val in self.values():
+                if self.time_limit is not None and (now - val[1]).total_seconds() > self.time_limit:
                     self.popitem(last=False)
                 else:
                     break
         super().__setitem__(key, value)
 
     def __getitem__(self, key):
+        if self.time_limit is None:
+            return super().__getitem__(key)[0]
         for _, val in self.items():
             now = datetime.now()
-            if not time_limit is None and int((now - val[1]).total_seconds()) > self.time_limit:
+            if (now - val[1]).total_seconds() > self.time_limit:
                 self.popitem(last=False)
             else:
                 break
