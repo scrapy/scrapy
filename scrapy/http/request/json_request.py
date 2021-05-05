@@ -42,8 +42,6 @@ class JsonRequest(Request):
 
     @property
     def dumps_kwargs(self):
-        if self._dumps_kwargs is None:
-            self._dumps_kwargs = {}
         return self._dumps_kwargs
 
     def replace(self, *args, **kwargs):
