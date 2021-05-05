@@ -157,7 +157,7 @@ class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
             warnings.simplefilter("always")
             from scrapy.utils.reqser import request_from_dict as _from_dict, request_to_dict as _to_dict
 
-            request_copy = _from_dict(_to_dict(request, spider=spider), spider=spider)
+            request_copy = _from_dict(_to_dict(request, spider), spider)
             self._assert_same_request(request, request_copy)
 
             self.assertEqual(len(caught), 1)

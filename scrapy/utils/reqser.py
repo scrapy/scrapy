@@ -3,7 +3,7 @@ from typing import Optional
 
 import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.request import request_from_dict  # noqa: F401
+from scrapy.utils.request import request_from_dict as _from_dict
 
 
 warnings.warn(
@@ -16,3 +16,7 @@ warnings.warn(
 
 def request_to_dict(request: "scrapy.Request", spider: Optional["scrapy.Spider"] = None) -> dict:
     return request.to_dict(spider=spider)
+
+
+def request_from_dict(d: dict, spider: Optional["scrapy.Spider"] = None) -> "scrapy.Request":
+    return _from_dict(d, spider=spider)
