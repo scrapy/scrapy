@@ -75,7 +75,7 @@ def _scrapy_serialization_queue(queue_class):
             request = super().pop()
             if not request:
                 return None
-            return request_from_dict(request, self.spider)
+            return request_from_dict(request, spider=self.spider)
 
         def peek(self):
             """Returns the next object to be returned by :meth:`pop`,
@@ -87,7 +87,7 @@ def _scrapy_serialization_queue(queue_class):
             request = super().peek()
             if not request:
                 return None
-            return request_from_dict(request, self.spider)
+            return request_from_dict(request, spider=self.spider)
 
     return ScrapyRequestQueue
 

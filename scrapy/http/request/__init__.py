@@ -19,11 +19,21 @@ from scrapy.utils.url import escape_ajax
 
 
 class Request(object_ref):
+    """Represents an HTTP request, which is usually generated in a Spider and
+    executed by the Downloader, thus generating a :class:`Response`.
+    """
 
     attributes: Tuple[str, ...] = (
         "url", "method", "headers", "body", "cookies", "meta", "flags",
         "encoding", "priority", "dont_filter", "callback", "errback", "cb_kwargs",
     )
+    """A tuple of :class:`str` objects containing the name of all public
+    attributes of the class that are also keyword parameters of the
+    ``__init__`` method.
+
+    Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+    :func:`~scrapy.utils.request.request_from_dict`.
+    """
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
