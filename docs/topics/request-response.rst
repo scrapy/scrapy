@@ -649,6 +649,8 @@ dealing with JSON requests.
        data into JSON format.
    :type dumps_kwargs: dict
 
+   .. autoattribute:: JsonRequest.attributes
+
 JsonRequest usage example
 -------------------------
 
