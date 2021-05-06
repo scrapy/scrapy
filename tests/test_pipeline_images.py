@@ -92,32 +92,37 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     response=Response("file:///tmp/some.name/foo"),
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
-                         
+
     def test_invalid_image_downloaded(self):
         image_downloaded = self.pipeline.image_downloaded
         self.assertEqual(image_downloaded(response=Response('https://scrapy.org/img/scrapylogo.png'),
-                        request=Request('https://scrapy.org/img/scrapylogo.png'),
-                        info=object()),
-                        'f4c913a7bbd3b8edf0a1433a1655ab16')
+                                          request=Request('https://scrapy.org/img/scrapylogo.png'),
+                                          info=object()),
+                                          'f4c913a7bbd3b8edf0a1433a1655ab16')
         self.assertEqual(image_downloaded(response=Response('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
-                        request=Request('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
-                        info=object()),
-                        'None')
+                                          request=Request('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
+                                          info=object()),
+                                          'None')
         self.assertEqual(image_downloaded(response=Response('http://racedata.gr/wp-content/uploads/2017/01/man3-252x300.jpg'),
-                        request=Request('http://racedata.gr/wp-content/uploads/2017/01/man3-252x300.jpg'),
-                        info=object()),
-                        '95dd6a450ecfefbd5916635c5dc11a03') 
+                                          request=Request('http://racedata.gr/wp-content/uploads/2017/01/man3-252x300.jpg'),
+                                          info=object()),
+                                         '95dd6a450ecfefbd5916635c5dc11a03')
 
     def test_logger_image_downloaded(self):
         image_downloaded = self.pipeline.image_downloaded
         with self.assertLogs() as cm:
-            image_downloaded(response=Response('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
-                    request=Request('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'), info=object())
+            image_downloaded(
+                response=Response('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
+                request=Request('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'), info=object()
+            )
             self.assertEqual('INFO:', __name__, 'Could not process image', cm.output)
 
         with self.assertRaises(OSError):
-            image_downloaded(response=Response('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
-                    request=Request('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'), info=object())
+            image_downloaded(
+                response=Response('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
+                request=Request('https://img01.mgo-images.com/image/thumbnail?id=MSRE18FBB98AF3BD2EF21EF2283708829B8A'),
+                info=object()
+            )
 
     def test_convert_image(self):
         SIZE = (100, 100)
