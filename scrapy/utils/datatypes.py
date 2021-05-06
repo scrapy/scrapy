@@ -82,23 +82,38 @@ class LocalCache(collections.OrderedDict):
         if self.limit is not None:
             while len(self) >= self.limit:
                 self.popitem(last=False)
-            for val in self.values():
-                if self.time_limit is not None and (now - val[1]).total_seconds() > self.time_limit:
-                    self.popitem(last=False)
-                else:
-                    break
+
+        while True:
+            try:
+                val = self.values().__iter__().__next__()
+            except StopIteration as e:
+                break
+            
+            if (datetime.now() - val[1]).total_seconds() > self.time_limit:
+                self.popitem(last=False)
+            else:
+                break
+            
         super().__setitem__(key, value)
 
     def __getitem__(self, key):
         if self.time_limit is None:
             return super().__getitem__(key)[0]
-        for _, val in self.items():
-            now = datetime.now()
-            if (now - val[1]).total_seconds() > self.time_limit:
+
+        while True:
+            try:
+                val = self.values().__iter__().__next__()
+            except StopIteration as e:
+                break
+            
+            if (datetime.now() - val[1]).total_seconds() > self.time_limit:
                 self.popitem(last=False)
             else:
                 break
-        return super().__getitem__(key)[0]
+        
+        val = (super().__getitem__(key)[0],datetime.now())
+        super().__setitem__(key, val)
+        return val[0]
 
 
 
