@@ -37,4 +37,7 @@ class UrlLengthMiddleware:
             else:
                 return True
 
-        return (r for r in result or () if _filter(r))
+        if self.maxlength == -1:
+            return result
+        else:
+            return (r for r in result or () if _filter(r))
