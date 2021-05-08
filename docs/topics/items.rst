@@ -319,11 +319,11 @@ If that is not the desired behavior, use a deep copy instead.
 See :mod:`copy` for more information.
 
 To create a shallow copy of an item, you can either call
-:meth:`~scrapy.item.Item.copy` on an existing item
+:meth:`~scrapy.Item.copy` on an existing item
 (``product2 = product.copy()``) or instantiate your item class from an existing
 item (``product2 = Product(product)``).
 
-To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+To create a deep copy, call :meth:`~scrapy.Item.deepcopy` instead
 (``product2 = product.deepcopy()``).
 
 
