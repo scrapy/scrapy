@@ -36,12 +36,19 @@ class RequestTest(unittest.TestCase):
 
         meta = {"lala": "lolo"}
         headers = {b"caca": b"coco"}
-        r = self.request_class("http://www.example.com", meta=meta, headers=headers, body="a body")
+        params = {'first': 'param1', 'second': 'param2'}
+        r = self.request_class("http://www.example.com", meta=meta, headers=headers, body="a body", params=params)
 
         assert r.meta is not meta
         self.assertEqual(r.meta, meta)
         assert r.headers is not headers
         self.assertEqual(r.headers[b"caca"], b"coco")
+        assert r.params is not params
+        self.assertEqual(r.params, 'first=param1&second=param2')
+
+    def test_params_types(self):
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', params='text')
 
     def test_url_scheme(self):
         # This test passes by not raising any (ValueError) exception
@@ -167,6 +174,25 @@ class RequestTest(unittest.TestCase):
         r4 = self.request_class(url="http://www.example.com/", body="Price: \xa3100", encoding='latin1')
         assert isinstance(r4.body, bytes)
         self.assertEqual(r4.body, b"Price: \xa3100")
+
+    def test_params(self):
+        params = {'first': 'param1', 'second': 'param2'}
+        body = "body"
+        r1 = self.request_class(url="http://www.example.com/", params=params, body=body)
+        self.assertEqual(r1.url, 'http://www.example.com/?first=param1&second=param2')
+        self.assertEqual(r1.params, 'first=param1&second=param2')
+
+        r2 = self.request_class(url="http://www.example.com", params=params, body=body)
+        self.assertEqual(r2.url, 'http://www.example.com?first=param1&second=param2')
+        self.assertEqual(r2.params, 'first=param1&second=param2')
+
+        r3 = self.request_class(url="http://www.example.com/list?other=1", params=params, body=body)
+        self.assertEqual(r3.url, 'http://www.example.com/list?other=1&first=param1&second=param2')
+        self.assertEqual(r3.params, 'first=param1&second=param2')
+
+        params_list = [('first', 'param1'), ('first', 'param2')]
+        r4 = self.request_class("http://www.example.com", body="a body", params=params_list)
+        self.assertEqual(r4.params, 'first=param1&first=param2')
 
     def test_ajax_url(self):
         # ascii url
