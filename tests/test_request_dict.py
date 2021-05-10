@@ -167,7 +167,7 @@ class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
             self.assertEqual(len(caught), 1)
             self.assertTrue(issubclass(caught[0].category, ScrapyDeprecationWarning))
             self.assertEqual(
-                "Module scrapy.utils.reqser is deprecated, please use scrapy.Request.to_dict"
+                "Module scrapy.utils.reqser is deprecated, please use request.to_dict method"
                 " and/or scrapy.utils.request.request_from_dict instead",
                 str(caught[0].message),
             )
