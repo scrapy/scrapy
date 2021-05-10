@@ -20,13 +20,13 @@ class TestUrlLengthMiddleware(TestCase):
         self.stats = crawler.stats
         self.mw = UrlLengthMiddleware.from_settings(settings)
 
-        self.maxlength_negative = -1
-        settings_negative = Settings({'URLLENGTH_LIMIT': self.maxlength_negative})
+        self.maxlength_infinite = 0
+        settings_infinite = Settings({'URLLENGTH_LIMIT': self.maxlength_infinite})
 
-        crawler_negative = get_crawler(Spider)
-        self.spider_negative = crawler_negative._create_spider('foo_negative')
-        self.stats_negative = crawler_negative.stats
-        self.mw_negative = UrlLengthMiddleware.from_settings(settings_negative)
+        crawler_infinite = get_crawler(Spider)
+        self.spider_infinite = crawler_infinite._create_spider('foo_infinite')
+        self.stats_infinite = crawler_infinite.stats
+        self.mw_infinite = UrlLengthMiddleware.from_settings(settings_infinite)
         self.response = Response('http://scrapytest.org')
 
         self.short_url_req = Request('http://scrapytest.org/')
@@ -36,20 +36,20 @@ class TestUrlLengthMiddleware(TestCase):
     def process_spider_output(self):
         return list(self.mw.process_spider_output(self.response, self.reqs, self.spider))
 
-    def process_spider_output_negative(self):
-        return list(self.mw_negative.process_spider_output(self.response, self.reqs, self.spider_negative))
+    def process_spider_output_infinite(self):
+        return list(self.mw_infinite.process_spider_output(self.response, self.reqs, self.spider_infinite))
 
     def test_middleware_works(self):
         self.assertEqual(self.process_spider_output(), [self.short_url_req])
-        self.assertEqual(self.process_spider_output_negative(), self.reqs)
+        self.assertEqual(self.process_spider_output_infinite(), self.reqs)
 
     def test_logging(self):
         with LogCapture() as log:
             self.process_spider_output()
-            self.process_spider_output_negative()
+            self.process_spider_output_infinite()
 
         ric = self.stats.get_value('urllength/request_ignored_count', spider=self.spider)
         self.assertEqual(ric, 1)
         self.assertIn(f'Ignoring link (url length > {self.maxlength})', str(log))
-        ric = self.stats_negative.get_value('urllength/request_ignored_count', spider=self.spider_negative)
+        ric = self.stats_infinite.get_value('urllength/request_ignored_count', spider=self.spider_infinite)
         self.assertIsNone(ric)
