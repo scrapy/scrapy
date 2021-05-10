@@ -88,8 +88,29 @@ Let's take an example::
                     'tags': quote.css('div.tags a.tag::text').getall(),
                 }
 
+Coroutines are also supported as can be seen :ref:`here <topics-coroutines>`.
+This is a more transparent approach and should be preferred over
+:class:`~twisted.internet.defer.Deferred` whenever possible.
+
+We will use the same concept as above::
+
+    import aiohttp
+    import asyncio
+
+
+    class SignalSpider(scrapy.Spider):
+        ...
+
+        async def item_scraped(self, item):
+            async with aiohttp.ClientSession() as session:
+                async with session.post('http://example.com/post', json=item) as response:
+                    html = await response.text()
+                    print("Body: ", html[:20])
+
+        ...
+
 See the :ref:`topics-signals-ref` below to know which signals support
-:class:`~twisted.internet.defer.Deferred`.
+:class:`~twisted.internet.defer.Deferred` and :term:`awaitable objects <awaitable>`.
 
 .. _topics-signals-ref:
 
