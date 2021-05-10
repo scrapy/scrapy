@@ -7,7 +7,7 @@ from scrapy.utils.request import request_from_dict as _from_dict
 
 
 warnings.warn(
-    ("Module scrapy.utils.reqser is deprecated, please use scrapy.Request.to_dict"
+    ("Module scrapy.utils.reqser is deprecated, please use request.to_dict method"
      " and/or scrapy.utils.request.request_from_dict instead"),
     category=ScrapyDeprecationWarning,
     stacklevel=2,
