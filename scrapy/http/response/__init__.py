@@ -12,7 +12,6 @@ from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
-from scrapy.utils.python import to_unicode
 from scrapy.utils.trackref import object_ref
 
 
@@ -22,7 +21,7 @@ class Response(object_ref):
     """
 
     attributes: Tuple[str, ...] = (
-        "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
+        "url", "status", "headers", "body", "flags", "request", "certificate", "ip_address", "protocol",
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
@@ -225,7 +224,7 @@ class Response(object_ref):
         back into a :class:`~scrapy.http.response.Response` object.
         """
         d = {
-            "url": to_unicode(self.url),  # urls are safe (safe_string_url)
+            "url": self.url,
             "headers": dict(self.headers),
             "ip_address": str(self.ip_address) if self.ip_address is not None else None,
             "certificate": self.certificate.dumpPEM() if self.certificate is not None else None,
