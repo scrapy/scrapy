@@ -17,10 +17,20 @@ from scrapy.utils.trackref import object_ref
 
 
 class Response(object_ref):
+    """An object that represents an HTTP response, which is usually
+    downloaded (by the Downloader) and fed to the Spiders for processing.
+    """
 
     attributes: Tuple[str, ...] = (
         "url", "status", "headers", "body", "request", "flags", "certificate", "ip_address", "protocol",
     )
+    """A tuple of :class:`str` objects containing the name of all public
+    attributes of the class that are also keyword parameters of the
+    ``__init__`` method.
+
+    Currently used by :meth:`Response.replace`, :meth:`Response.to_dict` and
+    :func:`~scrapy.utils.response.response_from_dict`.
+    """
 
     def __init__(
         self,
