@@ -5,6 +5,7 @@ from pathlib import Path
 from scrapy.http.request import Request
 from scrapy.http.response import Response
 from scrapy.http.response.html import TextResponse
+from scrapy.utils.request import request_fingerprint
 from scrapy.utils.response import response_from_dict
 
 from twisted.internet.ssl import Certificate
@@ -28,10 +29,11 @@ class ResponseSerializationTest(unittest.TestCase):
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.body, r2.body)
         self.assertEqual(r1.flags, r2.flags)
-        self.assertEqual(r1.request, r2.request)
         self.assertEqual(r1.certificate, r2.certificate)
         self.assertEqual(r1.ip_address, r2.ip_address)
         self.assertEqual(r1.protocol, r2.protocol)
+        if r1.request is not None:
+            self.assertEqual(request_fingerprint(r1.request), request_fingerprint(r2.request))
         if isinstance(r1, TextResponse):
             self.assertEqual(r1.encoding, r2.encoding)
 

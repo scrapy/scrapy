@@ -11,18 +11,18 @@ from weakref import WeakKeyDictionary
 from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
-from scrapy import Request, Spider
+import scrapy
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-_fingerprint_cache: "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]"
+_fingerprint_cache: "WeakKeyDictionary[scrapy.Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]"
 _fingerprint_cache = WeakKeyDictionary()
 
 
 def request_fingerprint(
-    request: Request,
+    request: "scrapy.Request",
     include_headers: Optional[Iterable[Union[bytes, str]]] = None,
     keep_fragments: bool = False,
 ) -> str:
@@ -77,14 +77,14 @@ def request_fingerprint(
     return cache[cache_key]
 
 
-def request_authenticate(request: Request, username: str, password: str) -> None:
+def request_authenticate(request: "scrapy.Request", username: str, password: str) -> None:
     """Autenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
 
 
-def request_httprepr(request: Request) -> bytes:
+def request_httprepr(request: "scrapy.Request") -> bytes:
     """Return the raw HTTP representation (as bytes) of the given request.
     This is provided only for reference since it's not the actual stream of
     bytes that will be send when performing the request (that's controlled
@@ -101,7 +101,7 @@ def request_httprepr(request: Request) -> bytes:
     return s
 
 
-def referer_str(request: Request) -> Optional[str]:
+def referer_str(request: "scrapy.Request") -> Optional[str]:
     """ Return Referer HTTP header suitable for logging. """
     referrer = request.headers.get('Referer')
     if referrer is None:
@@ -109,12 +109,14 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors='replace')
 
 
-def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
+def request_from_dict(d: dict, *, spider: Optional["scrapy.Spider"] = None) -> "scrapy.Request":
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
+    from scrapy import Request
+
     request_cls = load_object(d["_class"]) if "_class" in d else Request
     kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
     if d.get("callback") and spider:
