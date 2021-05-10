@@ -26,10 +26,6 @@ Request objects
 
 .. autoclass:: Request
 
-    A :class:`Request` object represents an HTTP request, which is usually
-    generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
-
     :param url: the URL of this request
 
         If the URL is invalid, a :exc:`ValueError` exception is raised.
@@ -205,11 +201,7 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
-    .. attribute:: Request.attributes
-
-        A tuple of :class:`str` objects containing all public attribute names (and ``__init__`` parameters)
-        for the class. Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
-        :func:`~scrapy.utils.request.request_from_dict`.
+    .. autoattribute:: Request.attributes
 
     .. method:: Request.copy()
 
@@ -650,6 +642,8 @@ dealing with JSON requests.
    :param dumps_kwargs: Parameters that will be passed to underlying :func:`json.dumps` method which is used to serialize
        data into JSON format.
    :type dumps_kwargs: dict
+
+   .. autoattribute:: JsonRequest.attributes
 
 JsonRequest usage example
 -------------------------

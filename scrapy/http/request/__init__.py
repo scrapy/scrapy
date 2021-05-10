@@ -13,17 +13,28 @@ import scrapy
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
-from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
 
 class Request(object_ref):
+    """Represents an HTTP request, which is usually generated in a Spider and
+    executed by the Downloader, thus generating a :class:`Response`.
+    """
 
     attributes: Tuple[str, ...] = (
-        "url", "method", "headers", "body", "cookies", "meta", "flags",
-        "encoding", "priority", "dont_filter", "callback", "errback", "cb_kwargs",
+        "url", "callback", "method", "headers", "body",
+        "cookies", "meta", "encoding", "priority",
+        "dont_filter", "errback", "flags", "cb_kwargs",
     )
+    """A tuple of :class:`str` objects containing the name of all public
+    attributes of the class that are also keyword parameters of the
+    ``__init__`` method.
+
+    Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+    :func:`~scrapy.utils.request.request_from_dict`.
+    """
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
@@ -152,11 +163,11 @@ class Request(object_ref):
 
         Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.
 
-        If a spider is given, this method will try to find out the name of the spider method used
-        as callback and include it in the output dict, raising an exception if it cannot be found.
+        If a spider is given, this method will try to find out the name of the spider methods used as callback
+        and errback and include them in the output dict, raising an exception if they cannot be found.
         """
         d = {
-            "url": to_unicode(self.url),  # urls are safe (safe_string_url)
+            "url": self.url,  # urls are safe (safe_string_url)
             "callback": _find_method(spider, self.callback) if callable(self.callback) else self.callback,
             "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
             "headers": dict(self.headers),

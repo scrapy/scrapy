@@ -109,7 +109,7 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors='replace')
 
 
-def request_from_dict(d: dict, spider: Optional[Spider] = None) -> Request:
+def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
