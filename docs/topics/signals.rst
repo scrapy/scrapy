@@ -51,12 +51,12 @@ Deferred signal handlers
 ========================
 
 Some signals support returning :class:`~twisted.internet.defer.Deferred`
-objects from their handlers, allowing you to run asynchronous code that
-does not block Scrapy. If a signal handler returns a
-:class:`~twisted.internet.defer.Deferred`, Scrapy waits for that
-:class:`~twisted.internet.defer.Deferred` to fire.
+or :term:`awaitable objects <awaitable>` from their handlers, allowing
+you to run asynchronous code that does not block Scrapy. If a signal
+handler returns one of these objects, Scrapy waits for that asynchronous
+operation to finish.
 
-Let's take an example::
+Let's take an example using :ref:`coroutines <topics-coroutines>`::
 
     class SignalSpider(scrapy.Spider):
         name = 'signals'
@@ -68,17 +68,15 @@ Let's take an example::
             crawler.signals.connect(spider.item_scraped, signal=signals.item_scraped)
             return spider
 
-        def item_scraped(self, item):
+        async def item_scraped(self, item):
             # Send the scraped item to the server
-            d = treq.post(
+            response = await treq.post(
                 'http://example.com/post',
                 json.dumps(item).encode('ascii'),
                 headers={b'Content-Type': [b'application/json']}
             )
-
-            # The next item will be scraped only after
-            # deferred (d) is fired
-            return d
+            content = await treq.content(response)
+            return content
 
         def parse(self, response):
             for quote in response.css('div.quote'):
@@ -87,27 +85,6 @@ Let's take an example::
                     'author': quote.css('small.author::text').get(),
                     'tags': quote.css('div.tags a.tag::text').getall(),
                 }
-
-Coroutines are also supported as can be seen :ref:`here <topics-coroutines>`.
-This is a more transparent approach and should be preferred over
-:class:`~twisted.internet.defer.Deferred` whenever possible.
-
-We will use the same concept as above::
-
-    import aiohttp
-    import asyncio
-
-
-    class SignalSpider(scrapy.Spider):
-        ...
-
-        async def item_scraped(self, item):
-            async with aiohttp.ClientSession() as session:
-                async with session.post('http://example.com/post', json=item) as response:
-                    html = await response.text()
-                    print("Body: ", html[:20])
-
-        ...
 
 See the :ref:`topics-signals-ref` below to know which signals support
 :class:`~twisted.internet.defer.Deferred` and :term:`awaitable objects <awaitable>`.
