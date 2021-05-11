@@ -4,17 +4,37 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+import inspect
+from typing import Optional, Tuple
+
 from w3lib.url import safe_url_string
 
+import scrapy
+from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
+from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
-from scrapy.http.common import obsolete_setter
-from scrapy.utils.curl import curl_to_request_kwargs
 
 
 class Request(object_ref):
+    """Represents an HTTP request, which is usually generated in a Spider and
+    executed by the Downloader, thus generating a :class:`Response`.
+    """
+
+    attributes: Tuple[str, ...] = (
+        "url", "callback", "method", "headers", "body",
+        "cookies", "meta", "encoding", "priority",
+        "dont_filter", "errback", "flags", "cb_kwargs",
+    )
+    """A tuple of :class:`str` objects containing the name of all public
+    attributes of the class that are also keyword parameters of the
+    ``__init__`` method.
+
+    Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+    :func:`~scrapy.utils.request.request_from_dict`.
+    """
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
@@ -99,11 +119,8 @@ class Request(object_ref):
         return self.replace()
 
     def replace(self, *args, **kwargs):
-        """Create a new Request with the same attributes except for those
-        given new values.
-        """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', 'flags',
-                  'encoding', 'priority', 'dont_filter', 'callback', 'errback', 'cb_kwargs']:
+        """Create a new Request with the same attributes except for those given new values"""
+        for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
@@ -136,8 +153,43 @@ class Request(object_ref):
 
         To translate a cURL command into a Scrapy request,
         you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
-
-       """
+        """
         request_kwargs = curl_to_request_kwargs(curl_command, ignore_unknown_options)
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
+
+    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> dict:
+        """Return a dictionary containing the Request's data.
+
+        Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.
+
+        If a spider is given, this method will try to find out the name of the spider methods used as callback
+        and errback and include them in the output dict, raising an exception if they cannot be found.
+        """
+        d = {
+            "url": self.url,  # urls are safe (safe_string_url)
+            "callback": _find_method(spider, self.callback) if callable(self.callback) else self.callback,
+            "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
+            "headers": dict(self.headers),
+        }
+        for attr in self.attributes:
+            d.setdefault(attr, getattr(self, attr))
+        if type(self) is not Request:
+            d["_class"] = self.__module__ + '.' + self.__class__.__name__
+        return d
+
+
+def _find_method(obj, func):
+    """Helper function for Request.to_dict"""
+    # Only instance methods contain ``__func__``
+    if obj and hasattr(func, '__func__'):
+        members = inspect.getmembers(obj, predicate=inspect.ismethod)
+        for name, obj_func in members:
+            # We need to use __func__ to access the original function object because instance
+            # method objects are generated each time attribute is retrieved from instance.
+            #
+            # Reference: The standard type hierarchy
+            # https://docs.python.org/3/reference/datamodel.html
+            if obj_func.__func__ is func.__func__:
+                return name
+    raise ValueError(f"Function {func} is not an instance method in: {obj}")

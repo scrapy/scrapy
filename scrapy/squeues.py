@@ -10,7 +10,7 @@ from queuelib import queue
 
 from scrapy.exceptions import SerializationError
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.utils.request import request_from_dict
 
 
 def _with_mkdir(queue_class):
@@ -64,20 +64,20 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key, *args, **kwargs)
 
         def push(self, request):
-            request = request_to_dict(request, self.spider)
+            request = request.to_dict(spider=self.spider)
             return super().push(request)
 
         def pop(self):
             request = super().pop()
             if not request:
                 return None
-            return request_from_dict(request, self.spider)
+            return request_from_dict(request, spider=self.spider)
 
         def peek(self):
             request = super().peek()
             if not request:
                 return None
-            return request_from_dict(request, self.spider)
+            return request_from_dict(request, spider=self.spider)
 
     return ScrapyRequestQueue
 
