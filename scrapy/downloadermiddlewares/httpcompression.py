@@ -58,8 +58,10 @@ class HttpCompressionMiddleware:
         if isinstance(response, Response):
             content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding:
-                encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                decoded_body = response.body
+                for encodings in content_encoding:
+                    for encoding in encodings.split(b','):
+                        decoded_body = self._decode(decoded_body, encoding.strip().lower())
                 if self.stats:
                     self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
                     self.stats.inc_value('httpcompression/response_count', spider=spider)
