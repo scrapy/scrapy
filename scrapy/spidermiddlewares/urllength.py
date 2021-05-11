@@ -8,7 +8,6 @@ import logging
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
-from scrapy.settings import default_settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +20,8 @@ class UrlLengthMiddleware:
     @classmethod
     def from_settings(cls, settings):
         maxlength = settings.getint('URLLENGTH_LIMIT')
-        if maxlength is None:
-            raise NotConfigured
+        if not maxlength:
+           raise NotConfigured
         return cls(maxlength)
 
     def process_spider_output(self, response, result, spider):
@@ -38,7 +37,4 @@ class UrlLengthMiddleware:
             else:
                 return True
 
-        if self.maxlength == default_settings.URLLENGTH_LIMIT:
-            return result
-        else:
-            return (r for r in result or () if _filter(r))
+        return (r for r in result or () if _filter(r))

@@ -439,5 +439,6 @@ UrlLengthMiddleware
    The :class:`UrlLengthMiddleware` can be configured through the following
    settings (see the settings documentation for more info):
 
-      * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
+      * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs. If URLLENGTH_LIMIT is equals
+	to ``0``, then :class:`UrlLengthMiddleware` middleware is disabled.
 

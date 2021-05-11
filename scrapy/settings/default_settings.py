@@ -285,7 +285,7 @@ STATSMAILER_RCPTS = []
 
 TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
-URLLENGTH_LIMIT = 0
+URLLENGTH_LIMIT = 2083
 
 USER_AGENT = f'Scrapy/{import_module("scrapy").__version__} (+https://scrapy.org)'
 
