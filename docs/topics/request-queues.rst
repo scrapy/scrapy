@@ -94,6 +94,8 @@ it has to conform to the following interface:
       used, for example, to create a unique file or folder to store the queue
       content.
 
+      *arg* and *kwargs* are used to restore internal state.
+
       If the input data is invalid, raise an exception from this class method
       of from your ``__init__`` method to halt the crawl.
 
@@ -138,9 +140,11 @@ it has to conform to the following interface:
 
       In case of a temporary problem or empty queue, ``None`` is returned.
 
-   .. method:: close(self)
+   .. method:: close(self) -> Optional[Tuple[List, Dict]]
 
-      Release internal resources (e.g. close files or sockets).
+      Release internal resources (e.g. close files or sockets) and return
+      current internal state if any. This state will be seriliazed and passed
+      to __init__ method.
 
    .. method:: __len__(self)
 
