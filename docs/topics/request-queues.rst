@@ -120,8 +120,9 @@ it has to conform to the following interface:
 
       Pop a request from the queue.
 
-      In case of a temporary problem, ``None`` is returned. Exceptions raised
-      in this method woudln't be handled and may lead to halt of the crawler.
+      In case of a temporary problem or empty queue, ``None`` is returned.
+      Exceptions raised in this method woudln't be handled and may lead to
+      halt of the crawler.
 
       The helper function :func:`~scrapy.utils.reqser.request_from_dict` can
       be used to convert a deserialized dict back into a
@@ -135,7 +136,7 @@ it has to conform to the following interface:
       Raises :exc:`NotImplementedError` if the underlying queue class does
       not implement a ``peek`` method, which is optional for queues.
 
-      In case of a temporary problem, ``None`` is returned.
+      In case of a temporary problem or empty queue, ``None`` is returned.
 
    .. method:: close(self)
 
