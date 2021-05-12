@@ -15,6 +15,7 @@ htmlcov/
 .coverage
 .pytest_cache/
 .coverage.*
+coverage.*
 .cache/
 .mypy_cache/
 /tests/keys/localhost.crt
