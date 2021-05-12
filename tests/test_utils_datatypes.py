@@ -1,26 +1,34 @@
 import copy
 import unittest
+import warnings
 from collections.abc import Mapping, MutableMapping
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
-from scrapy.utils.datatypes import CaselessDict, LocalCache, LocalWeakReferencedCache, SequenceExclude
+from scrapy.utils.datatypes import (
+    CaseInsensitiveDict,
+    CaselessDict,
+    LocalCache,
+    LocalWeakReferencedCache,
+    SequenceExclude,
+)
 from scrapy.utils.python import garbage_collect
 
 
 __doctests__ = ['scrapy.utils.datatypes']
 
 
-class CaselessDictTest(unittest.TestCase):
+class CaseInsensitiveDictMixin:
 
     def test_init_dict(self):
         seq = {'red': 1, 'black': 3}
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
     def test_init_pair_sequence(self):
         seq = (('red', 1), ('black', 3))
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
@@ -39,7 +47,7 @@ class CaselessDictTest(unittest.TestCase):
                 return len(self._d)
 
         seq = MyMapping(red=1, black=3)
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
@@ -64,12 +72,12 @@ class CaselessDictTest(unittest.TestCase):
                 return len(self._d)
 
         seq = MyMutableMapping(red=1, black=3)
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d['red'], 1)
         self.assertEqual(d['black'], 3)
 
     def test_caseless(self):
-        d = CaselessDict()
+        d = self.dict_class()
         d['key_Lower'] = 1
         self.assertEqual(d['KEy_loWer'], 1)
         self.assertEqual(d.get('KEy_loWer'), 1)
@@ -79,19 +87,19 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d.get('key_Lower'), 3)
 
     def test_delete(self):
-        d = CaselessDict({'key_lower': 1})
+        d = self.dict_class({'key_lower': 1})
         del d['key_LOWER']
         self.assertRaises(KeyError, d.__getitem__, 'key_LOWER')
         self.assertRaises(KeyError, d.__getitem__, 'key_lower')
 
     def test_getdefault(self):
-        d = CaselessDict()
+        d = self.dict_class()
         self.assertEqual(d.get('c', 5), 5)
         d['c'] = 10
         self.assertEqual(d.get('c', 5), 10)
 
     def test_setdefault(self):
-        d = CaselessDict({'a': 1, 'b': 2})
+        d = self.dict_class({'a': 1, 'b': 2})
 
         r = d.setdefault('A', 5)
         self.assertEqual(r, 1)
@@ -104,15 +112,15 @@ class CaselessDictTest(unittest.TestCase):
     def test_fromkeys(self):
         keys = ('a', 'b')
 
-        d = CaselessDict.fromkeys(keys)
+        d = self.dict_class.fromkeys(keys)
         self.assertEqual(d['A'], None)
         self.assertEqual(d['B'], None)
 
-        d = CaselessDict.fromkeys(keys, 1)
+        d = self.dict_class.fromkeys(keys, 1)
         self.assertEqual(d['A'], 1)
         self.assertEqual(d['B'], 1)
 
-        instance = CaselessDict()
+        instance = self.dict_class()
         d = instance.fromkeys(keys)
         self.assertEqual(d['A'], None)
         self.assertEqual(d['B'], None)
@@ -122,18 +130,19 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d['B'], 1)
 
     def test_contains(self):
-        d = CaselessDict()
+        d = self.dict_class()
         d['a'] = 1
         assert 'a' in d
+        assert 'A' in d
 
     def test_pop(self):
-        d = CaselessDict()
+        d = self.dict_class()
         d['a'] = 1
         self.assertEqual(d.pop('A'), 1)
         self.assertRaises(KeyError, d.pop, 'A')
 
     def test_normkey(self):
-        class MyDict(CaselessDict):
+        class MyDict(self.dict_class):
             def normkey(self, key):
                 return key.title()
 
@@ -142,7 +151,7 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(list(d.keys()), ['Key-One'])
 
     def test_normvalue(self):
-        class MyDict(CaselessDict):
+        class MyDict(self.dict_class):
             def normvalue(self, value):
                 if value is not None:
                     return value + 1
@@ -171,11 +180,35 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d.get('key'), 2)
 
     def test_copy(self):
-        h1 = CaselessDict({'header1': 'value'})
+        h1 = self.dict_class({'header1': 'value'})
         h2 = copy.copy(h1)
         self.assertEqual(h1, h2)
         self.assertEqual(h1.get('header1'), h2.get('header1'))
-        assert isinstance(h2, CaselessDict)
+        assert isinstance(h2, self.dict_class)
+
+
+class CaseInsensitiveDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
+    dict_class = CaseInsensitiveDict
+
+    def test_repr(self):
+        d = self.dict_class({"foo": "bar"})
+        self.assertEqual(repr(d), "<CaseInsensitiveDict: {'foo': 'bar'}>")
+
+
+class CaselessDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
+    dict_class = CaselessDict
+
+    def test_deprecation_message(self):
+        with warnings.catch_warnings(record=True) as caught:
+            self.dict_class({"foo": "bar"})
+
+            self.assertEqual(len(caught), 1)
+            self.assertTrue(issubclass(caught[0].category, ScrapyDeprecationWarning))
+            self.assertEqual(
+                "scrapy.utils.datatypes.CaselessDict is deprecated,"
+                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead",
+                str(caught[0].message),
+            )
 
 
 class SequenceExcludeTest(unittest.TestCase):

@@ -6,13 +6,29 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import collections
+import warnings
 import weakref
 from collections.abc import Mapping
+from typing import Any, AnyStr
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class CaselessDict(dict):
 
     __slots__ = ()
+
+    def __new__(cls, *args, **kwargs):
+        from scrapy.http.headers import Headers
+
+        if issubclass(cls, CaselessDict) and not issubclass(cls, Headers):
+            warnings.warn(
+                "scrapy.utils.datatypes.CaselessDict is deprecated,"
+                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(self, seq=None):
         super().__init__()
@@ -61,6 +77,36 @@ class CaselessDict(dict):
 
     def pop(self, key, *args):
         return dict.pop(self, self.normkey(key), *args)
+
+
+class CaseInsensitiveDict(collections.UserDict):
+    """A dict-like structure that accepts strings or bytes as keys and allows case-insensitive lookups.
+
+    It also allows overriding key and value normalization by defining custom `normkey` and `normvalue` methods.
+    """
+
+    def __getitem__(self, key: AnyStr) -> Any:
+        return super().__getitem__(self.normkey(key))
+
+    def __setitem__(self, key: AnyStr, value: Any) -> None:
+        super().__setitem__(self.normkey(key), self.normvalue(value))
+
+    def __delitem__(self, key: AnyStr) -> None:
+        super().__delitem__(self.normkey(key))
+
+    def __contains__(self, key: AnyStr) -> bool:  # type: ignore[override]
+        return super().__contains__(self.normkey(key))
+
+    def normkey(self, key: AnyStr) -> AnyStr:
+        """Method to normalize dictionary key access"""
+        return key.lower()
+
+    def normvalue(self, value: Any) -> Any:
+        """Method to normalize values prior to be set"""
+        return value
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {super().__repr__()}>"
 
 
 class LocalCache(collections.OrderedDict):
