@@ -8,9 +8,8 @@ import pickle
 
 from queuelib import queue
 
-from scrapy.http.request import Request, RequestList
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.utils.request import request_from_dict, request_list_from_dict
 
 
 def _with_mkdir(queue_class):
@@ -69,19 +68,16 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key)
 
         def push(self, obj):
-            if isinstance(obj, RequestList):
-                super().push(obj.to_dict(self.spider))
-            elif isinstance(obj, Request):
-                super().push(request_to_dict(obj, self.spider))
+            super().push(obj.to_dict(spider=self.spider))
 
         def pop(self):
             obj = super().pop()
             if not obj:
                 return None
             if obj.get("requests"):
-                return RequestList.from_dict(obj, self.spider)
+                return request_list_from_dict(obj, spider=self.spider)
             elif obj.get("url"):
-                return request_from_dict(obj, self.spider)
+                return request_from_dict(obj, spider=self.spider)
 
         def peek(self):
             """Returns the next object to be returned by :meth:`pop`,
@@ -94,9 +90,9 @@ def _scrapy_serialization_queue(queue_class):
             if not obj:
                 return None
             if obj.get("requests"):
-                return RequestList.from_dict(obj, self.spider)
+                return request_list_from_dict(obj, spider=self.spider)
             elif obj.get("url"):
-                return request_from_dict(obj, self.spider)
+                return request_from_dict(obj, spider=self.spider)
 
     return ScrapyRequestQueue
 

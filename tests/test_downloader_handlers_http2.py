@@ -1,5 +1,5 @@
 import json
-from unittest import mock
+from unittest import mock, skipIf
 
 from pytest import mark
 from testfixtures import LogCapture
@@ -7,8 +7,8 @@ from twisted.internet import defer, error, reactor
 from twisted.trial import unittest
 from twisted.web import server
 from twisted.web.error import SchemeNotSupported
+from twisted.web.http import H2_ENABLED
 
-from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
@@ -21,10 +21,16 @@ from tests.test_downloader_handlers import (
 )
 
 
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2TestCase(Https11TestCase):
+
     scheme = 'https'
-    download_handler_cls = H2DownloadHandler
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
+
+    @classmethod
+    def setUpClass(cls):
+        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+        cls.download_handler_cls = H2DownloadHandler
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -187,9 +193,14 @@ class Https2InvalidDNSPattern(Https2TestCase):
         super(Https2InvalidDNSPattern, self).setUp()
 
 
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2CustomCiphers(Https11CustomCiphers):
     scheme = 'https'
-    download_handler_cls = H2DownloadHandler
+
+    @classmethod
+    def setUpClass(cls):
+        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+        cls.download_handler_cls = H2DownloadHandler
 
 
 class Http2MockServerTestCase(Http11MockServerTestCase):
@@ -201,6 +212,7 @@ class Http2MockServerTestCase(Http11MockServerTestCase):
     }
 
 
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2ProxyTestCase(Http11ProxyTestCase):
     # only used for HTTPS tests
     keyfile = 'keys/localhost.key'
@@ -209,8 +221,12 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     scheme = 'https'
     host = u'127.0.0.1'
 
-    download_handler_cls = H2DownloadHandler
     expected_http_proxy_request_body = b'/'
+
+    @classmethod
+    def setUpClass(cls):
+        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+        cls.download_handler_cls = H2DownloadHandler
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
