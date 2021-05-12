@@ -53,7 +53,6 @@ CRAWLER_MOCK = None
 
 
 class MarshalFifoDiskQueueTest(FifoDiskQueueTestMixin):
-    chunksize = 100000
 
     def queue(self):
         return _MarshalFifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
