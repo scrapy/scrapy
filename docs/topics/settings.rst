@@ -1620,7 +1620,8 @@ Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
 the default value for this setting see: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
-If URLLENGTH_LIMIT is equals to ``0``, then the :class:`UrlLengthMiddleware` middleware is disabled.
+
+If URLLENGTH_LIMIT is ``0``, then the :class:`scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` middleware is disabled.
 
 .. setting:: USER_AGENT
 
