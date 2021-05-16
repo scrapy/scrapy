@@ -109,10 +109,8 @@ class Request(object_ref):
     def encoding(self):
         return self._encoding
 
-    def __str__(self):
+    def __repr__(self):
         return f"<{self.method} {self.url}>"
-
-    __repr__ = __str__
 
     def copy(self):
         """Return a copy of this Request"""

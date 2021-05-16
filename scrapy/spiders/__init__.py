@@ -106,10 +106,8 @@ class Spider(object_ref):
         if callable(closed):
             return closed(reason)
 
-    def __str__(self):
+    def __repr__(self):
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
-
-    __repr__ = __str__
 
 
 # Top-level imports

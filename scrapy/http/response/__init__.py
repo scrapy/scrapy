@@ -87,10 +87,8 @@ class Response(object_ref):
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 
-    def __str__(self):
+    def __repr__(self):
         return f"<{self.status} {self.url}>"
-
-    __repr__ = __str__
 
     def copy(self):
         """Return a copy of this Response"""
