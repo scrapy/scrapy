@@ -488,6 +488,7 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
 
 class StateInClassQueue(PickleLifoDiskQueue):
     STATE = 0
+
     def __init__(self, crawler, path, state):
         type(self).STATE = state
         super().__init__(crawler, path)
