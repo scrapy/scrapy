@@ -52,9 +52,23 @@ class ScrapyPriorityQueue:
         self.curprio = None
         self.init_prios(startprios)
 
+    @classmethod
+    def bring_prios_up_to_date(_, startprios):
+
+        def _is_valid(x):
+            return (isinstance(x, tuple) or isinstance(x, list)) and len(x) == 2
+
+        is_valid = all(map(_is_valid, startprios))
+        if is_valid:
+            return startprios
+
+        return [(x, None) for x in startprios]
+
     def init_prios(self, startprios):
         if not startprios:
             return
+
+        startprios = type(self).bring_prios_up_to_date(startprios)
 
         for priority, state in startprios:
             self.queues[priority] = self.qfactory(priority, state)

@@ -15,8 +15,12 @@ from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
 from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http import Request
+from scrapy.pqueues import (
+    ScrapyPriorityQueue,
+)
 from scrapy.spiders import Spider
 from scrapy.squeues import (
+    FifoMemoryQueue,
     PickleLifoDiskQueue,
     _scrapy_serialization_queue,
     _serializable_queue,
@@ -515,3 +519,21 @@ class StateTester(SchedulerHandler, unittest.TestCase):
 
         self.create_scheduler()
         assert StateInClassQueue.STATE == 5
+
+
+def test_obsolete_variant_for_pq():
+    mock_crawler = MockCrawler(
+        'scrapy.pqueue,ScrapyPriorityQueue',
+        None,
+        'scrapy.squeues.PickleLifoDiskQueue',
+        {},
+    )
+    priorities = [1, 2, 3]
+    pqueue = ScrapyPriorityQueue(
+        mock_crawler,
+        FifoMemoryQueue,
+        '',
+        priorities,
+    )
+    result = [p for p in pqueue.queues]
+    assert set(priorities) == set(result)
