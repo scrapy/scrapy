@@ -56,17 +56,18 @@ class ScrapyPriorityQueue:
         if not startprios:
             return
 
-        for priority in startprios:
-            self.queues[priority] = self.qfactory(priority)
+        for priority, state in startprios:
+            self.queues[priority] = self.qfactory(priority, state)
 
-        self.curprio = min(startprios)
+        self.curprio = min(p for p, s in startprios)
 
-    def qfactory(self, key):
+    def qfactory(self, key, state):
         return create_instance(
             self.downstream_queue_cls,
             None,
             self.crawler,
             self.key + '/' + str(key),
+            state,
         )
 
     def priority(self, request):
@@ -75,7 +76,7 @@ class ScrapyPriorityQueue:
     def push(self, request):
         priority = self.priority(request)
         if priority not in self.queues:
-            self.queues[priority] = self.qfactory(priority)
+            self.queues[priority] = self.qfactory(priority, None)
         q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
         if self.curprio is None or priority < self.curprio:
@@ -102,8 +103,7 @@ class ScrapyPriorityQueue:
     def close(self):
         active = []
         for p, q in self.queues.items():
-            active.append(p)
-            q.close()
+            active.append((p, q.close()))
         return active
 
     def __len__(self):
