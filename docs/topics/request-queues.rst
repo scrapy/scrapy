@@ -86,7 +86,7 @@ it has to conform to the following interface:
 
 .. class:: MyExternalQueue
 
-   .. classmethod:: from_crawler(cls, crawler: scrapy.crawler.Crawler, key: str, *args, **kwargs)
+   .. classmethod:: __init__(cls, crawler: scrapy.crawler.Crawler, key: str, state=None)
 
       Return an instance of this disk downstream queue class.
 
@@ -140,7 +140,7 @@ it has to conform to the following interface:
 
       In case of a temporary problem or empty queue, ``None`` is returned.
 
-   .. method:: close(self) -> Optional[Tuple[List, Dict]]
+   .. method:: close(self) -> Optional[Any]
 
       Release internal resources (e.g. close files or sockets) and return
       current internal state if any. This state will be seriliazed and passed
