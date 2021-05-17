@@ -17,6 +17,7 @@ from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.squeues import (
+    PickleLifoDiskQueue,
     _scrapy_serialization_queue,
     _serializable_queue,
     _with_mkdir,
@@ -479,3 +480,38 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
         self.scheduler.enqueue_request(Request('http://example.com/'))
         self.scheduler.enqueue_request(Request('http://example.com/'))
         assert _find_in_logs(self.caplog, 'hello world') == 3
+
+
+class StateInClassQueue(PickleLifoDiskQueue):
+    STATE = 0
+    def __init__(self, crawler, path, state):
+        type(self).STATE = state
+        super().__init__(crawler, path)
+
+    def close(self):
+        super().close()
+        return type(self).STATE
+
+
+class StateTester(SchedulerHandler, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+    disk_queue_cls = 'tests.test_scheduler.StateInClassQueue'
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
+
+    def test_access(self):
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        StateInClassQueue.STATE = 5
+        self.close_scheduler()
+
+        StateInClassQueue.STATE = 0
+
+        self.create_scheduler()
+        assert StateInClassQueue.STATE == 5
