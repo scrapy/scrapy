@@ -81,7 +81,7 @@ class PriorityQueueTest(unittest.TestCase):
         self.assertEqual(len(queue), 2)
         self.assertEqual(dequeued.url, req3.url)
         self.assertEqual(dequeued.priority, req3.priority)
-        self.assertEqual(queue.close(), [-1, -2])
+        self.assertEqual(queue.close(), [(-1, None), (-2, None)])
 
 
 class DownloaderAwarePriorityQueueTest(unittest.TestCase):
