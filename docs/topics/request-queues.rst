@@ -86,7 +86,7 @@ it has to conform to the following interface:
 
 .. class:: MyExternalQueue
 
-   .. classmethod:: __init__(cls, crawler: scrapy.crawler.Crawler, key: str, state=None)
+   .. classmethod:: __init__(cls, crawler: scrapy.crawler.Crawler, key: str, state)
 
       Return an instance of this disk downstream queue class.
 
