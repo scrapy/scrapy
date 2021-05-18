@@ -150,7 +150,7 @@ class Stream:
                 self.close(StreamCloseReason.CANCELLED)
 
         self._deferred_response = Deferred(_cancel)
-    
+
     def __repr__(self):
         return f'Stream(id={self.stream_id!r})'
 
