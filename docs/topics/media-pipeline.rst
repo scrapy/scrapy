@@ -111,13 +111,14 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 
    IMAGES_STORE = '/path/to/valid/dir'
 
-Supported Storage
+.. _topics-file-naming:
+
+File Naming
 =================
 
-File system storage
+Default File Naming
 -------------------
-
-The files are stored using a `SHA1 hash`_ of their URLs for the file names.
+By default, Scrapy will name files using a `SHA1 hash`_ of their origination URLs.
 
 For example, the following image URL::
 
@@ -127,9 +128,59 @@ Whose ``SHA1 hash`` is::
 
     3afec3b4765f8f0a07b78f98c07b83f013567a0a
 
-Will be downloaded and stored in the following file::
+Will be downloaded and stored in your chosen :ref:`storage method <topics-supported-storage>` using the following file name::
 
-   <IMAGES_STORE>/full/3afec3b4765f8f0a07b78f98c07b83f013567a0a.jpg
+   3afec3b4765f8f0a07b78f98c07b83f013567a0a.jpg
+
+Custom File Naming
+-------------------
+You may wish to use a different calculated file name for saved files.
+For example, classifying an image by including meta in the file name.
+
+Customize file names by overriding the ``file_path`` class method of your
+pipeline.
+
+For example, an image pipeline with image url::
+
+   http://www.example.com/product/images/large/front/0000000004166
+
+Can be processed into a file name with a condensed hash and the perspective
+``front``::
+
+  00b08510e4_front.jpg
+
+By overriding ``file_path`` like this:
+
+.. code-block:: python
+
+  import hashlib
+  from os.path import splitext
+
+  def file_path(self, request, response=None, info=None, *, item=None):
+      image_url_hash = hashlib.shake_256(request.url.encode()).hexdigest(5)
+      image_perspective = request.url.split('/')[-2]
+      image_filename = f'{image_url_hash}_{image_perspective}.jpg'
+
+      return image_filename
+
+.. warning::
+  If your custom file name scheme relies on meta data that can vary between
+  scrapes it may lead to unexpected re-downloading of existing media using
+  new file names.
+
+For more information about the ``file_path`` method, see :ref:`topics-media-pipeline-override`.
+
+.. _topics-supported-storage:
+
+Supported Storage
+=================
+
+File system storage
+-------------------
+
+File system storage will save files to the following path::
+
+   <IMAGES_STORE>/full/<FILE_NAME>
 
 Where:
 
@@ -138,6 +189,10 @@ Where:
 
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
+
+* ``<FILE_NAME>`` is the default file name created by Scrapy or a customized file
+  name (if used).  For more info see :ref:`topics-file-naming`.
+
 
 .. _media-pipeline-ftp:
 
