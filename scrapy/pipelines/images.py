@@ -137,6 +137,7 @@ class ImagesPipeline(FilesPipeline):
                                  f"{self.min_width}x{self.min_height})")
 
         image, buf = self.convert_image(orig_image)
+        orig_image.close()
         yield path, image, buf
 
         for thumb_id, size in self.thumbs.items():
