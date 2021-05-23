@@ -85,7 +85,7 @@ class LocalCache(collections.OrderedDict):
 
         while True:
             try:
-                val = self.values().__iter__().__next__()
+                val = next(iter(self.values()))
             except StopIteration as e:
                 break
             
