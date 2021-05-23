@@ -7,6 +7,7 @@ from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from scrapy.settings import Settings
+from scrapy.exceptions import NotConfigured
 
 
 class TestUrlLengthMiddleware(TestCase):
@@ -39,3 +40,14 @@ class TestUrlLengthMiddleware(TestCase):
         self.assertEqual(ric, 1)
 
         self.assertIn(f'Ignoring link (url length > {self.maxlength})', str(log))
+
+    def test_setting(self):
+        length = 10
+        settings = Settings({'URLLENGTH_LIMIT': length})
+        test_ok = UrlLengthMiddleware.from_settings(settings)
+        settings_error = Settings({'URLLENGTH_LIMIT': 0})
+        with self.assertRaises(NotConfigured) as cm:
+            UrlLengthMiddleware.from_settings(settings_error)
+        the_exception = cm.exception
+        self.assertEquals(type(the_exception), type(NotConfigured()))
+        self.assertEquals(test_ok.maxlength, length)
