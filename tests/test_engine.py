@@ -477,7 +477,8 @@ class EngineTest(unittest.TestCase):
             assert _find_in_warning_list(
                 warning_list,
                 ScrapyDeprecationWarning,
-                "ExecutionEngine.schedule is deprecated, please use ExecutionEngine.crawl or ExecutionEngine.download instead",
+                "ExecutionEngine.schedule is deprecated, please use "
+                "ExecutionEngine.crawl or ExecutionEngine.download instead",
             )
 
     @defer.inlineCallbacks
