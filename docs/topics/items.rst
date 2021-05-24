@@ -200,8 +200,12 @@ It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
 
+<<<<<<< HEAD
 .. class:: scrapy.item.Field([arg])
 .. class:: scrapy.Field([arg])
+=======
+.. class:: Field([arg])
+>>>>>>> parent of e821e2de... Import more paths #2733
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
