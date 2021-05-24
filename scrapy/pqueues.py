@@ -56,7 +56,7 @@ class ScrapyPriorityQueue:
     def bring_prios_up_to_date(_, startprios):
 
         def _is_valid(x):
-            return (isinstance(x, tuple) or isinstance(x, list)) and len(x) == 2
+            return isinstance(x, (tuple, list)) and len(x) == 2
 
         is_valid = all(map(_is_valid, startprios))
         if is_valid:
