@@ -7,8 +7,8 @@ from typing import Optional, Type, TypeVar
 
 from twisted.internet.defer import Deferred
 
-from scrapy.exceptions import SerializationError, TransientError
 from scrapy.crawler import Crawler
+from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http.request import Request
 from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir

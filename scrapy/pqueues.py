@@ -38,7 +38,8 @@ class ScrapyPriorityQueue:
 
     startprios is a sequence of priorities to start with. If the queue was
     previously closed leaving some priority buckets non-empty, those priorities
-    should be passed in startprios."""
+    should be passed in startprios.
+    """
 
     @classmethod
     def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
@@ -52,8 +53,8 @@ class ScrapyPriorityQueue:
         self.curprio = None
         self.init_prios(startprios)
 
-    @classmethod
-    def bring_prios_up_to_date(_, startprios):
+    @staticmethod
+    def bring_prios_up_to_date(startprios):
 
         def _is_valid(x):
             return isinstance(x, (tuple, list)) and len(x) == 2
@@ -68,7 +69,7 @@ class ScrapyPriorityQueue:
         if not startprios:
             return
 
-        startprios = type(self).bring_prios_up_to_date(startprios)
+        startprios = self.bring_prios_up_to_date(startprios)
 
         for priority, state in startprios:
             self.queues[priority] = self.qfactory(priority, state)
