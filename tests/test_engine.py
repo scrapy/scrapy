@@ -233,6 +233,7 @@ def _find_in_warning_list(warning_list, category, message):
 
     return False
 
+
 class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawler(self):
