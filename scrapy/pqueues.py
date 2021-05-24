@@ -54,7 +54,7 @@ class ScrapyPriorityQueue:
         self.init_prios(startprios)
 
     @staticmethod
-    def bring_prios_up_to_date(startprios):
+    def _bring_prios_up_to_date(startprios):
 
         def _is_valid(x):
             return isinstance(x, (tuple, list)) and len(x) == 2
@@ -69,7 +69,7 @@ class ScrapyPriorityQueue:
         if not startprios:
             return
 
-        startprios = self.bring_prios_up_to_date(startprios)
+        startprios = self._bring_prios_up_to_date(startprios)
 
         for priority, state in startprios:
             self.queues[priority] = self.qfactory(priority, state)
