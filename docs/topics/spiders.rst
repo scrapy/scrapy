@@ -17,15 +17,15 @@ For spiders, the scraping cycle goes through something like this:
    those requests.
 
    The first requests to perform are obtained by calling the
-   :meth:`~scrapy.spiders.Spider.start_requests` method which (by default)
-   generates :class:`~scrapy.http.Request` for the URLs specified in the
-   :attr:`~scrapy.spiders.Spider.start_urls` and the
-   :attr:`~scrapy.spiders.Spider.parse` method as callback function for the
+   :meth:`~scrapy.Spider.start_requests` method which (by default)
+   generates :class:`~scrapy.Request` for the URLs specified in the
+   :attr:`~scrapy.Spider.start_urls` and the
+   :attr:`~scrapy.Spider.parse` method as callback function for the
    Requests.
 
 2. In the callback function, you parse the response (web page) and return
    :ref:`item objects <topics-items>`,
-   :class:`~scrapy.http.Request` objects, or an iterable of these objects.
+   :class:`~scrapy.Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
    response handled by the specified callback.
@@ -86,7 +86,7 @@ scrapy.Spider
 
        A list of URLs where the spider will begin to crawl from, when no
        particular URLs are specified. So, the first pages downloaded will be those
-       listed here. The subsequent :class:`~scrapy.http.Request` will be generated successively from data
+       listed here. The subsequent :class:`~scrapy.Request` will be generated successively from data
        contained in the start URLs.
 
    .. attribute:: custom_settings
@@ -179,7 +179,7 @@ scrapy.Spider
        the same requirements as the :class:`Spider` class.
 
        This method, as well as any other Request callback, must return an
-       iterable of :class:`~scrapy.http.Request` and/or :ref:`item objects
+       iterable of :class:`~scrapy.Request` and/or :ref:`item objects
        <topics-items>`.
 
        :param response: the response to parse
@@ -365,7 +365,7 @@ CrawlSpider
       This method is called for each response produced for the URLs in
       the spider's ``start_urls`` attribute. It allows to parse
       the initial responses and must return either an
-      :ref:`item object <topics-items>`, a :class:`~scrapy.http.Request`
+      :ref:`item object <topics-items>`, a :class:`~scrapy.Request`
       object, or an iterable containing any of them.
 
 Crawling rules
@@ -375,7 +375,7 @@ Crawling rules
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page. Each produced link will
-   be used to generate a :class:`~scrapy.http.Request` object, which will contain the
+   be used to generate a :class:`~scrapy.Request` object, which will contain the
    link's text in its ``meta`` dictionary (under the ``link_text`` key).
    If omitted, a default link extractor created with no arguments will be used,
    resulting in all links being extracted.
@@ -384,9 +384,9 @@ Crawling rules
    object with that name will be used) to be called for each link extracted with
    the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
    as its first argument and must return either a single instance or an iterable of
-   :ref:`item objects <topics-items>` and/or :class:`~scrapy.http.Request` objects
+   :ref:`item objects <topics-items>` and/or :class:`~scrapy.Request` objects
    (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
-   object will contain the text of the link that produced the :class:`~scrapy.http.Request`
+   object will contain the text of the link that produced the :class:`~scrapy.Request`
    in its ``meta`` dictionary (under the ``link_text`` key)
 
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
@@ -403,7 +403,7 @@ Crawling rules
 
    ``process_request`` is a callable (or a string, in which case a method from
    the spider object with that name will be used) which will be called for every
-   :class:`~scrapy.http.Request` extracted by this rule. This callable should
+   :class:`~scrapy.Request` extracted by this rule. This callable should
    take said request as first argument and the :class:`~scrapy.http.Response`
    from which the request originated as second argument. It must return a
    ``Request`` object or ``None`` (to filter out the request).
@@ -538,7 +538,7 @@ XMLFeedSpider
         :class:`~scrapy.selector.Selector` for each node.  Overriding this
         method is mandatory. Otherwise, you spider won't work.  This method
         must return an :ref:`item object <topics-items>`, a
-        :class:`~scrapy.http.Request` object, or an iterable containing any of
+        :class:`~scrapy.Request` object, or an iterable containing any of
         them.
 
     .. method:: process_results(response, results)
