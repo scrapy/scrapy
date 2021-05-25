@@ -1,7 +1,6 @@
 import unittest
 from unittest import mock
-import warnings
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, _BaseItem, BaseItem, DictItem, Field, Item, ItemMeta
@@ -330,7 +329,7 @@ class BaseItemTest(unittest.TestCase):
             pass
 
         with catch_warnings():
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
             self.assertTrue(isinstance(BaseItem(), BaseItem))
             self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
             self.assertTrue(isinstance(Item(), BaseItem))
