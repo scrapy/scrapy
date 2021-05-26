@@ -269,7 +269,7 @@ class ExecutionEngine:
     ) -> Union[Deferred, Response]:
         assert self.slot is not None  # typing
         self.slot.remove_request(request)
-        return self.download(result) if isinstance(result, Request) else result
+        return self.download(result, spider) if isinstance(result, Request) else result
 
     def _download(self, request: Request, spider: Spider) -> Deferred:
         assert self.slot is not None  # typing
