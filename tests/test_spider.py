@@ -162,6 +162,85 @@ class XMLFeedSpiderTest(SpiderTest):
                  'custom': []},
             ], iterator)
 
+    def test_kwargs_accepting_parse(self):
+        docs = [{
+            "body": b"""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
+                    xmlns:y="http://www.example.com/schemas/extras/1.0">
+                    <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated>
+                            <other value="bar" y:custom="fuu"/>
+                    </url>
+                    <url><loc>http://www.example.com/</loc><y:updated>2009-08-16</updated><other value="foo"/></url>
+                </urlset>""",
+            "itertag": "url",
+            "namespaces": (
+                ('a', 'http://www.google.com/schemas/sitemap/0.84'),
+                ('b', 'http://www.example.com/schemas/extras/1.0'),
+            ),
+            "rules": {
+                "loc": 'a:loc/text()',
+                "updated": 'b:updated/text()',
+                "other": 'other/@value',
+                "custom": 'other/@b:custom'
+            },
+            "outputs": [
+                {'loc': ['http://www.example.com/Special-Offers.html'],
+                 'updated': ['2009-08-16'],
+                 'custom': ['fuu'],
+                 'other': ['bar']},
+                {'loc': [],
+                 'updated': ['2009-08-16'],
+                 'other': ['foo'],
+                 'custom': []},
+            ]
+            }, {
+            "body": b"""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <note>
+                    <to>Tove</to>
+                    <from>Jani</from>
+                    <heading>Reminder</heading>
+                    <body>Don't forget me this weekend!</body>
+                </note>""",
+            "itertag": "note",
+            "rules": {
+                "to": './/to/text()',
+                "from": './/from/text()',
+                "heading": './/heading/text()',
+                "body": './/body/text()'
+            },
+            "outputs": [
+                {
+                    "to": ["Tove"],
+                    "from": ["Jani"],
+                    "heading": ["Reminder"],
+                    "body": ["Don't forget me this weekend!"]
+                }
+            ]
+        }]
+
+        class _XMLSpider(self.spider_class):
+
+            def parse_node(self, response, node, **kwargs):
+                collected_data = {}
+                for key,value in kwargs["rules"].items():
+                    collected_data[key] = node.xpath(value).getall()
+                yield collected_data
+        
+
+        for document in docs:
+            response = XmlResponse(url='http://example.com/sitemap.xml', body=document["body"])
+            spider = _XMLSpider("example", iterator="xml")
+            if "itertag" in document and document["itertag"] != None:
+                spider.itertag = document["itertag"]
+            if "namespaces" in document and document["namespaces"] != None and len(document["namespaces"]) > 0:
+                spider.namespaces += tuple(document["namespaces"])
+            output = list(spider._parse(response, **{"rules": document["rules"]} ))
+            self.assertEqual(len(output),len(document["outputs"]), "checking correct rules implementation using length" )
+            self.assertEqual(output, document["outputs"], "exact output matching failed")
+
+
 
 class CSVFeedSpiderTest(SpiderTest):
 
@@ -310,7 +389,8 @@ class CrawlSpiderTest(SpiderTest):
             name = "test"
             allowed_domains = ['example.org']
             rules = (
-                Rule(LinkExtractor(), process_request=process_request_meta_response_class),
+                Rule(LinkExtractor(),
+                     process_request=process_request_meta_response_class),
             )
 
         spider = _CrawlSpider()
@@ -355,7 +435,8 @@ class CrawlSpiderTest(SpiderTest):
             name = "test"
             allowed_domains = ['example.org']
             rules = (
-                Rule(LinkExtractor(), process_request='process_request_meta_response_class'),
+                Rule(LinkExtractor(),
+                     process_request='process_request_meta_response_class'),
             )
 
             def process_request_meta_response_class(self, request, response):
@@ -429,11 +510,11 @@ class SitemapSpiderTest(SpiderTest):
         self.assertSitemapBody(r, self.BODY)
 
     def test_get_sitemap_body_xml_url_compressed(self):
-        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
+        r = Response(url="http://www.example.com/sitemap.xml.gz",body=self.GZBODY)
         self.assertSitemapBody(r, self.BODY)
 
         # .xml.gz but body decoded by HttpCompression middleware already
-        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.BODY)
+        r = Response(url="http://www.example.com/sitemap.xml.gz",body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
     def test_get_sitemap_urls_from_robotstxt(self):
@@ -563,7 +644,8 @@ Sitemap: /sitemap-relative-url.xml
             def sitemap_filter(self, entries):
                 from datetime import datetime
                 for entry in entries:
-                    date_time = datetime.strptime(entry['lastmod'].split('T')[0], '%Y-%m-%d')
+                    date_time = datetime.strptime(
+                        entry['lastmod'].split('T')[0], '%Y-%m-%d')
                     if date_time.year > 2004:
                         yield entry
 
