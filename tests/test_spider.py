@@ -389,8 +389,7 @@ class CrawlSpiderTest(SpiderTest):
             name = "test"
             allowed_domains = ['example.org']
             rules = (
-                Rule(LinkExtractor(),
-                     process_request=process_request_meta_response_class),
+                Rule(LinkExtractor(),process_request=process_request_meta_response_class),
             )
 
         spider = _CrawlSpider()
@@ -435,8 +434,7 @@ class CrawlSpiderTest(SpiderTest):
             name = "test"
             allowed_domains = ['example.org']
             rules = (
-                Rule(LinkExtractor(),
-                     process_request='process_request_meta_response_class'),
+                Rule(LinkExtractor(),process_request='process_request_meta_response_class'),
             )
 
             def process_request_meta_response_class(self, request, response):
@@ -510,11 +508,11 @@ class SitemapSpiderTest(SpiderTest):
         self.assertSitemapBody(r, self.BODY)
 
     def test_get_sitemap_body_xml_url_compressed(self):
-        r = Response(url="http://www.example.com/sitemap.xml.gz",body=self.GZBODY)
+        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertSitemapBody(r, self.BODY)
 
         # .xml.gz but body decoded by HttpCompression middleware already
-        r = Response(url="http://www.example.com/sitemap.xml.gz",body=self.BODY)
+        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
     def test_get_sitemap_urls_from_robotstxt(self):
@@ -644,8 +642,7 @@ Sitemap: /sitemap-relative-url.xml
             def sitemap_filter(self, entries):
                 from datetime import datetime
                 for entry in entries:
-                    date_time = datetime.strptime(
-                        entry['lastmod'].split('T')[0], '%Y-%m-%d')
+                    date_time = datetime.strptime(entry['lastmod'].split('T')[0], '%Y-%m-%d')
                     if date_time.year > 2004:
                         yield entry
 
