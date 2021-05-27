@@ -517,11 +517,10 @@ class SitemapSpiderTest(SpiderTest):
 
     def test_get_sitemap_urls_from_robotstxt(self):
         robots = b"""# Sitemap files
-Sitemap: http://example.com/sitemap.xml
-Sitemap: http://example.com/sitemap-product-index.xml
-Sitemap: HTTP://example.com/sitemap-uppercase.xml
-Sitemap: /sitemap-relative-url.xml
-"""
+                Sitemap: http://example.com/sitemap.xml
+                Sitemap: http://example.com/sitemap-product-index.xml
+                Sitemap: HTTP://example.com/sitemap-uppercase.xml
+                Sitemap: /sitemap-relative-url.xml"""
 
         r = TextResponse(url="http://www.example.com/robots.txt", body=robots)
         spider = self.spider_class("example.com")
