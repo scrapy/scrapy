@@ -42,13 +42,13 @@ class XMLFeedSpider(Spider):
         """
         return response
 
-    def parse_node(self, response, selector):
+    def parse_node(self, response, selector, **kwargs):
         """This method must be overriden with your custom spider functionality"""
         if hasattr(self, 'parse_item'):  # backward compatibility
-            return self.parse_item(response, selector)
+            return self.parse_item(response, selector, **kwargs)
         raise NotImplementedError
 
-    def parse_nodes(self, response, nodes):
+    def parse_nodes(self, response, nodes, **kwargs):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an Selector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
@@ -57,7 +57,7 @@ class XMLFeedSpider(Spider):
         """
 
         for selector in nodes:
-            ret = iterate_spider_output(self.parse_node(response, selector))
+            ret = iterate_spider_output(self.parse_node(response, selector, **kwargs))
             for result_item in self.process_results(response, ret):
                 yield result_item
 
@@ -79,7 +79,7 @@ class XMLFeedSpider(Spider):
         else:
             raise NotSupported('Unsupported node iterator')
 
-        return self.parse_nodes(response, nodes)
+        return self.parse_nodes(response, nodes, **kwargs)
 
     def _iternodes(self, response):
         for node in xmliter(response, self.itertag):
