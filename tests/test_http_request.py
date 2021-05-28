@@ -6,7 +6,7 @@ import warnings
 from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
+from scrapy.http import Request, RequestList, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -1429,6 +1429,50 @@ class JsonRequestTest(RequestTest):
     def tearDown(self):
         warnings.resetwarnings()
         super().tearDown()
+
+
+class RequestListTest(unittest.TestCase):
+
+    URLS = ["http://example.org/one", "http://example.org/two", "http://example.org/three"]
+
+    def test_requests(self):
+        rl = RequestList(*[Request(u) for u in self.URLS])
+        self.assertEqual(len(rl.requests), len(self.URLS))
+        self.assertEqual([r.url for r in rl.requests], self.URLS)
+        for req in rl.requests:
+            self.assertEqual(req.meta["request_list"], rl)
+
+    def test_default_values(self):
+        rl = RequestList(*[Request(u) for u in self.URLS])
+        self.assertIsNone(rl.callback)
+        self.assertIsNone(rl.errback)
+        self.assertEqual(rl.priority, 0)
+        self.assertEqual(rl.cb_kwargs, {})
+        self.assertEqual(rl.meta, {})
+
+    def test_callback_errback(self):
+        def some_callback(response_list):
+            pass
+
+        def some_errback(failure):
+            pass
+
+        rl = RequestList(*[Request(u) for u in self.URLS], callback=some_callback, errback=some_errback)
+        self.assertEqual(rl.callback, some_callback)
+        self.assertEqual(rl.errback, some_errback)
+
+    def test_attributes(self):
+        rl = RequestList(
+            *[Request(u) for u in self.URLS],
+            priority=5,
+            cb_kwargs={"foo": "bar"},
+            meta={"asdf": "qwerty"},
+        )
+        self.assertIsNone(rl.callback)
+        self.assertIsNone(rl.errback)
+        self.assertEqual(rl.priority, 5)
+        self.assertEqual(rl.cb_kwargs, {"foo": "bar"})
+        self.assertEqual(rl.meta, {"asdf": "qwerty"})
 
 
 if __name__ == "__main__":
