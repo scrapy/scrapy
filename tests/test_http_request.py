@@ -6,6 +6,7 @@ import warnings
 from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
+from scrapy import Spider
 from scrapy.http import Request, RequestList, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -1431,6 +1432,20 @@ class JsonRequestTest(RequestTest):
         super().tearDown()
 
 
+class TestSpider(Spider):
+    name = "test"
+
+    def some_callback(response_list):
+        pass
+
+    def some_errback(failure):
+        pass
+
+
+class CustomRequestList(RequestList):
+    pass
+
+
 class RequestListTest(unittest.TestCase):
 
     URLS = ["http://example.org/one", "http://example.org/two", "http://example.org/three"]
@@ -1460,6 +1475,23 @@ class RequestListTest(unittest.TestCase):
         rl = RequestList(*[Request(u) for u in self.URLS], callback=some_callback, errback=some_errback)
         self.assertEqual(rl.callback, some_callback)
         self.assertEqual(rl.errback, some_errback)
+
+    def test_callback_errback_serialization(self):
+        spider = TestSpider()
+        rl = RequestList(*[Request(u) for u in self.URLS], callback=spider.some_callback, errback=spider.some_errback)
+        rl_dict = rl.to_dict(spider=spider)
+        self.assertEqual(rl_dict["callback"], "some_callback")
+        self.assertEqual(rl_dict["errback"], "some_errback")
+
+    def test_serialization_subclass(self):
+        spider = TestSpider()
+        rl = CustomRequestList(
+            *[Request(u) for u in self.URLS],
+            callback=spider.some_callback,
+            errback=spider.some_errback,
+        )
+        rl_dict = rl.to_dict(spider=spider)
+        self.assertEqual(rl_dict["_class"], f"{__name__}.CustomRequestList")
 
     def test_attributes(self):
         rl = RequestList(
