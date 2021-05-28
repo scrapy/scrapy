@@ -6,12 +6,14 @@ import tempfile
 import unittest
 from io import BytesIO
 from datetime import datetime
+from warnings import catch_warnings, filterwarnings
 
 import lxml.etree
 from itemadapter import ItemAdapter
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter, PprintItemExporter, PickleItemExporter, CsvItemExporter,
     XmlItemExporter, JsonLinesItemExporter, JsonItemExporter,
@@ -172,10 +174,12 @@ class PythonItemExporterTest(BaseItemExporterTest):
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
 
     def test_export_binary(self):
-        exporter = PythonItemExporter(binary=True)
-        value = self.item_class(name='John\xa3', age='22')
-        expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
-        self.assertEqual(expected, exporter.export_item(value))
+        with catch_warnings():
+            filterwarnings('ignore', category=ScrapyDeprecationWarning)
+            exporter = PythonItemExporter(binary=True)
+            value = self.item_class(name='John\xa3', age='22')
+            expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
+            self.assertEqual(expected, exporter.export_item(value))
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
