@@ -1442,10 +1442,6 @@ class TestSpider(Spider):
         pass
 
 
-class CustomRequestList(RequestList):
-    pass
-
-
 class RequestListTest(unittest.TestCase):
 
     URLS = ["http://example.org/one", "http://example.org/two", "http://example.org/three"]
@@ -1488,37 +1484,6 @@ class RequestListTest(unittest.TestCase):
         self.assertEqual(rl.priority, 5)
         self.assertEqual(rl.cb_kwargs, {"foo": "bar"})
         self.assertEqual(rl.meta, {"asdf": "qwerty"})
-
-    def test_serialization(self):
-        spider = TestSpider()
-        rl = RequestList(
-            *[Request(u) for u in self.URLS],
-            callback=spider.some_callback,
-            errback=spider.some_errback,
-            priority=5,
-            cb_kwargs={"foo": "bar"},
-            meta={"asdf": "qwerty"},
-        )
-        rl_dict = rl.to_dict(spider=spider)
-        self.assertEqual(rl_dict["callback"], "some_callback")
-        self.assertEqual(rl_dict["errback"], "some_errback")
-        self.assertEqual(rl_dict["priority"], 5)
-        self.assertEqual(rl_dict["cb_kwargs"], {"foo": "bar"})
-        self.assertEqual(rl_dict["meta"], {"asdf": "qwerty"})
-        for original, serialized in zip(rl.requests, rl_dict["requests"]):
-            req_dict = original.to_dict(spider=spider)
-            req_dict["meta"].pop("request_list", None)
-            self.assertEqual(req_dict, serialized)
-
-    def test_serialization_subclass(self):
-        spider = TestSpider()
-        rl = CustomRequestList(
-            *[Request(u) for u in self.URLS],
-            callback=spider.some_callback,
-            errback=spider.some_errback,
-        )
-        rl_dict = rl.to_dict(spider=spider)
-        self.assertEqual(rl_dict["_class"], f"{__name__}.CustomRequestList")
 
 
 if __name__ == "__main__":

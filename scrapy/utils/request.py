@@ -130,7 +130,7 @@ def request_list_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Reque
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
-    request_list_cls = load_object(d["_class"]) if "_class" in d else Request
+    request_list_cls = load_object(d["_class"]) if "_class" in d else RequestList
     callback = d["callback"]
     if callback and spider:
         callback = _get_method(spider, callback)

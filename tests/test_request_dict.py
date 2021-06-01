@@ -3,10 +3,10 @@ import unittest
 import warnings
 from contextlib import suppress
 
-from scrapy import Spider, Request
+from scrapy import Spider, Request, RequestList
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, JsonRequest
-from scrapy.utils.request import request_from_dict
+from scrapy.utils.request import request_fingerprint, request_from_dict, request_list_from_dict
 
 
 class CustomRequest(Request):
@@ -171,6 +171,65 @@ class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
                 " and/or scrapy.utils.request.request_from_dict instead",
                 str(caught[0].message),
             )
+
+
+class CustomRequestList(RequestList):
+    pass
+
+
+class RequestListSerializationTest(unittest.TestCase):
+
+    URLS = ["http://example.org/one", "http://example.org/two", "http://example.org/three"]
+
+    def test_serialization(self):
+        spider = TestSpider()
+        rl = RequestList(
+            *[Request(u) for u in self.URLS],
+            callback=spider.parse_item,
+            errback=spider.handle_error,
+            priority=5,
+            cb_kwargs={"foo": "bar"},
+            meta={"asdf": "qwerty"},
+        )
+        rl_dict = rl.to_dict(spider=spider)
+        self.assertEqual(rl_dict["callback"], "parse_item")
+        self.assertEqual(rl_dict["errback"], "handle_error")
+        self.assertEqual(rl_dict["priority"], 5)
+        self.assertEqual(rl_dict["cb_kwargs"], {"foo": "bar"})
+        self.assertEqual(rl_dict["meta"], {"asdf": "qwerty"})
+        for original, serialized in zip(rl.requests, rl_dict["requests"]):
+            req_dict = original.to_dict(spider=spider)
+            req_dict["meta"].pop("request_list", None)
+            self.assertEqual(req_dict, serialized)
+
+    def test_serialization_subclass(self):
+        spider = TestSpider()
+        rl = CustomRequestList(
+            *[Request(u) for u in self.URLS],
+            callback=spider.parse_item,
+            errback=spider.handle_error,
+        )
+        rl_dict = rl.to_dict(spider=spider)
+        self.assertEqual(rl_dict["_class"], f"{__name__}.CustomRequestList")
+
+    def test_deserialization(self):
+        spider = TestSpider()
+        rl = RequestList(
+            *[Request(u) for u in self.URLS],
+            callback=spider.parse_item,
+            errback=spider.handle_error,
+            priority=5,
+            cb_kwargs={"foo": "bar"},
+            meta={"asdf": "qwerty"},
+        )
+        new_rl = request_list_from_dict(rl.to_dict(spider=spider), spider=spider)
+        self.assertEqual(new_rl.callback, spider.parse_item)
+        self.assertEqual(new_rl.errback, spider.handle_error)
+        self.assertEqual(new_rl.priority, 5)
+        self.assertEqual(new_rl.cb_kwargs, {"foo": "bar"})
+        self.assertEqual(new_rl.meta, {"asdf": "qwerty"})
+        for original, copied in zip(rl.requests, new_rl.requests):
+            self.assertEqual(request_fingerprint(original), request_fingerprint(copied))
 
 
 class TestSpiderMixin:
