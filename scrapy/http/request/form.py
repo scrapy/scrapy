@@ -5,6 +5,7 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
+from typing import Optional, Type, TypeVar
 from urllib.parse import urljoin, urlencode
 
 import lxml.html
@@ -12,15 +13,18 @@ from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
+from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
+
+
+FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
 
 
 class FormRequest(Request):
     valid_form_methods = ['GET', 'POST']
 
-    def __init__(self, *args, **kwargs):
-        formdata = kwargs.pop('formdata', None)
+    def __init__(self, *args, formdata: Optional[dict] = None, **kwargs) -> None:
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
@@ -36,9 +40,19 @@ class FormRequest(Request):
                 self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
-    def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
-                      clickdata=None, dont_click=False, formxpath=None, formcss=None, **kwargs):
-
+    def from_response(
+        cls: Type[FormRequestTypeVar],
+        response: TextResponse,
+        formname: Optional[str] = None,
+        formid: Optional[str] = None,
+        formnumber: Optional[int] = 0,
+        formdata: Optional[dict] = None,
+        clickdata: Optional[dict] = None,
+        dont_click: bool = False,
+        formxpath: Optional[str] = None,
+        formcss: Optional[str] = None,
+        **kwargs,
+    ) -> FormRequestTypeVar:
         kwargs.setdefault('encoding', response.encoding)
 
         if formcss is not None:
