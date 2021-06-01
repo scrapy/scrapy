@@ -5,10 +5,9 @@ import re
 import shutil
 import string
 from ipaddress import IPv4Address
-from unittest import mock
+from unittest import mock, skipIf
 from urllib.parse import urlencode
 
-from h2.exceptions import InvalidBodyLengthError
 from twisted.internet import reactor
 from twisted.internet.defer import CancelledError, Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
@@ -17,12 +16,10 @@ from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certif
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 from twisted.web.client import ResponseFailed, URI
-from twisted.web.http import Request as TxRequest
+from twisted.web.http import H2_ENABLED, Request as TxRequest
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.static import File
 
-from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
-from scrapy.core.http2.stream import InactiveStreamClosed, InvalidHostname
 from scrapy.http import Request, Response, JsonRequest
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -173,6 +170,7 @@ def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
     return PrivateCertificate.loadPEM(pem)
 
 
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2ClientProtocolTestCase(TestCase):
     scheme = 'https'
     key_file = os.path.join(os.path.dirname(__file__), 'keys', 'localhost.key')
@@ -220,6 +218,7 @@ class Https2ClientProtocolTestCase(TestCase):
         uri = URI.fromBytes(bytes(self.get_url('/'), 'utf-8'))
 
         self.conn_closed_deferred = Deferred()
+        from scrapy.core.http2.protocol import H2ClientFactory
         h2_client_factory = H2ClientFactory(uri, Settings(), self.conn_closed_deferred)
         client_endpoint = SSL4ClientEndpoint(reactor, self.hostname, self.port_number, client_options)
         self.client = yield client_endpoint.connect(h2_client_factory)
@@ -426,6 +425,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
         def assert_failure(failure: Failure):
             self.assertTrue(len(failure.value.reasons) > 0)
+            from h2.exceptions import InvalidBodyLengthError
             self.assertTrue(any(
                 isinstance(error, InvalidBodyLengthError)
                 for error in failure.value.reasons
@@ -511,6 +511,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
         def assert_inactive_stream(failure):
             self.assertIsNotNone(failure.check(ResponseFailed))
+            from scrapy.core.http2.stream import InactiveStreamClosed
             self.assertTrue(any(
                 isinstance(e, InactiveStreamClosed)
                 for e in failure.value.reasons
@@ -596,6 +597,7 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(url)
 
         def assert_invalid_hostname(failure: Failure):
+            from scrapy.core.http2.stream import InvalidHostname
             self.assertIsNotNone(failure.check(InvalidHostname))
             error_msg = str(failure.value)
             self.assertIn('localhost', error_msg)
@@ -633,6 +635,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
         def assert_timeout_error(failure: Failure):
             for err in failure.value.reasons:
+                from scrapy.core.http2.protocol import H2ClientProtocol
                 if isinstance(err, TimeoutError):
                     self.assertIn(f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s", str(err))
                     break
