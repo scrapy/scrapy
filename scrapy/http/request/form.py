@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 from typing import Optional, Type, TypeVar
 from urllib.parse import urljoin, urlencode
 
-import lxml.html
+from lxml.html import HTMLParser, FormElement
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
@@ -72,7 +72,7 @@ class FormRequest(Request):
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
-def _get_form_url(form, url):
+def _get_form_url(form: FormElement, url: Optional[str]) -> str:
     if url is None:
         action = form.get('action')
         if action is None:
@@ -88,10 +88,15 @@ def _urlencode(seq, enc):
     return urlencode(values, doseq=True)
 
 
-def _get_form(response, formname, formid, formnumber, formxpath):
-    """Find the form element """
-    root = create_root_node(response.text, lxml.html.HTMLParser,
-                            base_url=get_base_url(response))
+def _get_form(
+    response: TextResponse,
+    formname: Optional[str],
+    formid: Optional[str],
+    formnumber: Optional[int],
+    formxpath: Optional[str],
+) -> FormElement:
+    """Find the wanted form element within the given response."""
+    root = create_root_node(response.text, HTMLParser, base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
         raise ValueError(f"No <form> element found in {response}")
@@ -119,8 +124,7 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                     break
         raise ValueError(f'No <form> element found with {formxpath}')
 
-    # If we get here, it means that either formname was None
-    # or invalid
+    # If we get here, it means that either formname was None or invalid
     if formnumber is not None:
         try:
             form = forms[formnumber]
