@@ -5,7 +5,7 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from typing import Optional, Type, TypeVar
+from typing import List, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import urljoin, urlencode
 
 from lxml.html import HTMLParser, FormElement
@@ -20,11 +20,13 @@ from scrapy.utils.response import get_base_url
 
 FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
 
+FormdataType = Optional[Union[dict, List[Tuple[str, str]]]]
+
 
 class FormRequest(Request):
     valid_form_methods = ['GET', 'POST']
 
-    def __init__(self, *args, formdata: Optional[dict] = None, **kwargs) -> None:
+    def __init__(self, *args, formdata: FormdataType = None, **kwargs) -> None:
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
@@ -46,7 +48,7 @@ class FormRequest(Request):
         formname: Optional[str] = None,
         formid: Optional[str] = None,
         formnumber: Optional[int] = 0,
-        formdata: Optional[dict] = None,
+        formdata: FormdataType = None,
         clickdata: Optional[dict] = None,
         dont_click: bool = False,
         formxpath: Optional[str] = None,
@@ -60,7 +62,7 @@ class FormRequest(Request):
             formxpath = HTMLTranslator().css_to_xpath(formcss)
 
         form = _get_form(response, formname, formid, formnumber, formxpath)
-        formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
+        formdata = _get_inputs(form, formdata, dont_click, clickdata)
         url = _get_form_url(form, kwargs.pop('url', None))
 
         method = kwargs.pop('method', form.method)
@@ -134,22 +136,27 @@ def _get_form(
             return form
 
 
-def _get_inputs(form, formdata, dont_click, clickdata, response):
+def _get_inputs(
+    form: FormElement,
+    formdata: FormdataType,
+    dont_click: bool,
+    clickdata: Optional[dict],
+) -> List[Tuple[str, str]]:
+    """Return a list of key-value pairs for the inputs found in the given form."""
     try:
         formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
     if not formdata:
-        formdata = ()
+        formdata = []
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
                         '|descendant::input[not(@type) or @type['
                         ' not(re:test(., "^(?:submit|image|reset)$", "i"))'
                         ' and (../@checked or'
                         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
-                        namespaces={
-                            "re": "http://exslt.org/regular-expressions"})
+                        namespaces={"re": "http://exslt.org/regular-expressions"})
     values = [(k, '' if v is None else v)
               for k, v in (_value(e) for e in inputs)
               if k and k not in formdata_keys]
@@ -160,7 +167,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
             values.append(clickable)
 
     if isinstance(formdata, dict):
-        formdata = formdata.items()
+        formdata = formdata.items()  # type: ignore[assignment]
 
     values.extend((k, v) for k, v in formdata if v is not None)
     return values
@@ -189,7 +196,7 @@ def _select_value(ele, n, v):
     return n, v
 
 
-def _get_clickable(clickdata, form):
+def _get_clickable(clickdata: Optional[dict], form: FormElement) -> Optional[Tuple[str, str]]:
     """
     Returns the clickable element specified in clickdata,
     if the latter is given. If not, it returns the first
@@ -201,7 +208,7 @@ def _get_clickable(clickdata, form):
         namespaces={"re": "http://exslt.org/regular-expressions"}
     ))
     if not clickables:
-        return
+        return None
 
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
