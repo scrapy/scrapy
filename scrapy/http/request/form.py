@@ -5,10 +5,10 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from typing import List, Optional, Tuple, Type, TypeVar, Union
+from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import urljoin, urlencode
 
-from lxml.html import HTMLParser, FormElement
+from lxml.html import FormElement, HtmlElement, HTMLParser, SelectElement
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
@@ -83,7 +83,7 @@ def _get_form_url(form: FormElement, url: Optional[str]) -> str:
     return urljoin(form.base_url, url)
 
 
-def _urlencode(seq, enc):
+def _urlencode(seq: Iterable, enc: str) -> str:
     values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
               for v in (vs if is_listlike(vs) else [vs])]
@@ -157,9 +157,11 @@ def _get_inputs(
                         ' and (../@checked or'
                         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
                         namespaces={"re": "http://exslt.org/regular-expressions"})
-    values = [(k, '' if v is None else v)
-              for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata_keys]
+    values = [
+        (k, '' if v is None else v)
+        for k, v in (_value(e) for e in inputs)
+        if k and k not in formdata_keys
+    ]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
@@ -173,7 +175,7 @@ def _get_inputs(
     return values
 
 
-def _value(ele):
+def _value(ele: HtmlElement):
     n = ele.name
     v = ele.value
     if ele.tag == 'select':
@@ -181,7 +183,7 @@ def _value(ele):
     return n, v
 
 
-def _select_value(ele, n, v):
+def _select_value(ele: SelectElement, n: str, v: str):
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
@@ -192,7 +194,8 @@ def _select_value(ele, n, v):
         # This is a workround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath('.//option[@selected]')
-        v = [(o.get('value') or o.text or '').strip() for o in selected_options]
+        values = [(o.get('value') or o.text or '').strip() for o in selected_options]
+        return n, values
     return n, v
 
 
