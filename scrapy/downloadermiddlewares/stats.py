@@ -1,6 +1,7 @@
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.request import request_httprepr
 from scrapy.utils.python import global_object_name
+from scrapy.utils.request import request_httprepr
+
 
 def get_header_size(headers):
     if headers is None:
@@ -13,6 +14,7 @@ def get_header_size(headers):
             for v in value:
                 size += len(b": ") + len(key) + len(v)
     return size + len(b'\r\n') * (len(headers.keys()) - 1)
+
 
 class DownloaderStats:
 
