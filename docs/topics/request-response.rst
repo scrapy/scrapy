@@ -26,10 +26,6 @@ Request objects
 
 .. autoclass:: Request
 
-    A :class:`Request` object represents an HTTP request, which is usually
-    generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
-
     :param url: the URL of this request
 
         If the URL is invalid, a :exc:`ValueError` exception is raised.
@@ -205,6 +201,8 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+    .. autoattribute:: Request.attributes
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -219,6 +217,15 @@ Request objects
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
     .. automethod:: from_curl
+
+    .. automethod:: to_dict
+
+
+Other functions related to requests
+-----------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
 
 .. _topics-request-response-ref-request-callback-arguments:
 
@@ -363,26 +370,26 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
-* :reqmeta:`dont_redirect`
-* :reqmeta:`dont_retry`
-* :reqmeta:`handle_httpstatus_list`
-* :reqmeta:`handle_httpstatus_all`
-* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
+* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`dont_obey_robotstxt`
+* :reqmeta:`dont_redirect`
+* :reqmeta:`dont_retry`
+* :reqmeta:`download_fail_on_dataloss`
+* :reqmeta:`download_latency`
+* :reqmeta:`download_maxsize`
+* :reqmeta:`download_timeout`
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`handle_httpstatus_all`
+* :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`max_retry_times`
+* :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
-* :reqmeta:`bindaddress`
-* :reqmeta:`dont_obey_robotstxt`
-* :reqmeta:`download_timeout`
-* :reqmeta:`download_maxsize`
-* :reqmeta:`download_latency`
-* :reqmeta:`download_fail_on_dataloss`
-* :reqmeta:`proxy`
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
-* :reqmeta:`max_retry_times`
 
 .. reqmeta:: bindaddress
 
@@ -432,9 +439,9 @@ The meta key is used set retry times per request. When initialized, the
 Stopping the download of a Response
 ===================================
 
-Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
-:class:`~scrapy.signals.bytes_received` signal handler will stop the
-download of a given response. See the following example::
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a handler for the
+:class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
+signals will stop the download of a given response. See the following example::
 
     import scrapy
 
@@ -642,6 +649,8 @@ dealing with JSON requests.
        data into JSON format.
    :type dumps_kwargs: dict
 
+   .. autoattribute:: JsonRequest.attributes
+
 JsonRequest usage example
 -------------------------
 
@@ -694,7 +703,7 @@ Response objects
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
     :param protocol: The protocol that was used to download the response.
-        For instance: "HTTP/1.0", "HTTP/1.1"
+        For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
 
     .. versionadded:: 2.0.0
@@ -703,7 +712,7 @@ Response objects
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.5.0
        The ``protocol`` parameter.
 
     .. attribute:: Response.url
@@ -809,7 +818,7 @@ Response objects
 
     .. attribute:: Response.protocol
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.5.0
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"
