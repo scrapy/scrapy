@@ -680,12 +680,16 @@ handler (without replacement), place this in your ``settings.py``::
 
 .. _http2:
 
-The default HTTPS handler uses HTTP/1.1. To use HTTP/2 update
-:setting:`DOWNLOAD_HANDLERS` as follows::
+The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 
-    DOWNLOAD_HANDLERS = {
-        'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
-    }
+#.  Install ``Twisted[http2]>=17.9.0`` to install the packages required to
+    enable HTTP/2 support in Twisted.
+
+#.  Update :setting:`DOWNLOAD_HANDLERS` as follows::
+
+        DOWNLOAD_HANDLERS = {
+            'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+        }
 
 .. warning::
 
@@ -1280,7 +1284,8 @@ SCHEDULER
 
 Default: ``'scrapy.core.scheduler.Scheduler'``
 
-The scheduler to use for crawling.
+The scheduler class to be used for crawling.
+See the :ref:`topics-scheduler` topic for details.
 
 .. setting:: SCHEDULER_DEBUG
 
@@ -1618,7 +1623,7 @@ Default: ``2083``
 Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: https://boutell.com/newfaq/misc/urllength.html
+the default value for this setting see: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
@@ -1640,7 +1645,6 @@ The following settings are documented elsewhere, please check each specific
 case to see how to enable and use them.
 
 .. settingslist::
-
 
 .. _Amazon web services: https://aws.amazon.com/
 .. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search

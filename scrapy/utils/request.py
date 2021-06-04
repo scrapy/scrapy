@@ -11,8 +11,9 @@ from weakref import WeakKeyDictionary
 from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
-from scrapy.http import Request
+from scrapy import Request, Spider
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -24,7 +25,7 @@ def request_fingerprint(
     request: Request,
     include_headers: Optional[Iterable[Union[bytes, str]]] = None,
     keep_fragments: bool = False,
-):
+) -> str:
     """
     Return the request fingerprint.
 
@@ -106,3 +107,27 @@ def referer_str(request: Request) -> Optional[str]:
     if referrer is None:
         return referrer
     return to_unicode(referrer, errors='replace')
+
+
+def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
+    """Create a :class:`~scrapy.Request` object from a dict.
+
+    If a spider is given, it will try to resolve the callbacks looking at the
+    spider for methods with the same name.
+    """
+    request_cls = load_object(d["_class"]) if "_class" in d else Request
+    kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
+    if d.get("callback") and spider:
+        kwargs["callback"] = _get_method(spider, d["callback"])
+    if d.get("errback") and spider:
+        kwargs["errback"] = _get_method(spider, d["errback"])
+    return request_cls(**kwargs)
+
+
+def _get_method(obj, name):
+    """Helper function for request_from_dict"""
+    name = str(name)
+    try:
+        return getattr(obj, name)
+    except AttributeError:
+        raise ValueError(f"Method {name!r} not found in: {obj}")

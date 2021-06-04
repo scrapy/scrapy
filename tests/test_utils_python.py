@@ -4,10 +4,11 @@ import operator
 import platform
 from datetime import datetime
 from itertools import count
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
 from twisted.trial import unittest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import deferred_f_from_coro_f, aiter_errback
 from scrapy.utils.python import (
@@ -214,7 +215,11 @@ class UtilsPythonTestCase(unittest.TestCase):
             pass
 
         _values = count()
-        wk = WeakKeyCache(lambda k: next(_values))
+
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            wk = WeakKeyCache(lambda k: next(_values))
+
         k = _Weakme()
         v = wk[k]
         self.assertEqual(v, wk[k])
