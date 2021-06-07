@@ -126,10 +126,10 @@ class Request(object_ref):
 
     __repr__ = __str__
 
-    def copy(self) -> RequestTypeVar:
+    def copy(self) -> "Request":
         return self.replace()
 
-    def replace(self, *args, **kwargs) -> RequestTypeVar:
+    def replace(self, *args, **kwargs) -> "Request":
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))

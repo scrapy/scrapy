@@ -10,7 +10,7 @@ import json
 import warnings
 from typing import Optional, Tuple
 
-from scrapy.http.request import Request, RequestTypeVar
+from scrapy.http.request import Request
 from scrapy.utils.deprecate import create_deprecated_class
 
 
@@ -42,7 +42,7 @@ class JsonRequest(Request):
     def dumps_kwargs(self) -> dict:
         return self._dumps_kwargs
 
-    def replace(self, *args, **kwargs) -> RequestTypeVar:
+    def replace(self, *args, **kwargs) -> Request:
         body_passed = kwargs.get('body', None) is not None
         data = kwargs.pop('data', None)
         data_passed = data is not None
