@@ -5,12 +5,11 @@ import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
-from typing import IO, Optional
+from typing import Any, IO, Optional
 from weakref import WeakKeyDictionary
 
 from scrapy import Spider, Request
-from scrapy.http import Headers, Response
-from scrapy.responsetypes import responsetypes
+from scrapy.http import Response
 from scrapy.settings import Settings
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
@@ -218,59 +217,36 @@ class RFC2616Policy:
 
 class DbmCacheStorage:
 
-    def __init__(self, settings):
+    def __init__(self, settings: Settings) -> None:
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
-        self.db = None
+        self.db: Any  # typing trick, this will be a dbm database
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: Spider) -> None:
         dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
-        self.db = self.dbmodule.open(dbpath, 'c')
-
+        self.db = self.dbmodule.open(dbpath, "c")  # type: ignore[attr-defined]
         logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
 
-    def close_spider(self, spider):
+    def close_spider(self, spider: Spider) -> None:
         self.db.close()
 
-    def retrieve_response(self, spider, request):
-        data = self._read_data(spider, request)
-        if data is None:
-            return  # not cached
-        url = data['url']
-        status = data['status']
-        headers = Headers(data['headers'])
-        body = data['body']
-        respcls = responsetypes.from_args(headers=headers, url=url)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+    def retrieve_response(self, spider: Spider, request: Request) -> Optional[Response]:
+        """Return response if present in cache and valid, None otherwise."""
+        key = request_fingerprint(request)
+        tkey = f"{key}_time"
+        if tkey not in self.db:
+            return None  # not found
+        mtime = float(self.db[tkey])
+        if 0 < self.expiration_secs < time() - mtime:
+            return None  # expired
+        response_dict = pickle.loads(self.db[f"{key}_data"])
+        return response_from_dict(response_dict, spider=spider)
 
-    def store_response(self, spider, request, response):
-        key = self._request_key(request)
-        data = {
-            'status': response.status,
-            'url': response.url,
-            'headers': dict(response.headers),
-            'body': response.body,
-        }
-        self.db[f'{key}_data'] = pickle.dumps(data, protocol=4)
-        self.db[f'{key}_time'] = str(time())
-
-    def _read_data(self, spider, request):
-        key = self._request_key(request)
-        db = self.db
-        tkey = f'{key}_time'
-        if tkey not in db:
-            return  # not found
-
-        ts = db[tkey]
-        if 0 < self.expiration_secs < time() - float(ts):
-            return  # expired
-
-        return pickle.loads(db[f'{key}_data'])
-
-    def _request_key(self, request):
-        return request_fingerprint(request)
+    def store_response(self, spider: Spider, request: Request, response: Response) -> None:
+        key = request_fingerprint(request)
+        self.db[f"{key}_data"] = pickle.dumps(response.to_dict(spider=spider), protocol=4)
+        self.db[f"{key}_time"] = str(time())
 
 
 class FilesystemCacheStorage:
