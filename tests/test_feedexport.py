@@ -515,7 +515,7 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
 
 class DummyBlockingFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
+    def __init__(self, uri, *args, feed_options=None):
         self.path = file_uri_to_path(uri)
 
     def _store_in_thread(self, file):
@@ -541,7 +541,7 @@ class LogOnStoreFileStorage:
     It can be used to make sure `store` method is invoked.
     """
 
-    def __init__(self, uri):
+    def __init__(self, uri, feed_options=None):
         self.path = file_uri_to_path(uri)
         self.logger = getLogger()
 
