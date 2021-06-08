@@ -223,7 +223,7 @@ class DbmCacheStorage:
         self.db = None
 
     def open_spider(self, spider):
-        dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
+        dbpath = os.path.join(self.cachedir)
         self.db = self.dbmodule.open(dbpath, 'c')
 
         logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
@@ -291,7 +291,7 @@ class FilesystemCacheStorage:
         metadata = self._read_meta(spider, request)
         if metadata is None:
             return  # not cached
-        rpath = self._get_request_path(spider, request)
+        rpath = self._get_request_path(request)
         with self._open(os.path.join(rpath, 'response_body'), 'rb') as f:
             body = f.read()
         with self._open(os.path.join(rpath, 'response_headers'), 'rb') as f:
@@ -305,7 +305,7 @@ class FilesystemCacheStorage:
 
     def store_response(self, spider, request, response):
         """Store the given response in the cache."""
-        rpath = self._get_request_path(spider, request)
+        rpath = self._get_request_path(request)
         if not os.path.exists(rpath):
             os.makedirs(rpath)
         metadata = {
@@ -328,12 +328,13 @@ class FilesystemCacheStorage:
         with self._open(os.path.join(rpath, 'request_body'), 'wb') as f:
             f.write(request.body)
 
-    def _get_request_path(self, spider, request):
+    def _get_request_path(self, request):
         key = request_fingerprint(request)
-        return os.path.join(self.cachedir, spider.name, key[0:2], key)
+        netloc = urlparse_cached(request).netloc
+        return os.path.join(self.cachedir, netloc, key[0:2], key)
 
     def _read_meta(self, spider, request):
-        rpath = self._get_request_path(spider, request)
+        rpath = self._get_request_path(request)
         metapath = os.path.join(rpath, 'pickled_meta')
         if not os.path.exists(metapath):
             return  # not found
