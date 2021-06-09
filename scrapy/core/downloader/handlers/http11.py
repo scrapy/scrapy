@@ -284,7 +284,7 @@ class ScrapyAgent:
                     "Using HTTPS proxies in the noconnect mode is deprecated. "
                     "If you use Zyte Smart Proxy Manager, it doesn't require "
                     "this mode anymore, so you should update scrapy-crawlera "
-                    "to scrapy-zyte-proxy and remove '?noconnect' "
+                    "to scrapy-zyte-smartproxy and remove '?noconnect' "
                     "from the Zyte Smart Proxy Manager URL.",
                     ScrapyDeprecationWarning,
                 )
