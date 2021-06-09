@@ -3,6 +3,190 @@
 Release notes
 =============
 
+.. _release-2.5.0:
+
+Scrapy 2.5.0 (2021-04-06)
+-------------------------
+
+Highlights:
+
+-   Official Python 3.9 support
+
+-   Experimental :ref:`HTTP/2 support <http2>`
+
+-   New :func:`~scrapy.downloadermiddlewares.retry.get_retry_request` function
+    to retry requests from spider callbacks
+
+-   New :class:`~scrapy.signals.headers_received` signal that allows stopping
+    downloads early
+
+-   New :class:`Response.protocol <scrapy.http.Response.protocol>` attribute
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed all code that :ref:`was deprecated in 1.7.0 <1.7-deprecations>` and
+    had not :ref:`already been removed in 2.4.0 <2.4-deprecation-removals>`.
+    (:issue:`4901`)
+
+-   Removed support for the ``SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE`` environment
+    variable, :ref:`deprecated in 1.8.0 <1.8-deprecations>`. (:issue:`4912`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The :mod:`scrapy.utils.py36` module is now deprecated in favor of
+    :mod:`scrapy.utils.asyncgen`. (:issue:`4900`)
+
+
+New features
+~~~~~~~~~~~~
+
+-   Experimental :ref:`HTTP/2 support <http2>` through a new download handler
+    that can be assigned to the ``https`` protocol in the
+    :setting:`DOWNLOAD_HANDLERS` setting.
+    (:issue:`1854`, :issue:`4769`, :issue:`5058`, :issue:`5059`, :issue:`5066`)
+
+-   The new :func:`scrapy.downloadermiddlewares.retry.get_retry_request`
+    function may be used from spider callbacks or middlewares to handle the
+    retrying of a request beyond the scenarios that
+    :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` supports.
+    (:issue:`3590`, :issue:`3685`, :issue:`4902`)
+
+-   The new :class:`~scrapy.signals.headers_received` signal gives early access
+    to response headers and allows :ref:`stopping downloads
+    <topics-stop-response-download>`.
+    (:issue:`1772`, :issue:`4897`)
+
+-   The new :attr:`Response.protocol <scrapy.http.Response.protocol>`
+    attribute gives access to the string that identifies the protocol used to
+    download a response. (:issue:`4878`)
+
+-   :ref:`Stats <topics-stats>` now include the following entries that indicate
+    the number of successes and failures in storing
+    :ref:`feeds <topics-feed-exports>`::
+
+        feedexport/success_count/<storage type>
+        feedexport/failed_count/<storage type>
+
+    Where ``<storage type>`` is the feed storage backend class name, such as
+    :class:`~scrapy.extensions.feedexport.FileFeedStorage` or
+    :class:`~scrapy.extensions.feedexport.FTPFeedStorage`.
+
+    (:issue:`3947`, :issue:`4850`)
+
+-   The :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` spider
+    middleware now logs ignored URLs with ``INFO`` :ref:`logging level
+    <levels>` instead of ``DEBUG``, and it now includes the following entry
+    into :ref:`stats <topics-stats>` to keep track of the number of ignored
+    URLs::
+
+        urllength/request_ignored_count
+
+    (:issue:`5036`)
+
+-   The
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    downloader middleware now logs the number of decompressed responses and the
+    total count of resulting bytes::
+
+        httpcompression/response_bytes
+        httpcompression/response_count
+
+    (:issue:`4797`, :issue:`4799`)
+
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed installation on PyPy installing PyDispatcher in addition to
+    PyPyDispatcher, which could prevent Scrapy from working depending on which
+    package got imported. (:issue:`4710`, :issue:`4814`)
+
+-   When inspecting a callback to check if it is a generator that also returns
+    a value, an exception is no longer raised if the callback has a docstring
+    with lower indentation than the following code.
+    (:issue:`4477`, :issue:`4935`)
+
+-   The `Content-Length <https://tools.ietf.org/html/rfc2616#section-14.13>`_
+    header is no longer omitted from responses when using the default, HTTP/1.1
+    download handler (see :setting:`DOWNLOAD_HANDLERS`).
+    (:issue:`5009`, :issue:`5034`, :issue:`5045`, :issue:`5057`, :issue:`5062`)
+
+-   Setting the :reqmeta:`handle_httpstatus_all` request meta key to ``False``
+    now has the same effect as not setting it at all, instead of having the
+    same effect as setting it to ``True``.
+    (:issue:`3851`, :issue:`4694`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Added instructions to :ref:`install Scrapy in Windows using pip
+    <intro-install-windows>`.
+    (:issue:`4715`, :issue:`4736`)
+
+-   Logging documentation now includes :ref:`additional ways to filter logs
+    <topics-logging-advanced-customization>`.
+    (:issue:`4216`, :issue:`4257`, :issue:`4965`)
+
+-   Covered how to deal with long lists of allowed domains in the :ref:`FAQ
+    <faq>`. (:issue:`2263`, :issue:`3667`)
+
+-   Covered scrapy-bench_ in :ref:`benchmarking`.
+    (:issue:`4996`, :issue:`5016`)
+
+-   Clarified that one :ref:`extension <topics-extensions>` instance is created
+    per crawler.
+    (:issue:`5014`)
+
+-   Fixed some errors in examples.
+    (:issue:`4829`, :issue:`4830`, :issue:`4907`, :issue:`4909`,
+    :issue:`5008`)
+
+-   Fixed some external links, typos, and so on.
+    (:issue:`4892`, :issue:`4899`, :issue:`4936`, :issue:`4942`, :issue:`5005`,
+    :issue:`5063`)
+
+-   The :ref:`list of Request.meta keys <topics-request-meta>` is now sorted
+    alphabetically.
+    (:issue:`5061`, :issue:`5065`)
+
+-   Updated references to Scrapinghub, which is now called Zyte.
+    (:issue:`4973`, :issue:`5072`)
+
+-   Added a mention to contributors in the README. (:issue:`4956`)
+
+-   Reduced the top margin of lists. (:issue:`4974`)
+
+
+Quality Assurance
+~~~~~~~~~~~~~~~~~
+
+-   Made Python 3.9 support official (:issue:`4757`, :issue:`4759`)
+
+-   Extended typing hints (:issue:`4895`)
+
+-   Fixed deprecated uses of the Twisted API.
+    (:issue:`4940`, :issue:`4950`, :issue:`5073`)
+
+-   Made our tests run with the new pip resolver.
+    (:issue:`4710`, :issue:`4814`)
+
+-   Added tests to ensure that :ref:`coroutine support <coroutine-support>`
+    is tested. (:issue:`4987`)
+
+-   Migrated from Travis CI to GitHub Actions. (:issue:`4924`)
+
+-   Fixed CI issues.
+    (:issue:`4986`, :issue:`5020`, :issue:`5022`, :issue:`5027`, :issue:`5052`,
+    :issue:`5053`)
+
+-   Implemented code refactorings, style fixes and cleanups.
+    (:issue:`4911`, :issue:`4982`, :issue:`5001`, :issue:`5002`, :issue:`5076`)
+
+
 .. _release-2.4.1:
 
 Scrapy 2.4.1 (2020-11-17)
@@ -96,6 +280,8 @@ Backward-incompatible changes
 
     (:issue:`4717`, :issue:`4823`)
 
+
+.. _2.4-deprecation-removals:
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
@@ -1433,6 +1619,8 @@ Deprecation removals
 *   ``scrapy.xlib`` has been removed (:issue:`4015`)
 
 
+.. _1.8-deprecations:
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -1788,6 +1976,8 @@ The following deprecated settings have also been removed (:issue:`3578`):
 
 *   ``SPIDER_MANAGER_CLASS`` (use :setting:`SPIDER_LOADER_CLASS`)
 
+
+.. _1.7-deprecations:
 
 Deprecations
 ~~~~~~~~~~~~
@@ -4184,7 +4374,7 @@ API changes
 - ``url`` and ``body`` attributes of Request objects are now read-only (#230)
 - ``Request.copy()`` and ``Request.replace()`` now also copies their ``callback`` and ``errback`` attributes (#231)
 - Removed ``UrlFilterMiddleware`` from ``scrapy.contrib`` (already disabled by default)
-- Offsite middelware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
+- Offsite middleware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
 - Removed Spider Manager ``load()`` method. Now spiders are loaded in the ``__init__`` method itself.
 - Changes to Scrapy Manager (now called "Crawler"):
    - ``scrapy.core.manager.ScrapyManager`` class renamed to ``scrapy.crawler.Crawler``
@@ -4331,6 +4521,7 @@ First release of Scrapy.
 .. _resource: https://docs.python.org/2/library/resource.html
 .. _robots.txt: https://www.robotstxt.org/
 .. _scrapely: https://github.com/scrapy/scrapely
+.. _scrapy-bench: https://github.com/scrapy/scrapy-bench
 .. _service_identity: https://service-identity.readthedocs.io/en/stable/
 .. _six: https://six.readthedocs.io/
 .. _tox: https://pypi.org/project/tox/

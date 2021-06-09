@@ -294,6 +294,14 @@ The above example can also be written as follows::
         def start_requests(self):
             yield scrapy.Request(f'http://www.example.com/categories/{self.category}')
 
+If you are :ref:`running Scrapy from a script <run-from-script>`, you can 
+specify spider arguments when calling 
+:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`::
+
+    process = CrawlerProcess()
+    process.crawl(MySpider, category="electronics")
+
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
