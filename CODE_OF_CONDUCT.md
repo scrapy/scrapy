@@ -72,3 +72,7 @@ available at [http://contributor-covenant.org/version/1/4][version].
 
 [homepage]: http://contributor-covenant.org
 [version]: http://contributor-covenant.org/version/1/4/
+
+For answers to common questions about this code of conduct, see
+https://www.contributor-covenant.org/faq
+
