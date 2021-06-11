@@ -77,14 +77,16 @@ coroutines, functions that return Deferreds and functions that return
 :term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
 This means you can use many useful Python libraries providing such code::
 
-    class MySpider(Spider):
+    class MySpiderDeferred(Spider):
         # ...
-        async def parse_with_deferred(self, response):
+        async def parse(self, response):
             additional_response = await treq.get('https://additional.url')
             additional_data = await treq.content(additional_response)
             # ... use response and additional_data to yield items and requests
 
-        async def parse_with_asyncio(self, response):
+    class MySpiderAsyncio(Spider):
+        # ...
+        async def parse(self, response):
             async with aiohttp.ClientSession() as session:
                 async with session.get('https://additional.url') as additional_response:
                     additional_data = await additional_response.text()
