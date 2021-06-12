@@ -54,7 +54,7 @@ def _parse_headers_and_cookies(parsed_args):
     return headers, cookies
 
 
-def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
+def curl_to_request_kwargs(curl_command: str, ignore_unknown_options: bool = True) -> dict:
     """Convert a cURL command syntax to Request kwargs.
 
     :param str curl_command: string containing the curl command

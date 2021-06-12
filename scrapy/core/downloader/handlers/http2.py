@@ -72,10 +72,14 @@ class ScrapyH2Agent:
             proxy_host = proxy_host.decode()
             omit_connect_tunnel = b'noconnect' in proxy_params
             if omit_connect_tunnel:
-                warnings.warn("Using HTTPS proxies in the noconnect mode is not supported by the "
-                              "downloader handler. If you use Crawlera, it doesn't require this "
-                              "mode anymore, so you should update scrapy-crawlera to 1.3.0+ "
-                              "and remove '?noconnect' from the Crawlera URL.")
+                warnings.warn(
+                    "Using HTTPS proxies in the noconnect mode is not "
+                    "supported by the downloader handler. If you use Zyte "
+                    "Smart Proxy Manager, it doesn't require this mode "
+                    "anymore, so you should update scrapy-crawlera to "
+                    "scrapy-zyte-smartproxy and remove '?noconnect' from the "
+                    "Zyte Smart Proxy Manager URL."
+                )
 
             if scheme == b'https' and not omit_connect_tunnel:
                 # ToDo
