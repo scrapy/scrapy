@@ -3,6 +3,9 @@ Filter for Scrapy Items to be used by Feed slots.
 """
 from itemadapter import ItemAdapter
 
+from scrapy import Item
+from scrapy.utils.misc import load_object
+
 
 class ItemChecker:
     """
@@ -18,7 +21,16 @@ class ItemChecker:
         self.feed_options = feed_options
 
         if 'item_classes' in self.feed_options:
-            self.item_classes += self.feed_options['item_classes']
+            item_classes = self.feed_options['item_classes']
+
+            if isinstance(item_classes, (Item, str)):
+                self.item_classes += (load_object(item_classes),)
+            elif isinstance(item_classes, (list,set,tuple)):
+                for item_class in item_classes:
+                    self.item_classes += (load_object(item_class),)
+            else:
+                pass
+                # raise some warning for invalid item_classes declaration?
 
     def accepts(self, item):
         """
@@ -31,7 +43,7 @@ class ItemChecker:
         :rtype: bool
         """
         adapter = ItemAdapter(item)
-        return self.accepts_item(item) and self.accepts_fields(adapter.asdict())
+        return self.accepts_class(item) and self.accepts_fields(adapter.asdict())
 
     def accepts_class(self, item):
         """
