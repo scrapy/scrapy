@@ -319,7 +319,7 @@ class ScrapyAgent:
                     pool=self._pool,
                 )
             else:
-                proxyScheme = b'http' if not proxyScheme else proxyScheme
+                proxyScheme = proxyScheme or b'http'
                 proxyHost = to_bytes(proxyHost, encoding='ascii')
                 proxyPort = to_bytes(str(proxyPort), encoding='ascii')
                 proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
