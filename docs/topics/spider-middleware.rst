@@ -146,8 +146,6 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_start_requests(start_requests, spider)
 
-        .. versionadded:: 0.15
-
         This method is called with the start requests of the spider, and works
         similarly to the :meth:`process_spider_output` method, except that it
         doesn't have a response associated and must return only requests (not
@@ -255,7 +253,8 @@ this::
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
 <scrapy.http.Request.meta>` can also be used to specify which response codes to
 allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
-to ``True`` if you want to allow any response code for a request.
+to ``True`` if you want to allow any response code for a request, and ``False`` to
+disable the effects of the ``handle_httpstatus_all`` key.
 
 Keep in mind, however, that it's usually a bad idea to handle non-200
 responses, unless you really know what you're doing.
@@ -341,8 +340,6 @@ RefererMiddleware settings
 REFERER_ENABLED
 ^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.15
-
 Default: ``True``
 
 Whether to enable referer middleware.
@@ -351,8 +348,6 @@ Whether to enable referer middleware.
 
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 

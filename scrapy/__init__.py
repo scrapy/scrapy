@@ -22,14 +22,14 @@ __all__ = [
 
 
 # Scrapy and Twisted versions
-__version__ = pkgutil.get_data(__package__, 'VERSION').decode('ascii').strip()
+__version__ = (pkgutil.get_data(__package__, "VERSION") or b"").decode("ascii").strip()
 version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split('.'))
 twisted_version = (_txv.major, _txv.minor, _txv.micro)
 
 
 # Check minimum required Python version
-if sys.version_info < (3, 5, 2):
-    print("Scrapy %s requires Python 3.5.2" % __version__)
+if sys.version_info < (3, 6):
+    print("Scrapy %s requires Python 3.6+" % __version__)
     sys.exit(1)
 
 

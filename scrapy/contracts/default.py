@@ -56,12 +56,11 @@ class ReturnsContract(Contract):
     }
 
     def __init__(self, *args, **kwargs):
-        super(ReturnsContract, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if len(self.args) not in [1, 2, 3]:
             raise ValueError(
-                "Incorrect argument quantity: expected 1, 2 or 3, got %i"
-                % len(self.args)
+                f"Incorrect argument quantity: expected 1, 2 or 3, got {len(self.args)}"
             )
         self.obj_name = self.args[0] or None
         self.obj_type_verifier = self.object_type_verifiers[self.obj_name]
@@ -88,10 +87,9 @@ class ReturnsContract(Contract):
             if self.min_bound == self.max_bound:
                 expected = self.min_bound
             else:
-                expected = '%s..%s' % (self.min_bound, self.max_bound)
+                expected = f'{self.min_bound}..{self.max_bound}'
 
-            raise ContractFail("Returned %s %s, expected %s" %
-                               (occurrences, self.obj_name, expected))
+            raise ContractFail(f"Returned {occurrences} {self.obj_name}, expected {expected}")
 
 
 class ScrapesContract(Contract):
@@ -106,5 +104,5 @@ class ScrapesContract(Contract):
             if is_item(x):
                 missing = [arg for arg in self.args if arg not in ItemAdapter(x)]
                 if missing:
-                    missing_str = ", ".join(missing)
-                    raise ContractFail("Missing fields: %s" % missing_str)
+                    missing_fields = ", ".join(missing)
+                    raise ContractFail(f"Missing fields: {missing_fields}")

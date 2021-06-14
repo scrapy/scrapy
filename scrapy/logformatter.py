@@ -44,7 +44,7 @@ class LogFormatter:
                 def dropped(self, item, exception, response, spider):
                     return {
                         'level': logging.INFO, # lowering the level from logging.WARNING
-                        'msg': u"Dropped: %(exception)s" + os.linesep + "%(item)s",
+                        'msg': "Dropped: %(exception)s" + os.linesep + "%(item)s",
                         'args': {
                             'exception': exception,
                             'item': item,
@@ -54,8 +54,8 @@ class LogFormatter:
 
     def crawled(self, request, response, spider):
         """Logs a message when the crawler finds a webpage."""
-        request_flags = ' %s' % str(request.flags) if request.flags else ''
-        response_flags = ' %s' % str(response.flags) if response.flags else ''
+        request_flags = f' {str(request.flags)}' if request.flags else ''
+        response_flags = f' {str(response.flags)}' if response.flags else ''
         return {
             'level': logging.DEBUG,
             'msg': CRAWLEDMSG,

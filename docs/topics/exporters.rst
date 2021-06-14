@@ -50,18 +50,19 @@ value of one of their fields::
             self.year_to_exporter = {}
 
         def close_spider(self, spider):
-            for exporter in self.year_to_exporter.values():
+            for exporter, xml_file in self.year_to_exporter.values():
                 exporter.finish_exporting()
+                xml_file.close()
 
         def _exporter_for_item(self, item):
             adapter = ItemAdapter(item)
             year = adapter['year']
             if year not in self.year_to_exporter:
-                f = open('{}.xml'.format(year), 'wb')
-                exporter = XmlItemExporter(f)
+                xml_file = open(f'{year}.xml', 'wb')
+                exporter = XmlItemExporter(xml_file)
                 exporter.start_exporting()
-                self.year_to_exporter[year] = exporter
-            return self.year_to_exporter[year]
+                self.year_to_exporter[year] = (exporter, xml_file)
+            return self.year_to_exporter[year][0]
 
         def process_item(self, item, spider):
             exporter = self._exporter_for_item(item)
@@ -98,7 +99,7 @@ Example::
     import scrapy
 
     def serialize_price(value):
-        return '$ %s' % str(value)
+        return f'$ {str(value)}'
 
     class Product(scrapy.Item):
         name = scrapy.Field()
@@ -122,8 +123,8 @@ Example::
 
           def serialize_field(self, field, name, value):
               if field == 'price':
-                  return '$ %s' % str(value)
-              return super(Product, self).serialize_field(field, name, value)
+                  return f'$ {str(value)}'
+              return super().serialize_field(field, name, value)
 
 .. _topics-exporters-reference:
 
@@ -166,8 +167,7 @@ BaseItemExporter
       By default, this method looks for a serializer :ref:`declared in the item
       field <topics-exporters-serializers>` and returns the result of applying
       that serializer to the value. If no serializer is found, it returns the
-      value unchanged except for ``unicode`` values which are encoded to
-      ``str`` using the encoding declared in the :attr:`encoding` attribute.
+      value unchanged.
 
       :param field: the field being serialized. If the source :ref:`item object
           <item-types>` does not define field metadata, *field* is an empty
@@ -217,10 +217,7 @@ BaseItemExporter
 
    .. attribute:: encoding
 
-      The encoding that will be used to encode unicode values. This only
-      affects unicode values (which are always serialized to str using this
-      encoding). Other value types are passed unchanged to the specific
-      serialization library.
+      The output character encoding.
 
    .. attribute:: indent
 
@@ -296,7 +293,7 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', **kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs)
 
    Exports items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
@@ -309,11 +306,16 @@ CsvItemExporter
    :param include_headers_line: If enabled, makes the exporter output a header
       line with the field names taken from
       :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
-   :type include_headers_line: boolean
+   :type include_headers_line: bool
 
    :param join_multivalued: The char (or chars) that will be used for joining
       multi-valued fields, if found.
    :type include_headers_line: str
+
+   :param errors: The optional string that specifies how encoding and decoding
+      errors are to be handled. For more information see
+      :class:`io.TextIOWrapper`.
+   :type errors: str
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method, and the leftover arguments to the

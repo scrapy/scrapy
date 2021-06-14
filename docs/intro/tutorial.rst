@@ -101,10 +101,10 @@ This is the code for our first Spider. Save it in a file named
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = 'quotes-%s.html' % page
+            filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
-            self.log('Saved file %s' % filename)
+            self.log(f'Saved file {filename}')
 
 
 As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
@@ -190,7 +190,7 @@ for your spider::
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = 'quotes-%s.html' % page
+            filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
@@ -405,8 +405,6 @@ to get all of them:
 
   from sys import version_info
 
-.. skip: next if(version_info < (3, 6), reason="Only Python 3.6+ dictionaries match the output")
-
 Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary:
 
@@ -464,16 +462,15 @@ Storing the scraped data
 The simplest way to store the scraped data is by using :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl quotes -o quotes.json
+    scrapy crawl quotes -O quotes.json
 
-That will generate an ``quotes.json`` file containing all scraped items,
+That will generate a ``quotes.json`` file containing all scraped items,
 serialized in `JSON`_.
 
-For historic reasons, Scrapy appends to a given file instead of overwriting
-its contents. If you run this command twice without removing the file
-before the second time, you'll end up with a broken JSON file.
-
-You can also use other formats, like `JSON Lines`_::
+The ``-O`` command-line switch overwrites any existing file; use ``-o`` instead
+to append new content to any existing file. However, appending to a JSON file
+makes the file contents invalid JSON. When appending to a file, consider
+using a different serialization format, such as `JSON Lines`_::
 
     scrapy crawl quotes -o quotes.jl
 
@@ -704,7 +701,7 @@ Using spider arguments
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
-    scrapy crawl quotes -o quotes-humor.json -a tag=humor
+    scrapy crawl quotes -O quotes-humor.json -a tag=humor
 
 These arguments are passed to the Spider's ``__init__`` method and become
 spider attributes by default.

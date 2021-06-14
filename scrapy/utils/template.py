@@ -12,10 +12,12 @@ def render_templatefile(path, **kwargs):
     content = string.Template(raw).substitute(**kwargs)
 
     render_path = path[:-len('.tmpl')] if path.endswith('.tmpl') else path
+
+    if path.endswith('.tmpl'):
+        os.rename(path, render_path)
+
     with open(render_path, 'wb') as fp:
         fp.write(content.encode('utf8'))
-    if path.endswith('.tmpl'):
-        os.remove(path)
 
 
 CAMELCASE_INVALID_CHARS = re.compile(r'[^a-zA-Z\d]')

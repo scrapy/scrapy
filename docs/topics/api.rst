@@ -4,8 +4,6 @@
 Core API
 ========
 
-.. versionadded:: 0.15
-
 This section documents the Scrapy core API, and it's intended for developers of
 extensions and middlewares.
 

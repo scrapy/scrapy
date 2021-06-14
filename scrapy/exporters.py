@@ -39,7 +39,7 @@ class BaseItemExporter:
         self.export_empty_fields = options.pop('export_empty_fields', False)
         self.indent = options.pop('indent', None)
         if not dont_fail and options:
-            raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
+            raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
     def export_item(self, item):
         raise NotImplementedError
@@ -195,7 +195,7 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
+    def __init__(self, file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
@@ -205,7 +205,8 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline='',  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            errors=errors,
         )
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
@@ -243,12 +244,8 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
             if not self.fields_to_export:
-                if isinstance(item, dict):
-                    # for dicts try using fields of the first item
-                    self.fields_to_export = list(item.keys())
-                else:
-                    # use fields declared in Item
-                    self.fields_to_export = list(item.fields.keys())
+                # use declared field names, or keys if the item is a dict
+                self.fields_to_export = ItemAdapter(item).field_names()
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
 
@@ -305,7 +302,7 @@ class PythonItemExporter(BaseItemExporter):
 
     def _configure(self, options, dont_fail=False):
         self.binary = options.pop('binary', True)
-        super(PythonItemExporter, self)._configure(options, dont_fail)
+        super()._configure(options, dont_fail)
         if self.binary:
             warnings.warn(
                 "PythonItemExporter will drop support for binary export in the future",

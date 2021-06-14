@@ -19,7 +19,7 @@ class _HttpErrorSpider(MockServerSpider):
     bypass_status_codes = set()
 
     def __init__(self, *args, **kwargs):
-        super(_HttpErrorSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.start_urls = [
             self.mockserver.url("/status?n=200"),
             self.mockserver.url("/status?n=404"),
@@ -138,6 +138,19 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
 
         self.assertIsNone(self.mw.process_spider_input(res404, self.spider))
         self.assertRaises(HttpError, self.mw.process_spider_input, res402, self.spider)
+
+    def test_httperror_allow_all_false(self):
+        crawler = get_crawler(_HttpErrorSpider)
+        mw = HttpErrorMiddleware.from_crawler(crawler)
+        request_httpstatus_false = Request('http://scrapytest.org', meta={'handle_httpstatus_all': False})
+        request_httpstatus_true = Request('http://scrapytest.org', meta={'handle_httpstatus_all': True})
+        res404 = self.res404.copy()
+        res404.request = request_httpstatus_false
+        res402 = self.res402.copy()
+        res402.request = request_httpstatus_true
+
+        self.assertRaises(HttpError, mw.process_spider_input, res404, self.spider)
+        self.assertIsNone(mw.process_spider_input(res402, self.spider))
 
 
 class TestHttpErrorMiddlewareIntegrational(TrialTestCase):

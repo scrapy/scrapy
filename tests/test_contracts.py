@@ -378,7 +378,7 @@ class ContractsManagerTest(unittest.TestCase):
             name = 'test_same_url'
 
             def __init__(self, *args, **kwargs):
-                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
                 self.visited = 0
 
             def start_requests(s):
@@ -393,7 +393,7 @@ class ContractsManagerTest(unittest.TestCase):
                 return TestItem()
 
         with MockServer() as mockserver:
-            contract_doc = '@url {}'.format(mockserver.url('/status?n=200'))
+            contract_doc = f'@url {mockserver.url("/status?n=200")}'
 
             TestSameUrlSpider.parse_first.__doc__ = contract_doc
             TestSameUrlSpider.parse_second.__doc__ = contract_doc
