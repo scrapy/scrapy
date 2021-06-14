@@ -202,6 +202,16 @@ CookiesMiddleware
    sends them back on subsequent requests (from that spider), just like web
    browsers do.
 
+   .. caution:: When non-UTF8 encoded byte sequences are passed to a
+      :class:`~scrapy.http.Request`, the ``CookiesMiddleware`` will log
+      a warning. Refer to :ref:`topics-logging-advanced-customization`
+      to customize the logging behaviour.
+
+   .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+      :ref:`cookies-mw`. If you need to set cookies for a request, use the
+      :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+      current limitation that is being worked on.
+
 The following settings can be used to configure the cookie middleware:
 
 * :setting:`COOKIES_ENABLED`
@@ -211,8 +221,6 @@ The following settings can be used to configure the cookie middleware:
 
 Multiple cookie sessions per spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 0.15
 
 There is support for keeping multiple cookie sessions per spider by using the
 :reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
@@ -470,8 +478,6 @@ DBM storage backend
 
 .. class:: DbmCacheStorage
 
-    .. versionadded:: 0.13
-
     A DBM_ storage backend is also available for the HTTP cache middleware.
 
     By default, it uses the :mod:`dbm`, but you can change it with the
@@ -544,14 +550,9 @@ settings:
 HTTPCACHE_ENABLED
 ^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.11
-
 Default: ``False``
 
 Whether the HTTP cache will be enabled.
-
-.. versionchanged:: 0.11
-   Before 0.11, :setting:`HTTPCACHE_DIR` was used to enable cache.
 
 .. setting:: HTTPCACHE_EXPIRATION_SECS
 
@@ -564,9 +565,6 @@ Expiration time for cached requests, in seconds.
 
 Cached requests older than this time will be re-downloaded. If zero, cached
 requests will never expire.
-
-.. versionchanged:: 0.11
-   Before 0.11, zero meant cached requests always expire.
 
 .. setting:: HTTPCACHE_DIR
 
@@ -583,8 +581,6 @@ project data dir. For more info see: :ref:`topics-project-structure`.
 
 HTTPCACHE_IGNORE_HTTP_CODES
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.10
 
 Default: ``[]``
 
@@ -604,8 +600,6 @@ If enabled, requests not found in the cache will be ignored instead of downloade
 HTTPCACHE_IGNORE_SCHEMES
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.10
-
 Default: ``['file']``
 
 Don't cache responses with these URI schemes.
@@ -624,8 +618,6 @@ The class which implements the cache storage backend.
 HTTPCACHE_DBM_MODULE
 ^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.13
-
 Default: ``'dbm'``
 
 The database module to use in the :ref:`DBM storage backend
@@ -636,8 +628,6 @@ The database module to use in the :ref:`DBM storage backend
 HTTPCACHE_POLICY
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.18
-
 Default: ``'scrapy.extensions.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
@@ -646,8 +636,6 @@ The class which implements the cache policy.
 
 HTTPCACHE_GZIP
 ^^^^^^^^^^^^^^
-
-.. versionadded:: 1.0
 
 Default: ``False``
 
@@ -658,8 +646,6 @@ This setting is specific to the Filesystem backend.
 
 HTTPCACHE_ALWAYS_STORE
 ^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.1
 
 Default: ``False``
 
@@ -678,8 +664,6 @@ responses you feed to the cache middleware.
 
 HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.1
 
 Default: ``[]``
 
@@ -705,11 +689,14 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
-   This middleware also supports decoding `brotli-compressed`_ responses,
-   provided `brotlipy`_ is installed.
+   This middleware also supports decoding `brotli-compressed`_ as well as
+   `zstd-compressed`_ responses, provided that `brotlipy`_ or `zstandard`_ is
+   installed, respectively.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
 .. _brotlipy: https://pypi.org/project/brotlipy/
+.. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
+.. _zstandard: https://pypi.org/project/zstandard/
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -730,8 +717,6 @@ HttpProxyMiddleware
 .. module:: scrapy.downloadermiddlewares.httpproxy
    :synopsis: Http Proxy Middleware
 
-.. versionadded:: 0.8
-
 .. reqmeta:: proxy
 
 .. class:: HttpProxyMiddleware
@@ -739,7 +724,7 @@ HttpProxyMiddleware
    This middleware sets the HTTP proxy to use for requests, by setting the
    ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
-   Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
+   Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
 
    * ``http_proxy``
@@ -750,9 +735,6 @@ HttpProxyMiddleware
    ``http://some_proxy_server:port`` or ``http://username:password@some_proxy_server:port``.
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
-
-.. _urllib: https://docs.python.org/2/library/urllib.html
-.. _urllib2: https://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -815,8 +797,6 @@ RedirectMiddleware settings
 REDIRECT_ENABLED
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.13
-
 Default: ``True``
 
 Whether the Redirect middleware will be enabled.
@@ -829,6 +809,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
+After this maximum, the request's response is returned as is.
 
 MetaRefreshMiddleware
 ---------------------
@@ -856,8 +837,6 @@ MetaRefreshMiddleware settings
 
 METAREFRESH_ENABLED
 ^^^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.17
 
 Default: ``True``
 
@@ -913,6 +892,11 @@ settings (see the settings documentation for more info):
 If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
 set to True, the request will be ignored by this middleware.
 
+To retry requests from a spider callback, you can use the
+:func:`get_retry_request` function:
+
+.. autofunction:: get_retry_request
+
 RetryMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -920,8 +904,6 @@ RetryMiddleware Settings
 
 RETRY_ENABLED
 ^^^^^^^^^^^^^
-
-.. versionadded:: 0.13
 
 Default: ``True``
 
@@ -954,6 +936,18 @@ connections lost, etc) are always retried.
 In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
+
+.. setting:: RETRY_PRIORITY_ADJUST
+
+RETRY_PRIORITY_ADJUST
+---------------------
+
+Default: ``-1``
+
+Adjust retry request priority relative to original request:
+
+- a positive priority adjust means higher priority.
+- **a negative priority adjust (default) means lower priority.**
 
 
 .. _topics-dlmw-robots:
@@ -1036,8 +1030,7 @@ Scrapy uses this parser by default.
 RobotFileParser
 ~~~~~~~~~~~~~~~
 
-Based on `RobotFileParser
-<https://docs.python.org/3.7/library/urllib.robotparser.html>`_:
+Based on :class:`~urllib.robotparser.RobotFileParser`:
 
 * is Python's built-in robots.txt_ parser
 
@@ -1176,8 +1169,6 @@ AjaxCrawlMiddleware Settings
 
 AJAXCRAWL_ENABLED
 ^^^^^^^^^^^^^^^^^
-
-.. versionadded:: 0.21
 
 Default: ``False``
 

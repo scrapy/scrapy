@@ -64,20 +64,6 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 
 .. _BeautifulSoup's official documentation: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
-.. _faq-python-versions:
-
-What Python versions does Scrapy support?
------------------------------------------
-
-Scrapy is supported under Python 3.5+
-under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 3 support was added in Scrapy 1.1.
-PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
-Python 2 support was dropped in Scrapy 2.0.
-
-.. note::
-    For Python 3 support on Windows, it is recommended to use
-    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
@@ -158,6 +144,41 @@ How can I make Scrapy consume less memory?
 ------------------------------------------
 
 See previous question.
+
+How can I prevent memory errors due to many allowed domains?
+------------------------------------------------------------
+
+If you have a spider with a long list of
+:attr:`~scrapy.spiders.Spider.allowed_domains` (e.g. 50,000+), consider
+replacing the default
+:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
+with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
+less memory. For example:
+
+-   If your domain names are similar enough, use your own regular expression
+    instead joining the strings in
+    :attr:`~scrapy.spiders.Spider.allowed_domains` into a complex regular
+    expression.
+
+-   If you can `meet the installation requirements`_, use pyre2_ instead of
+    Python’s re_ to compile your URL-filtering regular expression. See
+    :issue:`1908`.
+
+See also other suggestions at `StackOverflow`_.
+
+.. note:: Remember to disable
+   :class:`scrapy.spidermiddlewares.offsite.OffsiteMiddleware` when you enable
+   your custom implementation::
+
+       SPIDER_MIDDLEWARES = {
+           'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
+           'myproject.middlewares.CustomOffsiteMiddleware': 500,
+       }
+
+.. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
+.. _pyre2: https://github.com/andreasvc/pyre2
+.. _re: https://docs.python.org/library/re.html
+.. _StackOverflow: https://stackoverflow.com/q/36440681/939364
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -250,15 +271,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -o items.json
+    scrapy crawl myspider -O items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -o items.csv
+    scrapy crawl myspider -O items.csv
 
 To dump into a XML file::
 
-    scrapy crawl myspider -o items.xml
+    scrapy crawl myspider -O items.xml
 
 For more information see :ref:`topics-feed-exports`
 
@@ -342,15 +363,15 @@ method for this purpose. For example::
 
     from copy import deepcopy
 
-    from scrapy.item import BaseItem
-
+    from itemadapter import is_item, ItemAdapter
 
     class MultiplyItemsMiddleware:
 
         def process_spider_output(self, response, result, spider):
             for item in result:
-                if isinstance(item, (BaseItem, dict)):
-                    for _ in range(item['multiply_by']):
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter['multiply_by']):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
@@ -369,6 +390,20 @@ How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()
 This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
 Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
 different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+
+
+.. _faq-stop-response-download:
+
+How can I cancel the download of a given response?
+--------------------------------------------------
+
+In some situations, it might be useful to stop the download of a certain response.
+For instance, sometimes you can determine whether or not you need the full contents
+of a response by inspecting its headers or the first bytes of its body. In that case,
+you could save resources by attaching a handler to the :class:`~scrapy.signals.bytes_received`
+or :class:`~scrapy.signals.headers_received` signals and raising a
+:exc:`~scrapy.exceptions.StopDownload` exception. Please refer to the
+:ref:`topics-stop-response-download` topic for additional information and examples.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905

@@ -9,8 +9,7 @@ Logging
     explicit calls to the Python standard logging. Keep reading to learn more
     about the new logging system.
 
-Scrapy uses `Python's builtin logging system
-<https://docs.python.org/3/library/logging.html>`_ for event logging. We'll
+Scrapy uses :mod:`logging` for event logging. We'll
 provide some simple examples to get you started, but for more advanced
 use-cases it's strongly suggested to read thoroughly its documentation.
 
@@ -83,10 +82,10 @@ path::
 
 .. seealso::
 
-    Module logging, `HowTo <https://docs.python.org/2/howto/logging.html>`_
+    Module logging, :doc:`HowTo <howto/logging>`
         Basic Logging Tutorial
 
-    Module logging, `Loggers <https://docs.python.org/2/library/logging.html#logger-objects>`_
+    Module logging, :ref:`Loggers <logger>`
         Further documentation on loggers
 
 .. _topics-logging-from-spiders:
@@ -102,7 +101,7 @@ instance, which can be accessed and used like this::
     class MySpider(scrapy.Spider):
 
         name = 'myspider'
-        start_urls = ['https://scrapinghub.com']
+        start_urls = ['https://scrapy.org']
 
         def parse(self, response):
             self.logger.info('Parse function called on %s', response.url)
@@ -118,7 +117,7 @@ Python logger you want. For example::
     class MySpider(scrapy.Spider):
 
         name = 'myspider'
-        start_urls = ['https://scrapinghub.com']
+        start_urls = ['https://scrapy.org']
 
         def parse(self, response):
             logger.info('Parse function called on %s', response.url)
@@ -165,14 +164,12 @@ possible levels listed in :ref:`topics-logging-levels`.
 
 :setting:`LOG_FORMAT` and :setting:`LOG_DATEFORMAT` specify formatting strings
 used as layouts for all messages. Those strings can contain any placeholders
-listed in `logging's logrecord attributes docs
-<https://docs.python.org/2/library/logging.html#logrecord-attributes>`_ and
-`datetime's strftime and strptime directives
-<https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior>`_
+listed in :ref:`logging's logrecord attributes docs <logrecord-attributes>` and
+:ref:`datetime's strftime and strptime directives <strftime-strptime-behavior>`
 respectively.
 
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
-component that prints the log. It is unset by default, hence logs contain the 
+component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
 
 Command-line options
@@ -190,7 +187,7 @@ to override some of the Scrapy settings regarding logging.
 
 .. seealso::
 
-    Module `logging.handlers <https://docs.python.org/2/library/logging.handlers.html>`_
+    Module :mod:`logging.handlers`
         Further documentation on available handlers
 
 .. _custom-log-formats:
@@ -201,9 +198,12 @@ Custom Log Formats
 A custom log format can be set for different actions by extending
 :class:`~scrapy.logformatter.LogFormatter` class and making
 :setting:`LOG_FORMATTER` point to your new class.
- 
+
 .. autoclass:: scrapy.logformatter.LogFormatter
    :members:
+
+
+.. _topics-logging-advanced-customization:
 
 Advanced customization
 ----------------------
@@ -242,6 +242,47 @@ e.g. in the spider's ``__init__`` method::
 If you run this spider again then INFO messages from
 ``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
+You can also filter log records by :class:`~logging.LogRecord` data. For 
+example, you can filter log records by message content using a substring or
+a regular expression. Create a :class:`logging.Filter` subclass 
+and equip it with a regular expression pattern to
+filter out unwanted messages::
+
+    import logging
+    import re
+    
+    class ContentFilter(logging.Filter):
+        def filter(self, record):
+            match = re.search(r'\d{3} [Ee]rror, retrying', record.message)
+            if match:
+                return False
+                
+A project-level filter may be attached to the root 
+handler created by Scrapy, this is a wieldy way to 
+filter all loggers in different parts of the project
+(middlewares, spider, etc.)::
+
+    import logging
+    import scrapy
+
+    class MySpider(scrapy.Spider):
+        # ...
+        def __init__(self, *args, **kwargs):
+            for handler in logging.root.handlers:
+                handler.addFilter(ContentFilter())
+ 
+Alternatively, you may choose a specific logger 
+and hide it without affecting other loggers::
+
+    import logging
+    import scrapy
+    
+    class MySpider(scrapy.Spider):
+        # ...
+        def __init__(self, *args, **kwargs):
+            logger = logging.getLogger('my_logger')
+            logger.addFilter(ContentFilter())
+            
 scrapy.utils.log module
 =======================
 
@@ -256,16 +297,15 @@ scrapy.utils.log module
     In that case, its usage is not required but it's recommended.
 
     Another option when running custom scripts is to manually configure the logging.
-    To do this you can use `logging.basicConfig()`_ to set a basic root handler.
+    To do this you can use :func:`logging.basicConfig` to set a basic root handler.
 
     Note that :class:`~scrapy.crawler.CrawlerProcess` automatically calls ``configure_logging``,
-    so it is recommended to only use `logging.basicConfig()`_ together with
+    so it is recommended to only use :func:`logging.basicConfig` together with
     :class:`~scrapy.crawler.CrawlerRunner`.
 
     This is an example on how to redirect ``INFO`` or higher messages to a file::
 
         import logging
-        from scrapy.utils.log import configure_logging
 
         logging.basicConfig(
             filename='log.txt',
@@ -275,7 +315,3 @@ scrapy.utils.log module
 
     Refer to :ref:`run-from-script` for more details about using Scrapy this
     way.
-
-.. _logging.basicConfig(): https://docs.python.org/2/library/logging.html#logging.basicConfig
-
-

@@ -102,20 +102,19 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
-        objects.
+        :class:`~scrapy.http.Request` objects and :ref:`item object
+        <topics-items>`.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request`, dict
-          or :class:`~scrapy.item.Item` objects
+        :type result: an iterable of :class:`~scrapy.http.Request` objects and
+          :ref:`item object <topics-items>`
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spiders.Spider` object
-
 
     .. method:: process_spider_exception(response, exception, spider)
 
@@ -123,8 +122,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request`, dict or
-        :class:`~scrapy.item.Item` objects.
+        iterable of :class:`~scrapy.http.Request` objects and :ref:`item object
+        <topics-items>`.
 
         If it returns ``None``, Scrapy will continue processing this exception,
         executing any other :meth:`process_spider_exception` in the following
@@ -140,14 +139,12 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type response: :class:`~scrapy.http.Response` object
 
         :param exception: the exception raised
-        :type exception: `Exception`_ object
+        :type exception: :exc:`Exception` object
 
         :param spider: the spider which raised the exception
         :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
-
-        .. versionadded:: 0.15
 
         This method is called with the start requests of the spider, and works
         similarly to the :meth:`process_spider_output` method, except that it
@@ -173,19 +170,15 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: from_crawler(cls, crawler)
-    
+
        If present, this classmethod is called to create a middleware instance
        from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
        of the middleware. Crawler object provides access to all Scrapy core
        components like settings and signals; it is a way for middleware to
        access them and hook its functionality into Scrapy.
-    
+
        :param crawler: crawler that uses this middleware
        :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-
-.. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
-
 
 .. _topics-spider-middleware-ref:
 
@@ -260,7 +253,8 @@ this::
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
 <scrapy.http.Request.meta>` can also be used to specify which response codes to
 allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
-to ``True`` if you want to allow any response code for a request.
+to ``True`` if you want to allow any response code for a request, and ``False`` to
+disable the effects of the ``handle_httpstatus_all`` key.
 
 Keep in mind, however, that it's usually a bad idea to handle non-200
 responses, unless you really know what you're doing.
@@ -346,8 +340,6 @@ RefererMiddleware settings
 REFERER_ENABLED
 ^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.15
-
 Default: ``True``
 
 Whether to enable referer middleware.
@@ -356,8 +348,6 @@ Whether to enable referer middleware.
 
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 

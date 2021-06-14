@@ -48,7 +48,7 @@ class StackTraceDump:
         for id_, frame in sys._current_frames().items():
             name = id2name.get(id_, '')
             dump = ''.join(traceback.format_stack(frame))
-            dumps += "# Thread: {0}({1})\n{2}\n".format(name, id_, dump)
+            dumps += f"# Thread: {name}({id_})\n{dump}\n"
         return dumps
 
 

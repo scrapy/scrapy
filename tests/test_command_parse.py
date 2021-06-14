@@ -1,5 +1,5 @@
 import os
-from os.path import join, abspath
+from os.path import join, abspath, isfile, exists
 from twisted.internet import defer
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
@@ -17,18 +17,18 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     command = 'parse'
 
     def setUp(self):
-        super(ParseCommandTest, self).setUp()
+        super().setUp()
         self.spider_name = 'parse_spider'
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
         with open(fname, 'w') as f:
-            f.write("""
+            f.write(f"""
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
 
 class MySpider(scrapy.Spider):
-    name = '{0}'
+    name = '{self.spider_name}'
 
     def parse(self, response):
         if getattr(self, 'test_arg', None):
@@ -58,7 +58,7 @@ class MySpider(scrapy.Spider):
             self.logger.debug('It Does Not Work :(')
 
 class MyGoodCrawlSpider(CrawlSpider):
-    name = 'goodcrawl{0}'
+    name = 'goodcrawl{self.spider_name}'
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
@@ -74,7 +74,7 @@ class MyGoodCrawlSpider(CrawlSpider):
 
 class MyBadCrawlSpider(CrawlSpider):
     '''Spider which doesn't define a parse_item callback while using it in a rule.'''
-    name = 'badcrawl{0}'
+    name = 'badcrawl{self.spider_name}'
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
@@ -82,7 +82,7 @@ class MyBadCrawlSpider(CrawlSpider):
 
     def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
-""".format(self.spider_name))
+""")
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
         with open(fname, 'w') as f:
@@ -99,9 +99,9 @@ class MyPipeline:
 
         fname = abspath(join(self.proj_mod_path, 'settings.py'))
         with open(fname, 'a') as f:
-            f.write("""
-ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
-""" % self.project_name)
+            f.write(f"""
+ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
+""")
 
     @defer.inlineCallbacks
     def test_spider_arguments(self):
@@ -142,8 +142,8 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     @defer.inlineCallbacks
     def test_request_without_meta(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
-                                          '-c', 'parse_request_without_meta',
-                                          '--nolinks',
+                                           '-c', 'parse_request_without_meta',
+                                           '--nolinks',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -218,3 +218,24 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         )
         self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
+
+    @defer.inlineCallbacks
+    def test_output_flag(self):
+        """Checks if a file was created successfully having
+        correct format containing correct data in it.
+        """
+        file_name = 'data.json'
+        file_path = join(self.proj_path, file_name)
+        yield self.execute([
+            '--spider', self.spider_name,
+            '-c', 'parse',
+            '-o', file_name,
+            self.url('/html')
+        ])
+
+        self.assertTrue(exists(file_path))
+        self.assertTrue(isfile(file_path))
+
+        content = '[\n{},\n{"foo": "bar"}\n]'
+        with open(file_path, 'r') as f:
+            self.assertEqual(f.read(), content)

@@ -8,11 +8,10 @@ class Command(fetch.Command):
         return "Open URL in browser, as seen by Scrapy"
 
     def long_desc(self):
-        return "Fetch a URL using the Scrapy downloader and show its " \
-            "contents in a browser"
+        return "Fetch a URL using the Scrapy downloader and show its contents in a browser"
 
     def add_options(self, parser):
-        super(Command, self).add_options(parser)
+        super().add_options(parser)
         parser.remove_option("--headers")
 
     def _print_response(self, response, opts):

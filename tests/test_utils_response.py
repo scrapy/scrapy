@@ -37,8 +37,7 @@ class ResponseUtilsTest(unittest.TestCase):
             self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
             return True
         response = HtmlResponse(url, body=body)
-        assert open_in_browser(response, _openfunc=browser_open), \
-            "Browser not called"
+        assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
 
         resp = Response(url, body=body)
         self.assertRaises(TypeError, open_in_browser, resp, debug=True)
