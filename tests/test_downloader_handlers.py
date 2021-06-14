@@ -768,7 +768,7 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         def _test(response):
             self.assertEqual(response.status, 200)
             self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'http://example.com')
+            self.assertEqual(response.body, self.expected_http_proxy_request_body)
 
         http_proxy = self.getURL('').replace('http://', '')
         request = Request('http://example.com', meta={'proxy': http_proxy})
