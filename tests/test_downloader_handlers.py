@@ -764,6 +764,16 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         timeout = yield self.assertFailure(d, error.TimeoutError)
         self.assertIn(domain, timeout.osError)
 
+    def test_download_with_proxy_without_http_scheme(self):
+        def _test(response):
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.url, request.url)
+            self.assertEqual(response.body, self.expected_http_proxy_request_body)
+
+        http_proxy = self.getURL('').replace('http://', '')
+        request = Request('http://example.com', meta={'proxy': http_proxy})
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
 
 class HttpDownloadHandlerMock:
 
