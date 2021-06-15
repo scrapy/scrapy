@@ -50,6 +50,7 @@ We will talk about those types here.
 scrapy.Spider
 =============
 
+.. class:: scrapy.spiders.Spider()
 .. class:: Spider()
 
    This is the simplest spider, and the one from which every other spider
@@ -234,7 +235,7 @@ Return multiple Requests and items from a single callback::
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
-to give data more structure you can use :class:`~scrapy.item.Item` objects::
+to give data more structure you can use :class:`~scrapy.Item` objects::
 
     import scrapy
     from myproject.items import MyItem
@@ -463,7 +464,7 @@ Let's now take a look at an example CrawlSpider with rules::
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-an :class:`~scrapy.item.Item` will be filled with it.
+an :class:`~scrapy.Item` will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -486,11 +487,11 @@ XMLFeedSpider
 
            - ``'iternodes'`` - a fast iterator based on regular expressions
 
-           - ``'html'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+           - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
              which could be a problem for big feeds
 
-           - ``'xml'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+           - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
              Keep in mind this uses DOM parsing and must load all DOM in memory
              which could be a problem for big feeds
 
@@ -508,7 +509,7 @@ XMLFeedSpider
         available in that document that will be processed with this spider. The
         ``prefix`` and ``uri`` will be used to automatically register
         namespaces using the
-        :meth:`~scrapy.selector.Selector.register_namespace` method.
+        :meth:`~scrapy.Selector.register_namespace` method.
 
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
@@ -535,7 +536,7 @@ XMLFeedSpider
 
         This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an
-        :class:`~scrapy.selector.Selector` for each node.  Overriding this
+        :class:`~scrapy.Selector` for each node.  Overriding this
         method is mandatory. Otherwise, you spider won't work.  This method
         must return an :ref:`item object <topics-items>`, a
         :class:`~scrapy.Request` object, or an iterable containing any of
@@ -581,7 +582,7 @@ These spiders are pretty easy to use, let's have a look at one example::
 
 Basically what we did up there was to create a spider that downloads a feed from
 the given ``start_urls``, and then iterates through each of its ``item`` tags,
-prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
+prints them out, and stores some random data in an :class:`~scrapy.Item`.
 
 CSVFeedSpider
 -------------
