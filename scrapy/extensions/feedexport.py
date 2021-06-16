@@ -19,6 +19,7 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.itemchecker import ItemChecker
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
@@ -498,5 +499,5 @@ class FeedExporter:
 
     def _load_filter(self, feed_options):
         # load the item filter if declared else load the default filter class
-        item_filter_class = load_object(feed_options.get("item_filter","scrapy.itemchecker.ItemChecker"))
+        item_filter_class = load_object(feed_options.get("item_filter", ItemChecker))
         return item_filter_class(feed_options)
