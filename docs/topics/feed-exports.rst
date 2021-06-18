@@ -268,6 +268,26 @@ in multiple files, with the specified maximum item count per file. That way, as
 soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
+.. _item-filter:
+
+Item filter
+===========
+
+An `ItemChecker` class can be used to create your own custom item filter.
+Creating such an item filter can help filter scraped items based on some custom
+conditions that you can write in the `accepts` methods of the class. The accepts
+method must return a bool value to determine if the item is acceptable or not.
+These filters can then be activated by declaring them in :ref:`feeds options <feed-options>`.
+
+For instance::
+
+    class MyCustomFilter(scrapy.itemchecker.ItemChecker):
+
+        def accepts(self, item):
+            if "field1" in item and item["field1"] == "expected_data":
+                return True
+            return False
+
 
 Settings
 ========
@@ -311,6 +331,7 @@ For instance::
             'format': 'json',
             'encoding': 'utf8',
             'store_empty': False,
+            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
             'fields': None,
             'indent': 4,
             'item_export_kwargs': {
@@ -320,12 +341,14 @@ For instance::
         '/home/user/documents/items.xml': {
             'format': 'xml',
             'fields': ['name', 'price'],
+            'item_filter': MyCustomFilter1,
             'encoding': 'latin1',
             'indent': 8,
         },
         pathlib.Path('items.csv'): {
             'format': 'csv',
             'fields': ['price', 'name'],
+            'item_filter': 'myproject.filters.MyCustomFilter2',
         },
     }
 
@@ -346,6 +369,19 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
+
+-   ``item_classes``: list of acceptable :ref:`item classes <topics-items>` that should be exported to the feed storage.
+
+    If no items declared then there will be no filtering based on item_classes. There is no fallback value.
+
+    .. versionadded:: 2.X.X
+
+-   ``item_filter``: a :ref:`filter class <item-filter>` based on ItemChecker class to filter items before they are
+    exported to the feed storage.
+
+    If no filter class declared then the base ItemChecker class will be loaded.
+
+    .. versionadded:: 2.X.X
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
