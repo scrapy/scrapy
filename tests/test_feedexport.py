@@ -986,17 +986,20 @@ class FeedExportTest(FeedExportTestBase):
 
         MyItem = self.MyItem
 
-        class CustomFilter1(scrapy.itemchecker.ItemChecker):
+        class CustomFilter1:
+            def __init__(self, feed_options):
+                pass
+
             def accepts(self, item):
                 return isinstance(item, MyItem)
 
-        class CustomFilter2(scrapy.itemchecker.ItemChecker):
+        class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
             def accepts(self, item):
                 if 'foo' not in item.fields:
                     return False
                 return True
 
-        class CustomFilter3(scrapy.itemchecker.ItemChecker):
+        class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
             def accepts(self, item):
                 if isinstance(item, tuple(self.item_classes)) and item['foo'] == "bar1":
                     return True

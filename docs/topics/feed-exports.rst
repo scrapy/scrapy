@@ -270,23 +270,35 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 
 .. _item-filter:
 
-Item filter
-===========
+Item filtering
+==============
 
-An `ItemChecker` class can be used to create your own custom item filter.
-Creating such an item filter can help filter scraped items based on some custom
-conditions that you can write in the `accepts` methods of the class. The accepts
-method must return a bool value to determine if the item is acceptable or not.
-These filters can then be activated by declaring them in :ref:`feeds options <feed-options>`.
+You can filter items that you want to allow for a particular feed storage by using
+the ``item_classes`` option in :ref:`feeds options <feed-options>`. Add the items you
+wish to accept and only those items will be entered to the feed. This feature is actually
+implemented by Scrapy's :class:`~scrapy.extensions.feedexport.ItemFilter` class which is 
+the default value of ``item_filter`` option in the :ref:`feeds options <feed-options>`.
+
+You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
+method ``accepts`` and taking ``feed_options`` as an argument.
 
 For instance::
 
-    class MyCustomFilter(scrapy.itemchecker.ItemChecker):
+    class MyCustomFilter:
+
+        def __init__(self, feed_options):
+            self.feed_options = feed_options
 
         def accepts(self, item):
             if "field1" in item and item["field1"] == "expected_data":
                 return True
             return False
+
+ItemFilter
+----------
+
+.. autoclass:: scrapy.extensions.feedexport.ItemFilter
+   :members:
 
 
 Settings
@@ -372,16 +384,15 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``item_classes``: list of acceptable :ref:`item classes <topics-items>` that should be exported to the feed storage.
 
-    If no items declared then there will be no filtering based on item_classes. There is no fallback value.
+    If no items declared then there will be no filtering based on ``item_classes``. There is no fallback value.
 
-    .. versionadded:: 2.X.X
+    .. versionadded:: 2.6.0
 
--   ``item_filter``: a :ref:`filter class <item-filter>` based on ItemChecker class to filter items before they are
-    exported to the feed storage.
+-   ``item_filter``: a :ref:`filter class <item-filter>` to filter items before they are exported to the feed storage.
 
-    If no filter class declared then the base ItemChecker class will be loaded.
+    If no filter class declared then the base :class:`~scrapy.extensions.feedexport.ItemFilter` will be loaded.
 
-    .. versionadded:: 2.X.X
+    .. versionadded:: 2.6.0
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 

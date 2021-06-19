@@ -19,7 +19,6 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.itemchecker import ItemChecker
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
@@ -45,6 +44,39 @@ def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
             category=ScrapyDeprecationWarning
         )
     return builder(*preargs, uri, *args, **kwargs)
+
+
+class ItemFilter:
+    """
+    This will be used by FeedExporter to decide if an item should be allowed
+    to be exported to a particular feed.
+
+    :param feed_options: feed specific options passed from FeedExporter
+    :type feed_options: dict
+    """
+
+    def __init__(self, feed_options):
+        self.feed_options = feed_options
+        self.item_classes = set()
+
+        if 'item_classes' in self.feed_options:
+            for item_class in self.feed_options['item_classes']:
+                self.item_classes.add(load_object(item_class))
+
+    def accepts(self, item):
+        """
+        Main method to be used by FeedExporter to check if the item is acceptable according
+        to defined constraints.
+
+        :param item: scraped item which user wants to check if is acceptable
+        :type item: scrapy supported items (dictionaries, Item objects, dataclass objects, and attrs objects)
+        :return: `True` if accepted, `False` otherwise
+        :rtype: bool
+        """
+        if self.item_classes:
+            return isinstance(item, tuple(self.item_classes))
+
+        return True    # accept all items if none declared in item_classes
 
 
 class IFeedStorage(Interface):
@@ -499,5 +531,5 @@ class FeedExporter:
 
     def _load_filter(self, feed_options):
         # load the item filter if declared else load the default filter class
-        item_filter_class = load_object(feed_options.get("item_filter", ItemChecker))
+        item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
         return item_filter_class(feed_options)
