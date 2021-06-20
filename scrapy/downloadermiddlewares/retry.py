@@ -98,7 +98,7 @@ def get_retry_request(
             {'request': request, 'retry_times': retry_times, 'reason': reason},
             extra={'spider': spider}
         )
-        new_request = request.copy()
+        new_request: Request = request.copy()
         new_request.meta['retry_times'] = retry_times
         new_request.dont_filter = True
         if priority_adjust is None:
