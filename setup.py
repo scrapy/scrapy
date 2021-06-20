@@ -19,7 +19,7 @@ def has_environment_marker_platform_impl_support():
 
 
 install_requires = [
-    'Twisted[http2]>=17.9.0',
+    'Twisted>=17.9.0',
     'cryptography>=2.0',
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
@@ -31,7 +31,7 @@ install_requires = [
     'zope.interface>=4.1.3',
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
-    'h2>=3.0,<4.0',
+    'setuptools',
 ]
 extras_require = {}
 cpython_dependencies = [

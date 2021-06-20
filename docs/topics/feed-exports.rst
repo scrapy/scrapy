@@ -135,6 +135,9 @@ Here are some examples to illustrate:
 
     -   ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
 
+.. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence 
+          they can also be used as storage URI parameters.
+
 
 .. _topics-feed-storage-backends:
 
