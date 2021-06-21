@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import install_reactor
 
@@ -20,10 +21,19 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-for line in open('tests/ignores.txt'):
-    file_path = line.strip()
-    if file_path and file_path[0] != '#':
-        collect_ignore.append(file_path)
+with open('tests/ignores.txt') as reader:
+    for line in reader:
+        file_path = line.strip()
+        if file_path and file_path[0] != '#':
+            collect_ignore.append(file_path)
+
+if not H2_ENABLED:
+    collect_ignore.extend(
+        (
+            'scrapy/core/downloader/handlers/http2.py',
+            *_py_files("scrapy/core/http2"),
+        )
+    )
 
 
 @pytest.fixture()

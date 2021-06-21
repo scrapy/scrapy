@@ -108,7 +108,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
         # ignore subclassing warnings
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
+            warnings.simplefilter('ignore', MyWarning)
 
             class UserClass(Deprecated):
                 pass

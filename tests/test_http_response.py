@@ -1,6 +1,6 @@
 import unittest
 from unittest import mock
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
 from w3lib.encoding import resolve_encoding
 
@@ -134,7 +134,9 @@ class BaseResponseTest(unittest.TestCase):
         assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
-        self.assertEqual(response.body_as_unicode(), body_unicode)
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            self.assertEqual(response.body_as_unicode(), body_unicode)
         self.assertEqual(response.text, body_unicode)
 
     def _assert_response_encoding(self, response, encoding):
@@ -345,8 +347,10 @@ class TextResponseTest(BaseResponseTest):
         r1 = self.response_class('http://www.example.com', body=original_string, encoding='cp1251')
 
         # check body_as_unicode
-        self.assertTrue(isinstance(r1.body_as_unicode(), str))
-        self.assertEqual(r1.body_as_unicode(), unicode_string)
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            self.assertTrue(isinstance(r1.body_as_unicode(), str))
+            self.assertEqual(r1.body_as_unicode(), unicode_string)
 
         # check response.text
         self.assertTrue(isinstance(r1.text, str))

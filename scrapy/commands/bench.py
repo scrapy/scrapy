@@ -50,7 +50,7 @@ class _BenchSpider(scrapy.Spider):
 
     def start_requests(self):
         qargs = {'total': self.total, 'show': self.show}
-        url = f'{self.baseurl}?{urlencode(qargs, doseq=1)}'
+        url = f'{self.baseurl}?{urlencode(qargs, doseq=True)}'
         return [scrapy.Request(url, dont_filter=True)]
 
     def parse(self, response):

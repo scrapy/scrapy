@@ -5,8 +5,9 @@ import platform
 import unittest
 from datetime import datetime
 from itertools import count
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
     WeakKeyCache, get_func_args, to_bytes, to_unicode,
@@ -160,7 +161,11 @@ class UtilsPythonTestCase(unittest.TestCase):
             pass
 
         _values = count()
-        wk = WeakKeyCache(lambda k: next(_values))
+
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            wk = WeakKeyCache(lambda k: next(_values))
+
         k = _Weakme()
         v = wk[k]
         self.assertEqual(v, wk[k])
