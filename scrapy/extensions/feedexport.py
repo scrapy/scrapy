@@ -65,8 +65,7 @@ class ItemFilter:
 
     def accepts(self, item):
         """
-        Main method to be used by FeedExporter to check if the item is acceptable according
-        to defined constraints.
+        Return ``True`` if `item` should be exported or ``False`` otherwise.
 
         :param item: scraped item which user wants to check if is acceptable
         :type item: scrapy supported items (dictionaries, Item objects, dataclass objects, and attrs objects)

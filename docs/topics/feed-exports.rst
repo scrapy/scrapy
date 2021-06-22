@@ -273,11 +273,12 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 Item filtering
 ==============
 
-You can filter items that you want to allow for a particular feed storage by using
-the ``item_classes`` option in :ref:`feeds options <feed-options>`. Add the items you
-wish to accept and only those items will be entered to the feed. This feature is actually
-implemented by Scrapy's :class:`~scrapy.extensions.feedexport.ItemFilter` class which is 
-the default value of ``item_filter`` option in the :ref:`feeds options <feed-options>`.
+You can filter items that you want to allow for a particular feed by using the
+``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
+the specified types will be added to the feed.
+
+The ``item_classes`` option is implemented by the :class:`~scrapy.extensions.feedexport.ItemFilter`
+class which is the default value of ``item_filter`` :ref:`feeds options <feed-options>`.
 
 You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
 method ``accepts`` and taking ``feed_options`` as an argument.
@@ -293,6 +294,10 @@ For instance::
             if "field1" in item and item["field1"] == "expected_data":
                 return True
             return False
+
+
+You can assign your custom filtering class to the ``item_filter`` :ref:`option of a feed <feed-options>`.
+See :setting:`FEEDS` for examples.
 
 ItemFilter
 ----------
@@ -382,17 +387,17 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
 
--   ``item_classes``: list of acceptable :ref:`item classes <topics-items>` that should be exported to the feed storage.
+-   ``item_classes``: list of :ref:`item classes <topics-items>` to export.
 
-    If no items declared then there will be no filtering based on ``item_classes``. There is no fallback value.
+    If undefined or empty, all items are exported.
 
-    .. versionadded:: 2.6.0
+    .. versionadded:: VERSION
 
--   ``item_filter``: a :ref:`filter class <item-filter>` to filter items before they are exported to the feed storage.
+-   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
-    If no filter class declared then the base :class:`~scrapy.extensions.feedexport.ItemFilter` will be loaded.
+    :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
 
-    .. versionadded:: 2.6.0
+    .. versionadded:: VERSION
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
