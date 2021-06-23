@@ -273,12 +273,14 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 Item filtering
 ==============
 
+.. versionadded:: VERSION
+
 You can filter items that you want to allow for a particular feed by using the
 ``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
 the specified types will be added to the feed.
 
 The ``item_classes`` option is implemented by the :class:`~scrapy.extensions.feedexport.ItemFilter`
-class which is the default value of ``item_filter`` :ref:`feeds options <feed-options>`.
+class, which is the default value of the ``item_filter`` :ref:`feed option <feed-options>`.
 
 You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
 method ``accepts`` and taking ``feed_options`` as an argument.
