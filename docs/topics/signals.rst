@@ -268,6 +268,9 @@ spider_idle
     You may raise a :exc:`~scrapy.exceptions.DontCloseSpider` exception to
     prevent the spider from being closed.
 
+    Alternatively, you may raise a :exc:`~scrapy.exceptions.CloseSpider`
+    exception to provide a custom spider closing reason.
+
     This signal does not support returning deferreds from its handlers.
 
     :param spider: the spider which has gone idle
