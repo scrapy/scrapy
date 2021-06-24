@@ -337,8 +337,9 @@ class ExecutionEngine:
         if DontCloseSpider in detected_ex:
             return None
         if self.spider_is_idle():
-            reason = detected_ex[CloseSpider].reason if CloseSpider in detected_ex else 'finished'
-            self.close_spider(self.spider, reason=reason)
+            ex = detected_ex.get(CloseSpider, CloseSpider(reason='finished'))
+            assert isinstance(ex, CloseSpider)  # typing
+            self.close_spider(self.spider, reason=ex.reason)
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
