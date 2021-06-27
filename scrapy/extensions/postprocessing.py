@@ -1,7 +1,7 @@
 """
 Extension for processing data before they are exported to feeds.
 """
-
+from io import IOBase
 from bz2 import BZ2File
 from gzip import GzipFile
 from lzma import LZMAFile
@@ -55,7 +55,7 @@ class GzipPlugin:
 
 
 @implementer(PostProcessorPlugin)
-class Bz2File:
+class Bz2Plugin:
 
     def __init__(self, file, feed_options):
         self.file = file
@@ -93,7 +93,7 @@ class LZMAPlugin:
         self.file.close()
 
 
-class PostProcessingManager:
+class PostProcessingManager(IOBase):
     """
     This will manage and use declared plugins to process data in a
     pipeline-ish way.
@@ -125,6 +125,9 @@ class PostProcessingManager:
         Close the target file along with all the plugins.
         """
         self.head_plugin.close()
+
+    def writable(self):
+        return True
 
     def _load_plugins(self, plugins):
         plugins = [load_object(plugin) for plugin in plugins]
