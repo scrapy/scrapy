@@ -269,7 +269,11 @@ spider_idle
     prevent the spider from being closed.
 
     Alternatively, you may raise a :exc:`~scrapy.exceptions.CloseSpider`
-    exception to provide a custom spider closing reason.
+    exception to provide a custom spider closing reason. An
+    idle handler is the perfect place to put some code that assesses
+    the final spider results and update the final closing reason
+    accordingly (e.g. setting it to 'too_few_results' instead of
+    'finished').
 
     This signal does not support returning deferreds from its handlers.
 

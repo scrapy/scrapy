@@ -326,7 +326,7 @@ class ExecutionEngine:
         Called when a spider gets idle, i.e. when there are no remaining requests to download or schedule.
         It can be called multiple times. If a handler for the spider_idle signal raises a DontCloseSpider
         exception, the spider is not closed until the next loop and this function is guaranteed to be called
-        (at least) once again. A handler can raise CloseSpider to provide a custom closing reason
+        (at least) once again. A handler can raise CloseSpider to provide a custom closing reason.
         """
         assert self.spider is not None  # typing
         expected_ex = (DontCloseSpider, CloseSpider)
