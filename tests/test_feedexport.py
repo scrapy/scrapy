@@ -1320,6 +1320,76 @@ class FeedExportTest(FeedExportTestBase):
             data = yield self.exported_data(items, settings)
             self.assertEqual(row['expected'], data[feed_options['format']])
 
+    @defer.inlineCallbacks
+    def test_postprocessed_exports(self):
+        items = [
+            {'foo': 'bar1', 'baz': ''},
+            {'egg': 'bar2', 'baz': 'quux'},
+        ]
+
+        import gzip
+        import lzma
+        import bz2
+        format_to_decompressor = {
+            'csv': gzip,
+            'json': lzma,
+            'jsonlines': bz2,
+            'xml': gzip,
+        }
+
+        format_to_expected = {
+            'csv': b'foo,baz\r\nbar1,\r\n,quux\r\n',
+            'json': b'[\n{"foo": "bar1", "baz": ""},\n{"egg": "bar2", "baz": "quux"}\n]',
+            'jsonlines': b'{"foo": "bar1", "baz": ""}\n{"egg": "bar2", "baz": "quux"}\n',
+            'xml': b'XXXX<?xml version="1.0" encoding="utf-8"?>\nXXXX<itemsXXXX>XXXX\nX'
+                   b'XXX<itemXXXX>XXXX<fooXXXX>XXXXbar1XXXX</foo>XXXX<bazXXXX>XXXX</baz'
+                   b'>XXXX</item>XXXX\nXXXX<itemXXXX>XXXX<eggXXXX>XXXXbar2XXXX</egg>XXX'
+                   b'X<bazXXXX>XXXXquuxXXXX</baz>XXXX</item>XXXX\nXXXX</items>',
+        }
+
+        class MyPlugin1:
+            def __init__(self, file, feed_options):
+                self.file = file
+                self.feed_options = feed_options
+
+            def write(self, data):
+                return self.file.write(b"XXXX" + data)
+
+            def close(self):
+                self.file.close()
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_compresslevel': random.randint(1, 9),
+                },
+                self._random_temp_filename(): {
+                    'format': 'json',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_preset': random.randint(0, 9),
+                    'lzma_check': random.choice([lzma.CHECK_CRC32, lzma.CHECK_CRC64,
+                                                 lzma.CHECK_NONE, lzma.CHECK_SHA256]),
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'bz2_compresslevel': random.randint(1, 9),
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+                },
+            }
+        }
+
+        data = yield self.exported_data(items, settings)
+
+        for fmt, decompressor in format_to_decompressor.items():
+            result = decompressor.decompress(data[fmt])
+            self.assertEqual(format_to_expected[fmt], result)
+
 
 class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
