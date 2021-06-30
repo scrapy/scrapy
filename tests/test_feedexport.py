@@ -1347,6 +1347,13 @@ class FeedExportTest(FeedExportTestBase):
                    b'X<bazXXXX>XXXXquuxXXXX</baz>XXXX</item>XXXX\nXXXX</items>',
         }
 
+        format_to_compressed = {
+            'csv': gzip.compress(format_to_expected['csv'], compresslevel=5, mtime=0),
+            'json': lzma.compress(format_to_expected['json'], preset=4),
+            'jsonlines': bz2.compress(format_to_expected['jsonlines'], compresslevel=7),
+            'xml': gzip.compress(format_to_expected['xml'], compresslevel=7, mtime=0),
+        }
+
         class MyPlugin1:
             def __init__(self, file, feed_options):
                 self.file = file
@@ -1363,23 +1370,26 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {
                     'format': 'csv',
                     'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
-                    'gzip_compresslevel': random.randint(1, 9),
+                    'gzip_compresslevel': 5,
+                    'gzip_mtime': 0,
+                    'gzip_filename': "",
                 },
                 self._random_temp_filename(): {
                     'format': 'json',
                     'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
-                    'lzma_preset': random.randint(0, 9),
-                    'lzma_check': random.choice([lzma.CHECK_CRC32, lzma.CHECK_CRC64,
-                                                 lzma.CHECK_NONE, lzma.CHECK_SHA256]),
+                    'lzma_preset': 4,
                 },
                 self._random_temp_filename(): {
                     'format': 'jsonlines',
                     'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
-                    'bz2_compresslevel': random.randint(1, 9),
+                    'bz2_compresslevel': 7,
                 },
                 self._random_temp_filename(): {
                     'format': 'xml',
                     'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_compresslevel': 7,
+                    'gzip_mtime': 0,
+                    'gzip_filename': "",
                 },
             }
         }
@@ -1388,6 +1398,7 @@ class FeedExportTest(FeedExportTestBase):
 
         for fmt, decompressor in format_to_decompressor.items():
             result = decompressor.decompress(data[fmt])
+            self.assertEqual(format_to_compressed[fmt], data[fmt])
             self.assertEqual(format_to_expected[fmt], result)
 
 

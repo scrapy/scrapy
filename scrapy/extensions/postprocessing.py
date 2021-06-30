@@ -5,7 +5,7 @@ from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase
 from lzma import LZMAFile
-from typing import BinaryIO, Dict, Any, List
+from typing import Any, BinaryIO, Dict, List
 
 from scrapy.utils.misc import load_object
 
@@ -16,7 +16,10 @@ class GzipPlugin:
         self.file = file
         self.feed_options = feed_options
         compress_level = self.feed_options.get("gzip_compresslevel", 9)
-        self.gzipfile = GzipFile(fileobj=self.file, mode="wb", compresslevel=compress_level)
+        mtime = self.feed_options.get("gzip_mtime")
+        filename = self.feed_options.get("gzip_filename")
+        self.gzipfile = GzipFile(fileobj=self.file, mode="wb", compresslevel=compress_level,
+                                 mtime=mtime, filename=filename)
 
     def write(self, data: bytes) -> int:
         return self.gzipfile.write(data)
