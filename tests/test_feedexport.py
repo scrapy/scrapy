@@ -1780,8 +1780,9 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
     maxDiff = None
 
     def test_init(self):
+        temp = tempfile.NamedTemporaryFile().name
         settings_dict = {
-            'FEED_URI': 'file:///tmp/foobar',
+            'FEED_URI': f'file:///{temp}',
             'FEED_STORAGES': {
                 'file': FileFeedStorageWithoutFeedOptions
             },
