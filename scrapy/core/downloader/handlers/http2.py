@@ -41,8 +41,8 @@ class H2DownloadHandler:
         )
         return agent.download_request(request, spider)
 
-    def close(self) -> None:
-        self._pool.close_connections()
+    def close(self) -> Deferred:
+        return self._pool.close_connections()
 
 
 class ScrapyH2Agent:
