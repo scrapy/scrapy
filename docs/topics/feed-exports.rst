@@ -268,6 +268,83 @@ in multiple files, with the specified maximum item count per file. That way, as
 soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
+.. _post-processing:
+
+Post-Processing
+===============
+
+.. versionadded:: VERSION
+
+Scrapy provides an option to activate plugins to post-process items before
+they are exported to feed storages. In addition to using builtin plugins, users
+can create their own plugins. 
+
+These plugins can be activated through ``postprocessing`` :ref:`option of a feed <feed-options>`.
+Parameters to plugins can be passed through the feed settings where the key will be the parameter name
+and the value will be the parameter value. These parameters will be made accessible to the plugin
+through the ``feed_options`` parameter which will be passed to their constructor method.
+
+As the data is passed from one plugin to another, users must ensure the order of plugins do not
+cause a plugin to breakdown because of some unprocessable data.
+
+Each plugin is a Python class that must implement the following methods:
+
+.. method:: __init__(self, file, feed_options)
+
+    Constructor method to initialize plugin.
+
+    :param file: target file object to which post-processed data will be written
+
+    :param feed_options: feed-specific options
+    :type feed_options: :class:`dict`
+
+.. method:: write(self, data)
+
+   Process and write `data` to plugin's target file.
+
+   :param data: data passed to be written to file
+   :type data: :class:`bytes`
+
+.. method:: close(self)
+
+    Close the target file object.
+
+.. _builtin-plugins:
+
+Built-in Plugins
+----------------
+
+GzipPlugin
+^^^^^^^^^^
+
+Compresses recieved data with with :py:mod:`gzip` module.
+
+Accpeted parameters:
+
+-   ``gzip_compresslevel``: integer from 0 to 9 controlling the level of compression.
+-   ``gzip_mtime``: numeric timestamp for the compressed file.
+-   ``gzip_filename``: filename to be included in the header of compressed file.
+
+LZMAPlugin
+^^^^^^^^^^
+
+Compresses recieved data with :py:mod:`lzma` module.
+
+Accepted parameters:
+
+-   ``lzma_format``: specifies what container format should be used.
+-   ``lzma_check``: specifies the type of integrity check to include in the compressed data.
+-   ``lzma_preset``: an integer between 0 and 9. Higher presets produce smaller output, but make the compression process slower.
+-   ``lzma_filter``: should be a filter chain specifier.
+
+Bz2Plugin
+^^^^^^^^^
+
+Compresses recieved data with :py:mod:`bz2` module.
+
+Accepted parameters:
+
+-   ``bz2_compresslevel``: integer from 1 to 9 controlling the level of compression.
 
 Settings
 ========
@@ -323,9 +400,11 @@ For instance::
             'encoding': 'latin1',
             'indent': 8,
         },
-        pathlib.Path('items.csv'): {
+        pathlib.Path('items.csv.gz'): {
             'format': 'csv',
             'fields': ['price', 'name'],
+            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+            'gzip_compresslevel': 5,
         },
     }
 
@@ -377,6 +456,11 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
 
+-   ``postprocessing``: list of :ref:`plugins <post-processing>` to use for post-processing.
+
+    The plugins will be used in the order of the list passed.
+
+    .. versionadded:: VERSION
 
 .. setting:: FEED_EXPORT_ENCODING
 

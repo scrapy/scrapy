@@ -1347,11 +1347,21 @@ class FeedExportTest(FeedExportTestBase):
                    b'X<bazXXXX>XXXXquuxXXXX</baz>XXXX</item>XXXX\nXXXX</items>',
         }
 
+        # versions < python3.8 doesn't support gzip.compresss with mtime as parameter
+        # so this function is needed which uses gzip.GzipFile for reproducible outputs
+        def get_gzip_compressed(data, compresslevel):
+            data_stream = BytesIO()
+            gzipf = gzip.GzipFile(fileobj=data_stream, filename="", mtime=0, compresslevel=compresslevel, mode="wb")
+            gzipf.write(data)
+            gzipf.close()
+            data_stream.seek(0)
+            return data_stream.read()
+
         format_to_compressed = {
-            'csv': gzip.compress(format_to_expected['csv'], compresslevel=5, mtime=0),
+            'csv': get_gzip_compressed(format_to_expected['csv'], compresslevel=5),
             'json': lzma.compress(format_to_expected['json'], preset=4),
             'jsonlines': bz2.compress(format_to_expected['jsonlines'], compresslevel=7),
-            'xml': gzip.compress(format_to_expected['xml'], compresslevel=7, mtime=0),
+            'xml': get_gzip_compressed(format_to_expected['xml'], compresslevel=7),
         }
 
         class MyPlugin1:
