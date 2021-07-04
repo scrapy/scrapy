@@ -1,5 +1,8 @@
+import bz2
 import csv
+import gzip
 import json
+import lzma
 import os
 import random
 import shutil
@@ -1320,49 +1323,223 @@ class FeedExportTest(FeedExportTestBase):
             data = yield self.exported_data(items, settings)
             self.assertEqual(row['expected'], data[feed_options['format']])
 
+
+class FeedPostProcessedExportsTest(FeedExportTestBase):
+    __test__ = True
+    items = [
+        {'foo': 'bar1', 'baz': ''},
+        {'egg': 'bar2', 'baz': 'quux'},
+    ]
+    format_to_expected = {
+        'csv': b'foo,baz\r\nbar1,\r\n,quux\r\n',
+        'jsonlines': b'{"foo": "bar1", "baz": ""}\n{"egg": "bar2", "baz": "quux"}\n',
+        'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>bar1</foo>'
+               b'<baz></baz></item>\n<item><egg>bar2</egg><baz>quux</baz></item>\n</items>',
+    }
+
     @defer.inlineCallbacks
-    def test_postprocessed_exports(self):
-        items = [
-            {'foo': 'bar1', 'baz': ''},
-            {'egg': 'bar2', 'baz': 'quux'},
-        ]
+    def run_and_export(self, spider_cls, settings):
+        """ Run spider with specified settings; return exported data. """
 
-        import gzip
-        import lzma
-        import bz2
-        format_to_decompressor = {
-            'csv': gzip,
-            'json': lzma,
-            'jsonlines': bz2,
-            'xml': gzip,
+        FEEDS = settings.get('FEEDS') or {}
+        settings['FEEDS'] = {
+            printf_escape(path_to_url(file_path)): feed_options
+            for file_path, feed_options in FEEDS.items()
         }
 
-        format_to_expected = {
-            'csv': b'foo,baz\r\nbar1,\r\n,quux\r\n',
-            'json': b'[\n{"foo": "bar1", "baz": ""},\n{"egg": "bar2", "baz": "quux"}\n]',
-            'jsonlines': b'{"foo": "bar1", "baz": ""}\n{"egg": "bar2", "baz": "quux"}\n',
-            'xml': b'XXXX<?xml version="1.0" encoding="utf-8"?>\nXXXX<itemsXXXX>XXXX\nX'
-                   b'XXX<itemXXXX>XXXX<fooXXXX>XXXXbar1XXXX</foo>XXXX<bazXXXX>XXXX</baz'
-                   b'>XXXX</item>XXXX\nXXXX<itemXXXX>XXXX<eggXXXX>XXXXbar2XXXX</egg>XXX'
-                   b'X<bazXXXX>XXXXquuxXXXX</baz>XXXX</item>XXXX\nXXXX</items>',
-        }
+        content = {}
+        try:
+            with MockServer() as s:
+                runner = CrawlerRunner(Settings(settings))
+                spider_cls.start_urls = [s.url('/')]
+                yield runner.crawl(spider_cls)
 
-        # versions < python3.8 doesn't support gzip.compresss with mtime as parameter
-        # so this function is needed which uses gzip.GzipFile for reproducible outputs
-        def get_gzip_compressed(data, compresslevel):
-            data_stream = BytesIO()
-            gzipf = gzip.GzipFile(fileobj=data_stream, filename="", mtime=0, compresslevel=compresslevel, mode="wb")
-            gzipf.write(data)
-            gzipf.close()
-            data_stream.seek(0)
-            return data_stream.read()
+            for file_path, feed_options in FEEDS.items():
+                if not os.path.exists(str(file_path)):
+                    continue
+
+                with open(str(file_path), 'rb') as f:
+                    content[feed_options['format']] = f.read()
+
+        finally:
+            for file_path in FEEDS.keys():
+                if not os.path.exists(str(file_path)):
+                    continue
+
+                os.remove(str(file_path))
+
+        return content
+
+    def get_gzip_compressed(self, data, compresslevel):
+        data_stream = BytesIO()
+        gzipf = gzip.GzipFile(fileobj=data_stream, filename="", mtime=0, compresslevel=compresslevel, mode="wb")
+        gzipf.write(data)
+        gzipf.close()
+        data_stream.seek(0)
+        return data_stream.read()
+
+    @defer.inlineCallbacks
+    def test_gzip_plugin(self):
 
         format_to_compressed = {
-            'csv': get_gzip_compressed(format_to_expected['csv'], compresslevel=5),
-            'json': lzma.compress(format_to_expected['json'], preset=4),
-            'jsonlines': bz2.compress(format_to_expected['jsonlines'], compresslevel=7),
-            'xml': get_gzip_compressed(format_to_expected['xml'], compresslevel=7),
+            'csv': self.get_gzip_compressed(self.format_to_expected['csv'], compresslevel=2),
+            'jsonlines': self.get_gzip_compressed(self.format_to_expected['jsonlines'], compresslevel=5),
+            'xml': self.get_gzip_compressed(self.format_to_expected['xml'], compresslevel=8),
         }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_compresslevel': 2,
+                    'gzip_mtime': 0,
+                    'gzip_filename': "",
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_compresslevel': 5,
+                    'gzip_mtime': 0,
+                    'gzip_filename': "",
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_compresslevel': 8,
+                    'gzip_mtime': 0,
+                    'gzip_filename': "",
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for fmt, expected in self.format_to_expected.items():
+            result = gzip.decompress(data[fmt])
+            self.assertEqual(format_to_compressed[fmt], data[fmt])
+            self.assertEqual(expected, result)
+
+    @defer.inlineCallbacks
+    def test_lzma_plugin(self):
+
+        format_to_compressed = {
+            'csv': lzma.compress(self.format_to_expected['csv'], preset=4),
+            'jsonlines': lzma.compress(self.format_to_expected['jsonlines'], format=lzma.FORMAT_ALONE),
+            'xml': lzma.compress(self.format_to_expected['xml'], check=lzma.CHECK_SHA256),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_preset': 4,
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_format': lzma.FORMAT_ALONE,
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_check': lzma.CHECK_SHA256,
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for fmt, expected in self.format_to_expected.items():
+            result = lzma.decompress(data[fmt])
+            self.assertEqual(format_to_compressed[fmt], data[fmt])
+            self.assertEqual(expected, result)
+
+    @defer.inlineCallbacks
+    def test_bz2_plugin(self):
+        format_to_compressed = {
+            'csv': bz2.compress(self.format_to_expected['csv'], compresslevel=2),
+            'jsonlines': bz2.compress(self.format_to_expected['jsonlines'], compresslevel=5),
+            'xml': bz2.compress(self.format_to_expected['xml'], compresslevel=7),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'bz2_compresslevel': 2,
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'bz2_compresslevel': 5,
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'bz2_compresslevel': 7,
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for fmt, expected in self.format_to_expected.items():
+            result = bz2.decompress(data[fmt])
+            self.assertEqual(format_to_compressed[fmt], data[fmt])
+            self.assertEqual(expected, result)
+
+    @defer.inlineCallbacks
+    def test_custom_plugin(self):
+
+        class MyPlugin1:
+            def __init__(self, file, feed_options):
+                self.file = file
+                self.feed_options = feed_options
+                self.char = self.feed_options.get('plugin1_char', b'')
+
+            def write(self, data):
+                return self.file.write(data + self.char)
+
+            def close(self):
+                self.file.close()
+
+        format_to_processed = {
+            'csv': b'foo,baz\r\nxbar1,\r\nx,quux\r\nx',
+            'jsonlines': b'{"foo": "bar1", "baz": ""}\n{"egg": "bar2", "baz": "quux"}\n',
+            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n\n<items\n>\n\n\n<item\n>\n'
+                   b'<foo\n>\nbar1\n</foo>\n<baz\n>\n</baz>\n</item>\n\n\n<item\n>\n<egg'
+                   b'\n>\nbar2\n</egg>\n<baz\n>\nquux\n</baz>\n</item>\n\n\n</items>\n',
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'postprocessing': [MyPlugin1],
+                    'plugin1_char': b'x'
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'postprocessing': [MyPlugin1],
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'postprocessing': [MyPlugin1],
+                    'plugin1_char': b'\n'
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for fmt, expected in format_to_processed.items():
+            self.assertEqual(expected, data[fmt])
+
+    @defer.inlineCallbacks
+    def test_multiple_plugins(self):
 
         class MyPlugin1:
             def __init__(self, file, feed_options):
@@ -1370,46 +1547,47 @@ class FeedExportTest(FeedExportTestBase):
                 self.feed_options = feed_options
 
             def write(self, data):
-                return self.file.write(b"XXXX" + data)
+                return self.file.write(data + b'\n')
 
             def close(self):
                 self.file.close()
+
+        format_to_processed = {
+            'csv': b'foo,baz\r\n\nbar1,\r\n\n,quux\r\n\n',
+            'jsonlines': b'{"foo": "bar1", "baz": ""}\n\n{"egg": "bar2", "baz": "quux"}\n\n',
+            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>bar1</foo>'
+                   b'<baz></baz></item>\n<item><egg>bar2</egg><baz>quux</baz></item>\n</items>',
+        }
+
+        format_to_decompressor = {
+            'csv': lambda x: bz2.decompress(x),
+            'jsonlines': lambda x: lzma.decompress(x),
+            'xml': lambda x: bz2.decompress(gzip.decompress(x)),
+        }
 
         settings = {
             'FEEDS': {
                 self._random_temp_filename(): {
                     'format': 'csv',
-                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
-                    'gzip_compresslevel': 5,
-                    'gzip_mtime': 0,
-                    'gzip_filename': "",
-                },
-                self._random_temp_filename(): {
-                    'format': 'json',
-                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
-                    'lzma_preset': 4,
+                    'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.Bz2Plugin'],
                 },
                 self._random_temp_filename(): {
                     'format': 'jsonlines',
-                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
-                    'bz2_compresslevel': 7,
+                    'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.LZMAPlugin'],
                 },
                 self._random_temp_filename(): {
                     'format': 'xml',
-                    'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
-                    'gzip_compresslevel': 7,
-                    'gzip_mtime': 0,
-                    'gzip_filename': "",
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin',
+                                       'scrapy.extensions.postprocessing.GzipPlugin'],
                 },
-            }
+            },
         }
 
-        data = yield self.exported_data(items, settings)
+        data = yield self.exported_data(self.items, settings)
 
         for fmt, decompressor in format_to_decompressor.items():
-            result = decompressor.decompress(data[fmt])
-            self.assertEqual(format_to_compressed[fmt], data[fmt])
-            self.assertEqual(format_to_expected[fmt], result)
+            result = decompressor(data[fmt])
+            self.assertEqual(format_to_processed[fmt], result)
 
 
 class BatchDeliveriesTest(FeedExportTestBase):
