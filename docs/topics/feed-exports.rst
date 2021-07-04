@@ -275,39 +275,15 @@ Post-Processing
 
 .. versionadded:: VERSION
 
-Scrapy provides an option to activate plugins to post-process items before
-they are exported to feed storages. In addition to using builtin plugins, users
-can create their own plugins. 
+Scrapy provides an option to activate plugins to post-process feeds before they are exported
+to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
+can create your own :ref:`plugins <custom-plugins>`. 
 
-These plugins can be activated through ``postprocessing`` :ref:`option of a feed <feed-options>`.
-Parameters to plugins can be passed through the feed settings where the key will be the parameter name
-and the value will be the parameter value. These parameters will be made accessible to the plugin
-through the ``feed_options`` parameter which will be passed to their constructor method.
-
-As the data is passed from one plugin to another, users must ensure the order of plugins do not
-cause a plugin to breakdown because of some unprocessable data.
-
-Each plugin is a Python class that must implement the following methods:
-
-.. method:: __init__(self, file, feed_options)
-
-    Constructor method to initialize plugin.
-
-    :param file: target file object to which post-processed data will be written
-
-    :param feed_options: feed-specific options
-    :type feed_options: :class:`dict`
-
-.. method:: write(self, data)
-
-   Process and write `data` to plugin's target file.
-
-   :param data: data passed to be written to file
-   :type data: :class:`bytes`
-
-.. method:: close(self)
-
-    Close the target file object.
+These plugins can be activated through ``postprocessing`` option of a feed. The option must
+be passed a list of post-processing plugins in the order you want the feed to be processed.
+These plugins can be declared either as an import string or with the imported class
+of the plugin. Parameters to plugins can be passed through the feed options. 
+See :ref:`feed options <feed-options>` for examples.
 
 .. _builtin-plugins:
 
@@ -317,34 +293,45 @@ Built-in Plugins
 GzipPlugin
 ^^^^^^^^^^
 
-Compresses recieved data with with :py:mod:`gzip` module.
-
-Accpeted parameters:
-
--   ``gzip_compresslevel``: integer from 0 to 9 controlling the level of compression.
--   ``gzip_mtime``: numeric timestamp for the compressed file.
--   ``gzip_filename``: filename to be included in the header of compressed file.
+.. autoclass:: scrapy.extensions.postprocessing.GzipPlugin
 
 LZMAPlugin
 ^^^^^^^^^^
 
-Compresses recieved data with :py:mod:`lzma` module.
-
-Accepted parameters:
-
--   ``lzma_format``: specifies what container format should be used.
--   ``lzma_check``: specifies the type of integrity check to include in the compressed data.
--   ``lzma_preset``: an integer between 0 and 9. Higher presets produce smaller output, but make the compression process slower.
--   ``lzma_filter``: should be a filter chain specifier.
+.. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
 
 Bz2Plugin
 ^^^^^^^^^
 
-Compresses recieved data with :py:mod:`bz2` module.
+.. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
 
-Accepted parameters:
+.. _custom-plugins:
 
--   ``bz2_compresslevel``: integer from 1 to 9 controlling the level of compression.
+Custom Plugins
+--------------
+
+Each plugin is a class that must implement the following methods:
+
+.. method:: __init__(self, file, feed_options)
+
+    Initialize the plugin.
+
+    :param file: file like object having at least `write` and `close` method implemented
+
+    :param feed_options: feed-specific :ref:`options <feed-options>`
+    :type feed_options: :class:`dict`
+
+.. method:: write(self, data)
+
+   Process and write `data` (:class:`bytes`) into to plugin's target file.
+
+.. method:: close(self)
+
+    Close the target file object.
+
+To pass a parameter to your plugin, simply enter the paramter name and value in
+the feed-options. You can then access those parameters through the feed specific
+`feed_options` dictionary which is passed to each declared plugin.
 
 Settings
 ========
@@ -405,6 +392,10 @@ For instance::
             'fields': ['price', 'name'],
             'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
             'gzip_compresslevel': 5,
+        },
+        'items.jl.xz': {
+            'format': 'jsonlines',
+            'postprocessing': [LZMAPlugin],
         },
     }
 

@@ -11,6 +11,16 @@ from scrapy.utils.misc import load_object
 
 
 class GzipPlugin:
+    """
+    Compresses received data with with :py:mod:`gzip` module.
+
+    Accepted ``feed_options`` parameters:
+
+    - `gzip_compresslevel`
+    - `gzip_mtime`
+    - `gzip_filename`
+    See :py:class:`gzip.GzipFile` for more info about parameters.
+    """
 
     def __init__(self, file: BinaryIO, feed_options: Dict[str, Any]) -> None:
         self.file = file
@@ -22,14 +32,24 @@ class GzipPlugin:
                                  mtime=mtime, filename=filename)
 
     def write(self, data: bytes) -> int:
+        """Compress and write the `data` into the target file."""
         return self.gzipfile.write(data)
 
     def close(self) -> None:
+        """Close target file."""
         self.gzipfile.close()
         self.file.close()
 
 
 class Bz2Plugin:
+    """
+    Compresses received data with :py:mod:`bz2` module.
+
+    Accepted ``feed_options`` parameters:
+
+    - `bz2_compresslevel`
+    See :py:class:`bz2.BZ2File` for more info about parameters.
+    """
 
     def __init__(self, file: BinaryIO, feed_options: Dict[str, Any]) -> None:
         self.file = file
@@ -38,14 +58,27 @@ class Bz2Plugin:
         self.bz2file = BZ2File(filename=self.file, mode="wb", compresslevel=compress_level)
 
     def write(self, data: bytes) -> int:
+        """Compress and write the `data` into the target file."""
         return self.bz2file.write(data)
 
     def close(self) -> None:
+        """Close target file."""
         self.bz2file.close()
         self.file.close()
 
 
 class LZMAPlugin:
+    """
+    Compresses received data with :py:mod:`lzma` module.
+
+    Accepted ``feed_options`` parameters:
+
+    - `lzma_format`
+    - `lzma_check`
+    - `lzma_preset`
+    - `lzma_filter`
+    See :py:class:`lzma.LZMAFile` for more info about parameters.
+    """
 
     def __init__(self, file: BinaryIO, feed_options: Dict[str, Any]) -> None:
         self.file = file
@@ -59,9 +92,11 @@ class LZMAPlugin:
                                  check=check, preset=preset, filters=filters)
 
     def write(self, data: bytes) -> int:
+        """Compress and write the `data` into the target file."""
         return self.lzmafile.write(data)
 
     def close(self) -> None:
+        """Close target file."""
         self.lzmafile.close()
         self.file.close()
 
