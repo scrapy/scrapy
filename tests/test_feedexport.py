@@ -1326,20 +1326,28 @@ class FeedExportTest(FeedExportTestBase):
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
     __test__ = True
-    items = [
-        {'foo': 'bar1', 'baz': ''},
-        {'egg': 'bar2', 'baz': 'quux'},
-    ]
-    format_to_expected = {
-        'csv': b'foo,baz\r\nbar1,\r\n,quux\r\n',
-        'jsonlines': b'{"foo": "bar1", "baz": ""}\n{"egg": "bar2", "baz": "quux"}\n',
-        'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>bar1</foo>'
-               b'<baz></baz></item>\n<item><egg>bar2</egg><baz>quux</baz></item>\n</items>',
-    }
+
+    items = [{'foo': 'bar'}]
+    expected = b'foo\r\nbar\r\n'
+
+    class MyPlugin1:
+        def __init__(self, file, feed_options):
+            self.file = file
+            self.feed_options = feed_options
+            self.char = self.feed_options.get('plugin1_char', b'')
+
+        def write(self, data):
+            return self.file.write(data + self.char)
+
+        def close(self):
+            self.file.close()
+
+    def _named_tempfile(self, name):
+        return os.path.join(self.temp_dir, name)
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
-        """ Run spider with specified settings; return exported data. """
+        """ Run spider with specified settings; return exported data with filename. """
 
         FEEDS = settings.get('FEEDS') or {}
         settings['FEEDS'] = {
@@ -1359,7 +1367,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                     continue
 
                 with open(str(file_path), 'rb') as f:
-                    content[feed_options['format']] = f.read()
+                    content[str(file_path)] = f.read()
 
         finally:
             for file_path in FEEDS.keys():
@@ -1370,43 +1378,36 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         return content
 
-    def get_gzip_compressed(self, data, compresslevel):
+    def get_gzip_compressed(self, data, compresslevel=9, mtime=0, filename=''):
         data_stream = BytesIO()
-        gzipf = gzip.GzipFile(fileobj=data_stream, filename="", mtime=0, compresslevel=compresslevel, mode="wb")
+        gzipf = gzip.GzipFile(fileobj=data_stream, filename=filename, mtime=mtime,
+                              compresslevel=compresslevel, mode="wb")
         gzipf.write(data)
         gzipf.close()
         data_stream.seek(0)
         return data_stream.read()
 
     @defer.inlineCallbacks
-    def test_gzip_plugin(self):
+    def test_gzip_plugin_compresslevel(self):
 
-        format_to_compressed = {
-            'csv': self.get_gzip_compressed(self.format_to_expected['csv'], compresslevel=2),
-            'jsonlines': self.get_gzip_compressed(self.format_to_expected['jsonlines'], compresslevel=5),
-            'xml': self.get_gzip_compressed(self.format_to_expected['xml'], compresslevel=8),
+        filename_to_compressed = {
+            self._named_tempfile('compresslevel_0'): self.get_gzip_compressed(self.expected, compresslevel=0),
+            self._named_tempfile('compresslevel_9'): self.get_gzip_compressed(self.expected, compresslevel=9),
         }
 
         settings = {
             'FEEDS': {
-                self._random_temp_filename(): {
+                self._named_tempfile('compresslevel_0'): {
                     'format': 'csv',
                     'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
-                    'gzip_compresslevel': 2,
+                    'gzip_compresslevel': 0,
                     'gzip_mtime': 0,
                     'gzip_filename': "",
                 },
-                self._random_temp_filename(): {
-                    'format': 'jsonlines',
+                self._named_tempfile('compresslevel_9'): {
+                    'format': 'csv',
                     'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
-                    'gzip_compresslevel': 5,
-                    'gzip_mtime': 0,
-                    'gzip_filename': "",
-                },
-                self._random_temp_filename(): {
-                    'format': 'xml',
-                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
-                    'gzip_compresslevel': 8,
+                    'gzip_compresslevel': 9,
                     'gzip_mtime': 0,
                     'gzip_filename': "",
                 },
@@ -1415,34 +1416,120 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         data = yield self.exported_data(self.items, settings)
 
-        for fmt, expected in self.format_to_expected.items():
-            result = gzip.decompress(data[fmt])
-            self.assertEqual(format_to_compressed[fmt], data[fmt])
-            self.assertEqual(expected, result)
+        for filename, compressed in filename_to_compressed.items():
+            result = gzip.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
 
     @defer.inlineCallbacks
-    def test_lzma_plugin(self):
-
-        format_to_compressed = {
-            'csv': lzma.compress(self.format_to_expected['csv'], preset=4),
-            'jsonlines': lzma.compress(self.format_to_expected['jsonlines'], format=lzma.FORMAT_ALONE),
-            'xml': lzma.compress(self.format_to_expected['xml'], check=lzma.CHECK_SHA256),
+    def test_gzip_plugin_mtime(self):
+        filename_to_compressed = {
+            self._named_tempfile('mtime_123'): self.get_gzip_compressed(self.expected, mtime=123),
+            self._named_tempfile('mtime_123456789'): self.get_gzip_compressed(self.expected, mtime=123456789),
         }
 
         settings = {
             'FEEDS': {
-                self._random_temp_filename(): {
+                self._named_tempfile('mtime_123'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_mtime': 123,
+                    'gzip_filename': "",
+                },
+                self._named_tempfile('mtime_123456789'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_mtime': 123456789,
+                    'gzip_filename': "",
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for filename, compressed in filename_to_compressed.items():
+            result = gzip.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
+
+    @defer.inlineCallbacks
+    def test_gzip_plugin_filename(self):
+        filename_to_compressed = {
+            self._named_tempfile('filename_FILE1'): self.get_gzip_compressed(self.expected, filename="FILE1"),
+            self._named_tempfile('filename_FILE2'): self.get_gzip_compressed(self.expected, filename="FILE2"),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._named_tempfile('filename_FILE1'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_mtime': 0,
+                    'gzip_filename': "FILE1",
+                },
+                self._named_tempfile('filename_FILE2'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                    'gzip_mtime': 0,
+                    'gzip_filename': "FILE2",
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for filename, compressed in filename_to_compressed.items():
+            result = gzip.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
+
+    @defer.inlineCallbacks
+    def test_lzma_plugin_format(self):
+
+        filename_to_compressed = {
+            self._named_tempfile('format_FORMAT_XZ'): lzma.compress(self.expected, format=lzma.FORMAT_XZ),
+            self._named_tempfile('format_FORMAT_ALONE'): lzma.compress(self.expected, format=lzma.FORMAT_ALONE),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._named_tempfile('format_FORMAT_XZ'): {
                     'format': 'csv',
                     'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
-                    'lzma_preset': 4,
+                    'lzma_format': lzma.FORMAT_XZ,
                 },
-                self._random_temp_filename(): {
-                    'format': 'jsonlines',
+                self._named_tempfile('format_FORMAT_ALONE'): {
+                    'format': 'csv',
                     'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
                     'lzma_format': lzma.FORMAT_ALONE,
                 },
-                self._random_temp_filename(): {
-                    'format': 'xml',
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for filename, compressed in filename_to_compressed.items():
+            result = lzma.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
+
+    @defer.inlineCallbacks
+    def test_lzma_plugin_check(self):
+
+        filename_to_compressed = {
+            self._named_tempfile('check_CHECK_NONE'): lzma.compress(self.expected, check=lzma.CHECK_NONE),
+            self._named_tempfile('check_CHECK_CRC256'): lzma.compress(self.expected, check=lzma.CHECK_SHA256),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._named_tempfile('check_CHECK_NONE'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_check': lzma.CHECK_NONE,
+                },
+                self._named_tempfile('check_CHECK_CRC256'): {
+                    'format': 'csv',
                     'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
                     'lzma_check': lzma.CHECK_SHA256,
                 },
@@ -1451,143 +1538,204 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         data = yield self.exported_data(self.items, settings)
 
-        for fmt, expected in self.format_to_expected.items():
-            result = lzma.decompress(data[fmt])
-            self.assertEqual(format_to_compressed[fmt], data[fmt])
-            self.assertEqual(expected, result)
+        for filename, compressed in filename_to_compressed.items():
+            result = lzma.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
 
     @defer.inlineCallbacks
-    def test_bz2_plugin(self):
-        format_to_compressed = {
-            'csv': bz2.compress(self.format_to_expected['csv'], compresslevel=2),
-            'jsonlines': bz2.compress(self.format_to_expected['jsonlines'], compresslevel=5),
-            'xml': bz2.compress(self.format_to_expected['xml'], compresslevel=7),
+    def test_lzma_plugin_preset(self):
+
+        filename_to_compressed = {
+            self._named_tempfile('preset_PRESET_0'): lzma.compress(self.expected, preset=0),
+            self._named_tempfile('preset_PRESET_9'): lzma.compress(self.expected, preset=9),
         }
 
         settings = {
             'FEEDS': {
-                self._random_temp_filename(): {
+                self._named_tempfile('preset_PRESET_0'): {
                     'format': 'csv',
-                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
-                    'bz2_compresslevel': 2,
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_preset': 0,
                 },
-                self._random_temp_filename(): {
-                    'format': 'jsonlines',
-                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
-                    'bz2_compresslevel': 5,
-                },
-                self._random_temp_filename(): {
-                    'format': 'xml',
-                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
-                    'bz2_compresslevel': 7,
+                self._named_tempfile('preset_PRESET_9'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_preset': 9,
                 },
             },
         }
 
         data = yield self.exported_data(self.items, settings)
 
-        for fmt, expected in self.format_to_expected.items():
-            result = bz2.decompress(data[fmt])
-            self.assertEqual(format_to_compressed[fmt], data[fmt])
-            self.assertEqual(expected, result)
+        for filename, compressed in filename_to_compressed.items():
+            result = lzma.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
+
+    @defer.inlineCallbacks
+    def test_lzma_plugin_filters(self):
+        filters = [{'id': lzma.FILTER_LZMA2}]
+        compressed = lzma.compress(self.expected, filters=filters)
+        filename = self._named_tempfile('filters')
+
+        settings = {
+            'FEEDS': {
+                filename: {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'lzma_filters': filters,
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+        self.assertEqual(compressed, data[filename])
+        result = lzma.decompress(data[filename])
+        self.assertEqual(self.expected, result)
+
+    @defer.inlineCallbacks
+    def test_bz2_plugin_compresslevel(self):
+
+        filename_to_compressed = {
+            self._named_tempfile('compresslevel_1'): bz2.compress(self.expected, compresslevel=1),
+            self._named_tempfile('compresslevel_9'): bz2.compress(self.expected, compresslevel=9),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._named_tempfile('compresslevel_1'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'bz2_compresslevel': 1,
+                },
+                self._named_tempfile('compresslevel_9'): {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'bz2_compresslevel': 9,
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for filename, compressed in filename_to_compressed.items():
+            result = bz2.decompress(data[filename])
+            self.assertEqual(compressed, data[filename])
+            self.assertEqual(self.expected, result)
 
     @defer.inlineCallbacks
     def test_custom_plugin(self):
 
-        class MyPlugin1:
-            def __init__(self, file, feed_options):
-                self.file = file
-                self.feed_options = feed_options
-                self.char = self.feed_options.get('plugin1_char', b'')
-
-            def write(self, data):
-                return self.file.write(data + self.char)
-
-            def close(self):
-                self.file.close()
-
-        format_to_processed = {
-            'csv': b'foo,baz\r\nxbar1,\r\nx,quux\r\nx',
-            'jsonlines': b'{"foo": "bar1", "baz": ""}\n{"egg": "bar2", "baz": "quux"}\n',
-            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n\n<items\n>\n\n\n<item\n>\n'
-                   b'<foo\n>\nbar1\n</foo>\n<baz\n>\n</baz>\n</item>\n\n\n<item\n>\n<egg'
-                   b'\n>\nbar2\n</egg>\n<baz\n>\nquux\n</baz>\n</item>\n\n\n</items>\n',
+        filename_to_processed = {
+            self._named_tempfile('newline'): b'foo\r\n\nbar\r\n\n',
+            self._named_tempfile('tab'): b'foo\r\n\tbar\r\n\t',
         }
 
         settings = {
             'FEEDS': {
-                self._random_temp_filename(): {
+                self._named_tempfile('newline'): {
                     'format': 'csv',
-                    'postprocessing': [MyPlugin1],
-                    'plugin1_char': b'x'
-                },
-                self._random_temp_filename(): {
-                    'format': 'jsonlines',
-                    'postprocessing': [MyPlugin1],
-                },
-                self._random_temp_filename(): {
-                    'format': 'xml',
-                    'postprocessing': [MyPlugin1],
+                    'postprocessing': [self.MyPlugin1],
                     'plugin1_char': b'\n'
                 },
+                self._named_tempfile('tab'): {
+                    'format': 'csv',
+                    'postprocessing': [self.MyPlugin1],
+                    'plugin1_char': b'\t',
+                },
             },
         }
 
         data = yield self.exported_data(self.items, settings)
 
-        for fmt, expected in format_to_processed.items():
-            self.assertEqual(expected, data[fmt])
+        for filename, expected in filename_to_processed.items():
+            self.assertEqual(expected, data[filename])
 
     @defer.inlineCallbacks
-    def test_multiple_plugins(self):
+    def test_custom_plugin_with_compression(self):
 
-        class MyPlugin1:
-            def __init__(self, file, feed_options):
-                self.file = file
-                self.feed_options = feed_options
+        expected = b'foo\r\n\nbar\r\n\n'
 
-            def write(self, data):
-                return self.file.write(data + b'\n')
-
-            def close(self):
-                self.file.close()
-
-        format_to_processed = {
-            'csv': b'foo,baz\r\n\nbar1,\r\n\n,quux\r\n\n',
-            'jsonlines': b'{"foo": "bar1", "baz": ""}\n\n{"egg": "bar2", "baz": "quux"}\n\n',
-            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>bar1</foo>'
-                   b'<baz></baz></item>\n<item><egg>bar2</egg><baz>quux</baz></item>\n</items>',
-        }
-
-        format_to_decompressor = {
-            'csv': lambda x: bz2.decompress(x),
-            'jsonlines': lambda x: lzma.decompress(x),
-            'xml': lambda x: bz2.decompress(gzip.decompress(x)),
+        filename_to_decompressor = {
+            self._named_tempfile('bz2'): bz2.decompress,
+            self._named_tempfile('lzma'): lzma.decompress,
+            self._named_tempfile('gzip'): gzip.decompress,
         }
 
         settings = {
             'FEEDS': {
-                self._random_temp_filename(): {
+                self._named_tempfile('bz2'): {
                     'format': 'csv',
-                    'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'postprocessing': [self.MyPlugin1, 'scrapy.extensions.postprocessing.Bz2Plugin'],
+                    'plugin1_char': b'\n',
                 },
-                self._random_temp_filename(): {
-                    'format': 'jsonlines',
-                    'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.LZMAPlugin'],
+                self._named_tempfile('lzma'): {
+                    'format': 'csv',
+                    'postprocessing': [self.MyPlugin1, 'scrapy.extensions.postprocessing.LZMAPlugin'],
+                    'plugin1_char': b'\n',
                 },
-                self._random_temp_filename(): {
-                    'format': 'xml',
-                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin',
-                                       'scrapy.extensions.postprocessing.GzipPlugin'],
+                self._named_tempfile('gzip'): {
+                    'format': 'csv',
+                    'postprocessing': [self.MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+                    'plugin1_char': b'\n',
                 },
             },
         }
 
         data = yield self.exported_data(self.items, settings)
 
-        for fmt, decompressor in format_to_decompressor.items():
-            result = decompressor(data[fmt])
-            self.assertEqual(format_to_processed[fmt], result)
+        for filename, decompressor in filename_to_decompressor.items():
+            result = decompressor(data[filename])
+            self.assertEqual(expected, result)
+
+    @defer.inlineCallbacks
+    def test_exports_compatibility_with_postproc(self):
+
+        format_to_expected = {
+            'csv': b'foo\r\nbar\r\n',
+            'json': b'[\n{"foo": "bar"}\n]',
+            'jsonlines': b'{"foo": "bar"}\n',
+            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>bar</foo></item>\n</items>',
+            'marshal': b'{\xda\x03foo\xda\x03bar0',
+            'pickle': b'\x80\x04\x95\x10\x00\x00\x00\x00\x00\x00\x00}\x94\x8c\x03foo\x94\x8c\x03bar\x94s.',
+        }
+
+        settings = {
+            'FEEDS': {
+                self._named_tempfile('csv'): {
+                    'format': 'csv',
+                    'postprocessing': [self.MyPlugin1],
+                    # empty plugin to activate postprocessing.PostProcessingManager
+                },
+                self._named_tempfile('json'): {
+                    'format': 'json',
+                    'postprocessing': [self.MyPlugin1],
+                },
+                self._named_tempfile('jsonlines'): {
+                    'format': 'jsonlines',
+                    'postprocessing': [self.MyPlugin1],
+                },
+                self._named_tempfile('xml'): {
+                    'format': 'xml',
+                    'postprocessing': [self.MyPlugin1],
+                },
+                self._named_tempfile('marshal'): {
+                    'format': 'marshal',
+                    'postprocessing': [self.MyPlugin1],
+                },
+                self._named_tempfile('pickle'): {
+                    'format': 'pickle',
+                    'postprocessing': [self.MyPlugin1],
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+
+        for format, expected in format_to_expected.items():
+            filename = self._named_tempfile(format)
+            self.assertEqual(expected, data[filename])
 
 
 class BatchDeliveriesTest(FeedExportTestBase):

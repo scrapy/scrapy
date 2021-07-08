@@ -279,29 +279,20 @@ Scrapy provides an option to activate plugins to post-process feeds before they 
 to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
 can create your own :ref:`plugins <custom-plugins>`. 
 
-These plugins can be activated through ``postprocessing`` option of a feed. The option must
-be passed a list of post-processing plugins in the order you want the feed to be processed.
-These plugins can be declared either as an import string or with the imported class
-of the plugin. Parameters to plugins can be passed through the feed options. 
-See :ref:`feed options <feed-options>` for examples.
+These plugins can be activated through the ``postprocessing`` option of a feed.
+The option must be passed a list of post-processing plugins in the order you want
+the feed to be processed. These plugins can be declared either as an import string
+or with the imported class of the plugin. Parameters to plugins can be passed
+through the feed options. See :ref:`feed options <feed-options>` for examples.
 
 .. _builtin-plugins:
 
 Built-in Plugins
 ----------------
 
-GzipPlugin
-^^^^^^^^^^
-
 .. autoclass:: scrapy.extensions.postprocessing.GzipPlugin
 
-LZMAPlugin
-^^^^^^^^^^
-
 .. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
-
-Bz2Plugin
-^^^^^^^^^
 
 .. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
 
@@ -316,22 +307,22 @@ Each plugin is a class that must implement the following methods:
 
     Initialize the plugin.
 
-    :param file: file like object having at least `write` and `close` method implemented
+    :param file: file-like object having at least the `write` and `close` methods implemented
 
     :param feed_options: feed-specific :ref:`options <feed-options>`
     :type feed_options: :class:`dict`
 
 .. method:: write(self, data)
 
-   Process and write `data` (:class:`bytes`) into to plugin's target file.
+   Process and write `data` (:class:`bytes`) into the plugin's target file.
+   It must return number of bytes written.
 
 .. method:: close(self)
 
     Close the target file object.
 
-To pass a parameter to your plugin, simply enter the paramter name and value in
-the feed-options. You can then access those parameters through the feed specific
-`feed_options` dictionary which is passed to each declared plugin.
+To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You 
+can then access those parameters from the ``__init__`` method of your plugin.
 
 Settings
 ========
@@ -392,10 +383,6 @@ For instance::
             'fields': ['price', 'name'],
             'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
             'gzip_compresslevel': 5,
-        },
-        'items.jl.xz': {
-            'format': 'jsonlines',
-            'postprocessing': [LZMAPlugin],
         },
     }
 

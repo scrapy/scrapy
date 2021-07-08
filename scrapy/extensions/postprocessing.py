@@ -12,13 +12,14 @@ from scrapy.utils.misc import load_object
 
 class GzipPlugin:
     """
-    Compresses received data with with :py:mod:`gzip` module.
+    Compresses received data using `gzip <https://en.wikipedia.org/wiki/Gzip>`_.
 
     Accepted ``feed_options`` parameters:
 
     - `gzip_compresslevel`
     - `gzip_mtime`
     - `gzip_filename`
+
     See :py:class:`gzip.GzipFile` for more info about parameters.
     """
 
@@ -32,22 +33,21 @@ class GzipPlugin:
                                  mtime=mtime, filename=filename)
 
     def write(self, data: bytes) -> int:
-        """Compress and write the `data` into the target file."""
         return self.gzipfile.write(data)
 
     def close(self) -> None:
-        """Close target file."""
         self.gzipfile.close()
         self.file.close()
 
 
 class Bz2Plugin:
     """
-    Compresses received data with :py:mod:`bz2` module.
+    Compresses received data using `bz2 <https://en.wikipedia.org/wiki/Bzip2>`_.
 
     Accepted ``feed_options`` parameters:
 
     - `bz2_compresslevel`
+
     See :py:class:`bz2.BZ2File` for more info about parameters.
     """
 
@@ -58,25 +58,24 @@ class Bz2Plugin:
         self.bz2file = BZ2File(filename=self.file, mode="wb", compresslevel=compress_level)
 
     def write(self, data: bytes) -> int:
-        """Compress and write the `data` into the target file."""
         return self.bz2file.write(data)
 
     def close(self) -> None:
-        """Close target file."""
         self.bz2file.close()
         self.file.close()
 
 
 class LZMAPlugin:
     """
-    Compresses received data with :py:mod:`lzma` module.
+    Compresses received data using `lzma <https://en.wikipedia.org/wiki/Lempel–Ziv–Markov_chain_algorithm>`_.
 
     Accepted ``feed_options`` parameters:
 
     - `lzma_format`
     - `lzma_check`
     - `lzma_preset`
-    - `lzma_filter`
+    - `lzma_filters`
+
     See :py:class:`lzma.LZMAFile` for more info about parameters.
     """
 
@@ -87,16 +86,14 @@ class LZMAPlugin:
         format = self.feed_options.get("lzma_format")
         check = self.feed_options.get("lzma_check", -1)
         preset = self.feed_options.get("lzma_preset")
-        filters = self.feed_options.get("lzma_filter")
+        filters = self.feed_options.get("lzma_filters")
         self.lzmafile = LZMAFile(filename=self.file, mode="wb", format=format,
                                  check=check, preset=preset, filters=filters)
 
     def write(self, data: bytes) -> int:
-        """Compress and write the `data` into the target file."""
         return self.lzmafile.write(data)
 
     def close(self) -> None:
-        """Close target file."""
         self.lzmafile.close()
         self.file.close()
 
