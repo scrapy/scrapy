@@ -17,9 +17,9 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import (
     CloseSpider,
-    DontCloseSpider, 
+    DontCloseSpider,
     ScrapyDeprecationWarning,
-)   
+)
 from scrapy.http import Response, Request
 from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
