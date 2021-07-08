@@ -334,9 +334,12 @@ class ExecutionEngine:
         assert self.spider is not None  # typing
         expected_ex = (DontCloseSpider, CloseSpider)
         res = self.signals.send_catch_log(signals.spider_idle, spider=self.spider, dont_log=expected_ex)
-        detected_ex = {ex: x.value
-                       for _, x in res for ex in expected_ex
-                       if isinstance(x, Failure) and isinstance(x.value, ex)}
+        detected_ex = {
+            ex: x.value
+            for _, x in res
+            for ex in expected_ex
+            if isinstance(x, Failure) and isinstance(x.value, ex)
+        }
         if DontCloseSpider in detected_ex:
             return None
         if self.spider_is_idle():
