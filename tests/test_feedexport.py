@@ -1388,6 +1388,26 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         return data_stream.read()
 
     @defer.inlineCallbacks
+    def test_gzip_plugin(self):
+
+        filename = self._named_tempfile('gzip_file')
+
+        settings = {
+            'FEEDS': {
+                filename: {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.GzipPlugin'],
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+        try:
+            gzip.decompress(data[filename])
+        except OSError:
+            self.fail("Received invalid gzip data.")
+
+    @defer.inlineCallbacks
     def test_gzip_plugin_compresslevel(self):
 
         filename_to_compressed = {
@@ -1482,6 +1502,26 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
             result = gzip.decompress(data[filename])
             self.assertEqual(compressed, data[filename])
             self.assertEqual(self.expected, result)
+
+    @defer.inlineCallbacks
+    def test_lzma_plugin(self):
+
+        filename = self._named_tempfile('lzma_file')
+
+        settings = {
+            'FEEDS': {
+                filename: {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.LZMAPlugin'],
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+        try:
+            lzma.decompress(data[filename])
+        except lzma.LZMAError:
+            self.fail("Received invalid lzma data.")
 
     @defer.inlineCallbacks
     def test_lzma_plugin_format(self):
@@ -1595,6 +1635,26 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         self.assertEqual(self.expected, result)
 
     @defer.inlineCallbacks
+    def test_bz2_plugin(self):
+
+        filename = self._named_tempfile('bz2_file')
+
+        settings = {
+            'FEEDS': {
+                filename: {
+                    'format': 'csv',
+                    'postprocessing': ['scrapy.extensions.postprocessing.Bz2Plugin'],
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+        try:
+            bz2.decompress(data[filename])
+        except OSError:
+            self.fail("Received invalid bz2 data.")
+
+    @defer.inlineCallbacks
     def test_bz2_plugin_compresslevel(self):
 
         filename_to_compressed = {
@@ -1626,31 +1686,38 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_custom_plugin(self):
-
-        filename_to_processed = {
-            self._named_tempfile('newline'): b'foo\r\n\nbar\r\n\n',
-            self._named_tempfile('tab'): b'foo\r\n\tbar\r\n\t',
-        }
+        filename = self._named_tempfile('csv_file')
 
         settings = {
             'FEEDS': {
-                self._named_tempfile('newline'): {
+                filename: {
                     'format': 'csv',
                     'postprocessing': [self.MyPlugin1],
-                    'plugin1_char': b'\n'
-                },
-                self._named_tempfile('tab'): {
-                    'format': 'csv',
-                    'postprocessing': [self.MyPlugin1],
-                    'plugin1_char': b'\t',
                 },
             },
         }
 
         data = yield self.exported_data(self.items, settings)
+        self.assertEqual(self.expected, data[filename])
 
-        for filename, expected in filename_to_processed.items():
-            self.assertEqual(expected, data[filename])
+    @defer.inlineCallbacks
+    def test_custom_plugin_with_parameter(self):
+
+        expected = b'foo\r\n\nbar\r\n\n'
+        filename = self._named_tempfile('newline')
+
+        settings = {
+            'FEEDS': {
+                filename: {
+                    'format': 'csv',
+                    'postprocessing': [self.MyPlugin1],
+                    'plugin1_char': b'\n'
+                },
+            },
+        }
+
+        data = yield self.exported_data(self.items, settings)
+        self.assertEqual(expected, data[filename])
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_compression(self):
@@ -1691,14 +1758,14 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_exports_compatibility_with_postproc(self):
-
-        format_to_expected = {
-            'csv': b'foo\r\nbar\r\n',
-            'json': b'[\n{"foo": "bar"}\n]',
-            'jsonlines': b'{"foo": "bar"}\n',
-            'xml': b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item><foo>bar</foo></item>\n</items>',
-            'marshal': b'{\xda\x03foo\xda\x03bar0',
-            'pickle': b'\x80\x04\x95\x10\x00\x00\x00\x00\x00\x00\x00}\x94\x8c\x03foo\x94\x8c\x03bar\x94s.',
+        import marshal
+        import pickle
+        filename_to_expected = {
+            self._named_tempfile('csv'): b'foo\r\nbar\r\n',
+            self._named_tempfile('json'): b'[\n{"foo": "bar"}\n]',
+            self._named_tempfile('jsonlines'): b'{"foo": "bar"}\n',
+            self._named_tempfile('xml'): b'<?xml version="1.0" encoding="utf-8"?>\n'
+                                         b'<items>\n<item><foo>bar</foo></item>\n</items>',
         }
 
         settings = {
@@ -1733,9 +1800,14 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         data = yield self.exported_data(self.items, settings)
 
-        for format, expected in format_to_expected.items():
-            filename = self._named_tempfile(format)
-            self.assertEqual(expected, data[filename])
+        for filename, result in data.items():
+            if 'pickle' in filename:
+                expected, result = self.items[0], pickle.loads(result)
+            elif 'marshal' in filename:
+                expected, result = self.items[0], marshal.loads(result)
+            else:
+                expected = filename_to_expected[filename]
+            self.assertEqual(expected, result)
 
 
 class BatchDeliveriesTest(FeedExportTestBase):
