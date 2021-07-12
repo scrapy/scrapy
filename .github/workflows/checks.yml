@@ -5,6 +5,7 @@ jobs:
   checks:
     runs-on: ubuntu-18.04
     strategy:
+      fail-fast: false
       matrix:
         include:
         - python-version: 3.9
