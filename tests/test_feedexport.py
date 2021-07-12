@@ -1780,15 +1780,15 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
     maxDiff = None
 
     def test_init(self):
-        temp = tempfile.NamedTemporaryFile().name
-        settings_dict = {
-            'FEED_URI': f'file:///{temp}',
-            'FEED_STORAGES': {
-                'file': FileFeedStorageWithoutFeedOptions
-            },
-        }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with tempfile.NamedTemporaryFile().name as temp:
+            settings_dict = {
+                'FEED_URI': f'file:///{temp}',
+                'FEED_STORAGES': {
+                    'file': FileFeedStorageWithoutFeedOptions
+                },
+            }
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
