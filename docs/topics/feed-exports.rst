@@ -268,6 +268,45 @@ in multiple files, with the specified maximum item count per file. That way, as
 soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
+.. _item-filter:
+
+Item filtering
+==============
+
+.. versionadded:: VERSION
+
+You can filter items that you want to allow for a particular feed by using the
+``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
+the specified types will be added to the feed.
+
+The ``item_classes`` option is implemented by the :class:`~scrapy.extensions.feedexport.ItemFilter`
+class, which is the default value of the ``item_filter`` :ref:`feed option <feed-options>`.
+
+You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
+method ``accepts`` and taking ``feed_options`` as an argument.
+
+For instance::
+
+    class MyCustomFilter:
+
+        def __init__(self, feed_options):
+            self.feed_options = feed_options
+
+        def accepts(self, item):
+            if "field1" in item and item["field1"] == "expected_data":
+                return True
+            return False
+
+
+You can assign your custom filtering class to the ``item_filter`` :ref:`option of a feed <feed-options>`.
+See :setting:`FEEDS` for examples.
+
+ItemFilter
+----------
+
+.. autoclass:: scrapy.extensions.feedexport.ItemFilter
+   :members:
+
 
 Settings
 ========
@@ -311,6 +350,7 @@ For instance::
             'format': 'json',
             'encoding': 'utf8',
             'store_empty': False,
+            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
             'fields': None,
             'indent': 4,
             'item_export_kwargs': {
@@ -320,12 +360,14 @@ For instance::
         '/home/user/documents/items.xml': {
             'format': 'xml',
             'fields': ['name', 'price'],
+            'item_filter': MyCustomFilter1,
             'encoding': 'latin1',
             'indent': 8,
         },
         pathlib.Path('items.csv'): {
             'format': 'csv',
             'fields': ['price', 'name'],
+            'item_filter': 'myproject.filters.MyCustomFilter2',
         },
     }
 
@@ -346,6 +388,18 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
+
+-   ``item_classes``: list of :ref:`item classes <topics-items>` to export.
+
+    If undefined or empty, all items are exported.
+
+    .. versionadded:: VERSION
+
+-   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
+
+    :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
+
+    .. versionadded:: VERSION
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 

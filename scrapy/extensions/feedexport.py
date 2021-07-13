@@ -46,6 +46,38 @@ def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
     return builder(*preargs, uri, *args, **kwargs)
 
 
+class ItemFilter:
+    """
+    This will be used by FeedExporter to decide if an item should be allowed
+    to be exported to a particular feed.
+
+    :param feed_options: feed specific options passed from FeedExporter
+    :type feed_options: dict
+    """
+
+    def __init__(self, feed_options):
+        self.feed_options = feed_options
+        self.item_classes = set()
+
+        if 'item_classes' in self.feed_options:
+            for item_class in self.feed_options['item_classes']:
+                self.item_classes.add(load_object(item_class))
+
+    def accepts(self, item):
+        """
+        Return ``True`` if `item` should be exported or ``False`` otherwise.
+
+        :param item: scraped item which user wants to check if is acceptable
+        :type item: :ref:`Scrapy items <topics-items>`
+        :return: `True` if accepted, `False` otherwise
+        :rtype: bool
+        """
+        if self.item_classes:
+            return isinstance(item, tuple(self.item_classes))
+
+        return True    # accept all items if none declared in item_classes
+
+
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
@@ -215,7 +247,7 @@ class FTPFeedStorage(BlockingFeedStorage):
 
 
 class _FeedSlot:
-    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, uri_template):
+    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, uri_template, filter):
         self.file = file
         self.exporter = exporter
         self.storage = storage
@@ -225,6 +257,7 @@ class _FeedSlot:
         self.store_empty = store_empty
         self.uri_template = uri_template
         self.uri = uri
+        self.filter = filter
         # flags
         self.itemcount = 0
         self._exporting = False
@@ -255,6 +288,7 @@ class FeedExporter:
         self.settings = crawler.settings
         self.feeds = {}
         self.slots = []
+        self.filters = {}
 
         if not self.settings['FEEDS'] and not self.settings['FEED_URI']:
             raise NotConfigured
@@ -269,12 +303,14 @@ class FeedExporter:
             uri = str(self.settings['FEED_URI'])  # handle pathlib.Path objects
             feed_options = {'format': self.settings.get('FEED_FORMAT', 'jsonlines')}
             self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.filters[uri] = self._load_filter(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict('FEEDS').items():
             uri = str(uri)  # handle pathlib.Path objects
             self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.filters[uri] = self._load_filter(feed_options)
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
@@ -368,6 +404,7 @@ class FeedExporter:
             store_empty=feed_options['store_empty'],
             batch_id=batch_id,
             uri_template=uri_template,
+            filter=self.filters[uri_template]
         )
         if slot.store_empty:
             slot.start_exporting()
@@ -376,6 +413,10 @@ class FeedExporter:
     def item_scraped(self, item, spider):
         slots = []
         for slot in self.slots:
+            if not slot.filter.accepts(item):
+                slots.append(slot)    # if slot doesn't accept item, continue with next slot
+                continue
+
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
@@ -486,3 +527,8 @@ class FeedExporter:
         uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
         uripar_function(params, spider)
         return params
+
+    def _load_filter(self, feed_options):
+        # load the item filter if declared else load the default filter class
+        item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
+        return item_filter_class(feed_options)
