@@ -68,7 +68,7 @@ class ItemFilter:
         Return ``True`` if `item` should be exported or ``False`` otherwise.
 
         :param item: scraped item which user wants to check if is acceptable
-        :type item: scrapy supported items (dictionaries, Item objects, dataclass objects, and attrs objects)
+        :type item: :ref:`Scrapy items <topics-items>`
         :return: `True` if accepted, `False` otherwise
         :rtype: bool
         """
