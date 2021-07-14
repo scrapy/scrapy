@@ -1,4 +1,3 @@
-test-output.xml
 /.vagrant
 /scrapy.iml
 *.pyc
@@ -16,6 +15,7 @@ htmlcov/
 .pytest_cache/
 .coverage.*
 coverage.*
+test-output.*
 .cache/
 .mypy_cache/
 /tests/keys/localhost.crt

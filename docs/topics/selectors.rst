@@ -48,7 +48,7 @@ Constructing selectors
 
 .. highlight:: python
 
-Response objects expose a :class:`~scrapy.selector.Selector` instance
+Response objects expose a :class:`~scrapy.Selector` instance
 on ``.selector`` attribute:
 
 >>> response.selector.xpath('//span/text()').get()
@@ -62,7 +62,7 @@ more shortcuts: ``response.xpath()`` and ``response.css()``:
 >>> response.css('span::text').get()
 'good'
 
-Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
+Scrapy selectors are instances of :class:`~scrapy.Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
 markup as a string (in ``text`` argument).
 
@@ -175,7 +175,7 @@ of ``None``:
 'not-found'
 
 Instead of using e.g. ``'@src'`` XPath it is possible to query for attributes
-using ``.attrib`` property of a :class:`~scrapy.selector.Selector`:
+using ``.attrib`` property of a :class:`~scrapy.Selector`:
 
 >>> [img.attrib['src'] for img in response.css('img')]
 ['image1_thumb.jpg',
@@ -383,7 +383,7 @@ ID, or when selecting an unique element on a page):
 Using selectors with regular expressions
 ----------------------------------------
 
-:class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
+:class:`~scrapy.Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
 ``.css()`` methods, ``.re()`` returns a list of strings. So you
 can't construct nested ``.re()`` calls.
