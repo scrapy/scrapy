@@ -326,6 +326,17 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
 
+    def test_init_with_endpoint_url(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+            endpoint_url='https://example.com'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.endpoint_url, 'https://example.com')
+
     def test_from_crawler_without_acl(self):
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
@@ -339,6 +350,20 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
+
+    def test_without_endpoint_url(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv',
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.endpoint_url, None)
 
     def test_from_crawler_with_acl(self):
         settings = {
@@ -354,6 +379,21 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
+
+    def test_from_crawler_with_endpoint_url(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+            'AWS_ENDPOINT_URL': 'https://example.com',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.endpoint_url, 'https://example.com')
 
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
@@ -1917,8 +1957,8 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
 class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
 
-    def __init__(self, uri, access_key, secret_key, acl):
-        super().__init__(uri, access_key, secret_key, acl)
+    def __init__(self, uri, access_key, secret_key, acl, endpoint_url):
+        super().__init__(uri, access_key, secret_key, acl, endpoint_url)
 
 
 class S3FeedStorageWithoutFeedOptionsWithFromCrawler(S3FeedStorage):
