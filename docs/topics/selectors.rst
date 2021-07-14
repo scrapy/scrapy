@@ -8,14 +8,14 @@ When you're scraping web pages, the most common task you need to perform is
 to extract data from the HTML source. There are several libraries available to
 achieve this, such as:
 
- * `BeautifulSoup`_ is a very popular web scraping library among Python
-   programmers which constructs a Python object based on the structure of the
-   HTML code and also deals with bad markup reasonably well, but it has one
-   drawback: it's slow.
+-   `BeautifulSoup`_ is a very popular web scraping library among Python
+    programmers which constructs a Python object based on the structure of the
+    HTML code and also deals with bad markup reasonably well, but it has one
+    drawback: it's slow.
 
- * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
-   API based on :mod:`~xml.etree.ElementTree`. (lxml is not part of the Python standard
-   library.)
+-   `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
+    API based on :mod:`~xml.etree.ElementTree`. (lxml is not part of the Python
+    standard library.)
 
 Scrapy comes with its own mechanism for extracting data. They're called
 selectors because they "select" certain parts of the HTML document specified
@@ -464,10 +464,10 @@ effectively. If you are not much familiar with XPath yet,
 you may want to take a look first at this `XPath tutorial`_.
 
 .. note::
-    Some of the tips are based on `this post from ScrapingHub's blog`_.
+    Some of the tips are based on `this post from Zyte's blog`_.
 
 .. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
-.. _`this post from ScrapingHub's blog`: https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+.. _this post from Zyte's blog: https://www.zyte.com/blog/xpath-tips-from-the-web-scraping-trenches/
 
 
 .. _topics-selectors-relative-xpaths:

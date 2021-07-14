@@ -50,18 +50,19 @@ value of one of their fields::
             self.year_to_exporter = {}
 
         def close_spider(self, spider):
-            for exporter in self.year_to_exporter.values():
+            for exporter, xml_file in self.year_to_exporter.values():
                 exporter.finish_exporting()
+                xml_file.close()
 
         def _exporter_for_item(self, item):
             adapter = ItemAdapter(item)
             year = adapter['year']
             if year not in self.year_to_exporter:
-                f = open(f'{year}.xml', 'wb')
-                exporter = XmlItemExporter(f)
+                xml_file = open(f'{year}.xml', 'wb')
+                exporter = XmlItemExporter(xml_file)
                 exporter.start_exporting()
-                self.year_to_exporter[year] = exporter
-            return self.year_to_exporter[year]
+                self.year_to_exporter[year] = (exporter, xml_file)
+            return self.year_to_exporter[year][0]
 
         def process_item(self, item, spider):
             exporter = self._exporter_for_item(item)

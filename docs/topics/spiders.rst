@@ -294,6 +294,14 @@ The above example can also be written as follows::
         def start_requests(self):
             yield scrapy.Request(f'http://www.example.com/categories/{self.category}')
 
+If you are :ref:`running Scrapy from a script <run-from-script>`, you can 
+specify spider arguments when calling 
+:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`::
+
+    process = CrawlerProcess()
+    process.crawl(MySpider, category="electronics")
+
 Keep in mind that spider arguments are only strings.
 The spider will not do any parsing on its own.
 If you were to set the ``start_urls`` attribute from the command line,
@@ -414,10 +422,9 @@ Crawling rules
    It receives a :class:`Twisted Failure <twisted.python.failure.Failure>`
    instance as first parameter.
 
-
-.. warning:: Because of its internal implementation, you must explicitly set
-   callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
-   unexpected behaviour can occur otherwise.
+   .. warning:: Because of its internal implementation, you must explicitly set
+      callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
+      unexpected behaviour can occur otherwise.
 
    .. versionadded:: 2.0
       The *errback* parameter.
@@ -549,10 +556,9 @@ XMLFeedSpider
         item IDs. It receives a list of results and the response which originated
         those results. It must return a list of results (items or requests).
 
-
-.. warning:: Because of its internal implementation, you must explicitly set
-   callbacks for new requests when writing :class:`XMLFeedSpider`-based spiders;
-   unexpected behaviour can occur otherwise.
+    .. warning:: Because of its internal implementation, you must explicitly set
+       callbacks for new requests when writing :class:`XMLFeedSpider`-based spiders;
+       unexpected behaviour can occur otherwise.
 
 
 XMLFeedSpider example

@@ -268,6 +268,13 @@ spider_idle
     You may raise a :exc:`~scrapy.exceptions.DontCloseSpider` exception to
     prevent the spider from being closed.
 
+    Alternatively, you may raise a :exc:`~scrapy.exceptions.CloseSpider`
+    exception to provide a custom spider closing reason. An
+    idle handler is the perfect place to put some code that assesses
+    the final spider results and update the final closing reason
+    accordingly (e.g. setting it to 'too_few_results' instead of
+    'finished').
+
     This signal does not support returning deferreds from its handlers.
 
     :param spider: the spider which has gone idle
@@ -384,6 +391,11 @@ bytes_received
     a possible scenario for a 25 kb response would be two signals fired
     with 10 kb of data, and a final one with 5 kb of data.
 
+    Handlers for this signal can stop the download of a response while it
+    is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`
+    exception. Please refer to the :ref:`topics-stop-response-download` topic
+    for additional information and examples.
+
     This signal does not support returning deferreds from its handlers.
 
     :param data: the data received by the download handler
@@ -395,10 +407,35 @@ bytes_received
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.spiders.Spider` object
 
-.. note:: Handlers of this signal can stop the download of a response while it
+headers_received
+~~~~~~~~~~~~~~~~
+
+.. versionadded:: 2.5
+
+.. signal:: headers_received
+.. function:: headers_received(headers, request, spider)
+
+    Sent by the HTTP 1.1 and S3 download handlers when the response headers are
+    available for a given request, before downloading any additional content.
+
+    Handlers for this signal can stop the download of a response while it
     is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`
     exception. Please refer to the :ref:`topics-stop-response-download` topic
     for additional information and examples.
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param headers: the headers received by the download handler
+    :type headers: :class:`scrapy.http.headers.Headers` object
+
+    :param body_length: expected size of the response body, in bytes
+    :type body_length: `int`
+
+    :param request: the request that generated the download
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider associated with the response
+    :type spider: :class:`~scrapy.spiders.Spider` object
 
 Response signals
 ----------------

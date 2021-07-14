@@ -69,7 +69,7 @@ class Selector(_ParselSelector, object_ref):
             raise ValueError(f'{self.__class__.__name__}.__init__() received '
                              'both response and text')
 
-        st = _st(response, type or self._default_type)
+        st = _st(response, type)
 
         if text is not None:
             response = _response_from_text(text, st)
