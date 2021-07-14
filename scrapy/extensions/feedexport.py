@@ -11,6 +11,7 @@ import sys
 import warnings
 from datetime import datetime
 from tempfile import NamedTemporaryFile
+from typing import Any, Optional, Tuple
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -54,16 +55,19 @@ class ItemFilter:
     :param feed_options: feed specific options passed from FeedExporter
     :type feed_options: dict
     """
+    feed_options: Optional[dict]
+    item_classes: Tuple
 
-    def __init__(self, feed_options):
+    def __init__(self, feed_options: Optional[dict]) -> None:
         self.feed_options = feed_options
-        self.item_classes = set()
+        if feed_options is not None:
+            self.item_classes = tuple(
+                load_object(item_class) for item_class in feed_options.get("item_classes") or ()
+            )
+        else:
+            self.item_classes = tuple()
 
-        if 'item_classes' in self.feed_options:
-            for item_class in self.feed_options['item_classes']:
-                self.item_classes.add(load_object(item_class))
-
-    def accepts(self, item):
+    def accepts(self, item: Any) -> bool:
         """
         Return ``True`` if `item` should be exported or ``False`` otherwise.
 
@@ -73,9 +77,8 @@ class ItemFilter:
         :rtype: bool
         """
         if self.item_classes:
-            return isinstance(item, tuple(self.item_classes))
-
-        return True    # accept all items if none declared in item_classes
+            return isinstance(item, self.item_classes)
+        return True  # accept all items by default
 
 
 class IFeedStorage(Interface):
