@@ -674,9 +674,9 @@ The function signature should be as follows:
    :type params: dict
 
    :param spider: source spider of the feed items
-   :type spider: scrapy.spiders.Spider
+   :type spider: scrapy.Spider
 
-For example, to include the :attr:`name <scrapy.spiders.Spider.name>` of the
+For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
 
 #.  Define the following function somewhere in your project::
