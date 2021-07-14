@@ -51,7 +51,7 @@ scrapy.Spider
 =============
 
 .. class:: scrapy.spiders.Spider()
-.. class:: Spider()
+.. class:: scrapy.Spider()
 
    This is the simplest spider, and the one from which every other spider
    must inherit (including spiders that come bundled with Scrapy, as well as spiders
