@@ -5,6 +5,7 @@ based on different criteria.
 from mimetypes import MimeTypes
 from pkgutil import get_data
 from io import StringIO
+from urllib.parse import urlparse
 
 from xtractmime import extract_mime
 
@@ -42,6 +43,9 @@ class ResponseTypes:
 
     def from_mimetype(self, mimetype):
         """Return the most appropriate Response class for the given mimetype"""
+        if isinstance(mimetype, bytes):
+            mimetype = mimetype.decode()
+
         if mimetype is None:
             return Response
         elif mimetype in self.classes:
@@ -88,34 +92,33 @@ class ResponseTypes:
         else:
             return Response
 
-    def from_body(self, body):
-        """Try to guess the appropriate response based on the body content.
-        This method is a bit magic and could be improved in the future, but
-        it's not meant to be used except for special cases where response types
-        cannot be guess using more straightforward methods."""
-        chunk = body[:5000]
-        chunk = to_bytes(chunk)
-        if not binary_is_text(chunk):
-            return self.from_mimetype('application/octet-stream')
-        elif b"<html>" in chunk.lower():
-            return self.from_mimetype('text/html')
-        elif b"<?xml" in chunk.lower():
-            return self.from_mimetype('text/xml')
-        else:
-            return self.from_mimetype('text')
-
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
         the given arguments."""
         cls = Response
-        if headers is not None:
+        if cls is Response and body is not None:
+            http_origin = True
+            no_sniff = False
+            content_types = None
+
+            if url and urlparse(url).scheme not in ("http", "https"):
+                http_origin = False
+
+            if headers:
+                if b'Content-Type' in headers:
+                    content_types = (headers[b'Content-Type'],)
+
+                if b'X-Content-Type-Options' in headers and headers[b'X-Content-Type-Options'] == b"nosniff":
+                    no_sniff = True
+
+            mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin, no_sniff=no_sniff)
+            cls = self.from_mimetype(mime_type)
+        if cls is Response and headers is not None:
             cls = self.from_headers(headers)
         if cls is Response and url is not None:
             cls = self.from_filename(url)
         if cls is Response and filename is not None:
             cls = self.from_filename(filename)
-        if cls is Response and body is not None:
-            cls = self.from_body(body)
         return cls
 
 
