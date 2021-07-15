@@ -7,6 +7,7 @@ See documentation in docs/topics/feed-exports.rst
 import logging
 import os
 import re
+from scrapy.extensions.batches import Batch
 import sys
 import warnings
 from datetime import datetime
@@ -259,7 +260,6 @@ class _FeedSlot:
         self.uri = uri
         self.filter = filter
         # flags
-        self.itemcount = 0
         self._exporting = False
 
     def start_exporting(self):
@@ -289,6 +289,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots = []
         self.filters = {}
+        self.batches = {}
 
         if not self.settings['FEEDS'] and not self.settings['FEED_URI']:
             raise NotConfigured
@@ -302,15 +303,19 @@ class FeedExporter:
             )
             uri = str(self.settings['FEED_URI'])  # handle pathlib.Path objects
             feed_options = {'format': self.settings.get('FEED_FORMAT', 'jsonlines')}
-            self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            feed_options = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.feeds[uri] = feed_options
             self.filters[uri] = self._load_filter(feed_options)
+            self.batches[uri] = self._load_batch(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict('FEEDS').items():
             uri = str(uri)  # handle pathlib.Path objects
-            self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            feed_options = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.feeds[uri] = feed_options
             self.filters[uri] = self._load_filter(feed_options)
+            self.batches[uri] = self._load_batch(feed_options)
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
@@ -326,7 +331,6 @@ class FeedExporter:
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options['uri_params'])
             self.slots.append(self._start_new_batch(
-                batch_id=1,
                 uri=uri % uri_params,
                 feed_options=feed_options,
                 spider=spider,
@@ -341,14 +345,16 @@ class FeedExporter:
         return defer.DeferredList(deferred_list) if deferred_list else None
 
     def _close_slot(self, slot, spider):
-        if not slot.itemcount and not slot.store_empty:
+        if not self.batches[slot.uri_template].updated_once and not slot.store_empty:
             # We need to call slot.storage.store nonetheless to get the file
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
+        logfmt = "%s %%(format)s feed in: %%(uri)s, batch state: %%(batch_state)s"
+        batch_state = self.batches[slot.uri_template].get_batch_state()
+        batch_state_str = ", ".join("{}={}".format(k, v) for k, v in batch_state.items())
         log_args = {'format': slot.format,
-                    'itemcount': slot.itemcount,
+                    'batch_state': batch_state_str,
                     'uri': slot.uri}
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
@@ -375,7 +381,7 @@ class FeedExporter:
         )
         self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
-    def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
+    def _start_new_batch(self, uri, feed_options, spider, uri_template):
         """
         Redirect the output data stream to a new file.
         Execute multiple times if FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified
@@ -387,6 +393,7 @@ class FeedExporter:
         """
         storage = self._get_storage(uri, feed_options)
         file = storage.open(spider)
+        self.batches[uri_template].new_batch(file)
         exporter = self._get_exporter(
             file=file,
             format=feed_options['format'],
@@ -402,7 +409,7 @@ class FeedExporter:
             uri=uri,
             format=feed_options['format'],
             store_empty=feed_options['store_empty'],
-            batch_id=batch_id,
+            batch_id=self.batches[uri_template].batch_id,
             uri_template=uri_template,
             filter=self.filters[uri_template]
         )
@@ -419,16 +426,12 @@ class FeedExporter:
 
             slot.start_exporting()
             slot.exporter.export_item(item)
-            slot.itemcount += 1
-            # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
-            if (
-                self.feeds[slot.uri_template]['batch_item_count']
-                and slot.itemcount >= self.feeds[slot.uri_template]['batch_item_count']
-            ):
+            self.batches[slot.uri_template].update()
+            # create new slot if slot's batch should trigger and close the old one
+            if self.batches[slot.uri_template].should_trigger():
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
-                    batch_id=slot.batch_id + 1,
                     uri=slot.uri_template % uri_params,
                     feed_options=self.feeds[slot.uri_template],
                     spider=spider,
@@ -455,11 +458,11 @@ class FeedExporter:
 
     def _settings_are_valid(self):
         """
-        If FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified uri has to contain
+        If batch class or related contraints are specified, uri has to contain
         %(batch_time)s or %(batch_id)d to distinguish different files of partial output
         """
-        for uri_template, values in self.feeds.items():
-            if values['batch_item_count'] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
+        for uri_template, batch in self.batches.items():
+            if batch.enabled and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
                 logger.error(
                     '%(batch_time)s or %(batch_id)d must be in the feed URI ({}) if FEED_EXPORT_BATCH_ITEM_COUNT '
                     'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '
@@ -532,3 +535,8 @@ class FeedExporter:
         # load the item filter if declared else load the default filter class
         item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
         return item_filter_class(feed_options)
+
+    def _load_batch(self, feed_options):
+        # load batch class if declared else load default base class
+        batch_class = load_object(feed_options.get("batch", Batch))
+        return batch_class(feed_options)
