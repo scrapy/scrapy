@@ -49,18 +49,6 @@ class ResponseTypesTest(unittest.TestCase):
             retcls = responsetypes.from_content_type(source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
-    """def test_from_body(self):
-        mappings = [
-            (b'\x03\x02\xdf\xdd\x23', Response),
-            (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
-            (b'<html><head><title>Hello</title></head>', HtmlResponse),
-            (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
-        ]
-        for source, cls in mappings:
-            retcls = responsetypes.from_body(source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
-        """
-
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
