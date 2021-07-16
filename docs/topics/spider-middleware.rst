@@ -93,7 +93,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
 
     .. method:: process_spider_output(response, result, spider)
@@ -106,7 +106,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request` objects and :ref:`item objects
+        :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
         .. note:: When defined as a :ref:`coroutine <async>`, this method needs
@@ -117,11 +117,11 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request` objects and
+        :type result: an iterable of :class:`~scrapy.Request` objects and
           :ref:`item objects <topics-items>`
 
         :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
     .. method:: process_spider_exception(response, exception, spider)
 
@@ -129,7 +129,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request` objects and :ref:`item objects
+        iterable of :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -149,7 +149,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type exception: :exc:`Exception` object
 
         :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
 
@@ -159,7 +159,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         items).
 
         It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.http.Request` objects.
+        return another iterable of :class:`~scrapy.Request` objects.
 
         .. note:: When implementing this method in your spider middleware, you
            should always return an iterable (that follows the input one) and
@@ -171,10 +171,10 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
            (like a time limit or item/page count).
 
         :param start_requests: the start requests
-        :type start_requests: an iterable of :class:`~scrapy.http.Request`
+        :type start_requests: an iterable of :class:`~scrapy.Request`
 
         :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
     .. method:: from_crawler(cls, crawler)
 
@@ -258,7 +258,7 @@ this::
 .. reqmeta:: handle_httpstatus_all
 
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.http.Request.meta>` can also be used to specify which response codes to
+<scrapy.Request.meta>` can also be used to specify which response codes to
 allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
 to ``True`` if you want to allow any response code for a request, and ``False`` to
 disable the effects of the ``handle_httpstatus_all`` key.
@@ -302,7 +302,7 @@ OffsiteMiddleware
    Filters out Requests for URLs outside the domains covered by the spider.
 
    This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
+   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
    All subdomains of any domain in the list are also allowed.
    E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
    but not ``www2.example.com`` nor ``example.com``.
@@ -320,10 +320,10 @@ OffsiteMiddleware
    will be printed (but only for the first request filtered).
 
    If the spider doesn't define an
-   :attr:`~scrapy.spiders.Spider.allowed_domains` attribute, or the
+   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
-   If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute
+   If the request has the :attr:`~scrapy.Request.dont_filter` attribute
    set, the offsite middleware will allow the request even if its domain is not
    listed in allowed domains.
 

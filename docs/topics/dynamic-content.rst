@@ -62,9 +62,9 @@ download the webpage with an HTTP client like curl_ or wget_ and see if the
 information can be found in the response they get.
 
 If they get a response with the desired data, modify your Scrapy
-:class:`~scrapy.http.Request` to match that of the other HTTP client. For
+:class:`~scrapy.Request` to match that of the other HTTP client. For
 example, try using the same user-agent string (:setting:`USER_AGENT`) or the
-same :attr:`~scrapy.http.Request.headers`.
+same :attr:`~scrapy.Request.headers`.
 
 If they also get a response without the desired data, you’ll need to take
 steps to make your request more similar to that of the web browser. See
@@ -81,14 +81,14 @@ Use the :ref:`network tool <topics-network-tool>` of your web browser to see
 how your web browser performs the desired request, and try to reproduce that
 request with Scrapy.
 
-It might be enough to yield a :class:`~scrapy.http.Request` with the same HTTP
+It might be enough to yield a :class:`~scrapy.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
-form parameters (see :class:`~scrapy.http.FormRequest`) of that request.
+form parameters (see :class:`~scrapy.FormRequest`) of that request.
 
 As all major browsers allow to export the requests in `cURL
 <https://curl.haxx.se/>`_ format, Scrapy incorporates the method
-:meth:`~scrapy.http.Request.from_curl()` to generate an equivalent
-:class:`~scrapy.http.Request` from a cURL command. To get more information
+:meth:`~scrapy.Request.from_curl()` to generate an equivalent
+:class:`~scrapy.Request` from a cURL command. To get more information
 visit :ref:`request from curl <requests-from-curl>` inside the network
 tool section.
 
@@ -125,7 +125,7 @@ data from it depends on the type of response:
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
-    :class:`~scrapy.selector.Selector` and then
+    :class:`~scrapy.Selector` and then
     :ref:`use it <topics-selectors>` as usual::
 
         selector = Selector(data['html'])

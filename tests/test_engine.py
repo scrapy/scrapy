@@ -26,7 +26,7 @@ from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
@@ -111,6 +111,18 @@ class ItemZeroDivisionErrorSpider(TestSpider):
             "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
         }
     }
+
+
+class ChangeCloseReasonSpider(TestSpider):
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = cls(*args, **kwargs)
+        spider._set_crawler(crawler)
+        crawler.signals.connect(spider.spider_idle, signals.spider_idle)
+        return spider
+
+    def spider_idle(self):
+        raise CloseSpider(reason="custom_reason")
 
 
 def start_test_site(debug=False):
@@ -250,6 +262,13 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
+
+    @defer.inlineCallbacks
+    def test_crawler_change_close_reason_on_idle(self):
+        self.run = CrawlerRun(ChangeCloseReasonSpider)
+        yield self.run.run()
+        self.assertEqual({'spider': self.run.spider, 'reason': 'custom_reason'},
+                         self.run.signals_caught[signals.spider_closed])
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",

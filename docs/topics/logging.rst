@@ -93,7 +93,7 @@ path::
 Logging from Spiders
 ====================
 
-Scrapy provides a :data:`~scrapy.spiders.Spider.logger` within each Spider
+Scrapy provides a :data:`~scrapy.Spider.logger` within each Spider
 instance, which can be accessed and used like this::
 
     import scrapy
