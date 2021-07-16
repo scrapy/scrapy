@@ -40,6 +40,7 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: extra-deps
+            TOX_PIP_VERSION: 20.3.3
         - python-version: 3.9
           env:
             TOXENV: asyncio
@@ -67,6 +68,9 @@ jobs:
           tar -jxf ${PYPY_VERSION}.tar.bz2
           $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
           source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+        fi
+        if [[ ! -z "$TOX_PIP_VERSION" ]]; then
+            pip install tox-pip-version
         fi
         pip install -U tox
         tox
