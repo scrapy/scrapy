@@ -49,6 +49,17 @@ class ResponseTypesTest(unittest.TestCase):
             retcls = responsetypes.from_content_type(source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
+    def test_from_body(self):
+        mappings = [
+            (b'\x03\x02\xdf\xdd\x23', Response),
+            (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
+            (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
+        ]
+        for source, cls in mappings:
+            retcls = responsetypes.from_body(source)
+            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
@@ -62,16 +73,14 @@ class ResponseTypesTest(unittest.TestCase):
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
     def test_from_args(self):
-        # TODO: add more tests that check precedence between the different arguments
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
-            # headers takes precedence over url
-            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
-              'url': 'http://www.example.com/item/'}, HtmlResponse),
+            ({'headers': Headers({'Content-Type': ['text/plain; charset=utf-8']}),
+              'url': 'http://www.example.com/item/'}, TextResponse),
             ({'body': b'Some plain text data with tabs and null bytes',
               'url': 'http://www.example.com/item/',
-              'headers': Headers({'Content-Type': ['text/html; charset=utf-8'],
-                                  'X-Content-Type-Options': 'nosniff'})}, TextResponse),
+              'headers': Headers({'Content-Type': ['text/html; charset=utf-8'], })},
+             TextResponse),
             ({'body': b'\x03\x02\xdf\xdd\x23', 'url': '://www.example.com/item/',
               'headers': Headers({'Content-Encoding': 'UTF-8'})}, Response),
             ({'body': b'Some plain text data with tabs and null bytes'}, TextResponse),
