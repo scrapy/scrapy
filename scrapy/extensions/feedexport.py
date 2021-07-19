@@ -7,7 +7,6 @@ See documentation in docs/topics/feed-exports.rst
 import logging
 import os
 import re
-from scrapy.extensions.batches import Batch
 import sys
 import warnings
 from datetime import datetime
@@ -20,6 +19,7 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.extensions.batches import BatchHandler
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
@@ -260,6 +260,7 @@ class _FeedSlot:
         self.uri = uri
         self.filter = filter
         # flags
+        self.itemcount = 0
         self._exporting = False
 
     def start_exporting(self):
@@ -345,16 +346,14 @@ class FeedExporter:
         return defer.DeferredList(deferred_list) if deferred_list else None
 
     def _close_slot(self, slot, spider):
-        if not self.batches[slot.uri_template].updated_once and not slot.store_empty:
+        if not slot.itemcount and not slot.store_empty:
             # We need to call slot.storage.store nonetheless to get the file
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logfmt = "%s %%(format)s feed in: %%(uri)s, batch state: %%(batch_state)s"
-        batch_state = self.batches[slot.uri_template].get_batch_state()
-        batch_state_str = ", ".join("{}={}".format(k, v) for k, v in batch_state.items())
+        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
         log_args = {'format': slot.format,
-                    'batch_state': batch_state_str,
+                    'itemcount': slot.itemcount,
                     'uri': slot.uri}
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
@@ -426,6 +425,7 @@ class FeedExporter:
 
             slot.start_exporting()
             slot.exporter.export_item(item)
+            slot.itemcount += 1
             self.batches[slot.uri_template].update()
             # create new slot if slot's batch should trigger and close the old one
             if self.batches[slot.uri_template].should_trigger():
@@ -537,6 +537,6 @@ class FeedExporter:
         return item_filter_class(feed_options)
 
     def _load_batch(self, feed_options):
-        # load batch class if declared else load default base class
-        batch_class = load_object(feed_options.get("batch", Batch))
+        # load batch class if declared else load default batch class
+        batch_class = load_object(feed_options.get("batch", BatchHandler))
         return batch_class(feed_options)
