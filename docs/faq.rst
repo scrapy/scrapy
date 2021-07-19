@@ -149,7 +149,7 @@ How can I prevent memory errors due to many allowed domains?
 ------------------------------------------------------------
 
 If you have a spider with a long list of
-:attr:`~scrapy.spiders.Spider.allowed_domains` (e.g. 50,000+), consider
+:attr:`~scrapy.Spider.allowed_domains` (e.g. 50,000+), consider
 replacing the default
 :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
 with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
@@ -157,7 +157,7 @@ less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
     instead joining the strings in
-    :attr:`~scrapy.spiders.Spider.allowed_domains` into a complex regular
+    :attr:`~scrapy.Spider.allowed_domains` into a complex regular
     expression.
 
 -   If you can `meet the installation requirements`_, use pyre2_ instead of
