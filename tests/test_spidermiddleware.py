@@ -19,7 +19,7 @@ class SpiderMiddlewareTestCase(TestCase):
     def setUp(self):
         self.request = Request('http://example.com/index.html')
         self.response = Response(self.request.url, request=self.request)
-        self.crawler = get_crawler(Spider)
+        self.crawler = get_crawler(Spider, {'SPIDER_MIDDLEWARES_BASE': {}})
         self.spider = self.crawler._create_spider('foo')
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
 
