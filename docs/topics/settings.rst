@@ -204,6 +204,20 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+.. setting:: AWS_SESSION_TOKEN
+
+AWS_SESSION_TOKEN
+-----------------
+
+Default: ``None`` (Optional)
+
+The AWS security token used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
+The security token is only required by a *temporary security credentials*.
+Using of temporary security credentials is discouraged cause the credentials
+are short term. It may expires before the scraping is done.
+
 .. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
