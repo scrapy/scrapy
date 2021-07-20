@@ -307,7 +307,7 @@ Each plugin is a class that must implement the following methods:
 
     Initialize the plugin.
 
-    :param file: file-like object having at least the `write` and `close` methods implemented
+    :param file: file-like object having at least the `write`, `tell` and `close` methods implemented
 
     :param feed_options: feed-specific :ref:`options <feed-options>`
     :type feed_options: :class:`dict`

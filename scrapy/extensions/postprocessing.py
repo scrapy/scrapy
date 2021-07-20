@@ -128,6 +128,9 @@ class PostProcessingManager(IOBase):
         """
         return self.head_plugin.write(data)
 
+    def tell(self) -> int:
+        return self.file.tell()
+
     def close(self) -> None:
         """
         Close the target file along with all the plugins.

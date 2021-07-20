@@ -1337,7 +1337,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
             self.char = self.feed_options.get('plugin1_char', b'')
 
         def write(self, data):
-            return self.file.write(data + self.char)
+            return self.file.write(bytes(data) + self.char)
 
         def close(self):
             self.file.close()
@@ -1615,6 +1615,10 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_filters(self):
+        import sys
+        if "PyPy" in sys.version:
+            raise unittest.SkipTest("lzma filters doesn't work in PyPy")
+
         filters = [{'id': lzma.FILTER_LZMA2}]
         compressed = lzma.compress(self.expected, filters=filters)
         filename = self._named_tempfile('filters')
