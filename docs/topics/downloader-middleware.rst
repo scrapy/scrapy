@@ -76,7 +76,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       middleware.
 
       :meth:`process_request` should either: return ``None``, return a
-      :class:`~scrapy.http.Response` object, return a :class:`~scrapy.http.Request`
+      :class:`~scrapy.Response` object, return a :class:`~scrapy.http.Request`
       object, or raise :exc:`~scrapy.exceptions.IgnoreRequest`.
 
       If it returns ``None``, Scrapy will continue processing this request, executing all
@@ -88,7 +88,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       or the appropriate download function; it'll return that response. The :meth:`process_response`
       methods of installed middleware is always called on every response.
 
-      If it returns a :class:`~scrapy.http.Request` object, Scrapy will stop calling
+      If it returns a :class:`~scrapy.Request` object, Scrapy will stop calling
       process_request methods and reschedule the returned request. Once the newly returned
       request is performed, the appropriate middleware chain will be called on
       the downloaded response.
@@ -100,22 +100,22 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       ignored and not logged (unlike other exceptions).
 
       :param request: the request being processed
-      :type request: :class:`~scrapy.http.Request` object
+      :type request: :class:`~scrapy.Request` object
 
       :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
    .. method:: process_response(request, response, spider)
 
       :meth:`process_response` should either: return a :class:`~scrapy.http.Response`
-      object, return a :class:`~scrapy.http.Request` object or
+      object, return a :class:`~scrapy.Request` object or
       raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
 
       If it returns a :class:`~scrapy.http.Response` (it could be the same given
       response, or a brand-new one), that response will continue to be processed
       with the :meth:`process_response` of the next middleware in the chain.
 
-      If it returns a :class:`~scrapy.http.Request` object, the middleware chain is
+      If it returns a :class:`~scrapy.Request` object, the middleware chain is
       halted and the returned request is rescheduled to be downloaded in the future.
       This is the same behavior as if a request is returned from :meth:`process_request`.
 
@@ -124,13 +124,13 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       exception, it is ignored and not logged (unlike other exceptions).
 
       :param request: the request that originated the response
-      :type request: is a :class:`~scrapy.http.Request` object
+      :type request: is a :class:`~scrapy.Request` object
 
       :param response: the response being processed
       :type response: :class:`~scrapy.http.Response` object
 
       :param spider: the spider for which this response is intended
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
    .. method:: process_exception(request, exception, spider)
 
@@ -139,7 +139,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
 
       :meth:`process_exception` should return: either ``None``,
-      a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request` object.
+      a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
 
       If it returns ``None``, Scrapy will continue processing this exception,
       executing any other :meth:`process_exception` methods of installed middleware,
@@ -149,19 +149,19 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       method chain of installed middleware is started, and Scrapy won't bother calling
       any other :meth:`process_exception` methods of middleware.
 
-      If it returns a :class:`~scrapy.http.Request` object, the returned request is
+      If it returns a :class:`~scrapy.Request` object, the returned request is
       rescheduled to be downloaded in the future. This stops the execution of
       :meth:`process_exception` methods of the middleware the same as returning a
       response would.
 
       :param request: the request that generated the exception
-      :type request: is a :class:`~scrapy.http.Request` object
+      :type request: is a :class:`~scrapy.Request` object
 
       :param exception: the raised exception
       :type exception: an ``Exception`` object
 
       :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
    .. method:: from_crawler(cls, crawler)
 
@@ -203,13 +203,13 @@ CookiesMiddleware
    browsers do.
 
    .. caution:: When non-UTF8 encoded byte sequences are passed to a
-      :class:`~scrapy.http.Request`, the ``CookiesMiddleware`` will log
+      :class:`~scrapy.Request`, the ``CookiesMiddleware`` will log
       a warning. Refer to :ref:`topics-logging-advanced-customization`
       to customize the logging behaviour.
 
    .. caution:: Cookies set via the ``Cookie`` header are not considered by the
       :ref:`cookies-mw`. If you need to set cookies for a request, use the
-      :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+      :class:`Request.cookies <scrapy.Request>` parameter. This is a known
       current limitation that is being worked on.
 
 The following settings can be used to configure the cookie middleware:
@@ -258,7 +258,7 @@ web server and received cookies in :class:`~scrapy.http.Response` will
 **not** be merged with the existing cookies.
 
 For more detailed information see the ``cookies`` parameter in
-:class:`~scrapy.http.Request`.
+:class:`~scrapy.Request`.
 
 .. setting:: COOKIES_DEBUG
 
@@ -501,7 +501,7 @@ defines the methods described below.
       the :signal:`open_spider <spider_opened>` signal.
 
       :param spider: the spider which has been opened
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
     .. method:: close_spider(spider)
 
@@ -509,27 +509,27 @@ defines the methods described below.
       the :signal:`close_spider <spider_closed>` signal.
 
       :param spider: the spider which has been closed
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
     .. method:: retrieve_response(spider, request)
 
       Return response if present in cache, or ``None`` otherwise.
 
       :param spider: the spider which generated the request
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
       :param request: the request to find cached response for
-      :type request: :class:`~scrapy.http.Request` object
+      :type request: :class:`~scrapy.Request` object
 
     .. method:: store_response(spider, request, response)
 
       Store the given response in the cache.
 
       :param spider: the spider for which the response is intended
-      :type spider: :class:`~scrapy.spiders.Spider` object
+      :type spider: :class:`~scrapy.Spider` object
 
       :param request: the corresponding request the spider generated
-      :type request: :class:`~scrapy.http.Request` object
+      :type request: :class:`~scrapy.Request` object
 
       :param response: the response to store in the cache
       :type response: :class:`~scrapy.http.Response` object
@@ -722,7 +722,7 @@ HttpProxyMiddleware
 .. class:: HttpProxyMiddleware
 
    This middleware sets the HTTP proxy to use for requests, by setting the
-   ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
+   ``proxy`` meta value for :class:`~scrapy.Request` objects.
 
    Like the Python standard library module :mod:`urllib.request`, it obeys
    the following environment variables:
@@ -749,12 +749,12 @@ RedirectMiddleware
 .. reqmeta:: redirect_urls
 
 The urls which the request goes through (while being redirected) can be found
-in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
+in the ``redirect_urls`` :attr:`Request.meta <scrapy.Request.meta>` key.
 
 .. reqmeta:: redirect_reasons
 
 The reason behind each redirect in :reqmeta:`redirect_urls` can be found in the
-``redirect_reasons`` :attr:`Request.meta <scrapy.http.Request.meta>` key. For
+``redirect_reasons`` :attr:`Request.meta <scrapy.Request.meta>` key. For
 example: ``[301, 302, 307, 'meta refresh']``.
 
 The format of a reason depends on the middleware that handled the corresponding
@@ -770,7 +770,7 @@ settings (see the settings documentation for more info):
 
 .. reqmeta:: dont_redirect
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_redirect``
+If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_redirect``
 key set to True, the request will be ignored by this middleware.
 
 If you want to handle some redirect status codes in your spider, you can
@@ -783,7 +783,7 @@ responses (and pass them through to your spider) you can do this::
         handle_httpstatus_list = [301, 302]
 
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.http.Request.meta>` can also be used to specify which response codes to
+<scrapy.Request.meta>` can also be used to specify which response codes to
 allow on a per-request basis. You can also set the meta key
 ``handle_httpstatus_all`` to ``True`` if you want to allow any response code
 for a request.
@@ -889,7 +889,7 @@ settings (see the settings documentation for more info):
 
 .. reqmeta:: dont_retry
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
+If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_retry`` key
 set to True, the request will be ignored by this middleware.
 
 To retry requests from a spider callback, you can use the
@@ -919,7 +919,7 @@ Default: ``2``
 Maximum number of times to retry, in addition to the first download.
 
 Maximum number of retries can also be specified per-request using
-:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.http.Request.meta>`.
+:reqmeta:`max_retry_times` attribute of :attr:`Request.meta <scrapy.Request.meta>`.
 When initialized, the :reqmeta:`max_retry_times` meta key takes higher
 precedence over the :setting:`RETRY_TIMES` setting.
 
@@ -986,7 +986,7 @@ RobotsTxtMiddleware
 
 .. reqmeta:: dont_obey_robotstxt
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` has
+If :attr:`Request.meta <scrapy.Request.meta>` has
 ``dont_obey_robotstxt`` key set to True
 the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.

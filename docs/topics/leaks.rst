@@ -27,7 +27,7 @@ Common causes of memory leaks
 
 It happens quite often (sometimes by accident, sometimes on purpose) that the
 Scrapy developer passes objects referenced in Requests (for example, using the
-:attr:`~scrapy.http.Request.cb_kwargs` or :attr:`~scrapy.http.Request.meta`
+:attr:`~scrapy.Request.cb_kwargs` or :attr:`~scrapy.Request.meta`
 attributes or the request callback function) and that effectively bounds the
 lifetime of those referenced objects to the lifetime of the Request. This is,
 by far, the most common cause of memory leaks in Scrapy projects, and a quite
@@ -48,9 +48,9 @@ Too Many Requests?
 ------------------
 
 By default Scrapy keeps the request queue in memory; it includes
-:class:`~scrapy.http.Request` objects and all objects
-referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.cb_kwargs`
-and :attr:`~scrapy.http.Request.meta`).
+:class:`~scrapy.Request` objects and all objects
+referenced in Request attributes (e.g. in :attr:`~scrapy.Request.cb_kwargs`
+and :attr:`~scrapy.Request.meta`).
 While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
@@ -90,11 +90,11 @@ Which objects are tracked?
 The objects tracked by ``trackrefs`` are all from these classes (and all its
 subclasses):
 
-* :class:`scrapy.http.Request`
+* :class:`scrapy.Request`
 * :class:`scrapy.http.Response`
-* :class:`scrapy.item.Item`
-* :class:`scrapy.selector.Selector`
-* :class:`scrapy.spiders.Spider`
+* :class:`scrapy.Item`
+* :class:`scrapy.Selector`
+* :class:`scrapy.Spider`
 
 A real example
 --------------
