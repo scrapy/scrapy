@@ -114,7 +114,7 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 .. _topics-file-naming:
 
 File Naming
-=================
+===========
 
 Default File Naming
 -------------------
