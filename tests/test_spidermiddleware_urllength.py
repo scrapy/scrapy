@@ -45,9 +45,11 @@ class TestUrlLengthMiddleware(TestCase):
         length = 10
         settings = Settings({'URLLENGTH_LIMIT': length})
         test_ok = UrlLengthMiddleware.from_settings(settings)
+        self.assertEquals(test_ok.maxlength, length)
+
+    def test_setting_error(self):
         settings_error = Settings({'URLLENGTH_LIMIT': 0})
         with self.assertRaises(NotConfigured) as cm:
             UrlLengthMiddleware.from_settings(settings_error)
         the_exception = cm.exception
         self.assertEquals(type(the_exception), type(NotConfigured()))
-        self.assertEquals(test_ok.maxlength, length)
