@@ -138,7 +138,7 @@ You may wish to use a different calculated file name for saved files.
 For example, classifying an image by including meta in the file name.
 
 Customize file names by overriding the ``file_path`` method of your
-pipeline.
+media pipeline.
 
 For example, an image pipeline with image url::
 
