@@ -2,6 +2,7 @@
 Extensions for batch processing and support.
 """
 
+import re
 import time
 from typing import Any, BinaryIO, Dict
 
@@ -88,14 +89,24 @@ class BatchHandler:
         return state
 
     def _in_seconds(self, duration: str) -> int:
-        # will be used for converting human readable duration
-        # to seconds
-        return duration
+        """
+        Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in integer.
+        """
+        h, m, s = map(int, duration.split(":"))
+        duration_in_secs = h * 60 * 60 + m * 60 + s
+        return duration_in_secs
 
     def _in_bytes(self, size: str) -> int:
-        # will be used for converting human readable file size
-        # to bytes
-        return size
+        """
+        Convert string size in format: '<SIZE><UNIT>' to bytes in integer.
+        """
+        # https://stackoverflow.com/a/60708339/7116579
+        units = {"B": 1, "KB": 2**10, "MB": 2**20, "GB": 2**30, "TB": 2**40}
+        size = size.upper()
+        if not re.match(r' ', size):
+            size = re.sub(r'([KMGT]?B)', r' \1', size)
+        number, unit = [string.strip() for string in size.split()]
+        return int(float(number) * units[unit])
 
     def _calculate_elapsed_time(self) -> int:
         return time.time() - self.start_time
