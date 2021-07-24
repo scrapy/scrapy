@@ -323,6 +323,15 @@ domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
 
+Emails can be sent using the MailSender class
+
+.. module:: scrapy.mail
+   :synopsis: MailSender class
+
+.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
+
+To see a full list of parameters, including examples on how to instantiate MailSender and using mail settings, see :ref:`topics-email`
+
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
 
