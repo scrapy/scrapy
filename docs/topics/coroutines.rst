@@ -15,7 +15,7 @@ Supported callables
 The following callables may be defined as coroutines using ``async def``, and
 hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
--   :class:`~scrapy.http.Request` callbacks.
+-   :class:`~scrapy.Request` callbacks.
 
     .. note:: The callback output is not processed until the whole callback
         finishes.
