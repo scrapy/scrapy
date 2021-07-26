@@ -111,25 +111,82 @@ For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 
    IMAGES_STORE = '/path/to/valid/dir'
 
+.. _topics-file-naming:
+
+File Naming
+===========
+
+Default File Naming
+-------------------
+
+By default, files are stored using an `SHA-1 hash`_ of their URLs for the file names.
+
+For example, the following image URL::
+
+    http://www.example.com/image.jpg
+
+Whose ``SHA-1 hash`` is::
+
+    3afec3b4765f8f0a07b78f98c07b83f013567a0a
+
+Will be downloaded and stored using your chosen :ref:`storage method <topics-supported-storage>` and the following file name::
+
+   3afec3b4765f8f0a07b78f98c07b83f013567a0a.jpg
+
+Custom File Naming
+-------------------
+
+You may wish to use a different calculated file name for saved files.
+For example, classifying an image by including meta in the file name.
+
+Customize file names by overriding the ``file_path`` method of your
+media pipeline.
+
+For example, an image pipeline with image URL::
+
+   http://www.example.com/product/images/large/front/0000000004166
+
+Can be processed into a file name with a condensed hash and the perspective
+``front``::
+
+  00b08510e4_front.jpg
+
+By overriding ``file_path`` like this:
+
+.. code-block:: python
+
+  import hashlib
+  from os.path import splitext
+
+  def file_path(self, request, response=None, info=None, *, item=None):
+      image_url_hash = hashlib.shake_256(request.url.encode()).hexdigest(5)
+      image_perspective = request.url.split('/')[-2]
+      image_filename = f'{image_url_hash}_{image_perspective}.jpg'
+
+      return image_filename
+
+.. warning::
+  If your custom file name scheme relies on meta data that can vary between
+  scrapes it may lead to unexpected re-downloading of existing media using
+  new file names.
+
+  For example, if your custom file name scheme uses a product title and the
+  site changes an item's product title between scrapes, Scrapy will re-download
+  the same media using updated file names.
+
+For more information about the ``file_path`` method, see :ref:`topics-media-pipeline-override`.
+
+.. _topics-supported-storage:
+
 Supported Storage
 =================
 
 File system storage
 -------------------
 
-The files are stored using a `SHA1 hash`_ of their URLs for the file names.
+File system storage will save files to the following path::
 
-For example, the following image URL::
-
-    http://www.example.com/image.jpg
-
-Whose ``SHA1 hash`` is::
-
-    3afec3b4765f8f0a07b78f98c07b83f013567a0a
-
-Will be downloaded and stored in the following file::
-
-   <IMAGES_STORE>/full/3afec3b4765f8f0a07b78f98c07b83f013567a0a.jpg
+   <IMAGES_STORE>/full/<FILE_NAME>
 
 Where:
 
@@ -138,6 +195,9 @@ Where:
 
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
+
+* ``<FILE_NAME>`` is the file name assigned to the file.  For more info see :ref:`topics-file-naming`.
+
 
 .. _media-pipeline-ftp:
 
@@ -353,9 +413,9 @@ Where:
 * ``<size_name>`` is the one specified in the :setting:`IMAGES_THUMBS`
   dictionary keys (``small``, ``big``, etc)
 
-* ``<image_id>`` is the `SHA1 hash`_ of the image url
+* ``<image_id>`` is the `SHA-1 hash`_ of the image url
 
-.. _SHA1 hash: https://en.wikipedia.org/wiki/SHA_hash_functions
+.. _SHA-1 hash: https://en.wikipedia.org/wiki/SHA_hash_functions
 
 Example of image files stored using ``small`` and ``big`` thumbnail names::
 
