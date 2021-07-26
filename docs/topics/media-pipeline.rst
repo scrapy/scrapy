@@ -170,6 +170,10 @@ By overriding ``file_path`` like this:
   scrapes it may lead to unexpected re-downloading of existing media using
   new file names.
 
+  For example, if your custom file name scheme uses a product title and the
+  site changes an item's product title between scrapes, Scrapy will re-download
+  the same media using updated file names.
+
 For more information about the ``file_path`` method, see :ref:`topics-media-pipeline-override`.
 
 .. _topics-supported-storage:
