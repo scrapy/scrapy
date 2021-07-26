@@ -336,6 +336,9 @@ Built-in Plugins
 
 .. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
 
+.. note::
+    ``lzma_filters`` cannot be used in pypy version 7.3.1 and older.
+
 .. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
 
 .. _custom-plugins:

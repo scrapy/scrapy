@@ -1765,7 +1765,10 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
     def test_lzma_plugin_filters(self):
         import sys
         if "PyPy" in sys.version:
-            raise unittest.SkipTest("lzma filters doesn't work in PyPy")
+            pypy_version = sys.version.split('\n')[1].split()[1]
+            if pypy_version <= '7.3.1':
+                # https://foss.heptapod.net/pypy/pypy/-/issues/3242
+                raise unittest.SkipTest("lzma filters doesn't work in PyPy versions <= 7.3.1")
 
         filters = [{'id': lzma.FILTER_LZMA2}]
         compressed = lzma.compress(self.expected, filters=filters)
