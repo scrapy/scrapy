@@ -142,7 +142,7 @@ For example, classifying an image by including meta in the file name.
 Customize file names by overriding the ``file_path`` method of your
 media pipeline.
 
-For example, an image pipeline with image url::
+For example, an image pipeline with image URL::
 
    http://www.example.com/product/images/large/front/0000000004166
 
