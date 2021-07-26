@@ -129,7 +129,7 @@ Whose ``SHA-1 hash`` is::
 
     3afec3b4765f8f0a07b78f98c07b83f013567a0a
 
-Will be downloaded and stored in your chosen :ref:`storage method <topics-supported-storage>` using the following file name::
+Will be downloaded and stored using your chosen :ref:`storage method <topics-supported-storage>` and the following file name::
 
    3afec3b4765f8f0a07b78f98c07b83f013567a0a.jpg
 
