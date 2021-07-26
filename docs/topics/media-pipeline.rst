@@ -196,8 +196,7 @@ Where:
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
 
-* ``<FILE_NAME>`` is the default file name created by Scrapy or a customized file
-  name (if used).  For more info see :ref:`topics-file-naming`.
+* ``<FILE_NAME>`` is the file name assigned to the file.  For more info see :ref:`topics-file-naming`.
 
 
 .. _media-pipeline-ftp:
