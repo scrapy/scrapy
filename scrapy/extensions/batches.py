@@ -27,7 +27,6 @@ class BatchHandler:
         # misc attributes
         self.file: BinaryIO
         self.start_time: int
-        self.updated_once: bool = False
         self.enabled: bool = True
         if not any([self.max_item_count, self.max_time_duration, self.max_file_size]):
             self.enabled = False
@@ -39,9 +38,6 @@ class BatchHandler:
         self.item_count += 1
         self.elapsed_time = self._calculate_elapsed_time()
         self.file_size = self._calculate_batch_size()
-
-        if not self.updated_once:
-            self.updated_once = True
 
     def should_trigger(self) -> bool:
         """
@@ -72,7 +68,6 @@ class BatchHandler:
         self.item_count = 0
         self.elapsed_time = 0
         self.file_size = 0
-        self.updated_once = False
         self.batch_id += 1
 
     def get_batch_state(self) -> Dict[str, int]:

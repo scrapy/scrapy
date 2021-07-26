@@ -13,7 +13,7 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 from urllib.parse import unquote, urlparse
 
-from twisted.internet import defer, threads
+from twisted.internet import defer, reactor, threads
 from w3lib.url import file_uri_to_path
 from zope.interface import implementer, Interface
 
@@ -345,16 +345,36 @@ class FeedExporter:
             deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
+    def reset_batch(self, slot, spider):
+        logger.debug("reset_batch called")
+        if slot not in self.slots:
+            logger.debug("slot not in self.slots, returning")
+            return
+        uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
+        self._close_slot(slot, spider)
+        new_slot = (self._start_new_batch(
+            uri=slot.uri_template % uri_params,
+            feed_options=self.feeds[slot.uri_template],
+            spider=spider,
+            uri_template=slot.uri_template,
+        ))
+        self.slots.remove(slot)
+        self.slots.append(new_slot)
+        logger.debug("batch reset succesful")
+
     def _close_slot(self, slot, spider):
         if not slot.itemcount and not slot.store_empty:
             # We need to call slot.storage.store nonetheless to get the file
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
+        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s, last batch state: %%(batch_state)s"
+        batch_state = self.batches[slot.uri_template].get_batch_state()
+        batch_state_str = ", ".join("{}={}".format(k, v) for k, v in batch_state.items())
         log_args = {'format': slot.format,
                     'itemcount': slot.itemcount,
-                    'uri': slot.uri}
+                    'uri': slot.uri,
+                    'batch_state': batch_state_str}
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
         # Use `largs=log_args` to copy log_args into function's scope
@@ -414,6 +434,9 @@ class FeedExporter:
         )
         if slot.store_empty:
             slot.start_exporting()
+
+        if "batch_time_duration" in feed_options:
+            reactor.callLater(self.batches[uri_template].max_time_duration, self.reset_batch, slot, spider)
         return slot
 
     def item_scraped(self, item, spider):
