@@ -119,13 +119,13 @@ File Naming
 Default File Naming
 -------------------
 
-By default, files are stored using an `SHA1 hash`_ of their URLs for the file names.
+By default, files are stored using an `SHA-1 hash`_ of their URLs for the file names.
 
 For example, the following image URL::
 
     http://www.example.com/image.jpg
 
-Whose ``SHA1 hash`` is::
+Whose ``SHA-1 hash`` is::
 
     3afec3b4765f8f0a07b78f98c07b83f013567a0a
 
@@ -410,9 +410,9 @@ Where:
 * ``<size_name>`` is the one specified in the :setting:`IMAGES_THUMBS`
   dictionary keys (``small``, ``big``, etc)
 
-* ``<image_id>`` is the `SHA1 hash`_ of the image url
+* ``<image_id>`` is the `SHA-1 hash`_ of the image url
 
-.. _SHA1 hash: https://en.wikipedia.org/wiki/SHA_hash_functions
+.. _SHA-1 hash: https://en.wikipedia.org/wiki/SHA_hash_functions
 
 Example of image files stored using ``small`` and ``big`` thumbnail names::
 
