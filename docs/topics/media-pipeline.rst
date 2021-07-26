@@ -119,7 +119,7 @@ File Naming
 Default File Naming
 -------------------
 
-By default, files are stored using a `SHA1 hash`_ of their URLs for the file names.
+By default, files are stored using an `SHA1 hash`_ of their URLs for the file names.
 
 For example, the following image URL::
 
