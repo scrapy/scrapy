@@ -119,7 +119,7 @@ File Naming
 Default File Naming
 -------------------
 
-By default, Scrapy will name files using a `SHA1 hash`_ of their origination URLs.
+By default, files are stored using a `SHA1 hash`_ of their URLs for the file names.
 
 For example, the following image URL::
 
