@@ -209,14 +209,13 @@ such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 AWS_SESSION_TOKEN
 -----------------
 
-Default: ``None`` (Optional)
+Default: ``None``
 
 The AWS security token used by code that requires access to `Amazon Web services`_,
-such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
+`temporary security credentials`_.
 
-The security token is only required by a *temporary security credentials*.
-Using of temporary security credentials is discouraged cause the credentials
-are short term. It may expires before the scraping is done.
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
 
 .. setting:: AWS_ENDPOINT_URL
 

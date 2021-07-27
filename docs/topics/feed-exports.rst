@@ -200,7 +200,9 @@ passed through the following settings:
 
 -   :setting:`AWS_ACCESS_KEY_ID`
 -   :setting:`AWS_SECRET_ACCESS_KEY`
--   :setting:`AWS_SESSION_TOKEN` (Optional)
+-   :setting:`AWS_SESSION_TOKEN` (only needed for `temporary security credentials`_)
+
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
 
 You can also define a custom ACL and custom endpoint for exported feeds using this setting:
 
