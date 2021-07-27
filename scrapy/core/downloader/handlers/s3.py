@@ -1,5 +1,3 @@
-from urllib.parse import unquote
-
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore_available
@@ -59,7 +57,7 @@ class S3DownloadHandler:
         url = f'{scheme}://{bucket}.s3.amazonaws.com{path}'
         if self.anon:
             request = request.replace(url=url)
-        elif self._signer is not None:
+        else:
             import botocore.awsrequest
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
@@ -69,14 +67,4 @@ class S3DownloadHandler:
             self._signer.add_auth(awsrequest)
             request = request.replace(
                 url=url, headers=awsrequest.headers.items())
-        else:
-            signed_headers = self.conn.make_request(
-                method=request.method,
-                bucket=bucket,
-                key=unquote(p.path),
-                query_args=unquote(p.query),
-                headers=request.headers,
-                data=request.body,
-            )
-            request = request.replace(url=url, headers=signed_headers)
         return self._download_http(request, spider)
