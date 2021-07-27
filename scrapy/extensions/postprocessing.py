@@ -76,6 +76,9 @@ class LZMAPlugin:
     - `lzma_preset`
     - `lzma_filters`
 
+    .. note::
+        ``lzma_filters`` cannot be used in pypy version 7.3.1 and older.
+
     See :py:class:`lzma.LZMAFile` for more info about parameters.
     """
 

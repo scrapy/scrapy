@@ -336,9 +336,6 @@ Built-in Plugins
 
 .. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
 
-.. note::
-    ``lzma_filters`` cannot be used in pypy version 7.3.1 and older.
-
 .. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
 
 .. _custom-plugins:
@@ -359,7 +356,7 @@ Each plugin is a class that must implement the following methods:
 
 .. method:: write(self, data)
 
-   Process and write `data` (:class:`bytes`) into the plugin's target file.
+   Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
    It must return number of bytes written.
 
 .. method:: close(self)

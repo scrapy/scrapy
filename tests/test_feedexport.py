@@ -1485,7 +1485,9 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
             self.char = self.feed_options.get('plugin1_char', b'')
 
         def write(self, data):
-            return self.file.write(bytes(data) + self.char)
+            written_count = self.file.write(data)
+            written_count += self.file.write(self.char)
+            return written_count
 
         def close(self):
             self.file.close()
@@ -1765,8 +1767,9 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
     def test_lzma_plugin_filters(self):
         import sys
         if "PyPy" in sys.version:
-            pypy_version = sys.version.split('\n')[1].split()[1]
-            if pypy_version <= '7.3.1':
+            pypy_version_str = sys.version.split('\n')[1].split()[1]
+            pypy_version = tuple(map(int, pypy_version_str.split(".")))
+            if pypy_version <= (7, 3, 1):
                 # https://foss.heptapod.net/pypy/pypy/-/issues/3242
                 raise unittest.SkipTest("lzma filters doesn't work in PyPy versions <= 7.3.1")
 
