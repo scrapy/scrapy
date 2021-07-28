@@ -272,10 +272,10 @@ The following is a simple snippet to illustrate its usage within Scrapy::
 For this example to work, Scrapy needs to be running on top of the
 :ref:`asyncio reactor <install-asyncio>`.
 
-Keep in mind that this is just a proof of concept, since it circumvents
-most of the Scrapy components (middlewares, dupefilter, etc).
-
-The following is a list of 3rd party projects which provide better integration:
+Using pypeteer_ directly circumvents most of the 
+Scrapy components (middlewares, dupefilter, etc). Use
+one of the following Scrapy plugins for better integration
+with Scrapy:
 
 * https://github.com/elacuesta/scrapy-pyppeteer
 * https://github.com/lopuhin/scrapy-pyppeteer
