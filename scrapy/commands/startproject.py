@@ -4,6 +4,7 @@ import string
 from importlib import import_module
 from os.path import join, exists, abspath
 from shutil import ignore_patterns, move, copy2, copystat
+from stat import S_IWUSR as OWNER_WRITE_PERMISSION
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -19,7 +20,12 @@ TEMPLATES_TO_RENDER = (
     ('${project_name}', 'middlewares.py.tmpl'),
 )
 
-IGNORE = ignore_patterns('*.pyc', '.svn')
+IGNORE = ignore_patterns('*.pyc', '__pycache__', '.svn')
+
+
+def _make_writable(path):
+    current_permissions = os.stat(path).st_mode
+    os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
 
 
 class Command(ScrapyCommand):
@@ -46,7 +52,7 @@ class Command(ScrapyCommand):
             print('Error: Project names must begin with a letter and contain'
                   ' only\nletters, numbers and underscores')
         elif _module_exists(project_name):
-            print('Error: Module %r already exists' % project_name)
+            print(f'Error: Module {project_name!r} already exists')
         else:
             return True
         return False
@@ -77,7 +83,10 @@ class Command(ScrapyCommand):
                 self._copytree(srcname, dstname)
             else:
                 copy2(srcname, dstname)
+                _make_writable(dstname)
+
         copystat(src, dst)
+        _make_writable(dst)
 
     def run(self, args, opts):
         if len(args) not in (1, 2):
@@ -91,7 +100,7 @@ class Command(ScrapyCommand):
 
         if exists(join(project_dir, 'scrapy.cfg')):
             self.exitcode = 1
-            print('Error: scrapy.cfg already exists in %s' % abspath(project_dir))
+            print(f'Error: scrapy.cfg already exists in {abspath(project_dir)}')
             return
 
         if not self._is_valid_name(project_name):
@@ -104,15 +113,16 @@ class Command(ScrapyCommand):
             path = join(*paths)
             tplfile = join(project_dir, string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name, ProjectName=string_camelcase(project_name))
-        print("New Scrapy project '%s', using template directory '%s', "
-              "created in:" % (project_name, self.templates_dir))
-        print("    %s\n" % abspath(project_dir))
+        print(f"New Scrapy project '{project_name}', using template directory "
+              f"'{self.templates_dir}', created in:")
+        print(f"    {abspath(project_dir)}\n")
         print("You can start your first spider with:")
-        print("    cd %s" % project_dir)
+        print(f"    cd {project_dir}")
         print("    scrapy genspider example example.com")
 
     @property
     def templates_dir(self):
-        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
-            join(scrapy.__path__[0], 'templates')
-        return join(_templates_base_dir, 'project')
+        return join(
+            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
+            'project'
+        )

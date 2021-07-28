@@ -1,7 +1,7 @@
 .. _versioning:
 
 ============================
-Versioning and API Stability
+Versioning and API stability
 ============================
 
 Versioning
@@ -34,7 +34,7 @@ For example:
   production)
 
 
-API Stability
+API stability
 =============
 
 API stability was one of the major goals for the *1.0* release.
@@ -45,6 +45,24 @@ should never be relied as stable.
 Also, keep in mind that stable doesn't mean complete: stable APIs could grow
 new methods or functionality but the existing methods should keep working the
 same way.
+
+
+.. _deprecation-policy:
+
+Deprecation policy
+==================
+
+We aim to maintain support for deprecated Scrapy features for at least 1 year.
+
+For example, if a feature is deprecated in a Scrapy version released on
+June 15th 2020, that feature should continue to work in versions released on
+June 14th 2021 or before that.
+
+Any new Scrapy release after a year *may* remove support for that deprecated
+feature.
+
+All deprecated features removed in a Scrapy release are explicitly mentioned in
+the :ref:`release notes <news>`.
 
 
 .. _odd-numbered versions for development releases: https://en.wikipedia.org/wiki/Software_versioning#Odd-numbered_versions_for_development_releases

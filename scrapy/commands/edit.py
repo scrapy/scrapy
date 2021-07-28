@@ -32,8 +32,8 @@ class Command(ScrapyCommand):
         try:
             spidercls = self.crawler_process.spider_loader.load(args[0])
         except KeyError:
-            return self._err("Spider not found: %s" % args[0])
+            return self._err(f"Spider not found: {args[0]}")
 
         sfile = sys.modules[spidercls.__module__].__file__
         sfile = sfile.replace('.pyc', '.py')
-        self.exitcode = os.system('%s "%s"' % (editor, sfile))
+        self.exitcode = os.system(f'{editor} "{sfile}"')

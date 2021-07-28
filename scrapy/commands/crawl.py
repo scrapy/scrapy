@@ -16,7 +16,7 @@ class Command(BaseRunSpiderCommand):
         if len(args) < 1:
             raise UsageError()
         elif len(args) > 1:
-            raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
+            raise UsageError("running 'scrapy crawl' with more than one spider is not supported")
         spname = args[0]
 
         crawl_defer = self.crawler_process.crawl(spname, **opts.spargs)
@@ -26,6 +26,8 @@ class Command(BaseRunSpiderCommand):
         else:
             self.crawler_process.start()
 
-            if self.crawler_process.bootstrap_failed or \
-                    (hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception):
+            if (
+                self.crawler_process.bootstrap_failed
+                or hasattr(self.crawler_process, 'has_exception') and self.crawler_process.has_exception
+            ):
                 self.exitcode = 1

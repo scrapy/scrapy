@@ -223,7 +223,7 @@ class DbmCacheStorage:
         self.db = None
 
     def open_spider(self, spider):
-        dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
+        dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
         self.db = self.dbmodule.open(dbpath, 'c')
 
         logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
@@ -251,13 +251,13 @@ class DbmCacheStorage:
             'headers': dict(response.headers),
             'body': response.body,
         }
-        self.db['%s_data' % key] = pickle.dumps(data, protocol=4)
-        self.db['%s_time' % key] = str(time())
+        self.db[f'{key}_data'] = pickle.dumps(data, protocol=4)
+        self.db[f'{key}_time'] = str(time())
 
     def _read_data(self, spider, request):
         key = self._request_key(request)
         db = self.db
-        tkey = '%s_time' % key
+        tkey = f'{key}_time'
         if tkey not in db:
             return  # not found
 
@@ -265,7 +265,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return  # expired
 
-        return pickle.loads(db['%s_data' % key])
+        return pickle.loads(db[f'{key}_data'])
 
     def _request_key(self, request):
         return request_fingerprint(request)

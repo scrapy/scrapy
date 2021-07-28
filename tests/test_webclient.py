@@ -4,7 +4,10 @@ Tests borrowed from the twisted.web.client tests.
 """
 import os
 import shutil
+import sys
+from pkg_resources import parse_version
 
+import cryptography
 import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
@@ -253,7 +256,7 @@ class WebClientTestCase(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"http://127.0.0.1:{self.portno}/{path}"
 
     def testPayload(self):
         s = "0123456789" * 10
@@ -265,7 +268,7 @@ class WebClientTestCase(unittest.TestCase):
         # it should extract from url
         return defer.gatherResults([
             getPage(self.getURL("host")).addCallback(
-                self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno)),
+                self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}")),
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(
                 self.assertEqual, to_bytes("www.example.com"))])
 
@@ -298,7 +301,7 @@ class WebClientTestCase(unittest.TestCase):
         """
         d = getPage(self.getURL("host"), timeout=100)
         d.addCallback(
-            self.assertEqual, to_bytes("127.0.0.1:%d" % self.portno))
+            self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}"))
         return d
 
     def test_timeoutTriggering(self):
@@ -356,9 +359,8 @@ class WebClientTestCase(unittest.TestCase):
         """ Test that non-standart body encoding matches
         Content-Encoding header """
         body = b'\xd0\x81\xd1\x8e\xd0\xaf'
-        return getPage(
-            self.getURL('encoding'), body=body, response_transform=lambda r: r)\
-            .addCallback(self._check_Encoding, body)
+        dfd = getPage(self.getURL('encoding'), body=body, response_transform=lambda r: r)
+        return dfd.addCallback(self._check_Encoding, body)
 
     def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b'Content-Encoding'])
@@ -377,7 +379,7 @@ class WebClientSSLTestCase(unittest.TestCase):
             interface="127.0.0.1")
 
     def getURL(self, path):
-        return "https://127.0.0.1:%d/%s" % (self.portno, path)
+        return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
         self.tmpname = self.mktemp()
@@ -414,7 +416,11 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
             self.getURL("payload"), body=s, contextFactory=client_context_factory
         ).addCallback(self.assertEqual, to_bytes(s))
 
-    def testPayloadDefaultCiphers(self):
+    def testPayloadDisabledCipher(self):
+        if sys.implementation.name == "pypy" and parse_version(cryptography.__version__) <= parse_version("2.3.1"):
+            self.skipTest("This test expects a failure, but the code does work in PyPy with cryptography<=2.3.1")
         s = "0123456789" * 10
-        d = getPage(self.getURL("payload"), body=s, contextFactory=ScrapyClientContextFactory())
+        settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'ECDHE-RSA-AES256-GCM-SHA384'})
+        client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
+        d = getPage(self.getURL("payload"), body=s, contextFactory=client_context_factory)
         return self.assertFailure(d, OpenSSL.SSL.Error)

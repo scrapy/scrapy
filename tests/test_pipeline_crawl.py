@@ -123,10 +123,10 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(crawler.stats.get_value('downloader/request_method_count/GET'), 4)
         self.assertEqual(crawler.stats.get_value('downloader/response_count'), 4)
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/200'), 1)
-        self.assertEqual(crawler.stats.get_value('downloader/response_status_count/%d' % code), 3)
+        self.assertEqual(crawler.stats.get_value(f'downloader/response_status_count/{code}'), 3)
 
         # check that logs do show the failure on the file downloads
-        file_dl_failure = 'File (code: %d): Error downloading file from' % code
+        file_dl_failure = f'File (code: {code}): Error downloading file from'
         self.assertEqual(logs.count(file_dl_failure), 3)
 
         # check that no files were written to the media store
@@ -180,7 +180,18 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/302'), 3)
 
 
+try:
+    from PIL import Image  # noqa: imported just to check for the import error
+except ImportError:
+    skip_pillow = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+else:
+    skip_pillow = None
+
+
 class ImageDownloadCrawlTestCase(FileDownloadCrawlTestCase):
+
+    skip = skip_pillow
+
     pipeline_class = 'scrapy.pipelines.images.ImagesPipeline'
     store_setting_key = 'IMAGES_STORE'
     media_key = 'images'

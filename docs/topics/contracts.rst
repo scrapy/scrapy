@@ -4,8 +4,6 @@
 Spiders Contracts
 =================
 
-.. versionadded:: 0.15
-
 Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an
 integrated way of testing your spiders by the means of contracts.
@@ -39,7 +37,7 @@ This callback is tested using three built-in contracts:
 
 .. class:: CallbackKeywordArgumentsContract
 
-    This contract (``@cb_kwargs``) sets the :attr:`cb_kwargs <scrapy.http.Request.cb_kwargs>`
+    This contract (``@cb_kwargs``) sets the :attr:`cb_kwargs <scrapy.Request.cb_kwargs>`
     attribute for the sample request. It must be a valid JSON dictionary.
     ::
 
@@ -81,7 +79,7 @@ override three methods:
 .. class:: Contract(method, *args)
 
     :param method: callback function to which the contract is associated
-    :type method: function
+    :type method: collections.abc.Callable
 
     :param args: list of arguments passed into the docstring (whitespace
         separated)
@@ -90,7 +88,7 @@ override three methods:
     .. method:: Contract.adjust_request_args(args)
 
         This receives a ``dict`` as an argument containing default arguments
-        for request object. :class:`~scrapy.http.Request` is used by default,
+        for request object. :class:`~scrapy.Request` is used by default,
         but this can be changed with the ``request_cls`` attribute.
         If multiple contracts in chain have this attribute defined, the last one is used.
 

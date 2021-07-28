@@ -3,6 +3,8 @@ Base class for Scrapy commands
 """
 import os
 from optparse import OptionGroup
+from typing import Any, Dict
+
 from twisted.python import failure
 
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
@@ -15,7 +17,7 @@ class ScrapyCommand:
     crawler_process = None
 
     # default settings to be used for this command instead of global defaults
-    default_settings = {}
+    default_settings: Dict[str, Any] = {}
 
     exitcode = 0
 
@@ -61,7 +63,7 @@ class ScrapyCommand:
         group.add_option("--logfile", metavar="FILE",
                          help="log file. if omitted stderr will be used")
         group.add_option("-L", "--loglevel", metavar="LEVEL", default=None,
-                         help="log level (default: %s)" % self.settings['LOG_LEVEL'])
+                         help=f"log level (default: {self.settings['LOG_LEVEL']})")
         group.add_option("--nolog", action="store_true",
                          help="disable logging completely")
         group.add_option("--profile", metavar="FILE", default=None,
@@ -108,16 +110,18 @@ class ScrapyCommand:
 
 class BaseRunSpiderCommand(ScrapyCommand):
     """
-    Common class used to share functionality between the crawl and runspider commands
+    Common class used to share functionality between the crawl, parse and runspider commands
     """
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE", action="append",
-                          help="dump scraped items into FILE (use - for stdout)")
+                          help="append scraped items to the end of FILE (use - for stdout)")
+        parser.add_option("-O", "--overwrite-output", metavar="FILE", action="append",
+                          help="dump scraped items into FILE, overwriting any existing file")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
-                          help="format to use for dumping items with -o")
+                          help="format to use for dumping items")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -125,6 +129,11 @@ class BaseRunSpiderCommand(ScrapyCommand):
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
-        if opts.output:
-            feeds = feed_process_params_from_cli(self.settings, opts.output, opts.output_format)
+        if opts.output or opts.overwrite_output:
+            feeds = feed_process_params_from_cli(
+                self.settings,
+                opts.output,
+                opts.output_format,
+                opts.overwrite_output,
+            )
             self.settings.set('FEEDS', feeds, priority='cmdline')

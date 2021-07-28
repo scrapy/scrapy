@@ -1,23 +1,41 @@
 import os
 import random
 import time
+from datetime import datetime
 from io import BytesIO
-from tempfile import mkdtemp
 from shutil import rmtree
-from unittest import mock
+from tempfile import mkdtemp
+from unittest import mock, skipIf
 from urllib.parse import urlparse
 
-from twisted.trial import unittest
+import attr
+from itemadapter import ItemAdapter
 from twisted.internet import defer
+from twisted.trial import unittest
 
-from scrapy.pipelines.files import FilesPipeline, FSFilesStore, S3FilesStore, GCSFilesStore, FTPFilesStore
-from scrapy.item import Item, Field
 from scrapy.http import Request, Response
+from scrapy.item import Field, Item
+from scrapy.pipelines.files import (
+    FilesPipeline,
+    FSFilesStore,
+    FTPFilesStore,
+    GCSFilesStore,
+    S3FilesStore,
+)
 from scrapy.settings import Settings
-from scrapy.utils.test import assert_aws_environ, get_s3_content_and_delete
-from scrapy.utils.test import assert_gcs_environ, get_gcs_content_and_delete
-from scrapy.utils.test import get_ftp_content_and_delete
-from scrapy.utils.boto import is_botocore
+from scrapy.utils.test import (
+    assert_gcs_environ,
+    get_ftp_content_and_delete,
+    get_gcs_content_and_delete,
+    skip_if_no_boto,
+)
+
+
+try:
+    from dataclasses import make_dataclass, field as dataclass_field
+except ImportError:
+    make_dataclass = None
+    dataclass_field = None
 
 
 def _mocked_download_func(request, info):
@@ -142,44 +160,102 @@ class FilesPipelineTestCase(unittest.TestCase):
         for p in patchers:
             p.stop()
 
+    def test_file_path_from_item(self):
+        """
+        Custom file path based on item data, overriding default implementation
+        """
+        class CustomFilesPipeline(FilesPipeline):
+            def file_path(self, request, response=None, info=None, item=None):
+                return f'full/{item.get("path")}'
 
-class FilesPipelineTestCaseFields(unittest.TestCase):
+        file_path = CustomFilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir})).file_path
+        item = dict(path='path-to-store-file')
+        request = Request("http://example.com")
+        self.assertEqual(file_path(request, item=item), 'full/path-to-store-file')
+
+
+class FilesPipelineTestCaseFieldsMixin:
 
     def test_item_fields_default(self):
-        class TestItem(Item):
-            name = Field()
-            file_urls = Field()
-            files = Field()
-
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/files/1.txt'
-            item = cls({'name': 'item1', 'file_urls': [url]})
-            pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['files'], [results[0][1]])
+        url = 'http://www.example.com/files/1.txt'
+        item = self.item_class(name='item1', file_urls=[url])
+        pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        files = ItemAdapter(item).get("files")
+        self.assertEqual(files, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
-        class TestItem(Item):
-            name = Field()
-            files = Field()
-            stored_file = Field()
+        url = 'http://www.example.com/files/1.txt'
+        item = self.item_class(name='item1', custom_file_urls=[url])
+        pipeline = FilesPipeline.from_settings(Settings({
+            'FILES_STORE': 's3://example/files/',
+            'FILES_URLS_FIELD': 'custom_file_urls',
+            'FILES_RESULT_FIELD': 'custom_files'
+        }))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        item = pipeline.item_completed(results, item, None)
+        custom_files = ItemAdapter(item).get("custom_files")
+        self.assertEqual(custom_files, [results[0][1]])
+        self.assertIsInstance(item, self.item_class)
 
-        for cls in TestItem, dict:
-            url = 'http://www.example.com/files/1.txt'
-            item = cls({'name': 'item1', 'files': [url]})
-            pipeline = FilesPipeline.from_settings(Settings({
-                'FILES_STORE': 's3://example/files/',
-                'FILES_URLS_FIELD': 'files',
-                'FILES_RESULT_FIELD': 'stored_file'
-            }))
-            requests = list(pipeline.get_media_requests(item, None))
-            self.assertEqual(requests[0].url, url)
-            results = [(True, {'url': url})]
-            pipeline.item_completed(results, item, None)
-            self.assertEqual(item['stored_file'], [results[0][1]])
+
+class FilesPipelineTestCaseFieldsDict(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = dict
+
+
+class FilesPipelineTestItem(Item):
+    name = Field()
+    # default fields
+    file_urls = Field()
+    files = Field()
+    # overridden fields
+    custom_file_urls = Field()
+    custom_files = Field()
+
+
+class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestItem
+
+
+@skipIf(not make_dataclass, "dataclasses module is not available")
+class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if make_dataclass:
+            self.item_class = make_dataclass(
+                "FilesPipelineTestDataClass",
+                [
+                    ("name", str),
+                    # default fields
+                    ("file_urls", list, dataclass_field(default_factory=list)),
+                    ("files", list, dataclass_field(default_factory=list)),
+                    # overridden fields
+                    ("custom_file_urls", list, dataclass_field(default_factory=list)),
+                    ("custom_files", list, dataclass_field(default_factory=list)),
+                ],
+            )
+
+
+@attr.s
+class FilesPipelineTestAttrsItem:
+    name = attr.ib(default="")
+    # default fields
+    file_urls = attr.ib(default=lambda: [])
+    files = attr.ib(default=lambda: [])
+    # overridden fields
+    custom_file_urls = attr.ib(default=lambda: [])
+    custom_files = attr.ib(default=lambda: [])
+
+
+class FilesPipelineTestCaseFieldsAttrsItem(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestAttrsItem
 
 
 class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
@@ -338,38 +414,88 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
 
 
 class TestS3FilesStore(unittest.TestCase):
+
     @defer.inlineCallbacks
     def test_persist(self):
-        assert_aws_environ()
-        uri = os.environ.get('S3_TEST_FILE_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
-        data = b"TestS3FilesStore: \xe2\x98\x83"
-        buf = BytesIO(data)
+        skip_if_no_boto()
+
+        bucket = 'mybucket'
+        key = 'export.csv'
+        uri = f's3://{bucket}/{key}'
+        buffer = mock.MagicMock()
         meta = {'foo': 'bar'}
         path = ''
+        content_type = 'image/png'
+
         store = S3FilesStore(uri)
-        yield store.persist_file(
-            path, buf, info=None, meta=meta,
-            headers={'Content-Type': 'image/png'})
-        s = yield store.stat_file(path, info=None)
-        self.assertIn('last_modified', s)
-        self.assertIn('checksum', s)
-        self.assertEqual(s['checksum'], '3187896a9657a28163abb31667df64c8')
-        u = urlparse(uri)
-        content, key = get_s3_content_and_delete(
-            u.hostname, u.path[1:], with_key=True)
-        self.assertEqual(content, data)
-        if is_botocore():
-            self.assertEqual(key['Metadata'], {'foo': 'bar'})
+        from botocore.stub import Stubber
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                'put_object',
+                expected_params={
+                    'ACL': S3FilesStore.POLICY,
+                    'Body': buffer,
+                    'Bucket': bucket,
+                    'CacheControl': S3FilesStore.HEADERS['Cache-Control'],
+                    'ContentType': content_type,
+                    'Key': key,
+                    'Metadata': meta,
+                },
+                service_response={},
+            )
+
+            yield store.persist_file(
+                path,
+                buffer,
+                info=None,
+                meta=meta,
+                headers={'Content-Type': content_type},
+            )
+
+            stub.assert_no_pending_responses()
             self.assertEqual(
-                key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
-            self.assertEqual(key['ContentType'], 'image/png')
-        else:
-            self.assertEqual(key.metadata, {'foo': 'bar'})
+                buffer.method_calls,
+                [
+                    mock.call.seek(0),
+                    # The call to read does not happen with Stubber
+                ]
+            )
+
+    @defer.inlineCallbacks
+    def test_stat(self):
+        skip_if_no_boto()
+
+        bucket = 'mybucket'
+        key = 'export.csv'
+        uri = f's3://{bucket}/{key}'
+        checksum = '3187896a9657a28163abb31667df64c8'
+        last_modified = datetime(2019, 12, 1)
+
+        store = S3FilesStore(uri)
+        from botocore.stub import Stubber
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                'head_object',
+                expected_params={
+                    'Bucket': bucket,
+                    'Key': key,
+                },
+                service_response={
+                    'ETag': f'"{checksum}"',
+                    'LastModified': last_modified,
+                },
+            )
+
+            file_stats = yield store.stat_file('', info=None)
             self.assertEqual(
-                key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
-            self.assertEqual(key.content_type, 'image/png')
+                file_stats,
+                {
+                    'checksum': checksum,
+                    'last_modified': last_modified.timestamp(),
+                },
+            )
+
+            stub.assert_no_pending_responses()
 
 
 class TestGCSFilesStore(unittest.TestCase):
@@ -418,7 +544,7 @@ class TestFTPFileStore(unittest.TestCase):
         self.assertIn('last_modified', stat)
         self.assertIn('checksum', stat)
         self.assertEqual(stat['checksum'], 'd113d66b2ec7258724a268bd88eef6b6')
-        path = '%s/%s' % (store.basedir, path)
+        path = f'{store.basedir}/{path}'
         content = get_ftp_content_and_delete(
             path, store.host, store.port,
             store.username, store.password, store.USE_ACTIVE_MODE)

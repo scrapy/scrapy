@@ -1,13 +1,9 @@
-import sys
 import unittest
 from unittest import mock
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, _BaseItem, BaseItem, DictItem, Field, Item, ItemMeta
-
-
-PY36_PLUS = (sys.version_info.major >= 3) and (sys.version_info.minor >= 6)
 
 
 class ItemTest(unittest.TestCase):
@@ -20,8 +16,8 @@ class ItemTest(unittest.TestCase):
             name = Field()
 
         i = TestItem()
-        i['name'] = u'name'
-        self.assertEqual(i['name'], u'name')
+        i['name'] = 'name'
+        self.assertEqual(i['name'], 'name')
 
     def test_init(self):
         class TestItem(Item):
@@ -30,17 +26,17 @@ class ItemTest(unittest.TestCase):
         i = TestItem()
         self.assertRaises(KeyError, i.__getitem__, 'name')
 
-        i2 = TestItem(name=u'john doe')
-        self.assertEqual(i2['name'], u'john doe')
+        i2 = TestItem(name='john doe')
+        self.assertEqual(i2['name'], 'john doe')
 
-        i3 = TestItem({'name': u'john doe'})
-        self.assertEqual(i3['name'], u'john doe')
+        i3 = TestItem({'name': 'john doe'})
+        self.assertEqual(i3['name'], 'john doe')
 
         i4 = TestItem(i3)
-        self.assertEqual(i4['name'], u'john doe')
+        self.assertEqual(i4['name'], 'john doe')
 
-        self.assertRaises(KeyError, TestItem, {'name': u'john doe',
-                                               'other': u'foo'})
+        self.assertRaises(KeyError, TestItem, {'name': 'john doe',
+                                               'other': 'foo'})
 
     def test_invalid_field(self):
         class TestItem(Item):
@@ -56,7 +52,7 @@ class ItemTest(unittest.TestCase):
             number = Field()
 
         i = TestItem()
-        i['name'] = u'John Doe'
+        i['name'] = 'John Doe'
         i['number'] = 123
         itemrepr = repr(i)
 
@@ -101,9 +97,9 @@ class ItemTest(unittest.TestCase):
 
         i = TestItem()
         self.assertRaises(KeyError, i.get_name)
-        i['name'] = u'lala'
-        self.assertEqual(i.get_name(), u'lala')
-        i.change_name(u'other')
+        i['name'] = 'lala'
+        self.assertEqual(i.get_name(), 'lala')
+        i.change_name('other')
         self.assertEqual(i.get_name(), 'other')
 
     def test_metaclass(self):
@@ -113,22 +109,22 @@ class ItemTest(unittest.TestCase):
             values = Field()
 
         i = TestItem()
-        i['name'] = u'John'
+        i['name'] = 'John'
         self.assertEqual(list(i.keys()), ['name'])
         self.assertEqual(list(i.values()), ['John'])
 
-        i['keys'] = u'Keys'
-        i['values'] = u'Values'
+        i['keys'] = 'Keys'
+        i['values'] = 'Values'
         self.assertSortedEqual(list(i.keys()), ['keys', 'values', 'name'])
-        self.assertSortedEqual(list(i.values()), [u'Keys', u'Values', u'John'])
+        self.assertSortedEqual(list(i.values()), ['Keys', 'Values', 'John'])
 
     def test_metaclass_with_fields_attribute(self):
         class TestItem(Item):
             fields = {'new': Field(default='X')}
 
-        item = TestItem(new=u'New')
+        item = TestItem(new='New')
         self.assertSortedEqual(list(item.keys()), ['new'])
-        self.assertSortedEqual(list(item.values()), [u'New'])
+        self.assertSortedEqual(list(item.values()), ['New'])
 
     def test_metaclass_inheritance(self):
         class ParentItem(Item):
@@ -238,8 +234,8 @@ class ItemTest(unittest.TestCase):
             name = Field()
 
         i = TestItem()
-        i['name'] = u'John'
-        self.assertEqual(dict(i), {'name': u'John'})
+        i['name'] = 'John'
+        self.assertEqual(dict(i), {'name': 'John'})
 
     def test_copy(self):
         class TestItem(Item):
@@ -280,14 +276,6 @@ class ItemMetaTest(unittest.TestCase):
         with mock.patch.object(base, '__new__', new_mock):
 
             class MyItem(Item):
-                if not PY36_PLUS:
-                    # This attribute is an internal attribute in Python 3.6+
-                    # and must be propagated properly. See
-                    # https://docs.python.org/3.6/reference/datamodel.html#creating-the-class-object
-                    # In <3.6, we add a dummy attribute just to ensure the
-                    # __new__ method propagates it correctly.
-                    __classcell__ = object()
-
                 def f(self):
                     # For rationale of this see:
                     # https://github.com/python/cpython/blob/ee1a81b77444c6715cbe610e951c655b6adab88b/Lib/test/test_super.py#L222
@@ -312,7 +300,7 @@ class ItemMetaClassCellRegression(unittest.TestCase):
                 # requirement. When not done properly raises an error:
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
-                super(MyItem, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
 
 
 class DictItemTest(unittest.TestCase):
@@ -340,16 +328,18 @@ class BaseItemTest(unittest.TestCase):
         class SubclassedItem(Item):
             pass
 
-        self.assertTrue(isinstance(BaseItem(), BaseItem))
-        self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
-        self.assertTrue(isinstance(Item(), BaseItem))
-        self.assertTrue(isinstance(SubclassedItem(), BaseItem))
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            self.assertTrue(isinstance(BaseItem(), BaseItem))
+            self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
+            self.assertTrue(isinstance(Item(), BaseItem))
+            self.assertTrue(isinstance(SubclassedItem(), BaseItem))
 
-        # make sure internal checks using private _BaseItem class succeed
-        self.assertTrue(isinstance(BaseItem(), _BaseItem))
-        self.assertTrue(isinstance(SubclassedBaseItem(), _BaseItem))
-        self.assertTrue(isinstance(Item(), _BaseItem))
-        self.assertTrue(isinstance(SubclassedItem(), _BaseItem))
+            # make sure internal checks using private _BaseItem class succeed
+            self.assertTrue(isinstance(BaseItem(), _BaseItem))
+            self.assertTrue(isinstance(SubclassedBaseItem(), _BaseItem))
+            self.assertTrue(isinstance(Item(), _BaseItem))
+            self.assertTrue(isinstance(SubclassedItem(), _BaseItem))
 
     def test_deprecation_warning(self):
         """

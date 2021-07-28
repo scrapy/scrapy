@@ -93,7 +93,7 @@ path::
 Logging from Spiders
 ====================
 
-Scrapy provides a :data:`~scrapy.spiders.Spider.logger` within each Spider
+Scrapy provides a :data:`~scrapy.Spider.logger` within each Spider
 instance, which can be accessed and used like this::
 
     import scrapy
@@ -101,7 +101,7 @@ instance, which can be accessed and used like this::
     class MySpider(scrapy.Spider):
 
         name = 'myspider'
-        start_urls = ['https://scrapinghub.com']
+        start_urls = ['https://scrapy.org']
 
         def parse(self, response):
             self.logger.info('Parse function called on %s', response.url)
@@ -117,7 +117,7 @@ Python logger you want. For example::
     class MySpider(scrapy.Spider):
 
         name = 'myspider'
-        start_urls = ['https://scrapinghub.com']
+        start_urls = ['https://scrapy.org']
 
         def parse(self, response):
             logger.info('Parse function called on %s', response.url)
@@ -242,6 +242,47 @@ e.g. in the spider's ``__init__`` method::
 If you run this spider again then INFO messages from
 ``scrapy.spidermiddlewares.httperror`` logger will be gone.
 
+You can also filter log records by :class:`~logging.LogRecord` data. For 
+example, you can filter log records by message content using a substring or
+a regular expression. Create a :class:`logging.Filter` subclass 
+and equip it with a regular expression pattern to
+filter out unwanted messages::
+
+    import logging
+    import re
+    
+    class ContentFilter(logging.Filter):
+        def filter(self, record):
+            match = re.search(r'\d{3} [Ee]rror, retrying', record.message)
+            if match:
+                return False
+                
+A project-level filter may be attached to the root 
+handler created by Scrapy, this is a wieldy way to 
+filter all loggers in different parts of the project
+(middlewares, spider, etc.)::
+
+    import logging
+    import scrapy
+
+    class MySpider(scrapy.Spider):
+        # ...
+        def __init__(self, *args, **kwargs):
+            for handler in logging.root.handlers:
+                handler.addFilter(ContentFilter())
+ 
+Alternatively, you may choose a specific logger 
+and hide it without affecting other loggers::
+
+    import logging
+    import scrapy
+    
+    class MySpider(scrapy.Spider):
+        # ...
+        def __init__(self, *args, **kwargs):
+            logger = logging.getLogger('my_logger')
+            logger.addFilter(ContentFilter())
+            
 scrapy.utils.log module
 =======================
 

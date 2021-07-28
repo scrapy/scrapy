@@ -4,7 +4,7 @@
 Debugging memory leaks
 ======================
 
-In Scrapy, objects such as Requests, Responses and Items have a finite
+In Scrapy, objects such as requests, responses and items have a finite
 lifetime: they are created, used for a while, and finally destroyed.
 
 From all those objects, the Request is probably the one with the longest
@@ -27,7 +27,7 @@ Common causes of memory leaks
 
 It happens quite often (sometimes by accident, sometimes on purpose) that the
 Scrapy developer passes objects referenced in Requests (for example, using the
-:attr:`~scrapy.http.Request.cb_kwargs` or :attr:`~scrapy.http.Request.meta`
+:attr:`~scrapy.Request.cb_kwargs` or :attr:`~scrapy.Request.meta`
 attributes or the request callback function) and that effectively bounds the
 lifetime of those referenced objects to the lifetime of the Request. This is,
 by far, the most common cause of memory leaks in Scrapy projects, and a quite
@@ -48,9 +48,9 @@ Too Many Requests?
 ------------------
 
 By default Scrapy keeps the request queue in memory; it includes
-:class:`~scrapy.http.Request` objects and all objects
-referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.cb_kwargs`
-and :attr:`~scrapy.http.Request.meta`).
+:class:`~scrapy.Request` objects and all objects
+referenced in Request attributes (e.g. in :attr:`~scrapy.Request.cb_kwargs`
+and :attr:`~scrapy.Request.meta`).
 While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
@@ -61,8 +61,8 @@ Debugging memory leaks with ``trackref``
 ========================================
 
 :mod:`trackref` is a module provided by Scrapy to debug the most common cases of
-memory leaks. It basically tracks the references to all live Requests,
-Responses, Item and Selector objects.
+memory leaks. It basically tracks the references to all live Request,
+Response, Item, Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
@@ -90,11 +90,11 @@ Which objects are tracked?
 The objects tracked by ``trackrefs`` are all from these classes (and all its
 subclasses):
 
-* :class:`scrapy.http.Request`
+* :class:`scrapy.Request`
 * :class:`scrapy.http.Response`
-* :class:`scrapy.item.Item`
-* :class:`scrapy.selector.Selector`
-* :class:`scrapy.spiders.Spider`
+* :class:`scrapy.Item`
+* :class:`scrapy.Selector`
+* :class:`scrapy.Spider`
 
 A real example
 --------------
@@ -102,7 +102,7 @@ A real example
 Let's see a concrete example of a hypothetical case of memory leaks.
 Suppose we have some spider with a line similar to this one::
 
-    return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,
+    return Request(f"http://www.somenastyspider.com/product.php?pid={product_id}",
                    callback=self.parse, cb_kwargs={'referer': response})
 
 That line is passing a response reference inside a request which effectively
@@ -179,7 +179,7 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 
     :param ignore: if given, all objects from the specified class (or tuple of
         classes) will be ignored.
-    :type ignore: class or classes tuple
+    :type ignore: type or tuple
 
 .. function:: get_oldest(class_name)
 
@@ -200,11 +200,10 @@ Debugging memory leaks with muppy
 
 ``trackref`` provides a very convenient mechanism for tracking down memory
 leaks, but it only keeps track of the objects that are more likely to cause
-memory leaks (Requests, Responses, Items, and Selectors). However, there are
-other cases where the memory leaks could come from other (more or less obscure)
-objects. If this is your case, and you can't find your leaks using ``trackref``,
-you still have another resource: the muppy library.
-
+memory leaks. However, there are other cases where the memory leaks could come
+from other (more or less obscure) objects. If this is your case, and you can't
+find your leaks using ``trackref``, you still have another resource: the muppy
+library.
 
 You can use muppy from `Pympler`_.
 

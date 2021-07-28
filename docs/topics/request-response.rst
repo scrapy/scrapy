@@ -26,41 +26,43 @@ Request objects
 
 .. autoclass:: Request
 
-    A :class:`Request` object represents an HTTP request, which is usually
-    generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
-
     :param url: the URL of this request
 
         If the URL is invalid, a :exc:`ValueError` exception is raised.
-    :type url: string
+    :type url: str
 
     :param callback: the function that will be called with the response of this
        request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spiders.Spider.parse` method will be used.
+       :meth:`~scrapy.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
-    :type callback: callable
+    :type callback: collections.abc.Callable
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
-    :type method: string
+    :type method: str
 
     :param meta: the initial values for the :attr:`Request.meta` attribute. If
        given, the dict passed in this parameter will be shallow copied.
     :type meta: dict
 
-    :param body: the request body. If a ``unicode`` is passed, then it's encoded to
-      ``str`` using the ``encoding`` passed (which defaults to ``utf-8``). If
-      ``body`` is not given, an empty string is stored. Regardless of the
-      type of this argument, the final value stored will be a ``str`` (never
-      ``unicode`` or ``None``).
-    :type body: str or unicode
+    :param body: the request body. If a string is passed, then it's encoded as
+      bytes using the ``encoding`` passed (which defaults to ``utf-8``). If
+      ``body`` is not given, an empty bytes object is stored. Regardless of the
+      type of this argument, the final value stored will be a bytes object
+      (never a string or ``None``).
+    :type body: bytes or str
 
     :param headers: the headers of this request. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers). If
        ``None`` is passed as value, the HTTP header will not be sent at all.
+
+        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+            :ref:`cookies-mw`. If you need to set cookies for a request, use the
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
+            current limitation that is being worked on.
+
     :type headers: dict
 
     :param cookies: the request cookies. These can be sent in two forms.
@@ -90,7 +92,7 @@ Request objects
 
         To create a request that does not send stored cookies and does not
         store received cookies, set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.http.Request.meta>`.
+        in :attr:`request.meta <scrapy.Request.meta>`.
 
         Example of a request that sends manually-defined cookies and ignores
         cookie storage::
@@ -102,12 +104,18 @@ Request objects
             )
 
         For more info see :ref:`cookies-mw`.
+
+        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+            :ref:`cookies-mw`. If you need to set cookies for a request, use the
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
+            current limitation that is being worked on.
+
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the
-       body to ``str`` (if given as ``unicode``).
-    :type encoding: string
+       body to bytes (if given as a string).
+    :type encoding: str
 
     :param priority: the priority of this request (defaults to ``0``).
        The priority is used by the scheduler to define the order used to process
@@ -119,7 +127,7 @@ Request objects
        the scheduler. This is used when you want to perform an identical
        request multiple times, to ignore the duplicates filter. Use it with
        care, or you will get into crawling loops. Default to ``False``.
-    :type dont_filter: boolean
+    :type dont_filter: bool
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
@@ -131,7 +139,7 @@ Request objects
        .. versionchanged:: 2.0
           The *callback* parameter is no longer required when the *errback*
           parameter is specified.
-    :type errback: callable
+    :type errback: collections.abc.Callable
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
@@ -159,7 +167,7 @@ Request objects
 
     .. attribute:: Request.body
 
-        A str that contains the request body.
+        The request body as bytes.
 
         This attribute is read-only. To change the body of a Request use
         :meth:`replace`.
@@ -189,6 +197,12 @@ Request objects
         cloned using the ``copy()`` or ``replace()`` methods, and can also be
         accessed, in your spider, from the ``response.cb_kwargs`` attribute.
 
+        In case of a failure to process the request, this dict can be accessed as
+        ``failure.request.cb_kwargs`` in the request's errback. For more information,
+        see :ref:`errback-cb_kwargs`.
+
+    .. autoattribute:: Request.attributes
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -203,6 +217,15 @@ Request objects
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
     .. automethod:: from_curl
+
+    .. automethod:: to_dict
+
+
+Other functions related to requests
+-----------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
 
 .. _topics-request-response-ref-request-callback-arguments:
 
@@ -312,6 +335,31 @@ errors if needed::
                 request = failure.request
                 self.logger.error('TimeoutError on %s', request.url)
 
+.. _errback-cb_kwargs:
+
+Accessing additional data in errback functions
+----------------------------------------------
+
+In case of a failure to process the request, you may be interested in
+accessing arguments to the callback functions so you can process further
+based on the arguments in the errback. The following example shows how to
+achieve this by using ``Failure.request.cb_kwargs``::
+
+    def parse(self, response):
+        request = scrapy.Request('http://www.example.com/index.html',
+                                 callback=self.parse_page2,
+                                 errback=self.errback_page2,
+                                 cb_kwargs=dict(main_url=response.url))
+        yield request
+
+    def parse_page2(self, response, main_url):
+        pass
+
+    def errback_page2(self, failure):
+        yield dict(
+            main_url=failure.request.cb_kwargs['main_url'],
+        )
+
 .. _topics-request-meta:
 
 Request.meta special keys
@@ -322,26 +370,26 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
-* :reqmeta:`dont_redirect`
-* :reqmeta:`dont_retry`
-* :reqmeta:`handle_httpstatus_list`
-* :reqmeta:`handle_httpstatus_all`
-* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
+* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`dont_obey_robotstxt`
+* :reqmeta:`dont_redirect`
+* :reqmeta:`dont_retry`
+* :reqmeta:`download_fail_on_dataloss`
+* :reqmeta:`download_latency`
+* :reqmeta:`download_maxsize`
+* :reqmeta:`download_timeout`
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`handle_httpstatus_all`
+* :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`max_retry_times`
+* :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
-* :reqmeta:`bindaddress`
-* :reqmeta:`dont_obey_robotstxt`
-* :reqmeta:`download_timeout`
-* :reqmeta:`download_maxsize`
-* :reqmeta:`download_latency`
-* :reqmeta:`download_fail_on_dataloss`
-* :reqmeta:`proxy`
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
-* :reqmeta:`max_retry_times`
 
 .. reqmeta:: bindaddress
 
@@ -391,9 +439,9 @@ The meta key is used set retry times per request. When initialized, the
 Stopping the download of a Response
 ===================================
 
-Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
-:class:`~scrapy.signals.bytes_received` signal handler will stop the
-download of a given response. See the following example::
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a handler for the
+:class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
+signals will stop the download of a given response. See the following example::
 
     import scrapy
 
@@ -447,7 +495,9 @@ fields with form data from :class:`Response` objects.
 
 .. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
-.. class:: FormRequest(url, [formdata, ...])
+.. class:: scrapy.http.request.form.FormRequest
+.. class:: scrapy.http.FormRequest
+.. class:: scrapy.FormRequest(url, [formdata, ...])
 
     The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
@@ -456,7 +506,7 @@ fields with form data from :class:`Response` objects.
     :param formdata: is a dictionary (or iterable of (key, value) tuples)
        containing HTML Form data which will be url-encoded and assigned to the
        body of the request.
-    :type formdata: dict or iterable of tuples
+    :type formdata: dict or collections.abc.Iterable
 
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
@@ -488,20 +538,20 @@ fields with form data from :class:`Response` objects.
        :type response: :class:`Response` object
 
        :param formname: if given, the form with name attribute set to this value will be used.
-       :type formname: string
+       :type formname: str
 
        :param formid: if given, the form with id attribute set to this value will be used.
-       :type formid: string
+       :type formid: str
 
        :param formxpath: if given, the first form that matches the xpath will be used.
-       :type formxpath: string
+       :type formxpath: str
 
        :param formcss: if given, the first form that matches the css selector will be used.
-       :type formcss: string
+       :type formcss: str
 
        :param formnumber: the number of form to use, when the response contains
           multiple forms. The first one (and also the default) is ``0``.
-       :type formnumber: integer
+       :type formnumber: int
 
        :param formdata: fields to override in the form data. If a field was
           already present in the response ``<form>`` element, its value is
@@ -519,22 +569,10 @@ fields with form data from :class:`Response` objects.
 
        :param dont_click: If True, the form data will be submitted without
          clicking in any element.
-       :type dont_click: boolean
+       :type dont_click: bool
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` ``__init__`` method.
-
-       .. versionadded:: 0.10.3
-          The ``formname`` parameter.
-
-       .. versionadded:: 0.17
-          The ``formxpath`` parameter.
-
-       .. versionadded:: 1.1.0
-          The ``formcss`` parameter.
-
-       .. versionadded:: 1.1.0
-          The ``formid`` parameter.
 
 Request usage examples
 ----------------------
@@ -607,11 +645,13 @@ dealing with JSON requests.
       if :attr:`Request.body` argument is provided this parameter will be ignored.
       if :attr:`Request.body` argument is not provided and data argument is provided :attr:`Request.method` will be
       set to ``'POST'`` automatically.
-   :type data: JSON serializable object
+   :type data: object
 
    :param dumps_kwargs: Parameters that will be passed to underlying :func:`json.dumps` method which is used to serialize
        data into JSON format.
    :type dumps_kwargs: dict
+
+   .. autoattribute:: JsonRequest.attributes
 
 JsonRequest usage example
 -------------------------
@@ -634,16 +674,16 @@ Response objects
     downloaded (by the Downloader) and fed to the Spiders for processing.
 
     :param url: the URL of this response
-    :type url: string
+    :type url: str
 
     :param status: the HTTP status of the response. Defaults to ``200``.
-    :type status: integer
+    :type status: int
 
     :param headers: the headers of this response. The dict values can be strings
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param body: the response body. To access the decoded text as str you can use
+    :param body: the response body. To access the decoded text as a string, use
        ``response.text`` from an encoding-aware
        :ref:`Response subclass <topics-request-response-ref-response-subclasses>`,
        such as :class:`TextResponse`.
@@ -656,7 +696,7 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: scrapy.http.Request
+    :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
     :type certificate: twisted.internet.ssl.Certificate
@@ -664,8 +704,18 @@ Response objects
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
+    :param protocol: The protocol that was used to download the response.
+        For instance: "HTTP/1.0", "HTTP/1.1", "h2"
+    :type protocol: :class:`str`
+
+    .. versionadded:: 2.0.0
+       The ``certificate`` parameter.
+
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
+
+    .. versionadded:: 2.5.0
+       The ``protocol`` parameter.
 
     .. attribute:: Response.url
 
@@ -691,10 +741,10 @@ Response objects
 
     .. attribute:: Response.body
 
-        The body of this Response. Keep in mind that Response.body
-        is always a bytes object. If you want the unicode version use
-        :attr:`TextResponse.text` (only available in :class:`TextResponse`
-        and subclasses).
+        The response body as bytes.
+
+        If you want the body as a string, use :attr:`TextResponse.text` (only
+        available in :class:`TextResponse` and subclasses).
 
         This attribute is read-only. To change the body of a Response use
         :meth:`replace`.
@@ -751,6 +801,8 @@ Response objects
 
     .. attribute:: Response.certificate
 
+        .. versionadded:: 2.0.0
+
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
 
@@ -765,6 +817,17 @@ Response objects
         This attribute is currently only populated by the HTTP 1.1 download
         handler, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
+
+    .. attribute:: Response.protocol
+
+        .. versionadded:: 2.5.0
+
+        The protocol that was used to download the response.
+        For instance: "HTTP/1.0", "HTTP/1.1"
+
+        This attribute is currently only populated by the HTTP download
+        handlers, i.e. for ``http(s)`` responses. For other handlers,
+        :attr:`protocol` is always ``None``.
 
     .. method:: Response.copy()
 
@@ -813,18 +876,18 @@ TextResponse objects
     is the same as for the :class:`Response` class and is not documented here.
 
     :param encoding: is a string which contains the encoding to use for this
-       response. If you create a :class:`TextResponse` object with a unicode
-       body, it will be encoded using this encoding (remember the body attribute
-       is always a string). If ``encoding`` is ``None`` (default value), the
-       encoding will be looked up in the response headers and body instead.
-    :type encoding: string
+       response. If you create a :class:`TextResponse` object with a string as
+       body, it will be converted to bytes encoded using this encoding. If
+       *encoding* is ``None`` (default), the encoding will be looked up in the
+       response headers and body instead.
+    :type encoding: str
 
     :class:`TextResponse` objects support the following attributes in addition
     to the standard :class:`Response` ones:
 
     .. attribute:: TextResponse.text
 
-       Response body, as unicode.
+       Response body, as a string.
 
        The same as ``response.body.decode(response.encoding)``, but the
        result is cached after the first call, so you can access
@@ -832,9 +895,11 @@ TextResponse objects
 
        .. note::
 
-            ``unicode(response.body)`` is not a correct way to convert response
-            body to unicode: you would be using the system default encoding
-            (typically ``ascii``) instead of the response encoding.
+            ``str(response.body)`` is not a correct way to convert the response
+            body into a string:
+
+            >>> str(b'body')
+            "b'body'"
 
 
     .. attribute:: TextResponse.encoding
@@ -857,7 +922,7 @@ TextResponse objects
 
     .. attribute:: TextResponse.selector
 
-        A :class:`~scrapy.selector.Selector` instance using the response as
+        A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
 
     :class:`TextResponse` objects support the following methods in addition to

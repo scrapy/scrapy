@@ -18,7 +18,7 @@ class SitemapSpider(Spider):
     sitemap_alternate_links = False
 
     def __init__(self, *a, **kw):
-        super(SitemapSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
             if isinstance(c, str):

@@ -16,7 +16,7 @@ class VersionTest(ProcessTest, unittest.TestCase):
         _, out, _ = yield self.execute([])
         self.assertEqual(
             out.strip().decode(encoding),
-            "Scrapy %s" % scrapy.__version__,
+            f"Scrapy {scrapy.__version__}",
         )
 
     @defer.inlineCallbacks

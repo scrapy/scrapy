@@ -6,6 +6,7 @@ See documentation in docs/topics/shell.rst
 import os
 import signal
 
+from itemadapter import is_item
 from twisted.internet import threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
@@ -13,20 +14,18 @@ from w3lib.url import any_to_uri
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.item import _BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.console import start_python_console
+from scrapy.utils.conf import get_config
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
 
 
 class Shell:
 
-    relevant_classes = (Crawler, Spider, Request, Response, _BaseItem, Settings)
+    relevant_classes = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
@@ -80,7 +79,7 @@ class Shell:
         spider = self._open_spider(request, spider)
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
-        self.crawler.engine.crawl(request, spider)
+        self.crawler.engine.crawl(request)
         return d
 
     def _open_spider(self, request, spider):
@@ -141,7 +140,7 @@ class Shell:
         b.append("  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)")
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
-                b.append("  %-10s %s" % (k, v))
+                b.append(f"  {k:<10} {v}")
         b.append("Useful shortcuts:")
         if self.inthread:
             b.append("  fetch(url[, redirect=True]) "
@@ -151,10 +150,10 @@ class Shell:
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join("[s] %s" % line for line in b)
+        return "\n".join(f"[s] {line}" for line in b)
 
     def _is_relevant(self, value):
-        return isinstance(value, self.relevant_classes)
+        return isinstance(value, self.relevant_classes) or is_item(value)
 
 
 def inspect_response(response, spider):
