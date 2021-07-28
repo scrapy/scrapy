@@ -730,6 +730,24 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
 
+.. setting:: DOWNLOAD_HANDLERS_S3_ANONYMOUS
+
+DOWNLOAD_HANDLERS_S3_ANONYMOUS
+------------------------------
+
+Default: ``False``
+
+Disable security credential in `S3DownloadHandler` explicitly and access `s3://`
+resources anonymously.
+
+`S3DownloadHandler` not only uses credential info from settings
+:setting:`AWS_ACCESS_KEY_ID`, :setting:`AWS_SECRET_ACCESS_KEY`,
+:setting:`AWS_SESSION_TOKEN`. Even these `AWS_*` settings are set as `None`, it
+still searches for credential from other `aws credential providers`_. This setting
+is introduced to disable credential creation in `S3DownloadHandler` completely.
+
+.. _aws credential providers: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT

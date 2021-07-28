@@ -1,5 +1,7 @@
+import warnings
+
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import create_instance
@@ -12,6 +14,13 @@ class S3DownloadHandler:
                  aws_access_key_id=None, aws_secret_access_key=None,
                  aws_session_token=None,
                  httpdownloadhandler=HTTPDownloadHandler, **kw):
+        if kw:
+            warnings.warn(
+                "'kw' args are deprecated. If you're trying to set s3 request anonymous."
+                " Use setting 'DOWNLOAD_HANDLERS_S3_ANONYMOUS = True' instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         if not is_botocore_available():
             raise NotConfigured('missing botocore library')
 
@@ -23,6 +32,8 @@ class S3DownloadHandler:
             aws_session_token = settings['AWS_SESSION_TOKEN']
 
         self.anon = kw.pop('anon', None)
+        if self.anon is None:
+            self.anon = settings.getbool('DOWNLOAD_HANDLERS_S3_ANONYMOUS')
         if kw:
             raise TypeError(f'Unexpected keyword arguments: {kw}')
 

@@ -788,7 +788,9 @@ class S3AnonTestCase(unittest.TestCase):
 
     def setUp(self):
         skip_if_no_boto()
-        crawler = get_crawler()
+        crawler = get_crawler(
+            settings_dict={'DOWNLOAD_HANDLERS_S3_ANONYMOUS': True}
+        )
         self.s3reqh = create_instance(
             objcls=S3DownloadHandler,
             settings=None,
@@ -845,20 +847,6 @@ class S3TestCase(unittest.TestCase):
             with mock.patch('botocore.auth.formatdate') as mock_formatdate:
                 mock_formatdate.return_value = date
                 yield
-
-    def test_extra_kw(self):
-        try:
-            crawler = get_crawler()
-            create_instance(
-                objcls=S3DownloadHandler,
-                settings=None,
-                crawler=crawler,
-                extra_kw=True,
-            )
-        except Exception as e:
-            self.assertIsInstance(e, (TypeError, NotConfigured))
-        else:
-            assert False
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
