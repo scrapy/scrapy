@@ -252,6 +252,7 @@ Since version 2.0, it is possible to integrate libraries that use the
 ``async/await`` syntax. One such library is `pyppeteer`_ (an unnoficial
 Python port of `puppeteer`_), which uses headless Chrome to download and
 render pages.
+
 The following is a simple snippet to illustrate its usage within Scrapy::
 
     import pyppeteer
