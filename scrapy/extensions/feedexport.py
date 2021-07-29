@@ -426,8 +426,8 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            self.batches[slot.uri_template].update()
-            # create new slot if slot's batch should trigger and close the old one
+            self.batches[slot.uri_template].item_added()
+
             if self.batches[slot.uri_template].should_trigger():
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
@@ -537,6 +537,5 @@ class FeedExporter:
         return item_filter_class(feed_options)
 
     def _load_batch(self, feed_options):
-        # load batch class if declared else load default batch class
         batch_class = load_object(feed_options.get("batch", BatchHandler))
         return batch_class(feed_options)

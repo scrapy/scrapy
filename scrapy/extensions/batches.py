@@ -14,34 +14,27 @@ class BatchHandler:
     """
 
     def __init__(self, feed_options: Dict[str, Any]) -> None:
-        self.feed_options: Dict[str, Any] = feed_options
         # get limits from feed_settings
-        self.max_item_count: int = self.feed_options["batch_item_count"]
-        self.max_time_duration: str = self._in_seconds(self.feed_options["batch_time_duration"])
-        self.max_file_size: str = self._in_bytes(self.feed_options["batch_file_size"])
+        self.max_item_count: int = feed_options["batch_item_count"]
+        self.max_seconds: int = self._in_seconds(feed_options["batch_duration"])
+        self.max_file_size: int = self._in_bytes(feed_options["batch_file_size"])
         # initialize batch state attributes
         self.item_count: int = 0
-        self.elapsed_time: int = 0
+        self.elapsed_seconds: int = 0
         self.file_size: int = 0
         self.batch_id: int = 0
         # misc attributes
         self.file: BinaryIO
         self.start_time: int
-        self.updated_once: bool = False
-        self.enabled: bool = True
-        if not any([self.max_item_count, self.max_time_duration, self.max_file_size]):
-            self.enabled = False
+        self.enabled: bool = any([self.max_item_count, self.max_seconds, self.max_file_size])
 
-    def update(self) -> None:
+    def item_added(self) -> None:
         """
         Update batch state attributes.
         """
         self.item_count += 1
-        self.elapsed_time = self._calculate_elapsed_time()
-        self.file_size = self._calculate_batch_size()
-
-        if not self.updated_once:
-            self.updated_once = True
+        self.elapsed_seconds = time.time() - self.start_time
+        self.file_size = self.file.tell()
 
     def should_trigger(self) -> bool:
         """
@@ -57,7 +50,7 @@ class BatchHandler:
             return True
         if self.max_file_size and self.file_size >= self.max_file_size:
             return True
-        if self.max_time_duration and self.elapsed_time >= self.max_time_duration:
+        if self.max_seconds and self.elapsed_seconds >= self.max_seconds:
             return True
 
         return False
@@ -70,9 +63,8 @@ class BatchHandler:
         self.file = file
         self.start_time = time.time()
         self.item_count = 0
-        self.elapsed_time = 0
+        self.elapsed_seconds = 0
         self.file_size = 0
-        self.updated_once = False
         self.batch_id += 1
 
     def get_batch_state(self) -> Dict[str, int]:
@@ -83,7 +75,7 @@ class BatchHandler:
         """
         state = {
             'itemcount': self.item_count,
-            'duration(seconds)': self.elapsed_time,
+            'duration(seconds)': self.elapsed_seconds,
             'file size(bytes)': self.file_size,
         }
         return state
@@ -101,15 +93,10 @@ class BatchHandler:
         Convert string size in format: '<SIZE><UNIT>' to bytes in integer.
         """
         # https://stackoverflow.com/a/60708339/7116579
-        units = {"B": 1, "KB": 2**10, "MB": 2**20, "GB": 2**30, "TB": 2**40}
-        size = size.upper()
-        if not re.match(r' ', size):
-            size = re.sub(r'([KMGT]?B)', r' \1', size)
-        number, unit = [string.strip() for string in size.split()]
+        units = {"B": 1, "KIB": 2**10, "MIB": 2**20, "GIB": 2**30, "TIB": 2**40,
+                 "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
+        match = re.search(r'(?i)^\s*(\d+)\s*((?:[kMGT]i?)?B)\s*$', size)
+        if not match:
+            raise ValueError(f'Invalid batch size: {size!r}')
+        number, unit = match[1], match[2].upper()
         return int(float(number) * units[unit])
-
-    def _calculate_elapsed_time(self) -> int:
-        return time.time() - self.start_time
-
-    def _calculate_batch_size(self) -> int:
-        return self.file.tell()
