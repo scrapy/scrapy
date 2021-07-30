@@ -246,24 +246,46 @@ Using a headless browser
 ========================
 
 A `headless browser`_ is a special web browser that provides an API for
-automation.
+automation. By installing the :ref:`asyncio reactor <install-asyncio>`,
+it is possible to integrate ``asyncio``-based libraries which handle headless browsers.
 
-The easiest way to use a headless browser with Scrapy is to use Selenium_,
-along with `scrapy-selenium`_ for seamless integration.
+One such library is `playwright-python`_ (an official Python port of `playwright`_).
+The following is a simple snippet to illustrate its usage within a Scrapy spider::
 
+    import scrapy
+    from playwright.async_api import async_playwright
+
+    class PlaywrightSpider(scrapy.Spider):
+        name = "playwright"
+        start_urls = ["data:,"]  # avoid using the default Scrapy downloader
+
+        async def parse(self, response):
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch()
+                page = await browser.new_page()
+                await page.goto("https:/example.org")
+                title = await page.title()
+                return {"title": title}
+
+
+However, using `playwright-python`_ directly as in the above example
+circumvents most of the Scrapy components (middlewares, dupefilter, etc).
+We recommend using `scrapy-playwright`_ for a better integration.
 
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
-.. _chompjs: https://github.com/Nykakin/chompjs
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
+.. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
+.. _Splash: https://github.com/scrapinghub/splash
+.. _chompjs: https://github.com/Nykakin/chompjs
 .. _curl: https://curl.haxx.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
-.. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
+.. _playwright-python: https://github.com/microsoft/playwright-python
+.. _playwright: https://github.com/microsoft/playwright
+.. _pyppeteer: https://pyppeteer.github.io/pyppeteer/
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
+.. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
-.. _Selenium: https://www.selenium.dev/
-.. _Splash: https://github.com/scrapinghub/splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/
 .. _wgrep: https://github.com/stav/wgrep

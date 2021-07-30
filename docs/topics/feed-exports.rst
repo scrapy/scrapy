@@ -135,7 +135,7 @@ Here are some examples to illustrate:
 
     -   ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
 
-.. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence 
+.. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
           they can also be used as storage URI parameters.
 
 
@@ -200,6 +200,9 @@ passed through the following settings:
 
 -   :setting:`AWS_ACCESS_KEY_ID`
 -   :setting:`AWS_SECRET_ACCESS_KEY`
+-   :setting:`AWS_SESSION_TOKEN` (only needed for `temporary security credentials`_)
+
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
 
 You can also define a custom ACL and custom endpoint for exported feeds using this setting:
 
@@ -357,7 +360,7 @@ For instance::
             'item_export_kwargs': {
                'export_empty_fields': True,
             },
-        }, 
+        },
         '/home/user/documents/items.xml': {
             'format': 'xml',
             'fields': ['name', 'price'],
