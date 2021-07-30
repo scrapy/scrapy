@@ -10,6 +10,7 @@ class S3DownloadHandler:
     def __init__(self, settings, *,
                  crawler=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
+                 aws_session_token=None,
                  httpdownloadhandler=HTTPDownloadHandler, **kw):
         if not is_botocore_available():
             raise NotConfigured('missing botocore library')
@@ -18,6 +19,8 @@ class S3DownloadHandler:
             aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
         if not aws_secret_access_key:
             aws_secret_access_key = settings['AWS_SECRET_ACCESS_KEY']
+        if not aws_session_token:
+            aws_session_token = settings['AWS_SESSION_TOKEN']
 
         # If no credentials could be found anywhere,
         # consider this an anonymous connection request by default;
@@ -36,7 +39,7 @@ class S3DownloadHandler:
         if not self.anon:
             SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
             self._signer = SignerCls(botocore.credentials.Credentials(
-                aws_access_key_id, aws_secret_access_key))
+                aws_access_key_id, aws_secret_access_key, aws_session_token))
 
         _http_handler = create_instance(
             objcls=httpdownloadhandler,
