@@ -8,7 +8,7 @@ from io import StringIO
 from urllib.parse import urlparse
 from warnings import warn
 
-from xtractmime import extract_mime
+from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH, extract_mime
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
@@ -117,16 +117,28 @@ class ResponseTypes:
         else:
             return self.from_mimetype('text')
 
+    def __guess_content_type(self, content_disposition=None, url=None, filename=None):
+        if content_disposition:
+            filename = content_disposition.split(b';')
+            if len(filename) != 1:
+                filename = filename[-1].split(b'=')[1].strip(b'"\'')
+            else:
+                filename = filename[0]
+            return self.mimetypes.guess_type(filename.decode())[0]
+
+        if url:
+            return self.mimetypes.guess_type(url)[0]
+
+        if filename:
+            return self.mimetypes.guess_type(filename)[0]
+
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
         the given arguments."""
-        if filename:
-            warn("'filename' keyword argument is deprecated, "
-                 "please ignore this parameter as it is no longer required",
-                 ScrapyDeprecationWarning)
         if not body:
             body = b''
 
+        body = body[:RESOURCE_HEADER_BUFFER_LENGTH].replace(b"\x00", b"")
         cls = Response
         http_origin = True
         content_types = None
@@ -136,6 +148,12 @@ class ResponseTypes:
 
         if headers and b'Content-Type' in headers:
             content_types = tuple(headers.getlist(b'Content-Type'))
+        elif headers and b'Content-Disposition' in headers:
+            content_types = (self.__guess_content_type(content_disposition=headers.get(b'Content-Disposition')).encode(),)
+        elif url:
+            content_types = (self.__guess_content_type(url=url).encode(),)
+        elif filename:
+            content_types = (self.__guess_content_type(filename=filename).encode(),)
 
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
         cls = self.from_mimetype(mime_type.decode())
