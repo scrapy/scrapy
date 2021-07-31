@@ -140,19 +140,8 @@ class ResponseTypes:
 
         body = body[:RESOURCE_HEADER_BUFFER_LENGTH].replace(b"\x00", b"")
         cls = Response
-        http_origin = True
-        content_types = None
-
-        if url and urlparse(url).scheme not in ("http", "https"):
-            http_origin = False
-
-        if headers:
-            content_types = self._guess_content_type(content_type=headers.getlist(b'Content-Type'),
-                                                  content_disposition=headers.get(b'Content-Disposition'),
-                                                  url=url, filename=filename)
-        else:
-            content_types = self._guess_content_type(url=url, filename=filename)
-
+        http_origin = not url or urlparse(url).scheme in ("http", "https")
+        content_types = self._guess_content_type(headers=headers, url=url, filename=filename)
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
         cls = self.from_mimetype(mime_type.decode())
 
