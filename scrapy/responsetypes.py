@@ -117,13 +117,12 @@ class ResponseTypes:
         else:
             return self.from_mimetype('text')
 
-    def _guess_content_type(self, content_type=None, content_disposition=None, url=None, filename=None):
-        if content_type:
-            return tuple(content_type)
+    def _guess_content_type(self, headers=None, url=None, filename=None):
+        if headers and b'Content-Type' in headers:
+            return tuple(headers.getlist(b'Content-Type'))
 
-        if content_disposition:
-            filename = content_disposition.split(b';')[-1].split(b'=')[-1].strip(b'"\'').decode()
-
+        if headers and b'Content-Disposition' in headers:
+            filename = headers.get(b'Content-Disposition').split(b';')[-1].split(b'=')[-1].strip(b'"\'').decode()
         elif url:
             filename = url
 
