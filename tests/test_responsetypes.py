@@ -86,9 +86,7 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_args_post_xtractmime(self):
         mappings = [
-            ({'body': b'Some plain text data with tabs and null bytes',
-              'headers': Headers({'Content-Type': ['text/html; charset=utf-8'], })},
-             TextResponse),
+            ({'body': b'Some plain text data with tabs and null bytes'}, TextResponse),
             ({'body': b'\x03\x02\xdf\xdd\x23', 'headers': Headers({'Content-Encoding': 'UTF-8'})}, 
              Response),
             # different behaviour with http and non-http urls

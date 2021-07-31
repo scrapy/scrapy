@@ -117,20 +117,20 @@ class ResponseTypes:
         else:
             return self.from_mimetype('text')
 
-    def __guess_content_type(self, content_disposition=None, url=None, filename=None):
-        if content_disposition:
-            filename = content_disposition.split(b';')
-            if len(filename) != 1:
-                filename = filename[-1].split(b'=')[1].strip(b'"\'')
-            else:
-                filename = filename[0]
-            return self.mimetypes.guess_type(filename.decode())[0]
+    def _guess_content_type(self, content_type=None, content_disposition=None, url=None, filename=None):
+        if content_type:
+            return tuple(content_type)
 
-        if url:
-            return self.mimetypes.guess_type(url)[0]
+        if content_disposition:
+            filename = content_disposition.split(b';')[-1].split(b'=')[-1].strip(b'"\'').decode()
+
+        elif url:
+            filename = url
 
         if filename:
-            return self.mimetypes.guess_type(filename)[0]
+            return (self.mimetypes.guess_type(filename)[0].encode(),)
+
+        return None
 
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
@@ -146,14 +146,12 @@ class ResponseTypes:
         if url and urlparse(url).scheme not in ("http", "https"):
             http_origin = False
 
-        if headers and b'Content-Type' in headers:
-            content_types = tuple(headers.getlist(b'Content-Type'))
-        elif headers and b'Content-Disposition' in headers:
-            content_types = (self.__guess_content_type(content_disposition=headers.get(b'Content-Disposition')).encode(),)
-        elif url:
-            content_types = (self.__guess_content_type(url=url).encode(),)
-        elif filename:
-            content_types = (self.__guess_content_type(filename=filename).encode(),)
+        if headers:
+            content_types = self._guess_content_type(content_type=headers.getlist(b'Content-Type'),
+                                                  content_disposition=headers.get(b'Content-Disposition'),
+                                                  url=url, filename=filename)
+        else:
+            content_types = self._guess_content_type(url=url, filename=filename)
 
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
         cls = self.from_mimetype(mime_type.decode())
