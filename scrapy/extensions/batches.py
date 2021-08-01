@@ -16,16 +16,16 @@ class BatchHandler:
     def __init__(self, feed_options: Dict[str, Any]) -> None:
         # get limits from feed_settings
         self.max_item_count: int = feed_options["batch_item_count"]
-        self.max_seconds: int = self._in_seconds(feed_options["batch_duration"])
+        self.max_seconds: float = self._in_seconds(feed_options["batch_duration"])
         self.max_file_size: int = self._in_bytes(feed_options["batch_file_size"])
         # initialize batch state attributes
         self.item_count: int = 0
-        self.elapsed_seconds: int = 0
+        self.elapsed_seconds: float = 0
         self.file_size: int = 0
         self.batch_id: int = 0
         # misc attributes
         self.file: BinaryIO
-        self.start_time: int
+        self.start_time: float
         self.enabled: bool = any([self.max_item_count, self.max_seconds, self.max_file_size])
 
     def item_added(self) -> None:
@@ -67,24 +67,11 @@ class BatchHandler:
         self.file_size = 0
         self.batch_id += 1
 
-    def get_batch_state(self) -> Dict[str, int]:
+    def _in_seconds(self, duration: str) -> float:
         """
-        Get current batch state.
-        :return: A dictionary containing batch state parameters and its current value.
-        :rtype: dict
+        Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in float.
         """
-        state = {
-            'itemcount': self.item_count,
-            'duration(seconds)': self.elapsed_seconds,
-            'file size(bytes)': self.file_size,
-        }
-        return state
-
-    def _in_seconds(self, duration: str) -> int:
-        """
-        Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in integer.
-        """
-        h, m, s = map(int, duration.split(":"))
+        h, m, s = map(float, duration.split(":"))
         duration_in_secs = h * 60 * 60 + m * 60 + s
         return duration_in_secs
 
