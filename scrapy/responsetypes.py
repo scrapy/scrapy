@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from warnings import warn
 
 from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH, extract_mime
+from xtractmime._utils import contains_binary
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
@@ -127,7 +128,11 @@ class ResponseTypes:
             filename = url
 
         if filename:
-            return (self.mimetypes.guess_type(filename)[0].encode(),)
+            mimetype, encoding = self.mimetypes.guess_type(filename)
+            if encoding:
+                return (f"application/{encoding}".encode(),)
+            else:
+                return (mimetype.encode(),)
 
         return None
 
@@ -137,7 +142,16 @@ class ResponseTypes:
         if not body:
             body = b''
 
-        body = body[:RESOURCE_HEADER_BUFFER_LENGTH].replace(b"\x00", b"")
+        contains_binary_bytes = False
+
+        for index in range(len(body)):
+            if body[index:index + 1] != b"\x00" and contains_binary(body[index:index + 1]):
+                contains_binary_bytes = True
+                break
+
+        if not contains_binary_bytes:
+            body = body[:RESOURCE_HEADER_BUFFER_LENGTH].replace(b"\x00", b"")
+
         cls = Response
         http_origin = not url or urlparse(url).scheme in ("http", "https")
         content_types = self._guess_content_type(headers=headers, url=url, filename=filename)

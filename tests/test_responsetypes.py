@@ -76,9 +76,9 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
-              'url': 'http://www.example.com/item/'}, HtmlResponse), # Failing with xtractmime, returning TextResponse expected HtmlResponse
+              'url': 'http://www.example.com/item/'}, HtmlResponse),
             ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
-              'url': 'http://www.example.com/page/'}, Response), # Failing with xtractmime, returning TextResponse expected Response
+              'url': 'http://www.example.com/page/'}, Response),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
@@ -86,19 +86,19 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_args_post_xtractmime(self):
         mappings = [
-            ({'body': b'Some plain text data with tabs and null bytes'}, TextResponse),
-            ({'body': b'\x03\x02\xdf\xdd\x23', 'headers': Headers({'Content-Encoding': 'UTF-8'})}, 
+            ({'body': b'Some plain\0 text data with\0 tabs and null bytes\0'}, TextResponse),
+            ({'body': b'\x03\x02\xdf\xdd\x23', 'headers': Headers({'Content-Encoding': 'UTF-8'})},
              Response),
             # different behaviour with http and non-http urls
-            ({'body': b'\x00\xfe\xff', 'url': 'http://www.example.com/item/',
-              'headers': Headers({'Content-Type': b'text/plain'})}, Response), 
-            ({'body': b'\x00\xfe\xff', 'url': '://www.example.com/item/',
+            ({'body': b'\x00\x01\xff', 'url': 'http://www.example.com/item/',
+              'headers': Headers({'Content-Type': b'text/plain'})}, Response),
+            ({'body': b'\x00\x01\xff', 'url': '://www.example.com/item/',
               'headers': Headers({'Content-Type': b'text/plain'})}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse), # Failing with xtractmime, return TextResponse expected HtmlResponse
-            ({'body': b'Some plain text\ndata with tabs\t and null bytes\0'}, Response), # earlier expected to be binary response, refer "test_from_body()"
+            ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
+            ({'body': b'Some plain text data\1 with tabs and\n null bytes\0'}, Response),
             ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
             ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
-            ({'filename': 'file.html'}, HtmlResponse), # Failing with xtractmime, returning TextResponse expected HtmlResponse
+            ({'filename': 'file.html'}, HtmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
