@@ -10,9 +10,15 @@ from warnings import warn
 
 from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH, extract_mime
 from xtractmime._utils import contains_binary
+from xtractmime.mimegroups import (
+    is_html_mime_type,
+    is_javascript_mime_type,
+    is_json_mime_type,
+    is_xml_mime_type,
+)
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Response
+from scrapy.http import HtmlResponse, Response, TextResponse, XmlResponse
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
@@ -136,6 +142,21 @@ class ResponseTypes:
 
         return None
 
+    def _guess_response_type(self, mime_type):
+        if not mime_type:
+            return Response
+        if is_html_mime_type(mime_type):
+            return HtmlResponse
+        if is_xml_mime_type(mime_type):
+            return XmlResponse
+        if (
+            mime_type.startswith(b'text/')
+            or is_json_mime_type(mime_type)
+            or is_javascript_mime_type(mime_type)
+        ):
+            return TextResponse
+        return Response
+
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
         the given arguments."""
@@ -156,7 +177,7 @@ class ResponseTypes:
         http_origin = not url or urlparse(url).scheme in ("http", "https")
         content_types = self._guess_content_type(headers=headers, url=url, filename=filename)
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
-        cls = self.from_mimetype(mime_type.decode())
+        cls = self._guess_response_type(mime_type)
 
         return cls
 
