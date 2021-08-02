@@ -22,24 +22,37 @@ class S3DownloadHandler:
         if not aws_session_token:
             aws_session_token = settings['AWS_SESSION_TOKEN']
 
-        # If no credentials could be found anywhere,
-        # consider this an anonymous connection request by default;
-        # unless 'anon' was set explicitly (True/False).
-        anon = kw.get('anon')
-        if anon is None and not aws_access_key_id and not aws_secret_access_key:
-            kw['anon'] = True
-        self.anon = kw.get('anon')
+        self.anon = kw.pop('anon', None)
+        if kw:
+            raise TypeError(f'Unexpected keyword arguments: {kw}')
 
         self._signer = None
         import botocore.auth
-        import botocore.credentials
-        kw.pop('anon', None)
-        if kw:
-            raise TypeError(f'Unexpected keyword arguments: {kw}')
+        from botocore.credentials import Credentials
+        from botocore.session import Session
+        from botocore.exceptions import NoCredentialsError
         if not self.anon:
-            SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
-            self._signer = SignerCls(botocore.credentials.Credentials(
-                aws_access_key_id, aws_secret_access_key, aws_session_token))
+            # Follow credential creation logic in Session.create_client(),
+            # which is used in item pipeline and feed exporter.
+            if aws_access_key_id is not None and aws_secret_access_key is not None:
+                credentials = Credentials(
+                    access_key=aws_access_key_id,
+                    secret_key=aws_secret_access_key,
+                    token=aws_session_token,
+                )
+            else:
+                credentials = Session().get_credentials()
+            if credentials is not None:
+                SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
+                self._signer = SignerCls(credentials)
+            else:
+                # If no credentials could be found anywhere,
+                # consider this an anonymous connection request by default;
+                # unless 'anon' was set explicitly (True/False).
+                if self.anon is None:
+                    self.anon = True
+                else:
+                    raise NoCredentialsError
 
         _http_handler = create_instance(
             objcls=httpdownloadhandler,
