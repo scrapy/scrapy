@@ -163,15 +163,15 @@ class ResponseTypes:
         if not body:
             body = b''
 
+        body = body[:RESOURCE_HEADER_BUFFER_LENGTH]
         contains_binary_bytes = False
-
         for index in range(len(body)):
             if body[index:index + 1] != b"\x00" and contains_binary(body[index:index + 1]):
                 contains_binary_bytes = True
                 break
 
         if not contains_binary_bytes:
-            body = body[:RESOURCE_HEADER_BUFFER_LENGTH].replace(b"\x00", b"")
+            body = body.replace(b"\x00", b"")
 
         cls = Response
         http_origin = not url or urlparse(url).scheme in ("http", "https")
