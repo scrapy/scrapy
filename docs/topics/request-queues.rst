@@ -94,10 +94,7 @@ it has to conform to the following interface:
       used, for example, to create a unique file or folder to store the queue
       content.
 
-      *arg* and *kwargs* are used to restore internal state.
-
-      If the input data is invalid, raise an exception from this class method
-      of from your ``__init__`` method to halt the crawl.
+      *state* is a variable containing state of queue
 
    .. method:: push(self, request: scrapy.http.Request) -> None
 
