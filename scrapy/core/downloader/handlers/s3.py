@@ -13,11 +13,11 @@ class S3DownloadHandler:
                  crawler=None,
                  aws_access_key_id=None, aws_secret_access_key=None,
                  aws_session_token=None,
-                 httpdownloadhandler=HTTPDownloadHandler, **kw):
-        if kw:
+                 httpdownloadhandler=HTTPDownloadHandler, anon=None):
+        if anon is not None:
             warnings.warn(
-                "'kw' args are deprecated. If you're trying to set s3 request anonymous."
-                " Use setting 'DOWNLOAD_HANDLERS_S3_ANONYMOUS = True' instead.",
+                "Argument 'anon' is deprecated. Use setting"
+                " 'DOWNLOAD_HANDLERS_S3_ANONYMOUS = True' instead.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -31,11 +31,9 @@ class S3DownloadHandler:
         if not aws_session_token:
             aws_session_token = settings['AWS_SESSION_TOKEN']
 
-        self.anon = kw.pop('anon', None)
+        self.anon = anon
         if self.anon is None:
             self.anon = settings.getbool('DOWNLOAD_HANDLERS_S3_ANONYMOUS')
-        if kw:
-            raise TypeError(f'Unexpected keyword arguments: {kw}')
 
         self._signer = None
         import botocore.auth
