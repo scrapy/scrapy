@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode, urlsplit, urlunsplit
 
 from lxml.html import FormElement, HtmlElement, HTMLParser, SelectElement
 from parsel.selector import create_root_node
@@ -34,12 +34,12 @@ class FormRequest(Request):
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
-            querystr = _urlencode(items, self.encoding)
+            form_query_str = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
-                self._set_body(querystr)
+                self._set_body(form_query_str)
             else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+                self._set_url(urlunsplit(urlsplit(self.url)._replace(query=form_query_str)))
 
     @classmethod
     def from_response(

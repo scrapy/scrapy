@@ -42,7 +42,8 @@ Item objects
 :class:`Item` provides a :class:`dict`-like API plus additional features that
 make it the most feature-complete item type:
 
-.. class:: Item([arg])
+.. class:: scrapy.item.Item([arg])
+.. class:: scrapy.Item([arg])
 
     :class:`Item` objects replicate the standard :class:`dict` API, including
     its ``__init__`` method.
@@ -199,7 +200,8 @@ It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
 
-.. class:: Field([arg])
+.. class:: scrapy.item.Field([arg])
+.. class:: scrapy.Field([arg])
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
@@ -317,11 +319,11 @@ If that is not the desired behavior, use a deep copy instead.
 See :mod:`copy` for more information.
 
 To create a shallow copy of an item, you can either call
-:meth:`~scrapy.item.Item.copy` on an existing item
+:meth:`~scrapy.Item.copy` on an existing item
 (``product2 = product.copy()``) or instantiate your item class from an existing
 item (``product2 = Product(product)``).
 
-To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+To create a deep copy, call :meth:`~scrapy.Item.deepcopy` instead
 (``product2 = product.deepcopy()``).
 
 
