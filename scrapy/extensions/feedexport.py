@@ -11,6 +11,7 @@ import sys
 import warnings
 from datetime import datetime
 from tempfile import NamedTemporaryFile
+from typing import Any, Optional, Tuple
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -55,16 +56,19 @@ class ItemFilter:
     :param feed_options: feed specific options passed from FeedExporter
     :type feed_options: dict
     """
+    feed_options: Optional[dict]
+    item_classes: Tuple
 
-    def __init__(self, feed_options=None):
-        self.feed_options = feed_options or {}
-        self.item_classes = set()
+    def __init__(self, feed_options: Optional[dict]) -> None:
+        self.feed_options = feed_options
+        if feed_options is not None:
+            self.item_classes = tuple(
+                load_object(item_class) for item_class in feed_options.get("item_classes") or ()
+            )
+        else:
+            self.item_classes = tuple()
 
-        if 'item_classes' in self.feed_options:
-            for item_class in self.feed_options['item_classes']:
-                self.item_classes.add(load_object(item_class))
-
-    def accepts(self, item):
+    def accepts(self, item: Any) -> bool:
         """
         Return ``True`` if `item` should be exported or ``False`` otherwise.
 
@@ -74,9 +78,8 @@ class ItemFilter:
         :rtype: bool
         """
         if self.item_classes:
-            return isinstance(item, tuple(self.item_classes))
-
-        return True    # accept all items if none declared in item_classes
+            return isinstance(item, self.item_classes)
+        return True  # accept all items by default
 
 
 class IFeedStorage(Interface):
@@ -151,21 +154,25 @@ class FileFeedStorage:
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, access_key=None, secret_key=None, acl=None, *,
-                 feed_options=None):
+    def __init__(self, uri, access_key=None, secret_key=None, acl=None, endpoint_url=None, *,
+                 feed_options=None, session_token=None):
         if not is_botocore_available():
             raise NotConfigured('missing botocore library')
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
+        self.session_token = session_token
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
+        self.endpoint_url = endpoint_url
         import botocore.session
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
             's3', aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key)
+            aws_secret_access_key=self.secret_key,
+            aws_session_token=self.session_token,
+            endpoint_url=self.endpoint_url)
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
                            'suppress this warning, remove the overwrite '
@@ -178,7 +185,9 @@ class S3FeedStorage(BlockingFeedStorage):
             uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
+            session_token=crawler.settings['AWS_SESSION_TOKEN'],
             acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
+            endpoint_url=crawler.settings['AWS_ENDPOINT_URL'] or None,
             feed_options=feed_options,
         )
 

@@ -35,7 +35,7 @@ Request objects
        request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spiders.Spider.parse` method will be used.
+       :meth:`~scrapy.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
     :type callback: collections.abc.Callable
@@ -60,7 +60,7 @@ Request objects
 
         .. caution:: Cookies set via the ``Cookie`` header are not considered by the
             :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
     :type headers: dict
@@ -92,7 +92,7 @@ Request objects
 
         To create a request that does not send stored cookies and does not
         store received cookies, set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.http.Request.meta>`.
+        in :attr:`request.meta <scrapy.Request.meta>`.
 
         Example of a request that sends manually-defined cookies and ignores
         cookie storage::
@@ -107,7 +107,7 @@ Request objects
 
         .. caution:: Cookies set via the ``Cookie`` header are not considered by the
             :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
     :type cookies: dict or list
@@ -495,7 +495,9 @@ fields with form data from :class:`Response` objects.
 
 .. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
-.. class:: FormRequest(url, [formdata, ...])
+.. class:: scrapy.http.request.form.FormRequest
+.. class:: scrapy.http.FormRequest
+.. class:: scrapy.FormRequest(url, [formdata, ...])
 
     The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
@@ -668,9 +670,6 @@ Response objects
 
 .. autoclass:: Response
 
-    A :class:`Response` object represents an HTTP response, which is usually
-    downloaded (by the Downloader) and fed to the Spiders for processing.
-
     :param url: the URL of this response
     :type url: str
 
@@ -694,7 +693,7 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: scrapy.http.Request
+    :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
     :type certificate: twisted.internet.ssl.Certificate
@@ -827,6 +826,8 @@ Response objects
         handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`protocol` is always ``None``.
 
+    .. autoattribute:: Response.attributes
+
     .. method:: Response.copy()
 
        Returns a new Response which is a copy of this Response.
@@ -920,8 +921,10 @@ TextResponse objects
 
     .. attribute:: TextResponse.selector
 
-        A :class:`~scrapy.selector.Selector` instance using the response as
+        A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
+
+    .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
