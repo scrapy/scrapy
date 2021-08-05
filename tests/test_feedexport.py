@@ -987,7 +987,7 @@ class FeedExportTest(FeedExportTestBase):
         MyItem = self.MyItem
 
         class CustomFilter1:
-            def __init__(self, feed_options):
+            def __init__(self, feed_options=None):
                 pass
 
             def accepts(self, item):
@@ -1436,6 +1436,26 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 {'FEED_EXPORT_BATCH_FILE_SIZE': '1B'},
                 {'FEED_EXPORT_BATCH_DURATION': '0:0:0.1'})
 
+    class CustomBatchHandler:
+
+        def __init__(self, feed_options):
+            self.divisor = feed_options.get("batch_divisible_by", 0)
+            self.item_count = 0
+            self.batch_id = 0
+            self.enabled = True if self.divisor > 0 else False
+
+        def item_added(self):
+            self.item_count += 1
+
+        def should_trigger(self):
+            if not self.enabled:
+                return False
+            return self.item_count % self.divisor == 0
+
+        def new_batch(self, file):
+            self.item_count = 0
+            self.batch_id += 1
+
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings, multiple_urls=1):
         """ Run spider with specified settings; return exported data. """
@@ -1596,17 +1616,27 @@ class BatchDeliveriesTest(FeedExportTestBase):
             self.MyItem({'foo': 'bar1', 'egg': 'spam1', 'baz': 'quux1'}),
             self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
         ]
-        fmt_to_limits = {
-            'json': ('40B', '90B'),
-            'jsonlines': ('40B', '90B'),
-            'xml': ('100B', '160B'),
-            'csv': ('30B', '40B'),
-            'marshal': ('30B', '70B'),
-            'pickle': ('50B', '110B'),
-        }
-        for fmt, limits in fmt_to_limits.items():
+        fmt_to_limit = {}
+        for fmt in ('csv', 'json', 'jsonlines', 'marshal', 'pickle', 'xml'):
             #  +1 for empty files after batch has been triggered
-            for limit, expected in {'0B': 1, '1B': 2 + 1, limits[0]: 2 + 1, limits[1]: 1 + 1}.items():
+            for limit, expected in {'0B': 1, '1B': 2 + 1}.items():
+                settings = {
+                    'FEEDS': {
+                        os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                    },
+                    'FEED_EXPORT_BATCH_FILE_SIZE': limit,
+                }
+                data = yield self.exported_data(items, settings)
+                self.assertEqual(expected, len(data[fmt]))
+                if limit == '1B':
+                    fmt_to_limit[fmt] = len(data[fmt][0])
+
+        fmt_to_limit['json'] -= 2  # ignore '\n' and ']'
+        fmt_to_limit['xml'] -= 8  # ignore '</items>'
+        for fmt, limit in fmt_to_limit.items():
+            at_most_1, at_most_2 = '%dB' % (limit), '%dB' % (limit + 1)
+            #  +1 for empty files after batch has been triggered
+            for limit, expected in {at_most_1: 2 + 1, at_most_2: 1 + 1}.items():
                 settings = {
                     'FEEDS': {
                         os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
@@ -1621,7 +1651,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         items = [self.MyItem({'foo': 'bar1', 'egg': 'spam1', 'baz': 'quux1'})]
         for fmt in ('csv', 'json', 'jsonlines', 'marshal', 'pickle'):
             #  +1 for empty files after batch has been triggered
-            for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:1.2': 1}.items():
+            for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:1.1': 1}.items():
                 settings = {
                     'FEEDS': {
                         os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
@@ -1629,7 +1659,30 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     'FEED_EXPORT_BATCH_DURATION': delay,
                     'DOWNLOAD_DELAY': 0.5,
                 }
+                print('batch_duration:', delay, "fmt:", fmt)
                 data = yield self.exported_data(items, settings, multiple_urls=2)
+                self.assertEqual(expected, len(data[fmt]))
+
+    @defer.inlineCallbacks
+    def test_export_custom_trigger(self):
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem({'foo': 'bar2', 'egg': 'spam2', 'baz': 'quux2'}),
+            self.MyItem({'foo': 'bar3', 'baz': 'quux3'}),
+        ]
+        for fmt in ("json", "csv", "jsonlines", "xml", "marshal", "pickle"):
+            #  +1 for empty files after batch has been triggered
+            for limit, expected in {0: 1, 1: 3 + 1, 2: 2, 3: 1 + 1}.items():
+                settings = {
+                    'FEEDS': {
+                        os.path.join(self._random_temp_filename(), fmt, self._file_mark): {
+                            'format': fmt,
+                            'batch': self.CustomBatchHandler,
+                            'batch_divisible_by': limit,
+                        },
+                    }
+                }
+                data = yield self.exported_data(items, settings)
                 self.assertEqual(expected, len(data[fmt]))
 
     def test_wrong_path(self):
@@ -1645,6 +1698,18 @@ class BatchDeliveriesTest(FeedExportTestBase):
             crawler = get_crawler(settings_dict=s)
             self.assertRaises(NotConfigured, FeedExporter, crawler)
 
+        s = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'batch': self.CustomBatchHandler,
+                    'batch_divisible_by': 1,
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=s)
+        self.assertRaises(NotConfigured, FeedExporter, crawler)
+
     @defer.inlineCallbacks
     def test_export_no_items_not_store_empty(self):
         for fmt in ('json', 'jsonlines', 'xml', 'csv'):
@@ -1659,6 +1724,19 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 data = yield self.exported_no_data(s)
                 data = dict(data)
                 self.assertEqual(b'', data[fmt][0])
+
+            s = {
+                'FEEDS': {
+                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {
+                        'format': fmt,
+                        'batch': self.CustomBatchHandler,
+                        'batch_divisible_by': 1,
+                    },
+                },
+            }
+            data = yield self.exported_no_data(s)
+            data = dict(data)
+            self.assertEqual(b'', data[fmt][0])
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -1683,6 +1761,21 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 data = yield self.exported_no_data(s)
                 data = dict(data)
                 self.assertEqual(expctd, data[fmt][0])
+
+            s = {
+                'FEEDS': {
+                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {
+                        'format': fmt,
+                        'batch': self.CustomBatchHandler,
+                        'batch_divisible_by': 1,
+                    },
+                },
+                'FEED_STORE_EMPTY': True,
+                'FEED_EXPORT_INDENT': None,
+            }
+            data = yield self.exported_no_data(s)
+            data = dict(data)
+            self.assertEqual(expctd, data[fmt][0])
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
@@ -1734,6 +1827,12 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 data = yield self.exported_data(items, s)
                 for expected_batch, got_batch in zip(expected, data[fmt]):
                     self.assertEqual(expected_batch, got_batch)
+            s = settings.copy()
+            for entry in s['FEEDS']:
+                s['FEEDS'][entry].update({'batch': self.CustomBatchHandler, 'batch_divisible_by': 1})
+            data = yield self.exported_data(items, s)
+            for expected_batch, got_batch in zip(expected, data[fmt]):
+                self.assertEqual(expected_batch, got_batch)
 
     @defer.inlineCallbacks
     def test_batch_item_count_feeds_setting(self):
@@ -1780,7 +1879,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def test_batch_duration_feeds_setting(self):
         items = [self.MyItem({'foo': 'bar1', 'egg': 'spam1', 'baz': 'quux1'})]
         #  +1 for empty files after batch has been triggered
-        for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:1.2': 1}.items():
+        for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:1.1': 1}.items():
             settings = {
                 'FEEDS': {
                     os.path.join(self._random_temp_filename(), self._file_mark): {'format': 'jsonlines'},
@@ -1828,6 +1927,21 @@ class BatchDeliveriesTest(FeedExportTestBase):
             yield crawler.crawl(total=2, mockserver=mockserver)
         self.assertIn("feedexport/success_count/FileFeedStorage", crawler.stats.get_stats())
         self.assertEqual(crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12)
+
+    def test_invalid_file_size(self):
+        invalid_sizes = ['B', 'b32', '1r', '4']
+        for size in invalid_sizes:
+            settings = {
+                'FEEDS': {
+                    os.path.join(self._random_temp_filename(), self._file_mark): {
+                        'format': 'jsonlines',
+                        'batch_file_size': size,
+                    },
+                },
+            }
+            with self.assertRaises(ValueError):
+                crawler = get_crawler(settings_dict=settings)
+                FeedExporter.from_crawler(crawler)
 
     @defer.inlineCallbacks
     def test_s3_export(self):

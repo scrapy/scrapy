@@ -56,8 +56,8 @@ class ItemFilter:
     :type feed_options: dict
     """
 
-    def __init__(self, feed_options):
-        self.feed_options = feed_options
+    def __init__(self, feed_options=None):
+        self.feed_options = feed_options or {}
         self.item_classes = set()
 
         if 'item_classes' in self.feed_options:
