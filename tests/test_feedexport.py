@@ -1782,7 +1782,7 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
     def test_init(self):
         with tempfile.NamedTemporaryFile() as temp:
             settings_dict = {
-                'FEED_URI': f'file:///{temp.name}',
+                'FEED_URI': f'file://{temp.name}',
                 'FEED_STORAGES': {
                     'file': FileFeedStorageWithoutFeedOptions
                 },
