@@ -1486,7 +1486,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             self.divisor = feed_options.get("batch_divisible_by", 0)
             self.item_count = 0
             self.batch_id = 0
-            self.enabled = True if self.divisor > 0 else False
+            self.enabled = bool(self.divisor)
 
         def item_added(self):
             self.item_count += 1
