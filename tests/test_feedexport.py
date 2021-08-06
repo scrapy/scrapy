@@ -1695,15 +1695,15 @@ class BatchDeliveriesTest(FeedExportTestBase):
         items = [self.MyItem({'foo': 'bar1', 'egg': 'spam1', 'baz': 'quux1'})]
         for fmt in ('csv', 'json', 'jsonlines', 'marshal', 'pickle'):
             #  +1 for empty files after batch has been triggered
-            for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:1.1': 1}.items():
+            for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:0.51': 1 + 1}.items():
                 settings = {
                     'FEEDS': {
                         os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
                     },
                     'FEED_EXPORT_BATCH_DURATION': delay,
                     'DOWNLOAD_DELAY': 0.5,
+                    'RANDOMIZE_DOWNLOAD_DELAY': False,
                 }
-                print('batch_duration:', delay, "fmt:", fmt)
                 data = yield self.exported_data(items, settings, multiple_urls=2)
                 self.assertEqual(expected, len(data[fmt]))
 
@@ -1923,13 +1923,14 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def test_batch_duration_feeds_setting(self):
         items = [self.MyItem({'foo': 'bar1', 'egg': 'spam1', 'baz': 'quux1'})]
         #  +1 for empty files after batch has been triggered
-        for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:1.1': 1}.items():
+        for delay, expected in {'0:0:0': 1, '0:0:0.01': 2 + 1, '0:0:0.1': 2 + 1, '0:0:0.51': 1 + 1}.items():
             settings = {
                 'FEEDS': {
                     os.path.join(self._random_temp_filename(), self._file_mark): {'format': 'jsonlines'},
                 },
                 'FEED_EXPORT_BATCH_DURATION': delay,
                 'DOWNLOAD_DELAY': 0.5,
+                'RANDOMIZE_DOWNLOAD_DELAY': False,
             }
             data = yield self.exported_data(items, settings, multiple_urls=2)
             self.assertEqual(expected, len(data['jsonlines']))

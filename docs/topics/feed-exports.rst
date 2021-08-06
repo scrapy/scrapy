@@ -266,20 +266,26 @@ scraped. Instead, Scrapy writes items into a temporary local file, and only
 once all the file contents have been written (i.e. at the end of the crawl) is
 that file uploaded to the feed URI.
 
-.. _batch_trigger:
+If you want item delivery to start earlier when using one of these storage
+backends, use :ref:`batches<batches>` to split the output items in multiple
+files, based on a specified limit. That way, as soon as a file reaches the specified
+limit, that file is delivered to the feed URI, allowing item delivery to start
+way before the end of the crawl.
+
+.. _batches:
+
+Batches
+=======
 
 .. versionadded:: VERSION
 
-Batch Delivery Triggers
-=======================
+Batches enable multiple sequential files to be generated for a feed instead of getting
+a single file. This is useful in getting item deliveries earlier before the crawl has
+been ended.
 
-If you want item delivery to start earlier when using one of the storage
-backends, you can use triggers such as ``batch_item_count``, ``batch_file_size``,
-``batch_duration`` or you can create :ref:`your own triggers <custom_batch_handler>`
-. You can acitvate these triggers in :ref:`feed-options<feed-options>`. These triggers will
-split the output items in multiple files according to the specified limit for each
-trigger. That way as soon as a file passes the specified limit, that file is delivered
-to the feed URI, allowing item delivery to start way before the end of the crawl.
+To enable batching, you can use :ref:`criterias<batch_criterias>` such as ``batch_item_count``
+, ``batch_file_size``, ``batch_duration`` or you can create :ref:`your own batch
+handlers<custom_batch_handler>` to handle batch deliveries.
 
 When generating multiple output files, you must use at least one of the following
 placeholders in the feed URI to indicate how the different output file names are
@@ -313,6 +319,25 @@ The command line above can generate a directory tree like::
 
 Where the first and second files contain exactly 100 items. The last one contains
 100 items or fewer.
+
+.. _batch_criterias:
+
+Batch Criterias
+---------------
+
+To use batch criterias, assign any criteria in the :ref:`feeds-options<feed-options>`
+of a feed with the desired limit.
+
+* ``batch_item_count``: Create batches with each batches having at most the specified item counts.
+
+* ``batch_file_size``: Assign a soft limit to the size of a batch file.
+
+  The limit must be a string in the format <``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT``
+  must be byte unit based on powers of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
+
+* ``batch_duration``: Assign a soft limit on the duration a batch stays active.
+
+  Duration must be a string in the format ``hours:months:seconds``.
 
 .. _custom_batch_handler:
 
@@ -734,9 +759,11 @@ FEED_EXPORT_BATCH_FILE_SIZE
 
 Default: ``0B``
 
-Assign a soft limit to the size of a batch file. Limit must be a string in the format
-<``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT`` must be byte unit based on powers
-of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
+If assigned a size larger than ``0B``, Scrapy generates multiple output files based on
+the specified size as a soft limit.
+
+The size must be a string in the format <``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT``
+must be byte unit based on powers of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
 
 .. setting:: FEED_EXPORT_BATCH_DURATION
 
@@ -747,8 +774,10 @@ FEED_EXPORT_BATCH_DURATION
 
 Default: ``0:0:0``
 
-Assign a soft limit to the duration a batch stays active. Duration must be a string in
-the format ``hours:months:seconds``.
+If assigned a duration longer than ``0:0:0``, Scrapy generates multiple output files based on
+the specified duration as a soft limit.
+
+Duration must be a string in the format ``hours:months:seconds``.
 
 .. setting:: FEED_URI_PARAMS
 
@@ -773,7 +802,7 @@ The function signature should be as follows:
         Specifically:
 
         -   ``batch_id``: ID of the file batch. See
-            :ref:`Batch Delivery Triggers<batch_trigger>`.
+            :ref:`Batches<batches>`.
 
             If a batch handler is not enabled or no batch trigger
             is passed, ``batch_id`` is always ``1``.
@@ -783,7 +812,7 @@ The function signature should be as follows:
         -   ``batch_time``: UTC date and time, in ISO format with ``:``
             replaced with ``-``.
 
-            See :ref:`Batch Delivery Triggers<batch_trigger>`.
+            See :ref:`Batches<batches>`.
 
             .. versionadded:: 2.3.0
 
