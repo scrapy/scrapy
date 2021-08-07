@@ -199,6 +199,8 @@ ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 ITEM_PIPELINES = {}
 ITEM_PIPELINES_BASE = {}
 
+JOBDIR = ''
+
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
 LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
