@@ -9,8 +9,51 @@ from typing import Any, BinaryIO, Dict
 
 class BatchHandler:
     """
-    A batch handler which will store information for current batches
-    and provides suitable methods to check and update batch info.
+    The default batch handler for handling batch formation.
+
+    To activate batching using the default batch handler, assign any criteria in the :ref:`feeds-options
+    <feed-options>` of a feed with the desired limit. When using more than one criteria,
+    whichever criteria is exceeded first will trigger the formation of the new batch.
+
+    Accepted criteria:
+
+    - ``batch_item_count``: Assign a limit on the number of items a batch can have.
+
+        The limit must be an integer value.
+
+    - ``batch_file_size``: Assign a soft limit to the size of a batch file.
+
+        The limit must be a string in the format <``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT``
+        must be byte unit based on powers of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
+        Eg: 200MB, 100KiB.
+
+    - ``batch_duration``: Assign a soft limit on the duration a batch stays active.
+
+        Duration must be a string in the format ``hours:minutes:seconds``. Eg: 1:0:0 for 1 hour,
+        0:30:0 for a 30 minute duration.
+
+    Criteria can also be set in settings which will be assigned to all the feeds. But
+    criteria assigned through feed-options will have higher priority.
+
+    Equivalent settings criteria:
+
+    .. setting:: FEED_EXPORT_BATCH_ITEM_COUNT
+
+    - ``FEED_EXPORT_BATCH_ITEM_COUNT``: Equivalent to ``batch_item_count``.
+
+        Default: ``0``
+
+    .. setting:: FEED_EXPORT_BATCH_FILE_SIZE
+
+    - ``FEED_EXPORT_BATCH_FILE_SIZE``: Equivalent to ``batch_file_size``.
+
+        Default: ``0B``
+
+    .. setting:: FEED_EXPORT_BATCH_DURATION
+
+    - ``FEED_EXPORT_BATCH_DURATION``: Equivalent to ``batch_duration``.
+
+        Default: ``0:0:0``
     """
 
     def __init__(self, feed_options: Dict[str, Any]) -> None:

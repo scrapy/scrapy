@@ -1081,6 +1081,22 @@ class FeedExportTest(FeedExportTestBase):
         for fmt, expected in formats.items():
             self.assertEqual(expected, data[fmt])
 
+    def test_item_filters_without_feed_options(self):
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem2({'hello': 'world2', 'foo': 'bar2'}),
+        ]
+
+        class CustomFilter(scrapy.extensions.feedexport.ItemFilter):
+            def accepts(self, item):
+                if 'foo' not in item.fields:
+                    return False
+                return True
+
+        filter = CustomFilter()
+        for item in items:
+            self.assertTrue(filter.accepts(item))
+
     @defer.inlineCallbacks
     def test_export_dicts(self):
         # When dicts are used, only keys from the first row are used as

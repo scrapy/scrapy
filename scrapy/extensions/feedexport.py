@@ -59,7 +59,7 @@ class ItemFilter:
     feed_options: Optional[dict]
     item_classes: Tuple
 
-    def __init__(self, feed_options: Optional[dict]) -> None:
+    def __init__(self, feed_options: Optional[dict] = None) -> None:
         self.feed_options = feed_options
         if feed_options is not None:
             self.item_classes = tuple(

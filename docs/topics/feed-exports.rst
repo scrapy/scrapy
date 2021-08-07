@@ -267,10 +267,10 @@ once all the file contents have been written (i.e. at the end of the crawl) is
 that file uploaded to the feed URI.
 
 If you want item delivery to start earlier when using one of these storage
-backends, use :ref:`batches<batches>` to split the output items in multiple
-files, based on a specified limit. That way, as soon as a file reaches the specified
-limit, that file is delivered to the feed URI, allowing item delivery to start
-way before the end of the crawl.
+backends, use :ref:`batches` to split the output items into multiple
+files, delivered sequentially after a given criteria is met, e.g. after each
+file contains a given number of items or after a given time has passed since
+the last file delivered.
 
 .. _batches:
 
@@ -283,61 +283,20 @@ Batches enable multiple sequential files to be generated for a feed instead of g
 a single file. This is useful in getting item deliveries earlier before the crawl has
 been ended.
 
-To enable batching, you can use :ref:`criterias<batch_criterias>` such as ``batch_item_count``
-, ``batch_file_size``, ``batch_duration`` or you can create :ref:`your own batch
-handlers<custom_batch_handler>` to handle batch deliveries.
+Batching is controlled by a batch handler, which is defined through the 
+:ref:`batch feed option <feed-options>`.
+For information about enabling and configuring the default batch handler, see
+:class:`~scrapy.extensions.batches.BatchHandler`. You can alternatively 
+:ref:`create your own batch handler <custom_batch_handler>`.
 
-When generating multiple output files, you must use at least one of the following
-placeholders in the feed URI to indicate how the different output file names are
-generated:
+If you enable batching, you must also set :ref:`feed URIs appropriately<batch-uri>` with placeholders.
 
-* ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
-  (e.g. ``2020-03-28T14-45-08.237134``)
+.. _default_batch_handler:
 
-* ``%(batch_id)d`` - gets replaced by the 1-based sequence number of the batch.
+Default Batch Handler
+----------------------
 
-  Use :ref:`printf-style string formatting <python:old-string-formatting>` to
-  alter the number format. For example, to make the batch ID a 5-digit
-  number by introducing leading zeroes as needed, use ``%(batch_id)05d``
-  (e.g. ``3`` becomes ``00003``, ``123`` becomes ``00123``).
-
-For instance, if your settings include::
-
-    FEED_EXPORT_BATCH_ITEM_COUNT = 100
-
-And your :command:`crawl` command line is::
-
-    scrapy crawl spidername -o "dirname/%(batch_id)d-filename%(batch_time)s.json"
-
-The command line above can generate a directory tree like::
-
-    ->projectname
-    -->dirname
-    --->1-filename2020-03-28T14-45-08.237134.json
-    --->2-filename2020-03-28T14-45-09.148903.json
-    --->3-filename2020-03-28T14-45-10.046092.json
-
-Where the first and second files contain exactly 100 items. The last one contains
-100 items or fewer.
-
-.. _batch_criterias:
-
-Batch Criterias
----------------
-
-To use batch criterias, assign any criteria in the :ref:`feeds-options<feed-options>`
-of a feed with the desired limit.
-
-* ``batch_item_count``: Create batches with each batches having at most the specified item counts.
-
-* ``batch_file_size``: Assign a soft limit to the size of a batch file.
-
-  The limit must be a string in the format <``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT``
-  must be byte unit based on powers of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
-
-* ``batch_duration``: Assign a soft limit on the duration a batch stays active.
-
-  Duration must be a string in the format ``hours:months:seconds``.
+.. autoclass:: scrapy.extensions.batches.BatchHandler
 
 .. _custom_batch_handler:
 
@@ -378,7 +337,7 @@ Each batch handler is a class that must implement the following methods:
 To activate a custom batch handler use ``batch`` option of :ref:`feed-options<feed-options>`,
 declare the batch handler as an import string or use an imported class of that batch handler.
 To pass a parameter to your batch handler, use :ref:`feed options <feed-options>`. You 
-can then access those parameters from the ``__init__`` method of your plugin.
+can then access those parameters from the ``__init__`` method of your batch handler.
 
 An example for custom batch handler::
 
@@ -401,6 +360,44 @@ An example for custom batch handler::
         def new_batch(self, file):
             self.item_count = 0
             self.batch_id += 1
+
+.. _batch-uri:
+
+Batch URIs
+----------
+
+When generating multiple output files, you must use at least one of the following
+placeholders in the feed URI to indicate how the different output file names are
+generated:
+
+* ``%(batch_time)s`` - gets replaced by a timestamp when the feed is being created
+  (e.g. ``2020-03-28T14-45-08.237134``)
+
+* ``%(batch_id)d`` - gets replaced by the 1-based sequence number of the batch.
+
+  Use :ref:`printf-style string formatting <python:old-string-formatting>` to
+  alter the number format. For example, to make the batch ID a 5-digit
+  number by introducing leading zeroes as needed, use ``%(batch_id)05d``
+  (e.g. ``3`` becomes ``00003``, ``123`` becomes ``00123``).
+
+For instance, if your settings include::
+
+    FEED_EXPORT_BATCH_ITEM_COUNT = 100
+
+And your :command:`crawl` command line is::
+
+    scrapy crawl spidername -o "dirname/%(batch_id)d-filename%(batch_time)s.json"
+
+The command line above can generate a directory tree like::
+
+    ->projectname
+    -->dirname
+    --->1-filename2020-03-28T14-45-08.237134.json
+    --->2-filename2020-03-28T14-45-09.148903.json
+    --->3-filename2020-03-28T14-45-10.046092.json
+
+Where the first and second files contain exactly 100 items. The last one contains
+100 items or fewer.
 
 .. _item-filter:
 
@@ -533,7 +530,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     .. versionadded:: VERSION
 
--   ``batch``: a custom batch handler to handle batch deliveries.
+-   ``batch``: a :ref:`custom batch handler<custom_batch_handler>` to handle batch deliveries.
 
     .. versionadded:: VERSION
 
@@ -737,48 +734,6 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
         'csv': None,
     }
 
-
-.. setting:: FEED_EXPORT_BATCH_ITEM_COUNT
-
-FEED_EXPORT_BATCH_ITEM_COUNT
-----------------------------
-
-.. versionadded:: 2.3.0
-
-Default: ``0``
-
-If assigned an integer number higher than ``0``, Scrapy generates multiple output files
-storing up to the specified number of items in each output file.
-
-.. setting:: FEED_EXPORT_BATCH_FILE_SIZE
-
-FEED_EXPORT_BATCH_FILE_SIZE
-----------------------------
-
-.. versionadded:: VERSION
-
-Default: ``0B``
-
-If assigned a size larger than ``0B``, Scrapy generates multiple output files based on
-the specified size as a soft limit.
-
-The size must be a string in the format <``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT``
-must be byte unit based on powers of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
-
-.. setting:: FEED_EXPORT_BATCH_DURATION
-
-FEED_EXPORT_BATCH_DURATION
-----------------------------
-
-.. versionadded:: VERSION
-
-Default: ``0:0:0``
-
-If assigned a duration longer than ``0:0:0``, Scrapy generates multiple output files based on
-the specified duration as a soft limit.
-
-Duration must be a string in the format ``hours:months:seconds``.
-
 .. setting:: FEED_URI_PARAMS
 
 FEED_URI_PARAMS
@@ -802,17 +757,16 @@ The function signature should be as follows:
         Specifically:
 
         -   ``batch_id``: ID of the file batch. See
-            :ref:`Batches<batches>`.
+            :ref:`batches`.
 
-            If a batch handler is not enabled or no batch trigger
-            is passed, ``batch_id`` is always ``1``.
+            If batching is not enabled, ``batch_id`` is always ``1``.
 
             .. versionadded:: 2.3.0
 
         -   ``batch_time``: UTC date and time, in ISO format with ``:``
             replaced with ``-``.
 
-            See :ref:`Batches<batches>`.
+            See :ref:`batches`.
 
             .. versionadded:: 2.3.0
 
