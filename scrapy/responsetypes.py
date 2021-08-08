@@ -8,8 +8,7 @@ from io import StringIO
 from urllib.parse import urlparse
 from warnings import warn
 
-from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH, extract_mime
-from xtractmime._utils import contains_binary
+from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH, extract_mime, is_binary_data
 from xtractmime.mimegroups import (
     is_html_mime_type,
     is_javascript_mime_type,
@@ -166,7 +165,7 @@ class ResponseTypes:
         body = body[:RESOURCE_HEADER_BUFFER_LENGTH]
         contains_binary_bytes = False
         for index in range(len(body)):
-            if body[index:index + 1] != b"\x00" and contains_binary(body[index:index + 1]):
+            if body[index:index + 1] != b"\x00" and is_binary_data(body[index:index + 1]):
                 contains_binary_bytes = True
                 break
 
