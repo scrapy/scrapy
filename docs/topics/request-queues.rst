@@ -12,8 +12,8 @@ Priority queues
 
 .. currentmodule:: scrapy.pqueues
 
-To decide the order in which requests are sent, Scrapy uses a queue called the
-*priority queue*.
+To decide the order in which requests are sent, the default :ref:`scheduler 
+<topics-scheduler>` uses a queue called the *priority queue*.
 
 The :setting:`SCHEDULER_PRIORITY_QUEUE` setting determines the type of priority
 queue that Scrapy uses. Its default value is :class:`ScrapyPriorityQueue`.
