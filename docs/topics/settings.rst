@@ -996,9 +996,8 @@ JOBDIR
 
 Default: ``''``
 
-A string indicating the directory for storing the required data to keep the state of a single job to enable persistence support. This directory must not be shared by different spiders or jobs/runs of the same spider.
-
-For more info on this setting, see :ref:`topics-jobs`
+A string indicating the directory for storing the state of a crawl when
+:ref:`pausing and resuming crawls <topics-jobs>`.
 
 .. setting:: LOG_ENABLED
 
