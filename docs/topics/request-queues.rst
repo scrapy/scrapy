@@ -34,8 +34,8 @@ Downstream queues
 
 .. currentmodule:: scrapy.squeues
 
-A :ref:`priority queue <priority-queues>` uses queues internally to store
-pending requests. These internal queues are called *downstream queues*.
+The built-in :ref:`priority queues <priority-queues>` use queues internally to 
+store pending requests. These internal queues are called *downstream queues*.
 
 The organization method used by the downstream queues, usually either
 FIFO or LIFO, affects the order in which requests are sent for requests
