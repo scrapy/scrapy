@@ -90,6 +90,7 @@ class ResponseTypesTest(unittest.TestCase):
             ({'filename': 'file.pdf'}, Response),
             ({'url': 'http://www.example.com/item/file.pdf'}, Response),
             ({'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'}, Response),
+            ({'filename': '/tmp/temp^'}, TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)

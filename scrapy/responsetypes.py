@@ -136,7 +136,7 @@ class ResponseTypes:
             mimetype, encoding = self.mimetypes.guess_type(filename)
             if encoding:
                 return (f"application/{encoding}".encode(),)
-            else:
+            elif mimetype:
                 return (mimetype.encode(),)
 
         return None
