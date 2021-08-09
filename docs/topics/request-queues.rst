@@ -12,7 +12,7 @@ Priority queues
 
 .. currentmodule:: scrapy.pqueues
 
-To decide the order in which requests are sent, the default :ref:`scheduler 
+To decide the order in which requests are sent, the default :ref:`scheduler
 <topics-scheduler>` uses a queue called the *priority queue*.
 
 The :setting:`SCHEDULER_PRIORITY_QUEUE` setting determines the type of priority
@@ -34,7 +34,7 @@ Downstream queues
 
 .. currentmodule:: scrapy.squeues
 
-The built-in :ref:`priority queues <priority-queues>` use queues internally to 
+The built-in :ref:`priority queues <priority-queues>` use queues internally to
 store pending requests. These internal queues are called *downstream queues*.
 
 The organization method used by the downstream queues, usually either
@@ -42,8 +42,8 @@ FIFO or LIFO, affects the order in which requests are sent for requests
 that the :ref:`priority queue <priority-queues>` considers to have the same
 priority.
 
-The built-in :ref:`priority queues <priority-queues>` allow you to choose the 
-type of downstream queue they use through a setting. Which setting, however, 
+The built-in :ref:`priority queues <priority-queues>` allow you to choose the
+type of downstream queue they use through a setting. Which setting, however,
 depends on the value of the :setting:`JOBDIR` setting (see :ref:`topics-jobs`):
 
 -   If :setting:`JOBDIR` is not set (default), the memory downstream queue type
@@ -89,7 +89,7 @@ it has to conform to the following interface:
 
    .. classmethod:: __init__(cls, crawler: scrapy.crawler.Crawler, key: str, state)
 
-      Return an instance of this disk downstream queue class.
+      Initializes an instance of this disk downstream queue class.
 
       *key* is the unique ID of the disk downstream queue instance. It may be
       used, for example, to create a unique file or folder to store the queue
