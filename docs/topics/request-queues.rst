@@ -42,8 +42,9 @@ FIFO or LIFO, affects the order in which requests are sent for requests
 that the :ref:`priority queue <priority-queues>` considers to have the same
 priority.
 
-The type of downstream queue used depends on the :setting:`JOBDIR` setting (see
-:ref:`topics-jobs`):
+The built-in :ref:`priority queues <priority-queues>` allow you to choose the 
+type of downstream queue they use through a setting. Which setting, however, 
+depends on the value of the :setting:`JOBDIR` setting (see :ref:`topics-jobs`):
 
 -   If :setting:`JOBDIR` is not set (default), the memory downstream queue type
     defined in the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used, which
