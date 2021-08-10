@@ -163,9 +163,9 @@ class UtilsMiscTestCase(unittest.TestCase):
         assert os.environ.get('some_test_environ') == 'test'
 
     def test_rel_has_nofollow(self):
-        assert rel_has_nofollow('ugc nofollow') == True
-        assert rel_has_nofollow('ugc,nofollow') == True
-        assert rel_has_nofollow('ugc') == False
+        assert rel_has_nofollow('ugc nofollow') is True
+        assert rel_has_nofollow('ugc,nofollow') is True
+        assert rel_has_nofollow('ugc') is False
 
 
 if __name__ == "__main__":
