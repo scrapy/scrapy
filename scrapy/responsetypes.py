@@ -149,36 +149,45 @@ class ResponseTypes:
         if is_xml_mime_type(mime_type):
             return XmlResponse
         if (
-            mime_type.startswith(b'text/')
+            mime_type.startswith(b"text/")
             or is_json_mime_type(mime_type)
             or is_javascript_mime_type(mime_type)
+            or mime_type
+            in (
+                b"application/x-json",
+                b"application/json-amazonui-streaming",
+                b"application/x-javascript",
+            )
         ):
             return TextResponse
         return Response
 
-    def from_args(self, headers=None, url=None, filename=None, body=None):
-        """Guess the most appropriate Response class based on
-        the given arguments."""
-        if not body:
-            body = b''
+    def _remove_nul_byte_from_text(self, text):
+        """Return the text with removed null byte (b"\x00") if there are no other
+        binary bytes in the text, otherwise return the text as-is.
 
-        body = body[:RESOURCE_HEADER_BUFFER_LENGTH]
+        Based on https://github.com/scrapy/scrapy/issues/2481"""
         contains_binary_bytes = False
-        for index in range(len(body)):
-            if body[index:index + 1] != b"\x00" and is_binary_data(body[index:index + 1]):
+
+        for index in range(len(text)):
+            if text[index:index + 1] != b"\x00" and is_binary_data(text[index:index + 1]):
                 contains_binary_bytes = True
                 break
 
         if not contains_binary_bytes:
-            body = body.replace(b"\x00", b"")
+            text = text.replace(b"\x00", b"")
 
-        cls = Response
+        return text
+
+    def from_args(self, headers=None, url=None, filename=None, body=None):
+        """Guess the most appropriate Response class based on
+        the given arguments."""
+        body = body or b''
+        body = self._remove_nul_byte_from_text(body[:RESOURCE_HEADER_BUFFER_LENGTH])
         http_origin = not url or urlparse(url).scheme in ("http", "https")
         content_types = self._guess_content_type(headers=headers, url=url, filename=filename)
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
-        cls = self._guess_response_type(mime_type)
-
-        return cls
+        return self._guess_response_type(mime_type)
 
 
 responsetypes = ResponseTypes()

@@ -83,14 +83,14 @@ class ResponseTypesTest(unittest.TestCase):
             ({'body': b'\x03\x02\xdf\xdd\x23', 'headers': Headers({'Content-Encoding': 'UTF-8'})},
              Response),
             ({'body': b'\x00\x01\xff', 'url': '://www.example.com/item/',
-              'headers': Headers({'Content-Type': b'text/plain'})}, TextResponse),
+              'headers': Headers({'Content-Type': ['text/plain']})}, TextResponse),
             ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
             ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
             ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
             ({'filename': 'file.pdf'}, Response),
             ({'url': 'http://www.example.com/item/file.pdf'}, Response),
             ({'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'}, Response),
-            ({'filename': '/tmp/temp^'}, TextResponse),
+            ({'headers': Headers({'Content-Type': ['application/x-json']})}, TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
@@ -98,13 +98,25 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_from_args_post_xtractmime(self):
         mappings = [
-            # different behaviour with http and non-http urls
             ({'body': b'\x00\x01\xff', 'url': 'http://www.example.com/item/',
-              'headers': Headers({'Content-Type': b'text/plain'})}, Response),
+              'headers': Headers({'Content-Type': ['text/plain']})}, Response),
+            ({'filename': '/tmp/temp^'}, TextResponse),
             ({'body': b'%PDF-1.4'}, Response),
-            ({'body': b'%PDF-1.4', 'headers': Headers({'Content-Type': b'application/pdf'})}, Response),
-            ({'headers': Headers({'Content-Type': b'application/ecmascript'})}, TextResponse),
-            ({'headers': Headers({'Content-Type': b'application/ld+json'})}, TextResponse),
+            ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
+            ({'headers': Headers({'Content-Type': ['application/ecmascript']})}, TextResponse),
+            ({'headers': Headers({'Content-Type': ['application/ld+json']})}, TextResponse),
+            ({'headers': Headers({'Content-Type': ['application/x-javascript']})}, TextResponse),
+            ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/html']})},
+             HtmlResponse),
+            ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/plain']})},
+             TextResponse),
+            ({'body': b'Non HTML', 'headers': Headers({'Content-Encoding': ['zip'],
+                                                       'Content-Type': ['text/html']})}, HtmlResponse),
+            ({'body': b'Some plain text', 'headers': Headers({'Content-Type': 'application/octet-stream'})},
+             Response),
+            ({'body': b'\x0c\x1b'}, TextResponse),
+            ({'body': b'this is not <html>'}, TextResponse),
+            ({'body': b'this is not <?xml'}, TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
