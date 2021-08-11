@@ -118,6 +118,11 @@ class SpiderLoaderTest(unittest.TestCase):
             settings = Settings({'SPIDER_MODULES': [module],
                                  'SPIDER_LOADER_WARN_ONLY': True})
             spider_loader = SpiderLoader.from_settings(settings)
+            if str(w[0].message).startswith("_SixMetaPathImporter"):
+                # needed on 3.10 because of https://github.com/benjaminp/six/issues/349,
+                # at least until all six versions we can import (including botocore.vendored.six)
+                # are updated to 1.16.0+
+                w.pop(0)
             self.assertIn("Could not load spiders from module", str(w[0].message))
 
             spiders = spider_loader.list()
