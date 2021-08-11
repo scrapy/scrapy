@@ -41,9 +41,6 @@ jobs:
           env:
             TOXENV: extra-deps
             TOX_PIP_VERSION: 20.3.3
-        - python-version: 3.9
-          env:
-            TOXENV: asyncio
 
         # 3.10-pre
         - python-version: "3.10.0-beta.4"
