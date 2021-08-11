@@ -1,5 +1,5 @@
 """Helper functions for working with signals"""
-import collections
+import collections.abc
 import logging
 
 from twisted.internet.defer import DeferredList, Deferred
@@ -21,7 +21,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     Failures instead of exceptions.
     """
     dont_log = named.pop('dont_log', ())
-    dont_log = tuple(dont_log) if isinstance(dont_log, collections.Sequence) else (dont_log,)
+    dont_log = tuple(dont_log) if isinstance(dont_log, collections.abc.Sequence) else (dont_log,)
     dont_log += (StopDownload, )
     spider = named.get('spider', None)
     responses = []

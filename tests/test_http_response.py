@@ -878,4 +878,4 @@ class CustomResponseTest(TextResponseTest):
 
         with self.assertRaises(TypeError) as ctx:
             r1.replace(unknown="unknown")
-        self.assertEqual(str(ctx.exception), "__init__() got an unexpected keyword argument 'unknown'")
+        self.assertTrue(str(ctx.exception).endswith("__init__() got an unexpected keyword argument 'unknown'"))
