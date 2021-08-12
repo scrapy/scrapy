@@ -113,7 +113,7 @@ it has to conform to the following interface:
       -     :exc:`TransientError`: indicates a temporary failure.
 
             For example, if storing requests on a server, raise this exception
-            if you temporarily loose access to the server.
+            if you temporarily lose access to the server.
 
         -   :exc:`SerializationError`: indicates that *request* could not be
             serialized
