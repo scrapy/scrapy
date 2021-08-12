@@ -139,7 +139,7 @@ it has to conform to the following interface:
       Return the next object to be returned by :meth:`pop`,
       but without removing it from the queue.
 
-      Raise :exc:`NotImplementedError` if the underlying queue class does
+      Raise :exc:`AttributeError` if the underlying queue class does
       not implement a ``peek`` method, which is optional for queues.
 
       In case of a temporary problem or empty queue, return ``None``.
