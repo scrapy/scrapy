@@ -123,24 +123,6 @@ class ResponseTypes:
         else:
             return self.from_mimetype('text')
 
-    def _guess_content_type(self, headers=None, url=None, filename=None):
-        if headers and b'Content-Type' in headers:
-            return tuple(headers.getlist(b'Content-Type'))
-
-        if headers and b'Content-Disposition' in headers:
-            filename = headers.get(b'Content-Disposition').split(b';')[-1].split(b'=')[-1].strip(b'"\'').decode()
-        elif url:
-            filename = url
-
-        if filename:
-            mimetype, encoding = self.mimetypes.guess_type(filename)
-            if encoding:
-                return (f"application/{encoding}".encode(),)
-            elif mimetype:
-                return (mimetype.encode(),)
-
-        return None
-
     def _guess_response_type(self, mime_type):
         if not mime_type:
             return Response
@@ -152,8 +134,7 @@ class ResponseTypes:
             mime_type.startswith(b"text/")
             or is_json_mime_type(mime_type)
             or is_javascript_mime_type(mime_type)
-            or mime_type
-            in (
+            or mime_type in (
                 b"application/x-json",
                 b"application/json-amazonui-streaming",
                 b"application/x-javascript",
@@ -162,22 +143,39 @@ class ResponseTypes:
             return TextResponse
         return Response
 
+    def _guess_content_type(self, body=None, headers=None, url=None, filename=None):
+        mimetype = None
+
+        if headers and b'Content-Type' in headers:
+            mimetype = tuple(headers.getlist(b'Content-Type'))
+        else:
+            if headers and b'Content-Disposition' in headers:
+                filename = headers.get(b'Content-Disposition').split(b';')[-1].split(b'=')[-1].strip(b'"\'').decode()
+            elif url:
+                filename = url
+
+            if filename:
+                mimetype, encoding = self.mimetypes.guess_type(filename)
+                if encoding:
+                    mimetype = (f"application/{encoding}".encode(),)
+                elif mimetype:
+                    mimetype = (mimetype.encode(),)
+
+        if mimetype and self._guess_response_type(mimetype[-1]) is Response:
+            return None
+
+        return mimetype
+
     def _remove_nul_byte_from_text(self, text):
         """Return the text with removed null byte (b"\x00") if there are no other
         binary bytes in the text, otherwise return the text as-is.
 
         Based on https://github.com/scrapy/scrapy/issues/2481"""
-        contains_binary_bytes = False
-
         for index in range(len(text)):
             if text[index:index + 1] != b"\x00" and is_binary_data(text[index:index + 1]):
-                contains_binary_bytes = True
-                break
+                return text
 
-        if not contains_binary_bytes:
-            text = text.replace(b"\x00", b"")
-
-        return text
+        return text.replace(b"\x00", b"")
 
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
@@ -185,7 +183,7 @@ class ResponseTypes:
         body = body or b''
         body = self._remove_nul_byte_from_text(body[:RESOURCE_HEADER_BUFFER_LENGTH])
         http_origin = not url or urlparse(url).scheme in ("http", "https")
-        content_types = self._guess_content_type(headers=headers, url=url, filename=filename)
+        content_types = self._guess_content_type(body=body, headers=headers, url=url, filename=filename)
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
         return self._guess_response_type(mime_type)
 

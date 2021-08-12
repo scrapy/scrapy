@@ -73,11 +73,15 @@ class ResponseTypesTest(unittest.TestCase):
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
     def test_from_args_pre_xtractmime(self):
+        """Each of the following test cases remains unaffected after
+        using xtractmime for MIME sniffing"""
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
               'url': 'http://www.example.com/item/'}, HtmlResponse),
             ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
+              'url': 'http://www.example.com/page/'}, TextResponse),
+            ({'body': b'\x01\x02', 'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
               'url': 'http://www.example.com/page/'}, Response),
             ({'body': b'Some plain\0 text data with\0 tabs and null bytes\0'}, TextResponse),
             ({'body': b'\x03\x02\xdf\xdd\x23', 'headers': Headers({'Content-Encoding': 'UTF-8'})},
@@ -87,25 +91,31 @@ class ResponseTypesTest(unittest.TestCase):
             ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
             ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
             ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
-            ({'filename': 'file.pdf'}, Response),
-            ({'url': 'http://www.example.com/item/file.pdf'}, Response),
+            ({'filename': 'file.pdf'}, TextResponse),
+            ({'url': 'http://www.example.com/item/file.pdf'}, TextResponse),
+            ({'body': b'\x01\x02', 'filename': 'file.pdf'}, Response),
+            ({'body': b'\x01\x02', 'url': 'http://www.example.com/item/file.pdf'}, Response),
             ({'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'}, Response),
+            ({'body': b'\x01\x02', 'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
             ({'headers': Headers({'Content-Type': ['application/x-json']})}, TextResponse),
+            ({'headers': Headers({'Content-Type': ['application/x-javascript']})}, TextResponse),
+            ({'headers': Headers({'Content-Type': ['application/json-amazonui-streaming']})}, TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
     def test_from_args_post_xtractmime(self):
+        """Each of the following test cases got affected after
+        using xtractmime for MIME sniffing"""
         mappings = [
             ({'body': b'\x00\x01\xff', 'url': 'http://www.example.com/item/',
               'headers': Headers({'Content-Type': ['text/plain']})}, Response),
             ({'filename': '/tmp/temp^'}, TextResponse),
             ({'body': b'%PDF-1.4'}, Response),
-            ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
+            ({'headers': Headers({'Content-Type': ['application/pdf']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/ecmascript']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/ld+json']})}, TextResponse),
-            ({'headers': Headers({'Content-Type': ['application/x-javascript']})}, TextResponse),
             ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/html']})},
              HtmlResponse),
             ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/plain']})},
@@ -113,7 +123,7 @@ class ResponseTypesTest(unittest.TestCase):
             ({'body': b'Non HTML', 'headers': Headers({'Content-Encoding': ['zip'],
                                                        'Content-Type': ['text/html']})}, HtmlResponse),
             ({'body': b'Some plain text', 'headers': Headers({'Content-Type': 'application/octet-stream'})},
-             Response),
+             TextResponse),
             ({'body': b'\x0c\x1b'}, TextResponse),
             ({'body': b'this is not <html>'}, TextResponse),
             ({'body': b'this is not <?xml'}, TextResponse),
