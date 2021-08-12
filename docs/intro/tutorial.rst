@@ -78,7 +78,7 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or a group of websites). They must subclass
-:class:`~scrapy.spiders.Spider` and define the initial requests to make,
+:class:`~scrapy.Spider` and define the initial requests to make,
 optionally how to follow links in the pages, and how to parse the downloaded
 page content to extract data.
 
@@ -107,26 +107,26 @@ This is the code for our first Spider. Save it in a file named
             self.log(f'Saved file {filename}')
 
 
-As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
+As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.Spider>`
 and defines some attributes and methods:
 
-* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
+* :attr:`~scrapy.Spider.name`: identifies the Spider. It must be
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of
+* :meth:`~scrapy.Spider.start_requests`: must return an iterable of
   Requests (you can return a list of requests or write a generator function)
   which the Spider will begin to crawl from. Subsequent requests will be
   generated successively from these initial requests.
 
-* :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
+* :meth:`~scrapy.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
   is an instance of :class:`~scrapy.http.TextResponse` that holds
   the page content and has further helpful methods to handle it.
 
-  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
+  The :meth:`~scrapy.Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
-  follow and creating new requests (:class:`~scrapy.http.Request`) from them.
+  follow and creating new requests (:class:`~scrapy.Request`) from them.
 
 How to run our spider
 ---------------------
@@ -162,7 +162,7 @@ for the respective URLs, as our ``parse`` method instructs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
+Scrapy schedules the :class:`scrapy.Request <scrapy.Request>` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
 response for each one, it instantiates :class:`~scrapy.http.Response` objects
 and calls the callback method associated with the request (in this case, the
@@ -171,11 +171,11 @@ and calls the callback method associated with the request (in this case, the
 
 A shortcut to the start_requests method
 ---------------------------------------
-Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method
-that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs,
-you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
+Instead of implementing a :meth:`~scrapy.Spider.start_requests` method
+that generates :class:`scrapy.Request <scrapy.Request>` objects from URLs,
+you can just define a :attr:`~scrapy.Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
-of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
+of :meth:`~scrapy.Spider.start_requests` to create the initial requests
 for your spider::
 
     import scrapy
@@ -194,9 +194,9 @@ for your spider::
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
-The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
+The :meth:`~scrapy.Spider.parse` method will be called to handle each
 of the requests for those URLs, even though we haven't explicitly told Scrapy
-to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's
+to do so. This happens because :meth:`~scrapy.Spider.parse` is Scrapy's
 default callback method, which is called for requests without an explicitly
 assigned callback.
 
@@ -248,7 +248,7 @@ object:
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
-:class:`~scrapy.selector.Selector` objects that wrap around XML/HTML elements
+:class:`~scrapy.Selector` objects that wrap around XML/HTML elements
 and allow you to run further queries to fine-grain the selection or extract the
 data.
 
@@ -670,7 +670,7 @@ the pagination links with the ``parse`` callback as we saw before.
 Here we're passing callbacks to
 :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` as positional
 arguments to make the code shorter; it also works for
-:class:`~scrapy.http.Request`.
+:class:`~scrapy.Request`.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.

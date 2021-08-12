@@ -5,7 +5,7 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import inspect
-from typing import Optional, Tuple
+from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
 
 from w3lib.url import safe_url_string
 
@@ -16,6 +16,9 @@ from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
+
+
+RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 
 class Request(object_ref):
@@ -36,10 +39,22 @@ class Request(object_ref):
     :func:`~scrapy.utils.request.request_from_dict`.
     """
 
-    def __init__(self, url, callback=None, method='GET', headers=None, body=None,
-                 cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None, flags=None, cb_kwargs=None):
-
+    def __init__(
+        self,
+        url: str,
+        callback: Optional[Callable] = None,
+        method: str = "GET",
+        headers: Optional[dict] = None,
+        body: Optional[Union[bytes, str]] = None,
+        cookies: Optional[Union[dict, List[dict]]] = None,
+        meta: Optional[dict] = None,
+        encoding: str = "utf-8",
+        priority: int = 0,
+        dont_filter: bool = False,
+        errback: Optional[Callable] = None,
+        flags: Optional[List[str]] = None,
+        cb_kwargs: Optional[dict] = None,
+    ) -> None:
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
         self._set_url(url)
@@ -64,23 +79,23 @@ class Request(object_ref):
         self.flags = [] if flags is None else list(flags)
 
     @property
-    def cb_kwargs(self):
+    def cb_kwargs(self) -> dict:
         if self._cb_kwargs is None:
             self._cb_kwargs = {}
         return self._cb_kwargs
 
     @property
-    def meta(self):
+    def meta(self) -> dict:
         if self._meta is None:
             self._meta = {}
         return self._meta
 
-    def _get_url(self):
+    def _get_url(self) -> str:
         return self._url
 
-    def _set_url(self, url):
+    def _set_url(self, url: str) -> None:
         if not isinstance(url, str):
-            raise TypeError(f'Request url must be str or unicode, got {type(url).__name__}')
+            raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
         s = safe_url_string(url, self.encoding)
         self._url = escape_ajax(s)
@@ -94,31 +109,27 @@ class Request(object_ref):
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
-    def _get_body(self):
+    def _get_body(self) -> bytes:
         return self._body
 
-    def _set_body(self, body):
-        if body is None:
-            self._body = b''
-        else:
-            self._body = to_bytes(body, self.encoding)
+    def _set_body(self, body: Optional[Union[str, bytes]]) -> None:
+        self._body = b"" if body is None else to_bytes(body, self.encoding)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 
     @property
-    def encoding(self):
+    def encoding(self) -> str:
         return self._encoding
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<{self.method} {self.url}>"
 
     __repr__ = __str__
 
-    def copy(self):
-        """Return a copy of this Request"""
+    def copy(self) -> "Request":
         return self.replace()
 
-    def replace(self, *args, **kwargs):
+    def replace(self, *args, **kwargs) -> "Request":
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
@@ -126,7 +137,9 @@ class Request(object_ref):
         return cls(*args, **kwargs)
 
     @classmethod
-    def from_curl(cls, curl_command, ignore_unknown_options=True, **kwargs):
+    def from_curl(
+        cls: Type[RequestTypeVar], curl_command: str, ignore_unknown_options: bool = True, **kwargs
+    ) -> RequestTypeVar:
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
