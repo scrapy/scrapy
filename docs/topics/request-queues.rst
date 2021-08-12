@@ -87,16 +87,20 @@ it has to conform to the following interface:
 
 .. class:: MyExternalQueue
 
-   .. classmethod:: __init__(cls, crawler: scrapy.crawler.Crawler, key: str, state)
+   .. classmethod:: from_crawler(cls, downstream_queue_cls: Optional[T], crawler: scrapy.crawler.Crawler, key: str, state)
 
       Initializes an instance of this disk downstream queue class.
+
+      *downstream_queue_cls* class of queues lying down on queue hierarchy, e.g.
+      priority queue manages disk queues. ``None`` in case there is no downstream
+      queue
 
       *key* is the unique ID of the disk downstream queue instance. It may be
       used, for example, to create a unique file or folder to store the queue
       content.
 
-      *state* is the data returned by the :method:`close` method of this queue 
-      during a prior execution, and should be used to restore the queue to that 
+      *state* is the data returned by the :method:`close` method of this queue
+      during a prior execution, and should be used to restore the queue to that
       prior state. If there is no prior execution, its value is ``None``.
 
    .. method:: push(self, request: scrapy.http.Request) -> None
@@ -142,10 +146,10 @@ it has to conform to the following interface:
 
    .. method:: close(self) -> Optional[Any]
 
-      Release internal resources (e.g. close files or sockets) and return an 
-      object serializable by :function:`json.dump` (e.g. a :class:`dict`) that 
-      represents the current internal state of this queue. When :ref:`resuming 
-      a crawl <topics-jobs>`, this object is passed to the :method:`__init__` 
+      Release internal resources (e.g. close files or sockets) and return an
+      object serializable by :function:`json.dump` (e.g. a :class:`dict`) that
+      represents the current internal state of this queue. When :ref:`resuming
+      a crawl <topics-jobs>`, this object is passed to the :method:`__init__`
       method of this queue class to restore the queue state.
 
    .. method:: __len__(self)
