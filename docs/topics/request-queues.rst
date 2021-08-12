@@ -95,9 +95,9 @@ it has to conform to the following interface:
       used, for example, to create a unique file or folder to store the queue
       content.
 
-      *state* is a variable containing state of queue. It should be serializeable
-      and deserializeble by json module. You need to come up with proper type
-      and structure to completely restore an internal state of your queue.
+      *state* is the data returned by the :method:`close` method of this queue 
+      during a prior execution, and should be used to restore the queue to that 
+      prior state. If there is no prior execution, its value is ``None``.
 
    .. method:: push(self, request: scrapy.http.Request) -> None
 
