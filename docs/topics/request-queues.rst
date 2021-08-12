@@ -116,7 +116,7 @@ it has to conform to the following interface:
             if you temporarily lose access to the server.
 
         -   :exc:`SerializationError`: indicates that *request* could not be
-            serialized
+            serialized.
 
    .. method:: pop(self) -> Optional[Request]
 
