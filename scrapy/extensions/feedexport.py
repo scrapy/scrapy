@@ -341,6 +341,7 @@ class FeedExporter:
         for uri, feed_options in self.feeds.items():
             uri_params = self._get_uri_params(spider, feed_options['uri_params'])
             self.slots.append(self._start_new_batch(
+                batch_id=1,
                 uri=uri % uri_params,
                 feed_options=feed_options,
                 spider=spider,
@@ -389,7 +390,7 @@ class FeedExporter:
         )
         self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
-    def _start_new_batch(self, uri, feed_options, spider, uri_template):
+    def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
         """
         Redirect the output data stream to a new file.
         Execute multiple times if FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified
@@ -417,7 +418,7 @@ class FeedExporter:
             uri=uri,
             format=feed_options['format'],
             store_empty=feed_options['store_empty'],
-            batch_id=self.batches[uri_template].batch_id,
+            batch_id=batch_id,
             uri_template=uri_template,
             filter=self.filters[uri_template]
         )
@@ -435,12 +436,13 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            self.batches[slot.uri_template].item_added()
+            batch_should_trigger = self.batches[slot.uri_template].item_added()
 
-            if self.batches[slot.uri_template].should_trigger():
+            if batch_should_trigger:
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
+                    batch_id=slot.batch_id + 1,
                     uri=slot.uri_template % uri_params,
                     feed_options=self.feeds[slot.uri_template],
                     spider=spider,
@@ -470,8 +472,11 @@ class FeedExporter:
         If batch class or related contraints are specified, uri has to contain
         %(batch_time)s or %(batch_id)d to distinguish different files of partial output
         """
-        for uri_template, batch in self.batches.items():
-            if batch.enabled and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
+        for uri_template, values in self.feeds.items():
+            if (
+                ('batch' in values or self.batches[uri_template].enabled)
+                and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template)
+            ):
                 logger.error(
                     '%(batch_time)s or %(batch_id)d must be in the feed URI ({}) if FEED_EXPORT_BATCH_ITEM_COUNT '
                     'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '

@@ -270,7 +270,7 @@ If you want item delivery to start earlier when using one of these storage
 backends, use :ref:`batches` to split the output items into multiple
 files, delivered sequentially after a given criteria is met, e.g. after each
 file contains a given number of items or after a given time has passed since
-the last file delivered.
+the last file was delivered.
 
 .. _batches:
 
@@ -280,28 +280,30 @@ Batches
 .. versionadded:: VERSION
 
 Batches enable multiple sequential files to be generated for a feed instead of getting
-a single file. This is useful in getting item deliveries earlier before the crawl has
-been ended.
+a single file. This is useful in getting item deliveries earlier before the crawl ends.
 
 Batching is controlled by a batch handler, which is defined through the 
 :ref:`batch feed option <feed-options>`.
 For information about enabling and configuring the default batch handler, see
 :class:`~scrapy.extensions.batches.BatchHandler`. You can alternatively 
-:ref:`create your own batch handler <custom_batch_handler>`.
+:ref:`create your own batch handler <custom-batch-handler>`.
 
-If you enable batching, you must also set :ref:`feed URIs appropriately<batch-uri>` with placeholders.
+If you enable batching, you must also :ref:`set feed URIs appropriately with placeholders<batch-uri>`.
 
-.. _default_batch_handler:
+.. _default-batch-handler:
 
 Default Batch Handler
 ----------------------
 
 .. autoclass:: scrapy.extensions.batches.BatchHandler
 
-.. _custom_batch_handler:
+.. _custom-batch-handler:
 
 Custom Batch Handler
 --------------------
+
+To use a custom batch handler, write a custom batch handler class and assign 
+that class or its import string to the :ref:`batch feed option <feed-options>`.
 
 Each batch handler is a class that must implement the following methods:
 
@@ -309,57 +311,45 @@ Each batch handler is a class that must implement the following methods:
 
     Initialize the batch handler.
 
-    Parameters:
-
     :param feed_options: feed-specific :ref:`options <feed-options>`
+
     :type feed_options: :class:`dict`
 
-    Required attributes:
-
-    * `self.batch_id` (:class:`int`): id number of current batch, must be initialised to 0.
-    * `self.enabled` (:class:`bool`): must be `True` if a non-empty limit is passed, otherwise `False`.
+    .. note:: Feed options support arbitrary parameters passing which can be
+              used by custom batch handlers to access parameters passed by users.
 
 .. method:: item_added(self)
 
     Update batch state info. Will be called everytime an item is exported to feed.
 
-.. method:: should_trigger(self)
-
-    Returns `True` if batch's limit has been crossed, `False` otherwise.
+    Return `True` if a new batch file should be created now, or `False` otherwise.
 
 .. method:: new_batch(self, file)
 
-    Resets batch state info and increments `self.batch_id`.
+    Called after each batch file is created, including the first batch file.
+
+    You may also reset any internal state of your batch handler.
 
     :param file: file pointer of new batch storage
-    :type file: :class:`BinaryIO`
 
-To activate a custom batch handler use ``batch`` option of :ref:`feed-options<feed-options>`,
-declare the batch handler as an import string or use an imported class of that batch handler.
-To pass a parameter to your batch handler, use :ref:`feed options <feed-options>`. You 
-can then access those parameters from the ``__init__`` method of your batch handler.
+    :type file: :class:`BinaryIO`
 
 An example for custom batch handler::
 
     class CustomBatchHandler:
 
         def __init__(self, feed_options):
-            self.divisor = feed_options.get("batch_divisible_by", 0)
+            if "batch_divisible_by" not in feed_options:
+                raise NotConfigured
+            self.divisor = feed_options["batch_divisible_by"]
             self.item_count = 0
-            self.batch_id = 0
-            self.enabled = True if self.divisor > 0 else False
 
         def item_added(self):
             self.item_count += 1
-
-        def should_trigger(self):
-            if not self.enabled:
-                return False
             return self.item_count % self.divisor == 0
 
         def new_batch(self, file):
             self.item_count = 0
-            self.batch_id += 1
 
 .. _batch-uri:
 
@@ -530,7 +520,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     .. versionadded:: VERSION
 
--   ``batch``: a :ref:`custom batch handler<custom_batch_handler>` to handle batch deliveries.
+-   ``batch``: a :ref:`custom batch handler<custom-batch-handler>` to handle batch deliveries.
 
     .. versionadded:: VERSION
 

@@ -1499,22 +1499,17 @@ class BatchDeliveriesTest(FeedExportTestBase):
     class CustomBatchHandler:
 
         def __init__(self, feed_options):
-            self.divisor = feed_options.get("batch_divisible_by", 0)
+            if "batch_divisible_by" not in feed_options:
+                raise NotConfigured
+            self.divisor = feed_options["batch_divisible_by"]
             self.item_count = 0
-            self.batch_id = 0
-            self.enabled = bool(self.divisor)
 
         def item_added(self):
             self.item_count += 1
-
-        def should_trigger(self):
-            if not self.enabled:
-                return False
             return self.item_count % self.divisor == 0
 
         def new_batch(self, file):
             self.item_count = 0
-            self.batch_id += 1
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings, multiple_urls=1):

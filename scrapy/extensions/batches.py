@@ -3,60 +3,57 @@ Extensions for batch processing and support.
 """
 
 import re
+from scrapy.exceptions import NotConfigured
 import time
 from typing import Any, BinaryIO, Dict
 
 
 class BatchHandler:
     """
-    The default batch handler for handling batch formation.
+    The default :ref:`batch handler <batches>`.
 
-    To activate batching using the default batch handler, assign any criteria in the :ref:`feeds-options
-    <feed-options>` of a feed with the desired limit. When using more than one criteria,
-    whichever criteria is exceeded first will trigger the formation of the new batch.
-
-    Accepted criteria:
-
-    - ``batch_item_count``: Assign a limit on the number of items a batch can have.
-
-        The limit must be an integer value.
-
-    - ``batch_file_size``: Assign a soft limit to the size of a batch file.
-
-        The limit must be a string in the format <``SIZE``><``STORAGE-UNIT``>, where ``STORAGE-UNIT``
-        must be byte unit based on powers of 2(KiB, MiB, GiB, TiB) or powers of 10(kB, MB, GB, TB).
-        Eg: 200MB, 100KiB.
-
-    - ``batch_duration``: Assign a soft limit on the duration a batch stays active.
-
-        Duration must be a string in the format ``hours:minutes:seconds``. Eg: 1:0:0 for 1 hour,
-        0:30:0 for a 30 minute duration.
-
-    Criteria can also be set in settings which will be assigned to all the feeds. But
-    criteria assigned through feed-options will have higher priority.
-
-    Equivalent settings criteria:
+    To activate, define one of the following :ref:`feed options <feeds-options>`:
 
     .. setting:: FEED_EXPORT_BATCH_ITEM_COUNT
 
-    - ``FEED_EXPORT_BATCH_ITEM_COUNT``: Equivalent to ``batch_item_count``.
+    - ``batch_item_count`` feed option or ``FEED_EXPORT_BATCH_ITEM_COUNT``
+      setting (:class:`int`): the maximum number of items a batch can have.
 
-        Default: ``0``
+      DEFAULT: ``0``
 
     .. setting:: FEED_EXPORT_BATCH_FILE_SIZE
 
-    - ``FEED_EXPORT_BATCH_FILE_SIZE``: Equivalent to ``batch_file_size``.
+    - ``batch_file_size`` feed options or ``FEED_EXPORT_BATCH_FILE_SIZE``
+      setting (:class:`str`): deliver a batch file after it surpasses this file size.
 
-        Default: ``0B``
+      The file size format is ``<number><unit>``, where ``<unit>`` is a byte
+      unit based on powers of 2 (KiB, MiB, GiB, TiB) or powers of 10 (kB, MB,
+      GB, TB). Eg: 200MB, 100KiB.
+
+      DEFAULT: ``0B``
 
     .. setting:: FEED_EXPORT_BATCH_DURATION
 
-    - ``FEED_EXPORT_BATCH_DURATION``: Equivalent to ``batch_duration``.
+    - ``batch_duration`` feed options or ``FEED_EXPORT_BATCH_DURATION``
+      setting (:class:`str`): deliver a batch file after at least this much time has passed.
 
-        Default: ``0:0:0``
+      The duration format is ``hours:minutes:seconds``. Eg: 1:0:0 for 1 hour,
+      0:30:0 for a 30 minute duration.
+
+      Duration is only checked after an item is added to the batch file.
+
+      DEFAULT: ``0:0:0``
+
+    Each feed option overrides its counterpart setting.
+
+    When using more than one type of limit, whichever limit exceeds first triggers a
+    new batch file.
     """
 
     def __init__(self, feed_options: Dict[str, Any]) -> None:
+        if not all(k in feed_options for k in ("batch_item_count", "batch_duration", "batch_file_size")):
+            raise NotConfigured
+
         # get limits from feed_settings
         self.max_item_count: int = feed_options["batch_item_count"]
         self.max_seconds: float = self._in_seconds(feed_options["batch_duration"])
@@ -65,29 +62,18 @@ class BatchHandler:
         self.item_count: int = 0
         self.elapsed_seconds: float = 0
         self.file_size: int = 0
-        self.batch_id: int = 0
         # misc attributes
         self.file: BinaryIO
         self.start_time: float
         self.enabled: bool = any([self.max_item_count, self.max_seconds, self.max_file_size])
 
-    def item_added(self) -> None:
-        """
-        Update batch state attributes.
-        """
+    def item_added(self) -> bool:
+        if not self.enabled:
+            return False
+
         self.item_count += 1
         self.elapsed_seconds = time.time() - self.start_time
         self.file_size = self.file.tell()
-
-    def should_trigger(self) -> bool:
-        """
-        Check if any batch state attribute has crossed its
-        specified limit.
-        :return: `True` if parameter value has crossed constraint, else `False`
-        :rtype: bool
-        """
-        if not self.enabled:
-            return False
 
         if self.max_item_count and self.item_count >= self.max_item_count:
             return True
@@ -99,29 +85,20 @@ class BatchHandler:
         return False
 
     def new_batch(self, file: BinaryIO) -> None:
-        """
-        Resets parameter values back to its initial value and increments
-        self.batch_id.
-        """
         self.file = file
         self.start_time = time.time()
         self.item_count = 0
         self.elapsed_seconds = 0
         self.file_size = 0
-        self.batch_id += 1
 
     def _in_seconds(self, duration: str) -> float:
-        """
-        Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in float.
-        """
+        # Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in float.
         h, m, s = map(float, duration.split(":"))
         duration_in_secs = h * 60 * 60 + m * 60 + s
         return duration_in_secs
 
     def _in_bytes(self, size: str) -> int:
-        """
-        Convert string size in format: '<SIZE><UNIT>' to bytes in integer.
-        """
+        # Convert string size in format: '<SIZE><UNIT>' to bytes in integer.
         # https://stackoverflow.com/a/60708339/7116579
         units = {"B": 1, "KIB": 2**10, "MIB": 2**20, "GIB": 2**30, "TIB": 2**40,
                  "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}
