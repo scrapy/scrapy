@@ -313,22 +313,24 @@ Each batch handler is a class that must implement the following methods:
 
     :param feed_options: feed-specific :ref:`options <feed-options>`
 
-    :type feed_options: :class:`dict`
+    :type feed_options: dict
 
-    .. note:: Feed options support arbitrary parameters passing which can be
+    .. note:: Feed options support arbitrary parameters passing which, can be
               used by custom batch handlers to access parameters passed by users.
 
 .. method:: item_added(self)
 
-    Update batch state info. Will be called everytime an item is exported to feed.
-
+    Called every time after an item is exported to the feed.
+    
     Return `True` if a new batch file should be created now, or `False` otherwise.
+
+    You may use this method to update batch state information.
 
 .. method:: new_batch(self, file)
 
     Called after each batch file is created, including the first batch file.
 
-    You may also reset any internal state of your batch handler.
+    You may reset any internal state of your batch handler.
 
     :param file: file pointer of new batch storage
 
@@ -339,7 +341,7 @@ An example for custom batch handler::
     class CustomBatchHandler:
 
         def __init__(self, feed_options):
-            if "batch_divisible_by" not in feed_options:
+            if "batch_divisible_by" not in feed_options or feed_options["batch_divisible_by"] <= 0
                 raise NotConfigured
             self.divisor = feed_options["batch_divisible_by"]
             self.item_count = 0
