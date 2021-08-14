@@ -2003,7 +2003,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         invalid_durations = ['0:-1:0', '-1:0:0']
         for duration in invalid_durations:
             settings = {
-                'FEEDS': { 
+                'FEEDS': {
                     os.path.join(self._random_temp_filename(), self._file_mark): {
                         'format': 'jsonlines',
                         'batch_duration': duration,
