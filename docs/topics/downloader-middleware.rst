@@ -1073,7 +1073,7 @@ In order to use this parser:
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``
 
-* only works with python 3.8 and earlier
+* Only works with python 3.8 and earlier
 
 .. _rerp-parser:
 
