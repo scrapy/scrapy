@@ -1068,12 +1068,13 @@ Native implementation, provides better speed than Protego.
 
 In order to use this parser:
 
+.. warning:: Does not support Python 3.9+
+
 * Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``
 
-* Only works with python 3.8 and earlier
 
 .. _rerp-parser:
 
