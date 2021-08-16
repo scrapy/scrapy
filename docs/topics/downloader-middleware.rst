@@ -1068,9 +1068,9 @@ Native implementation, provides better speed than Protego.
 
 In order to use this parser:
 
-.. warning:: Does not support Python 3.9+
-
 * Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
+
+  .. warning:: Does not support Python 3.9+
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``
