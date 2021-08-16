@@ -204,6 +204,19 @@ Default: ``None``
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
 
+.. setting:: AWS_SESSION_TOKEN
+
+AWS_SESSION_TOKEN
+-----------------
+
+Default: ``None``
+
+The AWS security token used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
+`temporary security credentials`_.
+
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+
 .. setting:: AWS_ENDPOINT_URL
 
 AWS_ENDPOINT_URL
@@ -975,6 +988,16 @@ Default: ``{}``
 
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
+
+.. setting:: JOBDIR
+
+JOBDIR
+------
+
+Default: ``''``
+
+A string indicating the directory for storing the state of a crawl when
+:ref:`pausing and resuming crawls <topics-jobs>`.
 
 .. setting:: LOG_ENABLED
 

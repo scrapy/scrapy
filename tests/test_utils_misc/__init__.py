@@ -4,7 +4,7 @@ import unittest
 from unittest import mock
 
 from scrapy.item import Item, Field
-from scrapy.utils.misc import arg_to_iter, create_instance, load_object, set_environ, walk_modules
+from scrapy.utils.misc import arg_to_iter, create_instance, load_object, rel_has_nofollow, set_environ, walk_modules
 
 
 __doctests__ = ['scrapy.utils.misc']
@@ -161,6 +161,15 @@ class UtilsMiscTestCase(unittest.TestCase):
         with set_environ(some_test_environ='test_value'):
             assert os.environ.get('some_test_environ') == 'test_value'
         assert os.environ.get('some_test_environ') == 'test'
+
+    def test_rel_has_nofollow(self):
+        assert rel_has_nofollow('ugc nofollow') is True
+        assert rel_has_nofollow('ugc,nofollow') is True
+        assert rel_has_nofollow('ugc') is False
+        assert rel_has_nofollow('nofollow') is True
+        assert rel_has_nofollow('nofollowfoo') is False
+        assert rel_has_nofollow('foonofollow') is False
+        assert rel_has_nofollow('ugc,  ,  nofollow') is True
 
 
 if __name__ == "__main__":

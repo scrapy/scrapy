@@ -670,9 +670,6 @@ Response objects
 
 .. autoclass:: Response
 
-    A :class:`Response` object represents an HTTP response, which is usually
-    downloaded (by the Downloader) and fed to the Spiders for processing.
-
     :param url: the URL of this response
     :type url: str
 
@@ -829,6 +826,8 @@ Response objects
         handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`protocol` is always ``None``.
 
+    .. autoattribute:: Response.attributes
+
     .. method:: Response.copy()
 
        Returns a new Response which is a copy of this Response.
@@ -924,6 +923,8 @@ TextResponse objects
 
         A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
+
+    .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:

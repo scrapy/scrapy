@@ -244,7 +244,8 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_parse_credentials(self):
         skip_if_no_boto()
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
-                           'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
+                           'AWS_SECRET_ACCESS_KEY': 'settings_secret',
+                           'AWS_SESSION_TOKEN': 'settings_token'}
         crawler = get_crawler(settings_dict=aws_credentials)
         # Instantiate with crawler
         storage = S3FeedStorage.from_crawler(
@@ -253,12 +254,15 @@ class S3FeedStorageTest(unittest.TestCase):
         )
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
+        self.assertEqual(storage.session_token, 'settings_token')
         # Instantiate directly
         storage = S3FeedStorage('s3://mybucket/export.csv',
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
-                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+                                aws_credentials['AWS_SECRET_ACCESS_KEY'],
+                                session_token=aws_credentials['AWS_SESSION_TOKEN'])
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
+        self.assertEqual(storage.session_token, 'settings_token')
         # URI priority > settings priority
         storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
@@ -1928,14 +1932,15 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
     maxDiff = None
 
     def test_init(self):
-        settings_dict = {
-            'FEED_URI': 'file:///tmp/foobar',
-            'FEED_STORAGES': {
-                'file': FileFeedStorageWithoutFeedOptions
-            },
-        }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with tempfile.NamedTemporaryFile() as temp:
+            settings_dict = {
+                'FEED_URI': f'file:///{temp.name}',
+                'FEED_STORAGES': {
+                    'file': FileFeedStorageWithoutFeedOptions
+                },
+            }
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
@@ -1957,8 +1962,8 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
 class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
 
-    def __init__(self, uri, access_key, secret_key, acl, endpoint_url):
-        super().__init__(uri, access_key, secret_key, acl, endpoint_url)
+    def __init__(self, uri, access_key, secret_key, acl, endpoint_url, **kwargs):
+        super().__init__(uri, access_key, secret_key, acl, endpoint_url, **kwargs)
 
 
 class S3FeedStorageWithoutFeedOptionsWithFromCrawler(S3FeedStorage):

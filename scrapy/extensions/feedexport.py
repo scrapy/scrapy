@@ -154,13 +154,14 @@ class FileFeedStorage:
 class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, access_key=None, secret_key=None, acl=None, endpoint_url=None, *,
-                 feed_options=None):
+                 feed_options=None, session_token=None):
         if not is_botocore_available():
             raise NotConfigured('missing botocore library')
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
+        self.session_token = session_token
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
@@ -169,6 +170,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.s3_client = session.create_client(
             's3', aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
+            aws_session_token=self.session_token,
             endpoint_url=self.endpoint_url)
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
@@ -182,6 +184,7 @@ class S3FeedStorage(BlockingFeedStorage):
             uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
+            session_token=crawler.settings['AWS_SESSION_TOKEN'],
             acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
             endpoint_url=crawler.settings['AWS_ENDPOINT_URL'] or None,
             feed_options=feed_options,
