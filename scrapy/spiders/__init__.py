@@ -11,6 +11,7 @@ from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
+from scrapy.exceptions import DontCloseSpider
 from scrapy.utils.deprecate import method_is_overridden
 
 
@@ -55,6 +56,7 @@ class Spider(object_ref):
         self.crawler = crawler
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
+        crawler.signals.connect(self.idle, signals.spider_idle)
 
     def start_requests(self):
         cls = self.__class__
@@ -105,6 +107,20 @@ class Spider(object_ref):
         closed = getattr(spider, 'closed', None)
         if callable(closed):
             return closed(reason)
+
+    @staticmethod
+    def idle(spider):
+        # scrapy.utils.spider needs Spider, so it must be imported late
+        from scrapy.utils.spider import iterate_spider_output
+
+        idled = getattr(spider, 'idled', None)
+        if not callable(idled):
+            return
+        cb_response = iterate_spider_output(idled())
+        if cb_response:
+            for request in cb_response:
+                spider.crawler.engine.crawl(request, spider)
+            raise DontCloseSpider
 
     def __str__(self):
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
