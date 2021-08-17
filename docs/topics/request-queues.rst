@@ -126,7 +126,7 @@ it has to conform to the following interface:
 
       Pop a request from the queue.
 
-      In case of a temporary problem or empty queue, ``None`` is returned.
+      In case of a temporary problem or empty queue, return ``None``.
       Exceptions raised in this method woudln't be handled and may lead to
       a halt of the crawler.
 
