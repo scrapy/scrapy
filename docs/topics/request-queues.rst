@@ -99,7 +99,7 @@ it has to conform to the following interface:
       used, for example, to create a unique file or folder to store the queue
       content.
 
-      *state* is the data returned by the :method:`close` method of this queue
+      *state* is the data returned by the :meth:`close` method of this queue
       during a prior execution, and should be used to restore the queue to that
       prior state. If there is no prior execution, its value is ``None``.
 
