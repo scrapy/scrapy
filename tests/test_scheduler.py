@@ -442,7 +442,7 @@ class ErrorEmitter(SchedulerHandler, unittest.TestCase):
 
 
 class FifoWithCrawlerAccess(queue.FifoDiskQueue):
-    def __init__(self, crawler, path, *_, **__):
+    def __init__(self, crawler, _, path, *__, **___):
         self.hello_message = crawler.settings.get('HELLO_MESSAGE')
         self.logger = logging.getLogger(__name__)
         super().__init__(path)
@@ -489,9 +489,9 @@ class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
 class StateInClassQueue(PickleLifoDiskQueue):
     STATE = 0
 
-    def __init__(self, crawler, path, state):
+    def __init__(self, crawler, _, path, state):
         type(self).STATE = state
-        super().__init__(crawler, path)
+        super().__init__(crawler, _, path)
 
     def close(self):
         super().close()

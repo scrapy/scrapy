@@ -1,8 +1,6 @@
 import hashlib
 import logging
 
-from scrapy.utils.misc import create_instance
-
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +39,13 @@ class ScrapyPriorityQueue:
     should be passed in startprios.
     """
 
-    @classmethod
-    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
-        return cls(crawler, downstream_queue_cls, key, startprios)
-
-    def __init__(self, crawler, downstream_queue_cls, key, startprios=()):
+    def __init__(self, crawler, downstream_queue_cls, key, state=()):
         self.crawler = crawler
         self.downstream_queue_cls = downstream_queue_cls
         self.key = key
         self.queues = {}
         self.curprio = None
-        self.init_prios(startprios)
+        self.init_prios(state)
 
     @staticmethod
     def _bring_prios_up_to_date(startprios):
@@ -77,10 +71,9 @@ class ScrapyPriorityQueue:
         self.curprio = min(p for p, s in startprios)
 
     def qfactory(self, key, state):
-        return create_instance(
-            self.downstream_queue_cls,
-            None,
+        return self.downstream_queue_cls(
             self.crawler,
+            None,
             self.key + '/' + str(key),
             state,
         )
@@ -156,18 +149,14 @@ class DownloaderAwarePriorityQueue:
     The :setting:`CONCURRENT_REQUESTS_PER_IP` setting is not supported.
     """
 
-    @classmethod
-    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
-        return cls(crawler, downstream_queue_cls, key, startprios)
-
-    def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
+    def __init__(self, crawler, downstream_queue_cls, key, state=()):
         if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
             raise ValueError(f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP')
 
-        if slot_startprios and not isinstance(slot_startprios, dict):
+        if state and not isinstance(state, dict):
             raise ValueError("DownloaderAwarePriorityQueue accepts "
-                             "``slot_startprios`` as a dict; "
-                             f"{slot_startprios.__class__!r} instance "
+                             "``state`` as a dict; "
+                             f"{state.__class__!r} instance "
                              "is passed. Most likely, it means the state is"
                              "created by an incompatible priority queue. "
                              "Only a crawl started with the same priority "
@@ -179,7 +168,7 @@ class DownloaderAwarePriorityQueue:
         self.crawler = crawler
 
         self.pqueues = {}  # slot -> priority queue
-        for slot, startprios in (slot_startprios or {}).items():
+        for slot, startprios in (state or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
     def pqfactory(self, slot, startprios=()):

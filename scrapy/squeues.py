@@ -17,12 +17,12 @@ def _with_mkdir(queue_class):
 
     class DirectoriesCreatedForKey(queue_class):
 
-        def __init__(self, crawler, key, *args, **kwargs):
+        def __init__(self, crawler, downstream_queue_cls, key, *args, **kwargs):
             path = key
             dirname = os.path.dirname(path)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
-            super().__init__(crawler, path, *args, **kwargs)
+            super().__init__(crawler, downstream_queue_cls, path, *args, **kwargs)
 
     return DirectoriesCreatedForKey
 
@@ -55,13 +55,9 @@ def _scrapy_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
 
-        def __init__(self, crawler, key, *args, **kwargs):
+        def __init__(self, crawler, downstream_queue_cls, key, *args, **kwargs):
             self.spider = crawler.spider
-            super().__init__(crawler, key, *args, **kwargs)
-
-        @classmethod
-        def from_crawler(cls, crawler, key, *args, **kwargs):
-            return cls(crawler, key, *args, **kwargs)
+            super().__init__(crawler, downstream_queue_cls, key, *args, **kwargs)
 
         def push(self, request):
             request = request.to_dict(spider=self.spider)
@@ -85,9 +81,8 @@ def _scrapy_serialization_queue(queue_class):
 def _scrapy_non_serialization_queue(queue_class):
 
     class ScrapyRequestQueue(queue_class):
-        @classmethod
-        def from_crawler(cls, crawler, *args, **kwargs):
-            return cls()
+        def __init__(self, _, __, ___, ____):
+            super().__init__()
 
         def peek(self):
             try:
@@ -111,12 +106,8 @@ def _pickle_serialize(obj):
 def _file_queue(queue_class):
     class FileQueue(queue_class):
 
-        def __init__(self, _, key, *args, **kwargs):
+        def __init__(self, _, __, key, *args, **kwargs):
             super().__init__(key)
-
-        @classmethod
-        def from_crawler(cls, crawler, key, *args, **kwargs):
-            return cls(crawler, key, *args, **kwargs)
 
     return FileQueue
 

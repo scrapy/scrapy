@@ -55,12 +55,12 @@ CRAWLER_MOCK = None
 class MarshalFifoDiskQueueTest(FifoDiskQueueTestMixin):
 
     def queue(self):
-        return _MarshalFifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _MarshalFifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
 
 class PickleFifoDiskQueueTest(FifoDiskQueueTestMixin):
     def queue(self):
-        return _PickleFifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _PickleFifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -121,13 +121,13 @@ class LifoDiskQueueTestMixin:
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
     def queue(self):
-        return _MarshalLifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _MarshalLifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
-        return _PickleLifoSerializationDiskQueue(CRAWLER_MOCK, self.qpath)
+        return _PickleLifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
     def test_serialize_item(self):
         q = self.queue()

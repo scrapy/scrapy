@@ -186,29 +186,29 @@ class LifoQueueMixin(RequestQueueTestMixin):
 
 class PickleFifoDiskQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return PickleFifoDiskQueue.from_crawler(crawler=self.crawler, key="pickle/fifo")
+        return PickleFifoDiskQueue(self.crawler, None, "pickle/fifo", None)
 
 
 class PickleLifoDiskQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return PickleLifoDiskQueue.from_crawler(crawler=self.crawler, key="pickle/lifo")
+        return PickleLifoDiskQueue(self.crawler, None, "pickle/lifo", None)
 
 
 class MarshalFifoDiskQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return MarshalFifoDiskQueue.from_crawler(crawler=self.crawler, key="marshal/fifo")
+        return MarshalFifoDiskQueue(self.crawler, None, "marshal/fifo", None)
 
 
 class MarshalLifoDiskQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return MarshalLifoDiskQueue.from_crawler(crawler=self.crawler, key="marshal/lifo")
+        return MarshalLifoDiskQueue(self.crawler, None, "marshal/lifo", None)
 
 
 class FifoMemoryQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return FifoMemoryQueue.from_crawler(crawler=self.crawler)
+        return FifoMemoryQueue(self.crawler, None, None, None)
 
 
 class LifoMemoryQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return LifoMemoryQueue.from_crawler(crawler=self.crawler)
+        return LifoMemoryQueue(self.crawler, None, None, None)
