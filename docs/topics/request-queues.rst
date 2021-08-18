@@ -82,20 +82,20 @@ depends on the value of the :setting:`JOBDIR` setting (see :ref:`topics-jobs`):
 Writing your own disk downstream queue class
 --------------------------------------------
 
-If you want to define and use your own disk downstream queue implementation,
+If you want to define and use your own downstream queue implementation,
 it has to conform to the following interface:
 
 .. class:: MyExternalQueue
 
    .. method:: __init__(self, crawler: scrapy.crawler.Crawler, downstream_queue_cls: Optional[T], key: str, state)
 
-      Initializes an instance of this disk downstream queue class.
+      Initializes an instance of this downstream queue class.
 
       *downstream_queue_cls* class of queues lying down on queue hierarchy, e.g.
-      priority queue manages disk queues. ``None`` in case there is no downstream
-      queue
+      priority queue manages disk or memory queues. ``None`` in case there is
+      no downstream queue
 
-      *key* is the unique ID of the disk downstream queue instance. It may be
+      *key* is the unique ID of the downstream queue instance. It may be
       used, for example, to create a unique file or folder to store the queue
       content.
 
@@ -109,7 +109,7 @@ it has to conform to the following interface:
 
       The helper function :func:`~scrapy.utils.reqser.request_to_dict` can be
       used to convert the request into a dict that can then be easily
-      serialized with, for example, :func:`pickle.dumps`.
+      serialized with, for example, :func:`pickle.dumps` and stored on disk.
 
       Scrapy falls back to the memory downstream queue for *request* if one of
       the following exceptions is raised:
@@ -131,7 +131,7 @@ it has to conform to the following interface:
       a halt of the crawler.
 
       The helper function :func:`~scrapy.utils.reqser.request_from_dict` can
-      be used to convert a deserialized dict back into a
+      be used to convert a deserialized dict from disk back into a
       :class:`~scrapy.http.Request` object.
 
    .. method:: peek(self) -> Optional[Request]
