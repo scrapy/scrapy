@@ -147,7 +147,7 @@ it has to conform to the following interface:
    .. method:: close(self) -> Optional[Any]
 
       Release internal resources (e.g. close files or sockets) and return an
-      object serializable by :function:`json.dump` (e.g. a :class:`dict`) that
+      object serializable by :func:`json.dump` (e.g. a :class:`dict`) that
       represents the current internal state of this queue. When :ref:`resuming
       a crawl <topics-jobs>`, this object is passed to the :method:`from_crawler`
       method of this queue class to restore the queue state.
