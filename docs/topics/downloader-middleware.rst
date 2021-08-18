@@ -1070,7 +1070,9 @@ In order to use this parser:
 
 * Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
 
-.. warning:: Does not support Python 3.9+
+ .. warning:: `Upstream issue #122
+      <https://github.com/seomoz/reppy/issues/122>`_ prevents reppy usage in
+      Python 3.9+.
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``
