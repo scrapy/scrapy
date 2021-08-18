@@ -87,8 +87,9 @@ of the system, and triggering events when certain actions occur. See the
 Scheduler
 ---------
 
-The Scheduler receives requests from the engine and enqueues them for feeding
-them later (also to the engine) when the engine requests them.
+The :ref:`scheduler <topics-scheduler>` receives requests from the engine and 
+enqueues them for feeding them later (also to the engine) when the engine 
+requests them.
 
 .. _component-downloader:
 

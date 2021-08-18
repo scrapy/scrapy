@@ -26,10 +26,6 @@ Request objects
 
 .. autoclass:: Request
 
-    A :class:`Request` object represents an HTTP request, which is usually
-    generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
-
     :param url: the URL of this request
 
         If the URL is invalid, a :exc:`ValueError` exception is raised.
@@ -39,7 +35,7 @@ Request objects
        request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spiders.Spider.parse` method will be used.
+       :meth:`~scrapy.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
     :type callback: collections.abc.Callable
@@ -64,7 +60,7 @@ Request objects
 
         .. caution:: Cookies set via the ``Cookie`` header are not considered by the
             :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
     :type headers: dict
@@ -96,7 +92,7 @@ Request objects
 
         To create a request that does not send stored cookies and does not
         store received cookies, set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.http.Request.meta>`.
+        in :attr:`request.meta <scrapy.Request.meta>`.
 
         Example of a request that sends manually-defined cookies and ignores
         cookie storage::
@@ -111,7 +107,7 @@ Request objects
 
         .. caution:: Cookies set via the ``Cookie`` header are not considered by the
             :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
     :type cookies: dict or list
@@ -205,6 +201,8 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+    .. autoattribute:: Request.attributes
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -219,6 +217,15 @@ Request objects
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
     .. automethod:: from_curl
+
+    .. automethod:: to_dict
+
+
+Other functions related to requests
+-----------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
 
 .. _topics-request-response-ref-request-callback-arguments:
 
@@ -363,26 +370,26 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
-* :reqmeta:`dont_redirect`
-* :reqmeta:`dont_retry`
-* :reqmeta:`handle_httpstatus_list`
-* :reqmeta:`handle_httpstatus_all`
-* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
+* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`dont_obey_robotstxt`
+* :reqmeta:`dont_redirect`
+* :reqmeta:`dont_retry`
+* :reqmeta:`download_fail_on_dataloss`
+* :reqmeta:`download_latency`
+* :reqmeta:`download_maxsize`
+* :reqmeta:`download_timeout`
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`handle_httpstatus_all`
+* :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`max_retry_times`
+* :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
-* :reqmeta:`bindaddress`
-* :reqmeta:`dont_obey_robotstxt`
-* :reqmeta:`download_timeout`
-* :reqmeta:`download_maxsize`
-* :reqmeta:`download_latency`
-* :reqmeta:`download_fail_on_dataloss`
-* :reqmeta:`proxy`
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
-* :reqmeta:`max_retry_times`
 
 .. reqmeta:: bindaddress
 
@@ -432,9 +439,9 @@ The meta key is used set retry times per request. When initialized, the
 Stopping the download of a Response
 ===================================
 
-Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
-:class:`~scrapy.signals.bytes_received` signal handler will stop the
-download of a given response. See the following example::
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a handler for the
+:class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
+signals will stop the download of a given response. See the following example::
 
     import scrapy
 
@@ -488,7 +495,9 @@ fields with form data from :class:`Response` objects.
 
 .. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
-.. class:: FormRequest(url, [formdata, ...])
+.. class:: scrapy.http.request.form.FormRequest
+.. class:: scrapy.http.FormRequest
+.. class:: scrapy.FormRequest(url, [formdata, ...])
 
     The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
@@ -642,6 +651,8 @@ dealing with JSON requests.
        data into JSON format.
    :type dumps_kwargs: dict
 
+   .. autoattribute:: JsonRequest.attributes
+
 JsonRequest usage example
 -------------------------
 
@@ -658,9 +669,6 @@ Response objects
 ================
 
 .. autoclass:: Response
-
-    A :class:`Response` object represents an HTTP response, which is usually
-    downloaded (by the Downloader) and fed to the Spiders for processing.
 
     :param url: the URL of this response
     :type url: str
@@ -685,7 +693,7 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: scrapy.http.Request
+    :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
     :type certificate: twisted.internet.ssl.Certificate
@@ -694,7 +702,7 @@ Response objects
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
     :param protocol: The protocol that was used to download the response.
-        For instance: "HTTP/1.0", "HTTP/1.1"
+        For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
 
     .. versionadded:: 2.0.0
@@ -703,7 +711,7 @@ Response objects
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.5.0
        The ``protocol`` parameter.
 
     .. attribute:: Response.url
@@ -809,7 +817,7 @@ Response objects
 
     .. attribute:: Response.protocol
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.5.0
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"
@@ -817,6 +825,8 @@ Response objects
         This attribute is currently only populated by the HTTP download
         handlers, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`protocol` is always ``None``.
+
+    .. autoattribute:: Response.attributes
 
     .. method:: Response.copy()
 
@@ -911,8 +921,10 @@ TextResponse objects
 
     .. attribute:: TextResponse.selector
 
-        A :class:`~scrapy.selector.Selector` instance using the response as
+        A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
+
+    .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:

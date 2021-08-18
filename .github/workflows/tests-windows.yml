@@ -5,6 +5,7 @@ jobs:
   tests:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
         - python-version: 3.6
@@ -16,6 +17,10 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: py
+        # https://twistedmatrix.com/trac/ticket/9990
+        #- python-version: 3.9
+          #env:
+            #TOXENV: py
 
     steps:
     - uses: actions/checkout@v2

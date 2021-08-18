@@ -1,5 +1,5 @@
 """Helper functions for working with signals"""
-
+import collections.abc
 import logging
 
 from twisted.internet.defer import DeferredList, Deferred
@@ -16,15 +16,13 @@ from scrapy.utils.log import failure_to_exc_info
 logger = logging.getLogger(__name__)
 
 
-class _IgnoredException(Exception):
-    pass
-
-
 def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
     """
-    dont_log = (named.pop('dont_log', _IgnoredException), StopDownload)
+    dont_log = named.pop('dont_log', ())
+    dont_log = tuple(dont_log) if isinstance(dont_log, collections.abc.Sequence) else (dont_log,)
+    dont_log += (StopDownload, )
     spider = named.get('spider', None)
     responses = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):

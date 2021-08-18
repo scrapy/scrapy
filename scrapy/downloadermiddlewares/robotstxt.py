@@ -67,7 +67,7 @@ class RobotsTxtMiddleware:
                 priority=self.DOWNLOAD_PRIORITY,
                 meta={'dont_obey_robotstxt': True}
             )
-            dfd = self.crawler.engine.download(robotsreq, spider)
+            dfd = self.crawler.engine.download(robotsreq)
             dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)

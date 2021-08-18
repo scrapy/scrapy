@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 import json
 import warnings
 from contextlib import suppress
-from typing import Generator
+from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 import parsel
@@ -29,6 +29,8 @@ class TextResponse(Response):
 
     _DEFAULT_ENCODING = 'ascii'
     _cached_decoded_json = _NONE
+
+    attributes: Tuple[str, ...] = Response.attributes + ("encoding",)
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
@@ -52,10 +54,6 @@ class TextResponse(Response):
             self._body = body.encode(self._encoding)
         else:
             super()._set_body(body)
-
-    def replace(self, *args, **kwargs):
-        kwargs.setdefault('encoding', self.encoding)
-        return Response.replace(self, *args, **kwargs)
 
     @property
     def encoding(self):
