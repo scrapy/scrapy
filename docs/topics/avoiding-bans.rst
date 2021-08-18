@@ -40,10 +40,10 @@ you.
 
 .. _identifying-yourself:
 
-Idenitfying yourself
+Identifying yourself
 --------------------
 
-If your crawling has a noticeable nevative impact on a website or you crawl
+If your crawling has a noticeable negative impact on a website or you crawl
 content that should not be crawled, website administrators will need to do
 something.
 
@@ -62,7 +62,7 @@ bots to follow when crawling their website.
 
 Before you start writing a spider for a website, read their ``robots.txt``
 file and implement your spider following its guidelines. See the `robots.txt
-standard draft`_ or the `robot.txt Google specification`_ for information on
+standard draft`_ or the `robots.txt Google specification`_ for information on
 how to read ``robots.txt`` files.
 
 To ensure that your spider does not crawl pages restricted by ``robots.txt``
@@ -81,7 +81,7 @@ You may also use the :ref:`AutoThrottle extension <topics-autothrottle>` on top
 of that, so that when the target website experiences a high load, your spider
 automatically switches to higher download delays.
 
-.. _robot.txt Google specification: https://developers.google.com/search/reference/robots_txt
+.. _robots.txt Google specification: https://developers.google.com/search/reference/robots_txt
 .. _robots.txt standard draft: https://tools.ietf.org/html/draft-koster-rep-00
 
 
@@ -218,7 +218,6 @@ responses.
 .. _CAPTCHA challenge: https://en.wikipedia.org/wiki/CAPTCHA
 .. _optical character recognition: https://en.wikipedia.org/wiki/Optical_character_recognition
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _scrapy-crawlera: https://scrapy-crawlera.readthedocs.io/en/latest/
 
 
 .. _ip-rotation:
@@ -247,15 +246,16 @@ filters and challenges at the same time.
 
 There are paid proxy services, like `Zyte Smart Proxy Manager`_, that
 automatically bypass website filters and challenges, so that your spider only
-gets successful responses. They also allow managing sessions to simulating user
+gets successful responses. They also allow managing sessions to simulate user
 behavior.
 
-For Zyte Smart Proxy Manager, installing scrapy-crawlera_ will ofter advanced
+For Zyte Smart Proxy Manager, installing scrapy-crawlera_ will offer advanced
 integration with Scrapy. For other services, use the
 :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` middleware
 or implement your own :ref:`downloader middleware
 <topics-downloader-middleware>`.
 
+.. _scrapy-crawlera: https://scrapy-crawlera.readthedocs.io/en/latest/
 .. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/
 
 
@@ -314,7 +314,7 @@ setup can be complex, and your requests will be vulnerable to
 The Tor network
 ---------------
 
-It’s possible to send requests through the `Tor network`_.
+It is possible to send requests through the `Tor network`_.
 
 The initial setup to have Scrapy working with Tor is not straightforward.
 Use a search engine to find up-to-date documentation specific to using
