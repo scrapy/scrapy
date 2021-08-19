@@ -1,6 +1,6 @@
 import unittest
 from unittest import mock
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, _BaseItem, BaseItem, DictItem, Field, Item, ItemMeta
@@ -328,16 +328,18 @@ class BaseItemTest(unittest.TestCase):
         class SubclassedItem(Item):
             pass
 
-        self.assertTrue(isinstance(BaseItem(), BaseItem))
-        self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
-        self.assertTrue(isinstance(Item(), BaseItem))
-        self.assertTrue(isinstance(SubclassedItem(), BaseItem))
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            self.assertTrue(isinstance(BaseItem(), BaseItem))
+            self.assertTrue(isinstance(SubclassedBaseItem(), BaseItem))
+            self.assertTrue(isinstance(Item(), BaseItem))
+            self.assertTrue(isinstance(SubclassedItem(), BaseItem))
 
-        # make sure internal checks using private _BaseItem class succeed
-        self.assertTrue(isinstance(BaseItem(), _BaseItem))
-        self.assertTrue(isinstance(SubclassedBaseItem(), _BaseItem))
-        self.assertTrue(isinstance(Item(), _BaseItem))
-        self.assertTrue(isinstance(SubclassedItem(), _BaseItem))
+            # make sure internal checks using private _BaseItem class succeed
+            self.assertTrue(isinstance(BaseItem(), _BaseItem))
+            self.assertTrue(isinstance(SubclassedBaseItem(), _BaseItem))
+            self.assertTrue(isinstance(Item(), _BaseItem))
+            self.assertTrue(isinstance(SubclassedItem(), _BaseItem))
 
     def test_deprecation_warning(self):
         """

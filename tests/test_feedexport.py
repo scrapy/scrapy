@@ -244,7 +244,8 @@ class S3FeedStorageTest(unittest.TestCase):
     def test_parse_credentials(self):
         skip_if_no_boto()
         aws_credentials = {'AWS_ACCESS_KEY_ID': 'settings_key',
-                           'AWS_SECRET_ACCESS_KEY': 'settings_secret'}
+                           'AWS_SECRET_ACCESS_KEY': 'settings_secret',
+                           'AWS_SESSION_TOKEN': 'settings_token'}
         crawler = get_crawler(settings_dict=aws_credentials)
         # Instantiate with crawler
         storage = S3FeedStorage.from_crawler(
@@ -253,12 +254,15 @@ class S3FeedStorageTest(unittest.TestCase):
         )
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
+        self.assertEqual(storage.session_token, 'settings_token')
         # Instantiate directly
         storage = S3FeedStorage('s3://mybucket/export.csv',
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
-                                aws_credentials['AWS_SECRET_ACCESS_KEY'])
+                                aws_credentials['AWS_SECRET_ACCESS_KEY'],
+                                session_token=aws_credentials['AWS_SESSION_TOKEN'])
         self.assertEqual(storage.access_key, 'settings_key')
         self.assertEqual(storage.secret_key, 'settings_secret')
+        self.assertEqual(storage.session_token, 'settings_token')
         # URI priority > settings priority
         storage = S3FeedStorage('s3://uri_key:uri_secret@mybucket/export.csv',
                                 aws_credentials['AWS_ACCESS_KEY_ID'],
@@ -326,6 +330,17 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
 
+    def test_init_with_endpoint_url(self):
+        storage = S3FeedStorage(
+            's3://mybucket/export.csv',
+            'access_key',
+            'secret_key',
+            endpoint_url='https://example.com'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.endpoint_url, 'https://example.com')
+
     def test_from_crawler_without_acl(self):
         settings = {
             'AWS_ACCESS_KEY_ID': 'access_key',
@@ -339,6 +354,20 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, None)
+
+    def test_without_endpoint_url(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv',
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.endpoint_url, None)
 
     def test_from_crawler_with_acl(self):
         settings = {
@@ -354,6 +383,21 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.access_key, 'access_key')
         self.assertEqual(storage.secret_key, 'secret_key')
         self.assertEqual(storage.acl, 'custom-acl')
+
+    def test_from_crawler_with_endpoint_url(self):
+        settings = {
+            'AWS_ACCESS_KEY_ID': 'access_key',
+            'AWS_SECRET_ACCESS_KEY': 'secret_key',
+            'AWS_ENDPOINT_URL': 'https://example.com',
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            's3://mybucket/export.csv'
+        )
+        self.assertEqual(storage.access_key, 'access_key')
+        self.assertEqual(storage.secret_key, 'secret_key')
+        self.assertEqual(storage.endpoint_url, 'https://example.com')
 
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
@@ -515,7 +559,7 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
 
 class DummyBlockingFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
+    def __init__(self, uri, *args, feed_options=None):
         self.path = file_uri_to_path(uri)
 
     def _store_in_thread(self, file):
@@ -541,7 +585,7 @@ class LogOnStoreFileStorage:
     It can be used to make sure `store` method is invoked.
     """
 
-    def __init__(self, uri):
+    def __init__(self, uri, feed_options=None):
         self.path = file_uri_to_path(uri)
         self.logger = getLogger()
 
@@ -560,6 +604,10 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         foo = scrapy.Field()
         egg = scrapy.Field()
         baz = scrapy.Field()
+
+    class MyItem2(scrapy.Item):
+        foo = scrapy.Field()
+        hello = scrapy.Field()
 
     def _random_temp_filename(self, inter_dir=''):
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
@@ -888,13 +936,9 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
 
-        class MyItem2(scrapy.Item):
-            foo = scrapy.Field()
-            hello = scrapy.Field()
-
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
-            MyItem2({'hello': 'world2', 'foo': 'bar2'}),
+            self.MyItem2({'hello': 'world2', 'foo': 'bar2'}),
             self.MyItem({'foo': 'bar3', 'egg': 'spam3', 'baz': 'quux3'}),
             {'hello': 'world4', 'egg': 'spam4'},
         ]
@@ -928,6 +972,114 @@ class FeedExportTest(FeedExportTestBase):
         ]
         yield self.assertExported(items, header, rows,
                                   settings=settings, ordered=True)
+
+    @defer.inlineCallbacks
+    def test_export_based_on_item_classes(self):
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem2({'hello': 'world2', 'foo': 'bar2'}),
+            {'hello': 'world3', 'egg': 'spam3'},
+        ]
+
+        formats = {
+            'csv': b'baz,egg,foo\r\n,spam1,bar1\r\n',
+            'json': b'[\n{"hello": "world2", "foo": "bar2"}\n]',
+            'jsonlines': (
+                b'{"foo": "bar1", "egg": "spam1"}\n'
+                b'{"hello": "world2", "foo": "bar2"}\n'
+            ),
+            'xml': (
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
+                b'<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>'
+                b'world2</hello><foo>bar2</foo></item>\n<item><hello>world3'
+                b'</hello><egg>spam3</egg></item>\n</items>'
+            ),
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'csv',
+                    'item_classes': [self.MyItem],
+                },
+                self._random_temp_filename(): {
+                    'format': 'json',
+                    'item_classes': [self.MyItem2],
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'item_classes': [self.MyItem, self.MyItem2],
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                },
+            },
+        }
+
+        data = yield self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            self.assertEqual(expected, data[fmt])
+
+    @defer.inlineCallbacks
+    def test_export_based_on_custom_filters(self):
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            self.MyItem2({'hello': 'world2', 'foo': 'bar2'}),
+            {'hello': 'world3', 'egg': 'spam3'},
+        ]
+
+        MyItem = self.MyItem
+
+        class CustomFilter1:
+            def __init__(self, feed_options):
+                pass
+
+            def accepts(self, item):
+                return isinstance(item, MyItem)
+
+        class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
+            def accepts(self, item):
+                if 'foo' not in item.fields:
+                    return False
+                return True
+
+        class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
+            def accepts(self, item):
+                if isinstance(item, tuple(self.item_classes)) and item['foo'] == "bar1":
+                    return True
+                return False
+
+        formats = {
+            'json': b'[\n{"foo": "bar1", "egg": "spam1"}\n]',
+            'xml': (
+                b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
+                b'<foo>bar1</foo><egg>spam1</egg></item>\n<item><hello>'
+                b'world2</hello><foo>bar2</foo></item>\n</items>'
+            ),
+            'jsonlines': b'{"foo": "bar1", "egg": "spam1"}\n',
+        }
+
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {
+                    'format': 'json',
+                    'item_filter': CustomFilter1,
+                },
+                self._random_temp_filename(): {
+                    'format': 'xml',
+                    'item_filter': CustomFilter2,
+                },
+                self._random_temp_filename(): {
+                    'format': 'jsonlines',
+                    'item_classes': [self.MyItem, self.MyItem2],
+                    'item_filter': CustomFilter3,
+                },
+            },
+        }
+
+        data = yield self.exported_data(items, settings)
+        for fmt, expected in formats.items():
+            self.assertEqual(expected, data[fmt])
 
     @defer.inlineCallbacks
     def test_export_dicts(self):
@@ -1780,14 +1932,15 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
     maxDiff = None
 
     def test_init(self):
-        settings_dict = {
-            'FEED_URI': 'file:///tmp/foobar',
-            'FEED_STORAGES': {
-                'file': FileFeedStorageWithoutFeedOptions
-            },
-        }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with tempfile.NamedTemporaryFile() as temp:
+            settings_dict = {
+                'FEED_URI': f'file:///{temp.name}',
+                'FEED_STORAGES': {
+                    'file': FileFeedStorageWithoutFeedOptions
+                },
+            }
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
         with warnings.catch_warnings(record=True) as w:
             feed_exporter.open_spider(spider)
@@ -1809,8 +1962,8 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
 class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
 
-    def __init__(self, uri, access_key, secret_key, acl):
-        super().__init__(uri, access_key, secret_key, acl)
+    def __init__(self, uri, access_key, secret_key, acl, endpoint_url, **kwargs):
+        super().__init__(uri, access_key, secret_key, acl, endpoint_url, **kwargs)
 
 
 class S3FeedStorageWithoutFeedOptionsWithFromCrawler(S3FeedStorage):

@@ -155,6 +155,7 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
+   topics/avoiding-bans
    topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
@@ -178,6 +179,9 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
+
+:doc:`topics/avoiding-bans`
+    Avoid getting banned from websites.
 
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.

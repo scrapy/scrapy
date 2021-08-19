@@ -79,6 +79,7 @@ class FSFilesStore:
 class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_SESSION_TOKEN = None
     AWS_ENDPOINT_URL = None
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
@@ -98,6 +99,7 @@ class S3FilesStore:
             's3',
             aws_access_key_id=self.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+            aws_session_token=self.AWS_SESSION_TOKEN,
             endpoint_url=self.AWS_ENDPOINT_URL,
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
@@ -349,6 +351,7 @@ class FilesPipeline(MediaPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_SESSION_TOKEN = settings['AWS_SESSION_TOKEN']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
         s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
         s3store.AWS_USE_SSL = settings['AWS_USE_SSL']

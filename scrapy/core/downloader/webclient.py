@@ -1,3 +1,4 @@
+import re
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
 
@@ -32,6 +33,8 @@ def _parse(url):
     and is ascii-only.
     """
     url = url.strip()
+    if not re.match(r'^\w+://', url):
+        url = '//' + url
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
 
