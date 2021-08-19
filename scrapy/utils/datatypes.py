@@ -79,7 +79,7 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class CaseInsensitiveDict(collections.UserDict,):
+class CaseInsensitiveDict(collections.UserDict):
     """A dict-like structure that accepts strings or bytes as keys and allows case-insensitive lookups.
 
     It also allows overriding key and value normalization by defining custom `normkey` and `normvalue` methods.
