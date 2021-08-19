@@ -1,4 +1,5 @@
 import copy
+from typing import Iterator
 import unittest
 import warnings
 from collections.abc import Mapping, MutableMapping
@@ -191,8 +192,16 @@ class CaseInsensitiveDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
     dict_class = CaseInsensitiveDict
 
     def test_repr(self):
-        d = self.dict_class({"foo": "bar"})
-        self.assertEqual(repr(d), "<CaseInsensitiveDict: {'foo': 'bar'}>")
+        d1 = self.dict_class({"foo": "bar"})
+        self.assertEqual(repr(d1), "<CaseInsensitiveDict: {'foo': 'bar'}>")
+        d2 = self.dict_class({"AsDf": "QwErTy", "FoO": "bAr"})
+        self.assertEqual(repr(d2), "<CaseInsensitiveDict: {'AsDf': 'QwErTy', 'FoO': 'bAr'}>")
+
+    def test_iter(self):
+        d = self.dict_class({"AsDf": "QwErTy", "FoO": "bAr"})
+        iterkeys = iter(d)
+        self.assertIsInstance(iterkeys, Iterator)
+        self.assertEqual(list(iterkeys), ["AsDf", "FoO"])
 
 
 class CaselessDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
