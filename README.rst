@@ -74,6 +74,10 @@ Documentation
 Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
 directory.
 
+Tutorials
+=========
+Tutorials can be found in the tutorials folder. 
+
 Releases
 ========
 
