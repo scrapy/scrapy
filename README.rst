@@ -78,7 +78,8 @@ Examples
 ========
 There is an example Scrapy project named quotesbot, here: https://github.com/scrapy/quotesbot, that you can use to play and learn more about Scrapy.
 
-Other tutorials can be found:
+Other tutorials:
+
 * Introductory tutorial notebook: https://github.com/scrapy/scrapy/blob/master/examples/Scrapy_Tutorial.ipynb
 
 Releases
