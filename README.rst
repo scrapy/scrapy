@@ -74,9 +74,12 @@ Documentation
 Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
 directory.
 
-Tutorials
-=========
-Tutorials can be found in the tutorials folder. 
+Examples
+========
+There is an example Scrapy project named quotesbot, here: https://github.com/scrapy/quotesbot, that you can use to play and learn more about Scrapy.
+
+Other tutorials can be found:
+* Introductory tutorial notebook: https://github.com/scrapy/scrapy/blob/master/examples/Scrapy_Tutorial.ipynb
 
 Releases
 ========
