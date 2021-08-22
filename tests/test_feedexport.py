@@ -1499,7 +1499,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
     class CustomBatchHandler:
 
         def __init__(self, feed_options):
-            if "batch_divisible_by" not in feed_options or feed_options["batch_divisible_by"] <= 0:
+            if feed_options.get("batch_divisible_by", 0) <= 0:
                 raise NotConfigured
             self.divisor = feed_options["batch_divisible_by"]
             self.item_count = 0
@@ -1727,7 +1727,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         ]
         for fmt in ("json", "csv", "jsonlines", "xml", "marshal", "pickle"):
             #  +1 for empty files after batch has been triggered
-            for limit, expected in {1: 3 + 1, 2: 2, 3: 1 + 1}.items():
+            for limit, expected in {0: 1, 1: 3 + 1, 2: 2, 3: 1 + 1}.items():
                 settings = {
                     'FEEDS': {
                         os.path.join(self._random_temp_filename(), fmt, self._file_mark): {
@@ -1996,21 +1996,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 },
             }
             with self.assertRaises(ValueError):
-                crawler = get_crawler(settings_dict=settings)
-                FeedExporter.from_crawler(crawler)
-
-    def test_invalid_batch_duration(self):
-        invalid_durations = ['0:-1:0', '-1:0:0']
-        for duration in invalid_durations:
-            settings = {
-                'FEEDS': {
-                    os.path.join(self._random_temp_filename(), self._file_mark): {
-                        'format': 'jsonlines',
-                        'batch_duration': duration,
-                    },
-                },
-            }
-            with self.assertRaises(NotConfigured):
                 crawler = get_crawler(settings_dict=settings)
                 FeedExporter.from_crawler(crawler)
 

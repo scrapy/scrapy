@@ -8,7 +8,7 @@ import time
 from typing import Any, BinaryIO, Dict
 
 
-class BatchHandler:
+class DefaultBatchHandler:
     """
     The default :ref:`batch handler <batches>`.
 
@@ -34,7 +34,7 @@ class BatchHandler:
 
     .. setting:: FEED_EXPORT_BATCH_DURATION
 
-    - ``batch_duration`` feed options or ``FEED_EXPORT_BATCH_DURATION``
+    - ``batch_duration`` feed option or ``FEED_EXPORT_BATCH_DURATION``
       setting (:class:`str`): deliver a batch file after at least this much time has passed.
 
       The duration format is ``hours:minutes:seconds``. Eg: 1:00:00 for 1 hour,
@@ -42,7 +42,7 @@ class BatchHandler:
 
       Duration is only checked after an item is added to the batch file.
 
-      Default: ``0:0:0``
+      Default: ``00:00:00``
 
     Each feed option overrides its counterpart setting.
 
@@ -57,7 +57,7 @@ class BatchHandler:
         self.max_item_count: int = feed_options.get("batch_item_count", 0)
         self.max_seconds: float = self._in_seconds(feed_options.get("batch_duration", "0:0:0"))
         self.max_file_size: int = self._in_bytes(feed_options.get("batch_file_size", "0B"))
-        if any(limit < 0 for limit in (self.max_file_size, self.max_item_count, self.max_seconds)):
+        if not any(limit > 0 for limit in (self.max_file_size, self.max_item_count, self.max_seconds)):
             raise NotConfigured
         # initialize batch state attributes
         self.item_count: int = 0
@@ -66,12 +66,8 @@ class BatchHandler:
         # misc attributes
         self.file: BinaryIO
         self.start_time: float
-        self.enabled: bool = any([self.max_item_count, self.max_seconds, self.max_file_size])
 
     def item_added(self) -> bool:
-        if not self.enabled:
-            return False
-
         self.item_count += 1
         self.elapsed_seconds = time.time() - self.start_time
         self.file_size = self.file.tell()
@@ -93,17 +89,13 @@ class BatchHandler:
         self.file_size = 0
 
     def _in_seconds(self, duration: str) -> float:
-        '''
-        Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in float.
-        '''
+        """Convert duration string in format: '<HOURS>:<MINUTES>:<SECONDS>' to seconds in float."""
         h, m, s = map(float, duration.split(":"))
         duration_in_secs = h * 60 * 60 + m * 60 + s
         return duration_in_secs
 
     def _in_bytes(self, size: str) -> int:
-        '''
-        Convert string size in format: '<SIZE><UNIT>' to bytes in integer.
-        '''
+        """Convert string size in format: '<SIZE><UNIT>' to bytes in integer."""
         # https://stackoverflow.com/a/60708339/7116579
         units = {"B": 1, "KIB": 2**10, "MIB": 2**20, "GIB": 2**30, "TIB": 2**40,
                  "KB": 10**3, "MB": 10**6, "GB": 10**9, "TB": 10**12}

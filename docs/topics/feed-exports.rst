@@ -285,7 +285,7 @@ a single file. This is useful in getting item deliveries earlier before the craw
 Batching is controlled by a batch handler, which is defined through the 
 :ref:`batch feed option <feed-options>`.
 For information about enabling and configuring the default batch handler, see
-:class:`~scrapy.extensions.batches.BatchHandler`. You can alternatively 
+:class:`~scrapy.extensions.batches.DefaultBatchHandler`. You can alternatively 
 :ref:`create your own batch handler <custom-batch-handler>`.
 
 If you enable batching, you must also :ref:`set feed URIs appropriately with placeholders<batch-uri>`.
@@ -295,7 +295,7 @@ If you enable batching, you must also :ref:`set feed URIs appropriately with pla
 Default Batch Handler
 ----------------------
 
-.. autoclass:: scrapy.extensions.batches.BatchHandler
+.. autoclass:: scrapy.extensions.batches.DefaultBatchHandler
 
 .. _custom-batch-handler:
 
@@ -315,14 +315,14 @@ Each batch handler is a class that must implement the following methods:
 
     :type feed_options: dict
 
-    .. note:: Feed options support arbitrary parameters passing which, can be
+    .. note:: Feed options support arbitrary parameters passing, which can be
               used by custom batch handlers to access parameters passed by users.
 
 .. method:: item_added(self)
 
     Called every time after an item is exported to the feed.
     
-    Return `True` if a new batch file should be created now, or `False` otherwise.
+    Return ``True`` if a new batch file should be created now, or ``False`` otherwise.
 
     You may use this method to update batch state information.
 
@@ -341,7 +341,7 @@ An example for custom batch handler::
     class CustomBatchHandler:
 
         def __init__(self, feed_options):
-            if "batch_divisible_by" not in feed_options or feed_options["batch_divisible_by"] <= 0
+        if feed_options.get("batch_divisible_by", 0) <= 0:
                 raise NotConfigured
             self.divisor = feed_options["batch_divisible_by"]
             self.item_count = 0
