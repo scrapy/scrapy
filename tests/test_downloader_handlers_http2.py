@@ -219,7 +219,7 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     certfile = 'keys/localhost.crt'
 
     scheme = 'https'
-    host = u'127.0.0.1'
+    host = '127.0.0.1'
 
     expected_http_proxy_request_body = b'/'
 

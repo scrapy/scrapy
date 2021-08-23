@@ -57,7 +57,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         },
     }
 
-    checks = list()
+    checks = []
 
     def start_requests(self):
         data = {'key': 'value', 'number': 123}
