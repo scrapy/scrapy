@@ -201,7 +201,7 @@ class Https2ClientProtocolTestCase(TestCase):
         self.site = Site(root, timeout=None)
 
         # Start server for testing
-        self.hostname = u'localhost'
+        self.hostname = 'localhost'
         context_factory = ssl_context_factory(self.key_file, self.certificate_file)
 
         server_endpoint = SSL4ServerEndpoint(reactor, 0, context_factory, interface=self.hostname)

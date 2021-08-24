@@ -703,7 +703,7 @@ class DeprecatedUtilityFunctionsTestCase(unittest.TestCase):
             return None
 
         with warnings.catch_warnings(record=True) as w:
-            wrap_loader_context(function, context=dict())
+            wrap_loader_context(function, context={})
 
             assert len(w) == 1
             assert issubclass(w[0].category, ScrapyDeprecationWarning)
