@@ -3,6 +3,7 @@ import json
 import optparse
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -93,6 +94,15 @@ class ProjectTest(unittest.TestCase):
             timer.cancel()
 
         return p, to_unicode(stdout), to_unicode(stderr)
+
+    def find_in_file(self, filename, regex):
+        """Find first pattern occurrence in file"""
+        pattern = re.compile(regex)
+        with open(filename, "r") as f:
+            for line in f:
+                match = pattern.search(line)
+                if match is not None:
+                    return match
 
 
 class StartprojectTest(ProjectTest):
@@ -481,6 +491,26 @@ class GenspiderCommandTest(CommandTest):
 
     def test_same_filename_as_existing_spider_force(self):
         self.test_same_filename_as_existing_spider(force=True)
+
+    def test_url(self, url='test.com', domain="test.com"):
+        self.assertEqual(0, self.call('genspider', '--force', 'test_name', url))
+        self.assertEqual(domain,
+                         self.find_in_file(join(self.proj_mod_path,
+                                                'spiders', 'test_name.py'),
+                                           r'allowed_domains\s*=\s*\[\'(.+)\'\]').group(1))
+        self.assertEqual('http://%s/' % domain,
+                         self.find_in_file(join(self.proj_mod_path,
+                                                'spiders', 'test_name.py'),
+                                           r'start_urls\s*=\s*\[\'(.+)\'\]').group(1))
+
+    def test_url_schema(self):
+        self.test_url('http://test.com', 'test.com')
+
+    def test_url_path(self):
+        self.test_url('test.com/some/other/page', 'test.com')
+
+    def test_url_schema_path(self):
+        self.test_url('https://test.com/some/other/page', 'test.com')
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):
