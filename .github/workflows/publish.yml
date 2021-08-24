@@ -1,0 +1,31 @@
+name: Publish
+on: [push]
+
+jobs:
+  publish:
+    runs-on: ubuntu-18.04
+    if: startsWith(github.event.ref, 'refs/tags/')
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+
+    - name: Check Tag
+      id: check-release-tag
+      run: |
+        if [[ ${{ github.event.ref }} =~ ^refs/tags/[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$ ]]; then
+          echo ::set-output name=release_tag::true
+        fi
+
+    - name: Publish to PyPI
+      if: steps.check-release-tag.outputs.release_tag == 'true'
+      run: |
+        pip install --upgrade setuptools wheel twine
+        python setup.py sdist bdist_wheel
+        export TWINE_USERNAME=__token__
+        export TWINE_PASSWORD=${{ secrets.PYPI_TOKEN }}
+        twine upload dist/*

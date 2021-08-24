@@ -19,8 +19,8 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
     def test_simple_render(self):
 
         context = dict(project_name='proj', name='spi', classname='TheSpider')
-        template = u'from ${project_name}.spiders.${name} import ${classname}'
-        rendered = u'from proj.spiders.spi import TheSpider'
+        template = 'from ${project_name}.spiders.${name} import ${classname}'
+        rendered = 'from proj.spiders.spi import TheSpider'
 
         template_path = os.path.join(self.tmp_path, 'templ.py.tmpl')
         render_path = os.path.join(self.tmp_path, 'templ.py')

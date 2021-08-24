@@ -41,17 +41,17 @@ class Slot:
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        return "%s(concurrency=%r, delay=%0.2f, randomize_delay=%r)" % (
-            cls_name, self.concurrency, self.delay, self.randomize_delay)
+        return (f"{cls_name}(concurrency={self.concurrency!r}, "
+                f"delay={self.delay:.2f}, "
+                f"randomize_delay={self.randomize_delay!r})")
 
     def __str__(self):
         return (
-            "<downloader.Slot concurrency=%r delay=%0.2f randomize_delay=%r "
-            "len(active)=%d len(queue)=%d len(transferring)=%d lastseen=%s>" % (
-                self.concurrency, self.delay, self.randomize_delay,
-                len(self.active), len(self.queue), len(self.transferring),
-                datetime.fromtimestamp(self.lastseen).isoformat()
-            )
+            f"<downloader.Slot concurrency={self.concurrency!r} "
+            f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
+            f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
+            f"len(transferring)={len(self.transferring)} "
+            f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
         )
 
 
@@ -173,7 +173,7 @@ class Downloader:
             return response
         dfd.addCallback(_downloaded)
 
-        # 3. After response arrives,  remove the request from transferring
+        # 3. After response arrives, remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)

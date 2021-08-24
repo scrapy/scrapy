@@ -34,11 +34,11 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-c", dest="code",
-            help="evaluate the code in the shell, print the result and exit")
+                          help="evaluate the code in the shell, print the result and exit")
         parser.add_option("--spider", dest="spider",
-            help="use this spider")
-        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", \
-            default=False, help="do not handle HTTP 3xx status codes and print response as-is")
+                          help="use this spider")
+        parser.add_option("--no-redirect", dest="no_redirect", action="store_true", default=False,
+                          help="do not handle HTTP 3xx status codes and print response as-is")
 
     def update_vars(self, vars):
         """You can use this function to update the Scrapy objects that will be

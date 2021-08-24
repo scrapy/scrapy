@@ -33,10 +33,8 @@ class BaseRedirectMiddleware:
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_ttl'] = ttl - 1
-            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
-                [request.url]
-            redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + \
-                [reason]
+            redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + [request.url]
+            redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + [reason]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
@@ -60,11 +58,14 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     Handle redirection of requests based on response status
     and meta-refresh html tag.
     """
+
     def process_response(self, request, response, spider):
-        if (request.meta.get('dont_redirect', False) or
-                response.status in getattr(spider, 'handle_httpstatus_list', []) or
-                response.status in request.meta.get('handle_httpstatus_list', []) or
-                request.meta.get('handle_httpstatus_all', False)):
+        if (
+            request.meta.get('dont_redirect', False)
+            or response.status in getattr(spider, 'handle_httpstatus_list', [])
+            or response.status in request.meta.get('handle_httpstatus_list', [])
+            or request.meta.get('handle_httpstatus_all', False)
+        ):
             return response
 
         allowed_status = (301, 302, 303, 307, 308)
@@ -91,13 +92,16 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
     enabled_setting = 'METAREFRESH_ENABLED'
 
     def __init__(self, settings):
-        super(MetaRefreshMiddleware, self).__init__(settings)
+        super().__init__(settings)
         self._ignore_tags = settings.getlist('METAREFRESH_IGNORE_TAGS')
         self._maxdelay = settings.getint('METAREFRESH_MAXDELAY')
 
     def process_response(self, request, response, spider):
-        if request.meta.get('dont_redirect', False) or request.method == 'HEAD' or \
-                not isinstance(response, HtmlResponse):
+        if (
+            request.meta.get('dont_redirect', False)
+            or request.method == 'HEAD'
+            or not isinstance(response, HtmlResponse)
+        ):
             return response
 
         interval, url = get_meta_refresh(response,

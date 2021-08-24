@@ -17,8 +17,8 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
 
     def _check_components(complist):
         if len({convert(c) for c in complist}) != len(complist):
-            raise ValueError('Some paths in {!r} convert to the same object, '
-                             'please update your settings'.format(complist))
+            raise ValueError(f'Some paths in {complist!r} convert to the same object, '
+                             'please update your settings')
 
     def _map_keys(compdict):
         if isinstance(compdict, BaseSettings):
@@ -26,9 +26,10 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 if compbs.getpriority(convert(k)) == prio:
-                    raise ValueError('Some paths in {!r} convert to the same '
+                    raise ValueError(f'Some paths in {list(compdict.keys())!r} '
+                                     'convert to the same '
                                      'object, please update your settings'
-                                     ''.format(list(compdict.keys())))
+                                     )
                 else:
                     compbs.set(convert(k), v, priority=prio)
             return compbs
@@ -40,8 +41,8 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         """Fail if a value in the components dict is not a real number or None."""
         for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
-                raise ValueError('Invalid value {} for component {}, please provide '
-                                 'a real number or None instead'.format(value, name))
+                raise ValueError(f'Invalid value {value} for component {name}, '
+                                 'please provide a real number or None instead')
 
     # BEGIN Backward compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
@@ -101,11 +102,13 @@ def get_config(use_closest=True):
 
 
 def get_sources(use_closest=True):
-    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or \
-        os.path.expanduser('~/.config')
-    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
-               xdg_config_home + '/scrapy.cfg',
-               os.path.expanduser('~/.scrapy.cfg')]
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
+    sources = [
+        '/etc/scrapy.cfg',
+        r'c:\scrapy\scrapy.cfg',
+        xdg_config_home + '/scrapy.cfg',
+        os.path.expanduser('~/.scrapy.cfg'),
+    ]
     if use_closest:
         sources.append(closest_scrapy_cfg())
     return sources
@@ -113,10 +116,12 @@ def get_sources(use_closest=True):
 
 def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
+    out.setdefault("batch_item_count", settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT'))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
     out.setdefault("uri_params", settings["FEED_URI_PARAMS"])
+    out.setdefault("item_export_kwargs", dict())
     if settings["FEED_EXPORT_INDENT"] is None:
         out.setdefault("indent", None)
     else:
@@ -124,7 +129,8 @@ def feed_complete_default_values_from_settings(feed, settings):
     return out
 
 
-def feed_process_params_from_cli(settings, output, output_format=None):
+def feed_process_params_from_cli(settings, output, output_format=None,
+                                 overwrite_output=None):
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
@@ -136,22 +142,37 @@ def feed_process_params_from_cli(settings, output, output_format=None):
 
     def check_valid_format(output_format):
         if output_format not in valid_output_formats:
-            raise UsageError("Unrecognized output format '%s', set one after a"
-                             " colon using the -o option (i.e. -o <URI>:<FORMAT>)"
-                             " or as a file extension, from the supported list %s" %
-                             (output_format, tuple(valid_output_formats)))
+            raise UsageError(
+                f"Unrecognized output format '{output_format}'. "
+                f"Set a supported one ({tuple(valid_output_formats)}) "
+                "after a colon at the end of the output URI (i.e. -o/-O "
+                "<URI>:<FORMAT>) or as a file extension."
+            )
+
+    overwrite = False
+    if overwrite_output:
+        if output:
+            raise UsageError(
+                "Please use only one of -o/--output and -O/--overwrite-output"
+            )
+        output = overwrite_output
+        overwrite = True
 
     if output_format:
         if len(output) == 1:
             check_valid_format(output_format)
-            warnings.warn('The -t command line option is deprecated in favor'
-                          ' of specifying the output format within the -o'
-                          ' option, please check the -o option docs for more details',
-                          category=ScrapyDeprecationWarning, stacklevel=2)
+            message = (
+                'The -t command line option is deprecated in favor of '
+                'specifying the output format within the output URI. See the '
+                'documentation of the -o and -O options for more information.',
+            )
+            warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}
         else:
-            raise UsageError('The -t command line option cannot be used if multiple'
-                             ' output files are specified with the -o option')
+            raise UsageError(
+                'The -t command-line option cannot be used if multiple output '
+                'URIs are specified'
+            )
 
     result = {}
     for element in output:
@@ -165,8 +186,10 @@ def feed_process_params_from_cli(settings, output, output_format=None):
                 feed_uri = 'stdout:'
         check_valid_format(feed_format)
         result[feed_uri] = {'format': feed_format}
+        if overwrite:
+            result[feed_uri]['overwrite'] = True
 
-    # FEEDS setting should take precedence over the -o and -t CLI options
+    # FEEDS setting should take precedence over the matching CLI options
     result.update(settings.getdict('FEEDS'))
 
     return result

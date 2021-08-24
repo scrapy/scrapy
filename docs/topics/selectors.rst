@@ -8,14 +8,14 @@ When you're scraping web pages, the most common task you need to perform is
 to extract data from the HTML source. There are several libraries available to
 achieve this, such as:
 
- * `BeautifulSoup`_ is a very popular web scraping library among Python
-   programmers which constructs a Python object based on the structure of the
-   HTML code and also deals with bad markup reasonably well, but it has one
-   drawback: it's slow.
+-   `BeautifulSoup`_ is a very popular web scraping library among Python
+    programmers which constructs a Python object based on the structure of the
+    HTML code and also deals with bad markup reasonably well, but it has one
+    drawback: it's slow.
 
- * `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
-   API based on `ElementTree`_. (lxml is not part of the Python standard
-   library.)
+-   `lxml`_ is an XML parsing library (which also parses HTML) with a pythonic
+    API based on :mod:`~xml.etree.ElementTree`. (lxml is not part of the Python
+    standard library.)
 
 Scrapy comes with its own mechanism for extracting data. They're called
 selectors because they "select" certain parts of the HTML document specified
@@ -36,7 +36,6 @@ defines selectors to associate those styles with specific HTML elements.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
-.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
 .. _parsel: https://parsel.readthedocs.io/en/latest/
@@ -49,7 +48,7 @@ Constructing selectors
 
 .. highlight:: python
 
-Response objects expose a :class:`~scrapy.selector.Selector` instance
+Response objects expose a :class:`~scrapy.Selector` instance
 on ``.selector`` attribute:
 
 >>> response.selector.xpath('//span/text()').get()
@@ -63,9 +62,10 @@ more shortcuts: ``response.xpath()`` and ``response.css()``:
 >>> response.css('span::text').get()
 'good'
 
-Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
+Scrapy selectors are instances of :class:`~scrapy.Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
-markup as an unicode string (in ``text`` argument).
+markup as a string (in ``text`` argument).
+
 Usually there is no need to construct Scrapy selectors manually:
 ``response`` object is available in Spider callbacks, so in most cases
 it is more convenient to use ``response.css()`` and ``response.xpath()``
@@ -175,7 +175,7 @@ of ``None``:
 'not-found'
 
 Instead of using e.g. ``'@src'`` XPath it is possible to query for attributes
-using ``.attrib`` property of a :class:`~scrapy.selector.Selector`:
+using ``.attrib`` property of a :class:`~scrapy.Selector`:
 
 >>> [img.attrib['src'] for img in response.css('img')]
 ['image1_thumb.jpg',
@@ -328,8 +328,9 @@ too. Here's an example:
  '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
 >>> for index, link in enumerate(links):
-...     args = (index, link.xpath('@href').get(), link.xpath('img/@src').get())
-...     print('Link number %d points to url %r and image %r' % args)
+...     href_xpath = link.xpath('@href').get()
+...     img_xpath = link.xpath('img/@src').get()
+...     print(f'Link number {index} points to url {href_xpath!r} and image {img_xpath!r}')
 Link number 0 points to url 'image1.html' and image 'image1_thumb.jpg'
 Link number 1 points to url 'image2.html' and image 'image2_thumb.jpg'
 Link number 2 points to url 'image3.html' and image 'image3_thumb.jpg'
@@ -382,9 +383,9 @@ ID, or when selecting an unique element on a page):
 Using selectors with regular expressions
 ----------------------------------------
 
-:class:`~scrapy.selector.Selector` also has a ``.re()`` method for extracting
+:class:`~scrapy.Selector` also has a ``.re()`` method for extracting
 data using regular expressions. However, unlike using ``.xpath()`` or
-``.css()`` methods, ``.re()`` returns a list of unicode strings. So you
+``.css()`` methods, ``.re()`` returns a list of strings. So you
 can't construct nested ``.re()`` calls.
 
 Here's an example used to extract image names from the :ref:`HTML code
@@ -463,10 +464,10 @@ effectively. If you are not much familiar with XPath yet,
 you may want to take a look first at this `XPath tutorial`_.
 
 .. note::
-    Some of the tips are based on `this post from ScrapingHub's blog`_.
+    Some of the tips are based on `this post from Zyte's blog`_.
 
 .. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
-.. _`this post from ScrapingHub's blog`: https://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+.. _this post from Zyte's blog: https://www.zyte.com/blog/xpath-tips-from-the-web-scraping-trenches/
 
 
 .. _topics-selectors-relative-xpaths:
@@ -735,7 +736,7 @@ The ``test()`` function, for example, can prove quite useful when XPath's
 Example selecting links in list item with a "class" attribute ending with a digit:
 
 >>> from scrapy import Selector
->>> doc = u"""
+>>> doc = """
 ... <div>
 ...     <ul>
 ...         <li class="item-0"><a href="link1.html">first item</a></li>
@@ -766,7 +767,7 @@ extracting text elements for example.
 Example extracting microdata (sample content taken from https://schema.org/Product)
 with groups of itemscopes and corresponding itemprops::
 
-    >>> doc = u"""
+    >>> doc = """
     ... <div itemscope itemtype="http://schema.org/Product">
     ...   <span itemprop="name">Kenmore White 17" Microwave</span>
     ...   <img src="kenmore-microwave-17in.jpg" alt='Kenmore 17" Microwave' />
@@ -822,7 +823,7 @@ with groups of itemscopes and corresponding itemprops::
     ...     props = scope.xpath('''
     ...                 set:difference(./descendant::*/@itemprop,
     ...                                .//*[@itemscope]/*/@itemprop)''')
-    ...     print("    properties: %s" % (props.getall()))
+    ...     print(f"    properties: {props.getall()}")
     ...     print("")
 
     current scope: ['http://schema.org/Product']
@@ -990,7 +991,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
       sel.xpath("//h1")
 
 2. Extract the text of all ``<h1>`` elements from an HTML response body,
-   returning a list of unicode strings::
+   returning a list of strings::
 
       sel.xpath("//h1").getall()         # this includes the h1 tag
       sel.xpath("//h1/text()").getall()  # this excludes the h1 tag

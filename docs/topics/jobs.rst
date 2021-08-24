@@ -65,7 +65,7 @@ Cookies expiration
 ------------------
 
 Cookies may expire. So, if you don't resume your spider quickly the requests
-scheduled may no longer work. This won't be an issue if you spider doesn't rely
+scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
 
 
@@ -74,10 +74,10 @@ on cookies.
 Request serialization
 ---------------------
 
-For persistence to work, :class:`~scrapy.http.Request` objects must be
+For persistence to work, :class:`~scrapy.Request` objects must be
 serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
 values passed to their ``__init__`` method, which must be methods of the
-running :class:`~scrapy.spiders.Spider` class.
+running :class:`~scrapy.Spider` class.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.

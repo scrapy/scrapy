@@ -1,8 +1,14 @@
+import re
 import time
-from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
+
+
+# Defined in the http.cookiejar module, but undocumented:
+# https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
+IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
 
 class CookieJar:
@@ -186,9 +192,6 @@ class WrappedResponse:
     def info(self):
         return self
 
-    # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
         return [to_unicode(v, errors='replace')
                 for v in self.response.headers.getlist(name)]
-    # python2 cookiejars calls getheaders
-    getheaders = get_all
