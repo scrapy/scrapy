@@ -285,7 +285,7 @@ a single file. This is useful in getting item deliveries earlier before the craw
 Batching is controlled by a batch handler, which is defined through the 
 :ref:`batch feed option <feed-options>`.
 For information about enabling and configuring the default batch handler, see
-:class:`~scrapy.extensions.batches.DefaultBatchHandler`. You can alternatively 
+:class:`~scrapy.extensions.batches.BatchHandler`. You can alternatively 
 :ref:`create your own batch handler <custom-batch-handler>`.
 
 If you enable batching, you must also :ref:`set feed URIs appropriately with placeholders<batch-uri>`.
@@ -295,7 +295,7 @@ If you enable batching, you must also :ref:`set feed URIs appropriately with pla
 Default Batch Handler
 ----------------------
 
-.. autoclass:: scrapy.extensions.batches.DefaultBatchHandler
+.. autoclass:: scrapy.extensions.batches.BatchHandler
 
 .. _custom-batch-handler:
 

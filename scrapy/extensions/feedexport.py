@@ -20,7 +20,7 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.extensions.batches import DefaultBatchHandler
+from scrapy.extensions.batches import BatchHandler
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
@@ -551,10 +551,9 @@ class FeedExporter:
         return item_filter_class(feed_options)
 
     def _load_batch(self, feed_options, uri):
-        batch_class = load_object(feed_options.get("batch", DefaultBatchHandler))
+        batch_class = load_object(feed_options.get("batch", BatchHandler))
         try:
             batch_obj = batch_class(feed_options)
         except NotConfigured:
-            logger.warning("Batch Handler %s not configured for %s." % (batch_class.__name__, uri))
             batch_obj = None
         return batch_obj

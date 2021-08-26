@@ -8,7 +8,7 @@ import time
 from typing import Any, BinaryIO, Dict
 
 
-class DefaultBatchHandler:
+class BatchHandler:
     """
     The default :ref:`batch handler <batches>`.
 

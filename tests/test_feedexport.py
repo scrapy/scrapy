@@ -39,6 +39,7 @@ from scrapy.extensions.feedexport import (
     S3FeedStorage,
     StdoutFeedStorage,
 )
+from scrapy.extensions.batches import BatchHandler
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import (
@@ -1998,6 +1999,37 @@ class BatchDeliveriesTest(FeedExportTestBase):
             with self.assertRaises(ValueError):
                 crawler = get_crawler(settings_dict=settings)
                 FeedExporter.from_crawler(crawler)
+
+    def test_batch_handler_invalid_config(self):
+        invalid_options = [
+            {},
+            {'batch_file_size': '0B'},
+            {'batch_item_count': 0},
+            {'batch_duration': '00:00:00'},
+            {'batch_file_size': '0B', 'batch_item_count': 0},
+            {'batch_duration': '00:00:00', 'batch_file_size': '0B'},
+            {'batch_file_size': '0B', 'batch_duration': '00:00:00', 'batch_item_count': 0},
+        ]
+
+        for options in invalid_options:
+            with self.assertRaises(NotConfigured):
+                BatchHandler(options)
+
+    def test_batch_handle_valid_config(self):
+        valid_options = [
+            {'batch_file_size': '1B'},
+            {'batch_item_count': 1},
+            {'batch_duration': '1:00:00'},
+            {'batch_file_size': '1B', 'batch_item_count': 1},
+            {'batch_item_count': 2, 'batch_duration': '00:02:00'},
+            {'batch_file_size': '20B', 'batch_item_count': 100, 'batch_duration': '01:00:00'},
+        ]
+
+        for options in valid_options:
+            try:
+                BatchHandler(options)
+            except NotConfigured:
+                self.fail("BatchHandler can't recognise valid options.")
 
     @defer.inlineCallbacks
     def test_s3_export(self):
