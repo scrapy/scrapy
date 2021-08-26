@@ -180,7 +180,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "batch_item_count": 2,
             "batch_duration": "0:0:1",
             "batch_file_size": "1B",
-            "item_export_kwargs": dict(),
+            "item_export_kwargs": {},
         })
 
     def test_feed_complete_default_values_from_settings_non_empty(self):
@@ -207,7 +207,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "batch_item_count": 2,
             "batch_duration": "0:0:1",
             "batch_file_size": "1B",
-            "item_export_kwargs": dict(),
+            "item_export_kwargs": {},
         })
 
 

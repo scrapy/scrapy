@@ -40,9 +40,9 @@ def generate_keys():
 
     subject = issuer = Name(
         [
-            NameAttribute(NameOID.COUNTRY_NAME, u"IE"),
-            NameAttribute(NameOID.ORGANIZATION_NAME, u"Scrapy"),
-            NameAttribute(NameOID.COMMON_NAME, u"localhost"),
+            NameAttribute(NameOID.COUNTRY_NAME, "IE"),
+            NameAttribute(NameOID.ORGANIZATION_NAME, "Scrapy"),
+            NameAttribute(NameOID.COMMON_NAME, "localhost"),
         ]
     )
     cert = (
@@ -54,7 +54,7 @@ def generate_keys():
         .not_valid_before(datetime.utcnow())
         .not_valid_after(datetime.utcnow() + timedelta(days=10))
         .add_extension(
-            SubjectAlternativeName([DNSName(u"localhost")]),
+            SubjectAlternativeName([DNSName("localhost")]),
             critical=False,
         )
         .sign(key, SHA256(), default_backend())

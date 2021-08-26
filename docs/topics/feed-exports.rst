@@ -391,6 +391,7 @@ The command line above can generate a directory tree like::
 Where the first and second files contain exactly 100 items. The last one contains
 100 items or fewer.
 
+
 .. _item-filter:
 
 Item filtering
@@ -429,6 +430,63 @@ ItemFilter
 
 .. autoclass:: scrapy.extensions.feedexport.ItemFilter
    :members:
+
+
+.. _post-processing:
+
+Post-Processing
+===============
+
+.. versionadded:: VERSION
+
+Scrapy provides an option to activate plugins to post-process feeds before they are exported
+to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
+can create your own :ref:`plugins <custom-plugins>`. 
+
+These plugins can be activated through the ``postprocessing`` option of a feed.
+The option must be passed a list of post-processing plugins in the order you want
+the feed to be processed. These plugins can be declared either as an import string
+or with the imported class of the plugin. Parameters to plugins can be passed
+through the feed options. See :ref:`feed options <feed-options>` for examples.
+
+.. _builtin-plugins:
+
+Built-in Plugins
+----------------
+
+.. autoclass:: scrapy.extensions.postprocessing.GzipPlugin
+
+.. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
+
+.. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
+
+.. _custom-plugins:
+
+Custom Plugins
+--------------
+
+Each plugin is a class that must implement the following methods:
+
+.. method:: __init__(self, file, feed_options)
+
+    Initialize the plugin.
+
+    :param file: file-like object having at least the `write`, `tell` and `close` methods implemented
+
+    :param feed_options: feed-specific :ref:`options <feed-options>`
+    :type feed_options: :class:`dict`
+
+.. method:: write(self, data)
+
+   Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
+   It must return number of bytes written.
+
+.. method:: close(self)
+
+    Close the target file object.
+
+To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You 
+can then access those parameters from the ``__init__`` method of your plugin.
 
 
 Settings
@@ -490,11 +548,13 @@ For instance::
             'indent': 8,
             'batch_file_size': '100MB',
         },
-        pathlib.Path('items.csv'): {
+        pathlib.Path('items.csv.gz'): {
             'format': 'csv',
             'fields': ['price', 'name'],
             'item_filter': 'myproject.filters.MyCustomFilter2',
             'batch': MyCustomBatchHandler,
+            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+            'gzip_compresslevel': 5,
         },
     }
 
@@ -572,6 +632,11 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
 
+-   ``postprocessing``: list of :ref:`plugins <post-processing>` to use for post-processing.
+
+    The plugins will be used in the order of the list passed.
+
+    .. versionadded:: VERSION
 
 .. setting:: FEED_EXPORT_ENCODING
 

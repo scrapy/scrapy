@@ -989,6 +989,16 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+.. setting:: JOBDIR
+
+JOBDIR
+------
+
+Default: ``''``
+
+A string indicating the directory for storing the state of a crawl when
+:ref:`pausing and resuming crawls <topics-jobs>`.
+
 .. setting:: LOG_ENABLED
 
 LOG_ENABLED
