@@ -665,7 +665,7 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         yield self.assertExportedMultiple(items, rows, settings)
 
     @abstractmethod
-    def run_and_export(self, spider_cls, settings):
+    def run_and_export(self, spider_cls, settings, multiple_urls=1):
         pass
 
     def _load_until_eof(self, data, load_func):
@@ -1517,7 +1517,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         return os.path.join(self.temp_dir, name)
 
     @defer.inlineCallbacks
-    def run_and_export(self, spider_cls, settings):
+    def run_and_export(self, spider_cls, settings, multiple_urls=1):
         """ Run spider with specified settings; return exported data with filename. """
 
         FEEDS = settings.get('FEEDS') or {}
@@ -1530,7 +1530,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         try:
             with MockServer() as s:
                 runner = CrawlerRunner(Settings(settings))
-                spider_cls.start_urls = [s.url('/')]
+                spider_cls.start_urls = [s.url('/')] * multiple_urls
                 yield runner.crawl(spider_cls)
 
             for file_path, feed_options in FEEDS.items():
