@@ -62,9 +62,9 @@ download the webpage with an HTTP client like curl_ or wget_ and see if the
 information can be found in the response they get.
 
 If they get a response with the desired data, modify your Scrapy
-:class:`~scrapy.http.Request` to match that of the other HTTP client. For
+:class:`~scrapy.Request` to match that of the other HTTP client. For
 example, try using the same user-agent string (:setting:`USER_AGENT`) or the
-same :attr:`~scrapy.http.Request.headers`.
+same :attr:`~scrapy.Request.headers`.
 
 If they also get a response without the desired data, you’ll need to take
 steps to make your request more similar to that of the web browser. See
@@ -81,14 +81,14 @@ Use the :ref:`network tool <topics-network-tool>` of your web browser to see
 how your web browser performs the desired request, and try to reproduce that
 request with Scrapy.
 
-It might be enough to yield a :class:`~scrapy.http.Request` with the same HTTP
+It might be enough to yield a :class:`~scrapy.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
-form parameters (see :class:`~scrapy.http.FormRequest`) of that request.
+form parameters (see :class:`~scrapy.FormRequest`) of that request.
 
 As all major browsers allow to export the requests in `cURL
 <https://curl.haxx.se/>`_ format, Scrapy incorporates the method
-:meth:`~scrapy.http.Request.from_curl()` to generate an equivalent
-:class:`~scrapy.http.Request` from a cURL command. To get more information
+:meth:`~scrapy.Request.from_curl()` to generate an equivalent
+:class:`~scrapy.Request` from a cURL command. To get more information
 visit :ref:`request from curl <requests-from-curl>` inside the network
 tool section.
 
@@ -125,7 +125,7 @@ data from it depends on the type of response:
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
-    :class:`~scrapy.selector.Selector` and then
+    :class:`~scrapy.Selector` and then
     :ref:`use it <topics-selectors>` as usual::
 
         selector = Selector(data['html'])
@@ -246,24 +246,46 @@ Using a headless browser
 ========================
 
 A `headless browser`_ is a special web browser that provides an API for
-automation.
+automation. By installing the :ref:`asyncio reactor <install-asyncio>`,
+it is possible to integrate ``asyncio``-based libraries which handle headless browsers.
 
-The easiest way to use a headless browser with Scrapy is to use Selenium_,
-along with `scrapy-selenium`_ for seamless integration.
+One such library is `playwright-python`_ (an official Python port of `playwright`_).
+The following is a simple snippet to illustrate its usage within a Scrapy spider::
 
+    import scrapy
+    from playwright.async_api import async_playwright
+
+    class PlaywrightSpider(scrapy.Spider):
+        name = "playwright"
+        start_urls = ["data:,"]  # avoid using the default Scrapy downloader
+
+        async def parse(self, response):
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch()
+                page = await browser.new_page()
+                await page.goto("https:/example.org")
+                title = await page.title()
+                return {"title": title}
+
+
+However, using `playwright-python`_ directly as in the above example
+circumvents most of the Scrapy components (middlewares, dupefilter, etc).
+We recommend using `scrapy-playwright`_ for a better integration.
 
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
-.. _chompjs: https://github.com/Nykakin/chompjs
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
+.. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
+.. _Splash: https://github.com/scrapinghub/splash
+.. _chompjs: https://github.com/Nykakin/chompjs
 .. _curl: https://curl.haxx.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
-.. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _js2xml: https://github.com/scrapinghub/js2xml
+.. _playwright-python: https://github.com/microsoft/playwright-python
+.. _playwright: https://github.com/microsoft/playwright
+.. _pyppeteer: https://pyppeteer.github.io/pyppeteer/
 .. _pytesseract: https://github.com/madmaze/pytesseract
-.. _scrapy-selenium: https://github.com/clemfromspace/scrapy-selenium
+.. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
-.. _Selenium: https://www.selenium.dev/
-.. _Splash: https://github.com/scrapinghub/splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/
 .. _wgrep: https://github.com/stav/wgrep

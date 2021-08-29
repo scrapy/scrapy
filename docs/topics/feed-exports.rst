@@ -135,6 +135,9 @@ Here are some examples to illustrate:
 
     -   ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
 
+.. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
+          they can also be used as storage URI parameters.
+
 
 .. _topics-feed-storage-backends:
 
@@ -197,10 +200,14 @@ passed through the following settings:
 
 -   :setting:`AWS_ACCESS_KEY_ID`
 -   :setting:`AWS_SECRET_ACCESS_KEY`
+-   :setting:`AWS_SESSION_TOKEN` (only needed for `temporary security credentials`_)
 
-You can also define a custom ACL for exported feeds using this setting:
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+
+You can also define a custom ACL and custom endpoint for exported feeds using this setting:
 
 -   :setting:`FEED_STORAGE_S3_ACL`
+-   :setting:`AWS_ENDPOINT_URL`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -266,6 +273,103 @@ soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
 
+.. _item-filter:
+
+Item filtering
+==============
+
+.. versionadded:: VERSION
+
+You can filter items that you want to allow for a particular feed by using the
+``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
+the specified types will be added to the feed.
+
+The ``item_classes`` option is implemented by the :class:`~scrapy.extensions.feedexport.ItemFilter`
+class, which is the default value of the ``item_filter`` :ref:`feed option <feed-options>`.
+
+You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
+method ``accepts`` and taking ``feed_options`` as an argument.
+
+For instance::
+
+    class MyCustomFilter:
+
+        def __init__(self, feed_options):
+            self.feed_options = feed_options
+
+        def accepts(self, item):
+            if "field1" in item and item["field1"] == "expected_data":
+                return True
+            return False
+
+
+You can assign your custom filtering class to the ``item_filter`` :ref:`option of a feed <feed-options>`.
+See :setting:`FEEDS` for examples.
+
+ItemFilter
+----------
+
+.. autoclass:: scrapy.extensions.feedexport.ItemFilter
+   :members:
+
+
+.. _post-processing:
+
+Post-Processing
+===============
+
+.. versionadded:: VERSION
+
+Scrapy provides an option to activate plugins to post-process feeds before they are exported
+to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
+can create your own :ref:`plugins <custom-plugins>`. 
+
+These plugins can be activated through the ``postprocessing`` option of a feed.
+The option must be passed a list of post-processing plugins in the order you want
+the feed to be processed. These plugins can be declared either as an import string
+or with the imported class of the plugin. Parameters to plugins can be passed
+through the feed options. See :ref:`feed options <feed-options>` for examples.
+
+.. _builtin-plugins:
+
+Built-in Plugins
+----------------
+
+.. autoclass:: scrapy.extensions.postprocessing.GzipPlugin
+
+.. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
+
+.. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
+
+.. _custom-plugins:
+
+Custom Plugins
+--------------
+
+Each plugin is a class that must implement the following methods:
+
+.. method:: __init__(self, file, feed_options)
+
+    Initialize the plugin.
+
+    :param file: file-like object having at least the `write`, `tell` and `close` methods implemented
+
+    :param feed_options: feed-specific :ref:`options <feed-options>`
+    :type feed_options: :class:`dict`
+
+.. method:: write(self, data)
+
+   Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
+   It must return number of bytes written.
+
+.. method:: close(self)
+
+    Close the target file object.
+
+To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You 
+can then access those parameters from the ``__init__`` method of your plugin.
+
+
 Settings
 ========
 
@@ -308,21 +412,26 @@ For instance::
             'format': 'json',
             'encoding': 'utf8',
             'store_empty': False,
+            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
             'fields': None,
             'indent': 4,
             'item_export_kwargs': {
                'export_empty_fields': True,
             },
-        }, 
+        },
         '/home/user/documents/items.xml': {
             'format': 'xml',
             'fields': ['name', 'price'],
+            'item_filter': MyCustomFilter1,
             'encoding': 'latin1',
             'indent': 8,
         },
-        pathlib.Path('items.csv'): {
+        pathlib.Path('items.csv.gz'): {
             'format': 'csv',
             'fields': ['price', 'name'],
+            'item_filter': 'myproject.filters.MyCustomFilter2',
+            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+            'gzip_compresslevel': 5,
         },
     }
 
@@ -343,6 +452,18 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
+
+-   ``item_classes``: list of :ref:`item classes <topics-items>` to export.
+
+    If undefined or empty, all items are exported.
+
+    .. versionadded:: VERSION
+
+-   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
+
+    :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
+
+    .. versionadded:: VERSION
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
@@ -374,6 +495,11 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
 
+-   ``postprocessing``: list of :ref:`plugins <post-processing>` to use for post-processing.
+
+    The plugins will be used in the order of the list passed.
+
+    .. versionadded:: VERSION
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -616,9 +742,9 @@ The function signature should be as follows:
    :type params: dict
 
    :param spider: source spider of the feed items
-   :type spider: scrapy.spiders.Spider
+   :type spider: scrapy.Spider
 
-For example, to include the :attr:`name <scrapy.spiders.Spider.name>` of the
+For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
 
 #.  Define the following function somewhere in your project::

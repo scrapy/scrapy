@@ -13,6 +13,7 @@ module with the ``runserver`` argument::
 import os
 import re
 import sys
+import warnings
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -25,6 +26,7 @@ from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
@@ -56,7 +58,7 @@ class TestSpider(Spider):
     name_re = re.compile(r"<h1>(.*?)</h1>", re.M)
     price_re = re.compile(r">Price: \$(.*?)<", re.M)
 
-    item_cls = TestItem
+    item_cls: type = TestItem
 
     def parse(self, response):
         xlink = LinkExtractor()
@@ -66,15 +68,15 @@ class TestSpider(Spider):
                 yield Request(url=link.url, callback=self.parse_item)
 
     def parse_item(self, response):
-        item = self.item_cls()
+        adapter = ItemAdapter(self.item_cls())
         m = self.name_re.search(response.text)
         if m:
-            item['name'] = m.group(1)
-        item['url'] = response.url
+            adapter['name'] = m.group(1)
+        adapter['url'] = response.url
         m = self.price_re.search(response.text)
         if m:
-            item['price'] = m.group(1)
-        return item
+            adapter['price'] = m.group(1)
+        return adapter.item
 
 
 class TestDupeFilterSpider(TestSpider):
@@ -87,7 +89,7 @@ class DictItemsSpider(TestSpider):
 
 
 class AttrsItemsSpider(TestSpider):
-    item_class = AttrsItem
+    item_cls = AttrsItem
 
 
 try:
@@ -97,14 +99,10 @@ except ImportError:
 else:
     TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
 
-    class DataClassItemsSpider(DictItemsSpider):
+    class DataClassItemsSpider(DictItemsSpider):  # type: ignore[no-redef]
         def parse_item(self, response):
             item = super().parse_item(response)
-            return TestDataClass(
-                name=item.get('name'),
-                url=item.get('url'),
-                price=item.get('price'),
-            )
+            return TestDataClass(**item)
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
@@ -113,6 +111,18 @@ class ItemZeroDivisionErrorSpider(TestSpider):
             "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
         }
     }
+
+
+class ChangeCloseReasonSpider(TestSpider):
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = cls(*args, **kwargs)
+        spider._set_crawler(crawler)
+        crawler.signals.connect(spider.spider_idle, signals.spider_idle)
+        return spider
+
+    def spider_idle(self):
+        raise CloseSpider(reason="custom_reason")
 
 
 def start_test_site(debug=False):
@@ -142,7 +152,7 @@ class CrawlerRun:
         self.itemerror = []
         self.itemresp = []
         self.headers = {}
-        self.bytes = defaultdict(lambda: list())
+        self.bytes = defaultdict(list)
         self.signals_caught = {}
         self.spider_class = spider_class
 
@@ -252,6 +262,13 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
         yield self.run.run()
         self._assert_items_error()
+
+    @defer.inlineCallbacks
+    def test_crawler_change_close_reason_on_idle(self):
+        self.run = CrawlerRun(ChangeCloseReasonSpider)
+        yield self.run.run()
+        self.assertEqual({'spider': self.run.spider, 'reason': 'custom_reason'},
+                         self.run.signals_caught[signals.spider_closed])
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
@@ -386,22 +403,104 @@ class EngineTest(unittest.TestCase):
         yield e.close()
 
     @defer.inlineCallbacks
-    def test_close_spiders_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
-        yield e.open_spider(TestSpider(), [])
-        self.assertEqual(len(e.open_spiders), 1)
-        yield e.close()
-        self.assertEqual(len(e.open_spiders), 0)
-
-    @defer.inlineCallbacks
-    def test_close_engine_spiders_downloader(self):
+    def test_start_already_running_exception(self):
         e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.open_spider(TestSpider(), [])
         e.start()
-        self.assertTrue(e.running)
-        yield e.close()
-        self.assertFalse(e.running)
-        self.assertEqual(len(e.open_spiders), 0)
+        yield self.assertFailure(e.start(), RuntimeError).addBoth(
+            lambda exc: self.assertEqual(str(exc), "Engine already running")
+        )
+        yield e.stop()
+
+    @defer.inlineCallbacks
+    def test_close_spiders_downloader(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            yield e.open_spider(TestSpider(), [])
+            self.assertEqual(len(e.open_spiders), 1)
+            yield e.close()
+            self.assertEqual(len(e.open_spiders), 0)
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            )
+
+    @defer.inlineCallbacks
+    def test_close_engine_spiders_downloader(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            yield e.open_spider(TestSpider(), [])
+            e.start()
+            self.assertTrue(e.running)
+            yield e.close()
+            self.assertFalse(e.running)
+            self.assertEqual(len(e.open_spiders), 0)
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
+            )
+
+    @defer.inlineCallbacks
+    def test_crawl_deprecated_spider_arg(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            spider = TestSpider()
+            yield e.open_spider(spider, [])
+            e.start()
+            e.crawl(Request("data:,"), spider)
+            yield e.close()
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "Passing a 'spider' argument to ExecutionEngine.crawl is deprecated",
+            )
+
+    @defer.inlineCallbacks
+    def test_download_deprecated_spider_arg(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            spider = TestSpider()
+            yield e.open_spider(spider, [])
+            e.start()
+            e.download(Request("data:,"), spider)
+            yield e.close()
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "Passing a 'spider' argument to ExecutionEngine.download is deprecated",
+            )
+
+    @defer.inlineCallbacks
+    def test_deprecated_schedule(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            spider = TestSpider()
+            yield e.open_spider(spider, [])
+            e.start()
+            e.schedule(Request("data:,"), spider)
+            yield e.close()
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(
+                str(warning_list[0].message),
+                "ExecutionEngine.schedule is deprecated, please use "
+                "ExecutionEngine.crawl or ExecutionEngine.download instead",
+            )
+
+    @defer.inlineCallbacks
+    def test_deprecated_has_capacity(self):
+        with warnings.catch_warnings(record=True) as warning_list:
+            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            self.assertTrue(e.has_capacity())
+            spider = TestSpider()
+            yield e.open_spider(spider, [])
+            self.assertFalse(e.has_capacity())
+            e.start()
+            yield e.close()
+            self.assertTrue(e.has_capacity())
+            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(str(warning_list[0].message), "ExecutionEngine.has_capacity is deprecated")
 
 
 if __name__ == "__main__":
