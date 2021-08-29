@@ -79,8 +79,6 @@ class ResponseTypesTest(unittest.TestCase):
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
               'url': 'http://www.example.com/item/'}, HtmlResponse),
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
-              'url': 'http://www.example.com/page/'}, TextResponse),
             ({'body': b'\x01\x02', 'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
               'url': 'http://www.example.com/page/'}, Response),
             ({'body': b'Some plain\0 text data with\0 tabs and null bytes\0'}, TextResponse),
@@ -91,10 +89,6 @@ class ResponseTypesTest(unittest.TestCase):
             ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
             ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
             ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
-            ({'filename': 'file.pdf'}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.pdf'}, TextResponse),
-            ({'body': b'\x01\x02', 'filename': 'file.pdf'}, Response),
-            ({'body': b'\x01\x02', 'url': 'http://www.example.com/item/file.pdf'}, Response),
             ({'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'}, Response),
             ({'body': b'\x01\x02', 'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
             ({'headers': Headers({'Content-Type': ['application/x-json']})}, TextResponse),
@@ -109,6 +103,8 @@ class ResponseTypesTest(unittest.TestCase):
         """Each of the following test cases got affected after
         using xtractmime for MIME sniffing"""
         mappings = [
+            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
+              'url': 'http://www.example.com/page/'}, TextResponse),
             ({'body': b'\x00\x01\xff', 'url': 'http://www.example.com/item/',
               'headers': Headers({'Content-Type': ['text/plain']})}, Response),
             ({'filename': '/tmp/temp^'}, TextResponse),
@@ -124,9 +120,13 @@ class ResponseTypesTest(unittest.TestCase):
                                                        'Content-Type': ['text/html']})}, HtmlResponse),
             ({'body': b'Some plain text', 'headers': Headers({'Content-Type': 'application/octet-stream'})},
              TextResponse),
+            ({'url': b'http://www.example.com/page/file.html', 'headers': Headers({'Content-Type': 'application/octet-stream'})},
+             TextResponse),
             ({'body': b'\x0c\x1b'}, TextResponse),
             ({'body': b'this is not <html>'}, TextResponse),
             ({'body': b'this is not <?xml'}, TextResponse),
+            ({'filename': 'file.pdf'}, TextResponse),
+            ({'url': 'http://www.example.com/item/file.pdf'}, TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
