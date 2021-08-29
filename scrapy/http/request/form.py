@@ -34,7 +34,7 @@ class FormRequest(Request):
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
-            form_query_str = _urlencode(items, self.encoding)
+            form_query_str = urlencode(formdata, doseq=1, encoding=self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(form_query_str)
@@ -81,13 +81,6 @@ def _get_form_url(form: FormElement, url: Optional[str]) -> str:
             return form.base_url
         return urljoin(form.base_url, strip_html5_whitespace(action))
     return urljoin(form.base_url, url)
-
-
-def _urlencode(seq: Iterable, enc: str) -> str:
-    values = [(to_bytes(k, enc), to_bytes(v, enc))
-              for k, vs in seq
-              for v in (vs if is_listlike(vs) else [vs])]
-    return urlencode(values, doseq=True)
 
 
 def _get_form(
