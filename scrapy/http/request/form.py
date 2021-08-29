@@ -5,7 +5,7 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import List, Optional, Tuple, Type, TypeVar, Union
 from urllib.parse import urljoin, urlencode, urlsplit, urlunsplit
 
 from lxml.html import FormElement, HtmlElement, HTMLParser, SelectElement
@@ -14,7 +14,6 @@ from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
 from scrapy.http.response.text import TextResponse
-from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
 
 
@@ -33,8 +32,7 @@ class FormRequest(Request):
         super().__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.items() if isinstance(formdata, dict) else formdata
-            form_query_str = urlencode(formdata, doseq=1, encoding=self.encoding)
+            form_query_str = urlencode(formdata, doseq=True, encoding=self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
                 self._set_body(form_query_str)
