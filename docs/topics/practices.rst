@@ -226,5 +226,39 @@ crawl::
     curl http://scrapy2.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=2
     curl http://scrapy3.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=3
 
+.. _bans:
 
+Avoiding getting banned
+=======================
+
+Some websites implement certain measures to prevent bots from crawling them,
+with varying degrees of sophistication. Getting around those measures can be
+difficult and tricky, and may sometimes require special infrastructure. Please
+consider contacting `commercial support`_ if in doubt.
+
+Here are some tips to keep in mind when dealing with these kinds of sites:
+
+* rotate your user agent from a pool of well-known ones from browsers (google
+  around to get a list of them)
+* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
+  cookies to spot bot behaviour
+* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
+* if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
+  directly
+* use a pool of rotating IPs. For example, the free `Tor project`_ or paid
+  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
+  super proxy that you can attach your own proxies to.
+* use a highly distributed downloader that circumvents bans internally, so you
+  can just focus on parsing clean pages. One example of such downloaders is
+  `Zyte Smart Proxy Manager`_
+
+If you are still unable to prevent your bot getting banned, consider contacting
+`commercial support`_.
+
+.. _Tor project: https://www.torproject.org/
+.. _commercial support: https://scrapy.org/support/
+.. _ProxyMesh: https://proxymesh.com/
+.. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
+.. _scrapoxy: https://scrapoxy.io/
+.. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/
