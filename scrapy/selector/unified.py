@@ -75,7 +75,11 @@ class Selector(_ParselSelector, object_ref):
             response = _response_from_text(text, st)
 
         if response is not None:
-            text = response.text
+            try:
+                text = response.text
+            except AttributeError:
+                if isinstance(response.body, bytes):
+                    text = response.body.decode('latin-1')
             kwargs.setdefault('base_url', response.url)
 
         self.response = response
