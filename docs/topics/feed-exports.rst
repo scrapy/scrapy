@@ -307,41 +307,39 @@ that class or its import string to the :ref:`batch feed option <feed-options>`.
 
 Each batch handler is a class that must implement the following methods:
 
-.. method:: __init__(self, feed_options)
+.. class:: MyBatchHandler(feed_options)
 
-    Initialize the batch handler.
+   Initialize the batch handler.
 
-    :param feed_options: feed-specific :ref:`options <feed-options>`
+   :param feed_options: feed-specific :ref:`options <feed-options>`
+   :type feed_options: dict
 
-    :type feed_options: dict
+   .. note:: Feed options support arbitrary parameters passing, which can be
+             used by custom batch handlers to access parameters passed by users.
 
-    .. note:: Feed options support arbitrary parameters passing, which can be
-              used by custom batch handlers to access parameters passed by users.
+   .. method:: item_added(self)
 
-.. method:: item_added(self)
+      Called every time after an item is exported to the feed.
 
-    Called every time after an item is exported to the feed.
-    
-    Return ``True`` if a new batch file should be created now, or ``False`` otherwise.
+      Return ``True`` if a new batch file should be created now, or ``False`` otherwise.
 
-    You may use this method to update batch state information.
+      You may use this method to update batch state information.
 
-.. method:: new_batch(self, file)
+   .. method:: new_batch(self, file)
 
-    Called after each batch file is created, including the first batch file.
+      Called after each batch file is created, including the first batch file.
 
-    You may reset any internal state of your batch handler.
+      You may reset any internal state of your batch handler here.
 
-    :param file: file pointer of new batch storage
-
-    :type file: :class:`BinaryIO`
+      :param file: file pointer of new batch storage
+      :type file: :class:`BinaryIO`
 
 An example for custom batch handler::
 
     class CustomBatchHandler:
 
         def __init__(self, feed_options):
-        if feed_options.get("batch_divisible_by", 0) <= 0:
+            if feed_options.get("batch_divisible_by", 0) <= 0:
                 raise NotConfigured
             self.divisor = feed_options["batch_divisible_by"]
             self.item_count = 0
@@ -467,23 +465,21 @@ Custom Plugins
 
 Each plugin is a class that must implement the following methods:
 
-.. method:: __init__(self, file, feed_options)
-
-    Initialize the plugin.
+.. class:: MyPlugin(file, feed_options)
 
     :param file: file-like object having at least the `write`, `tell` and `close` methods implemented
 
     :param feed_options: feed-specific :ref:`options <feed-options>`
     :type feed_options: :class:`dict`
 
-.. method:: write(self, data)
+    .. method:: write(self, data)
 
-   Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
-   It must return number of bytes written.
+       Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
+       It must return number of bytes written.
 
-.. method:: close(self)
+    .. method:: close(self)
 
-    Close the target file object.
+       Close the target file object.
 
 To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You 
 can then access those parameters from the ``__init__`` method of your plugin.
