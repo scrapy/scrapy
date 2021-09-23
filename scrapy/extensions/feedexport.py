@@ -355,32 +355,27 @@ class FeedExporter:
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
-        log_args = {'format': slot.format,
-                    'itemcount': slot.itemcount,
-                    'uri': slot.uri}
+        logfmt = f"{slot.format} feed ({str(slot.itemcount)} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
-        # Use `largs=log_args` to copy log_args into function's scope
-        # instead of using `log_args` from the outer scope
         d.addCallback(
-            self._handle_store_success, log_args, logfmt, spider, type(slot.storage).__name__
+            self._handle_store_success, logfmt, spider, type(slot.storage).__name__
         )
         d.addErrback(
-            self._handle_store_error, log_args, logfmt, spider, type(slot.storage).__name__
+            self._handle_store_error, logfmt, spider, type(slot.storage).__name__
         )
         return d
 
-    def _handle_store_error(self, f, largs, logfmt, spider, slot_type):
+    def _handle_store_error(self, f, logfmt, spider, slot_type):
         logger.error(
-            f"Stored {largs['format']} feed ({str(largs['itemcount'])} items) in {largs['uri']}",
+            f"Stored {logfmt}",
             exc_info=failure_to_exc_info(f), extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
 
-    def _handle_store_success(self, f, largs, logfmt, spider, slot_type):
+    def _handle_store_success(self, f, logfmt, spider, slot_type):
         logger.info(
-            f"Stored {largs['format']} feed ({str(largs['itemcount'])} items) in {largs['uri']}",
+            f"Stored {logfmt}",
             extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
@@ -474,7 +469,8 @@ class FeedExporter:
         for uri_template, values in self.feeds.items():
             if values['batch_item_count'] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
                 logger.error(
-                    f'%(batch_time)s or %(batch_id)d must be in the feed URI ({uri_template}) if FEED_EXPORT_BATCH_ITEM_COUNT '
+                    f'%(batch_time)s or %(batch_id)d must be in the feed URI ({uri_template})'
+                    'if FEED_EXPORT_BATCH_ITEM_COUNT '
                     'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '
                     'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count'
                 )
