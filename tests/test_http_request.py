@@ -1229,7 +1229,7 @@ class FormRequestTest(RequestTest):
             self.assertEqual(r.method, method)
 
         response = _buildresponse(
-            f"""
+            """
             <form action="post.php" method="UNKNOWN">
             <input type="hidden" name="one" value="1">
             </form>"""
