@@ -368,14 +368,14 @@ class FeedExporter:
 
     def _handle_store_error(self, f, logfmt, spider, slot_type):
         logger.error(
-            f"Error storing {logfmt}",
+            "Error storing %s", logfmt,
             exc_info=failure_to_exc_info(f), extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
 
     def _handle_store_success(self, f, logfmt, spider, slot_type):
         logger.info(
-            f"Stored {logfmt}",
+            "Stored %s", logfmt,
             extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
@@ -469,10 +469,10 @@ class FeedExporter:
         for uri_template, values in self.feeds.items():
             if values['batch_item_count'] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
                 logger.error(
-                    f'%(batch_time)s or %(batch_id)d must be in the feed URI ({uri_template})'
-                    'if FEED_EXPORT_BATCH_ITEM_COUNT '
+                    '%(batch_time)s or %(batch_id)d must be in the feed URI ({%s}) if FEED_EXPORT_BATCH_ITEM_COUNT '
                     'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '
-                    'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count'
+                    'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count',
+                    uri_template
                 )
                 return False
         return True
