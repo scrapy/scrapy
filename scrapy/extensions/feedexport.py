@@ -368,7 +368,7 @@ class FeedExporter:
 
     def _handle_store_error(self, f, logfmt, spider, slot_type):
         logger.error(
-            f"Stored {logfmt}",
+            f"Error storing {logfmt}",
             exc_info=failure_to_exc_info(f), extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
