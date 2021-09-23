@@ -65,14 +65,12 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                 verifyHostname(connection, self._hostnameASCII)
             except (CertificateError, VerificationError) as e:
                 logger.warning(
-                    'Remote certificate is not valid for hostname "{}"; {}'.format(
-                        self._hostnameASCII, e))
+                    f'Remote certificate is not valid for hostname "{self._hostnameASCII}"; {e}')
 
             except ValueError as e:
                 logger.warning(
                     'Ignoring error while verifying certificate '
-                    'from host "{}" (exception: {})'.format(
-                        self._hostnameASCII, repr(e)))
+                    f'from host "{self._hostnameASCII}" (exception: {repr(e)})')
 
 
 DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
