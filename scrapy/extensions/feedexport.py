@@ -355,27 +355,27 @@ class FeedExporter:
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logfmt = f"{slot.format} feed ({str(slot.itemcount)} items) in: {slot.uri}"
+        logmsg = f"{slot.format} feed ({str(slot.itemcount)} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
         d.addCallback(
-            self._handle_store_success, logfmt, spider, type(slot.storage).__name__
+            self._handle_store_success, logmsg, spider, type(slot.storage).__name__
         )
         d.addErrback(
-            self._handle_store_error, logfmt, spider, type(slot.storage).__name__
+            self._handle_store_error, logmsg, spider, type(slot.storage).__name__
         )
         return d
 
-    def _handle_store_error(self, f, logfmt, spider, slot_type):
+    def _handle_store_error(self, f, logmsg, spider, slot_type):
         logger.error(
-            "Error storing %s", logfmt,
+            "Error storing %s", logmsg,
             exc_info=failure_to_exc_info(f), extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
 
-    def _handle_store_success(self, f, logfmt, spider, slot_type):
+    def _handle_store_success(self, f, logmsg, spider, slot_type):
         logger.info(
-            "Stored %s", logfmt,
+            "Stored %s", logmsg,
             extra={'spider': spider}
         )
         self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
