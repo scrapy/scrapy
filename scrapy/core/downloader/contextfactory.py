@@ -136,7 +136,7 @@ def load_context_factory_from_settings(settings, crawler):
             crawler=crawler,
         )
         msg = f"""
-        {str(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'],)} \
+        {str(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])} \
         does not accept `method` argument (type OpenSSL.SSL method,\
         e.g. OpenSSL.SSL.SSLv23_METHOD) and/or `tls_verbose_logging` argument and/or `tls_ciphers` argument.\
         Please upgrade your context factory class to handle them or ignore them."""
