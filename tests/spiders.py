@@ -138,7 +138,7 @@ class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
         await asyncio.sleep(0.2)
         req_id = response.meta.get('req_id', 0)
         status = await get_from_asyncio_queue(response.status)
-        self.logger.info(f"Got response {status}, {req_id}")
+        self.logger.info(f"Got response {status}, req_id {req_id}")
         if req_id > 0:
             return
         reqs = []
