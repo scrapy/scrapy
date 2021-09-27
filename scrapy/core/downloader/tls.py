@@ -71,8 +71,8 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
             except ValueError as e:
                 logger.warning(
                     'Ignoring error while verifying certificate '
-                    'from host "%s" (exception: %s)',
-                    self._hostnameASCII, repr(e))
+                    'from host "%s" (exception: %r)',
+                    self._hostnameASCII, e)
 
 
 DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
