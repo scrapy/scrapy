@@ -355,7 +355,7 @@ class FeedExporter:
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logmsg = f"{slot.format} feed ({str(slot.itemcount)} items) in: {slot.uri}"
+        logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
         d.addCallback(
