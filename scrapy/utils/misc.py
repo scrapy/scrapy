@@ -50,7 +50,7 @@ def load_object(path):
             return path
         else:
             raise TypeError("Unexpected argument type, expected string "
-                            f"or object, got: {str(type(path))}")
+                            f"or object, got: {type(path)}")
 
     try:
         dot = path.rindex('.')
