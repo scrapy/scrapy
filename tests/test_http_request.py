@@ -1217,25 +1217,17 @@ class FormRequestTest(RequestTest):
                           response, formcss="input[name='abc']")
 
     def test_from_response_valid_form_methods(self):
+        form_methods = [[method, method] for method in self.request_class.valid_form_methods] + \
+                       [['UNKNOWN', 'GET']]
 
-        for method in self.request_class.valid_form_methods:
+        for method, expected in form_methods:
             response = _buildresponse(
-                f"""
-            <form action="post.php" method="{method}">
-            <input type="hidden" name="one" value="1">
-            </form>"""
+                f'<form action="post.php" method="{method}">'
+                '<input type="hidden" name="one" value="1">'
+                '</form>'
             )
             r = self.request_class.from_response(response)
-            self.assertEqual(r.method, method)
-
-        response = _buildresponse(
-            """
-            <form action="post.php" method="UNKNOWN">
-            <input type="hidden" name="one" value="1">
-            </form>"""
-        )
-        r = self.request_class.from_response(response)
-        self.assertEqual(r.method, 'GET')
+            self.assertEqual(r.method, expected)
 
 
 def _buildresponse(body, **kwargs):
