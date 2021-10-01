@@ -1218,7 +1218,7 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_valid_form_methods(self):
         form_methods = [[method, method] for method in self.request_class.valid_form_methods]
-        form_methods.append([['UNKNOWN', 'GET']])
+        form_methods.append(['UNKNOWN', 'GET'])
 
         for method, expected in form_methods:
             response = _buildresponse(
