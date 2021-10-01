@@ -440,5 +440,3 @@ UrlLengthMiddleware
    settings (see the settings documentation for more info):
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
-        If ``0``, then :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` is disabled.
-
