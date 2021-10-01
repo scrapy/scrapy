@@ -60,7 +60,7 @@ class KeywordArgumentsSpider(MockServerSpider):
     checks = []
 
     def start_requests(self):
-        data = {'key': 'value', 'number': 123}
+        data = {'key': 'value', 'number': 123, 'callback': 'some_callback'}
         yield Request(self.mockserver.url('/first'), self.parse_first, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_with'), self.parse_general, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_without'), self.parse_general)
@@ -88,7 +88,8 @@ class KeywordArgumentsSpider(MockServerSpider):
         if response.url.endswith('/general_with'):
             self.checks.append(kwargs['key'] == 'value')
             self.checks.append(kwargs['number'] == 123)
-            self.crawler.stats.inc_value('boolean_checks', 2)
+            self.checks.append(kwargs['callback'] == 'some_callback')
+            self.crawler.stats.inc_value('boolean_checks', 3)
         elif response.url.endswith('/general_without'):
             self.checks.append(kwargs == {})
             self.crawler.stats.inc_value('boolean_checks')
@@ -110,7 +111,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         TypeError: parse_takes_less() got an unexpected keyword argument 'number'
         """
 
-    def parse_takes_more(self, response, key, number, other):
+    def parse_takes_more(self, response, key, number, callback, other):
         """
         Should raise
         TypeError: parse_takes_more() missing 1 required positional argument: 'other'
@@ -161,11 +162,13 @@ class CallbackKeywordArgumentsTestCase(TestCase):
         self.assertTrue(
             str(exceptions['takes_less'].exc_info[1]).endswith(
                 "parse_takes_less() got an unexpected keyword argument 'number'"
-            )
+            ),
+            msg="Exception message: " + str(exceptions['takes_less'].exc_info[1]),
         )
         self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
         self.assertTrue(
             str(exceptions['takes_more'].exc_info[1]).endswith(
                 "parse_takes_more() missing 1 required positional argument: 'other'"
-            )
+            ),
+            msg="Exception message: " + str(exceptions['takes_more'].exc_info[1]),
         )
