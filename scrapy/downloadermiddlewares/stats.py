@@ -15,12 +15,8 @@ def get_header_size(headers):
 
 
 def get_status_size(response_status):
-    return sum((
-        9,  # b"HTTP/1.1 "
-        len(to_bytes(str(response_status))),
-        1,  # " "
-        len(to_bytes(http.RESPONSES.get(response_status, b''))),
-        2))  # b"\r\n"
+    return len(to_bytes(http.RESPONSES.get(response_status, b''))) + 15
+    # resp.status + b"\r\n" + b"HTTP/1.1 <100-599> "
 
 
 class DownloaderStats:
