@@ -42,9 +42,15 @@ class TestDownloaderStats(TestCase):
     def test_response_len(self):
         body = (b'', b'not_empty')  # empty/notempty body
         headers = ({}, {'lang': 'en'}, {'lang': 'en', 'User-Agent': 'scrapy'})  # 0 headers, 1h and 2h
-        test_responses = [
-            Response(url='scrapytest.org', status=200, body=r[0], headers=r[1])
-            for r in product(body, headers)]  # form test responses with all combinations of body/headers
+        test_responses = [  # form test responses with all combinations of body/headers
+            Response(
+                url='scrapytest.org',
+                status=200,
+                body=r[0],
+                headers=r[1]
+            )
+            for r in product(body, headers)
+        ]
         for test_response in test_responses:
             self.crawler.stats.set_value('downloader/response_bytes', 0)
             self.mw.process_response(self.req, test_response, self.spider)
