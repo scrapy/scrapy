@@ -50,6 +50,7 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     message = http.RESPONSES.get(status_int, "Unknown Status")
     return f'{status_int} {to_unicode(message)}'
 
+
 @deprecated
 def response_httprepr(response: Response) -> bytes:
     """Return raw HTTP representation (as bytes) of the given response. This
