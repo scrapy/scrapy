@@ -1645,12 +1645,19 @@ Default: ``2083``
 
 Scope: ``spidermiddlewares.urllength``
 
-The maximum URL length to allow for crawled URLs. You can set this to  ``0``  
-to disable :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` for working 
-with URLs longer than the default value. The default limit acts as a stopping condition in case of
-URLs of increasing length, usually caused by a loop.
-For more information about the default value 
-for this setting see: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+The maximum URL length to allow for crawled URLs.
+
+This setting can act as a stopping condition in case of URLs of ever-increasing 
+length, which may be caused for example by a programming error either in the 
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and 
+:setting:`DEPTH_LIMIT`.
+
+Use ``0`` to allow URLs of any length.
+
+The default value is copied from the `Microsoft Internet Explorer maximum URL 
+length`_, even though this setting exists for different reasons.
+
+.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
