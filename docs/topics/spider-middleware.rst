@@ -440,4 +440,3 @@ UrlLengthMiddleware
    settings (see the settings documentation for more info):
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
-      
