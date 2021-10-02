@@ -38,8 +38,6 @@ may be useful to you:
 You can also take a look at `this list of Python resources for non-programmers`_,
 as well as the `suggested resources in the learnpython-subreddit`_.
 
-
-
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
 .. _Python Tutorial: https://docs.python.org/3/tutorial
@@ -48,6 +46,7 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 .. _How To Think Like a Computer Scientist: http://openbookproject.net/thinkcs/python/english3e/
 .. _Learn Python 3 The Hard Way: https://learnpythonthehardway.org/python3/
 .. _suggested resources in the learnpython-subreddit: https://www.reddit.com/r/learnpython/wiki/index#wiki_new_to_python.3F
+
 
 Creating a project
 ==================
