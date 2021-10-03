@@ -1,3 +1,6 @@
+.. image:: /artwork/scrapy-logo.jpg
+   :width: 400px
+   
 ======
 Scrapy
 ======
