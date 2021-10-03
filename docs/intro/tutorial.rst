@@ -277,9 +277,9 @@ As an alternative, you could've written:
 >>> response.css('title::text')[0].get()
 'Quotes to Scrape'
 
-However, using ``.get()`` directly on a :class:`~scrapy.selector.SelectorList`
-instance avoids an ``IndexError`` and returns ``None`` when it doesn't
-find any element matching the selection.
+Directly accessing an index on a :class:`~scrapy.selector.SelectorList`
+instance could potentially run into an ``IndexError``. It is recommended to use
+``.get()`` directly instead as it avoids such index errors.
 
 There's a lesson here: for most scraping code, you want it to be resilient to
 errors due to things not being found on a page, so that even if some parts fail
