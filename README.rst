@@ -1,4 +1,4 @@
-.. image:: /artwork/scrapy-logo.jpg
+.. image:: https://scrapy.org/img/scrapylogo.png
    :width: 400px
    
 ======
