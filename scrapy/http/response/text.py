@@ -62,9 +62,9 @@ class TextResponse(Response):
 
     def _declared_encoding(self):
         return (
-                self._encoding
-                or self._headers_encoding()
-                or self._body_declared_encoding()
+            self._encoding
+            or self._headers_encoding()
+            or self._body_declared_encoding()
         )
 
     def body_as_unicode(self):
