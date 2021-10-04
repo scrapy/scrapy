@@ -93,3 +93,26 @@ class SelectorTestCase(unittest.TestCase):
     def test_selector_bad_args(self):
         with self.assertRaisesRegex(ValueError, 'received both response and text'):
             Selector(TextResponse(url='http://example.com', body=b''), text='')
+
+    def test_change_default_selector_type(self):
+        body = b"""<?xml version='1.0' encoding='iso-8859-1'?>
+        <rows>
+            <page>1</page>
+            <total>1</total>
+            <records>1</records>
+            <row id="1">
+                <cell><![CDATA[Scrapy]]></cell>
+                <cell><![CDATA[https://scrapy.org/]]></cell>
+                <cell><![CDATA[Python]]></cell>
+            </row>
+        </rows>
+        """
+        r1 = TextResponse('http://www.example.com',
+                          body=body,
+                          encoding='iso-8859-1')
+        # Default behaviour
+        self.assertIsNone(r1.xpath('//cell[1]/text()').get())
+        self.assertIsNone(r1.xpath('//cell[3]/text()').get())
+        # Changing selector type
+        self.assertEqual(r1.xpath('//cell[1]/text()', type='xml').get(), 'Scrapy')
+        self.assertEqual(r1.xpath('//cell[3]/text()').get(), 'Python')

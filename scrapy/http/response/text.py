@@ -37,6 +37,7 @@ class TextResponse(Response):
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
+        self._selector_type = None
         super().__init__(*args, **kwargs)
 
     def _set_url(self, url):
@@ -61,9 +62,9 @@ class TextResponse(Response):
 
     def _declared_encoding(self):
         return (
-            self._encoding
-            or self._headers_encoding()
-            or self._body_declared_encoding()
+                self._encoding
+                or self._headers_encoding()
+                or self._body_declared_encoding()
         )
 
     def body_as_unicode(self):
@@ -131,9 +132,13 @@ class TextResponse(Response):
         from scrapy.selector import Selector
         if self._cached_selector is None:
             self._cached_selector = Selector(self)
+        if (isinstance(self._selector_type, str) and
+                self._selector_type != self._cached_selector.type):
+            self._cached_selector = Selector(self, type=self._selector_type)
         return self._cached_selector
 
-    def xpath(self, query, **kwargs):
+    def xpath(self, query, type = None, **kwargs):
+        self._selector_type = type
         return self.selector.xpath(query, **kwargs)
 
     def css(self, query):
