@@ -828,7 +828,9 @@ REDIRECT_MAX_TIMES
 
 Default: ``20``
 
-The maximum number of redirections that will be followed for a single request.
+Defines the maximum times a request can be redirected. After this maximum the
+request's response is returned as is. We used Firefox default value for the
+same task.
 
 MetaRefreshMiddleware
 ---------------------

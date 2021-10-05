@@ -1,0 +1,16 @@
+version: 2
+formats: all
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true
+
+build:
+  image: latest
+
+python:
+  # For available versions, see:
+  # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-image
+  version: 3.8  # Keep in sync with .github/workflows/checks.yml
+  install:
+    - requirements: docs/requirements.txt
+    - path: .

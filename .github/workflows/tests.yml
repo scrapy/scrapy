@@ -1,0 +1,81 @@
+name: Ubuntu
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: 2.7
+          env:
+            TOXENV: py27
+        - python-version: 2.7
+          env:
+            TOXENV: py27-pinned
+        - python-version: 2.7
+          env:
+            TOXENV: py27-extra-deps
+        - python-version: pypy3
+          env:
+            TOXENV: pypy
+            PYPY_VERSION: '2.7-v7.3.5'
+        - python-version: pypy3
+          env:
+            TOXENV: pypy3
+            PYPY_VERSION: '3.7-v7.3.5'
+        - python-version: 3.5
+          env:
+            TOXENV: py35
+        - python-version: 3.5
+          env:
+            TOXENV: py35-pinned
+        - python-version: 3.6
+          env:
+            TOXENV: py36
+        - python-version: 3.7
+          env:
+            TOXENV: py37
+        - python-version: 3.8
+          env:
+            TOXENV: py38
+        - python-version: 3.8
+          env:
+            TOXENV: py38-extra-deps
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system libraries
+      if: matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned')
+      run: |
+        sudo apt-get update
+        # libxml2 2.9.12 from ondrej/php PPA breaks lxml so we pin it to the bionic-updates repo version
+        sudo apt-get install libxml2-dev/bionic-updates libxslt-dev
+
+    - name: Run tests
+      env: ${{ matrix.env }}
+      run: |
+        if [[ ! -z "$PYPY_VERSION" ]]; then
+          export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+          wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
+          tar -jxf ${PYPY_VERSION}.tar.bz2
+          if [ "${PYPY_VERSION:4:1}" = "2" ]; then
+            pip install -U virtualenv
+            virtualenv --python="$PYPY_VERSION/bin/pypy" "$HOME/virtualenvs/$PYPY_VERSION"
+          else
+            $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
+          fi
+          source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+        fi
+        pip install -U tox
+        tox
+
+    - name: Upload coverage report
+      run: bash <(curl -s https://codecov.io/bash)

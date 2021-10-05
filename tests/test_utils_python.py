@@ -5,6 +5,7 @@ import unittest
 from itertools import count
 import platform
 import six
+from sys import version_info
 
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
@@ -234,10 +235,12 @@ class UtilsPythonTestCase(unittest.TestCase):
             stripself = not six.PY2  # PyPy3 exposes them as methods
             self.assertEqual(
                 get_func_args(six.text_type.split, stripself), ['sep', 'maxsplit'])
-            self.assertEqual(get_func_args(" ".join, stripself), ['list'])
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself), ['obj'])
-
+            if version_info < (3, 6):
+                self.assertEqual(get_func_args(" ".join, stripself), ['list'])
+            else:
+                self.assertEqual(get_func_args(" ".join, stripself), ['iterable'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
