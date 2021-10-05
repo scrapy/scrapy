@@ -277,9 +277,20 @@ As an alternative, you could've written:
 >>> response.css('title::text')[0].get()
 'Quotes to Scrape'
 
-Directly accessing an index on a :class:`~scrapy.selector.SelectorList`
-instance could potentially run into an ``IndexError``. It is recommended to use
-``.get()`` directly instead as it avoids such index errors.
+Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will 
+raise an :exc:`IndexError` exception if there are no results::
+
+    >>> response.css('noelement')[0].get()
+    Traceback (most recent call last):
+    File "<console>", line 1, in <module>
+    ...
+    IndexError: list index out of range
+
+You might want to use ``.get()`` directly on the 
+:class:`~scrapy.selector.SelectorList` instance instead, which returns ``None`` 
+if there are no results::
+
+>>> response.css("noelement").get()
 
 There's a lesson here: for most scraping code, you want it to be resilient to
 errors due to things not being found on a page, so that even if some parts fail
