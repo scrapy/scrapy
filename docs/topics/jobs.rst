@@ -115,8 +115,6 @@ This file contains a dump of the scheduler's on-disk priority queue metadata. By
 
 Scrapy implements priority queues by keeping a list of functionally separate FIFO queues that each have a priority number assigned to them. The scheduler needs to keep track of these queue/priority mappings in order to load the queues from disk and pick up where it left off.
 
-(Is this actually true? It seems to me like all of this information can be recovered from the directory structure itself since the priorities are used for the sub-directory names)
-
 This file is only written to disk when the crawler is closed cleanly. If the crawler resumes but cannot access this file, it will not be able to load the requests.queue or recover any of the pending requests.
 
 Example::
@@ -127,8 +125,6 @@ Example::
 -----------------
 
 A sub-directory for a single slot in the crawler. The name is a filesystem-safe encoding of the hostname, along with the hostname's md5-hash to prevent rare collisions between hostnames.
-
-(why not just use the md5-hash? It seems pointlessly complex to add the human readable hostname component.)
 
 qXXXXXX
 -------
@@ -141,7 +137,7 @@ The queue files are updated in real-time as requests are pushed to and popped fr
 info.json
 ---------
 
-The info.json file is written by `queuelib <https://github.com/scrapy/queuelib>`_ and contains some metadata about the queue files in that directory. This file is only written when if the queue is closed cleanly.
+The info.json file is written by `queuelib <https://github.com/scrapy/queuelib>`_ and contains some metadata about the queue files in that directory. This file is only written if the queue is closed cleanly.
 
 Example::
 
