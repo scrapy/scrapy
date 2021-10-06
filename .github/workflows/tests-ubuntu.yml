@@ -17,10 +17,10 @@ jobs:
         - python-version: 3.9
           env:
             TOXENV: py
-        - python-version: 3.10
+        - python-version: "3.10"
           env:
             TOXENV: py
-        - python-version: 3.10
+        - python-version: "3.10"
           env:
             TOXENV: asyncio
         - python-version: pypy3
