@@ -27,7 +27,7 @@ this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
 
-For mode details about the layout of ``JOBDIR`` go to `job directory details`_
+For mode details about the layout of ``JOBDIR`` see :ref:`jobdir-details`.
 
 How to use it
 =============
