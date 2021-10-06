@@ -3,6 +3,44 @@
 Release notes
 =============
 
+.. _release-2.5.1:
+
+Scrapy 2.5.1 (2021-10-05)
+-------------------------
+
+*   **Security bug fix:**
+
+    If you use
+    :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
+    (i.e. the ``http_user`` and ``http_pass`` spider attributes) for HTTP
+    authentication, any request exposes your credentials to the request target.
+
+    To prevent unintended exposure of authentication credentials to unintended
+    domains, you must now additionally set a new, additional spider attribute,
+    ``http_auth_domain``, and point it to the specific domain to which the
+    authentication credentials must be sent.
+
+    If the ``http_auth_domain`` spider attribute is not set, the domain of the
+    first request will be considered the HTTP authentication target, and
+    authentication credentials will only be sent in requests targeting that
+    domain.
+
+    If you need to send the same HTTP authentication credentials to multiple
+    domains, you can use :func:`w3lib.http.basic_auth_header` instead to
+    set the value of the ``Authorization`` header of your requests.
+
+    If you *really* want your spider to send the same HTTP authentication
+    credentials to any domain, set the ``http_auth_domain`` spider attribute
+    to ``None``.
+
+    Finally, if you are a user of `scrapy-splash`_, know that this version of
+    Scrapy breaks compatibility with scrapy-splash 0.7.2 and earlier. You will
+    need to upgrade scrapy-splash to a greater version for it to continue to
+    work.
+
+.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
+
+
 .. _release-2.5.0:
 
 Scrapy 2.5.0 (2021-04-06)
@@ -1452,6 +1490,44 @@ affect subclasses:
     :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
 
 (:issue:`3884`)
+
+
+.. _release-1.8.1:
+
+Scrapy 1.8.1 (2021-10-05)
+-------------------------
+
+*   **Security bug fix:**
+
+    If you use
+    :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
+    (i.e. the ``http_user`` and ``http_pass`` spider attributes) for HTTP
+    authentication, any request exposes your credentials to the request target.
+
+    To prevent unintended exposure of authentication credentials to unintended
+    domains, you must now additionally set a new, additional spider attribute,
+    ``http_auth_domain``, and point it to the specific domain to which the
+    authentication credentials must be sent.
+
+    If the ``http_auth_domain`` spider attribute is not set, the domain of the
+    first request will be considered the HTTP authentication target, and
+    authentication credentials will only be sent in requests targeting that
+    domain.
+
+    If you need to send the same HTTP authentication credentials to multiple
+    domains, you can use :func:`w3lib.http.basic_auth_header` instead to
+    set the value of the ``Authorization`` header of your requests.
+
+    If you *really* want your spider to send the same HTTP authentication
+    credentials to any domain, set the ``http_auth_domain`` spider attribute
+    to ``None``.
+
+    Finally, if you are a user of `scrapy-splash`_, know that this version of
+    Scrapy breaks compatibility with scrapy-splash 0.7.2 and earlier. You will
+    need to upgrade scrapy-splash to a greater version for it to continue to
+    work.
+
+.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
 
 
 .. _release-1.8.0:
