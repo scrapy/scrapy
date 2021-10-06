@@ -347,3 +347,24 @@ class CookiesMiddlewareTest(TestCase):
         self.assertCookieValEqual(req1.headers['Cookie'], 'key=value1')
         self.assertCookieValEqual(req2.headers['Cookie'], 'key=value2')
         self.assertCookieValEqual(req3.headers['Cookie'], 'key=')
+
+    def test_primitive_type_cookies(self):
+        # Boolean
+        req1 = Request('http://example.org', cookies={'a': True})
+        assert self.mw.process_request(req1, self.spider) is None
+        self.assertCookieValEqual(req1.headers['Cookie'], b'a=True')
+
+        # Float
+        req2 = Request('http://example.org', cookies={'a': 9.5})
+        assert self.mw.process_request(req2, self.spider) is None
+        self.assertCookieValEqual(req2.headers['Cookie'], b'a=9.5')
+
+        # Integer
+        req3 = Request('http://example.org', cookies={'a': 10})
+        assert self.mw.process_request(req3, self.spider) is None
+        self.assertCookieValEqual(req3.headers['Cookie'], b'a=10')
+
+        # String
+        req4 = Request('http://example.org', cookies={'a': 'b'})
+        assert self.mw.process_request(req4, self.spider) is None
+        self.assertCookieValEqual(req4.headers['Cookie'], b'a=b')
