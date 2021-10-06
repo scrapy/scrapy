@@ -95,10 +95,8 @@ class MailSender:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
-            logger.debug('Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
-                         'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
-                         {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
-                          'mailattachs': len(attachs)})
+            logger.debug(f'Debug mail sent OK: To={to}s Cc={cc}s '
+                         f'Subject="{subject}s" Attachs={len(attachs)}d')
             return
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or 'utf-8'))
@@ -112,18 +110,14 @@ class MailSender:
         return dfd
 
     def _sent_ok(self, result, to, cc, subject, nattachs):
-        logger.info('Mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
-                    'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
-                    {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
-                     'mailattachs': nattachs})
+        logger.info(f'Mail sent OK: To={to}s Cc={cc}s '
+                    f'Subject="{subject}s" Attachs={nattachs}d')
 
     def _sent_failed(self, failure, to, cc, subject, nattachs):
         errstr = str(failure.value)
-        logger.error('Unable to send mail: To=%(mailto)s Cc=%(mailcc)s '
-                     'Subject="%(mailsubject)s" Attachs=%(mailattachs)d'
-                     '- %(mailerr)s',
-                     {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
-                      'mailattachs': nattachs, 'mailerr': errstr})
+        logger.error(f'Unable to send mail: To={to}s Cc={cc}s '
+                     f'Subject="{subject}s" Attachs={nattachs}d'
+                     f'- {errstr}s')
 
     def _sendmail(self, to_addrs, msg):
         # Import twisted.mail here because it is not available in python3
