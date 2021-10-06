@@ -92,15 +92,15 @@ It is ``False`` by default.
 Job directory details
 =====================
 
-(using the DownloaderAwarePriorityQueue)::
+Directory layout within ``JOBDIR``::
 
   {crawlname}
     requests.queue
       active.json
       {hostname}-{hash}
         {priority}
-          info.json
           q{00000}
+          info.json
     requests.seen
     spider.state
 
@@ -126,9 +126,13 @@ Example::
 
 A sub-directory for a single slot in the crawler. The name is a filesystem-safe encoding of the hostname, along with the hostname's md5-hash to prevent rare collisions between hostnames.
 
+{priority}
+----------
+As already mentioned above, the scheduler uses a priority queue by default. Each priority level will be represented by a seperate sub-directory on disk.
+
 qXXXXXX
 -------
-The file structure of the disk-backed queues are implemented by the `queuelib <https://github.com/scrapy/queuelib>`_ library. Request objects that are pushed to the queue are serialized (using pickle by default) and packed into a binary file format that's chunked across multiple files. I won't get into the gritty details but the general format of the q000000, q000001, etc. files looks like this::
+The file structure of the disk-backed queues are implemented by the `queuelib <https://github.com/scrapy/queuelib>`_ library. Request objects that are pushed to the queue are serialized (using pickle by default) and packed into a binary file format that's chunked across multiple files. The general format of the q000000, q000001, etc. files looks like this::
 
   [size header][pickled request][size header][pickled request]...
 
@@ -142,8 +146,6 @@ The info.json file is written by `queuelib <https://github.com/scrapy/queuelib>`
 Example::
 
    {"chunksize": 100000, "size": 28, "tail": [0, 18, 4986], "head": [0, 46]}
-
-(It's possible to read the queue files `directly <https://github.com/michael-lazar/mozz-archiver/blob/master/mozz_archiver/scripts/recover-queue>`_ without this metadata. Would it be possible to rebuild this info.json after a crash?)
 
 requests.seen
 -------------
