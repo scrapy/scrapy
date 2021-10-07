@@ -226,7 +226,7 @@ class DbmCacheStorage:
         dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
         self.db = self.dbmodule.open(dbpath, 'c')
 
-        logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
+        logger.debug("Using DBM cache storage in %(cachepath)s", {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider):
         self.db.close()
@@ -280,7 +280,7 @@ class FilesystemCacheStorage:
         self._open = gzip.open if self.use_gzip else open
 
     def open_spider(self, spider):
-        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
+        logger.debug("Using filesystem cache storage in %(cachedir)s", {'cachedir': self.cachedir},
                      extra={'spider': spider})
 
     def close_spider(self, spider):
