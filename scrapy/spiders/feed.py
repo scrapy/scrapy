@@ -43,7 +43,7 @@ class XMLFeedSpider(Spider):
         return response
 
     def parse_node(self, response, selector):
-        """This method must be overriden with your custom spider functionality"""
+        """This method must be overridden with your custom spider functionality"""
         if hasattr(self, 'parse_item'):  # backward compatibility
             return self.parse_item(response, selector)
         raise NotImplementedError
@@ -113,7 +113,7 @@ class CSVFeedSpider(Spider):
         return response
 
     def parse_row(self, response, row):
-        """This method must be overriden with your custom spider functionality"""
+        """This method must be overridden with your custom spider functionality"""
         raise NotImplementedError
 
     def parse_rows(self, response):

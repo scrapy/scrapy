@@ -1566,7 +1566,7 @@ If a reactor is already installed,
 
 :meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
 :exc:`Exception` if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:setting:`TWISTED_REACTOR` setting; therefore, having top-level
 :mod:`~twisted.internet.reactor` imports in project files and imported
 third-party libraries will make Scrapy raise :exc:`Exception` when
 it checks which reactor is installed.
@@ -1658,7 +1658,7 @@ Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 The default User-Agent to use when crawling, unless overridden. This user agent is
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
-there is no overridding User-Agent header specified for the request.
+there is no overriding User-Agent header specified for the request.
 
 
 Settings documented elsewhere:

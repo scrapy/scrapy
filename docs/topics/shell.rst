@@ -99,7 +99,7 @@ Available Shortcuts
     shortcuts
 
 -   ``fetch(url[, redirect=True])`` - fetch a new response from the given URL
-    and update all related objects accordingly. You can optionaly ask for HTTP
+    and update all related objects accordingly. You can optionally ask for HTTP
     3xx redirections to not be followed by passing ``redirect=False``
 
 -   ``fetch(request)`` - fetch a new response from the given request and update

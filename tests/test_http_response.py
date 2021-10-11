@@ -19,7 +19,7 @@ class BaseResponseTest(unittest.TestCase):
     response_class = Response
 
     def test_init(self):
-        # Response requires url in the consturctor
+        # Response requires url in the constructor
         self.assertRaises(Exception, self.response_class)
         self.assertTrue(isinstance(self.response_class('http://example.com/'), self.response_class))
         self.assertRaises(TypeError, self.response_class, b"http://example.com")
@@ -392,7 +392,7 @@ class TextResponseTest(BaseResponseTest):
     def test_declared_encoding_invalid(self):
         """Check that unknown declared encodings are ignored"""
         r = self.response_class("http://www.example.com",
-                                headers={"Content-type": ["text/html; charset=UKNOWN"]},
+                                headers={"Content-type": ["text/html; charset=UNKNOWN"]},
                                 body=b"\xc2\xa3")
         self.assertEqual(r._declared_encoding(), None)
         self._assert_response_values(r, 'utf-8', "\xa3")
