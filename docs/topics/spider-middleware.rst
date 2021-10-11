@@ -129,8 +129,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.Request` objects and :ref:`item objects
-        <topics-items>`.
+        iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`
+        objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
         executing any other :meth:`process_spider_exception` in the following
