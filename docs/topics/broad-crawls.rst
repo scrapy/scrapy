@@ -82,6 +82,11 @@ should pick a concurrency where CPU usage is at 80-90%.
 Increasing concurrency also increases memory usage. If memory usage is a
 concern, you might need to lower your global concurrency limit accordingly.
 
+.. note:: While performing a broad crawl with a high :setting:`CONCURRENT_REQUESTS` value,
+          you may encounter ``OSError``s as the number of open files can exceed the default
+          Linux user limit (``ulimit``), which is typically ``1024``. In this case, you can 
+          manually increase the Soft value of ``ulimit`` by using ``ulimit -S -n``.
+
 
 Increase Twisted IO thread pool maximum size
 ============================================
