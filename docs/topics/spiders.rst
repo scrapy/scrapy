@@ -372,7 +372,7 @@ CrawlSpider
        described below. If multiple rules match the same link, the first one
        will be used, according to the order they're defined in this attribute.
 
-   This spider also exposes an overrideable method:
+   This spider also exposes an overridable method:
 
    .. method:: parse_start_url(response, **kwargs)
 
@@ -534,7 +534,7 @@ XMLFeedSpider
                 itertag = 'n:url'
                 # ...
 
-    Apart from these new attributes, this spider has the following overrideable
+    Apart from these new attributes, this spider has the following overridable
     methods too:
 
     .. method:: adapt_response(response)
