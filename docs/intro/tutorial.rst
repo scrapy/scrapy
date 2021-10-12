@@ -282,7 +282,6 @@ raise an :exc:`IndexError` exception if there are no results::
 
     >>> response.css('noelement')[0].get()
     Traceback (most recent call last):
-    File "<console>", line 1, in <module>
     ...
     IndexError: list index out of range
 
