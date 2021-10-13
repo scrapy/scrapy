@@ -3,7 +3,6 @@ from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen, _process_iterable_universal
 from scrapy.utils.defer import deferred_f_from_coro_f
-from scrapy.utils.test import get_web_client_agent_req
 
 
 class AsyncgenUtilsTest(unittest.TestCase):
