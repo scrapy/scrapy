@@ -1,3 +1,4 @@
+from twisted.internet.defer import Deferred
 from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen, _process_iterable_universal
@@ -31,7 +32,10 @@ async def process_iterable(iterable):
 async def process_iterable_awaiting(iterable):
     async for i in iterable:
         yield i * 2
-        await get_web_client_agent_req('http://example.com')
+        d = Deferred()
+        from twisted.internet import reactor
+        reactor.callLater(0, d.callback, 42)
+        await d
 
 
 class ProcessIterableUniversalTest(unittest.TestCase):
