@@ -302,7 +302,9 @@ CONCURRENT_ITEMS
 Default: ``100``
 
 Maximum number of concurrent items (per response) to process in parallel in
-:ref:`item pipelines <topics-item-pipeline>`.
+:ref:`item pipelines <topics-item-pipeline>`. Setting value is capped to
+``"# of CPU cores" * 30``, to avoid performance degradation when a too high value
+is used. Limit can be removed by the :setting:`OVERRIDE_CONCURRENCY_LIMIT` option.
 
 .. setting:: CONCURRENT_REQUESTS
 
@@ -1214,6 +1216,17 @@ Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
+
+.. setting:: OVERRIDE_CONCURRENCY_LIMIT
+
+OVERRIDE_CONCURRENCY_LIMIT
+--------------------------
+
+Default: ``False``
+
+Enables exceeding the cap on the :setting:`CONCURRENT_ITEMS` value, in order to use
+arbitrarily high values.
+
 .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
 RANDOMIZE_DOWNLOAD_DELAY
@@ -1647,14 +1660,14 @@ Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs.
 
-This setting can act as a stopping condition in case of URLs of ever-increasing 
-length, which may be caused for example by a programming error either in the 
-target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and 
+This setting can act as a stopping condition in case of URLs of ever-increasing
+length, which may be caused for example by a programming error either in the
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and
 :setting:`DEPTH_LIMIT`.
 
 Use ``0`` to allow URLs of any length.
 
-The default value is copied from the `Microsoft Internet Explorer maximum URL 
+The default value is copied from the `Microsoft Internet Explorer maximum URL
 length`_, even though this setting exists for different reasons.
 
 .. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246

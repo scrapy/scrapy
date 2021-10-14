@@ -4,6 +4,7 @@ extracts information from them"""
 import logging
 from collections import deque
 from typing import Any, Deque, Iterable, Optional, Set, Tuple, Union
+from multiprocessing import cpu_count
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -67,6 +68,7 @@ class Slot:
 
 
 class Scraper:
+    MAX_PARALLEL_ITEMS = cpu_count() * 30
 
     def __init__(self, crawler):
         self.slot: Optional[Slot] = None
@@ -74,6 +76,16 @@ class Scraper:
         itemproc_cls = load_object(crawler.settings['ITEM_PROCESSOR'])
         self.itemproc = itemproc_cls.from_crawler(crawler)
         self.concurrent_items = crawler.settings.getint('CONCURRENT_ITEMS')
+        if self.concurrent_items > self.MAX_PARALLEL_ITEMS:
+            msg = 'CONCURRENT_ITEMS is set to a too high value ({0}).'.format(self.concurrent_items)
+            if crawler.settings.getbool('OVERRIDE_CONCURRENCY_LIMIT'):
+                msg += ' "OVERRIDE_CONCURRENCY_LIMIT" is set, using provided value. Performance might be degraded.'
+            else:
+                self.concurrent_items = self.MAX_PARALLEL_ITEMS
+                msg += ' Limiting to {0} to avoid performance degradation.'.format(self.concurrent_items)
+                msg += ' Use the "OVERRIDE_CONCURRENCY_LIMIT" setting to remove limit and use provided value.'
+            logger.warning(msg)
+
         self.crawler = crawler
         self.signals = crawler.signals
         self.logformatter = crawler.logformatter
