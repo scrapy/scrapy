@@ -149,7 +149,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             }
 
         configure_logging()
-        crawler = Crawler(MySpider, {})
+        Crawler(MySpider, {})
         logging.debug('debug message')
 
         with open(log_file, 'rb') as fo:
