@@ -143,6 +143,9 @@ Logging settings
 These settings can be used to configure the logging:
 
 * :setting:`LOG_FILE`
+* :setting:`LOG_ROTATING`
+* :setting:`LOG_MAX_BYTES`
+* :setting:`LOG_BACKUP_COUNT`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
 * :setting:`LOG_LEVEL`
@@ -154,7 +157,11 @@ These settings can be used to configure the logging:
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
 redirected to a file named :setting:`LOG_FILE` with encoding
-:setting:`LOG_ENCODING`. If unset and :setting:`LOG_ENABLED` is ``True``, log
+:setting:`LOG_ENCODING`. If :setting:`LOG_FILE` is set and
+:setting:`LOG_ROTATING` is ```True```, the file named
+:setting:`LOG_FILE` is allowed to rollover at a predetermined size according to
+:setting:`LOG_MAX_BYTES` and :setting:`LOG_BACKUP_COUNT`.
+If unset and :setting:`LOG_ENABLED` is ``True``, log
 messages will be displayed on the standard error. Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
 
