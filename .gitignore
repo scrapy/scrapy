@@ -23,3 +23,7 @@ test-output.*
 
 # Windows
 Thumbs.db
+
+#vscode temporary files
+.vscode
+

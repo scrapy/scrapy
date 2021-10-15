@@ -150,6 +150,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
+* :setting:`LOG_FILE_ROTATE`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -171,6 +172,11 @@ respectively.
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
+
+To have rollover of the logs, :setting:`LOG_FILE_ROTATE` have to be set ``TRUE``. `TimedRotatingFileHandler <https://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler>`_ is set as the file handler for the logger.
+Following settings :setting:`LOG_FILE_ROTATE_WHEN`, :setting:`LOG_FILE_ROTATE_INTERVAL`, :setting:`LOG_FILE_ROTATE_BACKUP_COUNT`, :setting:`LOG_FILE_ROTATE_DELAY`, :setting:`LOG_FILE_ROTATE_UTC` & :setting:`LOG_FILE_ROTATE_AT_TIME` can be additionally provided to change the default parameter of the ``TimeRotatingFileHandler``. 
+
+
 
 Command-line options
 --------------------
