@@ -123,9 +123,10 @@ _scrapy_root_handler = None
 def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
+    handler_mode = settings.get('LOG_FILEMODE')
     if filename:
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        handler = logging.FileHandler(filename, mode=handler_mode, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
