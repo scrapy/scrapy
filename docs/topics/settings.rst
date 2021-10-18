@@ -1026,6 +1026,16 @@ Default: ``None``
 
 File name to use for logging output. If ``None``, standard error will be used.
 
+.. setting:: LOG_FILE_APPEND
+
+LOG_FILE_APPEND
+---------------
+
+Default: ``True``
+
+If ``False``, the log file specified with :setting:`LOG_FILE` will be
+overwritten (discarding the output from previous runs, if any).
+
 .. setting:: LOG_FORMAT
 
 LOG_FORMAT
