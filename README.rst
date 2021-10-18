@@ -1,5 +1,6 @@
 .. image:: /artwork/scrapy-logo.jpg
    :width: 400px
+   :target: https://scrapy.org/
    
 ======
 Scrapy
