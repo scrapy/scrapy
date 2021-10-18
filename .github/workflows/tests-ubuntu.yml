@@ -17,6 +17,12 @@ jobs:
         - python-version: 3.9
           env:
             TOXENV: py
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.10"
+          env:
+            TOXENV: asyncio
         - python-version: pypy3
           env:
             TOXENV: pypy3
@@ -41,14 +47,6 @@ jobs:
           env:
             TOXENV: extra-deps
             TOX_PIP_VERSION: 20.3.3
-
-        # 3.10-pre
-        - python-version: "3.10.0-beta.4"
-          env:
-            TOXENV: py
-        - python-version: "3.10.0-beta.4"
-          env:
-            TOXENV: asyncio
 
     steps:
     - uses: actions/checkout@v2
