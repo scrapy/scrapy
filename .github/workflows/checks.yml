@@ -8,10 +8,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: 3.9
+        - python-version: "3.10"
           env:
             TOXENV: security
-        - python-version: 3.9
+        - python-version: "3.10"
           env:
             TOXENV: flake8
         # Pylint requires installing reppy, which does not support Python 3.9
@@ -20,10 +20,10 @@ jobs:
           env:
             TOXENV: pylint
             TOX_PIP_VERSION: 20.3.3
-        - python-version: 3.9
+        - python-version: 3.6
           env:
             TOXENV: typing
-        - python-version: 3.8  # Keep in sync with .readthedocs.yml
+        - python-version: "3.10"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs
 
