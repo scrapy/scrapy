@@ -383,6 +383,9 @@ class name. E.g. given pipeline class called MyPipeline you can set setting key:
 
 and pipeline class MyPipeline will have expiration time set to 180.
 
+The last modified time from the file is used to determine the age of the file in days, 
+which is then compared to the set expiration time to determine if the file is expired.
+
 .. _topics-images-thumbnails:
 
 Thumbnail generation for images

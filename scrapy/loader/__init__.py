@@ -83,6 +83,9 @@ class ItemLoader(itemloaders.ItemLoader):
 
     def __init__(self, item=None, selector=None, response=None, parent=None, **context):
         if selector is None and response is not None:
-            selector = self.default_selector_class(response)
+            try:
+                selector = self.default_selector_class(response)
+            except AttributeError:
+                selector = None
         context.update(response=response)
         super().__init__(item=item, selector=selector, parent=parent, **context)
