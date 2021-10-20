@@ -1,7 +1,7 @@
 import contextlib
 import os
 import shutil
-import tempfile
+from tempfile import mkdtemp, mkstemp
 from typing import Optional, Type
 from unittest import mock
 
@@ -100,7 +100,7 @@ class LoadTestCase(unittest.TestCase):
 class FileTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.tmpname = self.mktemp()
+        fd, self.tmpname = mkstemp()
         with open(self.tmpname + '^', 'w') as f:
             f.write('0123456789')
         handler = create_instance(FileDownloadHandler, None, get_crawler())
@@ -121,7 +121,7 @@ class FileTestCase(unittest.TestCase):
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request(f'file://{self.mktemp()}')
+        request = Request(f'file://{mkdtemp()}')
         d = self.download_request(request, Spider('foo'))
         return self.assertFailure(d, IOError)
 
@@ -215,8 +215,7 @@ class HttpTestCase(unittest.TestCase):
     certfile = 'keys/localhost.crt'
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        self.tmpname = mkdtemp()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -590,8 +589,7 @@ class Https11CustomCiphers(unittest.TestCase):
     certfile = 'keys/localhost.crt'
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        self.tmpname = mkdtemp()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         self.site = server.Site(r, timeout=None)
@@ -958,8 +956,7 @@ class BaseFTPTestCase(unittest.TestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dirs and test file
-        self.directory = self.mktemp()
-        os.mkdir(self.directory)
+        self.directory = mkdtemp()
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
         fp = FilePath(userdir)
@@ -1031,7 +1028,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        f, local_fname = tempfile.mkstemp()
+        f, local_fname = mkstemp()
         local_fname = to_bytes(local_fname)
         os.close(f)
         meta = {"ftp_local_filename": local_fname}
@@ -1078,9 +1075,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dir and test file
-        self.directory = self.mktemp()
-        os.mkdir(self.directory)
-
+        self.directory = mkdtemp()
         fp = FilePath(self.directory)
         fp.child('file.txt').setContent(b"I have the power!")
         fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")

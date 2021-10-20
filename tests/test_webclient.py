@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 from pkg_resources import parse_version
+from tempfile import mkdtemp, mkstemp
 
 import cryptography
 import OpenSSL.SSL
@@ -233,8 +234,7 @@ class WebClientTestCase(unittest.TestCase):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        self.tmpname = mkdtemp()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -382,8 +382,7 @@ class WebClientSSLTestCase(unittest.TestCase):
         return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
+        self.tmpname = mkdtemp()
         FilePath(self.tmpname).child("file").setContent(b"0123456789")
         r = static.File(self.tmpname)
         r.putChild(b"payload", PayloadResource())

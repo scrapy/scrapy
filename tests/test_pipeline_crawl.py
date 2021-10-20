@@ -7,6 +7,8 @@ from twisted.trial.unittest import TestCase
 from w3lib.url import add_or_replace_parameter
 
 from scrapy.crawler import CrawlerRunner
+from tempfile import mkdtemp
+
 from scrapy import signals
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
@@ -61,8 +63,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.mockserver.__enter__()
 
         # prepare a directory for storing files
-        self.tmpmediastore = self.mktemp()
-        os.mkdir(self.tmpmediastore)
+        self.tmpmediastore = mkdtemp()
         self.settings = {
             'ITEM_PIPELINES': {self.pipeline_class: 1},
             self.store_setting_key: self.tmpmediastore,

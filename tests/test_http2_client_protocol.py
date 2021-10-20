@@ -5,6 +5,7 @@ import re
 import shutil
 import string
 from ipaddress import IPv4Address
+from tempfile import mkdtemp
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
@@ -177,8 +178,7 @@ class Https2ClientProtocolTestCase(TestCase):
     certificate_file = os.path.join(os.path.dirname(__file__), 'keys', 'localhost.crt')
 
     def _init_resource(self):
-        self.temp_directory = self.mktemp()
-        os.mkdir(self.temp_directory)
+        self.temp_directory = mkdtemp()
         r = File(self.temp_directory)
         r.putChild(b'get-data-html-small', GetDataHtmlSmall())
         r.putChild(b'get-data-html-large', GetDataHtmlLarge())

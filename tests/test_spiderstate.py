@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import shutil
+from tempfile import mkdtemp
 from twisted.trial import unittest
 
 from scrapy.extensions.spiderstate import SpiderState
@@ -12,8 +13,7 @@ from scrapy.utils.test import get_crawler
 class SpiderStateTest(unittest.TestCase):
 
     def test_store_load(self):
-        jobdir = self.mktemp()
-        os.mkdir(jobdir)
+        jobdir = self.mkdtemp()
         try:
             spider = Spider(name='default')
             dt = datetime.now()

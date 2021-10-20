@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import warnings
+from tempfile import mkdtemp
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -133,8 +134,7 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 
     def setUp(self):
         orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
+        self.tmpdir = mkdtemp()
         self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
         _copytree(orig_spiders_dir, self.spiders_dir)
         sys.path.append(self.tmpdir)

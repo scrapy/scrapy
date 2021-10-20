@@ -6,14 +6,13 @@ import platform
 import re
 import subprocess
 import sys
-import tempfile
 from contextlib import contextmanager
 from itertools import chain
 from os.path import exists, join, abspath, getmtime
 from pathlib import Path
 from shutil import rmtree, copytree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
-from tempfile import mkdtemp
+from tempfile import mkdtemp, TemporaryFile
 from threading import Timer
 from unittest import skipIf
 
@@ -65,7 +64,7 @@ class ProjectTest(unittest.TestCase):
         rmtree(self.temp_path)
 
     def call(self, *new_args, **kwargs):
-        with tempfile.TemporaryFile() as out:
+        with TemporaryFile() as out:
             args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
             return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
                                    env=self.env, **kwargs)
@@ -580,8 +579,7 @@ class BadSpider(scrapy.Spider):
 
     @contextmanager
     def _create_file(self, content, name=None):
-        tmpdir = self.mktemp()
-        os.mkdir(tmpdir)
+        tmpdir = mkdtemp()
         if name:
             fname = abspath(join(tmpdir, name))
         else:

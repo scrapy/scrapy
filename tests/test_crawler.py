@@ -4,6 +4,7 @@ import platform
 import subprocess
 import sys
 import warnings
+from tempfile import mkstemp
 from unittest import skipIf
 
 from pytest import raises, mark
@@ -97,7 +98,9 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
-        log_file = self.mktemp()
+        fd, log_file = mkstemp()
+        with open(log_file, 'wb') as fo:
+            fo.write('previous message\n'.encode('utf-8'))
 
         class MySpider(scrapy.Spider):
             name = 'spider'
@@ -130,6 +133,30 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(
             crawler.stats.get_value('log_count/INFO') - info_count, 1)
         self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
+
+    def test_spider_custom_settings_log_append(self):
+        fd, log_file = mkstemp()
+        with open(log_file, 'wb') as fo:
+            fo.write('previous message\n'.encode('utf-8'))
+
+        class MySpider(scrapy.Spider):
+            name = 'spider'
+            custom_settings = {
+                'LOG_FILE': log_file,
+                'LOG_FILE_APPEND': False,
+                # disable telnet if not available to avoid an extra warning
+                'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
+            }
+
+        configure_logging()
+        Crawler(MySpider, {})
+        logging.debug('debug message')
+
+        with open(log_file, 'rb') as fo:
+            logged = fo.read().decode('utf-8')
+
+        self.assertNotIn('previous message', logged)
+        self.assertIn('debug message', logged)
 
 
 class SpiderLoaderWithWrongInterface:

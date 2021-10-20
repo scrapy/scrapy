@@ -16,6 +16,7 @@ from io import BytesIO
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
+from tempfile import mkstemp
 from unittest import mock
 from urllib.parse import urljoin, quote
 from urllib.request import pathname2url
@@ -71,31 +72,35 @@ def build_url(path):
 class FileFeedStorageTest(unittest.TestCase):
 
     def test_store_file_uri(self):
-        path = os.path.abspath(self.mktemp())
+        fd, p = mkstemp()
+        path = os.path.abspath(p)
         uri = path_to_file_uri(path)
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_file_uri_makedirs(self):
-        path = os.path.abspath(self.mktemp())
+        fd, p = mkstemp()
+        path = os.path.abspath(p)
         path = os.path.join(path, 'more', 'paths', 'file.txt')
         uri = path_to_file_uri(path)
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_direct_path(self):
-        path = os.path.abspath(self.mktemp())
+        fd, p = mkstemp()
+        path = os.path.abspath(p)
         return self._assert_stores(FileFeedStorage(path), path)
 
     def test_store_direct_path_relative(self):
-        path = self.mktemp()
+        fd, path = mkstemp()
         return self._assert_stores(FileFeedStorage(path), path)
 
     def test_interface(self):
-        path = self.mktemp()
+        fd, path = mkstemp()
         st = FileFeedStorage(path)
         verifyObject(IFeedStorage, st)
 
     def _store(self, feed_options=None):
-        path = os.path.abspath(self.mktemp())
+        fd, p = mkstemp()
+        path = os.path.abspath(p)
         storage = FileFeedStorage(path, feed_options=feed_options)
         spider = scrapy.Spider("default")
         file = storage.open(spider)

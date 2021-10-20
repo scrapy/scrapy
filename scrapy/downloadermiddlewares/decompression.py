@@ -8,7 +8,7 @@ import logging
 import tarfile
 import zipfile
 from io import BytesIO
-from tempfile import mktemp
+from tempfile import NamedTemporaryFile
 
 from scrapy.responsetypes import responsetypes
 
@@ -30,10 +30,11 @@ class DecompressionMiddleware:
 
     def _is_tar(self, response):
         archive = BytesIO(response.body)
-        try:
-            tar_file = tarfile.open(name=mktemp(), fileobj=archive)
-        except tarfile.ReadError:
-            return
+        with NamedTemporaryFile() as temporary_file:
+            try:
+                tar_file = tarfile.open(name=temporary_file.name, fileobj=archive)
+            except tarfile.ReadError:
+                return
 
         body = tar_file.extractfile(tar_file.members[0]).read()
         respcls = responsetypes.from_args(filename=tar_file.members[0].name, body=body)
