@@ -13,7 +13,7 @@ from scrapy.utils.test import get_crawler
 class SpiderStateTest(unittest.TestCase):
 
     def test_store_load(self):
-        jobdir = self.mkdtemp()
+        jobdir = mkdtemp()
         try:
             spider = Spider(name='default')
             dt = datetime.now()

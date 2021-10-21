@@ -579,7 +579,8 @@ class BadSpider(scrapy.Spider):
 
     @contextmanager
     def _create_file(self, content, name=None):
-        tmpdir = mkdtemp()
+        tmpdir = self.mktemp()
+        os.mkdir(tmpdir)
         if name:
             fname = abspath(join(tmpdir, name))
         else:
