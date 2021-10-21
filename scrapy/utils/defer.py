@@ -3,10 +3,16 @@ Helper functions for dealing with Twisted deferreds
 """
 import asyncio
 import inspect
-from collections.abc import Coroutine
+from asyncio import Future
 from functools import wraps
-from typing import Any, Callable, Generator, Iterable
-
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Generator,
+    Iterable,
+    Union
+)
 from twisted.internet import defer
 from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
 from twisted.internet.task import Cooperator
@@ -171,3 +177,21 @@ def maybeDeferred_coro(f: Callable, *args, **kw) -> Deferred:
         return defer.fail(result)
     else:
         return defer.succeed(result)
+
+
+def deferred_to_future(d: Deferred) -> Future:
+    """ Wraps a Deferred into a Future. Requires the asyncio reactor.
+    """
+    return d.asFuture(asyncio.get_event_loop())
+
+
+def maybe_deferred_to_future(d: Deferred) -> Union[Deferred, Future]:
+    """ Converts a Deferred to something that can be awaited in a callback or other user coroutine.
+    If the asyncio reactor is installed, coroutines are wrapped into Futures, and only Futures can be
+    awaited inside them. Otherwise, coroutines are wrapped into Deferreds and Deferreds can be awaited
+    directly inside them.
+    """
+    if not is_asyncio_reactor_installed():
+        return d
+    else:
+        return deferred_to_future(d)
