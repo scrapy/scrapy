@@ -13,6 +13,7 @@ from typing import (
     Iterable,
     Union
 )
+
 from twisted.internet import defer
 from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
 from twisted.internet.task import Cooperator
@@ -180,16 +181,50 @@ def maybeDeferred_coro(f: Callable, *args, **kw) -> Deferred:
 
 
 def deferred_to_future(d: Deferred) -> Future:
-    """ Wraps a Deferred into a Future. Requires the asyncio reactor.
+    """
+    .. versionadded:: VERSION
+
+    Return an :class:`asyncio.Future` object that wraps *d*.
+
+    When :ref:`using the asyncio reactor <install-asyncio>`, you cannot await
+    on :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
+    callables defined as coroutines <coroutine-support>`, you can only await on
+    ``Future`` objects. Wrapping ``Deferred`` objects into ``Future`` objects
+    allows you to wait on them::
+
+        class MySpider(Spider):
+            ...
+            async def parse(self, response):
+                d = treq.get('https://example.com/additional')
+                additional_response = await deferred_to_future(d)
     """
     return d.asFuture(asyncio.get_event_loop())
 
 
 def maybe_deferred_to_future(d: Deferred) -> Union[Deferred, Future]:
-    """ Converts a Deferred to something that can be awaited in a callback or other user coroutine.
-    If the asyncio reactor is installed, coroutines are wrapped into Futures, and only Futures can be
-    awaited inside them. Otherwise, coroutines are wrapped into Deferreds and Deferreds can be awaited
-    directly inside them.
+    """
+    .. versionadded:: VERSION
+
+    Return *d* as an object that can be awaited from a :ref:`Scrapy callable
+    defined as a coroutine <coroutine-support>`.
+
+    What you can await in Scrapy callables defined as coroutines depends on the
+    value of :setting:`TWISTED_REACTOR`:
+
+    -   When not using the asyncio reactor, you can only await on
+        :class:`~twisted.internet.defer.Deferred` objects.
+
+    -   When :ref:`using the asyncio reactor <install-asyncio>`, you can only
+        await on :class:`asyncio.Future` objects.
+
+    If you want to write code that uses ``Deferred`` objects but works with any
+    reactor, use this function on all ``Deferred`` objects::
+
+        class MySpider(Spider):
+            ...
+            async def parse(self, response):
+                d = treq.get('https://example.com/additional')
+                extra_response = await maybe_deferred_to_future(d)
     """
     if not is_asyncio_reactor_installed():
         return d
