@@ -96,8 +96,8 @@ This means you can use many useful Python libraries providing such code::
           :mod:`asyncio` loop and to use them you need to
           :doc:`enable asyncio support in Scrapy<asyncio>`.
 
-.. note:: If you want to ``await`` on Deferreds, you may need to
-          :ref:`wrap them<asyncio-await-dfd>`.
+.. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
+          you need to :ref:`wrap them<asyncio-await-dfd>`.
 
 Common use cases for asynchronous code include:
 

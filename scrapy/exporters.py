@@ -30,7 +30,7 @@ class BaseItemExporter:
         self._configure(kwargs, dont_fail=dont_fail)
 
     def _configure(self, options, dont_fail=False):
-        """Configure the exporter by poping options from the ``options`` dict.
+        """Configure the exporter by popping options from the ``options`` dict.
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses ``__init__`` methods)
         """

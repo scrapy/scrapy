@@ -48,7 +48,7 @@ def request_fingerprint(
     the fingerprint.
 
     For this reason, request headers are ignored by default when calculating
-    the fingeprint. If you want to include specific headers use the
+    the fingerprint. If you want to include specific headers use the
     include_headers argument, which is a list of Request headers to include.
 
     Also, servers usually ignore fragments in urls when handling requests,
@@ -78,7 +78,7 @@ def request_fingerprint(
 
 
 def request_authenticate(request: Request, username: str, password: str) -> None:
-    """Autenticate the given request (in place) using the HTTP basic access
+    """Authenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
