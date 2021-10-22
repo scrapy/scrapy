@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 import shutil
 from tempfile import mkdtemp

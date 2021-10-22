@@ -2,11 +2,10 @@
 from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
-import os
 import shutil
 import sys
 from pkg_resources import parse_version
-from tempfile import mkdtemp, mkstemp
+from tempfile import mkdtemp
 
 import cryptography
 import OpenSSL.SSL
