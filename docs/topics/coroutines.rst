@@ -75,22 +75,27 @@ coroutines, functions that return Deferreds and functions that return
 :term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
 This means you can use many useful Python libraries providing such code::
 
-    class MySpider(Spider):
+    class MySpiderDeferred(Spider):
         # ...
-        async def parse_with_deferred(self, response):
+        async def parse(self, response):
             additional_response = await treq.get('https://additional.url')
             additional_data = await treq.content(additional_response)
             # ... use response and additional_data to yield items and requests
 
-        async def parse_with_asyncio(self, response):
+    class MySpiderAsyncio(Spider):
+        # ...
+        async def parse(self, response):
             async with aiohttp.ClientSession() as session:
                 async with session.get('https://additional.url') as additional_response:
-                    additional_data = await r.text()
+                    additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
 .. note:: Many libraries that use coroutines, such as `aio-libs`_, require the
           :mod:`asyncio` loop and to use them you need to
           :doc:`enable asyncio support in Scrapy<asyncio>`.
+
+.. note:: If you want to ``await`` on Deferreds while using the asyncio reactor,
+          you need to :ref:`wrap them<asyncio-await-dfd>`.
 
 Common use cases for asynchronous code include:
 
