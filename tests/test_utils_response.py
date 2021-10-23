@@ -1,11 +1,12 @@
 import os
 import unittest
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 
 from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (response_httprepr, open_in_browser,
                                    get_meta_refresh, get_base_url, response_status_message)
+
 
 __doctests__ = ['scrapy.utils.response']
 
@@ -36,8 +37,7 @@ class ResponseUtilsTest(unittest.TestCase):
             self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
             return True
         response = HtmlResponse(url, body=body)
-        assert open_in_browser(response, _openfunc=browser_open), \
-            "Browser not called"
+        assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
 
         resp = Response(url, body=body)
         self.assertRaises(TypeError, open_in_browser, resp, debug=True)

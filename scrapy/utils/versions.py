@@ -27,5 +27,5 @@ def scrapy_components_versions():
         ("Python", sys.version.replace("\n", "- ")),
         ("pyOpenSSL", get_openssl_version()),
         ("cryptography", cryptography.__version__),
-        ("Platform",  platform.platform()),
+        ("Platform", platform.platform()),
     ]

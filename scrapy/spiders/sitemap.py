@@ -1,6 +1,5 @@
 import re
 import logging
-import six
 
 from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
@@ -19,10 +18,10 @@ class SitemapSpider(Spider):
     sitemap_alternate_links = False
 
     def __init__(self, *a, **kw):
-        super(SitemapSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
-            if isinstance(c, six.string_types):
+            if isinstance(c, str):
                 c = getattr(self, c)
             self._cbs.append((regex(r), c))
         self._follow = [regex(x) for x in self.sitemap_follow]
@@ -86,7 +85,7 @@ class SitemapSpider(Spider):
 
 
 def regex(x):
-    if isinstance(x, six.string_types):
+    if isinstance(x, str):
         return re.compile(x)
     return x
 
@@ -97,5 +96,4 @@ def iterloc(it, alt=False):
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and 'alternate' in d:
-            for l in d['alternate']:
-                yield l
+            yield from d['alternate']

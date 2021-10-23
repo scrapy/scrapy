@@ -1,34 +1,34 @@
 import os
-from os.path import join, abspath
-from twisted.trial import unittest
+from os.path import join, abspath, isfile, exists
 from twisted.internet import defer
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
 from tests.test_commands import CommandTest
 
 
 def _textmode(bstr):
     """Normalize input the same as writing to a file
     and reading from it in text mode"""
-    return to_native_str(bstr).replace(os.linesep, '\n')
+    return to_unicode(bstr).replace(os.linesep, '\n')
+
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     command = 'parse'
 
     def setUp(self):
-        super(ParseCommandTest, self).setUp()
+        super().setUp()
         self.spider_name = 'parse_spider'
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
         with open(fname, 'w') as f:
-            f.write("""
+            f.write(f"""
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
 
 class MySpider(scrapy.Spider):
-    name = '{0}'
+    name = '{self.spider_name}'
 
     def parse(self, response):
         if getattr(self, 'test_arg', None):
@@ -58,7 +58,7 @@ class MySpider(scrapy.Spider):
             self.logger.debug('It Does Not Work :(')
 
 class MyGoodCrawlSpider(CrawlSpider):
-    name = 'goodcrawl{0}'
+    name = 'goodcrawl{self.spider_name}'
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
@@ -74,7 +74,7 @@ class MyGoodCrawlSpider(CrawlSpider):
 
 class MyBadCrawlSpider(CrawlSpider):
     '''Spider which doesn't define a parse_item callback while using it in a rule.'''
-    name = 'badcrawl{0}'
+    name = 'badcrawl{self.spider_name}'
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
@@ -82,14 +82,14 @@ class MyBadCrawlSpider(CrawlSpider):
 
     def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
-""".format(self.spider_name))
+""")
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
         with open(fname, 'w') as f:
             f.write("""
 import logging
 
-class MyPipeline(object):
+class MyPipeline:
     component_name = 'my_pipeline'
 
     def process_item(self, item, spider):
@@ -99,15 +99,16 @@ class MyPipeline(object):
 
         fname = abspath(join(self.proj_mod_path, 'settings.py'))
         with open(fname, 'a') as f:
-            f.write("""
-ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
-""" % self.project_name)
+            f.write(f"""
+ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
+""")
 
     @defer.inlineCallbacks
     def test_spider_arguments(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '-a', 'test_arg=1',
                                            '-c', 'parse',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -117,12 +118,14 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '--meta', raw_json_string,
                                            '-c', 'parse_request_with_meta',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '-m', raw_json_string,
                                            '-c', 'parse_request_with_meta',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
@@ -132,22 +135,24 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '--cbkwargs', raw_json_string,
                                            '-c', 'parse_request_with_cb_kwargs',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
 
     @defer.inlineCallbacks
     def test_request_without_meta(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
-                                          '-c', 'parse_request_without_meta',
+                                           '-c', 'parse_request_without_meta',
+                                           '--nolinks',
                                            self.url('/html')])
         self.assertIn("DEBUG: It Works!", _textmode(stderr))
-
 
     @defer.inlineCallbacks
     def test_pipelines(self):
         _, _, stderr = yield self.execute(['--spider', self.spider_name,
                                            '--pipelines',
                                            '-c', 'parse',
+                                           '--verbose',
                                            self.url('/html')])
         self.assertIn("INFO: It Works!", _textmode(stderr))
 
@@ -177,7 +182,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     def test_crawlspider_matching_rule_callback_set(self):
         """If a rule matches the URL, use it's defined callback."""
         status, out, stderr = yield self.execute(
-            ['--spider', 'goodcrawl'+self.spider_name, '-r', self.url('/html')]
+            ['--spider', 'goodcrawl' + self.spider_name, '-r', self.url('/html')]
         )
         self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
 
@@ -185,7 +190,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     def test_crawlspider_matching_rule_default_callback(self):
         """If a rule match but it has no callback set, use the 'parse' callback."""
         status, out, stderr = yield self.execute(
-            ['--spider', 'goodcrawl'+self.spider_name, '-r', self.url('/text')]
+            ['--spider', 'goodcrawl' + self.spider_name, '-r', self.url('/text')]
         )
         self.assertIn("""[{}, {'nomatch': 'default'}]""", _textmode(out))
 
@@ -201,7 +206,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     @defer.inlineCallbacks
     def test_crawlspider_missing_callback(self):
         status, out, stderr = yield self.execute(
-            ['--spider', 'badcrawl'+self.spider_name, '-r', self.url('/html')]
+            ['--spider', 'badcrawl' + self.spider_name, '-r', self.url('/html')]
         )
         self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
 
@@ -209,7 +214,28 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
     def test_crawlspider_no_matching_rule(self):
         """The requested URL has no matching rule, so no items should be scraped"""
         status, out, stderr = yield self.execute(
-            ['--spider', 'badcrawl'+self.spider_name, '-r', self.url('/enc-gb18030')]
+            ['--spider', 'badcrawl' + self.spider_name, '-r', self.url('/enc-gb18030')]
         )
         self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
+
+    @defer.inlineCallbacks
+    def test_output_flag(self):
+        """Checks if a file was created successfully having
+        correct format containing correct data in it.
+        """
+        file_name = 'data.json'
+        file_path = join(self.proj_path, file_name)
+        yield self.execute([
+            '--spider', self.spider_name,
+            '-c', 'parse',
+            '-o', file_name,
+            self.url('/html')
+        ])
+
+        self.assertTrue(exists(file_path))
+        self.assertTrue(isfile(file_path))
+
+        content = '[\n{},\n{"foo": "bar"}\n]'
+        with open(file_path, 'r') as f:
+            self.assertEqual(f.read(), content)

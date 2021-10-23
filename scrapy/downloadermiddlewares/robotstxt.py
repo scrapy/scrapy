@@ -5,21 +5,18 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 """
 
 import logging
-import sys
-import re
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_native_str
 from scrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
 
-class RobotsTxtMiddleware(object):
+class RobotsTxtMiddleware:
     DOWNLOAD_PRIORITY = 1000
 
     def __init__(self, crawler):
@@ -64,13 +61,13 @@ class RobotsTxtMiddleware(object):
 
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
-            robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
+            robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
             robotsreq = Request(
                 robotsurl,
                 priority=self.DOWNLOAD_PRIORITY,
                 meta={'dont_obey_robotstxt': True}
             )
-            dfd = self.crawler.engine.download(robotsreq, spider)
+            dfd = self.crawler.engine.download(robotsreq)
             dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
@@ -97,7 +94,7 @@ class RobotsTxtMiddleware(object):
 
     def _parse_robots(self, response, netloc, spider):
         self.crawler.stats.inc_value('robotstxt/response_count')
-        self.crawler.stats.inc_value('robotstxt/response_status_count/{}'.format(response.status))
+        self.crawler.stats.inc_value(f'robotstxt/response_status_count/{response.status}')
         rp = self._parserimpl.from_crawler(self.crawler, response.body)
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
@@ -105,7 +102,7 @@ class RobotsTxtMiddleware(object):
 
     def _robots_error(self, failure, netloc):
         if failure.type is not IgnoreRequest:
-            key = 'robotstxt/exception_count/{}'.format(failure.type)
+            key = f'robotstxt/exception_count/{failure.type}'
             self.crawler.stats.inc_value(key)
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = None

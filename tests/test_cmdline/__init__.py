@@ -2,15 +2,11 @@ import json
 import os
 import pstats
 import shutil
-import six
-from subprocess import Popen, PIPE
 import sys
 import tempfile
 import unittest
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
+from subprocess import Popen, PIPE
 
 from scrapy.utils.test import get_testenv
 
@@ -29,17 +25,15 @@ class CmdlineTest(unittest.TestCase):
         return comm.decode(encoding)
 
     def test_default_settings(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-                         'default')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1'), 'default')
 
     def test_override_settings_using_set_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), \
-                         'override')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s',
+                                       'TEST1=override'), 'override')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-                         'override')
+        self.assertEqual(self._execute('settings', '--get', 'TEST1'), 'override')
 
     def test_profiling(self):
         path = tempfile.mkdtemp()
@@ -65,8 +59,8 @@ class CmdlineTest(unittest.TestCase):
                                     'EXTENSIONS=' + json.dumps(EXTENSIONS))
         # XXX: There's gotta be a smarter way to do this...
         self.assertNotIn("...", settingsstr)
-        for char in ("'", "<", ">", 'u"'):
+        for char in ("'", "<", ">"):
             settingsstr = settingsstr.replace(char, '"')
         settingsdict = json.loads(settingsstr)
-        six.assertCountEqual(self, settingsdict.keys(), EXTENSIONS.keys())
+        self.assertCountEqual(settingsdict.keys(), EXTENSIONS.keys())
         self.assertEqual(200, settingsdict[EXT_PATH])

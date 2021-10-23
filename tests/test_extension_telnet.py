@@ -1,14 +1,9 @@
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
-
 from twisted.trial import unittest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
 from twisted.internet import defer
 
-from scrapy.extensions.telnet import TelnetConsole, logger
+from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
 
 
@@ -16,8 +11,6 @@ class TelnetExtensionTest(unittest.TestCase):
     def _get_console_and_portal(self, settings=None):
         crawler = get_crawler(settings_dict=settings)
         console = TelnetConsole(crawler)
-        username = console.username
-        password = console.password
 
         # This function has some side effects we don't need for this test
         console._get_telnet_vars = lambda: {}

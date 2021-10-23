@@ -5,14 +5,13 @@ See documentation in docs/topics/extensions.rst
 """
 
 import gc
-import six
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.trackref import live_refs
 
 
-class MemoryDebugger(object):
+class MemoryDebugger:
 
     def __init__(self, stats):
         self.stats = stats
@@ -28,7 +27,7 @@ class MemoryDebugger(object):
     def spider_closed(self, spider, reason):
         gc.collect()
         self.stats.set_value('memdebug/gc_garbage_count', len(gc.garbage), spider=spider)
-        for cls, wdict in six.iteritems(live_refs):
+        for cls, wdict in live_refs.items():
             if not wdict:
                 continue
-            self.stats.set_value('memdebug/live_refs/%s' % cls.__name__, len(wdict), spider=spider)
+            self.stats.set_value(f'memdebug/live_refs/{cls.__name__}', len(wdict), spider=spider)

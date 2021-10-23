@@ -53,7 +53,7 @@ Here's a simple proof-of-concept code of such script:
    # ... do something more interesting with scraped_items ...
 
 The behaviour of the Scrapy crawler would be controller by the Scrapy settings,
-naturally, just like any typical scrapy project. But the default settings
+naturally, just like any typical Scrapy project. But the default settings
 should be sufficient so as to not require adding any specific setting. But, at
 the same time, you could do it if you need to, say, for specifying a custom
 middleware.

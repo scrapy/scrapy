@@ -13,6 +13,7 @@ error = KeyError
 
 _DATABASES = collections.defaultdict(DummyDB)
 
+
 def open(file, flag='r', mode=0o666):
     """Open or create a dummy database compatible.
 

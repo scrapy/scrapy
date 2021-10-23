@@ -6,6 +6,7 @@ from email.charset import Charset
 
 from scrapy.mail import MailSender
 
+
 class MailSenderTest(unittest.TestCase):
 
     def test_send(self):
@@ -48,7 +49,7 @@ class MailSenderTest(unittest.TestCase):
 
         mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
-                       attachs=attachs, _callback=self._catch_mail_sent)
+                        attachs=attachs, _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])
@@ -72,8 +73,8 @@ class MailSenderTest(unittest.TestCase):
         self.catched_msg = dict(**kwargs)
 
     def test_send_utf8(self):
-        subject = u'sübjèçt'
-        body = u'bödÿ-àéïöñß'
+        subject = 'sübjèçt'
+        body = 'bödÿ-àéïöñß'
         mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
                         charset='utf-8', _callback=self._catch_mail_sent)
@@ -89,8 +90,8 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg.get('Content-Type'), 'text/plain; charset="utf-8"')
 
     def test_send_attach_utf8(self):
-        subject = u'sübjèçt'
-        body = u'bödÿ-àéïöñß'
+        subject = 'sübjèçt'
+        body = 'bödÿ-àéïöñß'
         attach = BytesIO()
         attach.write(body.encode('utf-8'))
         attach.seek(0)
@@ -119,6 +120,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(text.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(text.get_charset(), Charset('utf-8'))
         self.assertEqual(attach.get_payload(decode=True).decode('utf-8'), body)
+
 
 if __name__ == "__main__":
     unittest.main()

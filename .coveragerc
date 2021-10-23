@@ -3,4 +3,3 @@ branch = true
 include = scrapy/*
 omit =
   tests/*
-  scrapy/xlib/*

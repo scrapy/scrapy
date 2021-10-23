@@ -1,0 +1,83 @@
+name: Ubuntu
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: 3.7
+          env:
+            TOXENV: py
+        - python-version: 3.8
+          env:
+            TOXENV: py
+        - python-version: 3.9
+          env:
+            TOXENV: py
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.10"
+          env:
+            TOXENV: asyncio
+        - python-version: pypy3
+          env:
+            TOXENV: pypy3
+            PYPY_VERSION: 3.6-v7.3.3
+
+        # pinned deps
+        - python-version: 3.6.12
+          env:
+            TOXENV: pinned
+        - python-version: 3.6.12
+          env:
+            TOXENV: asyncio-pinned
+        - python-version: pypy3
+          env:
+            TOXENV: pypy3-pinned
+            PYPY_VERSION: 3.6-v7.2.0
+
+        # extras
+        # extra-deps includes reppy, which does not support Python 3.9
+        # https://github.com/seomoz/reppy/issues/122
+        - python-version: 3.8
+          env:
+            TOXENV: extra-deps
+            TOX_PIP_VERSION: 20.3.3
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system libraries
+      if: matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned') || matrix.python-version == '3.10.0-beta.4'
+      run: |
+        sudo apt-get update
+        # libxml2 2.9.12 from ondrej/php PPA breaks lxml so we pin it to the bionic-updates repo version
+        sudo apt-get install libxml2-dev/bionic-updates libxslt-dev
+
+    - name: Run tests
+      env: ${{ matrix.env }}
+      run: |
+        if [[ ! -z "$PYPY_VERSION" ]]; then
+          export PYPY_VERSION="pypy$PYPY_VERSION-linux64"
+          wget "https://downloads.python.org/pypy/${PYPY_VERSION}.tar.bz2"
+          tar -jxf ${PYPY_VERSION}.tar.bz2
+          $PYPY_VERSION/bin/pypy3 -m venv "$HOME/virtualenvs/$PYPY_VERSION"
+          source "$HOME/virtualenvs/$PYPY_VERSION/bin/activate"
+        fi
+        if [[ ! -z "$TOX_PIP_VERSION" ]]; then
+            pip install tox-pip-version
+        fi
+        pip install -U tox
+        tox
+
+    - name: Upload coverage report
+      run: bash <(curl -s https://codecov.io/bash)

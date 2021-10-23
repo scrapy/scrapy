@@ -56,15 +56,17 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_redirect_not_follow_302(self):
-        _, out, _ = yield self.execute(['--no-redirect', self.url('/redirect-no-meta-refresh'), '-c', 'response.status'])
+        _, out, _ = yield self.execute(
+            ['--no-redirect', self.url('/redirect-no-meta-refresh'), '-c', 'response.status']
+        )
         assert out.strip().endswith(b'302')
 
     @defer.inlineCallbacks
     def test_fetch_redirect_follow_302(self):
         """Test that calling ``fetch(url)`` follows HTTP redirects by default."""
         url = self.url('/redirect-no-meta-refresh')
-        code = "fetch('{0}')"
-        errcode, out, errout = yield self.execute(['-c', code.format(url)])
+        code = f"fetch('{url}')"
+        errcode, out, errout = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
         assert b'Redirecting (302)' in errout
         assert b'Crawled (200)' in errout
@@ -73,43 +75,41 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_fetch_redirect_not_follow_302(self):
         """Test that calling ``fetch(url, redirect=False)`` disables automatic redirects."""
         url = self.url('/redirect-no-meta-refresh')
-        code = "fetch('{0}', redirect=False)"
-        errcode, out, errout = yield self.execute(['-c', code.format(url)])
+        code = f"fetch('{url}', redirect=False)"
+        errcode, out, errout = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
         assert b'Crawled (302)' in errout
 
     @defer.inlineCallbacks
     def test_request_replace(self):
         url = self.url('/text')
-        code = "fetch('{0}') or fetch(response.request.replace(method='POST'))"
-        errcode, out, _ = yield self.execute(['-c', code.format(url)])
+        code = f"fetch('{url}') or fetch(response.request.replace(method='POST'))"
+        errcode, out, _ = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
 
     @defer.inlineCallbacks
     def test_scrapy_import(self):
         url = self.url('/text')
-        code = "fetch(scrapy.Request('{0}'))"
-        errcode, out, _ = yield self.execute(['-c', code.format(url)])
+        code = f"fetch(scrapy.Request('{url}'))"
+        errcode, out, _ = yield self.execute(['-c', code])
         self.assertEqual(errcode, 0, out)
 
     @defer.inlineCallbacks
     def test_local_file(self):
-        filepath = join(tests_datadir, 'test_site/index.html')
+        filepath = join(tests_datadir, 'test_site', 'index.html')
         _, out, _ = yield self.execute([filepath, '-c', 'item'])
         assert b'{}' in out
 
     @defer.inlineCallbacks
     def test_local_nofile(self):
         filepath = 'file:///tests/sample_data/test_site/nothinghere.html'
-        errcode, out, err = yield self.execute([filepath, '-c', 'item'],
-                                       check_code=False)
+        errcode, out, err = yield self.execute([filepath, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'No such file or directory', err)
 
     @defer.inlineCallbacks
     def test_dns_failures(self):
         url = 'www.somedomainthatdoesntexi.st'
-        errcode, out, err = yield self.execute([url, '-c', 'item'],
-                                       check_code=False)
+        errcode, out, err = yield self.execute([url, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'DNS lookup failed', err)

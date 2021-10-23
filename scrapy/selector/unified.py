@@ -2,12 +2,10 @@
 XPath selectors based on lxml
 """
 
-import warnings
 from parsel import Selector as _ParselSelector
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.python import to_bytes
 from scrapy.http import HtmlResponse, XmlResponse
-from scrapy.utils.decorators import deprecated
 
 
 __all__ = ['Selector', 'SelectorList']
@@ -67,11 +65,11 @@ class Selector(_ParselSelector, object_ref):
     selectorlist_cls = SelectorList
 
     def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
-        if not(response is None or text is None):
-           raise ValueError('%s.__init__() received both response and text'
-                            % self.__class__.__name__)
+        if response is not None and text is not None:
+            raise ValueError(f'{self.__class__.__name__}.__init__() received '
+                             'both response and text')
 
-        st = _st(response, type or self._default_type)
+        st = _st(response, type)
 
         if text is not None:
             response = _response_from_text(text, st)
@@ -81,4 +79,4 @@ class Selector(_ParselSelector, object_ref):
             kwargs.setdefault('base_url', response.url)
 
         self.response = response
-        super(Selector, self).__init__(text=text, type=st, root=root, **kwargs)
+        super().__init__(text=text, type=st, root=root, **kwargs)
