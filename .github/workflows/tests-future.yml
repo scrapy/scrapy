@@ -10,23 +10,61 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        - windows-latest
-        - macos-latest
+        #- windows-latest
+        #- macos-latest
         tox:
-        - future
-        - asyncio-future
+        #- future
+        #- asyncio-future
         - pypy3-future
-        - extra-deps-future
+        #- extra-deps-future
         include:
-        - tox: future
-          python-version: "3.10"  # https://github.com/cython/cython/issues/4365
-        - tox: asyncio-future
-          python-version: "3.10"  # https://github.com/cython/cython/issues/4365
+        #- tox: future
+          #python-version: "3.10"  # https://github.com/cython/cython/issues/4365
+        #- tox: asyncio-future
+          #python-version: "3.10"  # https://github.com/cython/cython/issues/4365
         - tox: pypy3-future
-          python-version: pypy3
-        - tox: extra-deps-future
-          python-version: "3.8"  # https://github.com/seomoz/reppy/issues/122
-          pip: 20.3.3
+          python-version: pypy3.8.12-7.3.6
+        #- tox: extra-deps-future
+          #python-version: "3.8"  # https://github.com/seomoz/reppy/issues/122
+          #pip: 20.3.3
+
+        - os: ubuntu-latest
+          setup: |
+            sudo apt-get update
+            # bzr ← PyDispatcher
+            # libxml2 ← lxml
+            # libxslt-dev ← lxml
+            # rustc ← cryptography
+            sudo apt-get install \
+              bzr \
+              libxml2-dev \
+              libxslt-dev \
+              rustc
+        #- os: windows-latest
+          #setup: |
+            #sudo apt-get update
+            ## bzr ← PyDispatcher
+            ## libxml2 ← lxml
+            ## libxslt-dev ← lxml
+            ## rustc ← cryptography
+            #sudo apt-get install \
+              #bzr \
+              #libxml2-dev \
+              #libxslt-dev \
+              #rustc
+        #- os: macos-latest
+          #setup: |
+            #sudo apt-get update
+            ## bzr ← PyDispatcher
+            ## libxml2 ← lxml
+            ## libxslt-dev ← lxml
+            ## rustc ← cryptography
+            #sudo apt-get install \
+              #bzr \
+              #libxml2-dev \
+              #libxslt-dev \
+              #rustc
+
     runs-on: ${{ matrix.os }}
     env:
       TOXENV: ${{ matrix.tox }}
@@ -37,23 +75,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install system libraries
-      run: |
-        sudo apt-get update
-        # bzr ← PyDispatcher
-        # libxml2 ← lxml
-        # libxslt-dev ← lxml
-        # rustc ← cryptography
-        sudo apt-get install \
-          bzr \
-          libxml2-dev \
-          libxslt-dev \
-          rustc
+      run: ${{ matrix.setup }}
     - name: Run tests
       run: |
         # https://github.com/pytest-dev/py/issues/273
         pip install git+https://github.com/pytest-dev/py.git#egg=py
-        if [[ ! -z "$TOX_PIP_VERSION" ]]; then
-            pip install tox-pip-version
-        fi
-        pip install -U tox
+        pip install -U tox tox-pip-version
         tox
