@@ -45,8 +45,8 @@ class HttpCompressionMiddleware:
                 ScrapyDeprecationWarning,
             )
             result = cls()
-            result.settings = crawler.settings
             result.stats = crawler.stats
+            result.settings = crawler.settings
             return result
 
     def process_request(self, request, spider):
