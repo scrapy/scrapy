@@ -23,7 +23,7 @@ jobs:
         #- tox: asyncio-future
           #python-version: "3.10"  # https://github.com/cython/cython/issues/4365
         - tox: pypy3-future
-          python-version: pypy3.8.12-7.3.6
+          python-version: pypy-3.8.12-7.3.6
         #- tox: extra-deps-future
           #python-version: "3.8"  # https://github.com/seomoz/reppy/issues/122
           #pip: 20.3.3
