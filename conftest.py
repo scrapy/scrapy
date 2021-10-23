@@ -21,7 +21,8 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-with open('tests/ignores.txt') as reader:
+ignore_tests_file = Path("tests/ignores.txt")
+with open(ignore_tests_file) as reader:
     for line in reader:
         file_path = line.strip()
         if file_path and file_path[0] != '#':
