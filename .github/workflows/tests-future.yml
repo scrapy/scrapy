@@ -38,7 +38,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - uses: actions-rs/toolchain@v1 # for cryptography
-    - uses: actions/checkout@v2
+      with:
+        toolchain: nightly
 
     - name: Setup Ubuntu
       if: contains(matrix.os, 'ubuntu')
