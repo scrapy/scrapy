@@ -34,9 +34,7 @@ FORMAT = {
 class HttpCompressionTest(TestCase):
 
     def setUp(self):
-        settings = {'COMPRESSION_ENABLED': True,
-                    'COMPRESSION_KEEP_ENCODING_HEADERS': False}
-        self.crawler = get_crawler(Spider, settings)
+        self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('scrapytest.org')
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
         self.crawler.stats.open_spider(self.spider)
@@ -168,6 +166,7 @@ class HttpCompressionTest(TestCase):
         assert 'Content-Encoding' not in newresponse.headers
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 74840)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_zlibdelate(self):
         response = self._getresponse('zlibdeflate')
@@ -180,6 +179,7 @@ class HttpCompressionTest(TestCase):
         assert 'Content-Encoding' not in newresponse.headers
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 74840)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_plain(self):
         response = Response('http://scrapytest.org', body=b'<!DOCTYPE...')
@@ -199,6 +199,7 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         assert newresponse is not response
         self.assertEqual(newresponse.headers.getlist('Content-Encoding'), [b'uuencode'])
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_encoding_inside_body(self):
         headers = {
@@ -220,6 +221,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 104)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_force_recalculate_encoding(self):
         headers = {
@@ -241,6 +243,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 104)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_no_content_type_header(self):
         headers = {
@@ -258,6 +261,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 104)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_gzipped_contenttype(self):
         response = self._getresponse('gzip')
@@ -270,6 +274,7 @@ class HttpCompressionTest(TestCase):
         self.assertNotIn('Content-Encoding', newresponse.headers)
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 74837)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_gzip_app_octetstream_contenttype(self):
         response = self._getresponse('gzip')
@@ -282,6 +287,7 @@ class HttpCompressionTest(TestCase):
         self.assertNotIn('Content-Encoding', newresponse.headers)
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 74837)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_gzip_binary_octetstream_contenttype(self):
         response = self._getresponse('x-gzip')
@@ -294,6 +300,7 @@ class HttpCompressionTest(TestCase):
         self.assertNotIn('Content-Encoding', newresponse.headers)
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 74837)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_gzipped_gzip_file(self):
         """Test that a gzip Content-Encoded .gz file is gunzipped
@@ -338,6 +345,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(gunzip(newresponse.body), plainbody)
         self.assertStatsEqual('httpcompression/response_count', 1)
         self.assertStatsEqual('httpcompression/response_bytes', 230)
+        self.assertIn(b'decoded', newresponse.flags)
 
     def test_process_response_head_request_no_decode_required(self):
         response = self._getresponse('gzip')
@@ -351,11 +359,11 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual('httpcompression/response_count', None)
         self.assertStatsEqual('httpcompression/response_bytes', None)
 
-    def test_process_response_gzip_keep_headers(self):
+    def test_process_response_keeps_content_encoding_header(self):
         settings = {'COMPRESSION_ENABLED': True,
-                    'COMPRESSION_KEEP_ENCODING_HEADERS': True}
+                    'COMPRESSION_KEEP_ENCODING_HEADER': True}
         crawler = get_crawler(Spider, settings)
-        spider = crawler._create_spider('scrapytest.org')
+        spider = crawler._create_spider('example.com')
         mw = HttpCompressionMiddleware.from_crawler(crawler)
         response = self._getresponse('gzip')
         request = response.request
@@ -367,26 +375,26 @@ class HttpCompressionTest(TestCase):
         self.assertIn('Content-Encoding', newresponse.headers)
         self.assertIn(b'decoded', newresponse.flags)
 
-    def test_process_response_gzip_binary_octetstream_contenttype_keep_headers(self):
+    def test_process_response_doesnt_keep_content_encoding_header(self):
         settings = {'COMPRESSION_ENABLED': True,
-                    'COMPRESSION_KEEP_ENCODING_HEADERS': True}
+                    'COMPRESSION_KEEP_ENCODING_HEADER': False}
         crawler = get_crawler(Spider, settings)
-        spider = crawler._create_spider('scrapytest.org')
+        spider = crawler._create_spider('example.com')
         mw = HttpCompressionMiddleware.from_crawler(crawler)
-        response = self._getresponse('x-gzip')
-        response.headers['Content-Type'] = 'binary/octet-stream'
+        response = self._getresponse('gzip')
         request = response.request
 
+        self.assertEqual(response.headers['Content-Encoding'], b'gzip')
         newresponse = mw.process_response(request, response, spider)
         self.assertIsNot(newresponse, response)
         self.assertTrue(newresponse.body.startswith(b'<!DOCTYPE'))
-        self.assertIn('Content-Encoding', newresponse.headers)
+        self.assertNotIn('Content-Encoding', newresponse.headers)
         self.assertIn(b'decoded', newresponse.flags)
 
 
 class HttpCompressionSubclassTest(TestCase):
 
-    def test_init_missing_stats(self):
+    def test_from_crawler_missing_args(self):
         class HttpCompressionMiddlewareSubclass(HttpCompressionMiddleware):
 
             def __init__(self):
@@ -402,10 +410,28 @@ class HttpCompressionSubclassTest(TestCase):
         self.assertEqual(
             messages,
             (
-                (
-                    "HttpCompressionMiddleware subclasses must either modify "
-                    "their '__init__' method to support a 'stats' parameter "
-                    "or reimplement the 'from_crawler' method."
-                ),
-            )
+                "HttpCompressionMiddleware subclasses must either modify "
+                "their '__init__' method to support a 'stats' and 'settings' parameters "
+                "or reimplement the 'from_crawler' method.",
+                "HttpCompressionMiddleware now accepts a 'stats' parameter which should be specified.",
+                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified."
+                "Example: {'COMPRESSION_KEEP_ENCODING_HEADER': True}",
+            ),
+        )
+
+    def test_init_missing_args(self):
+        with catch_warnings(record=True) as caught_warnings:
+            self.assertIsNotNone(HttpCompressionMiddleware(stats=None, settings=None))
+        messages = tuple(
+            str(warning.message) for warning in caught_warnings
+            if warning.category is ScrapyDeprecationWarning
+        )
+
+        self.assertEqual(
+            messages,
+            (
+                "HttpCompressionMiddleware now accepts a 'stats' parameter which should be specified.",
+                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified."
+                "Example: {'COMPRESSION_KEEP_ENCODING_HEADER': True}",
+            ),
         )
