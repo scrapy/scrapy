@@ -1,7 +1,7 @@
 [flake8]
 
 max-line-length = 119
-ignore = W503
+ignore = W503, SFS301
 
 exclude =
 # Exclude files that are meant to provide top-level imports
