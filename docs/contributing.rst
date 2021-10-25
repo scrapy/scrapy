@@ -28,6 +28,26 @@ There are many ways to contribute to Scrapy. Here are some of them:
 * Answer Scrapy questions at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__.
 
+======================
+Where to Start
+======================
+If you are new to Scrapy or open-source development, it can be daunting at 
+first to know where to begin. The following is a list of things you can do 
+to get started working on your first contribution:
+
+* Go to the issue tracker page and type “label:"good first issue"” or 
+“label:docs” in the filter search bar.  
+
+*Look through the results and see if any seem approachable to you. 
+Take note of how other contributors have approached problems and 
+communicated with other members of the Scrapy team.
+
+*When you’ve found an issue you’d like to work on, try commenting on the issue
+with a plan of action of how you want to approach the problem. 
+This will help garner support from other, more advanced contributors.
+
+*Post on the Scrapy subreddit for more help and encouragement with starting to contribute to Scrapy
+
 
 Reporting bugs
 ==============
