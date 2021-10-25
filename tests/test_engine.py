@@ -415,7 +415,8 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_close_spiders_downloader(self):
         with warnings.catch_warnings(record=True) as warning_list:
-            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            settings = {'COMPRESSION_KEEP_ENCODING_HEADER': True}
+            e = ExecutionEngine(get_crawler(TestSpider, settings_dict=settings), lambda _: None)
             yield e.open_spider(TestSpider(), [])
             self.assertEqual(len(e.open_spiders), 1)
             yield e.close()
@@ -429,7 +430,8 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_close_engine_spiders_downloader(self):
         with warnings.catch_warnings(record=True) as warning_list:
-            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            settings = {'COMPRESSION_KEEP_ENCODING_HEADER': True}
+            e = ExecutionEngine(get_crawler(TestSpider, settings_dict=settings), lambda _: None)
             yield e.open_spider(TestSpider(), [])
             e.start()
             self.assertTrue(e.running)
@@ -445,7 +447,8 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawl_deprecated_spider_arg(self):
         with warnings.catch_warnings(record=True) as warning_list:
-            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            settings = {'COMPRESSION_KEEP_ENCODING_HEADER': True}
+            e = ExecutionEngine(get_crawler(TestSpider, settings_dict=settings), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
@@ -460,7 +463,8 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_download_deprecated_spider_arg(self):
         with warnings.catch_warnings(record=True) as warning_list:
-            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            settings = {'COMPRESSION_KEEP_ENCODING_HEADER': True}
+            e = ExecutionEngine(get_crawler(TestSpider, settings_dict=settings), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
@@ -475,7 +479,8 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_deprecated_schedule(self):
         with warnings.catch_warnings(record=True) as warning_list:
-            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            settings = {'COMPRESSION_KEEP_ENCODING_HEADER': True}
+            e = ExecutionEngine(get_crawler(TestSpider, settings_dict=settings), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
@@ -491,7 +496,8 @@ class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_deprecated_has_capacity(self):
         with warnings.catch_warnings(record=True) as warning_list:
-            e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+            settings = {'COMPRESSION_KEEP_ENCODING_HEADER': True}
+            e = ExecutionEngine(get_crawler(TestSpider, settings_dict=settings), lambda _: None)
             self.assertTrue(e.has_capacity())
             spider = TestSpider()
             yield e.open_spider(spider, [])
