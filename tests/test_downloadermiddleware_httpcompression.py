@@ -411,11 +411,10 @@ class HttpCompressionSubclassTest(TestCase):
             messages,
             (
                 "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'stats' and 'settings' parameters "
+                "their '__init__' method to support 'stats' and 'settings' parameters "
                 "or reimplement the 'from_crawler' method.",
                 "HttpCompressionMiddleware now accepts a 'stats' parameter which should be specified.",
-                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified."
-                "Example: {'COMPRESSION_KEEP_ENCODING_HEADER': True}",
+                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified.",
             ),
         )
 
@@ -431,7 +430,25 @@ class HttpCompressionSubclassTest(TestCase):
             messages,
             (
                 "HttpCompressionMiddleware now accepts a 'stats' parameter which should be specified.",
-                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified."
-                "Example: {'COMPRESSION_KEEP_ENCODING_HEADER': True}",
+                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified.",
+            ),
+        )
+
+    def test_init_keep_encoding_header_deprecation_warning(self):
+        from scrapy.settings import Settings
+        settings = Settings({'COMPRESSION_KEEP_ENCODING_HEADER': False})
+
+        with catch_warnings(record=True) as caught_warnings:
+            mw = HttpCompressionMiddleware(stats={'foo': 'bar'}, settings=settings)
+            self.assertIsNotNone(mw)
+        messages = tuple(
+            str(warning.message) for warning in caught_warnings
+            if warning.category is ScrapyDeprecationWarning
+        )
+
+        self.assertEqual(
+            messages,
+            (
+                "Setting COMPRESSION_KEEP_ENCODING_HEADER=False is deprecated",
             ),
         )

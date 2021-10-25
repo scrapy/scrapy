@@ -38,14 +38,13 @@ class HttpCompressionMiddleware:
             self.keep_encoding_header = settings.getbool('COMPRESSION_KEEP_ENCODING_HEADER')
             if not self.keep_encoding_header:
                 warnings.warn(
-                    "COMPRESSION_KEEP_ENCODING_HEADER should be set to True in settings.",
+                    "Setting COMPRESSION_KEEP_ENCODING_HEADER=False is deprecated",
                     ScrapyDeprecationWarning,
                 )
         else:
             self.keep_encoding_header = False
             warnings.warn(
-                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified."
-                "Example: {'COMPRESSION_KEEP_ENCODING_HEADER': True}",
+                "HttpCompressionMiddleware now accepts a 'settings' parameter which should be specified.",
                 ScrapyDeprecationWarning,
             )
 
@@ -58,7 +57,7 @@ class HttpCompressionMiddleware:
         except TypeError:
             warnings.warn(
                 "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'stats' and 'settings' parameters or "
+                "their '__init__' method to support 'stats' and 'settings' parameters or "
                 "reimplement the 'from_crawler' method.",
                 ScrapyDeprecationWarning,
             )
