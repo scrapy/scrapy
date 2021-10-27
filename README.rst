@@ -45,7 +45,7 @@ Scrapy is a fast high-level web crawling and web scraping framework, used to
 crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
-Scrapy is maintained by Zyte_ (formerly Scrapinghub) and `many other
+Scrapy is also maintained by Zyte_ (formerly Scrapinghub) and the `many other
 contributors`_.
 
 .. _many other contributors: https://github.com/scrapy/scrapy/graphs/contributors
@@ -110,3 +110,4 @@ Commercial Support
 ==================
 
 See https://scrapy.org/support/ for details.
+THANK YOU.
