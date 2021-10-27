@@ -3,7 +3,7 @@ import warnings
 import zlib
 
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response, TextResponse
+from scrapy.http import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
