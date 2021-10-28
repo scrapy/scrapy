@@ -1,0 +1,61 @@
+name: Future
+on:
+  schedule:
+    - cron:  13 7 * * *
+  workflow_dispatch: {}
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        #- ubuntu-latest
+        - windows-latest
+        #- macos-latest
+        tox:
+        - future
+        #- asyncio-future
+        #- pypy3-future
+        #- extra-deps-future
+        include:
+        - tox: future
+          python-version: "3.10"  # https://github.com/cython/cython/issues/4365
+        #- tox: asyncio-future
+          #python-version: "3.10"  # https://github.com/cython/cython/issues/4365
+        #- tox: pypy3-future
+          #python-version: pypy-3.8-7.3.6
+        #- tox: extra-deps-future
+          #python-version: "3.8"  # https://github.com/seomoz/reppy/issues/122
+          #pip: 20.3.3
+
+    runs-on: ${{ matrix.os }}
+    env:
+      TOXENV: ${{ matrix.tox }}
+      TOX_PIP_VERSION: ${{ matrix.pip }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions-rs/toolchain@v1 # for cryptography
+      with:
+        toolchain: nightly
+
+    - name: Setup Ubuntu
+      if: contains(matrix.os, 'ubuntu')
+      run: |
+        sudo apt-get update
+        # bzr ← PyDispatcher
+        # libxml2 ← lxml
+        # libxslt-dev ← lxml
+        sudo apt-get install \
+          bzr \
+          libxml2-dev \
+          libxslt-dev
+
+    - name: Run tests
+      run: |
+        # https://github.com/pytest-dev/py/issues/273
+        pip install git+https://github.com/pytest-dev/py.git#egg=py
+        pip install -U tox tox-pip-version
+        tox
