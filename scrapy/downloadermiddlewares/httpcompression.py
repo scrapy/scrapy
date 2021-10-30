@@ -81,7 +81,7 @@ class HttpCompressionMiddleware:
         if not content_encoding:
             return response
 
-        encoding = content_encoding.pop()
+        encoding = content_encoding[0]
         decoded_body = self._decode(response.body, encoding.lower())
         if self.stats:
             self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
@@ -97,7 +97,7 @@ class HttpCompressionMiddleware:
 
         kwargs['flags'] = response.flags + [b'decoded']
         response = response.replace(**kwargs)
-        if not self.keep_encoding_header and not content_encoding:
+        if not self.keep_encoding_header:
             del response.headers['Content-Encoding']
 
         return response
