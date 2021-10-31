@@ -18,7 +18,7 @@ This tutorial will walk you through these tasks:
 4. Changing spider to recursively follow links
 5. Using spider arguments
 
-The tutorial can be found below or alternatively as `a jupyter notebook`_.
+The tutorial can be found below or alternatively as `a jupyter notebook on Google Colab`_.
 
 Scrapy is written in Python_. If you're new to the language you might want to
 start by getting an idea of what the language is like, to get the most out of
@@ -41,7 +41,7 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
 .. _Python Tutorial: https://docs.python.org/3/tutorial
-.. _a jupyter notebook: https://github.com/scrapy/scrapy/blob/master/docs/intro/Scrapy_Tutorial.ipynb
+.. _a jupyter notebook on Google Colab: https://colab.research.google.com/github/scrapy/scrapy/blob/master/docs/intro/Scrapy_Tutorial.ipynb
 .. _Automate the Boring Stuff With Python: https://automatetheboringstuff.com/
 .. _How To Think Like a Computer Scientist: http://openbookproject.net/thinkcs/python/english3e/
 .. _Learn Python 3 The Hard Way: https://learnpythonthehardway.org/python3/
