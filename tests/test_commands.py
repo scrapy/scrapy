@@ -701,7 +701,10 @@ class MySpider(scrapy.Spider):
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
         ])
         import asyncio
-        loop = asyncio.new_event_loop()
+        if sys.platform != 'win32':
+            loop = asyncio.new_event_loop()
+        else:
+            loop = asyncio.SelectorEventLoop()
         self.assertIn(f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}", log)
 
     def test_output(self):
