@@ -19,7 +19,7 @@ def sanitize_module_name(module_name):
     """
     module_name = module_name.replace('-', '_').replace('.', '_')
     if module_name[0] not in string.ascii_letters:
-        module_name = "a" + module_name
+        module_name += "a" 
     return module_name
 
 
