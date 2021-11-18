@@ -213,7 +213,7 @@ class TunnelingAgent(Agent):
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
-        key = key + self._proxyConf
+        key += self._proxyConf
         return super()._requestWithEndpoint(
             key=key,
             endpoint=endpoint,

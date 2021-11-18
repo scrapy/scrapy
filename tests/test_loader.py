@@ -4,7 +4,7 @@ import attr
 from itemadapter import ItemAdapter
 from itemloaders.processors import Compose, Identity, MapCompose, TakeFirst
 
-from scrapy.http import HtmlResponse
+from scrapy.http import HtmlResponse, Response
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
@@ -304,6 +304,12 @@ class SelectortemLoaderTest(unittest.TestCase):
 
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), ['Marta'])
+    
+    def test_init_method_with_base_response(self):
+        """Selector should be None after initialization"""
+        response = Response("https://scrapy.org")
+        l = TestItemLoader(response=response)
+        self.assertIs(l.selector, None)
 
     def test_init_method_with_response(self):
         l = TestItemLoader(response=self.response)

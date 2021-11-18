@@ -300,7 +300,7 @@ errors if needed::
             "http://www.httpbin.org/status/404",    # Not found error
             "http://www.httpbin.org/status/500",    # server issue
             "http://www.httpbin.org:12345/",        # non-responding host, timeout expected
-            "http://www.httphttpbinbin.org/",       # DNS error expected
+            "https://example.invalid/",             # DNS error expected
         ]
 
         def start_requests(self):
