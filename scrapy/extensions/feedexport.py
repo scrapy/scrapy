@@ -411,6 +411,17 @@ class FeedExporter:
             indent=feed_options['indent'],
             **feed_options['item_export_kwargs'],
         )
+
+        if exporter.file is not file:
+            warnings.warn(
+                "Detected using overriden file in exporter class. Using an overriden file"
+                "may cause batching functionality to fail. Instead try using post-processing"
+                "plugins to achieve same results. For more info on post-procesising"
+                "see: https://docs.scrapy.org/en/latest/topics/feed-exports.html#post-processing",
+                UserWarning,
+                stacklevel=2,
+            )
+
         slot = _FeedSlot(
             file=file,
             exporter=exporter,
