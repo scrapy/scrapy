@@ -117,7 +117,7 @@ def get_retry_request(
     else:
         stats.inc_value(f'{stats_base_key}/max_reached')
         logger.error(
-            "Gave up retrying %(request)ss%(flags)s (failed %(retry_times)d times): "
+            "Gave up retrying %(request)s%(flags)s (failed %(retry_times)d times): "
             "%(reason)s",
             {'request': request, 'flags': request_flags, 'retry_times': retry_times, 'reason': reason},
         )
