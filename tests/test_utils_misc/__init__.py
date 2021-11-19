@@ -4,7 +4,7 @@ import unittest
 from unittest import mock
 
 from scrapy.item import Item, Field
-from scrapy.utils.misc import arg_to_iter, create_instance, load_object, set_environ, walk_modules
+from scrapy.utils.misc import arg_to_iter, create_instance, load_object, rel_has_nofollow, set_environ, walk_modules
 
 
 __doctests__ = ['scrapy.utils.misc']
@@ -12,11 +12,22 @@ __doctests__ = ['scrapy.utils.misc']
 
 class UtilsMiscTestCase(unittest.TestCase):
 
-    def test_load_object(self):
+    def test_load_object_class(self):
+        obj = load_object(Field)
+        self.assertIs(obj, Field)
+        obj = load_object('scrapy.item.Field')
+        self.assertIs(obj, Field)
+
+    def test_load_object_function(self):
+        obj = load_object(load_object)
+        self.assertIs(obj, load_object)
         obj = load_object('scrapy.utils.misc.load_object')
-        assert obj is load_object
+        self.assertIs(obj, load_object)
+
+    def test_load_object_exceptions(self):
         self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
+        self.assertRaises(TypeError, load_object, {})
 
     def test_walk_modules(self):
         mods = walk_modules('tests.test_utils_misc.test_walk_modules')
@@ -26,20 +37,20 @@ class UtilsMiscTestCase(unittest.TestCase):
             'tests.test_utils_misc.test_walk_modules.mod.mod0',
             'tests.test_utils_misc.test_walk_modules.mod1',
         ]
-        self.assertEqual(set([m.__name__ for m in mods]), set(expected))
+        self.assertEqual({m.__name__ for m in mods}, set(expected))
 
         mods = walk_modules('tests.test_utils_misc.test_walk_modules.mod')
         expected = [
             'tests.test_utils_misc.test_walk_modules.mod',
             'tests.test_utils_misc.test_walk_modules.mod.mod0',
         ]
-        self.assertEqual(set([m.__name__ for m in mods]), set(expected))
+        self.assertEqual({m.__name__ for m in mods}, set(expected))
 
         mods = walk_modules('tests.test_utils_misc.test_walk_modules.mod1')
         expected = [
             'tests.test_utils_misc.test_walk_modules.mod1',
         ]
-        self.assertEqual(set([m.__name__ for m in mods]), set(expected))
+        self.assertEqual({m.__name__ for m in mods}, set(expected))
 
         self.assertRaises(ImportError, walk_modules, 'nomodule999')
 
@@ -54,7 +65,7 @@ class UtilsMiscTestCase(unittest.TestCase):
                 'testegg.spiders.b',
                 'testegg'
             ]
-            self.assertEqual(set([m.__name__ for m in mods]), set(expected))
+            self.assertEqual({m.__name__ for m in mods}, set(expected))
         finally:
             sys.path.remove(egg)
 
@@ -67,12 +78,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         assert hasattr(arg_to_iter(100), '__iter__')
         assert hasattr(arg_to_iter('lala'), '__iter__')
         assert hasattr(arg_to_iter([1, 2, 3]), '__iter__')
-        assert hasattr(arg_to_iter(l for l in 'abcd'), '__iter__')
+        assert hasattr(arg_to_iter(c for c in 'abcd'), '__iter__')
 
         self.assertEqual(list(arg_to_iter(None)), [])
         self.assertEqual(list(arg_to_iter('lala')), ['lala'])
         self.assertEqual(list(arg_to_iter(100)), [100])
-        self.assertEqual(list(arg_to_iter(l for l in 'abc')), ['a', 'b', 'c'])
+        self.assertEqual(list(arg_to_iter(c for c in 'abc')), ['a', 'b', 'c'])
         self.assertEqual(list(arg_to_iter([1, 2, 3])), [1, 2, 3])
         self.assertEqual(list(arg_to_iter({'a': 1})), [{'a': 1}])
         self.assertEqual(list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")])
@@ -150,6 +161,15 @@ class UtilsMiscTestCase(unittest.TestCase):
         with set_environ(some_test_environ='test_value'):
             assert os.environ.get('some_test_environ') == 'test_value'
         assert os.environ.get('some_test_environ') == 'test'
+
+    def test_rel_has_nofollow(self):
+        assert rel_has_nofollow('ugc nofollow') is True
+        assert rel_has_nofollow('ugc,nofollow') is True
+        assert rel_has_nofollow('ugc') is False
+        assert rel_has_nofollow('nofollow') is True
+        assert rel_has_nofollow('nofollowfoo') is False
+        assert rel_has_nofollow('foonofollow') is False
+        assert rel_has_nofollow('ugc,  ,  nofollow') is True
 
 
 if __name__ == "__main__":

@@ -78,7 +78,6 @@ Basic concepts
    topics/settings
    topics/exceptions
 
-
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
 
@@ -228,6 +227,7 @@ Extending Scrapy
    topics/extensions
    topics/api
    topics/signals
+   topics/scheduler
    topics/exporters
 
 
@@ -248,6 +248,9 @@ Extending Scrapy
 
 :doc:`topics/signals`
     See all available signals and how to work with them.
+
+:doc:`topics/scheduler`
+    Understand the scheduler component.
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).

@@ -4,7 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator
+from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -16,9 +16,32 @@ from scrapy.utils.trackref import object_ref
 
 
 class Response(object_ref):
+    """An object that represents an HTTP response, which is usually
+    downloaded (by the Downloader) and fed to the Spiders for processing.
+    """
 
-    def __init__(self, url, status=200, headers=None, body=b'', flags=None,
-                 request=None, certificate=None, ip_address=None):
+    attributes: Tuple[str, ...] = (
+        "url", "status", "headers", "body", "flags", "request", "certificate", "ip_address", "protocol",
+    )
+    """A tuple of :class:`str` objects containing the name of all public
+    attributes of the class that are also keyword parameters of the
+    ``__init__`` method.
+
+    Currently used by :meth:`Response.replace`.
+    """
+
+    def __init__(
+        self,
+        url,
+        status=200,
+        headers=None,
+        body=b"",
+        flags=None,
+        request=None,
+        certificate=None,
+        ip_address=None,
+        protocol=None,
+    ):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
@@ -27,6 +50,7 @@ class Response(object_ref):
         self.flags = [] if flags is None else list(flags)
         self.certificate = certificate
         self.ip_address = ip_address
+        self.protocol = protocol
 
     @property
     def cb_kwargs(self):
@@ -55,8 +79,8 @@ class Response(object_ref):
         if isinstance(url, str):
             self._url = url
         else:
-            raise TypeError('%s url must be str, got %s:' %
-                            (type(self).__name__, type(url).__name__))
+            raise TypeError(f'{type(self).__name__} url must be str, '
+                            f'got {type(url).__name__}')
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
@@ -77,7 +101,7 @@ class Response(object_ref):
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 
     def __str__(self):
-        return "<%d %s>" % (self.status, self.url)
+        return f"<{self.status} {self.url}>"
 
     __repr__ = __str__
 
@@ -86,11 +110,8 @@ class Response(object_ref):
         return self.replace()
 
     def replace(self, *args, **kwargs):
-        """Create a new Response with the same attributes except for those
-        given new values.
-        """
-        for x in ['url', 'status', 'headers', 'body',
-                  'request', 'flags', 'certificate', 'ip_address']:
+        """Create a new Response with the same attributes except for those given new values"""
+        for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

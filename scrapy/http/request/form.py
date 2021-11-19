@@ -5,40 +5,56 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from urllib.parse import urljoin, urlencode
+from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from urllib.parse import urljoin, urlencode, urlsplit, urlunsplit
 
-import lxml.html
+from lxml.html import FormElement, HtmlElement, HTMLParser, SelectElement
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
+from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import to_bytes, is_listlike
 from scrapy.utils.response import get_base_url
+
+
+FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
+
+FormdataType = Optional[Union[dict, List[Tuple[str, str]]]]
 
 
 class FormRequest(Request):
     valid_form_methods = ['GET', 'POST']
 
-    def __init__(self, *args, **kwargs):
-        formdata = kwargs.pop('formdata', None)
+    def __init__(self, *args, formdata: FormdataType = None, **kwargs) -> None:
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
-        super(FormRequest, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.items() if isinstance(formdata, dict) else formdata
-            querystr = _urlencode(items, self.encoding)
+            form_query_str = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault(b'Content-Type', b'application/x-www-form-urlencoded')
-                self._set_body(querystr)
+                self._set_body(form_query_str)
             else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+                self._set_url(urlunsplit(urlsplit(self.url)._replace(query=form_query_str)))
 
     @classmethod
-    def from_response(cls, response, formname=None, formid=None, formnumber=0, formdata=None,
-                      clickdata=None, dont_click=False, formxpath=None, formcss=None, **kwargs):
-
+    def from_response(
+        cls: Type[FormRequestTypeVar],
+        response: TextResponse,
+        formname: Optional[str] = None,
+        formid: Optional[str] = None,
+        formnumber: Optional[int] = 0,
+        formdata: FormdataType = None,
+        clickdata: Optional[dict] = None,
+        dont_click: bool = False,
+        formxpath: Optional[str] = None,
+        formcss: Optional[str] = None,
+        **kwargs,
+    ) -> FormRequestTypeVar:
         kwargs.setdefault('encoding', response.encoding)
 
         if formcss is not None:
@@ -46,7 +62,7 @@ class FormRequest(Request):
             formxpath = HTMLTranslator().css_to_xpath(formcss)
 
         form = _get_form(response, formname, formid, formnumber, formxpath)
-        formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
+        formdata = _get_inputs(form, formdata, dont_click, clickdata)
         url = _get_form_url(form, kwargs.pop('url', None))
 
         method = kwargs.pop('method', form.method)
@@ -58,7 +74,7 @@ class FormRequest(Request):
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
-def _get_form_url(form, url):
+def _get_form_url(form: FormElement, url: Optional[str]) -> str:
     if url is None:
         action = form.get('action')
         if action is None:
@@ -67,28 +83,33 @@ def _get_form_url(form, url):
     return urljoin(form.base_url, url)
 
 
-def _urlencode(seq, enc):
+def _urlencode(seq: Iterable, enc: str) -> str:
     values = [(to_bytes(k, enc), to_bytes(v, enc))
               for k, vs in seq
               for v in (vs if is_listlike(vs) else [vs])]
-    return urlencode(values, doseq=1)
+    return urlencode(values, doseq=True)
 
 
-def _get_form(response, formname, formid, formnumber, formxpath):
-    """Find the form element """
-    root = create_root_node(response.text, lxml.html.HTMLParser,
-                            base_url=get_base_url(response))
+def _get_form(
+    response: TextResponse,
+    formname: Optional[str],
+    formid: Optional[str],
+    formnumber: Optional[int],
+    formxpath: Optional[str],
+) -> FormElement:
+    """Find the wanted form element within the given response."""
+    root = create_root_node(response.text, HTMLParser, base_url=get_base_url(response))
     forms = root.xpath('//form')
     if not forms:
-        raise ValueError("No <form> element found in %s" % response)
+        raise ValueError(f"No <form> element found in {response}")
 
     if formname is not None:
-        f = root.xpath('//form[@name="%s"]' % formname)
+        f = root.xpath(f'//form[@name="{formname}"]')
         if f:
             return f[0]
 
     if formid is not None:
-        f = root.xpath('//form[@id="%s"]' % formid)
+        f = root.xpath(f'//form[@id="{formid}"]')
         if f:
             return f[0]
 
@@ -103,39 +124,44 @@ def _get_form(response, formname, formid, formnumber, formxpath):
                 el = el.getparent()
                 if el is None:
                     break
-        raise ValueError('No <form> element found with %s' % formxpath)
+        raise ValueError(f'No <form> element found with {formxpath}')
 
-    # If we get here, it means that either formname was None
-    # or invalid
+    # If we get here, it means that either formname was None or invalid
     if formnumber is not None:
         try:
             form = forms[formnumber]
         except IndexError:
-            raise IndexError("Form number %d not found in %s" %
-                             (formnumber, response))
+            raise IndexError(f"Form number {formnumber} not found in {response}")
         else:
             return form
 
 
-def _get_inputs(form, formdata, dont_click, clickdata, response):
+def _get_inputs(
+    form: FormElement,
+    formdata: FormdataType,
+    dont_click: bool,
+    clickdata: Optional[dict],
+) -> List[Tuple[str, str]]:
+    """Return a list of key-value pairs for the inputs found in the given form."""
     try:
         formdata_keys = dict(formdata or ()).keys()
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
     if not formdata:
-        formdata = ()
+        formdata = []
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
                         '|descendant::input[not(@type) or @type['
                         ' not(re:test(., "^(?:submit|image|reset)$", "i"))'
                         ' and (../@checked or'
                         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
-                        namespaces={
-                            "re": "http://exslt.org/regular-expressions"})
-    values = [(k, u'' if v is None else v)
-              for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata_keys]
+                        namespaces={"re": "http://exslt.org/regular-expressions"})
+    values = [
+        (k, '' if v is None else v)
+        for k, v in (_value(e) for e in inputs)
+        if k and k not in formdata_keys
+    ]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
@@ -143,13 +169,13 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
             values.append(clickable)
 
     if isinstance(formdata, dict):
-        formdata = formdata.items()
+        formdata = formdata.items()  # type: ignore[assignment]
 
     values.extend((k, v) for k, v in formdata if v is not None)
     return values
 
 
-def _value(ele):
+def _value(ele: HtmlElement):
     n = ele.name
     v = ele.value
     if ele.tag == 'select':
@@ -157,22 +183,23 @@ def _value(ele):
     return n, v
 
 
-def _select_value(ele, n, v):
+def _select_value(ele: SelectElement, n: str, v: str):
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
-        # And for select tags wihout options
+        # And for select tags without options
         o = ele.value_options
         return (n, o[0]) if o else (None, None)
     elif v is not None and multiple:
         # This is a workround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath('.//option[@selected]')
-        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+        values = [(o.get('value') or o.text or '').strip() for o in selected_options]
+        return n, values
     return n, v
 
 
-def _get_clickable(clickdata, form):
+def _get_clickable(clickdata: Optional[dict], form: FormElement) -> Optional[Tuple[str, str]]:
     """
     Returns the clickable element specified in clickdata,
     if the latter is given. If not, it returns the first
@@ -184,7 +211,7 @@ def _get_clickable(clickdata, form):
         namespaces={"re": "http://exslt.org/regular-expressions"}
     ))
     if not clickables:
-        return
+        return None
 
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
@@ -205,13 +232,12 @@ def _get_clickable(clickdata, form):
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
-    xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in clickdata.items())
+    xpath = './/*' + ''.join(f'[@{k}="{v}"]' for k, v in clickdata.items())
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].get('name'), el[0].get('value') or '')
     elif len(el) > 1:
-        raise ValueError("Multiple elements found (%r) matching the criteria "
-                         "in clickdata: %r" % (el, clickdata))
+        raise ValueError(f"Multiple elements found ({el!r}) matching the "
+                         f"criteria in clickdata: {clickdata!r}")
     else:
-        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))
+        raise ValueError(f'No clickable element matching clickdata: {clickdata!r}')

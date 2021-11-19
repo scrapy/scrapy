@@ -3,10 +3,10 @@ import sys
 
 from queuelib.tests import test_queue as t
 from scrapy.squeues import (
-    MarshalFifoDiskQueueNonRequest as MarshalFifoDiskQueue,
-    MarshalLifoDiskQueueNonRequest as MarshalLifoDiskQueue,
-    PickleFifoDiskQueueNonRequest as PickleFifoDiskQueue,
-    PickleLifoDiskQueueNonRequest as PickleLifoDiskQueue
+    _MarshalFifoSerializationDiskQueue,
+    _MarshalLifoSerializationDiskQueue,
+    _PickleFifoSerializationDiskQueue,
+    _PickleLifoSerializationDiskQueue,
 )
 from scrapy.item import Item, Field
 from scrapy.http import Request
@@ -53,7 +53,7 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
     def queue(self):
-        return MarshalFifoDiskQueue(self.qpath, chunksize=self.chunksize)
+        return _MarshalFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
 
 
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
@@ -77,7 +77,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
     chunksize = 100000
 
     def queue(self):
-        return PickleFifoDiskQueue(self.qpath, chunksize=self.chunksize)
+        return _PickleFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -89,12 +89,12 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = TestLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, TestLoader)
+        assert loader2.default_item_class is TestItem
+        self.assertEqual(loader2.name_out('x'), 'xx')
 
     def test_serialize_request_recursive(self):
         q = self.queue()
@@ -155,13 +155,13 @@ class LifoDiskQueueTestMixin:
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
-        return MarshalLifoDiskQueue(self.qpath)
+        return _MarshalLifoSerializationDiskQueue(self.qpath)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
-        return PickleLifoDiskQueue(self.qpath)
+        return _PickleLifoSerializationDiskQueue(self.qpath)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -173,12 +173,12 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def test_serialize_loader(self):
         q = self.queue()
-        l = TestLoader()
-        q.push(l)
-        l2 = q.pop()
-        assert isinstance(l2, TestLoader)
-        assert l2.default_item_class is TestItem
-        self.assertEqual(l2.name_out('x'), 'xx')
+        loader = TestLoader()
+        q.push(loader)
+        loader2 = q.pop()
+        assert isinstance(loader2, TestLoader)
+        assert loader2.default_item_class is TestItem
+        self.assertEqual(loader2.name_out('x'), 'xx')
 
     def test_serialize_request_recursive(self):
         q = self.queue()

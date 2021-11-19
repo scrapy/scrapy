@@ -30,7 +30,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def _get_successful_crawler(self):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
-        ROBOTS = u"""
+        ROBOTS = """
 User-Agent: *
 Disallow: /admin/
 Disallow: /static/
@@ -42,7 +42,7 @@ Disallow: /some/randome/page.html
 """.encode('utf-8')
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
 
-        def return_response(request, spider):
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -56,7 +56,7 @@ Disallow: /some/randome/page.html
             self.assertIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertIgnored(Request('http://site.local/static/'), middleware),
             self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware),
-            self.assertIgnored(Request(u'http://site.local/wiki/Käyttäjä:'), middleware)
+            self.assertIgnored(Request('http://site.local/wiki/Käyttäjä:'), middleware)
         ], fireOnOneErrback=True)
 
     def test_robotstxt_ready_parser(self):
@@ -79,7 +79,7 @@ Disallow: /some/randome/page.html
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt', body=b'GIF89a\xd3\x00\xfe\x00\xa2')
 
-        def return_response(request, spider):
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -102,7 +102,7 @@ Disallow: /some/randome/page.html
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt')
 
-        def return_response(request, spider):
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -122,7 +122,7 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
 
-        def return_failure(request, spider):
+        def return_failure(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
             return deferred
@@ -138,7 +138,7 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
 
-        def immediate_failure(request, spider):
+        def immediate_failure(request):
             deferred = Deferred()
             deferred.errback(failure.Failure(err))
             return deferred
@@ -150,7 +150,7 @@ Disallow: /some/randome/page.html
     def test_ignore_robotstxt_request(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
 
-        def ignore_request(request, spider):
+        def ignore_request(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
             return deferred
@@ -189,7 +189,7 @@ class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
         skip = "Rerp parser is not installed"
 
     def setUp(self):
-        super(RobotsTxtMiddlewareWithRerpTest, self).setUp()
+        super().setUp()
         self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.RerpRobotParser')
 
 
@@ -198,5 +198,5 @@ class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
         skip = "Reppy parser is not installed"
 
     def setUp(self):
-        super(RobotsTxtMiddlewareWithReppyTest, self).setUp()
+        super().setUp()
         self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.ReppyRobotParser')

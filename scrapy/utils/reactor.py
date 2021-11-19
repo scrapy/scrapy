@@ -10,7 +10,7 @@ def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
     if len(portrange) > 2:
-        raise ValueError("invalid portrange: %s" % portrange)
+        raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
     if not hasattr(portrange, '__iter__'):
@@ -50,13 +50,20 @@ class CallLaterOnce:
         return self._func(*self._a, **self._kw)
 
 
-def install_reactor(reactor_path):
+def install_reactor(reactor_path, event_loop_path=None):
     """Installs the :mod:`~twisted.internet.reactor` with the specified
-    import path."""
+    import path. Also installs the asyncio event loop with the specified import
+    path if the asyncio reactor is enabled"""
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
-            asyncioreactor.install(asyncio.get_event_loop())
+            if event_loop_path is not None:
+                event_loop_class = load_object(event_loop_path)
+                event_loop = event_loop_class()
+                asyncio.set_event_loop(event_loop)
+            else:
+                event_loop = asyncio.get_event_loop()
+            asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")
         installer_path = module + ["install"]
@@ -72,9 +79,9 @@ def verify_installed_reactor(reactor_path):
     from twisted.internet import reactor
     reactor_class = load_object(reactor_path)
     if not isinstance(reactor, reactor_class):
-        msg = "The installed reactor ({}.{}) does not match the requested one ({})".format(
-            reactor.__module__, reactor.__class__.__name__, reactor_path
-        )
+        msg = ("The installed reactor "
+               f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
+               f"match the requested one ({reactor_path})")
         raise Exception(msg)
 
 

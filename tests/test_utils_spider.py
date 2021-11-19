@@ -2,7 +2,7 @@ import unittest
 
 from scrapy import Spider
 from scrapy.http import Request
-from scrapy.item import BaseItem
+from scrapy.item import Item
 from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
 
 
@@ -17,7 +17,7 @@ class MySpider2(Spider):
 class UtilsSpidersTestCase(unittest.TestCase):
 
     def test_iterate_spider_output(self):
-        i = BaseItem()
+        i = Item()
         r = Request('http://scrapytest.org')
         o = object()
 
