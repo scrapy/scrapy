@@ -95,9 +95,9 @@ def get_retry_request(
             max_retry_times = settings.getint('RETRY_TIMES')
     if retry_times <= max_retry_times:
         logger.debug(
-            "Retrying %(request)s%(flags)s (failed %(retries)d times): %(reason)s",
-            {'request': request, 'flags': request_flags, 'retries': retries, 'reason': reason},
-            extra={'spider': spider},
+            "Retrying %(request)s%(flags)s (failed %(retry_times)d times): %(reason)s",
+            {'request': request, 'flags': request_flags, 'retry_times': retry_times, 'reason': reason},
+            extra={'spider': spider}
         )
         new_request: Request = request.copy()
         new_request.meta['retry_times'] = retry_times
@@ -117,9 +117,9 @@ def get_retry_request(
     else:
         stats.inc_value(f'{stats_base_key}/max_reached')
         logger.error(
-            "Gave up retrying %(request)s%(flags)s (failed %(retries)d times): %(reason)s",
-            {'request': request, 'flags': request_flags, 'retries': retries, 'reason': reason},
-            extra={'spider': spider},
+            "Gave up retrying %(request)ss%(flags)s (failed %(retry_times)d times): "
+            "%(reason)s",
+            {'request': request, 'flags': request_flags, 'retry_times': retry_times, 'reason': reason},
         )
         return None
 
@@ -169,4 +169,3 @@ class RetryMiddleware:
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
         )
-
