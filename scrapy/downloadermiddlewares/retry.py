@@ -120,6 +120,7 @@ def get_retry_request(
             "Gave up retrying %(request)s%(flags)s (failed %(retry_times)d times): "
             "%(reason)s",
             {'request': request, 'flags': request_flags, 'retry_times': retry_times, 'reason': reason},
+            extra={'spider': spider},
         )
         return None
 
