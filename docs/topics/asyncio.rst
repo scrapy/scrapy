@@ -39,5 +39,22 @@ You can also use custom asyncio event loops with the asyncio reactor. Set the
 :setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event loop class to
 use it instead of the default asyncio event loop.
 
+.. _asyncio-await-dfd:
 
+Awaiting on Deferreds
+=====================
 
+When the asyncio reactor isn't installed, you can await on Deferreds in the
+coroutines directly. When it is installed, this is not possible anymore, due to
+specifics of the Scrapy coroutine integration (the coroutines are wrapped into
+:class:`asyncio.Future` objects, not into
+:class:`~twisted.internet.defer.Deferred` directly), and you need to wrap them into
+Futures. Scrapy provides two helpers for this:
+
+.. autofunction:: scrapy.utils.defer.deferred_to_future
+.. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
+.. tip:: If you need to use these functions in code that aims to be compatible
+         with lower versions of Scrapy that do not provide these functions,
+         down to Scrapy 2.0 (earlier versions do not support
+         :mod:`asyncio`), you can copy the implementation of these functions
+         into your own code.

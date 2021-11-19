@@ -498,7 +498,7 @@ class GenspiderCommandTest(CommandTest):
                          self.find_in_file(join(self.proj_mod_path,
                                                 'spiders', 'test_name.py'),
                                            r'allowed_domains\s*=\s*\[\'(.+)\'\]').group(1))
-        self.assertEqual('http://%s/' % domain,
+        self.assertEqual(f'http://{domain}/',
                          self.find_in_file(join(self.proj_mod_path,
                                                 'spiders', 'test_name.py'),
                                            r'start_urls\s*=\s*\[\'(.+)\'\]').group(1))
@@ -708,7 +708,7 @@ class MySpider(scrapy.Spider):
         ])
         import asyncio
         loop = asyncio.new_event_loop()
-        self.assertIn("Using asyncio event loop: %s.%s" % (loop.__module__, loop.__class__.__name__), log)
+        self.assertIn(f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}", log)
 
     def test_output(self):
         spider_code = """

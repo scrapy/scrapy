@@ -39,6 +39,8 @@ a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
+.. _topics-keeping-persistent-state-between-batches:
+
 Keeping persistent state between batches
 ========================================
 

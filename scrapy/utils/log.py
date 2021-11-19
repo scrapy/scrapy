@@ -124,8 +124,9 @@ def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
     if filename:
+        mode = 'a' if settings.getbool('LOG_FILE_APPEND') else 'w'
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:

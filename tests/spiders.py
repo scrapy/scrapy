@@ -86,7 +86,7 @@ class SimpleSpider(MetaSpider):
         self.start_urls = [url]
 
     def parse(self, response):
-        self.logger.info("Got response %d" % response.status)
+        self.logger.info(f"Got response {response.status}")
 
 
 class AsyncDefSpider(SimpleSpider):
@@ -95,7 +95,7 @@ class AsyncDefSpider(SimpleSpider):
 
     async def parse(self, response):
         await defer.succeed(42)
-        self.logger.info("Got response %d" % response.status)
+        self.logger.info(f"Got response {response.status}")
 
 
 class AsyncDefAsyncioSpider(SimpleSpider):
@@ -105,7 +105,7 @@ class AsyncDefAsyncioSpider(SimpleSpider):
     async def parse(self, response):
         await asyncio.sleep(0.2)
         status = await get_from_asyncio_queue(response.status)
-        self.logger.info("Got response %d" % status)
+        self.logger.info(f"Got response {status}")
 
 
 class AsyncDefAsyncioReturnSpider(SimpleSpider):
@@ -115,7 +115,7 @@ class AsyncDefAsyncioReturnSpider(SimpleSpider):
     async def parse(self, response):
         await asyncio.sleep(0.2)
         status = await get_from_asyncio_queue(response.status)
-        self.logger.info("Got response %d" % status)
+        self.logger.info(f"Got response {status}")
         return [{'id': 1}, {'id': 2}]
 
 
@@ -126,7 +126,7 @@ class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
     async def parse(self, response):
         await asyncio.sleep(0.1)
         status = await get_from_asyncio_queue(response.status)
-        self.logger.info("Got response %d" % status)
+        self.logger.info(f"Got response {status}")
         return {"foo": 42}
 
 
@@ -138,7 +138,7 @@ class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
         await asyncio.sleep(0.2)
         req_id = response.meta.get('req_id', 0)
         status = await get_from_asyncio_queue(response.status)
-        self.logger.info("Got response %d, req_id %d" % (status, req_id))
+        self.logger.info(f"Got response {status}, req_id {req_id}")
         if req_id > 0:
             return
         reqs = []
@@ -155,7 +155,7 @@ class AsyncDefAsyncioGenSpider(SimpleSpider):
     async def parse(self, response):
         await asyncio.sleep(0.2)
         yield {'foo': 42}
-        self.logger.info("Got response %d" % response.status)
+        self.logger.info(f"Got response {response.status}")
 
 
 class AsyncDefAsyncioGenLoopSpider(SimpleSpider):
@@ -166,7 +166,7 @@ class AsyncDefAsyncioGenLoopSpider(SimpleSpider):
         for i in range(10):
             await asyncio.sleep(0.1)
             yield {'foo': i}
-        self.logger.info("Got response %d" % response.status)
+        self.logger.info(f"Got response {response.status}")
 
 
 class AsyncDefAsyncioGenComplexSpider(SimpleSpider):

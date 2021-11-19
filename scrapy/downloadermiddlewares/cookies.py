@@ -80,8 +80,8 @@ class CookiesMiddleware:
                     logger.warning(msg.format(request, cookie, key))
                     return
                 continue
-            if isinstance(cookie[key], str):
-                decoded[key] = cookie[key]
+            if isinstance(cookie[key], (bool, float, int, str)):
+                decoded[key] = str(cookie[key])
             else:
                 try:
                     decoded[key] = cookie[key].decode("utf8")

@@ -3,6 +3,44 @@
 Release notes
 =============
 
+.. _release-2.5.1:
+
+Scrapy 2.5.1 (2021-10-05)
+-------------------------
+
+*   **Security bug fix:**
+
+    If you use
+    :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
+    (i.e. the ``http_user`` and ``http_pass`` spider attributes) for HTTP
+    authentication, any request exposes your credentials to the request target.
+
+    To prevent unintended exposure of authentication credentials to unintended
+    domains, you must now additionally set a new, additional spider attribute,
+    ``http_auth_domain``, and point it to the specific domain to which the
+    authentication credentials must be sent.
+
+    If the ``http_auth_domain`` spider attribute is not set, the domain of the
+    first request will be considered the HTTP authentication target, and
+    authentication credentials will only be sent in requests targeting that
+    domain.
+
+    If you need to send the same HTTP authentication credentials to multiple
+    domains, you can use :func:`w3lib.http.basic_auth_header` instead to
+    set the value of the ``Authorization`` header of your requests.
+
+    If you *really* want your spider to send the same HTTP authentication
+    credentials to any domain, set the ``http_auth_domain`` spider attribute
+    to ``None``.
+
+    Finally, if you are a user of `scrapy-splash`_, know that this version of
+    Scrapy breaks compatibility with scrapy-splash 0.7.2 and earlier. You will
+    need to upgrade scrapy-splash to a greater version for it to continue to
+    work.
+
+.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
+
+
 .. _release-2.5.0:
 
 Scrapy 2.5.0 (2021-04-06)
@@ -1454,6 +1492,44 @@ affect subclasses:
 (:issue:`3884`)
 
 
+.. _release-1.8.1:
+
+Scrapy 1.8.1 (2021-10-05)
+-------------------------
+
+*   **Security bug fix:**
+
+    If you use
+    :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
+    (i.e. the ``http_user`` and ``http_pass`` spider attributes) for HTTP
+    authentication, any request exposes your credentials to the request target.
+
+    To prevent unintended exposure of authentication credentials to unintended
+    domains, you must now additionally set a new, additional spider attribute,
+    ``http_auth_domain``, and point it to the specific domain to which the
+    authentication credentials must be sent.
+
+    If the ``http_auth_domain`` spider attribute is not set, the domain of the
+    first request will be considered the HTTP authentication target, and
+    authentication credentials will only be sent in requests targeting that
+    domain.
+
+    If you need to send the same HTTP authentication credentials to multiple
+    domains, you can use :func:`w3lib.http.basic_auth_header` instead to
+    set the value of the ``Authorization`` header of your requests.
+
+    If you *really* want your spider to send the same HTTP authentication
+    credentials to any domain, set the ``http_auth_domain`` spider attribute
+    to ``None``.
+
+    Finally, if you are a user of `scrapy-splash`_, know that this version of
+    Scrapy breaks compatibility with scrapy-splash 0.7.2 and earlier. You will
+    need to upgrade scrapy-splash to a greater version for it to continue to
+    work.
+
+.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
+
+
 .. _release-1.8.0:
 
 Scrapy 1.8.0 (2019-10-28)
@@ -1754,7 +1830,7 @@ New features
 *   A new scheduler priority queue,
     ``scrapy.pqueues.DownloaderAwarePriorityQueue``, may be
     :ref:`enabled <broad-crawls-scheduler-priority-queue>` for a significant
-    scheduling improvement on crawls targetting multiple web domains, at the
+    scheduling improvement on crawls targeting multiple web domains, at the
     cost of no :setting:`CONCURRENT_REQUESTS_PER_IP` support (:issue:`3520`)
 
 *   A new :attr:`Request.cb_kwargs <scrapy.http.Request.cb_kwargs>` attribute
@@ -2792,7 +2868,7 @@ Bug fixes
 - Fix for selected callbacks when using ``CrawlSpider`` with :command:`scrapy parse <parse>`
   (:issue:`2225`).
 - Fix for invalid JSON and XML files when spider yields no items (:issue:`872`).
-- Implement ``flush()`` fpr ``StreamLogger`` avoiding a warning in logs (:issue:`2125`).
+- Implement ``flush()`` for ``StreamLogger`` avoiding a warning in logs (:issue:`2125`).
 
 Refactoring
 ~~~~~~~~~~~
@@ -3655,7 +3731,7 @@ Scrapy 0.24.3 (2014-08-09)
 - adding some xpath tips to selectors docs (:commit:`2d103e0`)
 - fix tests to account for https://github.com/scrapy/w3lib/pull/23 (:commit:`f8d366a`)
 - get_func_args maximum recursion fix #728 (:commit:`81344ea`)
-- Updated input/ouput processor example according to #560. (:commit:`f7c4ea8`)
+- Updated input/output processor example according to #560. (:commit:`f7c4ea8`)
 - Fixed Python syntax in tutorial. (:commit:`db59ed9`)
 - Add test case for tunneling proxy (:commit:`f090260`)
 - Bugfix for leaking Proxy-Authorization header to remote host when using tunneling (:commit:`d8793af`)
@@ -4317,7 +4393,7 @@ Scrapyd changes
 ~~~~~~~~~~~~~~~
 
 - Scrapyd now uses one process per spider
-- It stores one log file per spider run, and rotate them keeping the lastest 5 logs per spider (by default)
+- It stores one log file per spider run, and rotate them keeping the latest 5 logs per spider (by default)
 - A minimal web ui was added, available at http://localhost:6800 by default
 - There is now a ``scrapy server`` command to start a Scrapyd server of the current project
 
@@ -4353,7 +4429,7 @@ New features and improvements
 - Added two new methods to item pipeline open_spider(), close_spider() with deferred support (#195)
 - Support for overriding default request headers per spider (#181)
 - Replaced default Spider Manager with one with similar functionality but not depending on Twisted Plugins (#186)
-- Splitted Debian package into two packages - the library and the service (#187)
+- Split Debian package into two packages - the library and the service (#187)
 - Scrapy log refactoring (#188)
 - New extension for keeping persistent spider contexts among different runs (#203)
 - Added ``dont_redirect`` request.meta key for avoiding redirects (#233)

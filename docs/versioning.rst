@@ -13,7 +13,7 @@ There are 3 numbers in a Scrapy version: *A.B.C*
   large changes.
 * *B* is the release number. This will include many changes including features
   and things that possibly break backward compatibility, although we strive to
-  keep theses cases at a minimum.
+  keep these cases at a minimum.
 * *C* is the bugfix release number.
 
 Backward-incompatibilities are explicitly mentioned in the :ref:`release notes <news>`,

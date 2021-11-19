@@ -41,7 +41,7 @@ class CaselessDict(dict):
         return key.lower()
 
     def normvalue(self, value):
-        """Method to normalize values prior to be setted"""
+        """Method to normalize values prior to be set"""
         return value
 
     def get(self, key, def_val=None):
