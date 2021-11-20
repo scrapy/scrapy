@@ -1,3 +1,4 @@
+import logging
 import random
 from time import time
 from datetime import datetime
@@ -12,6 +13,7 @@ from scrapy import signals
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
 
+logger = logging.getLogger(__name__)
 
 class Slot:
     """Downloader slot"""
@@ -106,7 +108,7 @@ class Downloader:
             randomize_delay = self.per_slot_settings.get(key, {}).get('randomize_delay', self.randomize_delay)
             new_slot = Slot(conc, delay, randomize_delay)
             self.slots[key] = new_slot
-
+            logger.debug(f"Downloader slot created {'from per slot settings' if key in self.per_slot_settings.keys() else ''}: {new_slot}")
 
         return key, self.slots[key]
 
