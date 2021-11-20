@@ -108,7 +108,8 @@ class Downloader:
             randomize_delay = self.per_slot_settings.get(key, {}).get('randomize_delay', self.randomize_delay)
             new_slot = Slot(conc, delay, randomize_delay)
             self.slots[key] = new_slot
-            logger.debug(f"Downloader slot created {'from per slot settings' if key in self.per_slot_settings.keys() else ''}: {new_slot}")
+            logger.debug(
+                f"Downloader slot '{key}' - created {'(from per slot settings)' if key in self.per_slot_settings.keys() else ''}: {new_slot}")
 
         return key, self.slots[key]
 
@@ -205,4 +206,7 @@ class Downloader:
         mintime = time() - age
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
-                self.slots.pop(key).close()
+                inactive_slot = self.slots.pop(key)
+                inactive_slot.close()
+                logger.debug(
+                    f"Downloader slot '{key}' - closed {'(from per slot settings)' if key in self.per_slot_settings.keys() else ''} : {inactive_slot}")
