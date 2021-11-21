@@ -87,7 +87,7 @@ def get_retry_request(
     """
     settings = spider.crawler.settings
     stats = spider.crawler.stats
-    request_flags = f' {request.flags if request.flags else ""}'
+    request_flags = f' {request.flags}' if request.flags else ""
     retry_times = request.meta.get('retry_times', 0) + 1
     if max_retry_times is None:
         max_retry_times = request.meta.get('max_retry_times')
