@@ -87,6 +87,7 @@ def get_retry_request(
     """
     settings = spider.crawler.settings
     stats = spider.crawler.stats
+    request_flags = f' {request.flags if request.flags else ""}'
     retry_times = request.meta.get('retry_times', 0) + 1
     if max_retry_times is None:
         max_retry_times = request.meta.get('max_retry_times')
@@ -94,8 +95,8 @@ def get_retry_request(
             max_retry_times = settings.getint('RETRY_TIMES')
     if retry_times <= max_retry_times:
         logger.debug(
-            "Retrying %(request)s (failed %(retry_times)d times): %(reason)s",
-            {'request': request, 'retry_times': retry_times, 'reason': reason},
+            "Retrying %(request)s%(flags)s (failed %(retry_times)d times): %(reason)s",
+            {'request': request, 'flags': request_flags, 'retry_times': retry_times, 'reason': reason},
             extra={'spider': spider}
         )
         new_request: Request = request.copy()
@@ -116,9 +117,9 @@ def get_retry_request(
     else:
         stats.inc_value(f'{stats_base_key}/max_reached')
         logger.error(
-            "Gave up retrying %(request)s (failed %(retry_times)d times): "
+            "Gave up retrying %(request)s%(flags)s (failed %(retry_times)d times): "
             "%(reason)s",
-            {'request': request, 'retry_times': retry_times, 'reason': reason},
+            {'request': request, 'flags': request_flags, 'retry_times': retry_times, 'reason': reason},
             extra={'spider': spider},
         )
         return None
