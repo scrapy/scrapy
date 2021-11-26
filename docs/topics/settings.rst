@@ -1643,6 +1643,11 @@ default reactor defined by Twisted for the current platform will be used. This
 is to maintain backward compatibility and avoid possible problems caused by
 using a non-default reactor.
 
+.. note::
+    This setting has no effect in a spider
+    :attr:`~scrapy.Spider.custom_settings` attribute because it needs to be
+    read very early.
+
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
