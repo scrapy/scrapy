@@ -51,7 +51,7 @@ chapter <topics-items>`::
     from scrapy.loader import ItemLoader
     from myproject.items import Product
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         l = ItemLoader(item=Product(), response=response)
         l.add_xpath('name', '//div[@class="product_name"]')
         l.add_xpath('name', '//div[@class="product_title"]')

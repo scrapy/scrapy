@@ -99,7 +99,7 @@ This is the code for our first Spider. Save it in a file named
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             page = response.url.split("/")[-2]
             filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
@@ -188,7 +188,7 @@ for your spider::
             'http://quotes.toscrape.com/page/2/',
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             page = response.url.split("/")[-2]
             filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
@@ -448,7 +448,7 @@ in the callback, as you can see below::
             'http://quotes.toscrape.com/page/2/',
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').get(),
@@ -552,7 +552,7 @@ page, extracting data from it::
             'http://quotes.toscrape.com/page/1/',
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').get(),
@@ -603,7 +603,7 @@ As a shortcut for creating Request objects you can use
             'http://quotes.toscrape.com/page/1/',
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').get(),
@@ -656,7 +656,7 @@ this time for scraping author information::
 
         start_urls = ['http://quotes.toscrape.com/']
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             author_page_links = response.css('.author + a')
             yield from response.follow_all(author_page_links, self.parse_author)
 
@@ -733,7 +733,7 @@ with a specific tag, building the URL based on the argument::
                 url = url + 'tag/' + tag
             yield scrapy.Request(url, self.parse)
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').get(),

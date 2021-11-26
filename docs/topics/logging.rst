@@ -103,7 +103,7 @@ instance, which can be accessed and used like this::
         name = 'myspider'
         start_urls = ['https://scrapy.org']
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             self.logger.info('Parse function called on %s', response.url)
 
 That logger is created using the Spider's name, but you can use any custom
@@ -119,7 +119,7 @@ Python logger you want. For example::
         name = 'myspider'
         start_urls = ['https://scrapy.org']
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             logger.info('Parse function called on %s', response.url)
 
 .. _topics-logging-configuration:

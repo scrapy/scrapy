@@ -13,7 +13,7 @@ and check various constraints for how the callback processes the response. Each
 contract is prefixed with an ``@`` and included in the docstring. See the
 following example::
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         """ This function parses a sample response. Some contracts are mingled
         with this docstring.
 

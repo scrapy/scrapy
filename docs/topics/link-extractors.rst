@@ -20,7 +20,7 @@ You can also use link extractors in regular spiders. For example, you can instan
 :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` into a class
 variable in your spider, and use it from your spider callbacks::
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         for link in self.link_extractor.extract_links(response):
             yield Request(link.url, callback=self.parse)
 

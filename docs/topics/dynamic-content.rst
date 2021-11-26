@@ -259,7 +259,7 @@ The following is a simple snippet to illustrate its usage within a Scrapy spider
         name = "playwright"
         start_urls = ["data:,"]  # avoid using the default Scrapy downloader
 
-        async def parse(self, response):
+        async def parse(self, response, **kwargs):
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch()
                 page = await browser.new_page()

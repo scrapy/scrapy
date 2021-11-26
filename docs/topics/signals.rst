@@ -42,7 +42,7 @@ Here is a simple example showing how you can catch signals and perform some acti
             spider.logger.info('Spider closed: %s', spider.name)
 
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             pass
 
 .. _signal-deferred:
@@ -80,7 +80,7 @@ Let's take an example::
             # deferred (d) is fired
             return d
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {
                     'text': quote.css('span.text::text').get(),

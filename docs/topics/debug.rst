@@ -17,7 +17,7 @@ Consider the following Scrapy spider below::
             'http://example.com/page2',
             )
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             # <processing code not shown>
             # collect `item_urls` 
             for item_url in item_urls:

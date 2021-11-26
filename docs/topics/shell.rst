@@ -255,7 +255,7 @@ Here's an example of how you would call it from your spider::
             "http://example.net",
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             # We want to inspect one specific response.
             if ".org" in response.url:
                 from scrapy.shell import inspect_response

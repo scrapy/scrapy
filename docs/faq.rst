@@ -49,7 +49,7 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
             'http://www.example.com/',
         )
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             # use lxml to get decent HTML parsing speed
             soup = BeautifulSoup(response.text, 'lxml')
             yield {

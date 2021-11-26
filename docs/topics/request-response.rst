@@ -253,7 +253,7 @@ The following example shows how to achieve this by using the
 
 ::
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         request = scrapy.Request('http://www.example.com/index.html',
                                  callback=self.parse_page2,
                                  cb_kwargs=dict(main_url=response.url))
@@ -345,7 +345,7 @@ accessing arguments to the callback functions so you can process further
 based on the arguments in the errback. The following example shows how to
 achieve this by using ``Failure.request.cb_kwargs``::
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         request = scrapy.Request('http://www.example.com/index.html',
                                  callback=self.parse_page2,
                                  errback=self.errback_page2,
@@ -456,7 +456,7 @@ signals will stop the download of a given response. See the following example::
             crawler.signals.connect(spider.on_bytes_received, signal=scrapy.signals.bytes_received)
             return spider
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             # 'last_chars' show that the full response was not downloaded
             yield {"len": len(response.text), "last_chars": response.text[-40:]}
 
@@ -612,7 +612,7 @@ method for this job. Here's an example spider which uses it::
         name = 'example.com'
         start_urls = ['http://www.example.com/users/login.php']
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             return scrapy.FormRequest.from_response(
                 response,
                 formdata={'username': 'john', 'password': 'secret'},

@@ -135,7 +135,7 @@ In a spider, the settings are available through ``self.settings``::
         name = 'myspider'
         start_urls = ['http://example.com']
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             print(f"Existing settings: {self.settings.attributes.keys()}")
 
 .. note::
@@ -1601,7 +1601,7 @@ In order to use the reactor installed by Scrapy::
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {'text': quote.css('span.text::text').get()}
 
@@ -1629,7 +1629,7 @@ which raises :exc:`Exception`, becomes::
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for quote in response.css('div.quote'):
                 yield {'text': quote.css('span.text::text').get()}
 

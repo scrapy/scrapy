@@ -3320,7 +3320,7 @@ instead.
         url = scrapy.Field()
 
     class MySpider(scrapy.Spider):
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             return MyItem(url=response.url)
 
 *New version*
@@ -3328,7 +3328,7 @@ instead.
 ::
 
     class MySpider(scrapy.Spider):
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             return {'url': response.url}
 
 Per-spider settings (GSoC 2014)
@@ -3381,7 +3381,7 @@ events:
 ::
 
     class MySpider(scrapy.Spider):
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             self.logger.info('Response received')
 
 Read more in the logging documentation: :ref:`topics-logging`

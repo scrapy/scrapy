@@ -216,7 +216,7 @@ Let's see an example::
             'http://www.example.com/3.html',
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             self.logger.info('A response from %s just arrived!', response.url)
 
 Return multiple Requests and items from a single callback::
@@ -232,7 +232,7 @@ Return multiple Requests and items from a single callback::
             'http://www.example.com/3.html',
         ]
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for h3 in response.xpath('//h3').getall():
                 yield {"title": h3}
 
@@ -254,7 +254,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
             yield scrapy.Request('http://www.example.com/2.html', self.parse)
             yield scrapy.Request('http://www.example.com/3.html', self.parse)
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             for h3 in response.xpath('//h3').getall():
                 yield MyItem(title=h3)
 
@@ -774,7 +774,7 @@ Simplest example: process all urls discovered through sitemaps using the
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/sitemap.xml']
 
-        def parse(self, response):
+        def parse(self, response, **kwargs):
             pass # ... scrape item here ...
 
 Process some urls with certain callback and other urls with a different
