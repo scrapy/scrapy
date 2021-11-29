@@ -223,7 +223,7 @@ class GCSFilesStore:
             else:
                 return {}
 
-        return threads.deferToThread(self.bucket.get_blob, path).addCallback(_onsuccess)
+        return threads.deferToThread(self.bucket.get_blob, self.prefix + path).addCallback(_onsuccess)
 
     def _get_content_type(self, headers):
         if headers and 'Content-Type' in headers:
