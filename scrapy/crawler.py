@@ -278,7 +278,6 @@ class CrawlerProcess(CrawlerRunner):
 
     def __init__(self, settings=None, install_root_handler=True):
         super().__init__(settings)
-        install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
 
@@ -318,6 +317,7 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
+        install_shutdown_handlers(self._signal_shutdown)
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
         resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
         resolver.install_on_reactor()
