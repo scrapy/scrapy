@@ -67,7 +67,7 @@ this:
    the :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
    to crawl.
 
-9. The process repeats (from step 1) until there are no more requests from the
+9. The process repeats (from step 3) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
 
 Components
