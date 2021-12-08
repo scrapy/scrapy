@@ -145,8 +145,11 @@ What's next?
 
 The next steps for you are to :ref:`install Scrapy <intro-install>`,
 :ref:`follow through the tutorial <intro-tutorial>` to learn how to create
-a full-blown Scrapy project and `join the community`_. Thanks for your
-interest!
+a full-blown Scrapy project and `join the community`_.
+
+For video versions of the intro, please see `video introduction <https://blogs.oregonstate.edu/scrapy/2021/12/05/introduction-to-scrapy/>`_
+
+Thanks for your interest!
 
 .. _join the community: https://scrapy.org/community/
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
