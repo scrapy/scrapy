@@ -13,8 +13,6 @@ class AutoThrottle:
         if not crawler.settings.getbool('AUTOTHROTTLE_ENABLED'):
             raise NotConfigured
 
-        self.debug = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")
-        self.target_concurrency = crawler.settings.getfloat("AUTOTHROTTLE_TARGET_CONCURRENCY")
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(self._response_downloaded, signal=signals.response_downloaded)
 
@@ -45,7 +43,7 @@ class AutoThrottle:
 
         olddelay = slot.delay
         self._adjust_delay(slot, latency, response)
-        if self.debug:
+        if self.crawler.settings.getbool("AUTOTHROTTLE_DEBUG"):
             diff = slot.delay - olddelay
             size = len(response.body)
             conc = len(slot.transferring)
@@ -71,7 +69,7 @@ class AutoThrottle:
         # If a server needs `latency` seconds to respond then
         # we should send a request each `latency/N` seconds
         # to have N requests processed in parallel
-        target_delay = latency / self.target_concurrency
+        target_delay = latency / self.crawler.settings.getfloat("AUTOTHROTTLE_TARGET_CONCURRENCY")
 
         # Adjust the delay to make it closer to target_delay
         new_delay = (slot.delay + target_delay) / 2.0
