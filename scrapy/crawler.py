@@ -297,7 +297,7 @@ class CrawlerProcess(CrawlerRunner):
                     {'signame': signame})
         reactor.callFromThread(self._stop_reactor)
 
-    def start(self, stop_after_crawl=True):
+    def start(self, stop_after_crawl=True, install_signal_handlers=True):
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
         size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
@@ -308,6 +308,9 @@ class CrawlerProcess(CrawlerRunner):
 
         :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
+
+        :param bool install_signal_handlers: whether to install the shutdown
+            handlers (default: True)
         """
         from twisted.internet import reactor
         if stop_after_crawl:
@@ -317,7 +320,8 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        install_shutdown_handlers(self._signal_shutdown)
+        if install_signal_handlers:
+            install_shutdown_handlers(self._signal_shutdown)
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
         resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
         resolver.install_on_reactor()
