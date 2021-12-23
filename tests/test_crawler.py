@@ -7,7 +7,6 @@ import warnings
 from unittest import skipIf
 
 from pytest import raises, mark
-from testfixtures import LogCapture
 from twisted import version as twisted_version
 from twisted.internet import defer
 from twisted.python.versions import Version
