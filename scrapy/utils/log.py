@@ -152,7 +152,6 @@ def log_scrapy_info(settings: Settings) -> None:
         if name != "Scrapy"
     ]
     logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
-    log_reactor_info()
 
 
 def log_reactor_info() -> None:

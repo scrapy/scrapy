@@ -271,6 +271,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         self.assertEqual(runner.bootstrap_failed, True)
 
+    @defer.inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
             CrawlerRunner(settings={
@@ -279,9 +280,10 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                CrawlerRunner(settings={
+                runner = CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 })
+                yield runner.crawl(NoRequestsSpider)
 
     @defer.inlineCallbacks
     # https://twistedmatrix.com/trac/ticket/9766
@@ -301,6 +303,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
                     runner = CrawlerProcess(settings={
                         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                     })
+                    yield runner.crawl(NoRequestsSpider)
 
     @defer.inlineCallbacks
     def test_crawler_process_asyncio_enabled_false(self):
