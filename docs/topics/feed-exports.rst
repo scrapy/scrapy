@@ -751,7 +751,7 @@ source spider in the feed URI:
 
         # myproject/utils.py
         def uri_params(params, spider):
-            return {**params, 'spider_name': spider.name}
+            params.update({'spider_name': spider.name})
 
 #.  Point :setting:`FEED_URI_PARAMS` to that function in your settings::
 
