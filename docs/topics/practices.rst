@@ -102,6 +102,17 @@ reactor after ``MySpider`` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run() # the script will block here until the crawling is finished
 
+.. note::
+    .. versionchanged:: VERSION
+
+    The Twisted reactor is now installed when
+    :meth:`~scrapy.crawler.CrawlerProcess.crawl` is first called, not when a
+    :class:`scrapy.crawler.CrawlerProcess` object is created. Because of this,
+    :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` are now
+    honored in :attr:`~scrapy.Spider.custom_settings`. In older Scrapy versions
+    they are silently ignored when set there and you need to set these settings
+    in some other way.
+
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
 .. _run-multiple-spiders:
@@ -192,6 +203,25 @@ Same example but running the spiders sequentially by chaining the deferreds:
 
     crawl()
     reactor.run() # the script will block here until the last crawl call is finished
+
+Different spiders can set different values for the same setting, but when they
+run in the same process it may be impossible, by design or because of some
+limitations, to use these different values. What happens in practice is
+different for different settings:
+
+* :setting:`SPIDER_LOADER_CLASS` and the ones used by its value
+  (:setting:`SPIDER_MODULES`, :setting:`SPIDER_LOADER_WARN_ONLY` for the
+  default one) cannot be read from the per-spider settings. These are applied
+  when the :class:`~scrapy.crawler.CrawlerRunner` or
+  :class:`~scrapy.crawler.CrawlerProcess` object is created.
+* For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` the first
+  available value is used, and if a spider requests a different reactor an
+  exception will be raised. These are applied when the reactor is installed.
+* For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER` and the
+  ones used by the resolver (:setting:`DNSCACHE_ENABLED`,
+  :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy)
+  the first available value is used. These are applied when the reactor is
+  started.
 
 .. seealso:: :ref:`run-from-script`.
 
