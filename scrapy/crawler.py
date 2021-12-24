@@ -23,6 +23,7 @@ from scrapy.settings import overridden_settings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.log import (
     configure_logging,
+    failure_to_exc_info,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
     log_scrapy_info,
@@ -195,6 +196,10 @@ class CrawlerRunner:
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
+
+        d.addErrback(lambda f: logger.error(
+            f.value, exc_info=failure_to_exc_info(f))
+        )
 
         def _done(result):
             self.crawlers.discard(crawler)
