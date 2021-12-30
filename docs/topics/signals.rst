@@ -51,12 +51,12 @@ Deferred signal handlers
 ========================
 
 Some signals support returning :class:`~twisted.internet.defer.Deferred`
-objects from their handlers, allowing you to run asynchronous code that
-does not block Scrapy. If a signal handler returns a
-:class:`~twisted.internet.defer.Deferred`, Scrapy waits for that
-:class:`~twisted.internet.defer.Deferred` to fire.
+or :term:`awaitable objects <awaitable>` from their handlers, allowing
+you to run asynchronous code that does not block Scrapy. If a signal
+handler returns one of these objects, Scrapy waits for that asynchronous
+operation to finish.
 
-Let's take an example::
+Let's take an example using :ref:`coroutines <topics-coroutines>`::
 
     class SignalSpider(scrapy.Spider):
         name = 'signals'
@@ -68,17 +68,15 @@ Let's take an example::
             crawler.signals.connect(spider.item_scraped, signal=signals.item_scraped)
             return spider
 
-        def item_scraped(self, item):
+        async def item_scraped(self, item):
             # Send the scraped item to the server
-            d = treq.post(
+            response = await treq.post(
                 'http://example.com/post',
                 json.dumps(item).encode('ascii'),
                 headers={b'Content-Type': [b'application/json']}
             )
 
-            # The next item will be scraped only after
-            # deferred (d) is fired
-            return d
+            return response
 
         def parse(self, response):
             for quote in response.css('div.quote'):
@@ -89,7 +87,7 @@ Let's take an example::
                 }
 
 See the :ref:`topics-signals-ref` below to know which signals support
-:class:`~twisted.internet.defer.Deferred`.
+:class:`~twisted.internet.defer.Deferred` and :term:`awaitable objects <awaitable>`.
 
 .. _topics-signals-ref:
 
