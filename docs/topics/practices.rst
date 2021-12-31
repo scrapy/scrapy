@@ -102,17 +102,6 @@ reactor after ``MySpider`` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run() # the script will block here until the crawling is finished
 
-.. note::
-    .. versionchanged:: VERSION
-
-    The Twisted reactor is now installed when
-    :meth:`~scrapy.crawler.CrawlerProcess.crawl` is first called, not when a
-    :class:`scrapy.crawler.CrawlerProcess` object is created. Because of this,
-    :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` are now
-    honored in :attr:`~scrapy.Spider.custom_settings`. In older Scrapy versions
-    they are silently ignored when set there and you need to set these settings
-    in some other way.
-
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
 .. _run-multiple-spiders:
