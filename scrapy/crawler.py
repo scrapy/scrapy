@@ -71,17 +71,18 @@ class Crawler:
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
 
+        reactor_class = self.settings.get("TWISTED_REACTOR")
         if init_reactor:
             # this needs to be done after the spider settings are merged,
             # but before something imports twisted.internet.reactor
-            if self.settings.get("TWISTED_REACTOR"):
-                install_reactor(self.settings["TWISTED_REACTOR"], self.settings["ASYNCIO_EVENT_LOOP"])
+            if reactor_class:
+                install_reactor(reactor_class, self.settings["ASYNCIO_EVENT_LOOP"])
             else:
                 from twisted.internet import default
                 default.install()
             log_reactor_info()
-        if self.settings.get("TWISTED_REACTOR"):
-            verify_installed_reactor(self.settings["TWISTED_REACTOR"])
+        if reactor_class:
+            verify_installed_reactor(reactor_class)
 
         self.extensions = ExtensionManager.from_crawler(self)
 
