@@ -39,15 +39,15 @@ use it instead of the default asyncio event loop.
 Windows-specific notes
 ======================
 
-The Windows implementation of `asyncio` can use two event loop implementation:
-:class:`~asyncio.SelectorEventLoop` (default before Python 3.8, required when
-using Twisted) and :class:`~asyncio.ProactorEventLoop` (default since Python
-3.8, cannot work with Twisted). So on Python 3.8+ the event loop class needs
-to be changed. Scrapy since VERSION does this automatically when you change the
-:setting:`TWISTED_REACTOR` setting or call
+The Windows implementation of :mod:`asyncio` can use two event loop
+implementations: :class:`~asyncio.SelectorEventLoop` (default before Python
+3.8, required when using Twisted) and :class:`~asyncio.ProactorEventLoop`
+(default since Python 3.8, cannot work with Twisted). So on Python 3.8+ the
+event loop class needs to be changed. Scrapy since VERSION does this
+automatically when you change the :setting:`TWISTED_REACTOR` setting or call
 :func:`~scrapy.utils.reactor.install_reactor`, but if you install the reactor
-by other means or use older Scrapy you need to call the following code before
-installing the reactor::
+by other means or use an older Scrapy version you need to call the following
+code before installing the reactor::
 
     import asyncio
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
