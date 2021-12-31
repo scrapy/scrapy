@@ -1,6 +1,7 @@
 import contextlib
 import os
 import shutil
+import sys
 import tempfile
 from typing import Optional, Type
 from unittest import mock
@@ -287,6 +288,12 @@ class HttpTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider_nodata_rcvd(self):
+        if self.reactor_pytest == "asyncio" and sys.platform == "win32":
+            # https://twistedmatrix.com/trac/ticket/10279
+            raise unittest.SkipTest(
+                "This test produces DirtyReactorAggregateError on Windows with asyncio"
+            )
+
         # client connects but no data is received
         spider = Spider('foo')
         meta = {'download_timeout': 0.5}
@@ -296,6 +303,11 @@ class HttpTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider_server_hangs(self):
+        if self.reactor_pytest == "asyncio" and sys.platform == "win32":
+            # https://twistedmatrix.com/trac/ticket/10279
+            raise unittest.SkipTest(
+                "This test produces DirtyReactorAggregateError on Windows with asyncio"
+            )
         # client connects, server send headers and some body bytes but hangs
         spider = Spider('foo')
         meta = {'download_timeout': 0.5}
@@ -1055,6 +1067,10 @@ class BaseFTPTestCase(unittest.TestCase):
 class FTPTestCase(BaseFTPTestCase):
 
     def test_invalid_credentials(self):
+        if self.reactor_pytest == "asyncio" and sys.platform == "win32":
+            raise unittest.SkipTest(
+                "This test produces DirtyReactorAggregateError on Windows with asyncio"
+            )
         from twisted.protocols.ftp import ConnectionLost
 
         meta = dict(self.req_meta)
