@@ -9,7 +9,7 @@ from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
 from scrapy.utils.misc import create_instance, load_object
-from scrapy.utils.defer import process_parallel, process_chain, process_chain_both
+from scrapy.utils.defer import process_parallel, process_chain
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +71,6 @@ class MiddlewareManager:
     def _process_chain(self, methodname: str, obj, *args) -> Deferred:
         methods = cast(Iterable[Callable], self.methods[methodname])
         return process_chain(methods, obj, *args)
-
-    def _process_chain_both(self, cb_methodname: str, eb_methodname: str, obj, *args) -> Deferred:
-        cb_methods = cast(Iterable[Callable], self.methods[cb_methodname])
-        eb_methods = cast(Iterable[Callable], self.methods[eb_methodname])
-        return process_chain_both(cb_methods, eb_methods, obj, *args)
 
     def open_spider(self, spider: Spider) -> Deferred:
         return self._process_parallel('open_spider', spider)
