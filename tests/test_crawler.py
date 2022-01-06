@@ -6,7 +6,6 @@ import sys
 import warnings
 
 from pytest import raises, mark
-from testfixtures import LogCapture
 from twisted import version as twisted_version
 from twisted.internet import defer
 from twisted.python.versions import Version
@@ -270,6 +269,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         self.assertEqual(runner.bootstrap_failed, True)
 
+    @defer.inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == 'asyncio':
             CrawlerRunner(settings={
@@ -278,32 +278,10 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
-                CrawlerRunner(settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                })
-
-    @defer.inlineCallbacks
-    def test_crawler_process_asyncio_enabled_true(self):
-        with LogCapture(level=logging.DEBUG) as log:
-            if self.reactor_pytest == 'asyncio':
-                runner = CrawlerProcess(settings={
+                runner = CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 })
                 yield runner.crawl(NoRequestsSpider)
-                self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
-            else:
-                msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
-                with self.assertRaisesRegex(Exception, msg):
-                    runner = CrawlerProcess(settings={
-                        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                    })
-
-    @defer.inlineCallbacks
-    def test_crawler_process_asyncio_enabled_false(self):
-        runner = CrawlerProcess(settings={"TWISTED_REACTOR": None})
-        with LogCapture(level=logging.DEBUG) as log:
-            yield runner.crawl(NoRequestsSpider)
-            self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", str(log))
 
 
 class ScriptRunnerMixin:
@@ -371,6 +349,21 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_reactor_asyncio_custom_settings(self):
+        log = self.run_script("twisted_reactor_custom_settings.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_reactor_asyncio_custom_settings_same(self):
+        log = self.run_script("twisted_reactor_custom_settings_same.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_reactor_asyncio_custom_settings_conflict(self):
+        log = self.run_script("twisted_reactor_custom_settings_conflict.py")
+        self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
+        self.assertIn("(twisted.internet.selectreactor.SelectReactor) does not match the requested one", log)
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')

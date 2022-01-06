@@ -762,6 +762,7 @@ class MySpider(scrapy.Spider):
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
 
 
+@skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
 
     spider_filename = 'myspider.pyw'
@@ -774,35 +775,27 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_run_good_spider(self):
         super().test_run_good_spider()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider(self):
         super().test_runspider()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_dnscache_disabled(self):
         super().test_runspider_dnscache_disabled()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_log_level(self):
         super().test_runspider_log_level()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_log_short_names(self):
         super().test_runspider_log_short_names()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_no_spider_found(self):
         super().test_runspider_no_spider_found()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_output(self):
         super().test_output()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_overwrite_output(self):
         super().test_overwrite_output()
 
