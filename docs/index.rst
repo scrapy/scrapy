@@ -130,7 +130,6 @@ Built-in services
    topics/stats
    topics/email
    topics/telnetconsole
-   topics/webservice
 
 :doc:`topics/logging`
     Learn how to use Python's builtin logging on Scrapy.
@@ -143,9 +142,6 @@ Built-in services
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
-
-:doc:`topics/webservice`
-    Monitor and control a crawler using a web service.
 
 
 Solving specific problems
