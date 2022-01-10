@@ -3,8 +3,9 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 import os
-import webbrowser
+import re
 import tempfile
+import webbrowser
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
@@ -80,8 +81,9 @@ def open_in_browser(
     body = response.body
     if isinstance(response, HtmlResponse):
         if b'<base' not in body:
-            repl = f'<head><base href="{response.url}">'
-            body = body.replace(b'<head>', to_bytes(repl))
+            repl = fr'\1<base href="{response.url}">'
+            body = re.sub(b"<!--.*?-->", b"", body, flags=re.DOTALL)
+            body = re.sub(rb"(<head(?:>|\s.*?>))", to_bytes(repl), body)
         ext = '.html'
     elif isinstance(response, TextResponse):
         ext = '.txt'
