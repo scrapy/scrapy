@@ -674,9 +674,6 @@ class MySpider(scrapy.Spider):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
-    # https://twistedmatrix.com/trac/ticket/9766
-    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
-            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
@@ -699,15 +696,15 @@ class MySpider(scrapy.Spider):
         ])
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
-    # https://twistedmatrix.com/trac/ticket/9766
-    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
-            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_custom_asyncio_loop_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
         ])
         import asyncio
-        loop = asyncio.new_event_loop()
+        if sys.platform != 'win32':
+            loop = asyncio.new_event_loop()
+        else:
+            loop = asyncio.SelectorEventLoop()
         self.assertIn(f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}", log)
 
     def test_output(self):
@@ -765,6 +762,7 @@ class MySpider(scrapy.Spider):
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
 
 
+@skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
 
     spider_filename = 'myspider.pyw'
@@ -777,35 +775,27 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_run_good_spider(self):
         super().test_run_good_spider()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider(self):
         super().test_runspider()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_dnscache_disabled(self):
         super().test_runspider_dnscache_disabled()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_log_level(self):
         super().test_runspider_log_level()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_log_short_names(self):
         super().test_runspider_log_short_names()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_no_spider_found(self):
         super().test_runspider_no_spider_found()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_output(self):
         super().test_output()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_overwrite_output(self):
         super().test_overwrite_output()
 

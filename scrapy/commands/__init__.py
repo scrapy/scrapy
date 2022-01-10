@@ -43,14 +43,14 @@ class ScrapyCommand:
 
     def long_desc(self):
         """A long description of the command. Return short description when not
-        available. It cannot contain newlines, since contents will be formatted
+        available. It cannot contain newlines since contents will be formatted
         by optparser which removes newlines and wraps text.
         """
         return self.short_desc()
 
     def help(self):
         """An extensive help for the command. It will be shown when using the
-        "help" command. It can contain newlines, since no post-formatting will
+        "help" command. It can contain newlines since no post-formatting will
         be applied to its contents.
         """
         return self.long_desc()

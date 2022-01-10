@@ -1,3 +1,25 @@
+.. note::
+    .. versionchanged:: VERSION
+
+    The Twisted reactor is now installed when
+    :meth:`~scrapy.crawler.CrawlerProcess.crawl` is first called, not when a
+    :class:`scrapy.crawler.CrawlerProcess` object is created. Because of this,
+    :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` are now
+    honored in :attr:`~scrapy.Spider.custom_settings`. In older Scrapy versions
+    they are silently ignored when set there and you need to set these settings
+    in some other way.
+
+
+.. note::
+    .. versionchanged:: VERSION
+
+    Previously this setting had no effect in a spider
+    :attr:`~scrapy.Spider.custom_settings` attribute. Now it will be used, but
+    if you :ref:`run several spiders in one process <run-multiple-spiders>`,
+    they must not have different values for this setting, because they will use
+    a single reactor instance.
+
+
 .. _news:
 
 Release notes

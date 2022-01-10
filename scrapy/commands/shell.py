@@ -75,6 +75,6 @@ class Command(ScrapyCommand):
 
     def _start_crawler_thread(self):
         t = Thread(target=self.crawler_process.start,
-                   kwargs={'stop_after_crawl': False})
+                   kwargs={'stop_after_crawl': False, 'install_signal_handlers': False})
         t.daemon = True
         t.start()

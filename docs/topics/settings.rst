@@ -1638,10 +1638,9 @@ which raises :exc:`Exception`, becomes::
 
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will not attempt to install any specific reactor, and the
-default reactor defined by Twisted for the current platform will be used. This
-is to maintain backward compatibility and avoid possible problems caused by
-using a non-default reactor.
+means that Scrapy will install the default reactor defined by Twisted for the
+current platform. This is to maintain backward compatibility and avoid possible
+problems caused by using a non-default reactor.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
