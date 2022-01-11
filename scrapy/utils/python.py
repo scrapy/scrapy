@@ -10,7 +10,7 @@ import warnings
 import weakref
 from functools import partial, wraps
 from itertools import chain
-from typing import AsyncIterable, Iterable, Union
+from typing import AsyncGenerator, AsyncIterable, Iterable, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
@@ -359,7 +359,7 @@ class MutableChain(Iterable):
         return self.__next__()
 
 
-async def _async_chain(*iterables: Union[Iterable, AsyncIterable]):
+async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
     for it in iterables:
         async for o in as_async_generator(it):
             yield o

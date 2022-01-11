@@ -123,6 +123,15 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.Spider` object
 
+    .. method:: process_spider_output_async(response, result, spider)
+
+        .. versionadded:: VERSION
+
+        If exists, this methid will be called instead of
+        :meth:`process_spider_output` when ``result`` is an async iterable.
+        If this method exists, it must be a coroutine while
+        :meth:`process_spider_output` must not be a coroutine.
+
     .. method:: process_spider_exception(response, exception, spider)
 
         This method is called when a spider or :meth:`process_spider_output`

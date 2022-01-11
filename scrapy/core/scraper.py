@@ -192,7 +192,8 @@ class Scraper:
             spider=spider
         )
 
-    def handle_spider_output(self, result: Iterable, request: Request, response: Response, spider: Spider) -> Deferred:
+    def handle_spider_output(self, result: Union[Iterable, AsyncIterable], request: Request,
+                             response: Response, spider: Spider) -> Deferred:
         if not result:
             return defer_succeed(None)
         it: Union[Generator, AsyncGenerator]

@@ -8,7 +8,6 @@ import logging
 
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.asyncgen import _process_iterable_universal
 
 logger = logging.getLogger(__name__)
 
@@ -26,22 +25,20 @@ class UrlLengthMiddleware:
         return cls(maxlength)
 
     def process_spider_output(self, response, result, spider):
-        def _filter(request):
-            if isinstance(request, Request) and len(request.url) > self.maxlength:
-                logger.info(
-                    "Ignoring link (url length > %(maxlength)d): %(url)s ",
-                    {'maxlength': self.maxlength, 'url': request.url},
-                    extra={'spider': spider}
-                )
-                spider.crawler.stats.inc_value('urllength/request_ignored_count', spider=spider)
-                return False
-            else:
-                return True
+        return (r for r in result or () if self._filter(r, spider))
 
-        @_process_iterable_universal
-        async def process(result):
-            async for r in result or ():
-                if _filter(r):
-                    yield r
+    async def process_spider_output_async(self, response, result, spider):
+        async for r in result or ():
+            if self._filter(r, spider):
+                yield r
 
-        return process(result)
+    def _filter(self, request, spider):
+        if isinstance(request, Request) and len(request.url) > self.maxlength:
+            logger.info(
+                "Ignoring link (url length > %(maxlength)d): %(url)s ",
+                {'maxlength': self.maxlength, 'url': request.url},
+                extra={'spider': spider}
+            )
+            spider.crawler.stats.inc_value('urllength/request_ignored_count', spider=spider)
+            return False
+        return True

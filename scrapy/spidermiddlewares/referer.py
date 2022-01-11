@@ -11,7 +11,6 @@ from w3lib.url import safe_url_string
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.utils.asyncgen import _process_iterable_universal
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
@@ -334,19 +333,18 @@ class RefererMiddleware:
         return cls() if cls else self.default_policy()
 
     def process_spider_output(self, response, result, spider):
-        def _set_referer(r):
-            if isinstance(r, Request):
-                referrer = self.policy(response, r).referrer(response.url, r.url)
-                if referrer is not None:
-                    r.headers.setdefault('Referer', referrer)
-            return r
+        return (self._set_referer(r, response) for r in result or ())
 
-        @_process_iterable_universal
-        async def process(result):
-            async for r in result or ():
-                yield _set_referer(r)
+    async def process_spider_output_async(self, response, result, spider):
+        async for r in result or ():
+            yield self._set_referer(r, response)
 
-        return process(result)
+    def _set_referer(self, r, response):
+        if isinstance(r, Request):
+            referrer = self.policy(response, r).referrer(response.url, r.url)
+            if referrer is not None:
+                r.headers.setdefault('Referer', referrer)
+        return r
 
     def request_scheduled(self, request, spider):
         # check redirected request to patch "Referer" header if necessary

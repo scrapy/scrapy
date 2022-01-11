@@ -28,6 +28,7 @@ class RecoveryMiddleware:
 class RecoverySpider(Spider):
     name = 'RecoverySpider'
     custom_settings = {
+        'SPIDER_MIDDLEWARES_BASE': {},
         'SPIDER_MIDDLEWARES': {
             RecoveryMiddleware: 10,
         },
@@ -102,6 +103,13 @@ class GeneratorCallbackSpider(Spider):
         yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
+        yield {'test': 1}
+        yield {'test': 2}
+        raise ImportError()
+
+
+class AsyncGeneratorCallbackSpider(GeneratorCallbackSpider):
+    async def parse(self, response):
         yield {'test': 1}
         yield {'test': 2}
         raise ImportError()
@@ -357,6 +365,15 @@ class TestSpiderMiddleware(TestCase):
         exception is raised should be processed normally.
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
+        self.assertIn("Middleware: ImportError exception caught", str(log2))
+        self.assertIn("'item_scraped_count': 2", str(log2))
+
+    @defer.inlineCallbacks
+    def test_async_generator_callback(self):
+        """
+        Same as test_generator_callback but with an async callback.
+        """
+        log2 = yield self.crawl_log(AsyncGeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
         self.assertIn("'item_scraped_count': 2", str(log2))
 

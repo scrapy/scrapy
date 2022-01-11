@@ -35,11 +35,10 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
 -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-    method of :ref:`spider middlewares <custom-spider-middleware>`.
+    method of :ref:`spider middlewares <custom-spider-middleware>`. See
+    :ref:`async-spider-middlewares`.
 
     .. versionadded:: VERSION
-    .. note:: This method needs to be an async generator, not just a coroutine that
-              returns an iterable.
 
 Usage
 =====
@@ -106,8 +105,8 @@ Common use cases for asynchronous code include:
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);
-* calling asynchronous Scrapy methods like ``ExecutionEngine.download`` (see
-  :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
+* calling asynchronous Scrapy methods like :meth:`ExecutionEngine.download`
+  (see :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
 
@@ -119,59 +118,72 @@ Asynchronous spider middlewares
 .. versionadded:: VERSION
 .. note:: This currently applies to
           :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`.
+          In the future it will also apply to
+          :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests`.
 
 Middleware methods discussed here can take and return async iterables. They can
 return the same type of iterable or they can take a normal one and return an
 async one. If such method needs to return an async iterable it must be an async
 generator, not just a coroutine that returns an iterable.
 
-.. autofunction:: scrapy.utils.asyncgen.as_async_generator
+As the result of a middleware method is passed to the same method of the next
+middleware, it needs to be adapted if the second method expects a different
+type. Scrapy will do this transparently:
 
-In the simplest form that supports both sync and async input it can be written
-like this::
+* A normal iterable is wrapped into an async one which shouldn't cause any side
+  effects.
+* An async iterable is downgraded to a normal one by waiting until all results
+  are available and wrapping them in a normal iterable. This is problematic
+  because it pauses the normal middleware processing for this iterable and
+  because all results can be skipped if exceptions are raised during
+  processing. This case emits a warning and will be deprecated and then removed
+  in a later Scrapy version.
+* Async iterables returned from
+  :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_exception`
+  won't be downgraded, an exception will be raised if that is needed.
 
-    from scrapy.utils.asyncgen import as_async_generator
+As downgrading is undesirable, here is the proposed way to avoid it. If all
+middlewares, including 3rd-party ones, support async iterables as input, no
+downgrading will happen. But removing normal iterable support (making the
+method a coroutine) from a middleware published as a separate project or used
+internally in projects for older Scrapy versions breaks backwards
+compatibility. So, as an interim measure (it will be deprecated and then
+removed in a later Scrapy version), a middleware can provide both sync and
+async methods in the following form::
 
-    class ProcessSpiderOutputAsyncGenMiddleware:
-        async def process_spider_output(self, response, result, spider):
-            async for r in as_async_generator(result):
+    class UniversalSpiderMiddleware:
+        def process_spider_output(self, response, result, spider):
+            for r in result:
                 # ... do something with r
                 yield r
 
-If the middleware input (the callback result for ``process_spider_output``) is
-an async iterable, all middlewares that process it must support it. The
-built-in ones do, but the ones in your project and 3rd-party ones will need to
-be updated to support it, as the code that expects a normal iterable will break
-on an async one. If these middlewares receive an async iterable, they must
-return one as well. On the other hand, if they receive a normal iterable, they
-shouldn't break and ideally should return a normal iterable too. There can be
-several possible implementations of this.
+        async def process_spider_output_async(self, response, result, spider):
+            async for r in result:
+                # ... do something with r
+                yield r
 
-The simplest one, always converting normal iterables to async ones, is provided
-above. Because a result of a middleware method is passed to the same method of
-the next middleware, it's only possible to mix middlewares with synchronous and
-asynchronous implementations of the same method if all synchronous ones are
-called first (which isn't always possible).
+In this case normal and async iterables will be passed to the respective
+methods without any wrapping or downgrading, and in older versions of Scrapy
+the coroutine method will just be ignored. When the backwards compatibility is
+no longer needed the non-coroutine method can be dropped and the coroutine one
+renamed to the normal name. It may be possible to extract common code from both
+methods to reduce code duplication, as in the simplest case the only difference
+between them will be ``for`` vs ``async for``.
 
-Another option is to make separate methods for normal and async iterables and
-choose one at run time::
+So, to recap:
 
-    from inspect import isasyncgen
-
-    class ProcessSpiderOutputAsyncGenMiddleware:
-        def _normal_process_spider_output(self, response, result, spider):
-            # ... do something with normal result
-
-        async def _async_process_spider_output(self, response, result, spider):
-            # ... do the same with async result
-
-        def process_spider_output(self, response, result, spider):
-            if isasyncgen(result):
-                return self._async_process_spider_output(self, response, result, spider)
-            else:
-                return self._normal_process_spider_output(self, response, result, spider)
-
-If you are writing a middleware that you intend to publish or to use in many
-projects, this is likely the best way to implement it. It may be possible to
-extract common code from both methods to reduce code duplication, as in the
-simplest case the only difference between them will be ``for`` vs ``async for``.
+* If you don't intend to use async callbacks or middlewares containing async
+  code in your project, nothing should change for you yet. At some point in the
+  future some of the 3rd-party middlewares you use may drop backwards
+  compatibility, which shouldn't lead to immediate problems but may be a sign
+  to start converting your code to ``async def`` too.
+* If you maintain a middleware that can be used with projects you can't control
+  (e.g. one you published for other people to use, or one that needs to support
+  some old project that can't be modernized), we recommend adding a
+  ``process_spider_output_async`` method so that the amount of unnecessary
+  iterable conversions is reduced but no compatibility is broken.
+* If you use async callbacks, try to make sure all middlewares support them.
+  Note that you can modernize 3rd-party middlewares by subclassing them.
+* If you want to write and publish a middleware that requires async code, you
+  should write in the docs that the minimum support Scrapy version is VERSION
+  (maybe even check this at the run time, using :attr:`scrapy.__version__`).
