@@ -149,7 +149,7 @@ How can I prevent memory errors due to many allowed domains?
 ------------------------------------------------------------
 
 If you have a spider with a long list of
-:attr:`~scrapy.spiders.Spider.allowed_domains` (e.g. 50,000+), consider
+:attr:`~scrapy.Spider.allowed_domains` (e.g. 50,000+), consider
 replacing the default
 :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
 with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
@@ -157,7 +157,7 @@ less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
     instead joining the strings in
-    :attr:`~scrapy.spiders.Spider.allowed_domains` into a complex regular
+    :attr:`~scrapy.Spider.allowed_domains` into a complex regular
     expression.
 
 -   If you can `meet the installation requirements`_, use pyre2_ instead of
@@ -350,6 +350,7 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+
 .. _faq-split-item:
 
 How to split an item into multiple items in an item pipeline?
@@ -406,7 +407,18 @@ or :class:`~scrapy.signals.headers_received` signals and raising a
 :ref:`topics-stop-response-download` topic for additional information and examples.
 
 
+Running ``runspider`` I get ``error: No spider found in file: <filename>``
+--------------------------------------------------------------------------
+
+This may happen if your Scrapy project has a spider module with a name that
+conflicts with the name of one of the `Python standard library modules`_, such
+as ``csv.py`` or ``os.py``, or any `Python package`_ that you have installed.
+See :issue:`2680`.
+
+
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
+.. _Python standard library modules: https://docs.python.org/py-modindex.html
+.. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search

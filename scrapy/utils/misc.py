@@ -50,7 +50,7 @@ def load_object(path):
             return path
         else:
             raise TypeError("Unexpected argument type, expected string "
-                            "or object, got: %s" % type(path))
+                            f"or object, got: {type(path)}")
 
     try:
         dot = path.rindex('.')
@@ -138,7 +138,7 @@ def md5sum(file):
 
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and 'nofollow' in rel.split()
+    return rel is not None and 'nofollow' in rel.replace(',', ' ').split()
 
 
 def create_instance(objcls, settings, crawler, *args, **kwargs):

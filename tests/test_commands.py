@@ -3,6 +3,7 @@ import json
 import optparse
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -71,9 +72,14 @@ class ProjectTest(unittest.TestCase):
 
     def proc(self, *new_args, **popen_kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        p = subprocess.Popen(args, cwd=self.cwd, env=self.env,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             **popen_kwargs)
+        p = subprocess.Popen(
+            args,
+            cwd=popen_kwargs.pop('cwd', self.cwd),
+            env=self.env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **popen_kwargs,
+        )
 
         def kill_proc():
             p.kill()
@@ -89,11 +95,23 @@ class ProjectTest(unittest.TestCase):
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
+    def find_in_file(self, filename, regex):
+        """Find first pattern occurrence in file"""
+        pattern = re.compile(regex)
+        with open(filename, "r") as f:
+            for line in f:
+                match = pattern.search(line)
+                if match is not None:
+                    return match
+
 
 class StartprojectTest(ProjectTest):
 
     def test_startproject(self):
-        self.assertEqual(0, self.call('startproject', self.project_name))
+        p, out, err = self.proc('startproject', self.project_name)
+        print(out)
+        print(err, file=sys.stderr)
+        self.assertEqual(p.returncode, 0)
 
         assert exists(join(self.proj_path, 'scrapy.cfg'))
         assert exists(join(self.proj_path, 'testproject'))
@@ -127,6 +145,25 @@ class StartprojectTest(ProjectTest):
         self.assertEqual(1, self.call('startproject', 'sys'))
         self.assertEqual(2, self.call('startproject'))
         self.assertEqual(2, self.call('startproject', self.project_name, project_dir, 'another_params'))
+
+    def test_existing_project_dir(self):
+        project_dir = mkdtemp()
+        project_name = self.project_name + '_existing'
+        project_path = os.path.join(project_dir, project_name)
+        os.mkdir(project_path)
+
+        p, out, err = self.proc('startproject', project_name, cwd=project_dir)
+        print(out)
+        print(err, file=sys.stderr)
+        self.assertEqual(p.returncode, 0)
+
+        assert exists(join(abspath(project_path), 'scrapy.cfg'))
+        assert exists(join(abspath(project_path), project_name))
+        assert exists(join(join(abspath(project_path), project_name), '__init__.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'items.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'pipelines.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'settings.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'spiders', '__init__.py'))
 
 
 def get_permissions_dict(path, renamings=None, ignore=None):
@@ -455,6 +492,26 @@ class GenspiderCommandTest(CommandTest):
     def test_same_filename_as_existing_spider_force(self):
         self.test_same_filename_as_existing_spider(force=True)
 
+    def test_url(self, url='test.com', domain="test.com"):
+        self.assertEqual(0, self.call('genspider', '--force', 'test_name', url))
+        self.assertEqual(domain,
+                         self.find_in_file(join(self.proj_mod_path,
+                                                'spiders', 'test_name.py'),
+                                           r'allowed_domains\s*=\s*\[\'(.+)\'\]').group(1))
+        self.assertEqual(f'http://{domain}/',
+                         self.find_in_file(join(self.proj_mod_path,
+                                                'spiders', 'test_name.py'),
+                                           r'start_urls\s*=\s*\[\'(.+)\'\]').group(1))
+
+    def test_url_schema(self):
+        self.test_url('http://test.com', 'test.com')
+
+    def test_url_path(self):
+        self.test_url('test.com/some/other/page', 'test.com')
+
+    def test_url_schema_path(self):
+        self.test_url('https://test.com/some/other/page', 'test.com')
+
 
 class GenspiderStandaloneCommandTest(ProjectTest):
 
@@ -651,7 +708,7 @@ class MySpider(scrapy.Spider):
         ])
         import asyncio
         loop = asyncio.new_event_loop()
-        self.assertIn("Using asyncio event loop: %s.%s" % (loop.__module__, loop.__class__.__name__), log)
+        self.assertIn(f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}", log)
 
     def test_output(self):
         spider_code = """

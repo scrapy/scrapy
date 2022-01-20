@@ -79,12 +79,13 @@ class FSFilesStore:
 class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_SESSION_TOKEN = None
     AWS_ENDPOINT_URL = None
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
+    POLICY = 'private'  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
@@ -98,6 +99,7 @@ class S3FilesStore:
             's3',
             aws_access_key_id=self.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+            aws_session_token=self.AWS_SESSION_TOKEN,
             endpoint_url=self.AWS_ENDPOINT_URL,
             region_name=self.AWS_REGION_NAME,
             use_ssl=self.AWS_USE_SSL,
@@ -140,7 +142,7 @@ class S3FilesStore:
             **extra)
 
     def _headers_to_botocore_kwargs(self, headers):
-        """ Convert headers to botocore keyword agruments.
+        """ Convert headers to botocore keyword arguments.
         """
         # This is required while we need to support both boto and botocore.
         mapping = CaselessDict({
@@ -188,7 +190,7 @@ class GCSFilesStore:
     CACHE_CONTROL = 'max-age=172800'
 
     # The bucket's default object ACL will be applied to the object.
-    # Overriden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
     POLICY = None
 
     def __init__(self, uri):
@@ -289,7 +291,7 @@ class FilesPipeline(MediaPipeline):
     """Abstract pipeline that implement the file downloading
 
     This pipeline tries to minimize network transfers and file processing,
-    doing stat of the files and determining if file is new, uptodate or
+    doing stat of the files and determining if file is new, up-to-date or
     expired.
 
     ``new`` files are those that pipeline never processed and needs to be
@@ -349,6 +351,7 @@ class FilesPipeline(MediaPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_SESSION_TOKEN = settings['AWS_SESSION_TOKEN']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
         s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
         s3store.AWS_USE_SSL = settings['AWS_USE_SSL']

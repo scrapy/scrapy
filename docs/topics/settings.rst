@@ -67,7 +67,7 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.spiders.Spider.custom_settings` attribute::
+do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute::
 
     class MySpider(scrapy.Spider):
         name = 'myspider'
@@ -142,7 +142,7 @@ In a spider, the settings are available through ``self.settings``::
     The ``settings`` attribute is set in the base Spider class after the spider
     is initialized.  If you want to use the settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
-    :meth:`~scrapy.spiders.Spider.from_crawler` method.
+    :meth:`~scrapy.Spider.from_crawler` method.
 
 Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
 attribute of the Crawler that is passed to ``from_crawler`` method in
@@ -203,6 +203,19 @@ Default: ``None``
 
 The AWS secret key used by code that requires access to `Amazon Web services`_,
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
+.. setting:: AWS_SESSION_TOKEN
+
+AWS_SESSION_TOKEN
+-----------------
+
+Default: ``None``
+
+The AWS security token used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
+`temporary security credentials`_.
+
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
 
 .. setting:: AWS_ENDPOINT_URL
 
@@ -338,7 +351,7 @@ is non-zero, download delay is enforced per IP, not per domain.
 DEFAULT_ITEM_CLASS
 ------------------
 
-Default: ``'scrapy.item.Item'``
+Default: ``'scrapy.Item'``
 
 The default class that will be used for instantiating items in the :ref:`the
 Scrapy shell <topics-shell>`.
@@ -360,7 +373,7 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
 
 .. caution:: Cookies set via the ``Cookie`` header are not considered by the
     :ref:`cookies-mw`. If you need to set cookies for a request, use the
-    :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+    :class:`Request.cookies <scrapy.Request>` parameter. This is a known
     current limitation that is being worked on.
 
 .. setting:: DEPTH_LIMIT
@@ -384,8 +397,8 @@ Default: ``0``
 
 Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 
-An integer that is used to adjust the :attr:`~scrapy.http.Request.priority` of
-a :class:`~scrapy.http.Request` based on its depth.
+An integer that is used to adjust the :attr:`~scrapy.Request.priority` of
+a :class:`~scrapy.Request` based on its depth.
 
 The priority of a request is adjusted as follows::
 
@@ -816,14 +829,14 @@ The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function. In order to change
 the way duplicates are checked you could subclass ``RFPDupeFilter`` and
 override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.http.Request` object and return its fingerprint
+scrapy :class:`~scrapy.Request` object and return its fingerprint
 (a string).
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
 Be very careful about this however, because you can get into crawling loops.
 It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.http.Request` that should not be
+``True`` on the specific :class:`~scrapy.Request` that should not be
 filtered.
 
 .. setting:: DUPEFILTER_DEBUG
@@ -976,6 +989,16 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+.. setting:: JOBDIR
+
+JOBDIR
+------
+
+Default: ``''``
+
+A string indicating the directory for storing the state of a crawl when
+:ref:`pausing and resuming crawls <topics-jobs>`.
+
 .. setting:: LOG_ENABLED
 
 LOG_ENABLED
@@ -1002,6 +1025,16 @@ LOG_FILE
 Default: ``None``
 
 File name to use for logging output. If ``None``, standard error will be used.
+
+.. setting:: LOG_FILE_APPEND
+
+LOG_FILE_APPEND
+---------------
+
+Default: ``True``
+
+If ``False``, the log file specified with :setting:`LOG_FILE` will be
+overwritten (discarding the output from previous runs, if any).
 
 .. setting:: LOG_FORMAT
 
@@ -1543,7 +1576,7 @@ If a reactor is already installed,
 
 :meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
 :exc:`Exception` if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:setting:`TWISTED_REACTOR` setting; therefore, having top-level
 :mod:`~twisted.internet.reactor` imports in project files and imported
 third-party libraries will make Scrapy raise :exc:`Exception` when
 it checks which reactor is installed.
@@ -1622,8 +1655,19 @@ Default: ``2083``
 
 Scope: ``spidermiddlewares.urllength``
 
-The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+The maximum URL length to allow for crawled URLs.
+
+This setting can act as a stopping condition in case of URLs of ever-increasing 
+length, which may be caused for example by a programming error either in the 
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and 
+:setting:`DEPTH_LIMIT`.
+
+Use ``0`` to allow URLs of any length.
+
+The default value is copied from the `Microsoft Internet Explorer maximum URL 
+length`_, even though this setting exists for different reasons.
+
+.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
@@ -1635,7 +1679,7 @@ Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 The default User-Agent to use when crawling, unless overridden. This user agent is
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
-there is no overridding User-Agent header specified for the request.
+there is no overriding User-Agent header specified for the request.
 
 
 Settings documented elsewhere:

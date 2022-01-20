@@ -92,6 +92,7 @@ class ImagesPipeline(FilesPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_SESSION_TOKEN = settings['AWS_SESSION_TOKEN']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
         s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
         s3store.AWS_USE_SSL = settings['AWS_USE_SSL']

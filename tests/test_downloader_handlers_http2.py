@@ -219,7 +219,7 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     certfile = 'keys/localhost.crt'
 
     scheme = 'https'
-    host = u'127.0.0.1'
+    host = '127.0.0.1'
 
     expected_http_proxy_request_body = b'/'
 
@@ -248,7 +248,7 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
             self.assertEqual(response.url, request.url)
             self.assertEqual(response.body, b'/')
 
-        http_proxy = '%s?noconnect' % self.getURL('')
+        http_proxy = f"{self.getURL('')}?noconnect"
         request = Request('https://example.com', meta={'proxy': http_proxy})
         with self.assertWarnsRegex(
             Warning,
