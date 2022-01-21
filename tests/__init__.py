@@ -1,7 +1,7 @@
 """
 tests: this package contains all Scrapy unittests
 
-see https://doc.scrapy.org/en/latest/contributing.html#running-tests
+see https://docs.scrapy.org/en/latest/contributing.html#running-tests
 """
 
 import os
@@ -20,11 +20,6 @@ if 'COV_CORE_CONFIG' in os.environ:
     os.environ['COVERAGE_FILE'] = os.path.join(_sourceroot, '.coverage')
     os.environ['COV_CORE_CONFIG'] = os.path.join(_sourceroot,
                                                  os.environ['COV_CORE_CONFIG'])
-
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
 
 tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                              'sample_data')

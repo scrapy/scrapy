@@ -1,10 +1,10 @@
+.. highlight:: none
+
 .. _topics-commands:
 
 =================
 Command line tool
 =================
-
-.. versionadded:: 0.10
 
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
@@ -27,7 +27,7 @@ in standard locations:
 1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
 2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
    for global (user-wide) settings, and
-3. ``scrapy.cfg`` inside a scrapy project's root (see next section).
+3. ``scrapy.cfg`` inside a Scrapy project's root (see next section).
 
 Settings from these files are merged in the listed order of preference:
 user-defined values have higher priority than system-wide defaults
@@ -37,7 +37,7 @@ Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
 
 * ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
-* ``SCRAPY_PROJECT``
+* ``SCRAPY_PROJECT`` (see :ref:`topics-project-envvar`)
 * ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
 
 .. _topics-project-structure:
@@ -66,10 +66,41 @@ structure by default, similar to this::
 
 The directory where the ``scrapy.cfg`` file resides is known as the *project
 root directory*. That file contains the name of the python module that defines
-the project settings. Here is an example::
+the project settings. Here is an example:
+
+.. code-block:: ini
 
     [settings]
     default = myproject.settings
+
+.. _topics-project-envvar:
+
+Sharing the root directory between projects
+===========================================
+
+A project root directory, the one that contains the ``scrapy.cfg``, may be
+shared by multiple Scrapy projects, each with its own settings module.
+
+In that case, you must define one or more aliases for those settings modules
+under ``[settings]`` in your ``scrapy.cfg`` file:
+
+.. code-block:: ini
+
+    [settings]
+    default = myproject1.settings
+    project1 = myproject1.settings
+    project2 = myproject2.settings
+
+By default, the ``scrapy`` command-line tool will use the ``default`` settings.
+Use the ``SCRAPY_PROJECT`` environment variable to specify a different project
+for ``scrapy`` to use::
+
+    $ scrapy settings --get BOT_NAME
+    Project 1 Bot
+    $ export SCRAPY_PROJECT=project2
+    $ scrapy settings --get BOT_NAME
+    Project 2 Bot
+
 
 Using the ``scrapy`` tool
 =========================
@@ -250,6 +281,8 @@ check
 
 Run contract checks.
 
+.. skip: start
+
 Usage examples::
 
     $ scrapy check -l
@@ -266,6 +299,8 @@ Usage examples::
 
     [FAILED] first_spider:parse
     >>> Returned 92 requests, expected 0..4
+
+.. skip: end
 
 .. command:: list
 
@@ -431,8 +466,11 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
+
+* ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
+  This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
 
 * ``--pipelines``: process items through pipelines
 
@@ -451,6 +489,12 @@ Supported options:
 
 * ``--verbose`` or ``-v``: display information for each depth level
 
+* ``--output`` or ``-o``: dump scraped items to a file
+
+  .. versionadded:: 2.3
+
+.. skip: start
+
 Usage example::
 
     $ scrapy parse http://www.example.com/ -c parse_item
@@ -458,12 +502,14 @@ Usage example::
 
     >>> STATUS DEPTH LEVEL 1 <<<
     # Scraped Items  ------------------------------------------------------------
-    [{'name': u'Example item',
-     'category': u'Furniture',
-     'length': u'12 cm'}]
+    [{'name': 'Example item',
+     'category': 'Furniture',
+     'length': '12 cm'}]
 
     # Requests  -----------------------------------------------------------------
     []
+
+.. skip: end
 
 
 .. command:: settings
@@ -518,8 +564,6 @@ and Platform info, which is useful for bug reports.
 bench
 -----
 
-.. versionadded:: 0.17
-
 * Syntax: ``scrapy bench``
 * Requires project: *no*
 
@@ -543,7 +587,9 @@ Default: ``''`` (empty string)
 A module to use for looking up custom Scrapy commands. This is used to add custom
 commands for your Scrapy project.
 
-Example::
+Example:
+
+.. code-block:: python
 
     COMMANDS_MODULE = 'mybot.commands'
 
@@ -552,13 +598,15 @@ Example::
 Register commands via setup.py entry points
 -------------------------------------------
 
-.. note:: This is an experimental feature, use with caution.
-
 You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``
 file.
 
-The following example adds ``my_command`` command::
+The following example adds ``my_command`` command:
+
+.. skip: next
+
+.. code-block:: python
 
   from setuptools import setup, find_packages
 

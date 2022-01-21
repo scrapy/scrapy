@@ -1,19 +1,18 @@
-from __future__ import print_function
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
-from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
 
-class SiteTest(object):
+class SiteTest:
 
     def setUp(self):
-        super(SiteTest, self).setUp()
+        from twisted.internet import reactor
+        super().setUp()
         self.site = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
-        self.baseurl = "http://localhost:%d/" % self.site.getHost().port
+        self.baseurl = f"http://localhost:{self.site.getHost().port}/"
 
     def tearDown(self):
-        super(SiteTest, self).tearDown()
+        super().tearDown()
         self.site.stopListening()
 
     def url(self, path):
@@ -39,6 +38,7 @@ def test_site():
 
 
 if __name__ == '__main__':
+    from twisted.internet import reactor
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
-    print("http://localhost:%d/" % port.getHost().port)
+    print(f"http://localhost:{port.getHost().port}/")
     reactor.run()

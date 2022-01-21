@@ -4,8 +4,6 @@
 Core API
 ========
 
-.. versionadded:: 0.15
-
 This section documents the Scrapy core API, and it's intended for developers of
 extensions and middlewares.
 
@@ -31,7 +29,7 @@ how you :ref:`configure the downloader middlewares
 .. class:: Crawler(spidercls, settings)
 
     The Crawler object must be instantiated with a
-    :class:`scrapy.spiders.Spider` subclass and a
+    :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
     .. attribute:: settings
@@ -91,13 +89,15 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(\*args, \**kwargs)
+    .. method:: crawl(*args, **kwargs)
 
         Starts the crawler by instantiating its spider class with the given
-        `args` and `kwargs` arguments, while setting the execution engine in
+        ``args`` and ``kwargs`` arguments, while setting the execution engine in
         motion.
 
         Returns a deferred that is fired when the crawl is finished.
+
+    .. automethod:: stop
 
 .. autoclass:: CrawlerRunner
    :members:
@@ -154,7 +154,7 @@ Settings API
 SpiderLoader API
 ================
 
-.. module:: scrapy.loader
+.. module:: scrapy.spiderloader
    :synopsis: The spider loader
 
 .. class:: SpiderLoader
@@ -180,7 +180,7 @@ SpiderLoader API
     .. method:: load(spider_name)
 
        Get the Spider class with the given name. It'll look into the previously
-       loaded spiders for a spider class with name `spider_name` and will raise
+       loaded spiders for a spider class with name ``spider_name`` and will raise
        a KeyError if not found.
 
        :param spider_name: spider class name
@@ -196,7 +196,7 @@ SpiderLoader API
        match the request's url against the domains of the spiders.
 
        :param request: queried request
-       :type request: :class:`~scrapy.http.Request` instance
+       :type request: :class:`~scrapy.Request` instance
 
 .. _topics-api-signals:
 
@@ -271,5 +271,3 @@ class (which they all inherit from).
 
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
-
-.. _reactor: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

@@ -4,15 +4,12 @@ Base class for Scrapy spiders
 See documentation in docs/topics/spiders.rst
 """
 import logging
-import warnings
+from typing import Optional
 
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.deprecate import method_is_overridden
 
 
 class Spider(object_ref):
@@ -20,14 +17,14 @@ class Spider(object_ref):
     class.
     """
 
-    name = None
-    custom_settings = None
+    name: Optional[str] = None
+    custom_settings: Optional[dict] = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:
             self.name = name
         elif not getattr(self, 'name', None):
-            raise ValueError("%s must have a name" % type(self).__name__)
+            raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
@@ -52,42 +49,25 @@ class Spider(object_ref):
         spider._set_crawler(crawler)
         return spider
 
-    def set_crawler(self, crawler):
-        warnings.warn("set_crawler is deprecated, instantiate and bound the "
-                      "spider to this crawler with from_crawler method "
-                      "instead.",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        assert not hasattr(self, 'crawler'), "Spider already bounded to a " \
-                                             "crawler"
-        self._set_crawler(crawler)
-
     def _set_crawler(self, crawler):
         self.crawler = crawler
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self):
-        cls = self.__class__
-        if method_is_overridden(cls, Spider, 'make_requests_from_url'):
-            warnings.warn(
-                "Spider.make_requests_from_url method is deprecated; it "
-                "won't be called in future Scrapy releases. Please "
-                "override Spider.start_requests method instead (see %s.%s)." % (
-                    cls.__module__, cls.__name__
-                ),
-            )
-            for url in self.start_urls:
-                yield self.make_requests_from_url(url)
-        else:
-            for url in self.start_urls:
-                yield Request(url, dont_filter=True)
+        if not self.start_urls and hasattr(self, 'start_url'):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)")
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
 
-    def make_requests_from_url(self, url):
-        """ This method is deprecated. """
-        return Request(url, dont_filter=True)
+    def _parse(self, response, **kwargs):
+        return self.parse(response, **kwargs)
 
-    def parse(self, response):
-        raise NotImplementedError('{}.parse callback is not defined'.format(self.__class__.__name__))
+    def parse(self, response, **kwargs):
+        raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')
 
     @classmethod
     def update_settings(cls, settings):
@@ -104,26 +84,10 @@ class Spider(object_ref):
             return closed(reason)
 
     def __str__(self):
-        return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
+        return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
 
     __repr__ = __str__
 
-
-BaseSpider = create_deprecated_class('BaseSpider', Spider)
-
-
-class ObsoleteClass(object):
-    def __init__(self, message):
-        self.message = message
-
-    def __getattr__(self, name):
-        raise AttributeError(self.message)
-
-spiders = ObsoleteClass(
-    '"from scrapy.spider import spiders" no longer works - use '
-    '"from scrapy.spiderloader import SpiderLoader" and instantiate '
-    'it with your project settings"'
-)
 
 # Top-level imports
 from scrapy.spiders.crawl import CrawlSpider, Rule
