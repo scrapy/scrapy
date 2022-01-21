@@ -17,11 +17,12 @@ from scrapy.pipelines.files import FileException, FilesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
+from scrapy.utils.decorators import deprecated
 
 
+@deprecated("scrapy.pipelines.images.NoimagesDrop")
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
-
 
 class ImageException(FileException):
     """General image error exception"""
