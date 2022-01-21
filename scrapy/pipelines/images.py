@@ -18,6 +18,8 @@ from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 
+#removed class NoimagesDrop(DropItem):
+
 class ImageException(FileException):
     """General image error exception"""
 
