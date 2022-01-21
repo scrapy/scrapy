@@ -1,4 +1,4 @@
-class TestSpiderPipeline(object):
+class TestSpiderPipeline:
 
     def open_spider(self, spider):
         pass
@@ -7,7 +7,7 @@ class TestSpiderPipeline(object):
         return item
 
 
-class TestSpiderExceptionPipeline(object):
+class TestSpiderExceptionPipeline:
 
     def open_spider(self, spider):
         raise Exception('exception')

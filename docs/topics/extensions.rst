@@ -7,8 +7,7 @@ Extensions
 The extensions framework provides a mechanism for inserting your own
 custom functionality into Scrapy.
 
-Extensions are just regular classes that are instantiated at Scrapy startup,
-when extensions are initialized.
+Extensions are just regular classes.
 
 Extension settings
 ==================
@@ -27,8 +26,8 @@ Loading & activating extensions
 ===============================
 
 Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class ``__init__`` method.
+instance of the extension class per spider being run. All the extension
+initialization code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
@@ -107,7 +106,7 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
+    class SpiderOpenCloseLogging:
 
         def __init__(self, item_count):
             self.item_count = item_count
@@ -257,6 +256,12 @@ settings:
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
+.. note::
+
+   When a certain closing condition is met, requests which are 
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS` 
+   requests) are still processed.
+
 .. setting:: CLOSESPIDER_TIMEOUT
 
 CLOSESPIDER_TIMEOUT
@@ -279,16 +284,12 @@ Default: ``0``
 An integer which specifies a number of items. If the spider scrapes more than
 that amount and those items are passed by the item pipeline, the
 spider will be closed with the reason ``closespider_itemcount``.
-Requests which  are currently in the downloader queue (up to
-:setting:`CONCURRENT_REQUESTS` requests) are still processed.
 If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
 CLOSESPIDER_PAGECOUNT
 """""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -301,8 +302,6 @@ number of crawled responses.
 
 CLOSESPIDER_ERRORCOUNT
 """"""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -323,6 +322,11 @@ This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
+
+Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
+full list of parameters, including examples on how to instantiate
+:class:`~scrapy.mail.MailSender` and use mail settings, see
+:ref:`topics-email`.
 
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
@@ -364,7 +368,7 @@ Debugger extension
 
 .. class:: Debugger
 
-Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
@@ -372,5 +376,4 @@ For more info see `Debugging in Python`_.
 
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
-.. _Python debugger: https://docs.python.org/2/library/pdb.html
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

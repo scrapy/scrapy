@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Scrapy documentation build configuration file, created by
 # sphinx-quickstart on Mon Nov 24 12:02:52 2008.
 #
@@ -51,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Scrapy'
-copyright = '2008–{}, Scrapy developers'.format(datetime.now().year)
+copyright = f'2008–{datetime.now().year}, Scrapy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -102,6 +100,9 @@ exclude_trees = ['.build']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
+# List of Sphinx warnings that will not be raised
+suppress_warnings = ['epub.unknown_project_files']
+
 
 # Options for HTML output
 # -----------------------
@@ -120,7 +121,6 @@ html_theme = 'sphinx_rtd_theme'
 # fail in a clean Debian build env)
 import sphinx_rtd_theme
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
@@ -181,6 +181,10 @@ html_copy_source = True
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Scrapydoc'
+
+html_css_files = [
+    'custom.css',
+]
 
 
 # Options for LaTeX output
@@ -280,8 +284,11 @@ coverage_ignore_pyobjects = [
 # -------------------------------------
 
 intersphinx_mapping = {
+    'attrs': ('https://www.attrs.org/en/stable/', None),
     'coverage': ('https://coverage.readthedocs.io/en/stable', None),
+    'cryptography' : ('https://cryptography.io/en/latest/', None),
     'cssselect': ('https://cssselect.readthedocs.io/en/latest', None),
+    'itemloaders': ('https://itemloaders.readthedocs.io/en/latest/', None),
     'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
@@ -295,3 +302,23 @@ intersphinx_mapping = {
 # ------------------------------------
 
 hoverxref_auto_ref = True
+hoverxref_role_types = {
+    "class": "tooltip",
+    "confval": "tooltip",
+    "hoverxref": "tooltip",
+    "mod": "tooltip",
+    "ref": "tooltip",
+}
+hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', maybe_skip_member)
+
+
+def maybe_skip_member(app, what, name, obj, skip, options):
+    if not skip:
+        # autodocs was generating a text "alias of" for the following members
+        # https://github.com/sphinx-doc/sphinx/issues/4422
+        return name in {'default_item_class', 'default_selector_class'}
+    return skip

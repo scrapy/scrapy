@@ -6,7 +6,7 @@ from scrapy import signals
 logger = logging.getLogger(__name__)
 
 
-class AutoThrottle(object):
+class AutoThrottle:
 
     def __init__(self, crawler):
         self.crawler = crawler

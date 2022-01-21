@@ -10,7 +10,7 @@ from scrapy.utils.python import to_unicode
 logger = logging.getLogger(__name__)
 
 
-class CookiesMiddleware(object):
+class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self, debug=False):
@@ -29,8 +29,7 @@ class CookiesMiddleware(object):
 
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
-        cookies = self._get_request_cookies(jar, request)
-        for cookie in cookies:
+        for cookie in self._get_request_cookies(jar, request):
             jar.set_cookie_if_ok(cookie, request)
 
         # set Cookie header
@@ -55,8 +54,8 @@ class CookiesMiddleware(object):
             cl = [to_unicode(c, errors='replace')
                   for c in request.headers.getlist('Cookie')]
             if cl:
-                cookies = "\n".join("Cookie: {}\n".format(c) for c in cl)
-                msg = "Sending cookies to: {}\n{}".format(request, cookies)
+                cookies = "\n".join(f"Cookie: {c}\n" for c in cl)
+                msg = f"Sending cookies to: {request}\n{cookies}"
                 logger.debug(msg, extra={'spider': spider})
 
     def _debug_set_cookie(self, response, spider):
@@ -64,32 +63,48 @@ class CookiesMiddleware(object):
             cl = [to_unicode(c, errors='replace')
                   for c in response.headers.getlist('Set-Cookie')]
             if cl:
-                cookies = "\n".join("Set-Cookie: {}\n".format(c) for c in cl)
-                msg = "Received cookies from: {}\n{}".format(response, cookies)
+                cookies = "\n".join(f"Set-Cookie: {c}\n" for c in cl)
+                msg = f"Received cookies from: {response}\n{cookies}"
                 logger.debug(msg, extra={'spider': spider})
 
-    def _format_cookie(self, cookie):
-        # build cookie string
-        cookie_str = '%s=%s' % (cookie['name'], cookie['value'])
+    def _format_cookie(self, cookie, request):
+        """
+        Given a dict consisting of cookie components, return its string representation.
+        Decode from bytes if necessary.
+        """
+        decoded = {}
+        for key in ("name", "value", "path", "domain"):
+            if cookie.get(key) is None:
+                if key in ("name", "value"):
+                    msg = "Invalid cookie found in request {}: {} ('{}' is missing)"
+                    logger.warning(msg.format(request, cookie, key))
+                    return
+                continue
+            if isinstance(cookie[key], (bool, float, int, str)):
+                decoded[key] = str(cookie[key])
+            else:
+                try:
+                    decoded[key] = cookie[key].decode("utf8")
+                except UnicodeDecodeError:
+                    logger.warning("Non UTF-8 encoded cookie found in request %s: %s",
+                                   request, cookie)
+                    decoded[key] = cookie[key].decode("latin1", errors="replace")
 
-        if cookie.get('path', None):
-            cookie_str += '; Path=%s' % cookie['path']
-        if cookie.get('domain', None):
-            cookie_str += '; Domain=%s' % cookie['domain']
-
+        cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
+        for key, value in decoded.items():  # path, domain
+            cookie_str += f"; {key.capitalize()}={value}"
         return cookie_str
 
     def _get_request_cookies(self, jar, request):
-        if isinstance(request.cookies, dict):
-            cookie_list = [
-                {'name': k, 'value': v}
-                for k, v in request.cookies.items()
-            ]
+        """
+        Extract cookies from the Request.cookies attribute
+        """
+        if not request.cookies:
+            return []
+        elif isinstance(request.cookies, dict):
+            cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
         else:
-            cookie_list = request.cookies
-
-        cookies = [self._format_cookie(x) for x in cookie_list]
-        headers = {'Set-Cookie': cookies}
-        response = Response(request.url, headers=headers)
-
+            cookies = request.cookies
+        formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
+        response = Response(request.url, headers={"Set-Cookie": formatted})
         return jar.make_cookies(response, request)

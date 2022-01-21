@@ -11,8 +11,6 @@ class TelnetExtensionTest(unittest.TestCase):
     def _get_console_and_portal(self, settings=None):
         crawler = get_crawler(settings_dict=settings)
         console = TelnetConsole(crawler)
-        username = console.username
-        password = console.password
 
         # This function has some side effects we don't need for this test
         console._get_telnet_vars = lambda: {}

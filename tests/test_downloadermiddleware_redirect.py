@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import unittest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware, MetaRefreshMiddleware
@@ -24,7 +22,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
     def test_redirect_3xx_permanent(self):
         def _test(method, status=301):
-            url = 'http://www.example.com/{}'.format(status)
+            url = f'http://www.example.com/{status}'
             url2 = 'http://www.example.com/redirected'
             req = Request(url, method=method)
             rsp = Response(url, headers={'Location': url2}, status=status)
@@ -72,19 +70,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
         req = Request(url, method='POST', body='test',
-            headers={'Content-Type': 'text/plain', 'Content-length': '4'})
+                      headers={'Content-Type': 'text/plain', 'Content-length': '4'})
         rsp = Response(url, headers={'Location': url2}, status=302)
 
         req2 = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, url2)
         self.assertEqual(req2.method, 'GET')
-        assert 'Content-Type' not in req2.headers, \
-            "Content-Type header must not be present in redirected request"
-        assert 'Content-Length' not in req2.headers, \
-            "Content-Length header must not be present in redirected request"
-        assert not req2.body, \
-            "Redirected body must be empty, not '%s'" % req2.body
+        assert 'Content-Type' not in req2.headers, "Content-Type header must not be present in redirected request"
+        assert 'Content-Length' not in req2.headers, "Content-Length header must not be present in redirected request"
+        assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
@@ -151,7 +146,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
-        self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+        self.assertEqual(
+            req3.meta['redirect_urls'],
+            ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
+        )
 
     def test_redirect_reasons(self):
         req1 = Request('http://scrapytest.org/first')
@@ -181,13 +179,12 @@ class RedirectMiddlewareTest(unittest.TestCase):
             rsp = Response(url, headers={'Location': url2}, status=301, request=req)
             r = self.mw.process_response(req, rsp, self.spider)
             self.assertIs(r, rsp)
-        _test_passthrough(Request(url, meta={'handle_httpstatus_list':
-                                                           [404, 301, 302]}))
+        _test_passthrough(Request(url, meta={'handle_httpstatus_list': [404, 301, 302]}))
         _test_passthrough(Request(url, meta={'handle_httpstatus_all': True}))
 
     def test_latin1_location(self):
         req = Request('http://scrapytest.org/first')
-        latin1_location = u'/ação'.encode('latin1')  # HTTP historically supports latin1
+        latin1_location = '/ação'.encode('latin1')  # HTTP historically supports latin1
         resp = Response('http://scrapytest.org/first', headers={'Location': latin1_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = 'http://scrapytest.org/a%E7%E3o'
@@ -195,7 +192,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
     def test_utf8_location(self):
         req = Request('http://scrapytest.org/first')
-        utf8_location = u'/ação'.encode('utf-8')  # header using UTF-8 encoding
+        utf8_location = '/ação'.encode('utf-8')  # header using UTF-8 encoding
         resp = Response('http://scrapytest.org/first', headers={'Location': utf8_location}, status=302)
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = 'http://scrapytest.org/a%C3%A7%C3%A3o'
@@ -210,8 +207,8 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url='http://example.org/newpage'):
-        html = u"""<html><head><meta http-equiv="refresh" content="{0};url={1}"/></head></html>"""
-        return html.format(interval, url).encode('utf-8')
+        html = f"""<html><head><meta http-equiv="refresh" content="{interval};url={url}"/></head></html>"""
+        return html.encode('utf-8')
 
     def test_priority_adjust(self):
         req = Request('http://a.com')
@@ -244,12 +241,9 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
         self.assertEqual(req2.method, 'GET')
-        assert 'Content-Type' not in req2.headers, \
-            "Content-Type header must not be present in redirected request"
-        assert 'Content-Length' not in req2.headers, \
-            "Content-Length header must not be present in redirected request"
-        assert not req2.body, \
-            "Redirected body must be empty, not '%s'" % req2.body
+        assert 'Content-Type' not in req2.headers, "Content-Type header must not be present in redirected request"
+        assert 'Content-Length' not in req2.headers, "Content-Length header must not be present in redirected request"
+        assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
@@ -282,7 +276,10 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
-        self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+        self.assertEqual(
+            req3.meta['redirect_urls'],
+            ['http://scrapytest.org/first', 'http://scrapytest.org/redirected']
+        )
 
     def test_redirect_reasons(self):
         req1 = Request('http://scrapytest.org/first')

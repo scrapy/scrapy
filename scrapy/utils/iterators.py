@@ -22,27 +22,43 @@ def xmliter(obj, nodename):
     """
     nodename_patt = re.escape(nodename)
 
-    HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename_patt, re.S)
-    HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename_patt, re.S)
+    DOCUMENT_HEADER_RE = re.compile(r'<\?xml[^>]+>\s*', re.S)
+    HEADER_END_RE = re.compile(fr'<\s*/{nodename_patt}\s*>', re.S)
+    END_TAG_RE = re.compile(r'<\s*/([^\s>]+)\s*>', re.S)
+    NAMESPACE_RE = re.compile(r'((xmlns[:A-Za-z]*)=[^>\s]+)', re.S)
     text = _body_or_str(obj)
 
-    header_start = re.search(HEADER_START_RE, text)
-    header_start = header_start.group(1).strip() if header_start else ''
-    header_end = re_rsearch(HEADER_END_RE, text)
-    header_end = text[header_end[1]:].strip() if header_end else ''
+    document_header = re.search(DOCUMENT_HEADER_RE, text)
+    document_header = document_header.group().strip() if document_header else ''
+    header_end_idx = re_rsearch(HEADER_END_RE, text)
+    header_end = text[header_end_idx[1]:].strip() if header_end_idx else ''
+    namespaces = {}
+    if header_end:
+        for tagname in reversed(re.findall(END_TAG_RE, header_end)):
+            tag = re.search(fr'<\s*{tagname}.*?xmlns[:=][^>]*>', text[:header_end_idx[1]], re.S)
+            if tag:
+                namespaces.update(reversed(x) for x in re.findall(NAMESPACE_RE, tag.group()))
 
-    r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
+    r = re.compile(fr'<{nodename_patt}[\s>].*?</{nodename_patt}>', re.DOTALL)
     for match in r.finditer(text):
-        nodetext = header_start + match.group() + header_end
-        yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
+        nodetext = (
+            document_header
+            + match.group().replace(
+                nodename,
+                f'{nodename} {" ".join(namespaces.values())}',
+                1
+            )
+            + header_end
+        )
+        yield Selector(text=nodetext, type='xml')
 
 
 def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     from lxml import etree
     reader = _StreamReader(obj)
-    tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
+    tag = f'{{{namespace}}}{nodename}' if namespace else nodename
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
-    selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
+    selxpath = '//' + (f'{prefix}:{nodename}' if namespace else nodename)
     for _, node in iterable:
         nodetext = etree.tostring(node, encoding='unicode')
         node.clear()
@@ -52,7 +68,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
         yield xs.xpath(selxpath)[0]
 
 
-class _StreamReader(object):
+class _StreamReader:
 
     def __init__(self, obj):
         self._ptr = 0
@@ -128,10 +144,11 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 def _body_or_str(obj, unicode=True):
     expected_types = (Response, str, bytes)
-    assert isinstance(obj, expected_types), \
-        "obj must be %s, not %s" % (
-            " or ".join(t.__name__ for t in expected_types),
-            type(obj).__name__)
+    if not isinstance(obj, expected_types):
+        expected_types_str = " or ".join(t.__name__ for t in expected_types)
+        raise TypeError(
+            f"Object {obj!r} must be {expected_types_str}, not {type(obj).__name__}"
+        )
     if isinstance(obj, Response):
         if not unicode:
             return obj.body

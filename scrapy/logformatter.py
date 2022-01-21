@@ -14,7 +14,7 @@ DOWNLOADERRORMSG_SHORT = "Error downloading %(request)s"
 DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 
 
-class LogFormatter(object):
+class LogFormatter:
     """Class for generating log messages for different actions.
 
     All methods must return a dictionary listing the parameters ``level``, ``msg``
@@ -44,7 +44,7 @@ class LogFormatter(object):
                 def dropped(self, item, exception, response, spider):
                     return {
                         'level': logging.INFO, # lowering the level from logging.WARNING
-                        'msg': u"Dropped: %(exception)s" + os.linesep + "%(item)s",
+                        'msg': "Dropped: %(exception)s" + os.linesep + "%(item)s",
                         'args': {
                             'exception': exception,
                             'item': item,
@@ -54,8 +54,8 @@ class LogFormatter(object):
 
     def crawled(self, request, response, spider):
         """Logs a message when the crawler finds a webpage."""
-        request_flags = ' %s' % str(request.flags) if request.flags else ''
-        response_flags = ' %s' % str(response.flags) if response.flags else ''
+        request_flags = f' {str(request.flags)}' if request.flags else ''
+        response_flags = f' {str(response.flags)}' if response.flags else ''
         return {
             'level': logging.DEBUG,
             'msg': CRAWLEDMSG,
@@ -97,7 +97,11 @@ class LogFormatter(object):
         }
 
     def item_error(self, item, exception, response, spider):
-        """Logs a message when an item causes an error while it is passing through the item pipeline."""
+        """Logs a message when an item causes an error while it is passing
+        through the item pipeline.
+
+        .. versionadded:: 2.0
+        """
         return {
             'level': logging.ERROR,
             'msg': ITEMERRORMSG,
@@ -107,7 +111,10 @@ class LogFormatter(object):
         }
 
     def spider_error(self, failure, request, response, spider):
-        """Logs an error message from a spider."""
+        """Logs an error message from a spider.
+
+        .. versionadded:: 2.0
+        """
         return {
             'level': logging.ERROR,
             'msg': SPIDERERRORMSG,
@@ -118,7 +125,11 @@ class LogFormatter(object):
         }
 
     def download_error(self, failure, request, spider, errmsg=None):
-        """Logs a download error message from a spider (typically coming from the engine)."""
+        """Logs a download error message from a spider (typically coming from
+        the engine).
+
+        .. versionadded:: 2.0
+        """
         args = {'request': request}
         if errmsg:
             msg = DOWNLOADERRORMSG_LONG

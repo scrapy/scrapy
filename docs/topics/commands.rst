@@ -6,8 +6,6 @@
 Command line tool
 =================
 
-.. versionadded:: 0.10
-
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
@@ -468,7 +466,7 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
@@ -490,6 +488,10 @@ Supported options:
   recursively (default: 1)
 
 * ``--verbose`` or ``-v``: display information for each depth level
+
+* ``--output`` or ``-o``: dump scraped items to a file
+
+  .. versionadded:: 2.3
 
 .. skip: start
 
@@ -562,8 +564,6 @@ and Platform info, which is useful for bug reports.
 bench
 -----
 
-.. versionadded:: 0.17
-
 * Syntax: ``scrapy bench``
 * Requires project: *no*
 
@@ -597,8 +597,6 @@ Example:
 
 Register commands via setup.py entry points
 -------------------------------------------
-
-.. note:: This is an experimental feature, use with caution.
 
 You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``

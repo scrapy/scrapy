@@ -17,7 +17,7 @@ class TextTestResult(_TextTestResult):
         plural = "s" if run != 1 else ""
 
         writeln(self.separator2)
-        writeln("Ran %d contract%s in %.3fs" % (run, plural, stop - start))
+        writeln(f"Ran {run} contract{plural} in {stop - start:.3f}s")
         writeln()
 
         infos = []
@@ -25,14 +25,14 @@ class TextTestResult(_TextTestResult):
             write("FAILED")
             failed, errored = map(len, (self.failures, self.errors))
             if failed:
-                infos.append("failures=%d" % failed)
+                infos.append(f"failures={failed}")
             if errored:
-                infos.append("errors=%d" % errored)
+                infos.append(f"errors={errored}")
         else:
             write("OK")
 
         if infos:
-            writeln(" (%s)" % (", ".join(infos),))
+            writeln(f" ({', '.join(infos)})")
         else:
             write("\n")
 
@@ -78,19 +78,19 @@ class Command(ScrapyCommand):
                 elif tested_methods:
                     self.crawler_process.crawl(spidercls)
 
-        # start checks
-        if opts.list:
-            for spider, methods in sorted(contract_reqs.items()):
-                if not methods and not opts.verbose:
-                    continue
-                print(spider)
-                for method in sorted(methods):
-                    print('  * %s' % method)
-        else:
-            start = time.time()
-            self.crawler_process.start()
-            stop = time.time()
+            # start checks
+            if opts.list:
+                for spider, methods in sorted(contract_reqs.items()):
+                    if not methods and not opts.verbose:
+                        continue
+                    print(spider)
+                    for method in sorted(methods):
+                        print(f'  * {method}')
+            else:
+                start = time.time()
+                self.crawler_process.start()
+                stop = time.time()
 
-            result.printErrors()
-            result.printSummary(start, stop)
-            self.exitcode = int(not result.wasSuccessful())
+                result.printErrors()
+                result.printSummary(start, stop)
+                self.exitcode = int(not result.wasSuccessful())

@@ -5,8 +5,10 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import json
+import warnings
 from contextlib import suppress
-from typing import Generator
+from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 import parsel
@@ -14,54 +16,72 @@ from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
+_NONE = object()
+
 
 class TextResponse(Response):
 
     _DEFAULT_ENCODING = 'ascii'
+    _cached_decoded_json = _NONE
+
+    attributes: Tuple[str, ...] = Response.attributes + ("encoding",)
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
-        super(TextResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _set_url(self, url):
         if isinstance(url, str):
             self._url = to_unicode(url, self.encoding)
         else:
-            super(TextResponse, self)._set_url(url)
+            super()._set_url(url)
 
     def _set_body(self, body):
         self._body = b''  # used by encoding detection
         if isinstance(body, str):
             if self._encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                                type(self).__name__)
+                raise TypeError('Cannot convert unicode body - '
+                                f'{type(self).__name__} has no encoding')
             self._body = body.encode(self._encoding)
         else:
-            super(TextResponse, self)._set_body(body)
-
-    def replace(self, *args, **kwargs):
-        kwargs.setdefault('encoding', self.encoding)
-        return Response.replace(self, *args, **kwargs)
+            super()._set_body(body)
 
     @property
     def encoding(self):
         return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
-        return self._encoding or self._headers_encoding() \
+        return (
+            self._encoding
+            or self._headers_encoding()
             or self._body_declared_encoding()
+        )
 
     def body_as_unicode(self):
         """Return body as unicode"""
+        warnings.warn('Response.body_as_unicode() is deprecated, '
+                      'please use Response.text instead.',
+                      ScrapyDeprecationWarning, stacklevel=2)
         return self.text
+
+    def json(self):
+        """
+        .. versionadded:: 2.2
+
+        Deserialize a JSON document to a Python object.
+        """
+        if self._cached_decoded_json is _NONE:
+            self._cached_decoded_json = json.loads(self.text)
+        return self._cached_decoded_json
 
     @property
     def text(self):
@@ -70,7 +90,7 @@ class TextResponse(Response):
         # _body_inferred_encoding is called
         benc = self.encoding
         if self._cached_ubody is None:
-            charset = 'charset=%s' % benc
+            charset = f'charset={benc}'
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
@@ -144,7 +164,7 @@ class TextResponse(Response):
         elif isinstance(url, parsel.SelectorList):
             raise ValueError("SelectorList is not supported")
         encoding = self.encoding if encoding is None else encoding
-        return super(TextResponse, self).follow(
+        return super().follow(
             url=url,
             callback=callback,
             method=method,
@@ -188,9 +208,11 @@ class TextResponse(Response):
         selectors from which links cannot be obtained (for instance, anchor tags without an
         ``href`` attribute)
         """
-        arg_count = len(list(filter(None, (urls, css, xpath))))
-        if arg_count != 1:
-            raise ValueError('Please supply exactly one of the following arguments: urls, css, xpath')
+        arguments = [x for x in (urls, css, xpath) if x is not None]
+        if len(arguments) != 1:
+            raise ValueError(
+                "Please supply exactly one of the following arguments: urls, css, xpath"
+            )
         if not urls:
             if css:
                 urls = self.css(css)
@@ -202,7 +224,7 @@ class TextResponse(Response):
             for sel in selectors:
                 with suppress(_InvalidSelector):
                     urls.append(_url_from_selector(sel))
-        return super(TextResponse, self).follow_all(
+        return super().follow_all(
             urls=urls,
             callback=callback,
             method=method,
@@ -231,12 +253,11 @@ def _url_from_selector(sel):
         # e.g. ::attr(href) result
         return strip_html5_whitespace(sel.root)
     if not hasattr(sel.root, 'tag'):
-        raise _InvalidSelector("Unsupported selector: %s" % sel)
+        raise _InvalidSelector(f"Unsupported selector: {sel}")
     if sel.root.tag not in ('a', 'link'):
-        raise _InvalidSelector("Only <a> and <link> elements are supported; got <%s>" %
-                               sel.root.tag)
+        raise _InvalidSelector("Only <a> and <link> elements are supported; "
+                               f"got <{sel.root.tag}>")
     href = sel.root.get('href')
     if href is None:
-        raise _InvalidSelector("<%s> element has no href attribute: %s" %
-                               (sel.root.tag, sel))
+        raise _InvalidSelector(f"<{sel.root.tag}> element has no href attribute: {sel}")
     return strip_html5_whitespace(href)

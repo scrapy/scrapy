@@ -25,7 +25,7 @@ class TestItem(Item):
     url = Field()
 
 
-class ResponseMock(object):
+class ResponseMock:
     url = 'http://scrapy.org'
 
 
@@ -232,7 +232,8 @@ class ContractsManagerTest(unittest.TestCase):
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request)
         self.assertEqual(len(contracts), 2)
-        self.assertEqual(frozenset(type(x) for x in contracts),
+        self.assertEqual(
+            frozenset(type(x) for x in contracts),
             frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
@@ -377,7 +378,7 @@ class ContractsManagerTest(unittest.TestCase):
             name = 'test_same_url'
 
             def __init__(self, *args, **kwargs):
-                super(TestSameUrlSpider, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
                 self.visited = 0
 
             def start_requests(s):
@@ -392,7 +393,7 @@ class ContractsManagerTest(unittest.TestCase):
                 return TestItem()
 
         with MockServer() as mockserver:
-            contract_doc = '@url {}'.format(mockserver.url('/status?n=200'))
+            contract_doc = f'@url {mockserver.url("/status?n=200")}'
 
             TestSameUrlSpider.parse_first.__doc__ = contract_doc
             TestSameUrlSpider.parse_second.__doc__ = contract_doc

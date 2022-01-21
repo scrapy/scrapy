@@ -25,7 +25,7 @@ class Command(ScrapyCommand):
             self.crawler_process.start()
 
 
-class _BenchServer(object):
+class _BenchServer:
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
@@ -50,7 +50,7 @@ class _BenchSpider(scrapy.Spider):
 
     def start_requests(self):
         qargs = {'total': self.total, 'show': self.show}
-        url = '{}?{}'.format(self.baseurl, urlencode(qargs, doseq=1))
+        url = f'{self.baseurl}?{urlencode(qargs, doseq=True)}'
         return [scrapy.Request(url, dont_filter=True)]
 
     def parse(self, response):

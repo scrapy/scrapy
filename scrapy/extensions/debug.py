@@ -17,7 +17,7 @@ from scrapy.utils.trackref import format_live_refs
 logger = logging.getLogger(__name__)
 
 
-class StackTraceDump(object):
+class StackTraceDump:
 
     def __init__(self, crawler=None):
         self.crawler = crawler
@@ -48,11 +48,11 @@ class StackTraceDump(object):
         for id_, frame in sys._current_frames().items():
             name = id2name.get(id_, '')
             dump = ''.join(traceback.format_stack(frame))
-            dumps += "# Thread: {0}({1})\n{2}\n".format(name, id_, dump)
+            dumps += f"# Thread: {name}({id_})\n{dump}\n"
         return dumps
 
 
-class Debugger(object):
+class Debugger:
     def __init__(self):
         try:
             signal.signal(signal.SIGUSR2, self._enter_debugger)

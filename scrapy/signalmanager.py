@@ -2,7 +2,7 @@ from pydispatch import dispatcher
 from scrapy.utils import signal as _signal
 
 
-class SignalManager(object):
+class SignalManager:
 
     def __init__(self, sender=dispatcher.Anonymous):
         self.sender = sender
@@ -16,7 +16,7 @@ class SignalManager(object):
         section.
 
         :param receiver: the function to be connected
-        :type receiver: callable
+        :type receiver: collections.abc.Callable
 
         :param signal: the signal to connect to
         :type signal: object

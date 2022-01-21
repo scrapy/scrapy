@@ -8,7 +8,7 @@ from tests.spiders import MockServerSpider
 from tests.mockserver import MockServer
 
 
-class InjectArgumentsDownloaderMiddleware(object):
+class InjectArgumentsDownloaderMiddleware:
     """
     Make sure downloader middlewares are able to update the keyword arguments
     """
@@ -23,7 +23,7 @@ class InjectArgumentsDownloaderMiddleware(object):
         return response
 
 
-class InjectArgumentsSpiderMiddleware(object):
+class InjectArgumentsSpiderMiddleware:
     """
     Make sure spider middlewares are able to update the keyword arguments
     """
@@ -50,17 +50,17 @@ class KeywordArgumentsSpider(MockServerSpider):
     name = 'kwargs'
     custom_settings = {
         'DOWNLOADER_MIDDLEWARES': {
-            __name__ + '.InjectArgumentsDownloaderMiddleware': 750,
+            InjectArgumentsDownloaderMiddleware: 750,
         },
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.InjectArgumentsSpiderMiddleware': 750,
+            InjectArgumentsSpiderMiddleware: 750,
         },
     }
 
-    checks = list()
+    checks = []
 
     def start_requests(self):
-        data = {'key': 'value', 'number': 123}
+        data = {'key': 'value', 'number': 123, 'callback': 'some_callback'}
         yield Request(self.mockserver.url('/first'), self.parse_first, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_with'), self.parse_general, cb_kwargs=data)
         yield Request(self.mockserver.url('/general_without'), self.parse_general)
@@ -88,7 +88,8 @@ class KeywordArgumentsSpider(MockServerSpider):
         if response.url.endswith('/general_with'):
             self.checks.append(kwargs['key'] == 'value')
             self.checks.append(kwargs['number'] == 123)
-            self.crawler.stats.inc_value('boolean_checks', 2)
+            self.checks.append(kwargs['callback'] == 'some_callback')
+            self.crawler.stats.inc_value('boolean_checks', 3)
         elif response.url.endswith('/general_without'):
             self.checks.append(kwargs == {})
             self.crawler.stats.inc_value('boolean_checks')
@@ -104,13 +105,13 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.checks.append(default == 99)
         self.crawler.stats.inc_value('boolean_checks', 4)
 
-    def parse_takes_less(self, response, key):
+    def parse_takes_less(self, response, key, callback):
         """
         Should raise
         TypeError: parse_takes_less() got an unexpected keyword argument 'number'
         """
 
-    def parse_takes_more(self, response, key, number, other):
+    def parse_takes_more(self, response, key, number, callback, other):
         """
         Should raise
         TypeError: parse_takes_more() missing 1 required positional argument: 'other'
@@ -158,6 +159,16 @@ class CallbackKeywordArgumentsTestCase(TestCase):
                 if key in line.getMessage():
                     exceptions[key] = line
         self.assertEqual(exceptions['takes_less'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_less'].exc_info[1]), "parse_takes_less() got an unexpected keyword argument 'number'")
+        self.assertTrue(
+            str(exceptions['takes_less'].exc_info[1]).endswith(
+                "parse_takes_less() got an unexpected keyword argument 'number'"
+            ),
+            msg="Exception message: " + str(exceptions['takes_less'].exc_info[1]),
+        )
         self.assertEqual(exceptions['takes_more'].exc_info[0], TypeError)
-        self.assertEqual(str(exceptions['takes_more'].exc_info[1]), "parse_takes_more() missing 1 required positional argument: 'other'")
+        self.assertTrue(
+            str(exceptions['takes_more'].exc_info[1]).endswith(
+                "parse_takes_more() missing 1 required positional argument: 'other'"
+            ),
+            msg="Exception message: " + str(exceptions['takes_more'].exc_info[1]),
+        )

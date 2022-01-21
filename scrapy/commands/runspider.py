@@ -3,18 +3,16 @@ import os
 from importlib import import_module
 
 from scrapy.utils.spider import iter_spider_classes
-from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.conf import arglist_to_dict
-from scrapy.utils.python import without_none_values
+from scrapy.commands import BaseRunSpiderCommand
 
 
 def _import_file(filepath):
     abspath = os.path.abspath(filepath)
     dirname, file = os.path.split(abspath)
     fname, fext = os.path.splitext(file)
-    if fext != '.py':
-        raise ValueError("Not a Python source file: %s" % abspath)
+    if fext not in ('.py', '.pyw'):
+        raise ValueError(f"Not a Python source file: {abspath}")
     if dirname:
         sys.path = [dirname] + sys.path
     try:
@@ -25,7 +23,7 @@ def _import_file(filepath):
     return module
 
 
-class Command(ScrapyCommand):
+class Command(BaseRunSpiderCommand):
 
     requires_project = False
     default_settings = {'SPIDER_LOADER_WARN_ONLY': True}
@@ -39,49 +37,19 @@ class Command(ScrapyCommand):
     def long_desc(self):
         return "Run the spider defined in the given file"
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
-                          help="set spider argument (may be repeated)")
-        parser.add_option("-o", "--output", metavar="FILE",
-                          help="dump scraped items into FILE (use - for stdout)")
-        parser.add_option("-t", "--output-format", metavar="FORMAT",
-                          help="format to use for dumping items with -o")
-
-    def process_options(self, args, opts):
-        ScrapyCommand.process_options(self, args, opts)
-        try:
-            opts.spargs = arglist_to_dict(opts.spargs)
-        except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
-        if opts.output:
-            if opts.output == '-':
-                self.settings.set('FEED_URI', 'stdout:', priority='cmdline')
-            else:
-                self.settings.set('FEED_URI', opts.output, priority='cmdline')
-            feed_exporters = without_none_values(self.settings.getwithbase('FEED_EXPORTERS'))
-            if not opts.output_format:
-                opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
-            if opts.output_format not in feed_exporters:
-                raise UsageError("Unrecognized output format '%s', set one"
-                                 " using the '-t' switch or as a file extension"
-                                 " from the supported list %s" % (opts.output_format,
-                                                                  tuple(feed_exporters)))
-            self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
-
     def run(self, args, opts):
         if len(args) != 1:
             raise UsageError()
         filename = args[0]
         if not os.path.exists(filename):
-            raise UsageError("File not found: %s\n" % filename)
+            raise UsageError(f"File not found: {filename}\n")
         try:
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
-            raise UsageError("Unable to load %r: %s\n" % (filename, e))
+            raise UsageError(f"Unable to load {filename!r}: {e}\n")
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
-            raise UsageError("No spider found in file: %s\n" % filename)
+            raise UsageError(f"No spider found in file: {filename}\n")
         spidercls = spclasses.pop()
 
         self.crawler_process.crawl(spidercls, **opts.spargs)

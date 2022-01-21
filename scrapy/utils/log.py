@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import sys
 import warnings
@@ -39,7 +37,7 @@ class TopLevelFormatter(logging.Filter):
         self.loggers = loggers or []
 
     def filter(self, record):
-        if any(record.name.startswith(l + '.') for l in self.loggers):
+        if any(record.name.startswith(logger + '.') for logger in self.loggers):
             record.name = record.name.split('.', 1)[0]
         return True
 
@@ -48,6 +46,9 @@ DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'loggers': {
+        'hpack': {
+            'level': 'ERROR',
+        },
         'scrapy': {
             'level': 'DEBUG',
         },
@@ -123,8 +124,9 @@ def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
     if filename:
+        mode = 'a' if settings.getbool('LOG_FILE_APPEND') else 'w'
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
@@ -141,18 +143,30 @@ def _get_handler(settings):
     return handler
 
 
-def log_scrapy_info(settings):
+def log_scrapy_info(settings: Settings) -> None:
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
-    logger.info("Versions: %(versions)s",
-                {'versions': ", ".join("%s %s" % (name, version)
-                    for name, version in scrapy_components_versions()
-                    if name != "Scrapy")})
+    versions = [
+        f"{name} {version}"
+        for name, version in scrapy_components_versions()
+        if name != "Scrapy"
+    ]
+    logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
+
+
+def log_reactor_info() -> None:
     from twisted.internet import reactor
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
+    from twisted.internet import asyncioreactor
+    if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
+        logger.debug(
+            "Using asyncio event loop: %s.%s",
+            reactor._asyncioEventloop.__module__,
+            reactor._asyncioEventloop.__class__.__name__,
+        )
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:
@@ -176,11 +190,11 @@ class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
 
     def __init__(self, crawler, *args, **kwargs):
-        super(LogCounterHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.crawler = crawler
 
     def emit(self, record):
-        sname = 'log_count/{}'.format(record.levelname)
+        sname = f'log_count/{record.levelname}'
         self.crawler.stats.inc_value(sname)
 
 

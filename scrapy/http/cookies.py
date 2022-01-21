@@ -1,11 +1,17 @@
+import re
 import time
-from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 
-class CookieJar(object):
+# Defined in the http.cookiejar module, but undocumented:
+# https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
+IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
+
+
+class CookieJar:
     def __init__(self, policy=None, check_expired_frequency=10000):
         self.policy = policy or DefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
@@ -100,7 +106,7 @@ def potential_domain_matches(domain):
     return matches + ['.' + d for d in matches]
 
 
-class _DummyLock(object):
+class _DummyLock:
     def acquire(self):
         pass
 
@@ -108,7 +114,7 @@ class _DummyLock(object):
         pass
 
 
-class WrappedRequest(object):
+class WrappedRequest:
     """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
 
     see http://docs.python.org/library/urllib2.html#urllib2.Request
@@ -178,7 +184,7 @@ class WrappedRequest(object):
         self.request.headers.appendlist(name, value)
 
 
-class WrappedResponse(object):
+class WrappedResponse:
 
     def __init__(self, response):
         self.response = response
@@ -186,9 +192,6 @@ class WrappedResponse(object):
     def info(self):
         return self
 
-    # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
         return [to_unicode(v, errors='replace')
                 for v in self.response.headers.getlist(name)]
-    # python2 cookiejars calls getheaders
-    getheaders = get_all

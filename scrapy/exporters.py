@@ -4,16 +4,18 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import io
-import pprint
 import marshal
-import warnings
 import pickle
+import pprint
+import warnings
 from xml.sax.saxutils import XMLGenerator
 
-from scrapy.utils.serialize import ScrapyJSONEncoder
-from scrapy.utils.python import to_bytes, to_unicode, is_listlike
-from scrapy.item import BaseItem
+from itemadapter import is_item, ItemAdapter
+
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.item import _BaseItem
+from scrapy.utils.python import is_listlike, to_bytes, to_unicode
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
@@ -21,14 +23,14 @@ __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'JsonItemExporter', 'MarshalItemExporter']
 
 
-class BaseItemExporter(object):
+class BaseItemExporter:
 
     def __init__(self, *, dont_fail=False, **kwargs):
         self._kwargs = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
 
     def _configure(self, options, dont_fail=False):
-        """Configure the exporter by poping options from the ``options`` dict.
+        """Configure the exporter by popping options from the ``options`` dict.
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses ``__init__`` methods)
         """
@@ -37,7 +39,7 @@ class BaseItemExporter(object):
         self.export_empty_fields = options.pop('export_empty_fields', False)
         self.indent = options.pop('indent', None)
         if not dont_fail and options:
-            raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
+            raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
     def export_item(self, item):
         raise NotImplementedError
@@ -56,11 +58,14 @@ class BaseItemExporter(object):
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
+        item = ItemAdapter(item)
+
         if include_empty is None:
             include_empty = self.export_empty_fields
+
         if self.fields_to_export is None:
-            if include_empty and not isinstance(item, dict):
-                field_iter = item.fields.keys()
+            if include_empty:
+                field_iter = item.field_names()
             else:
                 field_iter = item.keys()
         else:
@@ -71,8 +76,8 @@ class BaseItemExporter(object):
 
         for field_name in field_iter:
             if field_name in item:
-                field = {} if isinstance(item, dict) else item.fields[field_name]
-                value = self.serialize_field(field, field_name, item[field_name])
+                field_meta = item.get_field_meta(field_name)
+                value = self.serialize_field(field_meta, field_name, item[field_name])
             else:
                 value = default_value
 
@@ -190,7 +195,7 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
+    def __init__(self, file, include_headers_line=True, join_multivalued=',', errors=None, **kwargs):
         super().__init__(dont_fail=True, **kwargs)
         if not self.encoding:
             self.encoding = 'utf-8'
@@ -200,7 +205,8 @@ class CsvItemExporter(BaseItemExporter):
             line_buffering=False,
             write_through=True,
             encoding=self.encoding,
-            newline=''  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            newline='',  # Windows needs this https://github.com/scrapy/scrapy/issues/3034
+            errors=errors,
         )
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
         self._headers_not_written = True
@@ -238,19 +244,15 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
             if not self.fields_to_export:
-                if isinstance(item, dict):
-                    # for dicts try using fields of the first item
-                    self.fields_to_export = list(item.keys())
-                else:
-                    # use fields declared in Item
-                    self.fields_to_export = list(item.fields.keys())
+                # use declared field names, or keys if the item is a dict
+                self.fields_to_export = ItemAdapter(item).field_names()
             row = list(self._build_row(self.fields_to_export))
             self.csv_writer.writerow(row)
 
 
 class PickleItemExporter(BaseItemExporter):
 
-    def __init__(self, file, protocol=2, **kwargs):
+    def __init__(self, file, protocol=4, **kwargs):
         super().__init__(**kwargs)
         self.file = file
         self.protocol = protocol
@@ -297,9 +299,10 @@ class PythonItemExporter(BaseItemExporter):
 
     .. _msgpack: https://pypi.org/project/msgpack/
     """
+
     def _configure(self, options, dont_fail=False):
         self.binary = options.pop('binary', True)
-        super(PythonItemExporter, self)._configure(options, dont_fail)
+        super()._configure(options, dont_fail)
         if self.binary:
             warnings.warn(
                 "PythonItemExporter will drop support for binary export in the future",
@@ -312,24 +315,24 @@ class PythonItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _serialize_value(self, value):
-        if isinstance(value, BaseItem):
+        if isinstance(value, _BaseItem):
             return self.export_item(value)
-        if isinstance(value, dict):
-            return dict(self._serialize_dict(value))
-        if is_listlike(value):
+        elif is_item(value):
+            return dict(self._serialize_item(value))
+        elif is_listlike(value):
             return [self._serialize_value(v) for v in value]
         encode_func = to_bytes if self.binary else to_unicode
         if isinstance(value, (str, bytes)):
             return encode_func(value, encoding=self.encoding)
         return value
 
-    def _serialize_dict(self, value):
-        for key, val in value.items():
+    def _serialize_item(self, item):
+        for key, value in ItemAdapter(item).items():
             key = to_bytes(key) if self.binary else key
-            yield key, self._serialize_value(val)
+            yield key, self._serialize_value(value)
 
     def export_item(self, item):
         result = dict(self._get_serialized_fields(item))
         if self.binary:
-            result = dict(self._serialize_dict(result))
+            result = dict(self._serialize_item(result))
         return result

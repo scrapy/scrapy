@@ -64,7 +64,7 @@ Request Processors takes requests objects and can perform any action to them,
 like filtering or modifying on the fly.
 
 The current ``LinkExtractor`` had integrated link processing, like
-canonicalize. Request Processors can be reutilized and applied in serie.
+canonicalize. Request Processors can be reutilized and applied in series.
 
 Request Generator
 -----------------

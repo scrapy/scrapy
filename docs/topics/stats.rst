@@ -32,7 +32,7 @@ Common Stats Collector uses
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
 attribute. Here is an example of an extension that access stats::
 
-    class ExtensionThatAccessStats(object):
+    class ExtensionThatAccessStats:
 
         def __init__(self, stats):
             self.stats = stats

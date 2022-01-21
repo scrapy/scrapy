@@ -25,16 +25,16 @@ Scrapy.
 If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
-may be useful to you: 
+may be useful to you:
 
 * `Automate the Boring Stuff With Python`_
 
-* `How To Think Like a Computer Scientist`_ 
+* `How To Think Like a Computer Scientist`_
 
-* `Learn Python 3 The Hard Way`_ 
+* `Learn Python 3 The Hard Way`_
 
 You can also take a look at `this list of Python resources for non-programmers`_,
-as well as the `suggested resources in the learnpython-subreddit`_. 
+as well as the `suggested resources in the learnpython-subreddit`_.
 
 .. _Python: https://www.python.org/
 .. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
@@ -62,7 +62,7 @@ This will create a ``tutorial`` directory with the following contents::
             __init__.py
 
             items.py          # project items definition file
-            
+
             middlewares.py    # project middlewares file
 
             pipelines.py      # project pipelines file
@@ -78,7 +78,7 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or a group of websites). They must subclass
-:class:`~scrapy.spiders.Spider` and define the initial requests to make,
+:class:`~scrapy.Spider` and define the initial requests to make,
 optionally how to follow links in the pages, and how to parse the downloaded
 page content to extract data.
 
@@ -101,32 +101,32 @@ This is the code for our first Spider. Save it in a file named
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = 'quotes-%s.html' % page
+            filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
-            self.log('Saved file %s' % filename)
+            self.log(f'Saved file {filename}')
 
 
-As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.spiders.Spider>`
+As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.Spider>`
 and defines some attributes and methods:
 
-* :attr:`~scrapy.spiders.Spider.name`: identifies the Spider. It must be
+* :attr:`~scrapy.Spider.name`: identifies the Spider. It must be
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.spiders.Spider.start_requests`: must return an iterable of
+* :meth:`~scrapy.Spider.start_requests`: must return an iterable of
   Requests (you can return a list of requests or write a generator function)
   which the Spider will begin to crawl from. Subsequent requests will be
   generated successively from these initial requests.
 
-* :meth:`~scrapy.spiders.Spider.parse`: a method that will be called to handle
+* :meth:`~scrapy.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
   is an instance of :class:`~scrapy.http.TextResponse` that holds
   the page content and has further helpful methods to handle it.
 
-  The :meth:`~scrapy.spiders.Spider.parse` method usually parses the response, extracting
+  The :meth:`~scrapy.Spider.parse` method usually parses the response, extracting
   the scraped data as dicts and also finding new URLs to
-  follow and creating new requests (:class:`~scrapy.http.Request`) from them.
+  follow and creating new requests (:class:`~scrapy.Request`) from them.
 
 How to run our spider
 ---------------------
@@ -162,7 +162,7 @@ for the respective URLs, as our ``parse`` method instructs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy schedules the :class:`scrapy.Request <scrapy.http.Request>` objects
+Scrapy schedules the :class:`scrapy.Request <scrapy.Request>` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
 response for each one, it instantiates :class:`~scrapy.http.Response` objects
 and calls the callback method associated with the request (in this case, the
@@ -171,11 +171,11 @@ and calls the callback method associated with the request (in this case, the
 
 A shortcut to the start_requests method
 ---------------------------------------
-Instead of implementing a :meth:`~scrapy.spiders.Spider.start_requests` method
-that generates :class:`scrapy.Request <scrapy.http.Request>` objects from URLs,
-you can just define a :attr:`~scrapy.spiders.Spider.start_urls` class attribute
+Instead of implementing a :meth:`~scrapy.Spider.start_requests` method
+that generates :class:`scrapy.Request <scrapy.Request>` objects from URLs,
+you can just define a :attr:`~scrapy.Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
-of :meth:`~scrapy.spiders.Spider.start_requests` to create the initial requests
+of :meth:`~scrapy.Spider.start_requests` to create the initial requests
 for your spider::
 
     import scrapy
@@ -190,13 +190,13 @@ for your spider::
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = 'quotes-%s.html' % page
+            filename = f'quotes-{page}.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
-The :meth:`~scrapy.spiders.Spider.parse` method will be called to handle each
+The :meth:`~scrapy.Spider.parse` method will be called to handle each
 of the requests for those URLs, even though we haven't explicitly told Scrapy
-to do so. This happens because :meth:`~scrapy.spiders.Spider.parse` is Scrapy's
+to do so. This happens because :meth:`~scrapy.Spider.parse` is Scrapy's
 default callback method, which is called for requests without an explicitly
 assigned callback.
 
@@ -248,7 +248,7 @@ object:
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
-:class:`~scrapy.selector.Selector` objects that wrap around XML/HTML elements
+:class:`~scrapy.Selector` objects that wrap around XML/HTML elements
 and allow you to run further queries to fine-grain the selection or extract the
 data.
 
@@ -277,9 +277,19 @@ As an alternative, you could've written:
 >>> response.css('title::text')[0].get()
 'Quotes to Scrape'
 
-However, using ``.get()`` directly on a :class:`~scrapy.selector.SelectorList`
-instance avoids an ``IndexError`` and returns ``None`` when it doesn't
-find any element matching the selection.
+Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will 
+raise an :exc:`IndexError` exception if there are no results::
+
+    >>> response.css('noelement')[0].get()
+    Traceback (most recent call last):
+    ...
+    IndexError: list index out of range
+
+You might want to use ``.get()`` directly on the 
+:class:`~scrapy.selector.SelectorList` instance instead, which returns ``None`` 
+if there are no results::
+
+>>> response.css("noelement").get()
 
 There's a lesson here: for most scraping code, you want it to be resilient to
 errors due to things not being found on a page, so that even if some parts fail
@@ -287,8 +297,8 @@ to be scraped, you can at least get **some** data.
 
 Besides the :meth:`~scrapy.selector.SelectorList.getall` and
 :meth:`~scrapy.selector.SelectorList.get` methods, you can also use
-the :meth:`~scrapy.selector.SelectorList.re` method to extract using `regular
-expressions`_:
+the :meth:`~scrapy.selector.SelectorList.re` method to extract using
+:doc:`regular expressions <library/re>`:
 
 >>> response.css('title::text').re(r'Quotes.*')
 ['Quotes to Scrape']
@@ -305,7 +315,6 @@ with a selector (see :ref:`topics-developer-tools`).
 `Selector Gadget`_ is also a nice tool to quickly find CSS selector for
 visually selected elements, which works in many browsers.
 
-.. _regular expressions: https://docs.python.org/3/library/re.html
 .. _Selector Gadget: https://selectorgadget.com/
 
 
@@ -406,8 +415,6 @@ to get all of them:
 
   from sys import version_info
 
-.. skip: next if(version_info < (3, 6), reason="Only Python 3.6+ dictionaries match the output")
-
 Having figured out how to extract each bit, we can now iterate over all the
 quotes elements and put them together into a Python dictionary:
 
@@ -465,16 +472,15 @@ Storing the scraped data
 The simplest way to store the scraped data is by using :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl quotes -o quotes.json
+    scrapy crawl quotes -O quotes.json
 
-That will generate an ``quotes.json`` file containing all scraped items,
+That will generate a ``quotes.json`` file containing all scraped items,
 serialized in `JSON`_.
 
-For historic reasons, Scrapy appends to a given file instead of overwriting
-its contents. If you run this command twice without removing the file
-before the second time, you'll end up with a broken JSON file.
-
-You can also use other formats, like `JSON Lines`_::
+The ``-O`` command-line switch overwrites any existing file; use ``-o`` instead
+to append new content to any existing file. However, appending to a JSON file
+makes the file contents invalid JSON. When appending to a file, consider
+using a different serialization format, such as `JSON Lines`_::
 
     scrapy crawl quotes -o quotes.jl
 
@@ -674,7 +680,7 @@ the pagination links with the ``parse`` callback as we saw before.
 Here we're passing callbacks to
 :meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` as positional
 arguments to make the code shorter; it also works for
-:class:`~scrapy.http.Request`.
+:class:`~scrapy.Request`.
 
 The ``parse_author`` callback defines a helper function to extract and cleanup the
 data from a CSS query and yields the Python dict with the author data.
@@ -705,7 +711,7 @@ Using spider arguments
 You can provide command line arguments to your spiders by using the ``-a``
 option when running them::
 
-    scrapy crawl quotes -o quotes-humor.json -a tag=humor
+    scrapy crawl quotes -O quotes-humor.json -a tag=humor
 
 These arguments are passed to the Spider's ``__init__`` method and become
 spider attributes by default.

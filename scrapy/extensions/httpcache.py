@@ -20,7 +20,7 @@ from scrapy.utils.request import request_fingerprint
 logger = logging.getLogger(__name__)
 
 
-class DummyPolicy(object):
+class DummyPolicy:
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
@@ -39,16 +39,17 @@ class DummyPolicy(object):
         return True
 
 
-class RFC2616Policy(object):
+class RFC2616Policy:
 
     MAXAGE = 3600 * 24 * 365  # one year
 
     def __init__(self, settings):
         self.always_store = settings.getbool('HTTPCACHE_ALWAYS_STORE')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_response_cache_controls = [to_bytes(cc) for cc in
-            settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')]
         self._cc_parsed = WeakKeyDictionary()
+        self.ignore_response_cache_controls = [
+            to_bytes(cc) for cc in settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
+        ]
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:
@@ -213,7 +214,7 @@ class RFC2616Policy(object):
         return currentage
 
 
-class DbmCacheStorage(object):
+class DbmCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
@@ -222,10 +223,10 @@ class DbmCacheStorage(object):
         self.db = None
 
     def open_spider(self, spider):
-        dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
+        dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
         self.db = self.dbmodule.open(dbpath, 'c')
 
-        logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
+        logger.debug("Using DBM cache storage in %(cachepath)s", {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider):
         self.db.close()
@@ -250,13 +251,13 @@ class DbmCacheStorage(object):
             'headers': dict(response.headers),
             'body': response.body,
         }
-        self.db['%s_data' % key] = pickle.dumps(data, protocol=2)
-        self.db['%s_time' % key] = str(time())
+        self.db[f'{key}_data'] = pickle.dumps(data, protocol=4)
+        self.db[f'{key}_time'] = str(time())
 
     def _read_data(self, spider, request):
         key = self._request_key(request)
         db = self.db
-        tkey = '%s_time' % key
+        tkey = f'{key}_time'
         if tkey not in db:
             return  # not found
 
@@ -264,13 +265,13 @@ class DbmCacheStorage(object):
         if 0 < self.expiration_secs < time() - float(ts):
             return  # expired
 
-        return pickle.loads(db['%s_data' % key])
+        return pickle.loads(db[f'{key}_data'])
 
     def _request_key(self, request):
         return request_fingerprint(request)
 
 
-class FilesystemCacheStorage(object):
+class FilesystemCacheStorage:
 
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
@@ -279,7 +280,7 @@ class FilesystemCacheStorage(object):
         self._open = gzip.open if self.use_gzip else open
 
     def open_spider(self, spider):
-        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
+        logger.debug("Using filesystem cache storage in %(cachedir)s", {'cachedir': self.cachedir},
                      extra={'spider': spider})
 
     def close_spider(self, spider):
@@ -317,7 +318,7 @@ class FilesystemCacheStorage(object):
         with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
             f.write(to_bytes(repr(metadata)))
         with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
-            pickle.dump(metadata, f, protocol=2)
+            pickle.dump(metadata, f, protocol=4)
         with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
             f.write(headers_dict_to_raw(response.headers))
         with self._open(os.path.join(rpath, 'response_body'), 'wb') as f:
