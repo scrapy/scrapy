@@ -31,7 +31,7 @@ for more info.
 Scrapy also has support for `bpython`_, and will try to use it where `IPython`_
 is unavailable.
 
-Through scrapy's settings you can configure it to use any one of
+Through Scrapy's settings you can configure it to use any one of
 ``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
 are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
 variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
@@ -41,7 +41,7 @@ variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
 
 .. _IPython: https://ipython.org/
 .. _IPython installation guide: https://ipython.org/install.html
-.. _bpython: https://www.bpython-interpreter.org/
+.. _bpython: https://bpython-interpreter.org/
 
 Launch the shell
 ================
@@ -95,20 +95,21 @@ convenience.
 Available Shortcuts
 -------------------
 
- * ``shelp()`` - print a help with the list of available objects and shortcuts
+-   ``shelp()`` - print a help with the list of available objects and
+    shortcuts
 
- * ``fetch(url[, redirect=True])`` - fetch a new response from the given
-   URL and update all related objects accordingly. You can optionaly ask for
-   HTTP 3xx redirections to not be followed by passing ``redirect=False``
+-   ``fetch(url[, redirect=True])`` - fetch a new response from the given URL
+    and update all related objects accordingly. You can optionally ask for HTTP
+    3xx redirections to not be followed by passing ``redirect=False``
 
- * ``fetch(request)`` - fetch a new response from the given request and
-   update all related objects accordingly.
+-   ``fetch(request)`` - fetch a new response from the given request and update
+    all related objects accordingly.
 
- * ``view(response)`` - open the given response in your local web browser, for
-   inspection. This will add a `\<base\> tag`_ to the response body in order
-   for external links (such as images and style sheets) to display properly.
-   Note, however, that this will create a temporary file in your computer,
-   which won't be removed automatically.
+-   ``view(response)`` - open the given response in your local web browser, for
+    inspection. This will add a `\<base\> tag`_ to the response body in order
+    for external links (such as images and style sheets) to display properly.
+    Note, however, that this will create a temporary file in your computer,
+    which won't be removed automatically.
 
 .. _<base> tag: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
@@ -117,32 +118,32 @@ Available Scrapy objects
 
 The Scrapy shell automatically creates some convenient objects from the
 downloaded page, like the :class:`~scrapy.http.Response` object and the
-:class:`~scrapy.selector.Selector` objects (for both HTML and XML
+:class:`~scrapy.Selector` objects (for both HTML and XML
 content).
 
 Those objects are:
 
- * ``crawler`` - the current :class:`~scrapy.crawler.Crawler` object.
+-    ``crawler`` - the current :class:`~scrapy.crawler.Crawler` object.
 
- * ``spider`` - the Spider which is known to handle the URL, or a
-   :class:`~scrapy.spiders.Spider` object if there is no spider found for
-   the current URL
+-   ``spider`` - the Spider which is known to handle the URL, or a
+    :class:`~scrapy.Spider` object if there is no spider found for the
+    current URL
 
- * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched
-   page. You can modify this request using :meth:`~scrapy.http.Request.replace`
-   or fetch a new request (without leaving the shell) using the ``fetch``
-   shortcut.
+-   ``request`` - a :class:`~scrapy.Request` object of the last fetched
+    page. You can modify this request using
+    :meth:`~scrapy.Request.replace` or fetch a new request (without
+    leaving the shell) using the ``fetch`` shortcut.
 
- * ``response`` - a :class:`~scrapy.http.Response` object containing the last
-   fetched page
+-   ``response`` - a :class:`~scrapy.http.Response` object containing the last
+    fetched page
 
- * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
+-   ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
 
 Example of shell session
 ========================
 
 Here's an example of a typical shell session where we start by scraping the
-https://scrapy.org page, and then proceed to scrape the https://reddit.com
+https://scrapy.org page, and then proceed to scrape the https://old.reddit.com/
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
 getting an error. We end the session by typing Ctrl-D (in Unix systems) or
 Ctrl-Z in Windows.
@@ -155,6 +156,17 @@ shell works.
 First, we launch the shell::
 
     scrapy shell 'https://scrapy.org' --nolog
+
+.. note::
+
+   Remember to always enclose URLs in quotes when running the Scrapy shell from
+   the command line, otherwise URLs containing arguments (i.e. the ``&`` character)
+   will not work.
+
+   On Windows, use double quotes instead::
+
+       scrapy shell "https://scrapy.org" --nolog
+
 
 Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
@@ -177,47 +189,46 @@ all start with the ``[s]`` prefix)::
     >>>
 
 
-After that, we can start playing with the objects::
+After that, we can start playing with the objects:
 
-    >>> response.xpath('//title/text()').extract_first()
-    'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
+>>> response.xpath('//title/text()').get()
+'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
-    >>> fetch("https://reddit.com")
+>>> fetch("https://old.reddit.com/")
 
-    >>> response.xpath('//title/text()').extract()
-    ['reddit: the front page of the internet']
+>>> response.xpath('//title/text()').get()
+'reddit: the front page of the internet'
 
-    >>> request = request.replace(method="POST")
+>>> request = request.replace(method="POST")
 
-    >>> fetch(request)
+>>> fetch(request)
 
-    >>> response.status
-    404
+>>> response.status
+404
 
-    >>> from pprint import pprint
+>>> from pprint import pprint
 
-    >>> pprint(response.headers)
-    {'Accept-Ranges': ['bytes'],
-     'Cache-Control': ['max-age=0, must-revalidate'],
-     'Content-Type': ['text/html; charset=UTF-8'],
-     'Date': ['Thu, 08 Dec 2016 16:21:19 GMT'],
-     'Server': ['snooserv'],
-     'Set-Cookie': ['loid=KqNLou0V9SKMX4qb4n; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
-                    'loidcreated=2016-12-08T16%3A21%3A19.445Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
-                    'loid=vi0ZVe4NkxNWdlH7r7; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
-                    'loidcreated=2016-12-08T16%3A21%3A19.459Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure'],
-     'Vary': ['accept-encoding'],
-     'Via': ['1.1 varnish'],
-     'X-Cache': ['MISS'],
-     'X-Cache-Hits': ['0'],
-     'X-Content-Type-Options': ['nosniff'],
-     'X-Frame-Options': ['SAMEORIGIN'],
-     'X-Moose': ['majestic'],
-     'X-Served-By': ['cache-cdg8730-CDG'],
-     'X-Timer': ['S1481214079.394283,VS0,VE159'],
-     'X-Ua-Compatible': ['IE=edge'],
-     'X-Xss-Protection': ['1; mode=block']}
-    >>>
+>>> pprint(response.headers)
+{'Accept-Ranges': ['bytes'],
+ 'Cache-Control': ['max-age=0, must-revalidate'],
+ 'Content-Type': ['text/html; charset=UTF-8'],
+ 'Date': ['Thu, 08 Dec 2016 16:21:19 GMT'],
+ 'Server': ['snooserv'],
+ 'Set-Cookie': ['loid=KqNLou0V9SKMX4qb4n; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                'loidcreated=2016-12-08T16%3A21%3A19.445Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                'loid=vi0ZVe4NkxNWdlH7r7; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                'loidcreated=2016-12-08T16%3A21%3A19.459Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure'],
+ 'Vary': ['accept-encoding'],
+ 'Via': ['1.1 varnish'],
+ 'X-Cache': ['MISS'],
+ 'X-Cache-Hits': ['0'],
+ 'X-Content-Type-Options': ['nosniff'],
+ 'X-Frame-Options': ['SAMEORIGIN'],
+ 'X-Moose': ['majestic'],
+ 'X-Served-By': ['cache-cdg8730-CDG'],
+ 'X-Timer': ['S1481214079.394283,VS0,VE159'],
+ 'X-Ua-Compatible': ['IE=edge'],
+ 'X-Xss-Protection': ['1; mode=block']}
 
 
 .. _topics-shell-inspect-response:
@@ -263,16 +274,16 @@ When you run the spider, you will get something similar to this::
     >>> response.url
     'http://example.org'
 
-Then, you can check if the extraction code is working::
+Then, you can check if the extraction code is working:
 
-    >>> response.xpath('//h1[@class="fn"]')
-    []
+>>> response.xpath('//h1[@class="fn"]')
+[]
 
 Nope, it doesn't. So you can open the response in your web browser and see if
-it's the response you were expecting::
+it's the response you were expecting:
 
-    >>> view(response)
-    True
+>>> view(response)
+True
 
 Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::

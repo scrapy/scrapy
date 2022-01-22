@@ -3,6 +3,7 @@ import copy
 
 from scrapy.http import Headers
 
+
 class HeadersTest(unittest.TestCase):
 
     def assertSortedEqual(self, first, second, msg=None):
@@ -38,19 +39,19 @@ class HeadersTest(unittest.TestCase):
         assert h.getlist('X-Forwarded-For') is not hlist
 
     def test_encode_utf8(self):
-        h = Headers({u'key': u'\xa3'}, encoding='utf-8')
+        h = Headers({'key': '\xa3'}, encoding='utf-8')
         key, val = dict(h).popitem()
         assert isinstance(key, bytes), key
         assert isinstance(val[0], bytes), val[0]
         self.assertEqual(val[0], b'\xc2\xa3')
 
     def test_encode_latin1(self):
-        h = Headers({u'key': u'\xa3'}, encoding='latin1')
+        h = Headers({'key': '\xa3'}, encoding='latin1')
         key, val = dict(h).popitem()
         self.assertEqual(val[0], b'\xa3')
 
     def test_encode_multiple(self):
-        h = Headers({u'key': [u'\xa3']}, encoding='utf-8')
+        h = Headers({'key': ['\xa3']}, encoding='utf-8')
         key, val = dict(h).popitem()
         self.assertEqual(val[0], b'\xc2\xa3')
 
@@ -83,9 +84,6 @@ class HeadersTest(unittest.TestCase):
         self.assertSortedEqual(h.keys(),
                                [b'X-Forwarded-For', b'Content-Type'])
         self.assertSortedEqual(h.items(),
-                               [(b'X-Forwarded-For', [b'ip1', b'ip2']),
-                                (b'Content-Type', [b'text/html'])])
-        self.assertSortedEqual(h.iteritems(),
                                [(b'X-Forwarded-For', [b'ip1', b'ip2']),
                                 (b'Content-Type', [b'text/html'])])
         self.assertSortedEqual(h.values(), [b'ip2', b'text/html'])
@@ -147,11 +145,11 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h1.getlist('hey'), [b'5'])
 
     def test_invalid_value(self):
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers, {'foo': object()})
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().__setitem__, 'foo', object())
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().setdefault, 'foo', object())
-        self.assertRaisesRegexp(TypeError, 'Unsupported value type',
-                                Headers().setlist, 'foo', [object()])
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers, {'foo': object()})
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().__setitem__, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().setdefault, 'foo', object())
+        self.assertRaisesRegex(TypeError, 'Unsupported value type',
+                               Headers().setlist, 'foo', [object()])

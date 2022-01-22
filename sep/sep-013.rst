@@ -59,7 +59,7 @@ Global changes to all middlewares
 
 To be discussed:
 
-1. should we support returning deferreds (ie. ``maybeDeferred``) in middleware
+1. should we support returning deferreds (i.e. ``maybeDeferred``) in middleware
    methods?
 2. should we pass Twisted Failures instead of exceptions to error methods?
 

@@ -1,8 +1,8 @@
-from __future__ import print_function
 import json
 
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings
+
 
 class Command(ScrapyCommand):
 
@@ -19,15 +19,15 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--get", dest="get", metavar="SETTING",
-            help="print raw setting value")
+                          help="print raw setting value")
         parser.add_option("--getbool", dest="getbool", metavar="SETTING",
-            help="print setting value, interpreted as a boolean")
+                          help="print setting value, interpreted as a boolean")
         parser.add_option("--getint", dest="getint", metavar="SETTING",
-            help="print setting value, interpreted as an integer")
+                          help="print setting value, interpreted as an integer")
         parser.add_option("--getfloat", dest="getfloat", metavar="SETTING",
-            help="print setting value, interpreted as a float")
+                          help="print setting value, interpreted as a float")
         parser.add_option("--getlist", dest="getlist", metavar="SETTING",
-            help="print setting value, interpreted as a list")
+                          help="print setting value, interpreted as a list")
 
     def run(self, args, opts):
         settings = self.crawler_process.settings

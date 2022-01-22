@@ -1,12 +1,10 @@
-from __future__ import print_function
 import time
-import sys
 from collections import defaultdict
 from unittest import TextTestRunner, TextTestResult as _TextTestResult
 
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, set_environ
 from scrapy.utils.conf import build_component_list
 
 
@@ -19,7 +17,7 @@ class TextTestResult(_TextTestResult):
         plural = "s" if run != 1 else ""
 
         writeln(self.separator2)
-        writeln("Ran %d contract%s in %.3fs" % (run, plural, stop - start))
+        writeln(f"Ran {run} contract{plural} in {stop - start:.3f}s")
         writeln()
 
         infos = []
@@ -27,14 +25,14 @@ class TextTestResult(_TextTestResult):
             write("FAILED")
             failed, errored = map(len, (self.failures, self.errors))
             if failed:
-                infos.append("failures=%d" % failed)
+                infos.append(f"failures={failed}")
             if errored:
-                infos.append("errors=%d" % errored)
+                infos.append(f"errors={errored}")
         else:
             write("OK")
 
         if infos:
-            writeln(" (%s)" % (", ".join(infos),))
+            writeln(f" ({', '.join(infos)})")
         else:
             write("\n")
 
@@ -68,31 +66,31 @@ class Command(ScrapyCommand):
 
         spider_loader = self.crawler_process.spider_loader
 
-        for spidername in args or spider_loader.list():
-            spidercls = spider_loader.load(spidername)
-            spidercls.start_requests = lambda s: conman.from_spider(s, result)
+        with set_environ(SCRAPY_CHECK='true'):
+            for spidername in args or spider_loader.list():
+                spidercls = spider_loader.load(spidername)
+                spidercls.start_requests = lambda s: conman.from_spider(s, result)
 
-            tested_methods = conman.tested_methods_from_spidercls(spidercls)
+                tested_methods = conman.tested_methods_from_spidercls(spidercls)
+                if opts.list:
+                    for method in tested_methods:
+                        contract_reqs[spidercls.name].append(method)
+                elif tested_methods:
+                    self.crawler_process.crawl(spidercls)
+
+            # start checks
             if opts.list:
-                for method in tested_methods:
-                    contract_reqs[spidercls.name].append(method)
-            elif tested_methods:
-                self.crawler_process.crawl(spidercls)
+                for spider, methods in sorted(contract_reqs.items()):
+                    if not methods and not opts.verbose:
+                        continue
+                    print(spider)
+                    for method in sorted(methods):
+                        print(f'  * {method}')
+            else:
+                start = time.time()
+                self.crawler_process.start()
+                stop = time.time()
 
-        # start checks
-        if opts.list:
-            for spider, methods in sorted(contract_reqs.items()):
-                if not methods and not opts.verbose:
-                    continue
-                print(spider)
-                for method in sorted(methods):
-                    print('  * %s' % method)
-        else:
-            start = time.time()
-            self.crawler_process.start()
-            stop = time.time()
-
-            result.printErrors()
-            result.printSummary(start, stop)
-            self.exitcode = int(not result.wasSuccessful())
-
+                result.printErrors()
+                result.printSummary(start, stop)
+                self.exitcode = int(not result.wasSuccessful())

@@ -1,12 +1,12 @@
 from unittest import TestCase
-import six
+
 import scrapy
 
 
 class ToplevelTestCase(TestCase):
 
     def test_version(self):
-        self.assertIs(type(scrapy.__version__), six.text_type)
+        self.assertIs(type(scrapy.__version__), str)
 
     def test_version_info(self):
         self.assertIs(type(scrapy.version_info), tuple)

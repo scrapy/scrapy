@@ -40,4 +40,3 @@ class TestDepthMiddleware(TestCase):
 
     def tearDown(self):
         self.stats.close_spider(self.spider, '')
-

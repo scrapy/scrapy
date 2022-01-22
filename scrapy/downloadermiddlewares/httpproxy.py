@@ -1,24 +1,24 @@
 import base64
-from six.moves.urllib.request import getproxies, proxy_bypass
-from six.moves.urllib.parse import unquote
-try:
-    from urllib2 import _parse_proxy
-except ImportError:
-    from urllib.request import _parse_proxy
-from six.moves.urllib.parse import urlunparse
+from urllib.parse import unquote, urlunparse
+from urllib.request import getproxies, proxy_bypass, _parse_proxy
 
-from scrapy.utils.httpobj import urlparse_cached
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 
-class HttpProxyMiddleware(object):
+class HttpProxyMiddleware:
 
     def __init__(self, auth_encoding='latin-1'):
         self.auth_encoding = auth_encoding
         self.proxies = {}
-        for type, url in getproxies().items():
-            self.proxies[type] = self._get_proxy(url, type)
+        for type_, url in getproxies().items():
+            try:
+                self.proxies[type_] = self._get_proxy(url, type_)
+            # some values such as '/var/run/docker.sock' can't be parsed
+            # by _parse_proxy and as such should be skipped
+            except ValueError:
+                continue
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -29,9 +29,9 @@ class HttpProxyMiddleware(object):
 
     def _basic_auth_header(self, username, password):
         user_pass = to_bytes(
-            '%s:%s' % (unquote(username), unquote(password)),
+            f'{unquote(username)}:{unquote(password)}',
             encoding=self.auth_encoding)
-        return base64.b64encode(user_pass).strip()
+        return base64.b64encode(user_pass)
 
     def _get_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)

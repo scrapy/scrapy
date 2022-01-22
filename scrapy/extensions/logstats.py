@@ -8,7 +8,7 @@ from scrapy import signals
 logger = logging.getLogger(__name__)
 
 
-class LogStats(object):
+class LogStats:
     """Log basic scraping stats periodically"""
 
     def __init__(self, stats, interval=60.0):

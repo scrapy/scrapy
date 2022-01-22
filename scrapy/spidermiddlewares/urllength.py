@@ -12,7 +12,7 @@ from scrapy.exceptions import NotConfigured
 logger = logging.getLogger(__name__)
 
 
-class UrlLengthMiddleware(object):
+class UrlLengthMiddleware:
 
     def __init__(self, maxlength):
         self.maxlength = maxlength
@@ -27,9 +27,12 @@ class UrlLengthMiddleware(object):
     def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request) and len(request.url) > self.maxlength:
-                logger.debug("Ignoring link (url length > %(maxlength)d): %(url)s ",
-                             {'maxlength': self.maxlength, 'url': request.url},
-                             extra={'spider': spider})
+                logger.info(
+                    "Ignoring link (url length > %(maxlength)d): %(url)s ",
+                    {'maxlength': self.maxlength, 'url': request.url},
+                    extra={'spider': spider}
+                )
+                spider.crawler.stats.inc_value('urllength/request_ignored_count', spider=spider)
                 return False
             else:
                 return True

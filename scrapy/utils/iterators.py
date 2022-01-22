@@ -1,16 +1,12 @@
-import re
 import csv
 import logging
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
+import re
 from io import StringIO
-import six
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,27 +22,43 @@ def xmliter(obj, nodename):
     """
     nodename_patt = re.escape(nodename)
 
-    HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename_patt, re.S)
-    HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename_patt, re.S)
+    DOCUMENT_HEADER_RE = re.compile(r'<\?xml[^>]+>\s*', re.S)
+    HEADER_END_RE = re.compile(fr'<\s*/{nodename_patt}\s*>', re.S)
+    END_TAG_RE = re.compile(r'<\s*/([^\s>]+)\s*>', re.S)
+    NAMESPACE_RE = re.compile(r'((xmlns[:A-Za-z]*)=[^>\s]+)', re.S)
     text = _body_or_str(obj)
 
-    header_start = re.search(HEADER_START_RE, text)
-    header_start = header_start.group(1).strip() if header_start else ''
-    header_end = re_rsearch(HEADER_END_RE, text)
-    header_end = text[header_end[1]:].strip() if header_end else ''
+    document_header = re.search(DOCUMENT_HEADER_RE, text)
+    document_header = document_header.group().strip() if document_header else ''
+    header_end_idx = re_rsearch(HEADER_END_RE, text)
+    header_end = text[header_end_idx[1]:].strip() if header_end_idx else ''
+    namespaces = {}
+    if header_end:
+        for tagname in reversed(re.findall(END_TAG_RE, header_end)):
+            tag = re.search(fr'<\s*{tagname}.*?xmlns[:=][^>]*>', text[:header_end_idx[1]], re.S)
+            if tag:
+                namespaces.update(reversed(x) for x in re.findall(NAMESPACE_RE, tag.group()))
 
-    r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
+    r = re.compile(fr'<{nodename_patt}[\s>].*?</{nodename_patt}>', re.DOTALL)
     for match in r.finditer(text):
-        nodetext = header_start + match.group() + header_end
-        yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
+        nodetext = (
+            document_header
+            + match.group().replace(
+                nodename,
+                f'{nodename} {" ".join(namespaces.values())}',
+                1
+            )
+            + header_end
+        )
+        yield Selector(text=nodetext, type='xml')
 
 
 def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     from lxml import etree
     reader = _StreamReader(obj)
-    tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
+    tag = f'{{{namespace}}}{nodename}' if namespace else nodename
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
-    selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
+    selxpath = '//' + (f'{prefix}:{nodename}' if namespace else nodename)
     for _, node in iterable:
         nodetext = etree.tostring(node, encoding='unicode')
         node.clear()
@@ -56,7 +68,7 @@ def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
         yield xs.xpath(selxpath)[0]
 
 
-class _StreamReader(object):
+class _StreamReader:
 
     def __init__(self, obj):
         self._ptr = 0
@@ -64,7 +76,7 @@ class _StreamReader(object):
             self._text, self.encoding = obj.body, obj.encoding
         else:
             self._text, self.encoding = obj, 'utf-8'
-        self._is_unicode = isinstance(self._text, six.text_type)
+        self._is_unicode = isinstance(self._text, str)
 
     def read(self, n=65535):
         self.read = self._read_unicode if self._is_unicode else self._read_string
@@ -98,25 +110,28 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     """
 
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
-    def _getrow(csv_r):
-        return [to_unicode(field, encoding) for field in next(csv_r)]
 
-    # Python 3 csv reader input object needs to return strings
-    if six.PY3:
-        lines = StringIO(_body_or_str(obj, unicode=True))
-    else:
-        lines = BytesIO(_body_or_str(obj, unicode=False))
+    def row_to_unicode(row_):
+        return [to_unicode(field, encoding) for field in row_]
+
+    lines = StringIO(_body_or_str(obj, unicode=True))
 
     kwargs = {}
-    if delimiter: kwargs["delimiter"] = delimiter
-    if quotechar: kwargs["quotechar"] = quotechar
+    if delimiter:
+        kwargs["delimiter"] = delimiter
+    if quotechar:
+        kwargs["quotechar"] = quotechar
     csv_r = csv.reader(lines, **kwargs)
 
     if not headers:
-        headers = _getrow(csv_r)
+        try:
+            row = next(csv_r)
+        except StopIteration:
+            return
+        headers = row_to_unicode(row)
 
-    while True:
-        row = _getrow(csv_r)
+    for row in csv_r:
+        row = row_to_unicode(row)
         if len(row) != len(headers):
             logger.warning("ignoring row %(csvlnum)d (length: %(csvrow)d, "
                            "should be: %(csvheader)d)",
@@ -128,11 +143,12 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
 
 def _body_or_str(obj, unicode=True):
-    expected_types = (Response, six.text_type, six.binary_type)
-    assert isinstance(obj, expected_types), \
-        "obj must be %s, not %s" % (
-            " or ".join(t.__name__ for t in expected_types),
-            type(obj).__name__)
+    expected_types = (Response, str, bytes)
+    if not isinstance(obj, expected_types):
+        expected_types_str = " or ".join(t.__name__ for t in expected_types)
+        raise TypeError(
+            f"Object {obj!r} must be {expected_types_str}, not {type(obj).__name__}"
+        )
     if isinstance(obj, Response):
         if not unicode:
             return obj.body
@@ -140,7 +156,7 @@ def _body_or_str(obj, unicode=True):
             return obj.text
         else:
             return obj.body.decode('utf-8')
-    elif isinstance(obj, six.text_type):
+    elif isinstance(obj, str):
         return obj if unicode else obj.encode('utf-8')
     else:
         return obj.decode('utf-8') if unicode else obj

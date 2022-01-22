@@ -1,11 +1,12 @@
 import os
 import unittest
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 
 from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (response_httprepr, open_in_browser,
                                    get_meta_refresh, get_base_url, response_status_message)
+
 
 __doctests__ = ['scrapy.utils.response']
 
@@ -36,8 +37,7 @@ class ResponseUtilsTest(unittest.TestCase):
             self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
             return True
         response = HtmlResponse(url, body=body)
-        assert open_in_browser(response, _openfunc=browser_open), \
-            "Browser not called"
+        assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
 
         resp = Response(url, body=body)
         self.assertRaises(TypeError, open_in_browser, resp, debug=True)
@@ -83,3 +83,56 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertEqual(response_status_message(200), '200 OK')
         self.assertEqual(response_status_message(404), '404 Not Found')
         self.assertEqual(response_status_message(573), "573 Unknown Status")
+
+    def test_inject_base_url(self):
+        url = "http://www.example.com"
+
+        def check_base_url(burl):
+            path = urlparse(burl).path
+            if not os.path.exists(path):
+                path = burl.replace('file://', '')
+            with open(path, "rb") as f:
+                bbody = f.read()
+            self.assertEqual(bbody.count(b'<base href="' + to_bytes(url) + b'">'), 1)
+            return True
+
+        r1 = HtmlResponse(url, body=b"""
+        <html>
+            <head><title>Dummy</title></head>
+            <body><p>Hello world.</p></body>
+        </html>""")
+        r2 = HtmlResponse(url, body=b"""
+        <html>
+            <head id="foo"><title>Dummy</title></head>
+            <body>Hello world.</body>
+        </html>""")
+        r3 = HtmlResponse(url, body=b"""
+        <html>
+            <head><title>Dummy</title></head>
+            <body>
+                <header>Hello header</header>
+                <p>Hello world.</p>
+            </body>
+        </html>""")
+        r4 = HtmlResponse(url, body=b"""
+        <html>
+            <!-- <head>Dummy comment</head> -->
+            <head><title>Dummy</title></head>
+            <body><p>Hello world.</p></body>
+        </html>""")
+        r5 = HtmlResponse(url, body=b"""
+        <html>
+            <!--[if IE]>
+            <head><title>IE head</title></head>
+            <![endif]-->
+            <!--[if !IE]>-->
+            <head><title>Standard head</title></head>
+            <!--<![endif]-->
+            <body><p>Hello world.</p></body>
+        </html>""")
+
+        assert open_in_browser(r1, _openfunc=check_base_url), "Inject base url"
+        assert open_in_browser(r2, _openfunc=check_base_url), "Inject base url with argumented head"
+        assert open_in_browser(r3, _openfunc=check_base_url), "Inject unique base url with misleading tag"
+        assert open_in_browser(r4, _openfunc=check_base_url), "Inject unique base url with misleading comment"
+        assert open_in_browser(r5, _openfunc=check_base_url), "Inject unique base url with conditional comment"

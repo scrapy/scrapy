@@ -211,7 +211,7 @@ spider methods on each event such as:
 - call additional spider middlewares defined in the ``Spider.middlewares``
   attribute
 - call ``Spider.next_request()`` and ``Spider.start_requests()`` on
-  ``next_request()`` middleware method (this would implicitly support backwards
+  ``next_request()`` middleware method (this would implicitly support backward
   compatibility)
 
 Differences with Spider middleware v1

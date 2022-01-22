@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
 import sys
 import logging
 import unittest
@@ -10,13 +8,14 @@ from twisted.python.failure import Failure
 from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
                               LogCounterHandler, StreamLogger)
 from scrapy.utils.test import get_crawler
+from scrapy.extensions import telnet
 
 
 class FailureToExcInfoTest(unittest.TestCase):
 
     def test_failure(self):
         try:
-            0/0
+            0 / 0
         except ZeroDivisionError:
             exc_info = sys.exc_info()
             failure = Failure()
@@ -35,40 +34,40 @@ class TopLevelFormatterTest(unittest.TestCase):
 
     def test_top_level_logger(self):
         logger = logging.getLogger('test')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('test', 'WARNING', 'test log msg'))
+        log.check(('test', 'WARNING', 'test log msg'))
 
     def test_children_logger(self):
         logger = logging.getLogger('test.test1')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('test', 'WARNING', 'test log msg'))
+        log.check(('test', 'WARNING', 'test log msg'))
 
     def test_overlapping_name_logger(self):
         logger = logging.getLogger('test2')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('test2', 'WARNING', 'test log msg'))
+        log.check(('test2', 'WARNING', 'test log msg'))
 
     def test_different_name_logger(self):
         logger = logging.getLogger('different')
-        with self.handler as l:
+        with self.handler as log:
             logger.warning('test log msg')
-
-        l.check(('different', 'WARNING', 'test log msg'))
+        log.check(('different', 'WARNING', 'test log msg'))
 
 
 class LogCounterHandlerTest(unittest.TestCase):
 
     def setUp(self):
+        settings = {'LOG_LEVEL': 'WARNING'}
+        if not telnet.TWISTED_CONCH_AVAILABLE:
+            # disable it to avoid the extra warning
+            settings['TELNETCONSOLE_ENABLED'] = False
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.NOTSET)
         self.logger.propagate = False
-        self.crawler = get_crawler(settings_dict={'LOG_LEVEL': 'WARNING'})
+        self.crawler = get_crawler(settings_dict=settings)
         self.handler = LogCounterHandler(self.crawler)
         self.logger.addHandler(self.handler)
 
@@ -104,6 +103,6 @@ class StreamLoggerTest(unittest.TestCase):
         sys.stdout = self.stdout
 
     def test_redirect(self):
-        with LogCapture() as l:
+        with LogCapture() as log:
             print('test log msg')
-        l.check(('test', 'ERROR', 'test log msg'))
+        log.check(('test', 'ERROR', 'test log msg'))
