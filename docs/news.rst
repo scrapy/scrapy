@@ -60,11 +60,9 @@ Scrapy 2.5.1 (2021-10-05)
     need to upgrade scrapy-splash to a greater version for it to continue to
     work.
 
-    Deprecations
-    ~~~~~~~~~~~~
-
-    -   The :class:`scrapy.pipelines.images.NoimagesDrop` class is now
-        deprecated as it is not being used in Scrapy code. (:issue:`5368`)
+*   **Deprecations:**
+    The :class:`scrapy.pipelines.images.NoimagesDrop` class is now
+    deprecated as it is not being used in Scrapy code. (:issue:`5368`)
 
 .. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
 
