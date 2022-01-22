@@ -1,33 +1,33 @@
 """Helper functions for working with signals"""
-
+import collections.abc
 import logging
 
-from twisted.internet.defer import maybeDeferred, DeferredList, Deferred
+from twisted.internet.defer import DeferredList, Deferred
 from twisted.python.failure import Failure
 
-from pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
-    getAllReceivers, disconnect
+from pydispatch.dispatcher import Anonymous, Any, disconnect, getAllReceivers, liveReceivers
 from pydispatch.robustapply import robustApply
+
+from scrapy.exceptions import StopDownload
+from scrapy.utils.defer import maybeDeferred_coro
 from scrapy.utils.log import failure_to_exc_info
 
+
 logger = logging.getLogger(__name__)
-
-
-class _IgnoredException(Exception):
-    pass
 
 
 def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
     """
-    dont_log = named.pop('dont_log', _IgnoredException)
+    dont_log = named.pop('dont_log', ())
+    dont_log = tuple(dont_log) if isinstance(dont_log, collections.abc.Sequence) else (dont_log,)
+    dont_log += (StopDownload, )
     spider = named.get('spider', None)
     responses = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         try:
-            response = robustApply(receiver, signal=signal, sender=sender,
-                *arguments, **named)
+            response = robustApply(receiver, signal=signal, sender=sender, *arguments, **named)
             if isinstance(response, Deferred):
                 logger.error("Cannot return deferreds from signal handler: %(receiver)s",
                              {'receiver': receiver}, extra={'spider': spider})
@@ -61,8 +61,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     spider = named.get('spider', None)
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        d = maybeDeferred(robustApply, receiver, signal=signal, sender=sender,
-                *arguments, **named)
+        d = maybeDeferred_coro(robustApply, receiver, signal=signal, sender=sender, *arguments, **named)
         d.addErrback(logerror, receiver)
         d.addBoth(lambda result: (receiver, result))
         dfds.append(d)

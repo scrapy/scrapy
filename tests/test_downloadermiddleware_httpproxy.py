@@ -1,11 +1,10 @@
 import os
-import sys
 from functools import partial
-from twisted.trial.unittest import TestCase, SkipTest
+from twisted.trial.unittest import TestCase
 
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response, Request
+from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.crawler import Crawler
 from scrapy.settings import Settings
@@ -13,7 +12,7 @@ from scrapy.settings import Settings
 spider = Spider('foo')
 
 
-class TestDefaultHeadersMiddleware(TestCase):
+class TestHttpProxyMiddleware(TestCase):
 
     failureException = AssertionError
 
@@ -25,7 +24,7 @@ class TestDefaultHeadersMiddleware(TestCase):
 
     def test_not_enabled(self):
         settings = Settings({'HTTPPROXY_ENABLED': False})
-        crawler = Crawler(spider, settings)
+        crawler = Crawler(Spider, settings)
         self.assertRaises(NotConfigured, partial(HttpProxyMiddleware.from_crawler, crawler))
 
     def test_no_environment_proxies(self):
@@ -44,8 +43,11 @@ class TestDefaultHeadersMiddleware(TestCase):
         os.environ.pop('file_proxy', None)
         mw = HttpProxyMiddleware()
 
-        for url, proxy in [('http://e.com', http_proxy),
-                ('https://e.com', https_proxy), ('file://tmp/a', None)]:
+        for url, proxy in [
+            ('http://e.com', http_proxy),
+            ('https://e.com', https_proxy),
+            ('file://tmp/a', None),
+        ]:
             req = Request(url)
             assert mw.process_request(req, spider) is None
             self.assertEqual(req.url, url)
@@ -86,7 +88,7 @@ class TestDefaultHeadersMiddleware(TestCase):
 
     def test_proxy_auth_encoding(self):
         # utf-8 encoding
-        os.environ['http_proxy'] = u'https://m\u00E1n:pass@proxy:3128'
+        os.environ['http_proxy'] = 'https://m\u00E1n:pass@proxy:3128'
         mw = HttpProxyMiddleware(auth_encoding='utf-8')
         req = Request('http://scrapytest.org')
         assert mw.process_request(req, spider) is None
@@ -94,7 +96,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         self.assertEqual(req.headers.get('Proxy-Authorization'), b'Basic bcOhbjpwYXNz')
 
         # proxy from request.meta
-        req = Request('http://scrapytest.org', meta={'proxy': u'https://\u00FCser:pass@proxy:3128'})
+        req = Request('http://scrapytest.org', meta={'proxy': 'https://\u00FCser:pass@proxy:3128'})
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.meta, {'proxy': 'https://proxy:3128'})
         self.assertEqual(req.headers.get('Proxy-Authorization'), b'Basic w7xzZXI6cGFzcw==')
@@ -107,7 +109,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         self.assertEqual(req.headers.get('Proxy-Authorization'), b'Basic beFuOnBhc3M=')
 
         # proxy from request.meta, latin-1 encoding
-        req = Request('http://scrapytest.org', meta={'proxy': u'https://\u00FCser:pass@proxy:3128'})
+        req = Request('http://scrapytest.org', meta={'proxy': 'https://\u00FCser:pass@proxy:3128'})
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.meta, {'proxy': 'https://proxy:3128'})
         self.assertEqual(req.headers.get('Proxy-Authorization'), b'Basic /HNlcjpwYXNz')
@@ -143,3 +145,10 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://noproxy.com', meta={'proxy': 'http://proxy.com'})
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.meta, {'proxy': 'http://proxy.com'})
+
+    def test_no_proxy_invalid_values(self):
+        os.environ['no_proxy'] = '/var/run/docker.sock'
+        mw = HttpProxyMiddleware()
+        # '/var/run/docker.sock' may be used by the user for
+        # no_proxy value but is not parseable and should be skipped
+        assert 'no' not in mw.proxies

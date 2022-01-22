@@ -2,6 +2,7 @@ import gzip
 import inspect
 import warnings
 from io import BytesIO
+from unittest import mock
 
 from testfixtures import LogCapture
 from twisted.trial import unittest
@@ -10,14 +11,16 @@ from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.spiders.init import InitSpider
-from scrapy.spiders import Spider, BaseSpider, CrawlSpider, Rule, XMLFeedSpider, \
-    CSVFeedSpider, SitemapSpider
+from scrapy.spiders import (
+    CSVFeedSpider,
+    CrawlSpider,
+    Rule,
+    SitemapSpider,
+    Spider,
+    XMLFeedSpider,
+)
 from scrapy.linkextractors import LinkExtractor
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
-
-from tests import mock
 
 
 class SpiderTest(unittest.TestCase):
@@ -42,25 +45,14 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(list(start_requests), [])
 
     def test_spider_args(self):
-        """Constructor arguments are assigned to spider attributes"""
+        """``__init__`` method arguments are assigned to spider attributes"""
         spider = self.spider_class('example.com', foo='bar')
         self.assertEqual(spider.foo, 'bar')
 
     def test_spider_without_name(self):
-        """Constructor arguments are assigned to spider attributes"""
+        """``__init__`` method arguments are assigned to spider attributes"""
         self.assertRaises(ValueError, self.spider_class)
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
-
-    def test_deprecated_set_crawler_method(self):
-        spider = self.spider_class('example.com')
-        crawler = get_crawler()
-        with warnings.catch_warnings(record=True) as w:
-            spider.set_crawler(crawler)
-            self.assertIn("set_crawler", str(w[0].message))
-            self.assertTrue(hasattr(spider, 'crawler'))
-            self.assertIs(spider.crawler, crawler)
-            self.assertTrue(hasattr(spider, 'settings'))
-            self.assertIs(spider.settings, crawler.settings)
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
@@ -105,11 +97,11 @@ class SpiderTest(unittest.TestCase):
 
     def test_logger(self):
         spider = self.spider_class('example.com')
-        with LogCapture() as l:
+        with LogCapture() as lc:
             spider.logger.info('test log msg')
-        l.check(('example.com', 'INFO', 'test log msg'))
+        lc.check(('example.com', 'INFO', 'test log msg'))
 
-        record = l.records[0]
+        record = lc.records[0]
         self.assertIn('spider', record.__dict__)
         self.assertIs(record.spider, spider)
 
@@ -133,7 +125,9 @@ class XMLFeedSpiderTest(SpiderTest):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
                 xmlns:y="http://www.example.com/schemas/extras/1.0">
-        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated><other value="bar" y:custom="fuu"/></url>
+        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated>
+            <other value="bar" y:custom="fuu"/>
+        </url>
         <url><loc>http://www.example.com/</loc><y:updated>2009-08-16</updated><other value="foo"/></url>
         </urlset>"""
         response = XmlResponse(url='http://example.com/sitemap.xml', body=body)
@@ -147,24 +141,24 @@ class XMLFeedSpiderTest(SpiderTest):
 
             def parse_node(self, response, selector):
                 yield {
-                    'loc': selector.xpath('a:loc/text()').extract(),
-                    'updated': selector.xpath('b:updated/text()').extract(),
-                    'other': selector.xpath('other/@value').extract(),
-                    'custom': selector.xpath('other/@b:custom').extract(),
+                    'loc': selector.xpath('a:loc/text()').getall(),
+                    'updated': selector.xpath('b:updated/text()').getall(),
+                    'other': selector.xpath('other/@value').getall(),
+                    'custom': selector.xpath('other/@b:custom').getall(),
                 }
 
         for iterator in ('iternodes', 'xml'):
             spider = _XMLSpider('example', iterator=iterator)
-            output = list(spider.parse(response))
+            output = list(spider._parse(response))
             self.assertEqual(len(output), 2, iterator)
             self.assertEqual(output, [
-                {'loc': [u'http://www.example.com/Special-Offers.html'],
-                 'updated': [u'2009-08-16'],
-                 'custom': [u'fuu'],
-                 'other': [u'bar']},
+                {'loc': ['http://www.example.com/Special-Offers.html'],
+                 'updated': ['2009-08-16'],
+                 'custom': ['fuu'],
+                 'other': ['bar']},
                 {'loc': [],
-                 'updated': [u'2009-08-16'],
-                 'other': [u'foo'],
+                 'updated': ['2009-08-16'],
+                 'other': ['foo'],
                  'custom': []},
             ], iterator)
 
@@ -188,14 +182,33 @@ class CrawlSpiderTest(SpiderTest):
     </body></html>"""
     spider_class = CrawlSpider
 
-    def test_process_links(self):
+    def test_rule_without_link_extractor(self):
 
-        response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+
+    def test_process_links(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
@@ -208,24 +221,24 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                          ['http://example.org/somepage/item/12.html',
-                           'http://example.org/about.html',
-                           'http://example.org/nofollow.html'])
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
 
     def test_process_links_filter(self):
 
-        response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
             import re
 
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="filter_process_links"),
             )
             _test_regex = re.compile('nofollow')
+
             def filter_process_links(self, links):
                 return [link for link in links
                         if not self._test_regex.search(link.url)]
@@ -235,17 +248,16 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 2)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                          ['http://example.org/somepage/item/12.html',
-                           'http://example.org/about.html'])
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html'])
 
     def test_process_links_generator(self):
 
-        response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
@@ -259,9 +271,107 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                          ['http://example.org/somepage/item/12.html',
-                           'http://example.org/about.html',
-                           'http://example.org/nofollow.html'])
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+
+    def test_process_request(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        def process_request_change_domain(request, response):
+            return request.replace(url=request.url.replace('.org', '.com'))
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request=process_request_change_domain),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.com/somepage/item/12.html',
+                          'http://example.com/about.html',
+                          'http://example.com/nofollow.html'])
+
+    def test_process_request_with_response(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        def process_request_meta_response_class(request, response):
+            request.meta['response_class'] = response.__class__.__name__
+            return request
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request=process_request_meta_response_class),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+        self.assertEqual([r.meta['response_class'] for r in output],
+                         ['HtmlResponse', 'HtmlResponse', 'HtmlResponse'])
+
+    def test_process_request_instance_method(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request='process_request_upper'),
+            )
+
+            def process_request_upper(self, request, response):
+                return request.replace(url=request.url.upper())
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
+                          'http://EXAMPLE.ORG/ABOUT.HTML',
+                          'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
+
+    def test_process_request_instance_method_with_response(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html", body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            allowed_domains = ['example.org']
+            rules = (
+                Rule(LinkExtractor(), process_request='process_request_meta_response_class'),
+            )
+
+            def process_request_meta_response_class(self, request, response):
+                request.meta['response_class'] = response.__class__.__name__
+                return request
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEqual([r.url for r in output],
+                         ['http://example.org/somepage/item/12.html',
+                          'http://example.org/about.html',
+                          'http://example.org/nofollow.html'])
+        self.assertEqual([r.meta['response_class'] for r in output],
+                         ['HtmlResponse', 'HtmlResponse', 'HtmlResponse'])
 
     def test_follow_links_attribute_population(self):
         crawler = get_crawler()
@@ -275,19 +385,13 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
 
-    def test_follow_links_attribute_deprecated_population(self):
-        spider = self.spider_class('example.com')
-        self.assertFalse(hasattr(spider, '_follow_links'))
+    def test_start_url(self):
+        spider = self.spider_class("example.com")
+        spider.start_url = 'https://www.example.com'
 
-        spider.set_crawler(get_crawler())
-        self.assertTrue(hasattr(spider, '_follow_links'))
-        self.assertTrue(spider._follow_links)
-
-        spider = self.spider_class('example.com')
-        settings_dict = {'CRAWLSPIDER_FOLLOW_LINKS': False}
-        spider.set_crawler(get_crawler(settings_dict=settings_dict))
-        self.assertTrue(hasattr(spider, '_follow_links'))
-        self.assertFalse(spider._follow_links)
+        with self.assertRaisesRegex(AttributeError,
+                                    r'^Crawling could not start.*$'):
+            list(spider.start_requests())
 
 
 class SitemapSpiderTest(SpiderTest):
@@ -375,87 +479,110 @@ Sitemap: /sitemap-relative-url.xml
                           'http://www.example.com/schweiz-deutsch/',
                           'http://www.example.com/italiano/'])
 
+    def test_sitemap_filter(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/</loc>
+            <lastmod>2010-01-01</lastmod>
+        </url>
+        <url>
+            <loc>http://www.example.com/portuguese/</loc>
+            <lastmod>2005-01-01</lastmod>
+        </url>
+    </urlset>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                from datetime import datetime
+                for entry in entries:
+                    date_time = datetime.strptime(entry['lastmod'], '%Y-%m-%d')
+                    if date_time.year > 2008:
+                        yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/',
+                          'http://www.example.com/portuguese/'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/'])
+
+    def test_sitemap_filter_with_alternate_links(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/english/article_1/</loc>
+            <lastmod>2010-01-01</lastmod>
+            <xhtml:link rel="alternate" hreflang="de"
+                href="http://www.example.com/deutsch/article_1/"/>
+        </url>
+        <url>
+            <loc>http://www.example.com/english/article_2/</loc>
+            <lastmod>2015-01-01</lastmod>
+        </url>
+    </urlset>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                for entry in entries:
+                    alternate_links = entry.get('alternate', tuple())
+                    for link in alternate_links:
+                        if '/deutsch/' in link:
+                            entry['loc'] = link
+                            yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/english/article_1/',
+                          'http://www.example.com/english/article_2/'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/deutsch/article_1/'])
+
+    def test_sitemapindex_filter(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <sitemap>
+            <loc>http://www.example.com/sitemap1.xml</loc>
+            <lastmod>2004-01-01T20:00:00+00:00</lastmod>
+        </sitemap>
+        <sitemap>
+            <loc>http://www.example.com/sitemap2.xml</loc>
+            <lastmod>2005-01-01</lastmod>
+        </sitemap>
+    </sitemapindex>"""
+
+        class FilteredSitemapSpider(self.spider_class):
+            def sitemap_filter(self, entries):
+                from datetime import datetime
+                for entry in entries:
+                    date_time = datetime.strptime(entry['lastmod'].split('T')[0], '%Y-%m-%d')
+                    if date_time.year > 2004:
+                        yield entry
+
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/sitemap1.xml',
+                          'http://www.example.com/sitemap2.xml'])
+
+        spider = FilteredSitemapSpider("example.com")
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)],
+                         ['http://www.example.com/sitemap2.xml'])
+
 
 class DeprecationTest(unittest.TestCase):
 
-    def test_basespider_is_deprecated(self):
-        with warnings.catch_warnings(record=True) as w:
-
-            class MySpider1(BaseSpider):
-                pass
-
-            self.assertEqual(len(w), 1)
-            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(w[0].lineno, inspect.getsourcelines(MySpider1)[1])
-
-    def test_basespider_issubclass(self):
-        class MySpider2(Spider):
-            pass
-
-        class MySpider2a(MySpider2):
-            pass
-
-        class Foo(object):
-            pass
-
-        class Foo2(object_ref):
-            pass
-
-        assert issubclass(MySpider2, BaseSpider)
-        assert issubclass(MySpider2a, BaseSpider)
-        assert not issubclass(Foo, BaseSpider)
-        assert not issubclass(Foo2, BaseSpider)
-
-    def test_basespider_isinstance(self):
-        class MySpider3(Spider):
-            name = 'myspider3'
-
-        class MySpider3a(MySpider3):
-            pass
-
-        class Foo(object):
-            pass
-
-        class Foo2(object_ref):
-            pass
-
-        assert isinstance(MySpider3(), BaseSpider)
-        assert isinstance(MySpider3a(), BaseSpider)
-        assert not isinstance(Foo(), BaseSpider)
-        assert not isinstance(Foo2(), BaseSpider)
-
     def test_crawl_spider(self):
         assert issubclass(CrawlSpider, Spider)
-        assert issubclass(CrawlSpider, BaseSpider)
         assert isinstance(CrawlSpider(name='foo'), Spider)
-        assert isinstance(CrawlSpider(name='foo'), BaseSpider)
-
-    def test_make_requests_from_url_deprecated(self):
-        class MySpider4(Spider):
-            name = 'spider1'
-            start_urls = ['http://example.com']
-
-        class MySpider5(Spider):
-            name = 'spider2'
-            start_urls = ['http://example.com']
-
-            def make_requests_from_url(self, url):
-                return Request(url + "/foo", dont_filter=True)
-
-        with warnings.catch_warnings(record=True) as w:
-            # spider without overridden make_requests_from_url method
-            # doesn't issue a warning
-            spider1 = MySpider4()
-            self.assertEqual(len(list(spider1.start_requests())), 1)
-            self.assertEqual(len(w), 0)
-
-            # spider with overridden make_requests_from_url issues a warning,
-            # but the method still works
-            spider2 = MySpider5()
-            requests = list(spider2.start_requests())
-            self.assertEqual(len(requests), 1)
-            self.assertEqual(requests[0].url, 'http://example.com/foo')
-            self.assertEqual(len(w), 1)
 
 
 class NoParseMethodSpiderTest(unittest.TestCase):
@@ -468,5 +595,5 @@ class NoParseMethodSpiderTest(unittest.TestCase):
         resp = TextResponse(url="http://www.example.com/random_url", body=text)
 
         exc_msg = 'Spider.parse callback is not defined'
-        with self.assertRaisesRegexp(NotImplementedError, exc_msg):
+        with self.assertRaisesRegex(NotImplementedError, exc_msg):
             spider.parse(resp)

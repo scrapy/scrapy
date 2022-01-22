@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-import re
+from unittest import mock
+
 from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
@@ -10,7 +9,7 @@ from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.settings import Settings
-from tests import mock
+from tests.test_robotstxt_interface import rerp_available, reppy_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -31,20 +30,19 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def _get_successful_crawler(self):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
-        ROBOTS = re.sub(b'^\s+(?m)', b'', u'''
-        User-Agent: *
-        Disallow: /admin/
-        Disallow: /static/
-
-        # taken from https://en.wikipedia.org/robots.txt
-        Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
-        Disallow: /wiki/Käyttäjä:
-
-        User-Agent: UnicödeBöt
-        Disallow: /some/randome/page.html
-        '''.encode('utf-8'))
+        ROBOTS = """
+User-Agent: *
+Disallow: /admin/
+Disallow: /static/
+# taken from https://en.wikipedia.org/robots.txt
+Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
+Disallow: /wiki/Käyttäjä:
+User-Agent: UnicödeBöt
+Disallow: /some/randome/page.html
+""".encode('utf-8')
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
-        def return_response(request, spider):
+
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -58,7 +56,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
             self.assertIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertIgnored(Request('http://site.local/static/'), middleware),
             self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware),
-            self.assertIgnored(Request(u'http://site.local/wiki/Käyttäjä:'), middleware)
+            self.assertIgnored(Request('http://site.local/wiki/Käyttäjä:'), middleware)
         ], fireOnOneErrback=True)
 
     def test_robotstxt_ready_parser(self):
@@ -80,7 +78,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt', body=b'GIF89a\xd3\x00\xfe\x00\xa2')
-        def return_response(request, spider):
+
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -102,7 +101,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         crawler = self.crawler
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt')
-        def return_response(request, spider):
+
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -121,7 +121,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
-        def return_failure(request, spider):
+
+        def return_failure(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
             return deferred
@@ -136,7 +137,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_immediate_error(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
-        def immediate_failure(request, spider):
+
+        def immediate_failure(request):
             deferred = Deferred()
             deferred.errback(failure.Failure(err))
             return deferred
@@ -147,7 +149,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
 
     def test_ignore_robotstxt_request(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
-        def ignore_request(request, spider):
+
+        def ignore_request(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
             return deferred
@@ -160,6 +163,15 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         d.addCallback(lambda _: self.assertFalse(mw_module_logger.error.called))
         return d
 
+    def test_robotstxt_user_agent_setting(self):
+        crawler = self._get_successful_crawler()
+        crawler.settings.set('ROBOTSTXT_USER_AGENT', 'Examplebot')
+        crawler.settings.set('USER_AGENT', 'Mozilla/5.0 (X11; Linux x86_64)')
+        middleware = RobotsTxtMiddleware(crawler)
+        rp = mock.MagicMock(return_value=True)
+        middleware.process_request_2(rp, Request('http://site.local/allowed'), None)
+        rp.allowed.assert_called_once_with('http://site.local/allowed', 'Examplebot')
+
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used
         dfd = maybeDeferred(middleware.process_request, request, spider)
@@ -170,3 +182,21 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         spider = None  # not actually used
         return self.assertFailure(maybeDeferred(middleware.process_request, request, spider),
                                   IgnoreRequest)
+
+
+class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
+    if not rerp_available():
+        skip = "Rerp parser is not installed"
+
+    def setUp(self):
+        super().setUp()
+        self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.RerpRobotParser')
+
+
+class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
+    if not reppy_available():
+        skip = "Reppy parser is not installed"
+
+    def setUp(self):
+        super().setUp()
+        self.crawler.settings.set('ROBOTSTXT_PARSER', 'scrapy.robotstxt.ReppyRobotParser')
