@@ -94,15 +94,6 @@ How can I scrape an item with attributes in different pages?
 
 See :ref:`topics-request-response-ref-request-callback-arguments`.
 
-
-Scrapy crashes with: ImportError: No module named win32api
-----------------------------------------------------------
-
-You need to install `pywin32`_ because of `this Twisted bug`_.
-
-.. _pywin32: https://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: https://twistedmatrix.com/trac/ticket/3707
-
 How can I simulate a user login in my spider?
 ---------------------------------------------
 
