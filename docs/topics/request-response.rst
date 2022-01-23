@@ -950,6 +950,14 @@ TextResponse objects
         Returns a Python object from deserialized JSON document.
         The result is cached after the first call.
 
+    .. method:: TextResponse.urljoin(url)
+
+        Constructs an absolute url by combining the Response's base url with
+        a possible relative url. The base url shall be extracted from the
+        ``<base>`` tag, or just the Response's :attr:`url` if there is no such
+        tag.
+
+
 
 HtmlResponse objects
 --------------------
