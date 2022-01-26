@@ -524,7 +524,7 @@ class FeedExporter:
             raise TypeError(f"{feedcls.__qualname__}.{method_name} returned None")
         return instance
 
-    def _get_uri_params(self, spider, uri_params, slot=None):
+    def _get_uri_params(self, spider, uri_params_function, slot=None):
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
@@ -532,9 +532,11 @@ class FeedExporter:
         params['time'] = utc_now.replace(microsecond=0).isoformat().replace(':', '-')
         params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
-        uripar_function = load_object(uri_params) if uri_params else lambda x, y: x
+
+        original_params = params.copy()
+        uripar_function = load_object(uri_params_function) if uri_params_function else lambda x, y: x
         new_params = uripar_function(params, spider)
-        if new_params is None:
+        if new_params is None or original_params != params:
             warnings.warn(
                 'Modifying the params dictionary in-place in the function defined in '
                 'the FEED_URI_PARAMS setting or in the uri_params key of the FEEDS '
