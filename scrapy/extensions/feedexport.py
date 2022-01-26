@@ -532,7 +532,6 @@ class FeedExporter:
         params['time'] = utc_now.replace(microsecond=0).isoformat().replace(':', '-')
         params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
-
         original_params = params.copy()
         uripar_function = load_object(uri_params_function) if uri_params_function else lambda x, y: x
         new_params = uripar_function(params, spider)
