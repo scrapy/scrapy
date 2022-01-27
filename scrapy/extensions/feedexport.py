@@ -11,14 +11,14 @@ import sys
 import warnings
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from typing import Any, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 from zope.interface import implementer, Interface
 
-from scrapy import signals
+from scrapy import signals, Spider
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
@@ -524,7 +524,12 @@ class FeedExporter:
             raise TypeError(f"{feedcls.__qualname__}.{method_name} returned None")
         return instance
 
-    def _get_uri_params(self, spider, uri_params_function, slot=None):
+    def _get_uri_params(
+        self,
+        spider: Spider,
+        uri_params_function: Optional[Union[str, Callable[[dict, Spider], dict]]],
+        slot: Optional[_FeedSlot] = None,
+    ) -> dict:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
