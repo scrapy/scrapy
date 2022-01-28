@@ -2608,3 +2608,166 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
                     ),
                 )
             )
+
+
+class URIParamsTest:
+
+    spider_name = "uri_params_spider"
+
+    def build_settings(self, uri='file:///tmp/foobar', uri_params=None):
+        raise NotImplementedError
+
+    def test_default(self):
+        settings = self.build_settings(
+            uri='file:///tmp/%(name)s',
+        )
+        crawler = get_crawler(settings_dict=settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            messages = tuple(
+                str(item.message) for item in w
+                if item.category is ScrapyDeprecationWarning
+            )
+            self.assertEqual(messages, tuple())
+
+        self.assertEqual(
+            feed_exporter.slots[0].uri,
+            f'file:///tmp/{self.spider_name}'
+        )
+
+    def test_none(self):
+        def uri_params(params, spider):
+            pass
+
+        settings = self.build_settings(
+            uri='file:///tmp/%(name)s',
+            uri_params=uri_params,
+        )
+        crawler = get_crawler(settings_dict=settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            messages = tuple(
+                str(item.message) for item in w
+                if item.category is ScrapyDeprecationWarning
+            )
+            self.assertEqual(
+                messages,
+                (
+                    (
+                        'Modifying the params dictionary in-place in the '
+                        'function defined in the FEED_URI_PARAMS setting or '
+                        'in the uri_params key of the FEEDS setting is '
+                        'deprecated. The function must return a new '
+                        'dictionary instead.'
+                    ),
+                )
+            )
+
+        self.assertEqual(
+            feed_exporter.slots[0].uri,
+            f'file:///tmp/{self.spider_name}'
+        )
+
+    def test_empty_dict(self):
+        def uri_params(params, spider):
+            return {}
+
+        settings = self.build_settings(
+            uri='file:///tmp/%(name)s',
+            uri_params=uri_params,
+        )
+        crawler = get_crawler(settings_dict=settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            with self.assertRaises(KeyError):
+                feed_exporter.open_spider(spider)
+            messages = tuple(
+                str(item.message) for item in w
+                if item.category is ScrapyDeprecationWarning
+            )
+            self.assertEqual(messages, tuple())
+
+    def test_params_as_is(self):
+        def uri_params(params, spider):
+            return params
+
+        settings = self.build_settings(
+            uri='file:///tmp/%(name)s',
+            uri_params=uri_params,
+        )
+        crawler = get_crawler(settings_dict=settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            messages = tuple(
+                str(item.message) for item in w
+                if item.category is ScrapyDeprecationWarning
+            )
+            self.assertEqual(messages, tuple())
+
+        self.assertEqual(
+            feed_exporter.slots[0].uri,
+            f'file:///tmp/{self.spider_name}'
+        )
+
+    def test_custom_param(self):
+        def uri_params(params, spider):
+            return {**params, 'foo': self.spider_name}
+
+        settings = self.build_settings(
+            uri='file:///tmp/%(foo)s',
+            uri_params=uri_params,
+        )
+        crawler = get_crawler(settings_dict=settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+        with warnings.catch_warnings(record=True) as w:
+            feed_exporter.open_spider(spider)
+            messages = tuple(
+                str(item.message) for item in w
+                if item.category is ScrapyDeprecationWarning
+            )
+            self.assertEqual(messages, tuple())
+
+        self.assertEqual(
+            feed_exporter.slots[0].uri,
+            f'file:///tmp/{self.spider_name}'
+        )
+
+
+class URIParamsSettingTest(URIParamsTest, unittest.TestCase):
+
+    def build_settings(self, uri='file:///tmp/foobar', uri_params=None):
+        extra_settings = {}
+        if uri_params:
+            extra_settings['FEED_URI_PARAMS'] = uri_params
+        return {
+            'FEED_URI': uri,
+            **extra_settings,
+        }
+
+
+class URIParamsFeedOptionTest(URIParamsTest, unittest.TestCase):
+
+    def build_settings(self, uri='file:///tmp/foobar', uri_params=None):
+        options = {
+            'format': 'jl',
+        }
+        if uri_params:
+            options['uri_params'] = uri_params
+        return {
+            'FEEDS': {
+                uri: options,
+            },
+        }
