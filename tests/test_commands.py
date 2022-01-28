@@ -1,6 +1,6 @@
 import inspect
 import json
-import optparse
+import argparse
 import os
 import platform
 import re
@@ -37,15 +37,13 @@ class CommandSettings(unittest.TestCase):
     def setUp(self):
         self.command = ScrapyCommand()
         self.command.settings = Settings()
-        self.parser = optparse.OptionParser(
-            formatter=optparse.TitledHelpFormatter(),
-            conflict_handler='resolve',
-        )
+        self.parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                              conflict_handler='resolve')
         self.command.add_options(self.parser)
 
     def test_settings_json_string(self):
         feeds_json = '{"data.json": {"format": "json"}, "data.xml": {"format": "xml"}}'
-        opts, args = self.parser.parse_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
+        opts, args = self.parser.parse_known_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
         self.command.process_options(args, opts)
         self.assertIsInstance(self.command.settings['FEEDS'], scrapy.settings.BaseSettings)
         self.assertEqual(dict(self.command.settings['FEEDS']), json.loads(feeds_json))
