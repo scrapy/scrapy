@@ -23,7 +23,7 @@ from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -37,7 +37,7 @@ class CommandSettings(unittest.TestCase):
     def setUp(self):
         self.command = ScrapyCommand()
         self.command.settings = Settings()
-        self.parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter,
+        self.parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
                                               conflict_handler='resolve')
         self.command.add_options(self.parser)
 

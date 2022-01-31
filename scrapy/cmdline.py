@@ -7,7 +7,7 @@ import pkg_resources
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
@@ -131,7 +131,7 @@ def execute(argv=None, settings=None):
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter,
+    parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
                                      usage=f"scrapy {cmdname} {cmd.syntax()}",
                                      conflict_handler='resolve',
                                      description=cmd.long_desc())
