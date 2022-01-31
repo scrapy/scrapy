@@ -375,7 +375,7 @@ class BaseSettings(MutableMapping):
         return len(self.attributes)
 
     def _to_dict(self):
-        return {k: (v._to_dict() if isinstance(v, BaseSettings) else v)
+        return {str(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
                 for k, v in self.items()}
 
     def copy_to_dict(self):
