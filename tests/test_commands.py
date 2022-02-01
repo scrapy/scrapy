@@ -48,6 +48,14 @@ class CommandSettings(unittest.TestCase):
         self.assertIsInstance(self.command.settings['FEEDS'], scrapy.settings.BaseSettings)
         self.assertEqual(dict(self.command.settings['FEEDS']), json.loads(feeds_json))
 
+    def test_help_formatter(self):
+        formatter = ScrapyHelpFormatter(prog='scrapy')
+        usage = ['usage: scrapy crawl [options] <spider>']
+        self.assertEqual(
+            formatter._join_parts(usage),
+            'Usage\n=====\n  scrapy crawl [options] <spider>'
+        )
+
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
