@@ -50,10 +50,13 @@ class CommandSettings(unittest.TestCase):
 
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog='scrapy')
-        usage = ['usage: scrapy crawl [options] <spider>']
+        part_strings = ['usage: scrapy genspider [options] <name> <domain>\n\n',
+                        '\n', 'optional arguments:\n', '\n', 'Global Options:\n']
         self.assertEqual(
-            formatter._join_parts(usage),
-            'Usage\n=====\n  scrapy crawl [options] <spider>'
+            formatter._join_parts(part_strings),
+            ('Usage\n=====\n  scrapy genspider [options] <name> <domain>\n\n\n'
+             'Optional Arguments\n==================\n\n'
+             'Global Options\n--------------\n')
         )
 
 
