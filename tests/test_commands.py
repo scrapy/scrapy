@@ -23,7 +23,7 @@ from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
+from scrapy.commands import view, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -819,6 +819,20 @@ class BenchCommandTest(CommandTest):
                               '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
+
+
+class ViewCommandTest(CommandTest):
+
+    def test_methods(self):
+        command = view.Command()
+        command.settings = Settings()
+        parser = argparse.ArgumentParser(prog='scrapy', prefix_chars='-',
+                                         formatter_class=ScrapyHelpFormatter)
+        command.add_options(parser)
+        self.assertEqual(command.short_desc(),
+                         "Open URL in browser, as seen by Scrapy")
+        self.assertIn("URL using the Scrapy downloader and show its",
+                      command.long_desc())
 
 
 class CrawlCommandTest(CommandTest):
