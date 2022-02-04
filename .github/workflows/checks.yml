@@ -19,7 +19,6 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: pylint
-            TOX_PIP_VERSION: 20.3.3
         - python-version: 3.6
           env:
             TOXENV: typing
@@ -38,8 +37,5 @@ jobs:
     - name: Run check
       env: ${{ matrix.env }}
       run: |
-        if [[ ! -z "$TOX_PIP_VERSION" ]]; then
-            pip install tox-pip-version
-        fi
         pip install -U tox
         tox
