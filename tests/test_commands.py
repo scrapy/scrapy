@@ -827,7 +827,8 @@ class ViewCommandTest(CommandTest):
         command = view.Command()
         command.settings = Settings()
         parser = argparse.ArgumentParser(prog='scrapy', prefix_chars='-',
-                                         formatter_class=ScrapyHelpFormatter)
+                                         formatter_class=ScrapyHelpFormatter,
+                                         conflict_handler='resolve')
         command.add_options(parser)
         self.assertEqual(command.short_desc(),
                          "Open URL in browser, as seen by Scrapy")
