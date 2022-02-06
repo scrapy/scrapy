@@ -93,7 +93,7 @@ class _StreamReader:
         return self._text[s:e].encode('utf-8')
 
 
-def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
+def csviter(obj, delimiter=None, headers=None, quotechar=None, encoding=None):
     """ Returns an iterator of dictionaries from the given csv object
 
     obj can be:
