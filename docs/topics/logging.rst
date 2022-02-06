@@ -218,7 +218,7 @@ For example, let's say you're scraping a website which returns many
 HTTP 404 and 500 responses, and you want to hide all messages like this::
 
     2016-12-16 22:00:06 [scrapy.spidermiddlewares.httperror] INFO: Ignoring
-    response <500 http://quotes.toscrape.com/page/1-34/>: HTTP status code
+    response <500 https://quotes.toscrape.com/page/1-34/>: HTTP status code
     is not handled or not allowed
 
 The first thing to note is a logger name - it is in brackets:
