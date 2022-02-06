@@ -25,6 +25,223 @@
 Release notes
 =============
 
+.. _release-2.6.0:
+
+Scrapy 2.6.0 (2022-02-??)
+-------------------------
+
+Highlights:
+
+*   Python 3.10 support
+
+*   Feed export now support per-feed :ref:`item filtering <item-filter>`
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   The h2_ dependency is now optional, only needed to
+    :ref:`enable HTTP/2 support <http2>`. (:issue:`5113`)
+
+    .. _h2: https://pypi.org/project/h2/
+
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   :class:`FormRequest.formdata <scrapy.http.FormRequest.formdata>`, if
+    specified for a non-POST request, now overrides the URL query string,
+    instead of getting appended to it. (:issue:`2919`, :issue:`3579`)
+
+-   In :class:`scrapy.core.engine.ExecutionEngine`, methods
+    :meth:`~scrapy.core.engine.ExecutionEngine.crawl`,
+    :meth:`~scrapy.core.engine.ExecutionEngine.download`,
+    :meth:`~scrapy.core.engine.ExecutionEngine.schedule`,
+    and :meth:`~scrapy.core.engine.ExecutionEngine.spider_is_idle`
+    now raise :exc:`RuntimeError` if called before
+    :meth:`~scrapy.core.engine.ExecutionEngine.open_spider`. (:issue:`5090`)
+
+    These methods used to assume that
+    :attr:`ExecutionEngine.slot <scrapy.core.engine.ExecutionEngine.slot>` had
+    been defined by a prior call to
+    :meth:`~scrapy.core.engine.ExecutionEngine.open_spider`, so they were
+    raising :exc:`AttributeError` instead.
+
+-   If the API of the configured :ref:`scheduler <topics-scheduler>` does not
+    meet expectations, :exc:`TypeError` is now raised at startup time. Before,
+    other exceptions would be raised at run time. (:issue:`3559`)
+
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   ``Spider.make_requests_from_url``, deprecated in Scrapy 1.4.0, has now
+    been removed (:issue:`4178`, :issue:`4356`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :mod:`scrapy.utils.reqser` is deprecated. (:issue:`5130`)
+
+    -   Instead of :func:`~scrapy.utils.reqser.request_to_dict`, use the new
+        :meth:`Request.to_dict <scrapy.http.Request.to_dict>` method.
+
+    -   Instead of :func:`~scrapy.utils.reqser.request_from_dict`, use the new
+        :func:`scrapy.utils.request.request_from_dict` function.
+
+-   In :mod:`scrapy.squeues`, the following queue classes are deprecated:
+    :class:`~scrapy.squeues.PickleFifoDiskQueueNonRequest`,
+    :class:`~scrapy.squeues.PickleLifoDiskQueueNonRequest`,
+    :class:`~scrapy.squeues.MarshalFifoDiskQueueNonRequest`,
+    and :class:`~scrapy.squeues.MarshalLifoDiskQueueNonRequest`. You should
+    instead use:
+    :class:`~scrapy.squeues.PickleFifoDiskQueue`,
+    :class:`~scrapy.squeues.PickleLifoDiskQueue`,
+    :class:`~scrapy.squeues.MarshalFifoDiskQueue`,
+    and :class:`~scrapy.squeues.MarshalLifoDiskQueue`. (:issue:`5117`)
+
+-   Many aspects of :class:`scrapy.core.engine.ExecutionEngine` that come from
+    a time when this class could handle multiple :class:`~scrapy.Spider`
+    objects at a time have been deprecated. (:issue:`5090`)
+
+    -   The :meth:`~scrapy.core.engine.ExecutionEngine.has_capacity` method
+        is deprecated.
+
+    -   The :meth:`~scrapy.core.engine.ExecutionEngine.schedule` method is
+        deprecated, use :meth:`~scrapy.core.engine.ExecutionEngine.crawl` or
+        :meth:`~scrapy.core.engine.ExecutionEngine.download` instead.
+
+    -   The :attr:`~scrapy.core.engine.ExecutionEngine.open_spiders` attribute
+        is deprecated, use :attr:`~scrapy.core.engine.ExecutionEngine.spider`
+        instead.
+
+    -   The ``spider`` parameter is deprecated for the following methods:
+
+        -   :meth:`~scrapy.core.engine.ExecutionEngine.spider_is_idle`
+
+        -   :meth:`~scrapy.core.engine.ExecutionEngine.crawl`
+
+        -   :meth:`~scrapy.core.engine.ExecutionEngine.download`
+
+        Instead, call :meth:`~scrapy.core.engine.ExecutionEngine.open_spider`
+        first to set the :class:`~scrapy.Spider` object.
+
+
+New features
+~~~~~~~~~~~~
+
+-   You can now use :ref:`item filtering <item-filter>` to control which items
+    are exported to each output feed. (:issue:`4575`, :issue:`5178`,
+    :issue:`5161`, :issue:`5203`)
+
+-   :ref:`Amazon S3 feed export storage <topics-feed-storage-s3>` gained
+    support for `temporary security credentials`_
+    (:setting:`AWS_SESSION_TOKEN`) and endpoint customization
+    (:setting:`AWS_ENDPOINT_URL`). (:issue:`4998`, :issue:`5210`)
+
+    .. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+
+-   You may now raise :exc:`~scrapy.exceptions.CloseSpider` from a handler of
+    the :signal:`spider_idle` signal to customize the reason why the spider is
+    stopping. (:issue:`5191`)
+
+-   When using
+    :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`, the
+    proxy URL for non-HTTPS HTTP/1.1 requests no longer needs to include a URL
+    scheme. (:issue:`4505`, :issue:`4649`)
+
+-   All built-in queues now expose a ``peek`` method that returns the next
+    queue object (like ``pop``) but does not remove the returned object from
+    the queue. (:issue:`5112`)
+
+    If the underlying queue does not support peeking (e.g. because you are not
+    using ``queuelib`` 1.6.1 or later), the ``peek`` method raises
+    :exc:`NotImplementedError`.
+
+-   :class:`~scrapy.http.Request` and :class:`~scrapy.http.Response` now have
+    an ``attributes`` attribute that makes subclassing easier. For
+    :class:`~scrapy.http.Request`, it also allows subclasses to work with
+    :func:`scrapy.utils.request.request_from_dict`. (:issue:`1877`,
+    :issue:`5130`, :issue:`5218`)
+
+-   The :meth:`~scrapy.core.scheduler.BaseScheduler.open` and
+    :meth:`~scrapy.core.scheduler.BaseScheduler.close` methods of the
+    :ref:`scheduler <topics-scheduler>` are now optional. (:issue:`3559`)
+
+-   HTTP/1.1 :exc:`~scrapy.core.downloader.handlers.http11.TunnelError`
+    exceptions now only truncate response bodies longer than 1000 characters,
+    instead of those longer than 32 characters, making it easier to debug such
+    errors. (:issue:`4881`, :issue:`5007`)
+
+
+Bug fixes
+~~~~~~~~~
+
+-   Added missing setuptools_ to the list of dependencies. (:issue:`5122`)
+
+    .. _setuptools: https://pypi.org/project/setuptools/
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    now also works as expected with links that have comma-separated ``rel``
+    attribute values including ``nofollow``. (:issue:`5225`)
+
+-   The :command:`startproject` command works with existing folders again.
+    (:issue:`4665`, :issue:`4676`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Rewrote :ref:`topics-headless-browsing` with up-to-date best practices.
+    (:issue:`4484`, :issue:`4613`)
+
+-   Documented :ref:`local file naming in media pipelines
+    <topics-file-naming>`. (:issue:`5069`, :issue:`5152`)
+
+-   :ref:`faq` now covers spider file name collision issues. (:issue:`2680`,
+    :issue:`3669`)
+
+-   Documented that :ref:`reppy-parser` does not support Python 3.9+.
+    (:issue:`5226`, :issue:`5231`)
+
+-   Documented :ref:`the scheduler component <topics-scheduler>`.
+    (:issue:`3537`, :issue:`3559`)
+
+-   The documentation now features the shortest import path of classes with
+    multiple import paths. (:issue:`2733`, :issue:`5099`)
+
+-   :ref:`run-multiple-spiders` now features
+    :func:`scrapy.utils.project.get_project_settings` usage. (:issue:`5070`)
+
+-   Extended the documentation of the
+    :class:`~scrapy.extensions.statsmailer.StatsMailer` extension.
+    (:issue:`5199`, :issue:`5217`)
+
+-   Added :setting:`JOBDIR` to :ref:`topics-settings`. (:issue:`5173`,
+    :issue:`5224`)
+
+-   Fixed issues. (:issue:`5074`, :issue:`5098`, :issue:`5134`, :issue:`5180`,
+    :issue:`5194`)
+
+
+Quality Assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added support for Python 3.10 (:issue:`5212`, :issue:`5221`)
+
+-   Extended typing hints. (:issue:`5077`, :issue:`5090`, :issue:`5100`,
+    :issue:`5108`, :issue:`5171`, :issue:`5215`)
+
+-   Improved tests, fixed CI issues. (:issue:`5094`, :issue:`5157`,
+    :issue:`5162`, :issue:`5198`, :issue:`5207`, :issue:`5208`, :issue:`5229`)
+
+-   Implemented improvements for contributors (:issue:`5080`, :issue:`5082`,
+    :issue:`5177`, :issue:`5200`)
+
+-   Implemented cleanups. (:issue:`5095`, :issue:`5106`, :issue:`5209`,
+    :issue:`5228`)
+
+
 .. _release-2.5.1:
 
 Scrapy 2.5.1 (2021-10-05)
@@ -1000,9 +1217,8 @@ Bug fixes
 *   zope.interface 5.0.0 and later versions are now supported
     (:issue:`4447`, :issue:`4448`)
 
-*   :meth:`Spider.make_requests_from_url
-    <scrapy.spiders.Spider.make_requests_from_url>`, deprecated in Scrapy
-    1.4.0, now issues a warning when used (:issue:`4412`)
+*   ``Spider.make_requests_from_url``, deprecated in Scrapy 1.4.0, now issues a
+    warning when used (:issue:`4412`)
 
 
 Documentation
