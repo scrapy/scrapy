@@ -1,6 +1,6 @@
 import unittest
 from unittest import mock
-from warnings import catch_warnings, filterwarnings
+from warnings import catch_warnings
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import ABCMeta, DictItem, Field, Item, ItemMeta
@@ -316,7 +316,6 @@ class DictItemTest(unittest.TestCase):
             SubclassedDictItem()
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
-
 
 
 if __name__ == "__main__":
