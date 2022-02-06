@@ -13,7 +13,7 @@ from xml.sax.saxutils import XMLGenerator
 from itemadapter import is_item, ItemAdapter
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.item import _BaseItem
+from scrapy.item import Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
@@ -315,7 +315,7 @@ class PythonItemExporter(BaseItemExporter):
         return serializer(value)
 
     def _serialize_value(self, value):
-        if isinstance(value, _BaseItem):
+        if isinstance(value, Item):
             return self.export_item(value)
         elif is_item(value):
             return dict(self._serialize_item(value))

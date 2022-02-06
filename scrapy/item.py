@@ -15,39 +15,11 @@ from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 
 
-class _BaseItem(object_ref):
-    """
-    Temporary class used internally to avoid the deprecation
-    warning raised by isinstance checks using BaseItem.
-    """
-    pass
-
-
-class _BaseItemMeta(ABCMeta):
-    def __instancecheck__(cls, instance):
-        if cls is BaseItem:
-            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
-        return super().__instancecheck__(instance)
-
-
-class BaseItem(_BaseItem, metaclass=_BaseItemMeta):
-    """
-    Deprecated, please use :class:`scrapy.item.Item` instead
-    """
-
-    def __new__(cls, *args, **kwargs):
-        if issubclass(cls, BaseItem) and not issubclass(cls, (Item, DictItem)):
-            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
-        return super().__new__(cls, *args, **kwargs)
-
-
 class Field(dict):
     """Container of field metadata"""
 
 
-class ItemMeta(_BaseItemMeta):
+class ItemMeta(ABCMeta):
     """Metaclass_ of :class:`Item` that handles field definitions.
 
     .. _metaclass: https://realpython.com/python-metaclasses
@@ -74,7 +46,7 @@ class ItemMeta(_BaseItemMeta):
         return super().__new__(mcs, class_name, bases, new_attrs)
 
 
-class DictItem(MutableMapping, BaseItem):
+class DictItem(MutableMapping, object_ref):
 
     fields: Dict[str, Field] = {}
 
@@ -118,7 +90,7 @@ class DictItem(MutableMapping, BaseItem):
     def __iter__(self):
         return iter(self._values)
 
-    __hash__ = BaseItem.__hash__
+    __hash__ = object_ref.__hash__
 
     def keys(self):
         return self._values.keys()
