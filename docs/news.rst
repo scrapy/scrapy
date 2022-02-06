@@ -34,7 +34,7 @@ Highlights:
 
 *   Python 3.10 support
 
-*   Feed export now support per-feed :ref:`item filtering <item-filter>`
+*   Feed exports now support per-feed :ref:`item filtering <item-filter>`
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
