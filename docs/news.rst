@@ -32,14 +32,14 @@ Modified requirements
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   :class:`FormRequest.formdata <scrapy.http.FormRequest.formdata>`, if
-    specified for a non-POST request, now overrides the URL query string,
-    instead of getting appended to it. (:issue:`2919`, :issue:`3579`)
+-   The ``formdata`` parameter of :class:`~scrapy.FormRequest`, if specified
+    for a non-POST request, now overrides the URL query string, instead of
+    being appended to it. (:issue:`2919`, :issue:`3579`)
 
--   When a function assigned to the :setting:`FEED_URI_PARAMS` setting, now the
-    return value of that function, and not the input ``params``, will determine
-    the feed URI parameters, unless the return value is ``None``.
-    (:issue:`4962`, :issue:`4966`)
+-   When a function is assigned to the :setting:`FEED_URI_PARAMS` setting, now
+    the return value of that function, and not the ``params`` input parameter,
+    will determine the feed URI parameters, unless that return value is
+    ``None``. (:issue:`4962`, :issue:`4966`)
 
 -   In :class:`scrapy.core.engine.ExecutionEngine`, methods
     :meth:`~scrapy.core.engine.ExecutionEngine.crawl`,
@@ -79,9 +79,9 @@ Deprecation removals
 Deprecations
 ~~~~~~~~~~~~
 
--   When a function assigned to the :setting:`FEED_URI_PARAMS` setting,
-    returning ``None`` or modifying the input ``params`` is now deprecated.
-    Return a new dictionary instead. (:issue:`4962`, :issue:`4966`)
+-   When a function is assigned to the :setting:`FEED_URI_PARAMS` setting,
+    returning ``None`` or modifying the ``params`` input parameter is now
+    deprecated. Return a new dictionary instead. (:issue:`4962`, :issue:`4966`)
 
 -   :mod:`scrapy.utils.reqser` is deprecated. (:issue:`5130`)
 
@@ -214,8 +214,8 @@ Bug fixes
     are no longer ignored if defined in :attr:`~scrapy.Spider.custom_settings`.
     (:issue:`4485`, :issue:`5352`)
 
--   Removed a module-level Twisted reactor import that could prevent using the
-    :ref:`asyncio reactor <asyncio-reactor>`. (:issue:`5357`)
+-   Removed a module-level Twisted reactor import that could prevent
+    :ref:`using the asyncio reactor <using-asyncio>`. (:issue:`5357`)
 
 -   The :command:`startproject` command works with existing folders again.
     (:issue:`4665`, :issue:`4676`)
@@ -311,7 +311,7 @@ Documentation
 -   The pronunciation of the project name is now :ref:`officially
     <intro-overview>` /ˈskreɪpaɪ/. (:issue:`5280`, :issue:`5281`)
 
--   Added the Scrapy logo to the README (:issue:`5255`, :issue:`5258`)
+-   Added the Scrapy logo to the README. (:issue:`5255`, :issue:`5258`)
 
 -   Fixed issues. (:issue:`3155`, :issue:`4335`, :issue:`5074`, :issue:`5098`,
     :issue:`5134`, :issue:`5180`, :issue:`5194`, :issue:`5239`, :issue:`5266`,
@@ -322,7 +322,8 @@ Documentation
 Quality Assurance
 ~~~~~~~~~~~~~~~~~
 
--   Added support for Python 3.10 (:issue:`5212`, :issue:`5221`, :issue:`5265`)
+-   Added support for Python 3.10. (:issue:`5212`, :issue:`5221`,
+    :issue:`5265`)
 
 -   Significantly reduced memory usage by
     :func:`scrapy.utils.response.response_httprepr`, used by the
@@ -337,7 +338,7 @@ Quality Assurance
     :issue:`5298`, :issue:`5299`, :issue:`5310`, :issue:`5316`, :issue:`5333`,
     :issue:`5388`, :issue:`5389`, :issue:`5401`)
 
--   Implemented improvements for contributors (:issue:`5080`, :issue:`5082`,
+-   Implemented improvements for contributors. (:issue:`5080`, :issue:`5082`,
     :issue:`5177`, :issue:`5200`)
 
 -   Implemented cleanups. (:issue:`5095`, :issue:`5106`, :issue:`5209`,

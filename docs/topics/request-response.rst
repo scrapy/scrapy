@@ -110,7 +110,7 @@ Request objects
             :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
-        .. versionadded:: 2.6
+        .. versionadded:: 2.6.0
            Cookie values that are :class:`bool`, :class:`float` or :class:`int`
            are casted to :class:`str`.
 
