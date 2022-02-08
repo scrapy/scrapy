@@ -21,6 +21,7 @@ from scrapy.spiders import (
 )
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.test import get_crawler
+from tests import get_testdata
 
 
 class SpiderTest(unittest.TestCase):
@@ -166,6 +167,23 @@ class XMLFeedSpiderTest(SpiderTest):
 class CSVFeedSpiderTest(SpiderTest):
 
     spider_class = CSVFeedSpider
+
+    def test_parse_rows(self):
+        body = get_testdata('feeds', 'feed-sample6.csv')
+        response = Response("http://example.org/dummy.csv", body=body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            delimiter = ","
+            quotechar = "'"
+
+            def parse_row(self, response, row):
+                return row
+
+        spider = _CrawlSpider()
+        rows = list(spider.parse_rows(response))
+        assert rows[0] == {'id': '1', 'name': 'alpha', 'value': 'foobar'}
+        assert len(rows) == 4
 
 
 class CrawlSpiderTest(SpiderTest):
