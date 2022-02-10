@@ -4,7 +4,7 @@ Spider Middleware manager
 See documentation in docs/topics/spider-middleware.rst
 """
 from itertools import islice
-from typing import Any, Callable, Generator, Iterable, Union
+from typing import Any, Callable, Generator, Iterable, Union, cast
 
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -47,6 +47,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _process_spider_input(self, scrape_func: ScrapeFunc, response: Response, request: Request,
                               spider: Spider) -> Any:
         for method in self.methods['process_spider_input']:
+            method = cast(Callable, method)
             try:
                 result = method(response=response, spider=spider)
                 if result is not None:

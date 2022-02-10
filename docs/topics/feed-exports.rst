@@ -322,7 +322,7 @@ Post-Processing
 
 Scrapy provides an option to activate plugins to post-process feeds before they are exported
 to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
-can create your own :ref:`plugins <custom-plugins>`. 
+can create your own :ref:`plugins <custom-plugins>`.
 
 These plugins can be activated through the ``postprocessing`` option of a feed.
 The option must be passed a list of post-processing plugins in the order you want
@@ -366,7 +366,7 @@ Each plugin is a class that must implement the following methods:
 
     Close the target file object.
 
-To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You 
+To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You
 can then access those parameters from the ``__init__`` method of your plugin.
 
 
@@ -743,6 +743,9 @@ The function signature should be as follows:
 
    :param spider: source spider of the feed items
    :type spider: scrapy.Spider
+
+   .. caution:: The function should return a new dictionary, modifying
+                the received ``params`` in-place is deprecated.
 
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:

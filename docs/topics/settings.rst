@@ -1597,7 +1597,7 @@ In order to use the reactor installed by Scrapy::
         def start_requests(self):
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ['https://quotes.toscrape.com/page/1']
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
@@ -1625,7 +1625,7 @@ which raises :exc:`Exception`, becomes::
             from twisted.internet import reactor
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ['https://quotes.toscrape.com/page/1']
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
@@ -1638,10 +1638,9 @@ which raises :exc:`Exception`, becomes::
 
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will not attempt to install any specific reactor, and the
-default reactor defined by Twisted for the current platform will be used. This
-is to maintain backward compatibility and avoid possible problems caused by
-using a non-default reactor.
+means that Scrapy will install the default reactor defined by Twisted for the
+current platform. This is to maintain backward compatibility and avoid possible
+problems caused by using a non-default reactor.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 

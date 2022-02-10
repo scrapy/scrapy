@@ -1,3 +1,25 @@
+.. note::
+    .. versionchanged:: VERSION
+
+    The Twisted reactor is now installed when
+    :meth:`~scrapy.crawler.CrawlerProcess.crawl` is first called, not when a
+    :class:`scrapy.crawler.CrawlerProcess` object is created. Because of this,
+    :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` are now
+    honored in :attr:`~scrapy.Spider.custom_settings`. In older Scrapy versions
+    they are silently ignored when set there and you need to set these settings
+    in some other way.
+
+
+.. note::
+    .. versionchanged:: VERSION
+
+    Previously this setting had no effect in a spider
+    :attr:`~scrapy.Spider.custom_settings` attribute. Now it will be used, but
+    if you :ref:`run several spiders in one process <run-multiple-spiders>`,
+    they must not have different values for this setting, because they will use
+    a single reactor instance.
+
+
 .. _news:
 
 Release notes
@@ -4358,7 +4380,7 @@ Code rearranged and removed
 - Removed googledir project from ``examples/googledir``. There's now a new example project called ``dirbot`` available on GitHub: https://github.com/scrapy/dirbot
 - Removed support for default field values in Scrapy items (:rev:`2616`)
 - Removed experimental crawlspider v2 (:rev:`2632`)
-- Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe fltering class as before (``DUPEFILTER_CLASS`` setting) (:rev:`2640`)
+- Removed scheduler middleware to simplify architecture. Duplicates filter is now done in the scheduler itself, using the same dupe filtering class as before (``DUPEFILTER_CLASS`` setting) (:rev:`2640`)
 - Removed support for passing urls to ``scrapy crawl`` command (use ``scrapy parse`` instead) (:rev:`2704`)
 - Removed deprecated Execution Queue (:rev:`2704`)
 - Removed (undocumented) spider context extension (from scrapy.contrib.spidercontext) (:rev:`2780`)
