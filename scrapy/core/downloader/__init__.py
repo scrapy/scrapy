@@ -86,7 +86,7 @@ class Downloader:
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
         self._slot_gc_loop = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
-        self.per_slot_settings = self.settings.getdict('PER_SLOT_SETTINGS', {})
+        self.per_slot_settings = self.settings.getdict('DOWNLOAD_SLOTS', {})
 
     def fetch(self, request, spider):
         def _deactivate(response):
