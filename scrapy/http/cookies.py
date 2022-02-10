@@ -2,6 +2,7 @@ import re
 import time
 from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
 
+from publicsuffixlist import PublicSuffixList
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
@@ -9,6 +10,8 @@ from scrapy.utils.python import to_unicode
 # Defined in the http.cookiejar module, but undocumented:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
 IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
+
+public_suffix_list = PublicSuffixList()
 
 
 class CookieJar:
@@ -28,23 +31,43 @@ class CookieJar:
         wreq = WrappedRequest(request)
         self.policy._now = self.jar._now = int(time.time())
 
-        # the cookiejar implementation iterates through all domains
-        # instead we restrict to potential matches on the domain
         req_host = urlparse_cached(request).hostname
         if not req_host:
             return
 
-        if not IPV4_RE.search(req_host):
-            hosts = potential_domain_matches(req_host)
-            if '.' not in req_host:
-                hosts += [req_host + ".local"]
-        else:
-            hosts = [req_host]
+        # TODO: Do we need to handle cookies for IP addresses? How? What about
+        # IPv6?
+        if IPV4_RE.search(req_host):
+            return
+
+        # TODO: self.jar._cookies is empty when using a local domain, like
+        # ‘localhost’. Do we need to handle cookies for local domains? How?
+        if '.' not in req_host:
+            return
+
+        raise ValueError(repr(self.jar._cookies))
+
+        hosts = _potential_domain_matches(req_host)
 
         cookies = []
         for host in hosts:
-            if host in self.jar._cookies:
-                cookies += self.jar._cookies_for_domain(host, wreq)
+            if req_host == host and host in self.jar._cookies:
+                for host_cookie in self.jar._cookies_for_domain(host, wreq):
+                    cookies.append(host_cookie)
+
+            dot_host = '.' + host
+            if dot_host not in self.jar._cookies:
+                continue
+
+            for host_cookie in self.jar._cookies_for_domain(dot_host, wreq):
+                if (
+                    host == req_host
+                    or (
+                        host_cookie.domain_specified
+                        and public_suffix_list.is_private(host)
+                    )
+                ):
+                    cookies.append(host_cookie)
 
         attrs = self.jar._cookie_attrs(cookies)
         if attrs:
@@ -87,6 +110,25 @@ class CookieJar:
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))
 
 
+def _potential_domain_matches(domain):
+    """Potential domain matches for a cookie
+
+    >>> _potential_domain_matches('www.example.com')
+    ['www.example.com', 'example.com', 'com']
+
+    """
+    matches = [domain]
+    try:
+        start = domain.index('.') + 1
+        while start:
+            matches.append(domain[start:])
+            start = domain.index('.', start) + 1
+    except ValueError:
+        pass
+    return matches
+
+
+# TODO: Deprecate
 def potential_domain_matches(domain):
     """Potential domain matches for a cookie
 
