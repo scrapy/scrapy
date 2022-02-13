@@ -45,8 +45,6 @@ class CookieJar:
         if '.' not in req_host:
             return
 
-        raise ValueError(repr(self.jar._cookies))
-
         hosts = _potential_domain_matches(req_host)
 
         cookies = []

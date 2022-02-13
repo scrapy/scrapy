@@ -400,15 +400,18 @@ class UserSetCookieDomainTest(TestCase):
         url2,
         *,
         input_cookies,
-        output_cookies,
+        cookies1,
+        cookies2,
     ):
         request1 = Request(url1, cookies=input_cookies)
         self.mw.process_request(request1, self.spider)
+        cookies = request1.headers.get('Cookie')
+        self.assertEqual(cookies, cookies1)
 
         request2 = Request(url2)
         self.mw.process_request(request2, self.spider)
         cookies = request2.headers.get('Cookie')
-        self.assertEqual(cookies, output_cookies)
+        self.assertEqual(cookies, cookies2)
 
     def _test_redirect(
         self,
@@ -416,10 +419,13 @@ class UserSetCookieDomainTest(TestCase):
         to_url,
         *,
         input_cookies,
-        output_cookies,
+        cookies1,
+        cookies2,
     ):
-        original_request = Request(from_url, cookies=input_cookies)
-        self.mw.process_request(original_request, self.spider)
+        request1 = Request(from_url, cookies=input_cookies)
+        self.mw.process_request(request1, self.spider)
+        cookies = request1.headers.get('Cookie')
+        self.assertEqual(cookies, cookies1)
 
         response = Response(
             from_url,
@@ -429,20 +435,20 @@ class UserSetCookieDomainTest(TestCase):
             },
         )
         self.assertEqual(
-            self.mw.process_response(original_request, response, self.spider),
+            self.mw.process_response(request1, response, self.spider),
             response,
         )
 
-        redirect_request = self.redirect_middleware.process_response(
-            original_request,
+        request2 = self.redirect_middleware.process_response(
+            request1,
             response,
             self.spider,
         )
-        self.assertIsInstance(redirect_request, Request)
+        self.assertIsInstance(request2, Request)
 
-        self.mw.process_request(redirect_request, self.spider)
-        redirect_cookies = redirect_request.headers.get('Cookie')
-        self.assertEqual(redirect_cookies, output_cookies)
+        self.mw.process_request(request2, self.spider)
+        cookies = request2.headers.get('Cookie')
+        self.assertEqual(cookies, cookies2)
 
     def test_undefined_same(self):
         """If a request to a domain sets some cookies, follow-up requests to
@@ -451,7 +457,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies={'a': 'b'},
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_undefined_same_redirect_absolute(self):
@@ -461,7 +468,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies={'a': 'b'},
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_undefined_same_redirect_relative(self):
@@ -471,7 +479,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             '/b',
             input_cookies={'a': 'b'},
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_undefined_other(self):
@@ -481,7 +490,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_other_redirect(self):
@@ -491,7 +501,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_sub(self):
@@ -505,7 +516,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_sub_redirect(self):
@@ -513,7 +525,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_super(self):
@@ -527,7 +540,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_super_redirect(self):
@@ -535,7 +549,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_sibling(self):
@@ -549,7 +564,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_undefined_sibling_redirect(self):
@@ -557,7 +573,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies={'a': 'b'},
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_same(self):
@@ -567,7 +584,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_none_same_redirect_absolute(self):
@@ -577,7 +595,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_none_same_redirect_relative(self):
@@ -587,7 +606,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             '/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_none_other(self):
@@ -597,7 +617,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_other_redirect(self):
@@ -607,7 +628,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_sub(self):
@@ -621,7 +643,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_sub_redirect(self):
@@ -629,7 +652,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_super(self):
@@ -643,7 +667,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_super_redirect(self):
@@ -651,7 +676,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_sibling(self):
@@ -665,7 +691,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_none_sibling_redirect(self):
@@ -673,16 +700,10 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': None}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Python turns an empty domain attribute into a dot: "
-            "https://bugs.python.org/issue33017"
-        ),
-        strict=True,
-    )
     def test_empty_same(self):
         """If a request to a domain sets some cookies, follow-up requests to
         the same domain include those cookies."""
@@ -690,16 +711,10 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Python turns an empty domain attribute into a dot: "
-            "https://bugs.python.org/issue33017"
-        ),
-        strict=True,
-    )
     def test_empty_same_redirect_absolute(self):
         """If a request to a domain sets some cookies, follow-up requests to
         the same domain include those cookies."""
@@ -707,16 +722,10 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Python turns an empty domain attribute into a dot: "
-            "https://bugs.python.org/issue33017"
-        ),
-        strict=True,
-    )
     def test_empty_same_redirect_relative(self):
         """If a request to a domain sets some cookies, follow-up requests to
         the same domain include those cookies."""
@@ -724,7 +733,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             '/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_empty_other(self):
@@ -734,7 +744,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_other_redirect(self):
@@ -744,7 +755,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_sub(self):
@@ -758,7 +770,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_sub_redirect(self):
@@ -766,7 +779,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_super(self):
@@ -780,7 +794,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_super_redirect(self):
@@ -788,7 +803,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_sibling(self):
@@ -802,7 +818,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_empty_sibling_redirect(self):
@@ -810,16 +827,10 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': ''}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Python fails to ignore a dot as domain: "
-            "https://bugs.python.org/issue33017"
-        ),
-        strict=True,
-    )
     def test_dot_same(self):
         """If a request to a domain sets some cookies, follow-up requests to
         the same domain include those cookies."""
@@ -827,16 +838,10 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Python fails to ignore a dot as domain: "
-            "https://bugs.python.org/issue33017"
-        ),
-        strict=True,
-    )
     def test_dot_same_redirect_absolute(self):
         """If a request to a domain sets some cookies, follow-up requests to
         the same domain include those cookies."""
@@ -844,16 +849,10 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Python fails to ignore a dot as domain: "
-            "https://bugs.python.org/issue33017"
-        ),
-        strict=True,
-    )
     def test_dot_same_redirect_relative(self):
         """If a request to a domain sets some cookies, follow-up requests to
         the same domain include those cookies."""
@@ -861,7 +860,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/a',
             '/b',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=b"a=b",
+            cookies2=b"a=b",
+            cookies1=b"a=b",
         )
 
     def test_dot_other(self):
@@ -871,7 +871,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_other_redirect(self):
@@ -881,7 +882,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://example.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_sub(self):
@@ -895,7 +897,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_sub_redirect(self):
@@ -903,7 +906,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://toscrape.com/',
             'https://books.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_super(self):
@@ -917,7 +921,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_super_redirect(self):
@@ -925,7 +930,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_sibling(self):
@@ -939,7 +945,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_dot_sibling_redirect(self):
@@ -947,7 +954,8 @@ class UserSetCookieDomainTest(TestCase):
             'https://books.toscrape.com/',
             'https://quotes.toscrape.com/',
             input_cookies=[{'name': 'a', 'value': 'b', 'domain': '.'}],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_same(self):
@@ -957,7 +965,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_same_redirect_absolute(self):
@@ -969,7 +978,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_same_redirect_relative(self):
@@ -981,7 +991,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_other(self):
@@ -993,7 +1004,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_other_redirect(self):
@@ -1005,7 +1017,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_sub(self):
@@ -1015,7 +1028,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_sub_redirect(self):
@@ -1025,7 +1039,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'toscrape.com'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_super(self):
@@ -1041,7 +1056,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_super_redirect(self):
@@ -1051,7 +1067,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_sibling(self):
@@ -1067,7 +1084,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_sibling_redirect(self):
@@ -1077,7 +1095,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_same(self):
@@ -1087,7 +1106,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_public_suffix_same_redirect_absolute(self):
@@ -1099,7 +1119,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_public_suffix_same_redirect_relative(self):
@@ -1111,7 +1132,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=b"a=b",
+            cookies1=b"a=b",
+            cookies2=b"a=b",
         )
 
     def test_same_public_suffix_other(self):
@@ -1123,7 +1145,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_other_redirect(self):
@@ -1135,7 +1158,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_sub(self):
@@ -1145,7 +1169,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_sub_redirect(self):
@@ -1155,7 +1180,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_super(self):
@@ -1171,7 +1197,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_super_redirect(self):
@@ -1181,7 +1208,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_sibling(self):
@@ -1197,7 +1225,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_same_public_suffix_sibling_redirect(self):
@@ -1207,17 +1236,305 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'cc.ak.us'}
             ],
-            output_cookies=None,
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_same(self):
+        self._test_followup(
+            'https://toscrape.com/a',
+            'https://toscrape.com/b',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_same_redirect_absolute(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        the same domain include those cookies."""
+        self._test_redirect(
+            'https://toscrape.com/a',
+            'https://toscrape.com/b',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_same_redirect_relative(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        the same domain include those cookies."""
+        self._test_redirect(
+            'https://toscrape.com/a',
+            '/b',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_other(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        a different domain do not include those cookies."""
+        self._test_followup(
+            'https://toscrape.com/',
+            'https://example.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_other_redirect(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        a different domain do not include those cookies."""
+        self._test_redirect(
+            'https://toscrape.com/',
+            'https://example.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_sub(self):
+        self._test_followup(
+            'https://toscrape.com/',
+            'https://books.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_sub_redirect(self):
+        self._test_redirect(
+            'https://toscrape.com/',
+            'https://books.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_super(self):
+        """If a cookie is set without an explicit domain value, it is
+        restricted to the domain for which is has been set (superdomains do not
+        get the cookie either).
+
+        https://datatracker.ietf.org/doc/html/rfc6265#section-5.3
+        """
+        self._test_followup(
+            'https://books.toscrape.com/',
+            'https://toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.books.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_super_redirect(self):
+        self._test_redirect(
+            'https://books.toscrape.com/',
+            'https://toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.books.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_sibling(self):
+        """If a cookie is set without an explicit domain value, it is
+        restricted to the domain for which is has been set (sibling subdomains
+        do not get the cookie either).
+
+        https://datatracker.ietf.org/doc/html/rfc6265#section-5.3
+        """
+        self._test_followup(
+            'https://books.toscrape.com/',
+            'https://quotes.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.books.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_sibling_redirect(self):
+        self._test_redirect(
+            'https://books.toscrape.com/',
+            'https://quotes.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.books.toscrape.com'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_same(self):
+        self._test_followup(
+            'https://cc.ak.us/a',
+            'https://cc.ak.us/b',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_public_suffix_same_redirect_absolute(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        the same domain include those cookies."""
+        self._test_redirect(
+            'https://cc.ak.us/a',
+            'https://cc.ak.us/b',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_public_suffix_same_redirect_relative(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        the same domain include those cookies."""
+        self._test_redirect(
+            'https://cc.ak.us/a',
+            '/b',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=b"a=b",
+        )
+
+    def test_dotsame_public_suffix_other(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        a different domain do not include those cookies."""
+        self._test_followup(
+            'https://cc.ak.us/',
+            'https://example.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_other_redirect(self):
+        """If a request to a domain sets some cookies, follow-up requests to
+        a different domain do not include those cookies."""
+        self._test_redirect(
+            'https://cc.ak.us/',
+            'https://example.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_sub(self):
+        self._test_followup(
+            'https://cc.ak.us/',
+            'https://foobar.cc.ak.us/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_sub_redirect(self):
+        self._test_redirect(
+            'https://cc.ak.us/',
+            'https://foobar.cc.ak.us/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_super(self):
+        """If a cookie is set without an explicit domain value, it is
+        restricted to the domain for which is has been set (superdomains do not
+        get the cookie either).
+
+        https://datatracker.ietf.org/doc/html/rfc6265#section-5.3
+        """
+        self._test_followup(
+            'https://cc.ak.us/',
+            'https://ak.us/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_super_redirect(self):
+        self._test_redirect(
+            'https://cc.ak.us/',
+            'https://ak.us/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_sibling(self):
+        """If a cookie is set without an explicit domain value, it is
+        restricted to the domain for which is has been set (sibling subdomains
+        do not get the cookie either).
+
+        https://datatracker.ietf.org/doc/html/rfc6265#section-5.3
+        """
+        self._test_followup(
+            'https://cc.ak.us/',
+            'https://lib.ak.us/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
+        )
+
+    def test_dotsame_public_suffix_sibling_redirect(self):
+        self._test_redirect(
+            'https://cc.ak.us/',
+            'https://lib.ak.us/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': '.cc.ak.us'}
+            ],
+            cookies1=b"a=b",
+            cookies2=None,
         )
 
     def test_sub_same(self):
+        """If the specified cookie domain does not domain-match the request
+        domain, the cookie must be ignored. Domain-matching means being the
+        same domain or a superdomain, so specifing a subdomain must cause the
+        cookie to be ignored."""
         self._test_followup(
             'https://toscrape.com/a',
             'https://toscrape.com/b',
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=None,
+            cookies2=None,
         )
 
     def test_sub_same_redirect_absolute(self):
@@ -1229,7 +1546,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=None,
+            cookies2=None,
         )
 
     def test_sub_same_redirect_relative(self):
@@ -1241,7 +1559,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=None,
+            cookies2=None,
         )
 
     def test_sub_other(self):
@@ -1253,7 +1572,8 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=None,
+            cookies2=None,
         )
 
     def test_sub_other_redirect(self):
@@ -1265,12 +1585,10 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=None,
+            cookies1=None,
+            cookies2=None,
         )
 
-    # TODO: Make sure that the cookies are not applied to the initial request.
-    # TODO: Find out why this test fails? Can domains not allow-list cookies
-    # for their subdomains?
     def test_sub_sub(self):
         self._test_followup(
             'https://toscrape.com/',
@@ -1278,7 +1596,67 @@ class UserSetCookieDomainTest(TestCase):
             input_cookies=[
                 {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
             ],
-            output_cookies=b"a=b",
+            cookies1=None,
+            cookies2=None,
         )
 
-    # TODO: Continue writing the remaining test_sub_… scenarios.
+    def test_sub_sub_redirect(self):
+        self._test_redirect(
+            'https://toscrape.com/',
+            'https://books.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': 'books.toscrape.com'}
+            ],
+            cookies1=None,
+            cookies2=None,
+        )
+
+    def test_sub_super(self):
+        self._test_followup(
+            'https://books.toscrape.com/',
+            'https://toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': 'bad.books.toscrape.com'}
+            ],
+            cookies1=None,
+            cookies2=None,
+        )
+
+    def test_sub_super_redirect(self):
+        self._test_redirect(
+            'https://books.toscrape.com/',
+            'https://toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': 'bad.books.toscrape.com'}
+            ],
+            cookies1=None,
+            cookies2=None,
+        )
+
+    def test_sub_sibling(self):
+        """If a cookie is set without an explicit domain value, it is
+        restricted to the domain for which is has been set (sibling subdomains
+        do not get the cookie either).
+
+        https://datatracker.ietf.org/doc/html/rfc6265#section-5.3
+        """
+        self._test_followup(
+            'https://books.toscrape.com/',
+            'https://quotes.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': 'bad.books.toscrape.com'}
+            ],
+            cookies1=None,
+            cookies2=None,
+        )
+
+    def test_sub_sibling_redirect(self):
+        self._test_redirect(
+            'https://books.toscrape.com/',
+            'https://quotes.toscrape.com/',
+            input_cookies=[
+                {'name': 'a', 'value': 'b', 'domain': 'bad.books.toscrape.com'}
+            ],
+            cookies1=None,
+            cookies2=None,
+        )

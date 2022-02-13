@@ -4,6 +4,7 @@ from collections import defaultdict
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 
@@ -30,6 +31,10 @@ class CookiesMiddleware:
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
         for cookie in self._get_request_cookies(jar, request):
+            # https://bugs.python.org/issue33017
+            if cookie.domain == ".":
+                cookie.domain = urlparse_cached(request).hostname.lower()
+
             jar.set_cookie_if_ok(cookie, request)
 
         # set Cookie header
