@@ -1,6 +1,8 @@
 import logging
 from collections import defaultdict
 
+from publicsuffixlist import PublicSuffixList
+
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
@@ -17,6 +19,7 @@ class CookiesMiddleware:
     def __init__(self, debug=False):
         self.jars = defaultdict(CookieJar)
         self.debug = debug
+        self.public_suffix_list = PublicSuffixList()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -31,9 +34,18 @@ class CookiesMiddleware:
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
         for cookie in self._get_request_cookies(jar, request):
-            # https://bugs.python.org/issue33017
-            if cookie.domain == ".":
-                cookie.domain = urlparse_cached(request).hostname.lower()
+            cookie_domain = cookie.domain
+            if cookie_domain.startswith('.'):
+                cookie_domain = cookie_domain[1:]
+
+            request_domain = urlparse_cached(request).hostname.lower()
+            if not cookie_domain:
+                # https://bugs.python.org/issue33017
+                cookie.domain = request_domain
+            elif not self.public_suffix_list.is_private(cookie_domain):
+                if cookie_domain != request_domain:
+                    continue
+                cookie.domain = request_domain
 
             jar.set_cookie_if_ok(cookie, request)
 

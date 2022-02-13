@@ -2,7 +2,6 @@ import re
 import time
 from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
 
-from publicsuffixlist import PublicSuffixList
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
@@ -10,8 +9,6 @@ from scrapy.utils.python import to_unicode
 # Defined in the http.cookiejar module, but undocumented:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
 IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
-
-public_suffix_list = PublicSuffixList()
 
 
 class CookieJar:
@@ -60,10 +57,7 @@ class CookieJar:
             for host_cookie in self.jar._cookies_for_domain(dot_host, wreq):
                 if (
                     host == req_host
-                    or (
-                        host_cookie.domain_specified
-                        and public_suffix_list.is_private(host)
-                    )
+                    or host_cookie.domain_specified
                 ):
                     cookies.append(host_cookie)
 
