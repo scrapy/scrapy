@@ -1,6 +1,7 @@
 import re
 import time
 from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
+from urllib.parse import urlunparse
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
@@ -37,15 +38,20 @@ class CookieJar:
         if IPV4_RE.search(req_host):
             return
 
-        # TODO: self.jar._cookies is empty when using a local domain, like
-        # ‘localhost’. Do we need to handle cookies for local domains? How?
+        # https://bugs.python.org/issue46075
+        # Workaround from https://github.com/psf/requests/issues/5388
         if '.' not in req_host:
-            return
-
-        hosts = _potential_domain_matches(req_host)
+            req_host = f'{req_host}.local'
+            hosts = [req_host]
+        else:
+            hosts = _potential_domain_matches(req_host)
 
         cookies = []
         for host in hosts:
+            if '.' not in host:
+                host = f'{host}.local'
+                wreq.is_local = True
+
             if req_host == host and host in self.jar._cookies:
                 for host_cookie in self.jar._cookies_for_domain(host, wreq):
                     cookies.append(host_cookie)
@@ -156,12 +162,23 @@ class WrappedRequest:
 
     def __init__(self, request):
         self.request = request
+        self.is_local = False
 
     def get_full_url(self):
-        return self.request.url
+        if not self.is_local:
+            return self.request.url
+        parsed = urlparse_cached(self.request)
+        netloc = f'{parsed.hostname}.local'
+        if parsed.port:
+            netloc = f'{netloc}:{parsed.post}'
+        new_parts = parsed._replace(netloc=netloc)
+        url = urlunparse(new_parts)
+        return url
 
     def get_host(self):
-        return urlparse_cached(self.request).netloc
+        suffix = '.local' if self.is_local else ''
+        host = f'{urlparse_cached(self.request).netloc}{suffix}'
+        return host
 
     def get_type(self):
         return urlparse_cached(self.request).scheme
@@ -177,7 +194,9 @@ class WrappedRequest:
         return self.request.meta.get('is_unverifiable', False)
 
     def get_origin_req_host(self):
-        return urlparse_cached(self.request).hostname
+        suffix = '.local' if self.is_local else ''
+        host = f'{urlparse_cached(self.request).hostname}{suffix}'
+        return host
 
     # python3 uses attributes instead of methods
     @property
