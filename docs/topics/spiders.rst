@@ -835,6 +835,6 @@ Combine SitemapSpider with other sources of urls::
 
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
-.. _robots.txt: https://github.com/scrapy/scrapy/issues/3969
+.. _robots.txt: https://www.robotstxt.org/
 .. _TLD: https://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: https://scrapyd.readthedocs.io/en/latest/
