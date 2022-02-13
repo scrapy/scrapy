@@ -1019,7 +1019,7 @@ Parsers vary in several aspects:
   (shorter) rule
 
 Performance comparison of different parsers is available at `the following link
-<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+<https://github.com/scrapy/scrapy/issues/3969>`_.
 
 .. _protego-parser:
 
