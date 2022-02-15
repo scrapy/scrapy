@@ -24,7 +24,7 @@ Having trouble? We'd like to help!
 * Search for questions on the archives of the `scrapy-users mailing list`_.
 * Ask a question in the `#scrapy IRC channel`_,
 * Report bugs with Scrapy in our `issue tracker`_.
-* Join the Discord community `Scrapy discord`_.
+* Join the Discord community `Scrapy Discord`_.
 
 .. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
