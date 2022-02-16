@@ -24,12 +24,14 @@ Having trouble? We'd like to help!
 * Search for questions on the archives of the `scrapy-users mailing list`_.
 * Ask a question in the `#scrapy IRC channel`_,
 * Report bugs with Scrapy in our `issue tracker`_.
+* Join the Discord community `Scrapy Discord`_.
 
 .. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
+.. _Scrapy Discord : https://discord.gg/mv3yErfpvq
 
 
 First steps
