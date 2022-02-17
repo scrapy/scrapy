@@ -129,18 +129,28 @@ class MailSender:
         # Import twisted.mail here because it is not available in python3
         from twisted.internet import reactor
         from twisted.mail.smtp import ESMTPSenderFactory
-        from twisted import copyright
-        from packaging import version
-        msg = BytesIO(msg)
+        from twisted import version as twisted_version
+        from distutils.version import Version
+
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(
-            self.smtpuser, self.smtppass, self.mailfrom, to_addrs, msg, d,
-            heloFallback=True, requireAuthentication=False, requireTransportSecurity=self.smtptls,
-        )
+
+        factory_config = {
+            'username': self.smtpuser,
+            'password': self.smtppass,
+            'fromEmail': self.mailfrom,
+            'toEmail': to_addrs,
+            'file': BytesIO(msg),
+            'deferred': defer.Deferred(),
+            'heloFallback': True,
+            'requireAuthentication': False,
+            'requireTransportSecurity': self.smtptls
+        }
 
         # Newer versions of twisted require the hostname to use STARTTLS
-        if version.parse(copyright.version) >= version.parse('21.2.0'):
-            factory.hostname = self.smtphost
+        if twisted_version >= Version('21.2.0'):
+            factory_config['hostname'] = self.smtphost
+
+        factory = ESMTPSenderFactory(**factory_config)
 
         factory.noisy = False
 
