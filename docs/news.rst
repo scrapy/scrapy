@@ -226,7 +226,7 @@ Bug fixes
 -   :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` once again allows the
     ``callback`` keyword. (:issue:`5237`, :issue:`5251`, :issue:`5264`)
 
--   Made :func:`scrapy.utils.response.open_in_browser` support to more complex
+-   Made :func:`scrapy.utils.response.open_in_browser` support more complex
     HTML. (:issue:`5319`, :issue:`5320`)
 
 -   Fixed :attr:`CSVFeedSpider.quotechar
@@ -308,15 +308,19 @@ Documentation
 -   ``quotes.toscrape.com`` references now use HTTPS instead of HTTP.
     (:issue:`5395`, :issue:`5396`)
 
+-   Added a link to `our Discord server <https://discord.gg/mv3yErfpvq>`_
+    to :ref:`getting-help`. (:issue:`5421`, :issue:`5422`)
+
 -   The pronunciation of the project name is now :ref:`officially
     <intro-overview>` /ˈskreɪpaɪ/. (:issue:`5280`, :issue:`5281`)
 
 -   Added the Scrapy logo to the README. (:issue:`5255`, :issue:`5258`)
 
--   Fixed issues. (:issue:`3155`, :issue:`4335`, :issue:`5074`, :issue:`5098`,
-    :issue:`5134`, :issue:`5180`, :issue:`5194`, :issue:`5239`, :issue:`5266`,
-    :issue:`5271`, :issue:`5273`, :issue:`5274`, :issue:`5276`, :issue:`5347`,
-    :issue:`5356`)
+-   Fixed issues and implemented minor improvements. (:issue:`3155`,
+    :issue:`4335`, :issue:`5074`, :issue:`5098`, :issue:`5134`, :issue:`5180`,
+    :issue:`5194`, :issue:`5239`, :issue:`5266`, :issue:`5271`, :issue:`5273`,
+    :issue:`5274`, :issue:`5276`, :issue:`5347`, :issue:`5356`, :issue:`5414`,
+    :issue:`5415`, :issue:`5416`, :issue:`5419`, :issue:`5420`)
 
 
 Quality Assurance
@@ -330,13 +334,18 @@ Quality Assurance
     :class:`~scrapy.downloadermiddlewares.stats.DownloaderStats` downloader
     middleware, which is enabled by default. (:issue:`4964`, :issue:`4972`)
 
+-   Removed uses of the deprecated :mod:`optparse` module. (:issue:`5366`,
+    :issue:`5374`)
+
 -   Extended typing hints. (:issue:`5077`, :issue:`5090`, :issue:`5100`,
     :issue:`5108`, :issue:`5171`, :issue:`5215`, :issue:`5334`)
 
--   Improved tests, fixed CI issues. (:issue:`5094`, :issue:`5157`,
-    :issue:`5162`, :issue:`5198`, :issue:`5207`, :issue:`5208`, :issue:`5229`,
-    :issue:`5298`, :issue:`5299`, :issue:`5310`, :issue:`5316`, :issue:`5333`,
-    :issue:`5388`, :issue:`5389`, :issue:`5401`)
+-   Improved tests, fixed CI issues, removed unused code. (:issue:`5094`,
+    :issue:`5157`, :issue:`5162`, :issue:`5198`, :issue:`5207`, :issue:`5208`,
+    :issue:`5229`, :issue:`5298`, :issue:`5299`, :issue:`5310`, :issue:`5316`,
+    :issue:`5333`, :issue:`5388`, :issue:`5389`, :issue:`5400`, :issue:`5401`,
+    :issue:`5404`, :issue:`5405`, :issue:`5407`, :issue:`5410`, :issue:`5412`,
+    :issue:`5425`, :issue:`5427`)
 
 -   Implemented improvements for contributors. (:issue:`5080`, :issue:`5082`,
     :issue:`5177`, :issue:`5200`)
