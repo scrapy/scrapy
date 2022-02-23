@@ -1,6 +1,6 @@
 import inspect
 import json
-import optparse
+import argparse
 import os
 import platform
 import re
@@ -23,7 +23,7 @@ from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import view, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -37,18 +37,27 @@ class CommandSettings(unittest.TestCase):
     def setUp(self):
         self.command = ScrapyCommand()
         self.command.settings = Settings()
-        self.parser = optparse.OptionParser(
-            formatter=optparse.TitledHelpFormatter(),
-            conflict_handler='resolve',
-        )
+        self.parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
+                                              conflict_handler='resolve')
         self.command.add_options(self.parser)
 
     def test_settings_json_string(self):
         feeds_json = '{"data.json": {"format": "json"}, "data.xml": {"format": "xml"}}'
-        opts, args = self.parser.parse_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
+        opts, args = self.parser.parse_known_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
         self.command.process_options(args, opts)
         self.assertIsInstance(self.command.settings['FEEDS'], scrapy.settings.BaseSettings)
         self.assertEqual(dict(self.command.settings['FEEDS']), json.loads(feeds_json))
+
+    def test_help_formatter(self):
+        formatter = ScrapyHelpFormatter(prog='scrapy')
+        part_strings = ['usage: scrapy genspider [options] <name> <domain>\n\n',
+                        '\n', 'optional arguments:\n', '\n', 'Global Options:\n']
+        self.assertEqual(
+            formatter._join_parts(part_strings),
+            ('Usage\n=====\n  scrapy genspider [options] <name> <domain>\n\n\n'
+             'Optional Arguments\n==================\n\n'
+             'Global Options\n--------------\n')
+        )
 
 
 class ProjectTest(unittest.TestCase):
@@ -810,6 +819,21 @@ class BenchCommandTest(CommandTest):
                               '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
+
+
+class ViewCommandTest(CommandTest):
+
+    def test_methods(self):
+        command = view.Command()
+        command.settings = Settings()
+        parser = argparse.ArgumentParser(prog='scrapy', prefix_chars='-',
+                                         formatter_class=ScrapyHelpFormatter,
+                                         conflict_handler='resolve')
+        command.add_options(parser)
+        self.assertEqual(command.short_desc(),
+                         "Open URL in browser, as seen by Scrapy")
+        self.assertIn("URL using the Scrapy downloader and show its",
+                      command.long_desc())
 
 
 class CrawlCommandTest(CommandTest):

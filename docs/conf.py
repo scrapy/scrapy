@@ -272,7 +272,6 @@ coverage_ignore_pyobjects = [
     r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
 
     # Never documented before, and deprecated now.
-    r'^scrapy\.item\.DictItem$',
     r'^scrapy\.linkextractors\.FilteringLinkExtractor$',
 
     # Implementation detail of LxmlLinkExtractor
