@@ -771,6 +771,57 @@ class DotDomainNoDotCookieDomainTest(
 ):
     pass
 
+# TODO:
+#
+# Complete tests about cookies:
+#
+# 1.  Continue migrating the code below to the class-based approach above.
+#
+# 2.  Extend tests to take into account the following scenarios:
+#
+#     -   Cookies set by users through the Cookie header, instead of the
+#         cookies parameter of requests.
+#
+#         See https://github.com/scrapy/scrapy/issues/1992
+#
+#     -   Cookies set by users through the Set-Cookie header, instead of the
+#         cookies parameter of requests.
+#
+#         I (Gallaecio) am not sure what the expected behavior should be here.
+#
+#     -   The 2 scenarios above when the cookie middleware is disabled.
+#
+#     -   Maybe we should also consider scenarios where
+#         dont_merge_cookies=False is involved.
+#
+# 3.  Find out how cookies are supposed to work with IP addresses, and add
+#     tests for those scenarios.
+#
+# 4.  Test uppercase-lowercase combinations of the cookie domain (they are
+#     supposed to be normalized to lowercase).
+#
+# 5.  Test the behavior with multiple domains set in a cookie. The last one
+#     takes precedence. In most browsers I believe a last domain with an empty
+#     value means the domain is interpreted as being unset (instead of a
+#     previous, non-empty value being taken).
+#
+# 6.  Cover with tests what https://github.com/scrapy/scrapy/pull/4812 aims to
+#     address.
+#
+# 7.  Make sure that foobar.local and foobar do not get the same cookies
+#     unintendedly. This would be a bug of my initial attempt to bypass the
+#     shortcomings of the Python standard library for the handling of domains
+#     without a period. Maybe we need to append .local to hosts that end in
+#     .local already and have only 1 dot.
+#
+# Make sure to include descriptions and references to the standard and any
+# other relevant sources in the corresponding components of the tests.
+#
+# Also, consider providing basic documentation about cookies, and links to
+# upstream documentation, so that users understand e.g. the effects of setting
+# a domain for a cookie (which unintuitively is less restrictive that not
+# setting a domain).
+
 
 class UserSetCookieDomainTest(TestCase):
 
@@ -839,7 +890,6 @@ class UserSetCookieDomainTest(TestCase):
         cookies = request2.headers.get('Cookie')
         self.assertEqual(cookies, cookies2)
 
-    # TODO: Continue migration to a class-based approach above
     def test_sub_same(self):
         """If the specified cookie domain does not domain-match the request
         domain, the cookie must be ignored. Domain-matching means being the
