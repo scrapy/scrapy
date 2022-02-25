@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
 
-from incremental import Version
+from twisted.python.versions import Version
 from twisted.internet import defer, ssl
 from twisted import version as twisted_version
 
