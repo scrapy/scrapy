@@ -12,11 +12,10 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 logger = logging.getLogger(__name__)
 
 
-def _build_redirect_request(source_request, *, url, method=None, body=None):
+def _build_redirect_request(source_request, *, url, **kwargs):
     redirect_request = source_request.replace(
         url=url,
-        method=method,
-        body=body,
+        **kwargs,
         cookies=None,
     )
     if 'Cookie' in redirect_request.headers:
