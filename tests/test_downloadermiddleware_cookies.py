@@ -280,7 +280,6 @@ class CookiesMiddlewareTest(TestCase):
         self,
         source,
         target,
-        *,
         cookies1,
         cookies2,
     ):
@@ -355,7 +354,6 @@ class CookiesMiddlewareTest(TestCase):
         self,
         source,
         target,
-        *,
         cookies2,
     ):
         """Test the handling of a user-defined Cookie header when building a
@@ -432,7 +430,6 @@ class CookiesMiddlewareTest(TestCase):
         url1,
         url2,
         domain,
-        *,
         cookies1,
         cookies2,
     ):
@@ -495,7 +492,6 @@ class CookiesMiddlewareTest(TestCase):
         url1,
         url2,
         domain,
-        *,
         cookies,
     ):
         request1 = Request(url1)

@@ -12,11 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 def _build_redirect_request(source_request, url, **kwargs):
-    redirect_request = source_request.replace(
-        url=url,
-        cookies=None,
-        **kwargs,
-    )
+    kwargs['url'] = url
+    kwargs['cookies'] = None
+    redirect_request = source_request.replace(**kwargs)
     if 'Cookie' in redirect_request.headers:
         source_request_netloc = urlparse_cached(source_request).netloc
         redirect_request_netloc = urlparse_cached(redirect_request).netloc
