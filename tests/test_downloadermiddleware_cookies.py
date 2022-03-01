@@ -3,7 +3,9 @@ import logging
 from unittest import TestCase
 from testfixtures import LogCapture
 
+from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Response, Request
+from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from scrapy.exceptions import NotConfigured
@@ -21,9 +23,11 @@ class CookiesMiddlewareTest(TestCase):
     def setUp(self):
         self.spider = Spider('foo')
         self.mw = CookiesMiddleware()
+        self.redirect_middleware = RedirectMiddleware(settings=Settings())
 
     def tearDown(self):
         del self.mw
+        del self.redirect_middleware
 
     def test_basic(self):
         req = Request('http://scrapytest.org/')
@@ -229,3 +233,154 @@ class CookiesMiddlewareTest(TestCase):
         assert self.mw.process_request(request, self.spider) is None
         self.assertIn('Cookie', request.headers)
         self.assertEqual(b'currencyCookie=USD', request.headers['Cookie'])
+
+    def _test_cookie_redirect(
+        self,
+        source,
+        target,
+        *,
+        cookies1,
+        cookies2,
+    ):
+        input_cookies = {'a': 'b'}
+
+        if not isinstance(source, dict):
+            source = {'url': source}
+        if not isinstance(target, dict):
+            target = {'url': target}
+        target.setdefault('status', 301)
+
+        request1 = Request(cookies=input_cookies, **source)
+        self.mw.process_request(request1, self.spider)
+        cookies = request1.headers.get('Cookie')
+        self.assertEqual(cookies, b"a=b" if cookies1 else None)
+
+        response = Response(
+            headers={
+                'Location': target['url'],
+            },
+            **target,
+        )
+        self.assertEqual(
+            self.mw.process_response(request1, response, self.spider),
+            response,
+        )
+
+        request2 = self.redirect_middleware.process_response(
+            request1,
+            response,
+            self.spider,
+        )
+        self.assertIsInstance(request2, Request)
+
+        self.mw.process_request(request2, self.spider)
+        cookies = request2.headers.get('Cookie')
+        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+
+    def test_cookie_redirect_same_domain(self):
+        self._test_cookie_redirect(
+            'https://toscrape.com',
+            'https://toscrape.com',
+            cookies1=True,
+            cookies2=True,
+        )
+
+    def test_cookie_redirect_same_domain_forcing_get(self):
+        self._test_cookie_redirect(
+            'https://toscrape.com',
+            {'url': 'https://toscrape.com', 'status': 302},
+            cookies1=True,
+            cookies2=True,
+        )
+
+    def test_cookie_redirect_different_domain(self):
+        self._test_cookie_redirect(
+            'https://toscrape.com',
+            'https://example.com',
+            cookies1=True,
+            cookies2=False,
+        )
+
+    def test_cookie_redirect_different_domain_forcing_get(self):
+        self._test_cookie_redirect(
+            'https://toscrape.com',
+            {'url': 'https://example.com', 'status': 302},
+            cookies1=True,
+            cookies2=False,
+        )
+
+    def _test_cookie_header_redirect(
+        self,
+        source,
+        target,
+        *,
+        cookies2,
+    ):
+        """Test the handling of a user-defined Cookie header when building a
+        redirect follow-up request.
+
+        We follow RFC 6265 for cookie handling. The Cookie header can only
+        contain a list of key-value pairs (i.e. no additional cookie
+        parameters like Domain or Path). Because of that, we follow the same
+        rules that we would follow for the handling of the Set-Cookie response
+        header when the Domain is not set: the cookies must be limited to the
+        target URL domain (not even subdomains can receive those cookies).
+
+        .. note:: This method tests the scenario where the cookie middleware is
+                  disabled. Because of known issue #1992, when the cookies
+                  middleware is enabled we do not need to be concerned about
+                  the Cookie header getting leaked to unintended domains,
+                  because the middleware empties the header from every request.
+        """
+        if not isinstance(source, dict):
+            source = {'url': source}
+        if not isinstance(target, dict):
+            target = {'url': target}
+        target.setdefault('status', 301)
+
+        request1 = Request(headers={'Cookie': b'a=b'}, **source)
+
+        response = Response(
+            headers={
+                'Location': target['url'],
+            },
+            **target,
+        )
+
+        request2 = self.redirect_middleware.process_response(
+            request1,
+            response,
+            self.spider,
+        )
+        self.assertIsInstance(request2, Request)
+
+        cookies = request2.headers.get('Cookie')
+        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+
+    def test_cookie_header_redirect_same_domain(self):
+        self._test_cookie_header_redirect(
+            'https://toscrape.com',
+            'https://toscrape.com',
+            cookies2=True,
+        )
+
+    def test_cookie_header_redirect_same_domain_forcing_get(self):
+        self._test_cookie_header_redirect(
+            'https://toscrape.com',
+            {'url': 'https://toscrape.com', 'status': 302},
+            cookies2=True,
+        )
+
+    def test_cookie_header_redirect_different_domain(self):
+        self._test_cookie_header_redirect(
+            'https://toscrape.com',
+            'https://example.com',
+            cookies2=False,
+        )
+
+    def test_cookie_header_redirect_different_domain_forcing_get(self):
+        self._test_cookie_header_redirect(
+            'https://toscrape.com',
+            {'url': 'https://example.com', 'status': 302},
+            cookies2=False,
+        )

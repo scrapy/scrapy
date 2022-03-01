@@ -4,10 +4,26 @@ from six.moves.urllib.parse import urljoin
 from w3lib.url import safe_url_string
 
 from scrapy.http import HtmlResponse
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 logger = logging.getLogger(__name__)
+
+
+def _build_redirect_request(source_request, *, url, method=None, body=None):
+    redirect_request = source_request.replace(
+        url=url,
+        method=method,
+        body=body,
+        cookies=None,
+    )
+    if 'Cookie' in redirect_request.headers:
+        source_request_netloc = urlparse_cached(source_request).netloc
+        redirect_request_netloc = urlparse_cached(redirect_request).netloc
+        if source_request_netloc != redirect_request_netloc:
+            del redirect_request.headers['Cookie']
+    return redirect_request
 
 
 class BaseRedirectMiddleware(object):
@@ -48,10 +64,15 @@ class BaseRedirectMiddleware(object):
             raise IgnoreRequest("max redirections reached")
 
     def _redirect_request_using_get(self, request, redirect_url):
-        redirected = request.replace(url=redirect_url, method='GET', body='')
-        redirected.headers.pop('Content-Type', None)
-        redirected.headers.pop('Content-Length', None)
-        return redirected
+        redirect_request = _build_redirect_request(
+            request,
+            url=redirect_url,
+            method='GET',
+            body='',
+        )
+        redirect_request.headers.pop('Content-Type', None)
+        redirect_request.headers.pop('Content-Length', None)
+        return redirect_request
 
 
 class RedirectMiddleware(BaseRedirectMiddleware):
@@ -75,7 +96,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         redirected_url = urljoin(request.url, location)
 
         if response.status in (301, 307, 308) or request.method == 'HEAD':
-            redirected = request.replace(url=redirected_url)
+            redirected = _build_redirect_request(request, url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
         redirected = self._redirect_request_using_get(request, redirected_url)
