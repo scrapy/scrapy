@@ -278,7 +278,7 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 Item filtering
 ==============
 
-.. versionadded:: VERSION
+.. versionadded:: 2.6.0
 
 You can filter items that you want to allow for a particular feed by using the
 ``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
@@ -318,7 +318,7 @@ ItemFilter
 Post-Processing
 ===============
 
-.. versionadded:: VERSION
+.. versionadded:: 2.6.0
 
 Scrapy provides an option to activate plugins to post-process feeds before they are exported
 to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
@@ -457,13 +457,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     If undefined or empty, all items are exported.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
@@ -499,7 +499,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     The plugins will be used in the order of the list passed.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
 .. setting:: FEED_EXPORT_ENCODING
 

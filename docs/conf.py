@@ -303,10 +303,14 @@ intersphinx_mapping = {
 hoverxref_auto_ref = True
 hoverxref_role_types = {
     "class": "tooltip",
+    "command": "tooltip",
     "confval": "tooltip",
     "hoverxref": "tooltip",
     "mod": "tooltip",
     "ref": "tooltip",
+    "reqmeta": "tooltip",
+    "setting": "tooltip",
+    "signal": "tooltip",
 }
 hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
 

@@ -356,6 +356,8 @@ setting MYPIPELINE_IMAGES_URLS_FIELD and your custom settings will be used.
 Additional features
 ===================
 
+.. _file-expiration:
+
 File expiration
 ---------------
 
