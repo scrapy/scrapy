@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 
-from publicsuffixlist import PublicSuffixList
+from tldextract import TLDExtract
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
@@ -60,6 +60,14 @@ def cookies_to_set_cookie_list(cookies, *, errback=None):
             for cookie in cookies
         )
     )
+
+
+_split_domain = TLDExtract(include_psl_private_domains=True)
+
+
+def _is_public_domain(domain):
+    parts = _split_domain(domain)
+    return not parts.domain
 
 
 class CookiesMiddleware:

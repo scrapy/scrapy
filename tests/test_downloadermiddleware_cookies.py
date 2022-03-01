@@ -18,6 +18,48 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 
 
+def _cookie_to_set_cookie_value(cookie):
+    """Given a cookie defined as a dictionary with name and value keys, and
+    optional path and domain keys, return the equivalent string that can be
+    associated to a ``Set-Cookie`` header."""
+    decoded = {}
+    for key in ("name", "value", "path", "domain"):
+        if cookie.get(key) is None:
+            if key in ("name", "value"):
+                return
+            continue
+        if isinstance(cookie[key], (bool, float, int, str)):
+            decoded[key] = str(cookie[key])
+        else:
+            try:
+                decoded[key] = cookie[key].decode("utf8")
+            except UnicodeDecodeError:
+                decoded[key] = cookie[key].decode("latin1", errors="replace")
+
+    cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
+    for key, value in decoded.items():  # path, domain
+        cookie_str += f"; {key.capitalize()}={value}"
+    return cookie_str
+
+
+def _cookies_to_set_cookie_list(cookies):
+    """Given a group of cookie defined either as a dictionary or as a list of
+    dictionaries (i.e. in a format supported by the cookies parameter of
+    Request), return the equivalen list of strings that can be associated to a
+    ``Set-Cookie`` header."""
+    if not cookies:
+        return []
+    if isinstance(cookies, dict):
+        cookies = ({"name": k, "value": v} for k, v in cookies.items())
+    return filter(
+        None,
+        (
+            _cookie_to_set_cookie_value(cookie)
+            for cookie in cookies
+        )
+    )
+
+
 class CookiesMiddlewareTest(TestCase):
 
     def assertCookieValEqual(self, first, second, msg=None):
