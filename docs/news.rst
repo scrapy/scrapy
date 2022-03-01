@@ -38,6 +38,18 @@ Scrapy 1.8.2 (2022-03-01)
               your cookies. See the documentation of the
               :class:`~scrapy.http.Request` class for more information.
 
+-   When the domain of a cookie, either received in the ``Set-Cookie`` header
+    of a response or defined in a :class:`~scrapy.http.Request` object, is set
+    to a `public suffix <https://publicsuffix.org/>`_, the cookie is now
+    ignored unless the cookie domain is the same as the request domain.
+
+    The old behavior could be exploited by an attacker to inject cookies into
+    your requests to some other domains. Please, see the `mfjm-vh54-3f96
+    security advisory`_ for more information.
+
+    .. _mfjm-vh54-3f96 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-mfjm-vh54-3f96
+
+
 .. _release-1.8.1:
 
 Scrapy 1.8.1 (2021-10-05)
