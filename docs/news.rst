@@ -3,6 +3,15 @@
 Release notes
 =============
 
+.. _release-2.6.1:
+
+Scrapy 2.6.1 (2022-03-01)
+-------------------------
+
+Fixes a regression introduced in 2.6.0 that would unset the request method when
+following redirects.
+
+
 .. _release-2.6.0:
 
 Scrapy 2.6.0 (2022-03-01)
