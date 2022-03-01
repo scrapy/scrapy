@@ -5,10 +5,12 @@ Release notes
 
 .. _release-2.6.0:
 
-Scrapy 2.6.0 (2022-02-??)
+Scrapy 2.6.0 (2022-03-01)
 -------------------------
 
 Highlights:
+
+*   :ref:`Security fixes for cookie handling <2.6-security-fixes>`
 
 *   Python 3.10 support
 
@@ -19,6 +21,37 @@ Highlights:
 *   Feed exports now support :class:`pathlib.Path` output paths and per-feed
     :ref:`item filtering <item-filter>` and
     :ref:`post-processing <post-processing>`
+
+.. _2.6-security-fixes:
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   When a :class:`~scrapy.http.Request` object with cookies defined gets a
+    redirect response causing a new :class:`~scrapy.http.Request` object to be
+    scheduled, the cookies defined in the original
+    :class:`~scrapy.http.Request` object are no longer copied into the new
+    :class:`~scrapy.http.Request` object.
+
+    If you manually set the ``Cookie`` header on a
+    :class:`~scrapy.http.Request` object and the domain name of the redirect
+    URL is not an exact match for the domain of the URL of the original
+    :class:`~scrapy.http.Request` object, your ``Cookie`` header is now dropped
+    from the new :class:`~scrapy.http.Request` object.
+
+    The old behavior could be exploited by an attacker to gain access to your
+    cookies. Please, see the `cjvr-mfj7-j4j8 security advisory`_ for more
+    information.
+
+    .. _cjvr-mfj7-j4j8 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cjvr-mfj7-j4j8
+
+    .. note:: It is still possible to enable the sharing of cookies between
+              different domains with a shared domain suffix (e.g.
+              ``example.com`` and any subdomain) by defining the shared domain
+              suffix (e.g. ``example.com``) as the cookie domain when defining
+              your cookies. See the documentation of the
+              :class:`~scrapy.http.Request` class for more information.
+
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1841,6 +1874,38 @@ affect subclasses:
     :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
 
 (:issue:`3884`)
+
+.. _release-1.8.2:
+
+Scrapy 1.8.2 (2022-03-01)
+-------------------------
+
+**Security bug fixes:**
+
+-   When a :class:`~scrapy.http.Request` object with cookies defined gets a
+    redirect response causing a new :class:`~scrapy.http.Request` object to be
+    scheduled, the cookies defined in the original
+    :class:`~scrapy.http.Request` object are no longer copied into the new
+    :class:`~scrapy.http.Request` object.
+
+    If you manually set the ``Cookie`` header on a
+    :class:`~scrapy.http.Request` object and the domain name of the redirect
+    URL is not an exact match for the domain of the URL of the original
+    :class:`~scrapy.http.Request` object, your ``Cookie`` header is now dropped
+    from the new :class:`~scrapy.http.Request` object.
+
+    The old behavior could be exploited by an attacker to gain access to your
+    cookies. Please, see the `cjvr-mfj7-j4j8 security advisory`_ for more
+    information.
+
+    .. _cjvr-mfj7-j4j8 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cjvr-mfj7-j4j8
+
+    .. note:: It is still possible to enable the sharing of cookies between
+              different domains with a shared domain suffix (e.g.
+              ``example.com`` and any subdomain) by defining the shared domain
+              suffix (e.g. ``example.com``) as the cookie domain when defining
+              your cookies. See the documentation of the
+              :class:`~scrapy.http.Request` class for more information.
 
 
 .. _release-1.8.1:
