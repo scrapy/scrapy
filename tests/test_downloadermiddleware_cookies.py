@@ -15,6 +15,48 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 
 
+def _cookie_to_set_cookie_value(cookie):
+    """Given a cookie defined as a dictionary with name and value keys, and
+    optional path and domain keys, return the equivalent string that can be
+    associated to a ``Set-Cookie`` header."""
+    decoded = {}
+    for key in ("name", "value", "path", "domain"):
+        if cookie.get(key) is None:
+            if key in ("name", "value"):
+                return
+            continue
+        if isinstance(cookie[key], (bool, float, int, str)):
+            decoded[key] = str(cookie[key])
+        else:
+            try:
+                decoded[key] = cookie[key].decode("utf8")
+            except UnicodeDecodeError:
+                decoded[key] = cookie[key].decode("latin1", errors="replace")
+
+    cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
+    for key, value in decoded.items():  # path, domain
+        cookie_str += f"; {key.capitalize()}={value}"
+    return cookie_str
+
+
+def _cookies_to_set_cookie_list(cookies):
+    """Given a group of cookie defined either as a dictionary or as a list of
+    dictionaries (i.e. in a format supported by the cookies parameter of
+    Request), return the equivalen list of strings that can be associated to a
+    ``Set-Cookie`` header."""
+    if not cookies:
+        return []
+    if isinstance(cookies, dict):
+        cookies = ({"name": k, "value": v} for k, v in cookies.items())
+    return filter(
+        None,
+        (
+            _cookie_to_set_cookie_value(cookie)
+            for cookie in cookies
+        )
+    )
+
+
 class CookiesMiddlewareTest(TestCase):
 
     def assertCookieValEqual(self, first, second, msg=None):
@@ -522,4 +564,132 @@ class CookiesMiddlewareTest(TestCase):
             'https://toscrape.com',
             {'url': 'https://example.com', 'status': 302},
             cookies2=False,
+        )
+
+    def _test_user_set_cookie_domain_followup(
+        self,
+        url1,
+        url2,
+        domain,
+        *,
+        cookies1,
+        cookies2,
+    ):
+        input_cookies = [
+            {
+                'name': 'a',
+                'value': 'b',
+                'domain': domain,
+            }
+        ]
+
+        request1 = Request(url1, cookies=input_cookies)
+        self.mw.process_request(request1, self.spider)
+        cookies = request1.headers.get('Cookie')
+        self.assertEqual(cookies, b"a=b" if cookies1 else None)
+
+        request2 = Request(url2)
+        self.mw.process_request(request2, self.spider)
+        cookies = request2.headers.get('Cookie')
+        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+
+    def test_user_set_cookie_domain_suffix_private(self):
+        self._test_user_set_cookie_domain_followup(
+            'https://books.toscrape.com',
+            'https://quotes.toscrape.com',
+            'toscrape.com',
+            cookies1=True,
+            cookies2=True,
+        )
+
+    def test_user_set_cookie_domain_suffix_public_period(self):
+        self._test_user_set_cookie_domain_followup(
+            'https://foo.co.uk',
+            'https://bar.co.uk',
+            'co.uk',
+            cookies1=False,
+            cookies2=False,
+        )
+
+    def test_user_set_cookie_domain_suffix_public_private(self):
+        self._test_user_set_cookie_domain_followup(
+            'https://foo.blogspot.com',
+            'https://bar.blogspot.com',
+            'blogspot.com',
+            cookies1=False,
+            cookies2=False,
+        )
+
+    def test_user_set_cookie_domain_public_period(self):
+        self._test_user_set_cookie_domain_followup(
+            'https://co.uk',
+            'https://co.uk',
+            'co.uk',
+            cookies1=True,
+            cookies2=True,
+        )
+
+    def _test_server_set_cookie_domain_followup(
+        self,
+        url1,
+        url2,
+        domain,
+        *,
+        cookies,
+    ):
+        request1 = Request(url1)
+        self.mw.process_request(request1, self.spider)
+
+        input_cookies = [
+            {
+                'name': 'a',
+                'value': 'b',
+                'domain': domain,
+            }
+        ]
+
+        headers = {
+            'Set-Cookie': _cookies_to_set_cookie_list(input_cookies),
+        }
+        response = Response(url1, status=200, headers=headers)
+        self.assertEqual(
+            self.mw.process_response(request1, response, self.spider),
+            response,
+        )
+
+        request2 = Request(url2)
+        self.mw.process_request(request2, self.spider)
+        actual_cookies = request2.headers.get('Cookie')
+        self.assertEqual(actual_cookies, b"a=b" if cookies else None)
+
+    def test_server_set_cookie_domain_suffix_private(self):
+        self._test_server_set_cookie_domain_followup(
+            'https://books.toscrape.com',
+            'https://quotes.toscrape.com',
+            'toscrape.com',
+            cookies=True,
+        )
+
+    def test_server_set_cookie_domain_suffix_public_period(self):
+        self._test_server_set_cookie_domain_followup(
+            'https://foo.co.uk',
+            'https://bar.co.uk',
+            'co.uk',
+            cookies=False,
+        )
+
+    def test_server_set_cookie_domain_suffix_public_private(self):
+        self._test_server_set_cookie_domain_followup(
+            'https://foo.blogspot.com',
+            'https://bar.blogspot.com',
+            'blogspot.com',
+            cookies=False,
+        )
+
+    def test_server_set_cookie_domain_public_period(self):
+        self._test_server_set_cookie_domain_followup(
+            'https://co.uk',
+            'https://co.uk',
+            'co.uk',
+            cookies=True,
         )
