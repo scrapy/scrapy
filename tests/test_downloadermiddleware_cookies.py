@@ -299,7 +299,7 @@ class CookiesMiddlewareTest(TestCase):
 
         target['headers'] = {
             'Location': target['url'],
-        },
+        }
         response = Response(**target)
         self.assertEqual(
             self.mw.process_response(request1, response, self.spider),
