@@ -35,7 +35,7 @@ class CookiesMiddleware(object):
             raise NotConfigured
         return cls(crawler.settings.getbool('COOKIES_DEBUG'))
 
-    def _process_cookies(self, cookies, *, jar, request):
+    def _process_cookies(self, cookies, jar, request):
         for cookie in cookies:
             cookie_domain = cookie.domain
             if cookie_domain.startswith('.'):

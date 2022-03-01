@@ -30,9 +30,9 @@ def _cookie_to_set_cookie_value(cookie):
             except UnicodeDecodeError:
                 decoded[key] = cookie[key].decode("latin1", errors="replace")
 
-    cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
+    cookie_str = "{}={}".format(decoded.pop('name'), decoded.pop('value'))
     for key, value in decoded.items():  # path, domain
-        cookie_str += f"; {key.capitalize()}={value}"
+        cookie_str += "; {}={}".format(key.capitalize(), value)
     return cookie_str
 
 
