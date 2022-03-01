@@ -291,17 +291,16 @@ class CookiesMiddlewareTest(TestCase):
             target = {'url': target}
         target.setdefault('status', 301)
 
-        request1 = Request(cookies=input_cookies, **source)
+        source['cookies'] = input_cookies
+        request1 = Request(**source)
         self.mw.process_request(request1, self.spider)
         cookies = request1.headers.get('Cookie')
         self.assertEqual(cookies, b"a=b" if cookies1 else None)
 
-        response = Response(
-            headers={
-                'Location': target['url'],
-            },
-            **target,
-        )
+        target['headers'] = {
+            'Location': target['url'],
+        },
+        response = Response(**target)
         self.assertEqual(
             self.mw.process_response(request1, response, self.spider),
             response,
@@ -378,14 +377,13 @@ class CookiesMiddlewareTest(TestCase):
             target = {'url': target}
         target.setdefault('status', 301)
 
-        request1 = Request(headers={'Cookie': b'a=b'}, **source)
+        source['headers'] = {'Cookie': b'a=b'}
+        request1 = Request(**source)
 
-        response = Response(
-            headers={
-                'Location': target['url'],
-            },
-            **target,
-        )
+        target['headers'] = {
+            'Location': target['url'],
+        }
+        response = Response(**target)
 
         request2 = self.redirect_middleware.process_response(
             request1,
