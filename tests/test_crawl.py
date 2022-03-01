@@ -161,7 +161,7 @@ with multiples lines
         crawler = self.runner.create_crawler(SimpleSpider)
         with LogCapture() as l:
             yield crawler.crawl(self.mockserver.url("/raw?{0}".format(query)), mockserver=self.mockserver)
-        self.assertEqual(str(l).count("Got response 200"), 1)
+        self.assertEqual(unicode(l).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
     def test_retry_conn_lost(self):
