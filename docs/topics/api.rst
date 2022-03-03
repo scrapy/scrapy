@@ -167,16 +167,6 @@ SpiderLoader API
     the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
     errorless execution.
 
-    .. method:: from_settings(settings)
-
-       This class method is used by Scrapy to create an instance of the class.
-       It's called with the current project settings, and it loads the spiders
-       found recursively in the modules of the :setting:`SPIDER_MODULES`
-       setting.
-
-       :param settings: project settings
-       :type settings: :class:`~scrapy.settings.Settings` instance
-
     .. method:: load(spider_name)
 
        Get the Spider class with the given name. It'll look into the previously
@@ -197,6 +187,13 @@ SpiderLoader API
 
        :param request: queried request
        :type request: :class:`~scrapy.Request` instance
+
+    :meth:`from_settings`:
+
+       This class method is used by Scrapy to create an instance of the class.
+       It's called with the current project settings, and it loads the spiders
+       found recursively in the modules of the :setting:`SPIDER_MODULES`
+       setting.
 
 .. _topics-api-signals:
 
