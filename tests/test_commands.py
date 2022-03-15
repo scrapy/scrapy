@@ -770,6 +770,21 @@ class MySpider(scrapy.Spider):
         log = self.get_log(spider_code, args=args)
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
 
+    def test_output_stdout(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        return []
+"""
+        args = ['-o', '-:json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}", log)
+
 
 @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
