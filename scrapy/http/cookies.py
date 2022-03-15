@@ -86,6 +86,35 @@ class CookieJar:
     def set_cookie_if_ok(self, cookie, request):
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))
 
+    def get_cookie(self, name):
+        cookie_dict = self.dict_from_cookiejar()
+        return cookie_dict.get(name)
+
+    def dict_from_cookiejar(self):
+        """Returns a key/value dictionary from a CookieJar.
+
+        :rtype: dict
+        """
+
+        cookie_dict = {}
+
+        for cookie in self.jar:
+            cookie_dict[cookie.name] = cookie.value
+
+        return cookie_dict
+
+    def list_from_cookiejar(self):
+        """Returns a list of all Cookies in the CookieJar
+
+        :rtype: list
+        """
+        cookie_list = []
+
+        for cookie in self.jar:
+            cookie_list.append(cookie)
+
+        return cookie_list
+
 
 def potential_domain_matches(domain):
     """Potential domain matches for a cookie

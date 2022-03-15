@@ -9,9 +9,7 @@ from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
-
 logger = logging.getLogger(__name__)
-
 
 _split_domain = TLDExtract(include_psl_private_domains=True)
 
@@ -136,3 +134,40 @@ class CookiesMiddleware:
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
         response = Response(request.url, headers={"Set-Cookie": formatted})
         return jar.make_cookies(response, request)
+
+
+class AccessCookiesMiddleware(CookiesMiddleware):
+    def __init__(self, debug=False):
+        super().__init__(debug)
+
+    def process_request(self, request, spider):
+        if request.meta.get('dont_merge_cookies', False):
+            # Create a clean CookieJar to add the cookies
+            jar = CookieJar()
+        else:
+            cookiejarkey = request.meta.get("cookiejar")
+            jar = self.jars[cookiejarkey]
+        cookies = self._get_request_cookies(jar, request)
+        self._process_cookies(cookies, jar=jar, request=request)
+
+        # set Cookie header
+        request.headers.pop('Cookie', None)
+        jar.add_cookie_header(request)
+        self._debug_cookie(request, spider)
+
+    def process_response(self, request, response, spider):
+        if request.meta.get('dont_merge_cookies', False):
+            # Create a clean CookieJar to add the cookies
+            jar = CookieJar()
+        else:
+            # extract cookies from Set-Cookie and drop invalid/expired cookies
+            cookiejarkey = request.meta.get("cookiejar")
+            jar = self.jars[cookiejarkey]
+        cookies = jar.make_cookies(response, request)
+        self._process_cookies(cookies, jar=jar, request=request)
+
+        self._debug_set_cookie(response, spider)
+
+        spider.set_cookie_jar(jar)
+
+        return response
