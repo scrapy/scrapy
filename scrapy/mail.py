@@ -129,9 +129,20 @@ class MailSender:
 
     def _sendmail(self, to_addrs, msg):
         from twisted.internet import reactor
-        from twisted.mail.smtp import ESMTPSenderFactory
         msg = BytesIO(msg)
         d = defer.Deferred()
+
+        factory = self._create_sender_factory(to_addrs, msg, d)
+
+        if self.smtpssl:
+            reactor.connectSSL(self.smtphost, self.smtpport, factory, ssl.ClientContextFactory())
+        else:
+            reactor.connectTCP(self.smtphost, self.smtpport, factory)
+
+        return d
+
+    def _create_sender_factory(self, to_addrs, msg, d):
+        from twisted.mail.smtp import ESMTPSenderFactory
 
         factory_keywords = {
             'heloFallback': True,
@@ -144,12 +155,5 @@ class MailSender:
             factory_keywords['hostname'] = self.smtphost
 
         factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, to_addrs, msg, d, **factory_keywords)
-
         factory.noisy = False
-
-        if self.smtpssl:
-            reactor.connectSSL(self.smtphost, self.smtpport, factory, ssl.ClientContextFactory())
-        else:
-            reactor.connectTCP(self.smtphost, self.smtpport, factory)
-
-        return d
+        return factory
