@@ -4,7 +4,7 @@ Spider Middleware manager
 See documentation in docs/topics/spider-middleware.rst
 """
 import logging
-from inspect import isasyncgenfunction
+from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import Any, AsyncGenerator, AsyncIterable, Callable, Generator, Iterable, Tuple, Union, cast
 
@@ -61,7 +61,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             try:
                 result = method(response=response, spider=spider)
                 if result is not None:
-                    msg = (f"Middleware {method.__qualname__} must return None "
+                    msg = (f"{method.__qualname__} must return None "
                            f"or raise an exception, got {type(result)}")
                     raise _InvalidOutput(msg)
             except _InvalidOutput:
@@ -129,7 +129,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             elif result is None:
                 continue
             else:
-                msg = (f"Middleware {method.__qualname__} must return None "
+                msg = (f"{method.__qualname__} must return None "
                        f"or an iterable, got {type(result)}")
                 raise _InvalidOutput(msg)
         return _failure
@@ -197,8 +197,17 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if _isiterable(result):
                 result = self._evaluate_iterable(response, spider, result, method_index + 1, recovered)
             else:
-                msg = (f"Middleware {method.__qualname__} must return an "
-                       f"iterable, got {type(result)}")
+                if iscoroutine(result):
+                    result.close()  # Silence warning about not awaiting
+                    msg = (
+                        f"{method.__qualname__} must be an asynchronous "
+                        f"generator (i.e. use yield)"
+                    )
+                else:
+                    msg = (
+                        f"{method.__qualname__} must return an iterable, got "
+                        f"{type(result)}"
+                    )
                 raise _InvalidOutput(msg)
             last_result_is_async = isinstance(result, AsyncIterable)
 
