@@ -190,7 +190,7 @@ prevents ``pip`` from updating system packages. This has to be addressed to
 successfully install Scrapy and its dependencies. Here are some proposed
 solutions:
 
-* *(Recommended)* **Don't** use system python, install a new, updated version
+* *(Recommended)* **Don't** use system Python. Install a new, updated version
   that doesn't conflict with the rest of your system. Here's how to do it using
   the `homebrew`_ package manager:
 
@@ -234,8 +234,8 @@ For PyPy3, only Linux installation was tested.
 
 Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
 This means that these dependencies will be built during installation.
-On macOS, you are likely to face an issue with building Cryptography dependency,
-solution to this problem is described
+On macOS, you are likely to face an issue with building the Cryptography
+dependency. The solution to this problem is described
 `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
 that is to ``brew install openssl`` and then export the flags that this command
 recommends (only needed when installing Scrapy). Installing on Linux has no special

@@ -15,8 +15,6 @@ from twisted.trial import unittest
 from twisted.web import resource, server, static, util
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
-from twisted.web.test.test_webclient import (ForeverTakingResource, HostHeaderResource,
-                                             NoLengthResource, PayloadResource)
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -34,7 +32,15 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
-from tests.mockserver import MockServer, ssl_context_factory, Echo
+from tests.mockserver import (
+    Echo,
+    ForeverTakingResource,
+    HostHeaderResource,
+    MockServer,
+    NoLengthResource,
+    PayloadResource,
+    ssl_context_factory,
+)
 from tests.spiders import SingleRequestSpider
 
 

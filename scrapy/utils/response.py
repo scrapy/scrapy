@@ -14,6 +14,7 @@ from scrapy.http.response import Response
 
 from twisted.web import http
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.decorators import deprecated
 from w3lib import html
 
 
@@ -51,6 +52,7 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     return f'{status_int} {to_unicode(message)}'
 
 
+@deprecated
 def response_httprepr(response: Response) -> bytes:
     """Return raw HTTP representation (as bytes) of the given response. This
     is provided only for reference, since it's not the exact stream of bytes

@@ -110,6 +110,10 @@ Request objects
             :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
+        .. versionadded:: 2.6.0
+           Cookie values that are :class:`bool`, :class:`float` or :class:`int`
+           are casted to :class:`str`.
+
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
@@ -949,6 +953,14 @@ TextResponse objects
 
         Returns a Python object from deserialized JSON document.
         The result is cached after the first call.
+
+    .. method:: TextResponse.urljoin(url)
+
+        Constructs an absolute url by combining the Response's base url with
+        a possible relative url. The base url shall be extracted from the
+        ``<base>`` tag, or just the Response's :attr:`url` if there is no such
+        tag.
+
 
 
 HtmlResponse objects

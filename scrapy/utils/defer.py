@@ -304,7 +304,7 @@ def maybeDeferred_coro(f: Callable, *args, **kw) -> Deferred:
 
 def deferred_to_future(d: Deferred) -> Future:
     """
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
     Return an :class:`asyncio.Future` object that wraps *d*.
 
@@ -325,7 +325,7 @@ def deferred_to_future(d: Deferred) -> Future:
 
 def maybe_deferred_to_future(d: Deferred) -> Union[Deferred, Future]:
     """
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
     Return *d* as an object that can be awaited from a :ref:`Scrapy callable
     defined as a coroutine <coroutine-support>`.

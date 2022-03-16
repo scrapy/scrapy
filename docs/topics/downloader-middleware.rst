@@ -89,7 +89,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       methods of installed middleware is always called on every response.
 
       If it returns a :class:`~scrapy.Request` object, Scrapy will stop calling
-      process_request methods and reschedule the returned request. Once the newly returned
+      :meth:`process_request` methods and reschedule the returned request. Once the newly returned
       request is performed, the appropriate middleware chain will be called on
       the downloaded response.
 
@@ -1019,7 +1019,7 @@ Parsers vary in several aspects:
   (shorter) rule
 
 Performance comparison of different parsers is available at `the following link
-<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+<https://github.com/scrapy/scrapy/issues/3969>`_.
 
 .. _protego-parser:
 

@@ -60,7 +60,7 @@ Let's take an example::
 
     class SignalSpider(scrapy.Spider):
         name = 'signals'
-        start_urls = ['http://quotes.toscrape.com/page/1/']
+        start_urls = ['https://quotes.toscrape.com/page/1/']
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):

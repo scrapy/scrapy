@@ -32,6 +32,7 @@ install_requires = [
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
     'setuptools',
+    'tldextract',
 ]
 extras_require = {}
 cpython_dependencies = [

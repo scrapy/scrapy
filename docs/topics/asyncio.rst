@@ -10,6 +10,7 @@ Scrapy has partial support for :mod:`asyncio`. After you :ref:`install the
 asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and
 :mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
 
+
 .. _install-asyncio:
 
 Installing the asyncio reactor
@@ -25,6 +26,7 @@ reactor manually. You can do that using
 
     install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
 
+
 .. _using-custom-loops:
 
 Using custom asyncio loops
@@ -34,20 +36,30 @@ You can also use custom asyncio event loops with the asyncio reactor. Set the
 :setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event loop class to
 use it instead of the default asyncio event loop.
 
-.. _asyncio-await-dfd:
+
+.. _asyncio-windows:
 
 Windows-specific notes
 ======================
 
 The Windows implementation of :mod:`asyncio` can use two event loop
-implementations: :class:`~asyncio.SelectorEventLoop` (default before Python
-3.8, required when using Twisted) and :class:`~asyncio.ProactorEventLoop`
-(default since Python 3.8, cannot work with Twisted). So on Python 3.8+ the
-event loop class needs to be changed. Scrapy since VERSION does this
-automatically when you change the :setting:`TWISTED_REACTOR` setting or call
-:func:`~scrapy.utils.reactor.install_reactor`, but if you install the reactor
-by other means or use an older Scrapy version you need to call the following
-code before installing the reactor::
+implementations:
+
+-   :class:`~asyncio.SelectorEventLoop`, default before Python 3.8, required
+    when using Twisted.
+
+-   :class:`~asyncio.ProactorEventLoop`, default since Python 3.8, cannot work
+    with Twisted.
+
+So on Python 3.8+ the event loop class needs to be changed.
+
+.. versionchanged:: 2.6.0
+   The event loop class is changed automatically when you change the
+   :setting:`TWISTED_REACTOR` setting or call
+   :func:`~scrapy.utils.reactor.install_reactor`.
+
+To change the event loop class manually, call the following code before
+installing the reactor::
 
     import asyncio
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -63,6 +75,9 @@ yourself, or in some code that runs before the reactor is installed, e.g.
           them on WSL or native Linux).
 
 .. _playwright: https://github.com/microsoft/playwright-python
+
+
+.. _asyncio-await-dfd:
 
 Awaiting on Deferreds
 =====================
