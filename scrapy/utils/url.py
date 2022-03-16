@@ -5,7 +5,6 @@ library.
 Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
-import posixpath
 import re
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
@@ -31,8 +30,8 @@ def url_is_from_spider(url, spider):
 
 
 def url_has_any_extension(url, extensions):
-    return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
-
+    """Return True if the url ends with one of the extensions provided"""
+    return any(parse_url(url).path.lower().endswith(ext) for ext in extensions)
 
 def parse_url(url, encoding=None):
     """Return urlparsed url from the given argument (which could be an already
