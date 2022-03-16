@@ -98,10 +98,6 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_spider_output(response, result, spider)
 
-        .. versionchanged:: VERSION
-           Since VERSION this can take and return an :term:`python:asynchronous
-           iterable`.
-
         This method is called with the results returned from the Spider, after
         it has processed the response.
 
@@ -109,8 +105,15 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
-        .. note:: When defined as a :ref:`coroutine <async>`, this method needs
-                  to be an async generator, not just return an iterable.
+        .. versionchanged:: VERSION
+           This method may be defined as an :term:`asynchronous generator`, in
+           which case ``result`` is an :term:`asynchronous iterable`.
+
+        Consider defining this method as an :term:`asynchronous generator`,
+        which will be a requirement in a future version of Scrapy. However, if
+        you wish your spider middleware to work with Scrapy versions earlier
+        than Scrapy VERSION, :ref:`make your spider middleware universal
+        <universal-spider-middleware>` instead.
 
         :param response: the response which generated this output from the
           spider
@@ -127,10 +130,9 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
         .. versionadded:: VERSION
 
-        If exists, this methid will be called instead of
-        :meth:`process_spider_output` when ``result`` is an async iterable.
-        If this method exists, it must be a coroutine while
-        :meth:`process_spider_output` must not be a coroutine.
+        If defined, this method must be an :term:`asynchronous generator`,
+        which will be called instead of :meth:`process_spider_output` if
+        ``result`` is an :term:`asynchronous iterable`.
 
     .. method:: process_spider_exception(response, exception, spider)
 
