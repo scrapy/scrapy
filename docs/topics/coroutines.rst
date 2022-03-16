@@ -155,6 +155,9 @@ synchronous ``process_spider_output`` method gets a synchronous iterable as its
     ``Request`` callback or ``process_spider_output`` method, none of that
     output will be processed.
 
+    This contrasts with the regular behavior, where all items yielded before
+    an exception raises are processed.
+
 Asynchronous-to-synchronous conversions are supported for backward
 compatibility, but they are deprecated and will stop working in a future
 version of Scrapy.
