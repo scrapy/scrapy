@@ -12,7 +12,7 @@ uvloop; platform_system != "Windows" and python_version > '3.6'
 
 # optional for shell wrapper tests
 bpython
-brotlipy  # optional for HTTP compress downloader middleware tests
+brotli  # optional for HTTP compress downloader middleware tests
 zstandard; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
 ipython
 pywin32; sys_platform == "win32"

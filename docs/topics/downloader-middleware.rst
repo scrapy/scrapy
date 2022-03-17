@@ -704,13 +704,14 @@ HttpCompressionMiddleware
    sent/received from web sites.
 
    This middleware also supports decoding `brotli-compressed`_ as well as
-   `zstd-compressed`_ responses, provided that `brotlipy`_ or `zstandard`_ is
+   `zstd-compressed`_ responses, provided that `brotli`_ or `zstandard`_ is
    installed, respectively.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotlipy: https://pypi.org/project/brotlipy/
+.. _brotli: https://pypi.org/project/Brotli/
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
 .. _zstandard: https://pypi.org/project/zstandard/
+
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
