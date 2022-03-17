@@ -2,4 +2,4 @@
 
 ## Reporting a Vulnerability
 
-Please report security issues to `scrapy-security@googlegroups.com`
+Follow the instructions at https://docs.scrapy.org/en/latest/contributing.html#reporting-bugs
