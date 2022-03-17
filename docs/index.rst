@@ -218,7 +218,7 @@ Solving specific problems
     Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
 
 :doc: `topics/class-methods`
-    Instantiate Scrapy objects from others.
+    Instantiate Scrapy objects from the crawler or from settings.
 
 .. _extending-scrapy:
 
