@@ -20,7 +20,7 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-http://quotes.toscrape.com, following the pagination::
+https://quotes.toscrape.com, following the pagination::
 
     import scrapy
 
@@ -28,7 +28,7 @@ http://quotes.toscrape.com, following the pagination::
     class QuotesSpider(scrapy.Spider):
         name = 'quotes'
         start_urls = [
-            'http://quotes.toscrape.com/tag/humor/',
+            'https://quotes.toscrape.com/tag/humor/',
         ]
 
         def parse(self, response):
