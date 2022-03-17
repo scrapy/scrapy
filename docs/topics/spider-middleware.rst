@@ -111,9 +111,11 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
         Consider defining this method as an :term:`asynchronous generator`,
         which will be a requirement in a future version of Scrapy. However, if
-        you wish your spider middleware to work with Scrapy versions earlier
-        than Scrapy VERSION, :ref:`make your spider middleware universal
-        <universal-spider-middleware>` instead.
+        you plan on sharing your spider middleware with other people, consider
+        either :ref:`enforcing Scrapy VERSION <enforce-component-requirements>`
+        as a minimum requirement of your spider middleware, or :ref:`making
+        your spider middleware universal <universal-spider-middleware>` so that
+        it works with Scrapy versions earlier than Scrapy VERSION.
 
         :param response: the response which generated this output from the
           spider

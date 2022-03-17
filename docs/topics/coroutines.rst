@@ -162,7 +162,7 @@ Asynchronous-to-synchronous conversions are supported for backward
 compatibility, but they are deprecated and will stop working in a future
 version of Scrapy.
 
-To avoid asynchronous-to-synchronous conversion, when defining ``Request``
+To avoid asynchronous-to-synchronous conversions, when defining ``Request``
 callbacks as coroutine methods or when using spider middlewares whose
 ``process_spider_output`` method is an :term:`asynchronous generator`, all
 active spider middlewares must either have their ``process_spider_output``
@@ -177,8 +177,8 @@ process_spider_output_async method <universal-spider-middleware>`.
 
 .. _universal-spider-middleware:
 
-Universal spider middleware
-===========================
+Universal spider middlewares
+============================
 
 .. versionadded:: VERSION
 
