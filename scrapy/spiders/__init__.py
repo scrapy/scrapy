@@ -104,10 +104,10 @@ class Spider(object_ref):
     def add_cookie(self, cookie):
         self._cookie_jar.set_cookie(cookie)
 
-    def get_cookie(self, name):
-        return self._cookie_jar.get_cookie(name)
-
-    def get_cookies(self, names: List[str] = None, return_type=list):
+    # TODO Maybe simplify
+    def get_cookies(self, name: str = None, names: List[str] = None, return_type=list):
+        if name is not None:
+            return self._cookie_jar.get_cookie(name)
         if isinstance(return_type, list):
             cookies_list = self._cookie_jar.list_from_cookiejar()
             if names is not None:
