@@ -1,5 +1,5 @@
 ===========================
-Class Instantiation Methods
+Class Factory Methods
 ===========================
 
 These methods create an instance of their implementer class by 
@@ -21,8 +21,7 @@ extracting the components needed for it from the argument that the method takes.
 
     This class method is used by Scrapy to create an instance of the implementer class
     using the settings passed as arguments.
-    In most implementations of this method, not all settings given will be used 
-    to instantiate the class, but only the ones needed in the specific scenario.
+    This class method will not be called at all if from_crawler is defined.
 
 
     :param settings: project settings
