@@ -3,6 +3,7 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 import os
+import re
 import tempfile
 import webbrowser
 from ipaddress import ip_address
@@ -14,6 +15,7 @@ from twisted.web import http
 from w3lib import html
 
 import scrapy
+from scrapy.utils.decorators import deprecated
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.request import request_from_dict
@@ -54,6 +56,7 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     return f'{status_int} {to_unicode(message)}'
 
 
+@deprecated
 def response_httprepr(response: "scrapy.http.response.Response") -> bytes:
     """Return raw HTTP representation (as bytes) of the given response. This
     is provided only for reference, since it's not the exact stream of bytes
@@ -84,8 +87,9 @@ def open_in_browser(
     body = response.body
     if isinstance(response, HtmlResponse):
         if b'<base' not in body:
-            repl = f'<head><base href="{response.url}">'
-            body = body.replace(b'<head>', to_bytes(repl))
+            repl = fr'\1<base href="{response.url}">'
+            body = re.sub(b"<!--.*?-->", b"", body, flags=re.DOTALL)
+            body = re.sub(rb"(<head(?:>|\s.*?>))", to_bytes(repl), body)
         ext = '.html'
     elif isinstance(response, TextResponse):
         ext = '.txt'

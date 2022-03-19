@@ -36,7 +36,7 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
             self.assertEqual(result.read().decode('utf8'), rendered)
 
         os.remove(render_path)
-        assert not os.path.exists(render_path)  # Failure of test iself
+        assert not os.path.exists(render_path)  # Failure of test itself
 
 
 if '__main__' == __name__:

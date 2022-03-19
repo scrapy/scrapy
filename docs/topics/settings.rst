@@ -1026,6 +1026,16 @@ Default: ``None``
 
 File name to use for logging output. If ``None``, standard error will be used.
 
+.. setting:: LOG_FILE_APPEND
+
+LOG_FILE_APPEND
+---------------
+
+Default: ``True``
+
+If ``False``, the log file specified with :setting:`LOG_FILE` will be
+overwritten (discarding the output from previous runs, if any).
+
 .. setting:: LOG_FORMAT
 
 LOG_FORMAT
@@ -1566,7 +1576,7 @@ If a reactor is already installed,
 
 :meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
 :exc:`Exception` if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:setting:`TWISTED_REACTOR` setting; therefore, having top-level
 :mod:`~twisted.internet.reactor` imports in project files and imported
 third-party libraries will make Scrapy raise :exc:`Exception` when
 it checks which reactor is installed.
@@ -1587,7 +1597,7 @@ In order to use the reactor installed by Scrapy::
         def start_requests(self):
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ['https://quotes.toscrape.com/page/1']
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
@@ -1615,7 +1625,7 @@ which raises :exc:`Exception`, becomes::
             from twisted.internet import reactor
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ['https://quotes.toscrape.com/page/1']
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
@@ -1628,10 +1638,9 @@ which raises :exc:`Exception`, becomes::
 
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will not attempt to install any specific reactor, and the
-default reactor defined by Twisted for the current platform will be used. This
-is to maintain backward compatibility and avoid possible problems caused by
-using a non-default reactor.
+means that Scrapy will install the default reactor defined by Twisted for the
+current platform. This is to maintain backward compatibility and avoid possible
+problems caused by using a non-default reactor.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
@@ -1645,8 +1654,19 @@ Default: ``2083``
 
 Scope: ``spidermiddlewares.urllength``
 
-The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+The maximum URL length to allow for crawled URLs.
+
+This setting can act as a stopping condition in case of URLs of ever-increasing 
+length, which may be caused for example by a programming error either in the 
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and 
+:setting:`DEPTH_LIMIT`.
+
+Use ``0`` to allow URLs of any length.
+
+The default value is copied from the `Microsoft Internet Explorer maximum URL 
+length`_, even though this setting exists for different reasons.
+
+.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
@@ -1658,7 +1678,7 @@ Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 The default User-Agent to use when crawling, unless overridden. This user agent is
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
-there is no overridding User-Agent header specified for the request.
+there is no overriding User-Agent header specified for the request.
 
 
 Settings documented elsewhere:

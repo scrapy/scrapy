@@ -42,15 +42,12 @@ Even though this cycle applies (more or less) to any kind of spider, there are
 different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
-.. module:: scrapy.spiders
-   :synopsis: Spiders base class, spider manager and spider middleware
-
 .. _topics-spiders-ref:
 
 scrapy.Spider
 =============
 
-.. class:: scrapy.spiders.Spider()
+.. class:: scrapy.spiders.Spider
 .. class:: scrapy.Spider()
 
    This is the simplest spider, and the one from which every other spider
@@ -121,6 +118,11 @@ scrapy.Spider
       Python logger created with the Spider's :attr:`name`. You can use it to
       send log messages through it as described on
       :ref:`topics-logging-from-spiders`.
+
+   .. attribute:: state
+
+      A dict you can use to persist some spider state between batches.
+      See :ref:`topics-keeping-persistent-state-between-batches` to know more about it.
 
    .. method:: from_crawler(crawler, *args, **kwargs)
 
@@ -367,7 +369,7 @@ CrawlSpider
        described below. If multiple rules match the same link, the first one
        will be used, according to the order they're defined in this attribute.
 
-   This spider also exposes an overrideable method:
+   This spider also exposes an overridable method:
 
    .. method:: parse_start_url(response, **kwargs)
 
@@ -529,7 +531,7 @@ XMLFeedSpider
                 itertag = 'n:url'
                 # ...
 
-    Apart from these new attributes, this spider has the following overrideable
+    Apart from these new attributes, this spider has the following overridable
     methods too:
 
     .. method:: adapt_response(response)

@@ -5,7 +5,7 @@ import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from time import time
-from typing import Any, IO, Optional
+from typing import Any, Optional
 from weakref import WeakKeyDictionary
 
 from scrapy import Spider, Request
@@ -221,12 +221,12 @@ class DbmCacheStorage:
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
-        self.db: Any  # typing trick, this will be a dbm database
+        self.db: Any  # dbm database
 
     def open_spider(self, spider: Spider) -> None:
         dbpath = os.path.join(self.cachedir, f'{spider.name}.db')
-        self.db = self.dbmodule.open(dbpath, "c")  # type: ignore[attr-defined]
-        logger.debug("Using DBM cache storage in %(cachepath)s" % {'cachepath': dbpath}, extra={'spider': spider})
+        self.db = self.dbmodule.open(dbpath, 'c')  # type: ignore[attr-defined]
+        logger.debug("Using DBM cache storage in %(cachepath)s", {'cachepath': dbpath}, extra={'spider': spider})
 
     def close_spider(self, spider: Spider) -> None:
         self.db.close()
@@ -256,8 +256,8 @@ class FilesystemCacheStorage:
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.use_gzip = settings.getbool('HTTPCACHE_GZIP')
 
-    def open_spider(self, spider: Spider) -> None:
-        logger.debug("Using filesystem cache storage in %(cachedir)s" % {'cachedir': self.cachedir},
+    def open_spider(self, spider):
+        logger.debug("Using filesystem cache storage in %(cachedir)s", {'cachedir': self.cachedir},
                      extra={'spider': spider})
 
     def close_spider(self, spider: Spider) -> None:
@@ -285,7 +285,7 @@ class FilesystemCacheStorage:
         with self._open(fpath, "wb") as fp:
             pickle.dump(obj=response_dict, file=fp, protocol=4)
 
-    def _open(self, filename: str, mode: str) -> IO:
+    def _open(self, filename: str, mode: str):
         return gzip.open(filename, mode) if self.use_gzip else open(filename, mode)
 
     def _get_request_path(self, spider: Spider, request: Request) -> str:

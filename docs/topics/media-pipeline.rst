@@ -356,6 +356,8 @@ setting MYPIPELINE_IMAGES_URLS_FIELD and your custom settings will be used.
 Additional features
 ===================
 
+.. _file-expiration:
+
 File expiration
 ---------------
 
@@ -382,6 +384,9 @@ class name. E.g. given pipeline class called MyPipeline you can set setting key:
     MYPIPELINE_FILES_EXPIRES = 180
 
 and pipeline class MyPipeline will have expiration time set to 180.
+
+The last modified time from the file is used to determine the age of the file in days, 
+which is then compared to the set expiration time to determine if the file is expired.
 
 .. _topics-images-thumbnails:
 

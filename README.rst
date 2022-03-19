@@ -1,3 +1,5 @@
+.. image:: https://scrapy.org/img/scrapylogo.png
+   
 ======
 Scrapy
 ======
