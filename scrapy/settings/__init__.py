@@ -425,7 +425,7 @@ class _DictProxy(MutableMapping):
     def __delitem__(self, k):
         del self.o[k]
 
-    def __iter__(self, k, v):
+    def __iter__(self):
         return iter(self.o)
 
 
