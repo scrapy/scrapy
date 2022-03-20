@@ -48,16 +48,15 @@ The ``from_settings`` class method is implemented in the following objects:
 Implementing Factory Methods
 ============================
 
-While extending a class that implements one of these factory methods.
-One's goal when extending these factory methods is simply given the arguments passed to it,
-whether is crawler, settings or any additional ones; to create a class instance.
-The main reason of including the Crawler object or the Settings object is because of the how much
+The goal when extending these factory methods should be: given the arguments passed to it,
+reate a class instance, regardless of it being a crawler, settings or other.
+The main reason to include the Crawler object or the Settings object is the amount of
 information these objects hold and can be used in the instantiation of the class.
 
 ``Crawler`` specifically gives access to ``settings``, ``signals``, ``stats``, ``extensions``,
 ``engine``, and ``spider`` which maybe very useful when wanting to instantiate a class.
 
-For example, lets say that we want to create a new spider, say TestSpider will look like this::
+For example, lets say that we want to create a new spider, TestSpider will look like this::
 
     class TestSpider:
         
