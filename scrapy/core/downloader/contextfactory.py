@@ -24,7 +24,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
      understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols.'
     """
 
-    def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
+    def __init__(self, method=SSL.TLSv1_2_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._ssl_method = method
         self.tls_verbose_logging = tls_verbose_logging
@@ -34,7 +34,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = DEFAULT_CIPHERS
 
     @classmethod
-    def from_settings(cls, settings, method=SSL.SSLv23_METHOD, *args, **kwargs):
+    def from_settings(cls, settings, method=SSL.TLSv1_2_METHOD, *args, **kwargs):
         tls_verbose_logging = settings.getbool('DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING')
         tls_ciphers = settings['DOWNLOADER_CLIENT_TLS_CIPHERS']
         return cls(method=method, tls_verbose_logging=tls_verbose_logging, tls_ciphers=tls_ciphers, *args, **kwargs)
