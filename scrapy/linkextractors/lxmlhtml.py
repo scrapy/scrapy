@@ -161,4 +161,6 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         for doc in docs:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links))
-        return unique_list(all_links)
+        if self.link_extractor.unique:
+            return unique_list(all_links)
+        return all_links
