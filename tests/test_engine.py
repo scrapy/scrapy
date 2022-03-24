@@ -12,9 +12,11 @@ module with the ``runserver`` argument::
 
 import os
 import re
+import subprocess
 import sys
 import warnings
 from collections import defaultdict
+from threading import Timer
 from urllib.parse import urlparse
 
 import attr
@@ -501,6 +503,37 @@ class EngineTest(unittest.TestCase):
             self.assertTrue(e.has_capacity())
             self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
             self.assertEqual(str(warning_list[0].message), "ExecutionEngine.has_capacity is deprecated")
+
+    def test_short_timeout(self):
+        args = (
+            sys.executable,
+            '-m',
+            'scrapy.cmdline',
+            'fetch',
+            '-s',
+            'CLOSESPIDER_TIMEOUT=0.001',
+            '-s',
+            'LOG_LEVEL=DEBUG',
+            'http://toscrape.com',
+        )
+        p = subprocess.Popen(
+            args,
+            stderr=subprocess.PIPE,
+        )
+
+        def kill_proc():
+            p.kill()
+            p.communicate()
+            assert False, 'Command took too much time to complete'
+
+        timer = Timer(15, kill_proc)
+        try:
+            timer.start()
+            _, stderr = p.communicate()
+        finally:
+            timer.cancel()
+
+        self.assertNotIn(b'Traceback', stderr)
 
 
 if __name__ == "__main__":
