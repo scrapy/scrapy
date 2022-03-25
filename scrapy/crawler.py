@@ -290,6 +290,7 @@ class CrawlerProcess(CrawlerRunner):
         super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
+        self._initialized_reactor = False
 
     def _signal_shutdown(self, signum, _):
         from twisted.internet import reactor
@@ -310,7 +311,9 @@ class CrawlerProcess(CrawlerRunner):
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, self.settings, init_reactor=True)
+        init_reactor = not self._initialized_reactor
+        self._initialized_reactor = True
+        return Crawler(spidercls, self.settings, init_reactor=init_reactor)
 
     def start(self, stop_after_crawl=True, install_signal_handlers=True):
         """
