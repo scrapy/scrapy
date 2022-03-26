@@ -180,8 +180,8 @@ Same example but running the spiders sequentially by chaining the deferreds:
         # Your second spider definition
         ...
 
-    configure_logging()
     settings = get_project_settings()
+    configure_logging(settings)
     runner = CrawlerRunner(settings)
 
     @defer.inlineCallbacks
