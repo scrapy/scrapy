@@ -19,7 +19,7 @@ class InMemoryStorage(UserDict, BaseStorage):
         self.settings = settings
         self.cookies_dir = data_path(settings["COOKIES_PERSISTENCE_DIR"])
 
-    def open_spider(self, spider: Spider):
+    def open_spider(self, spider):
         if not self.settings["COOKIES_PERSISTENCE"]:
             return
         if not os.path.exists(self.cookies_dir):
@@ -29,7 +29,7 @@ class InMemoryStorage(UserDict, BaseStorage):
 
     def close_spider(self, spider):
         if self.settings["COOKIES_PERSISTENCE"]:
-            with io.open(self.cookies_dir, "bw") as f:
+            with io.open(self.cookies_dir, "bw+") as f:
                 pickle.dump(self.data, f)
 
     def __missing__(self, key) -> CookieJar:
