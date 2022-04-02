@@ -8,6 +8,7 @@ from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
+from scrapy.utils.misc import load_object
 
 logger = logging.getLogger(__name__)
 
@@ -137,8 +138,21 @@ class CookiesMiddleware:
 
 
 class AccessCookiesMiddleware(CookiesMiddleware):
-    def __init__(self, debug=False):
-        super().__init__(debug)
+    def __init__(self, settings, debug=False):
+        self.jars = load_object(settings["COOKIES_STORAGE"]).from_middleware(self)
+        self.debug = debug
+
+    def spider_opened(self, spider):
+        """
+        Whenever a spider is open, we call retrieve the cookies from the storage
+        """
+        self.jars.open_spider(spider)
+
+    def spider_closed(self, spider):
+        """
+        Whenever a spider is closed, we save the cookies in the storage locally
+        """
+        self.jars.close_spider(spider)
 
     def process_request(self, request, spider):
         if request.meta.get('dont_merge_cookies', False):
@@ -153,7 +167,6 @@ class AccessCookiesMiddleware(CookiesMiddleware):
         # set Cookie header
         request.headers.pop('Cookie', None)
         jar.add_cookie_header(request)
-        self._debug_cookie(request, spider)
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_merge_cookies', False):

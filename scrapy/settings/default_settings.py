@@ -47,6 +47,11 @@ CONCURRENT_REQUESTS_PER_IP = 0
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
+COOKIES_PERSISTENCE = False
+COOKIES_PERSISTENCE_DIR = "cookies"
+
+COOKIES_STORAGE = "scrapy_cookies.storage.in_memory.InMemoryStorage"
+
 DEFAULT_ITEM_CLASS = 'scrapy.item.Item'
 
 DEFAULT_REQUEST_HEADERS = {
