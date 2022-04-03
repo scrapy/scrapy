@@ -693,3 +693,4 @@ class CookiesMiddlewareTest(TestCase):
             'co.uk',
             cookies=True,
         )
+
