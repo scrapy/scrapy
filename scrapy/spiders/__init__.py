@@ -1,6 +1,5 @@
 """
 Base class for Scrapy spiders
-
 See documentation in docs/topics/spiders.rst
 """
 import logging
@@ -38,7 +37,6 @@ class Spider(object_ref):
 
     def log(self, message, level=logging.DEBUG, **kw):
         """Log the given message at the given log level
-
         This helper wraps a log call to the logger within the spider, but you
         can use it directly (e.g. Spider.logger.info('msg')) or use any other
         Python logger too.
