@@ -219,6 +219,22 @@ The following settings can be used to configure the cookie middleware:
 
 .. reqmeta:: cookiejar
 
+AccessCookiesMiddleware
+-----------------------
+
+.. module:: scrapy.downloadermiddlewares.cookies
+   :synopsis: Access Cookies Downloader Middleware
+
+.. class:: AccessCookiesMiddleware
+
+Extension of the CookiesMiddleware, gives the spider access to the cookiejar of a session.
+
+The following settings can be used to configure the AccesCookiesMiddleware:
+
+* :setting:`COOKIES_PERSISTENCE`
+* :setting:`COOKIES_PERSISTENCE_DIR`
+* :setting:`COOKIES_STORAGE`
+
 Multiple cookie sessions per spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
