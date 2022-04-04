@@ -114,7 +114,7 @@ class Spider(object_ref):
                 return list(filter(lambda cookie: cookie.name in names, cookies_list))
             return cookies_list
         else:
-            cookies_dict = self._cookie_jar.dict_from_cookiejar()
+            cookies_dict = iter(self._cookie_jar)
             if names is not None:
                 return {name: cookies_dict[name] for name in names}
             return cookies_dict
