@@ -163,10 +163,16 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       :param spider: the spider for which this request is intended
       :type spider: :class:`~scrapy.Spider` object
 
-   :meth:`from_crawler`:
+   .. method:: from_crawler(cls, crawler)
 
-   	Class method that if present, is used to create a middleware 
-   	instance using a :class:`~scrapy.crawler.Crawler`.
+      If present, this classmethod is called to create a middleware instance
+      from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+      of the middleware. Crawler object provides access to all Scrapy core
+      components like settings and signals; it is a way for middleware to
+      access them and hook its functionality into Scrapy.
+
+      :param crawler: crawler that uses this middleware
+      :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 .. _topics-downloader-middleware-ref:
 

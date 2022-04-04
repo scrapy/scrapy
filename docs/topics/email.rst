@@ -67,6 +67,14 @@ rest of the framework.
     :param smtpssl: enforce using a secure SSL connection
     :type smtpssl: bool
 
+    .. classmethod:: from_settings(settings)
+
+        Instantiate using a Scrapy settings object, which will respect
+        :ref:`these Scrapy settings <topics-email-settings>`.
+
+        :param settings: the e-mail recipients
+        :type settings: :class:`scrapy.settings.Settings` object
+
     .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
 
         Send email to the given recipients.
@@ -94,12 +102,8 @@ rest of the framework.
         :type mimetype: str
 
         :param charset: the character encoding to use for the e-mail contents
-        :type charset: str 
-    
-    :meth:`from_settings`:
+        :type charset: str
 
-        Instantiate a MailSender using a Scrapy settings object, which will respect
-        :ref:`these Scrapy settings <topics-email-settings>`.
 
 .. _topics-email-settings:
 

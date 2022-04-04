@@ -60,10 +60,16 @@ Additionally, they may also implement the following methods:
    :param spider: the spider which was closed
    :type spider: :class:`~scrapy.Spider` object
 
-:meth:`from_crawler`: 
+.. method:: from_crawler(cls, crawler)
 
-   Class method that if present, is used to create a pipeline 
-   instance using a :class:`~scrapy.crawler.Crawler`.
+   If present, this classmethod is called to create a pipeline instance
+   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+   of the pipeline. Crawler object provides access to all Scrapy core
+   components like settings and signals; it is a way for pipeline to
+   access them and hook its functionality into Scrapy.
+
+   :param crawler: crawler that uses this pipeline
+   :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
 Item pipeline example
