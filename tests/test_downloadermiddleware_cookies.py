@@ -800,6 +800,5 @@ class AccessCookiesMiddlewareTest(TestCase):
             if c is None:
                 break
             cookie_count += 1
-            print(c.value)
             assert c.value in ("value1", "value2", "value3")
         assert cookie_count is 6
