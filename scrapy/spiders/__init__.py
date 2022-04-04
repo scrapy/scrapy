@@ -91,14 +91,6 @@ class Spider(object_ref):
     def set_cookie_jar(self, cj: CookieJar):
         self._cookie_jar = cj
 
-    def save_cookies(self):  # todo should return sesssion Id
-        # TODO
-        pass
-
-    def initialize_cookiejar(self, session_id):
-        # TODO
-        pass
-
     def add_cookie(self, cookie):
         self._cookie_jar.set_cookie(cookie)
 
