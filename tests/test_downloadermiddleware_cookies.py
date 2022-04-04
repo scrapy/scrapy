@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import pytest
 
-from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
+from scrapy.downloadermiddlewares.cookies import CookiesMiddleware, AccessCookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured

@@ -21,11 +21,11 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-# with open('tests/ignores.txt') as reader:
-#     for line in reader:
-#         file_path = line.strip()
-#         if file_path and file_path[0] != '#':
-#             collect_ignore.append(file_path)
+with open('tests/ignores.txt') as reader:
+    for line in reader:
+        file_path = line.strip()
+        if file_path and file_path[0] != '#':
+            collect_ignore.append(file_path)
 
 if not H2_ENABLED:
     collect_ignore.extend(
