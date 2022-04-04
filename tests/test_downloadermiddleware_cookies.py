@@ -757,9 +757,9 @@ class AccessCookiesMiddlewareTest(TestCase):
             {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'},
         ]
 
-        headers_c1 = {'Set-Cookie': 'C1=value1; path=/foo'}
+        headers_c1 = {'Set-Cookie': ['C1=value1; path=/foo',  'C3=value3; path=/foo'] }
         # headers_c2 = {'Set-Cookie': 'C2=value2; path=/bar'}
-        # headers_c3 = {'Set-Cookie': 'C3=value3; path=/foo'}
+        headers_c3 = {'Set-Cookie': 'C3=value3; path=/foo'}
         # headers_c4 = {'Set-Cookie': 'C4=value4; path=/foo'}
 
         req = Request('http://scrapytest.org/foo', cookies=cookies)
@@ -772,7 +772,7 @@ class AccessCookiesMiddlewareTest(TestCase):
         print(next(it))
         print(next(it))
         print(next(it))
-
+        print(next(it))
         # self.assertEqual(next(iter), "C1=value1")
         # self.assertEqual(next(iter), "C3=value3")
 

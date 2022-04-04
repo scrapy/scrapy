@@ -7,6 +7,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.project import get_project_settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.misc import load_object
 
@@ -138,8 +139,9 @@ class CookiesMiddleware:
 
 
 class AccessCookiesMiddleware(CookiesMiddleware):
-    def __init__(self, settings, debug=False):
-        self.jars = load_object(settings["COOKIES_STORAGE"]).from_middleware(self)
+    def __init__(self, debug=False):
+        self.settings = get_project_settings()
+        self.jars = load_object(self.settings["COOKIES_STORAGE"]).from_middleware(self)
         self.debug = debug
 
     def spider_opened(self, spider):
