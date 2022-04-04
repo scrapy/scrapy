@@ -757,13 +757,13 @@ class AccessCookiesMiddlewareTest(TestCase):
             {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'},
         ]
 
-        headers_c1 = {'Set-Cookie': 'C1=value1; path=/foo', 'Set-Cookie': 'C3=value3; path=/foo'}
+        headers_c1 = {'Set-Cookie': 'C1=value1; path=/foo'}
         # headers_c2 = {'Set-Cookie': 'C2=value2; path=/bar'}
         # headers_c3 = {'Set-Cookie': 'C3=value3; path=/foo'}
         # headers_c4 = {'Set-Cookie': 'C4=value4; path=/foo'}
 
-        req = Request('http://scrapytest.org/', cookies=cookies)
-        res = Response('http://scrapytest.org/', headers=headers_c1)
+        req = Request('http://scrapytest.org/foo', cookies=cookies)
+        res = Response('http://scrapytest.org/foo', headers=headers_c1)
         self.mw.process_request(req, self.spider)
         self.mw.process_response(req, res, self.spider)
 
