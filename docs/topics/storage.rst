@@ -9,7 +9,7 @@ The storage functionality can be used to store information locally or globally b
 .. _topics-base-storage:
 
 BaseStorage
-=============
+===========
 
 BaseStorage is the interface of the storage class that defines how an implemented storage should behave. The main methods are the following:
 
@@ -30,7 +30,7 @@ BaseStorage is the interface of the storage class that defines how an implemente
 .. _topics-in-memory-storage:
 
 InMemoryStorage
-=============
+===============
 
 The InMemoryStorage is designed to allow the storage of cookies on a local file. If the COOKIES_PERSISTENCE constant is set to true in the settings of the project, the cookies are saved to a file and loaded from it on demand.
 
