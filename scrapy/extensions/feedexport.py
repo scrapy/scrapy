@@ -11,14 +11,14 @@ import sys
 import warnings
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from typing import Any, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 from zope.interface import implementer, Interface
 
-from scrapy import signals
+from scrapy import signals, Spider
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
@@ -524,7 +524,12 @@ class FeedExporter:
             raise TypeError(f"{feedcls.__qualname__}.{method_name} returned None")
         return instance
 
-    def _get_uri_params(self, spider, uri_params, slot=None):
+    def _get_uri_params(
+        self,
+        spider: Spider,
+        uri_params_function: Optional[Union[str, Callable[[dict, Spider], dict]]],
+        slot: Optional[_FeedSlot] = None,
+    ) -> dict:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
@@ -532,9 +537,18 @@ class FeedExporter:
         params['time'] = utc_now.replace(microsecond=0).isoformat().replace(':', '-')
         params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
-        uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
-        uripar_function(params, spider)
-        return params
+        original_params = params.copy()
+        uripar_function = load_object(uri_params_function) if uri_params_function else lambda params, _: params
+        new_params = uripar_function(params, spider)
+        if new_params is None or original_params != params:
+            warnings.warn(
+                'Modifying the params dictionary in-place in the function defined in '
+                'the FEED_URI_PARAMS setting or in the uri_params key of the FEEDS '
+                'setting is deprecated. The function must return a new dictionary '
+                'instead.',
+                category=ScrapyDeprecationWarning
+            )
+        return new_params if new_params is not None else params
 
     def _load_filter(self, feed_options):
         # load the item filter if declared else load the default filter class

@@ -81,18 +81,18 @@ clicking directly on the tag. If we expand the ``span`` tag with the ``class=
 "text"`` we will see the quote-text we clicked on. The `Inspector` lets you
 copy XPaths to selected elements. Let's try it out.
 
-First open the Scrapy shell at http://quotes.toscrape.com/ in a terminal:
+First open the Scrapy shell at https://quotes.toscrape.com/ in a terminal:
 
 .. code-block:: none
 
-    $ scrapy shell "http://quotes.toscrape.com/"
+    $ scrapy shell "https://quotes.toscrape.com/"
 
 Then, back to your web browser, right-click on the ``span`` tag, select
 ``Copy > XPath`` and paste it in the Scrapy shell like so:
 
 .. invisible-code-block: python
 
-    response = load_response('http://quotes.toscrape.com/', 'quotes.html')
+    response = load_response('https://quotes.toscrape.com/', 'quotes.html')
 
 >>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').getall()
 ['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”']
@@ -227,7 +227,7 @@ interests us is the one request called ``quotes?page=1`` with the
 type ``json``.
 
 If we click on this request, we see that the request URL is
-``http://quotes.toscrape.com/api/quotes?page=1`` and the response
+``https://quotes.toscrape.com/api/quotes?page=1`` and the response
 is a JSON-object that contains our quotes. We can also right-click
 on the request and open ``Open in new tab`` to get a better overview.
 
@@ -247,7 +247,7 @@ also request each page to get every quote on the site::
         name = 'quote'
         allowed_domains = ['quotes.toscrape.com']
         page = 1
-        start_urls = ['http://quotes.toscrape.com/api/quotes?page=1']
+        start_urls = ['https://quotes.toscrape.com/api/quotes?page=1']
 
         def parse(self, response):
             data = json.loads(response.text)
@@ -255,7 +255,7 @@ also request each page to get every quote on the site::
                 yield {"quote": quote["text"]}
             if data["has_next"]:
                 self.page += 1
-                url = f"http://quotes.toscrape.com/api/quotes?page={self.page}"
+                url = f"https://quotes.toscrape.com/api/quotes?page={self.page}"
                 yield scrapy.Request(url=url, callback=self.parse)
 
 This spider starts at the first page of the quotes-API. With each
@@ -280,7 +280,7 @@ request::
     from scrapy import Request
 
     request = Request.from_curl(
-        "curl 'http://quotes.toscrape.com/api/quotes?page=1' -H 'User-Agent: Mozil"
+        "curl 'https://quotes.toscrape.com/api/quotes?page=1' -H 'User-Agent: Mozil"
         "la/5.0 (X11; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0' -H 'Acce"
         "pt: */*' -H 'Accept-Language: ca,en-US;q=0.7,en;q=0.3' --compressed -H 'X"
         "-Requested-With: XMLHttpRequest' -H 'Proxy-Authorization: Basic QFRLLTAzM"
@@ -304,8 +304,8 @@ daunting and pages can be very complex, but it (mostly) boils down
 to identifying the correct request and replicating it in your spider.
 
 .. _Developer Tools: https://en.wikipedia.org/wiki/Web_development_tools
-.. _quotes.toscrape.com: http://quotes.toscrape.com
-.. _quotes.toscrape.com/scroll: http://quotes.toscrape.com/scroll
-.. _quotes.toscrape.com/api/quotes?page=10: http://quotes.toscrape.com/api/quotes?page=10
+.. _quotes.toscrape.com: https://quotes.toscrape.com
+.. _quotes.toscrape.com/scroll: https://quotes.toscrape.com/scroll
+.. _quotes.toscrape.com/api/quotes?page=10: https://quotes.toscrape.com/api/quotes?page=10
 .. _has-class-extension: https://parsel.readthedocs.io/en/latest/usage.html#other-xpath-extensions
 

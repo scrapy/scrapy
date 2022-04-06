@@ -1,13 +1,24 @@
 import logging
 from collections import defaultdict
 
+from tldextract import TLDExtract
+
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 
 logger = logging.getLogger(__name__)
+
+
+_split_domain = TLDExtract(include_psl_private_domains=True)
+
+
+def _is_public_domain(domain):
+    parts = _split_domain(domain)
+    return not parts.domain
 
 
 class CookiesMiddleware:
@@ -23,14 +34,29 @@ class CookiesMiddleware:
             raise NotConfigured
         return cls(crawler.settings.getbool('COOKIES_DEBUG'))
 
+    def _process_cookies(self, cookies, *, jar, request):
+        for cookie in cookies:
+            cookie_domain = cookie.domain
+            if cookie_domain.startswith('.'):
+                cookie_domain = cookie_domain[1:]
+
+            request_domain = urlparse_cached(request).hostname.lower()
+
+            if cookie_domain and _is_public_domain(cookie_domain):
+                if cookie_domain != request_domain:
+                    continue
+                cookie.domain = request_domain
+
+            jar.set_cookie_if_ok(cookie, request)
+
     def process_request(self, request, spider):
         if request.meta.get('dont_merge_cookies', False):
             return
 
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
-        for cookie in self._get_request_cookies(jar, request):
-            jar.set_cookie_if_ok(cookie, request)
+        cookies = self._get_request_cookies(jar, request)
+        self._process_cookies(cookies, jar=jar, request=request)
 
         # set Cookie header
         request.headers.pop('Cookie', None)
@@ -44,7 +70,9 @@ class CookiesMiddleware:
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
-        jar.extract_cookies(response, request)
+        cookies = jar.make_cookies(response, request)
+        self._process_cookies(cookies, jar=jar, request=request)
+
         self._debug_set_cookie(response, spider)
 
         return response

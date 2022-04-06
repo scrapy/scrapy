@@ -143,6 +143,7 @@ Logging settings
 These settings can be used to configure the logging:
 
 * :setting:`LOG_FILE`
+* :setting:`LOG_FILE_APPEND`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
 * :setting:`LOG_LEVEL`
@@ -155,7 +156,9 @@ The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
 redirected to a file named :setting:`LOG_FILE` with encoding
 :setting:`LOG_ENCODING`. If unset and :setting:`LOG_ENABLED` is ``True``, log
-messages will be displayed on the standard error. Lastly, if
+messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
+and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
+(discarding the output from previous runs, if any). Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
 
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
@@ -215,7 +218,7 @@ For example, let's say you're scraping a website which returns many
 HTTP 404 and 500 responses, and you want to hide all messages like this::
 
     2016-12-16 22:00:06 [scrapy.spidermiddlewares.httperror] INFO: Ignoring
-    response <500 http://quotes.toscrape.com/page/1-34/>: HTTP status code
+    response <500 https://quotes.toscrape.com/page/1-34/>: HTTP status code
     is not handled or not allowed
 
 The first thing to note is a logger name - it is in brackets:

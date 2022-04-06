@@ -22,7 +22,7 @@ class SignalCatcherSpider(Spider):
         return spider
 
     def on_request_left(self, request, spider):
-        self.caught_times = self.caught_times + 1
+        self.caught_times += 1
 
 
 class TestCatching(TestCase):

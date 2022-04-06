@@ -124,8 +124,9 @@ def _get_handler(settings):
     """ Return a log handler object according to settings """
     filename = settings.get('LOG_FILE')
     if filename:
+        mode = 'a' if settings.getbool('LOG_FILE_APPEND') else 'w'
         encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
+        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool('LOG_ENABLED'):
         handler = logging.StreamHandler()
     else:
@@ -142,7 +143,7 @@ def _get_handler(settings):
     return handler
 
 
-def log_scrapy_info(settings):
+def log_scrapy_info(settings: Settings) -> None:
     logger.info("Scrapy %(version)s started (bot: %(bot)s)",
                 {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
     versions = [
@@ -151,6 +152,9 @@ def log_scrapy_info(settings):
         if name != "Scrapy"
     ]
     logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
+
+
+def log_reactor_info() -> None:
     from twisted.internet import reactor
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
     from twisted.internet import asyncioreactor
