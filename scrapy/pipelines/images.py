@@ -7,10 +7,11 @@ import functools
 import hashlib
 from contextlib import suppress
 from io import BytesIO
+import warnings
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import DropItem, NotConfigured
+from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
@@ -21,7 +22,11 @@ from scrapy.utils.python import to_bytes
 
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
-
+    warnings.warn(
+        "This exception is deprecated",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2
+    )
 
 class ImageException(FileException):
     """General image error exception"""
