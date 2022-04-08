@@ -78,8 +78,10 @@ class Crawler:
             if reactor_class:
                 install_reactor(reactor_class, self.settings["ASYNCIO_EVENT_LOOP"])
             else:
-                from twisted.internet import default
-                default.install()
+                from contextlib import suppress
+                from twisted.internet import default, error
+                with suppress(error.ReactorAlreadyInstalledError):
+                    default.install()
             log_reactor_info()
         if reactor_class:
             verify_installed_reactor(reactor_class)
