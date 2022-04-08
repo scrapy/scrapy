@@ -113,6 +113,9 @@ Backward-incompatible changes
     meet expectations, :exc:`TypeError` is now raised at startup time. Before,
     other exceptions would be raised at run time. (:issue:`3559`)
 
+-   The ``_encoding`` field of serialized :class:`~scrapy.http.Request` objects
+    is now named ``encoding``, in line with all other fields (:issue:`5130`)
+
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
