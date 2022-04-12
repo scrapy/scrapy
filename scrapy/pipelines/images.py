@@ -7,11 +7,11 @@ import functools
 import hashlib
 from contextlib import suppress
 from io import BytesIO
-import warnings
+
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import DropItem, NotConfigured
 from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
