@@ -8,7 +8,6 @@ import hashlib
 from contextlib import suppress
 from io import BytesIO
 
-
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import DropItem, NotConfigured
