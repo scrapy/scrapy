@@ -86,6 +86,18 @@ class TestHttpProxyMiddleware(TestCase):
         self.assertEqual(req.meta, {'proxy': 'https://proxy:3128'})
         self.assertEqual(req.headers.get('Proxy-Authorization'), b'Basic dXNlcm5hbWU6')
 
+    def test_rewrite_proxy_auth_header_if_use_credentials(self):
+        os.environ['http_proxy'] = 'https://user:pass@proxy:3128'
+        mw = HttpProxyMiddleware()
+        req = Request(
+            'http://scrapytest.org',
+            headers={'Proxy-Authorization': b'Basic dXNlcjo='},
+            meta={'proxy': 'https://user:pass@proxy:3128'},
+        )
+        assert mw.process_request(req, spider) is None
+        self.assertEqual(req.meta, {'proxy': 'https://proxy:3128'})
+        self.assertEqual(req.headers.get('Proxy-Authorization'), b'Basic dXNlcjpwYXNz')
+
     def test_proxy_auth_encoding(self):
         # utf-8 encoding
         os.environ['http_proxy'] = 'https://m\u00E1n:pass@proxy:3128'
