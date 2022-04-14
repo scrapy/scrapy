@@ -17,11 +17,21 @@ from scrapy.pipelines.files import FileException, FilesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
-from deprecated import deprecated
+from warnings import warn
 
-@deprecated("This class is deprecated.")
+
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
+    
+    def __init__(self, *args, **kwargs):
+        warn(f'{self.__class__.__name__} will be deprecated',
+             DeprecationWarning, stacklevel=2)
+        super().__init__(*args, **kwargs)
+
+    def __init_subclass__(cls,  **kwargs):
+        warn(f'{cls.__name__} will be deprecated',
+             DeprecationWarning, stacklevel=2)
+        super().__init_subclass__(**kwargs)
 
 
 class ImageException(FileException):
