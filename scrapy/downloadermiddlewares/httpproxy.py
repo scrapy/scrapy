@@ -1,10 +1,13 @@
 import base64
+from logging import getLogger
 from urllib.parse import unquote, urlunparse
 from urllib.request import getproxies, proxy_bypass, _parse_proxy
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
+
+logger = getLogger(__name__)
 
 
 class HttpProxyMiddleware:
@@ -52,8 +55,25 @@ class HttpProxyMiddleware:
             # extract credentials if present
             creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
             request.meta['proxy'] = proxy_url
-            if creds and not request.headers.get('Proxy-Authorization'):
-                request.headers['Proxy-Authorization'] = b'Basic ' + creds
+            if creds:
+                proxy_authorization = request.headers.get('Proxy-Authorization')
+                if not proxy_authorization:
+                    request.headers['Proxy-Authorization'] = b'Basic ' + creds
+                else:
+                    logger.warning(
+                        (
+                            'Request %r has proxy credentials defined both in the '
+                            'Proxy-Authorization header (%r) and in '
+                            'Request.meta[\'proxy\'] (%r). The credentials in '
+                            'Request.meta[\'proxy\'] have been ignored. To use the '
+                            'Request.meta[\'proxy\'] credentials, remove the '
+                            'Proxy-Authorization header. To silence this warning, remove '
+                            'the credentials from Request.meta[\'proxy\'].'
+                        ),
+                        request,
+                        proxy_authorization,
+                        request.meta['proxy'],
+                    )
             return
         elif not self.proxies:
             return
