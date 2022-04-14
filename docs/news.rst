@@ -3,6 +3,23 @@
 Release notes
 =============
 
+.. _release-2.6.2:
+
+Scrapy 2.6.2 (2022-03-15)
+-------------------------
+
+Fixes additional regressions introduced in 2.6.0:
+
+-   :class:`~scrapy.crawler.CrawlerProcess` supports again crawling multiple
+    spiders (:issue:`5435`, :issue:`5436`)
+
+-   Fixed an exception that was being logged after the spider finished under
+    certain conditions (:issue:`5437`, :issue:`5440`)
+
+-   The ``--output``/``-o`` command-line parameter supports again a value
+    starting with a hyphen (:issue:`5444`, :issue:`5445`)
+
+
 .. _release-2.6.1:
 
 Scrapy 2.6.1 (2022-03-01)
