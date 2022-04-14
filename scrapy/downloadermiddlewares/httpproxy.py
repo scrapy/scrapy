@@ -52,7 +52,7 @@ class HttpProxyMiddleware:
             # extract credentials if present
             creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
             request.meta['proxy'] = proxy_url
-            if creds and not request.headers.get('Proxy-Authorization'):
+            if creds:
                 request.headers['Proxy-Authorization'] = b'Basic ' + creds
             return
         elif not self.proxies:

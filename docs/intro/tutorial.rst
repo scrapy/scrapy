@@ -488,7 +488,7 @@ The `JSON Lines`_ format is useful because it's stream-like, you can easily
 append new records to it. It doesn't have the same problem of JSON when you run
 twice. Also, as each record is a separate line, you can process big files
 without having to fit everything in memory, there are tools like `JQ`_ to help
-doing that at the command-line.
+do that at the command-line.
 
 In small projects (like the one in this tutorial), that should be enough.
 However, if you want to perform more complex things with the scraped items, you
