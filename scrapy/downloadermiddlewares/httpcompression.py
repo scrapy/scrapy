@@ -91,8 +91,11 @@ class HttpCompressionMiddleware:
                 # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
-        if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
-            body = brotli.decompress(body)
+        if encoding == b'br':
+            if b'br' in ACCEPTED_ENCODINGS:
+                body = brotli.decompress(body)
+            else:
+                raise ImportError('brotli is not installed')
         if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame
