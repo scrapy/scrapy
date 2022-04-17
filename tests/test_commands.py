@@ -930,3 +930,17 @@ class MySpider(scrapy.Spider):
         args = ['-o', 'example1.json', '-O', 'example2.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
+
+
+class HelpMessageTest(CommandTest):
+
+    def setUp(self):
+        super().setUp()
+        self.commands = ["parse", "startproject", "view", "crawl", "edit",
+                         "list", "fetch", "settings", "shell", "runspider",
+                         "version", "genspider", "check", "bench"]
+
+    def test_help_messages(self):
+        for command in self.commands:
+            _, out, _ = self.proc(command, "-h")
+            self.assertIn("Usage", out)
