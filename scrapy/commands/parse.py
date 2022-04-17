@@ -51,7 +51,7 @@ class Command(BaseRunSpiderCommand):
         parser.add_argument("--cbkwargs", dest="cbkwargs",
                             help="inject extra callback kwargs into the Request, it must be a valid raw json string")
         parser.add_argument("-d", "--depth", dest="depth", type=int, default=1,
-                            help=f"maximum depth for parsing requests [default: {self.max_level}]")
+                            help="maximum depth for parsing requests [default: 1]")
         parser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
                             help="print each depth level one by one")
 
