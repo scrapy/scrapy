@@ -64,3 +64,7 @@ class CmdlineTest(unittest.TestCase):
         settingsdict = json.loads(settingsstr)
         self.assertCountEqual(settingsdict.keys(), EXTENSIONS.keys())
         self.assertEqual(200, settingsdict[EXT_PATH])
+
+    def test_pathlib_path_as_feeds_key(self):
+        self.assertEqual(self._execute('settings', '--get', 'FEEDS'),
+                         json.dumps({"items.csv": {"format": "csv", "fields": ["price", "name"]}}))

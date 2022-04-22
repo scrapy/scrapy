@@ -122,7 +122,7 @@ Example::
       class ProductXmlExporter(XmlItemExporter):
 
           def serialize_field(self, field, name, value):
-              if field == 'price':
+              if name == 'price':
                   return f'$ {str(value)}'
               return super().serialize_field(field, name, value)
 

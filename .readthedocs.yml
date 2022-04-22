@@ -5,12 +5,13 @@ sphinx:
   fail_on_warning: true
 
 build:
-  image: latest
+  os: ubuntu-20.04
+  tools:
+    # For available versions, see:
+    # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-tools-python
+    python: "3.10"  # Keep in sync with .github/workflows/checks.yml
 
 python:
-  # For available versions, see:
-  # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-image
-  version: 3.8  # Keep in sync with .github/workflows/checks.yml
   install:
     - requirements: docs/requirements.txt
     - path: .

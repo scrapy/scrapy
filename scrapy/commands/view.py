@@ -1,3 +1,4 @@
+import argparse
 from scrapy.commands import fetch
 from scrapy.utils.response import open_in_browser
 
@@ -12,7 +13,7 @@ class Command(fetch.Command):
 
     def add_options(self, parser):
         super().add_options(parser)
-        parser.remove_option("--headers")
+        parser.add_argument('--headers', help=argparse.SUPPRESS)
 
     def _print_response(self, response, opts):
         open_in_browser(response)

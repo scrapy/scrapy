@@ -105,7 +105,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.checks.append(default == 99)
         self.crawler.stats.inc_value('boolean_checks', 4)
 
-    def parse_takes_less(self, response, key):
+    def parse_takes_less(self, response, key, callback):
         """
         Should raise
         TypeError: parse_takes_less() got an unexpected keyword argument 'number'

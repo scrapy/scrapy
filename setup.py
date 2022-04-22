@@ -32,6 +32,7 @@ install_requires = [
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
     'setuptools',
+    'tldextract',
 ]
 extras_require = {}
 cpython_dependencies = [
@@ -87,6 +88,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Internet :: WWW/HTTP',
