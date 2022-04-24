@@ -10,10 +10,6 @@ Scrapy has partial support for :mod:`asyncio`. After you :ref:`install the
 asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and
 :mod:`asyncio`-powered libraries in any :doc:`coroutine <coroutines>`.
 
-.. warning:: :mod:`asyncio` support in Scrapy is experimental, and not yet
-             recommended for production environments. Future Scrapy versions
-             may introduce related changes without a deprecation period or
-             warning.
 
 .. _install-asyncio:
 
@@ -30,6 +26,7 @@ reactor manually. You can do that using
 
     install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
 
+
 .. _using-custom-loops:
 
 Using custom asyncio loops
@@ -38,6 +35,47 @@ Using custom asyncio loops
 You can also use custom asyncio event loops with the asyncio reactor. Set the
 :setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event loop class to
 use it instead of the default asyncio event loop.
+
+
+.. _asyncio-windows:
+
+Windows-specific notes
+======================
+
+The Windows implementation of :mod:`asyncio` can use two event loop
+implementations:
+
+-   :class:`~asyncio.SelectorEventLoop`, default before Python 3.8, required
+    when using Twisted.
+
+-   :class:`~asyncio.ProactorEventLoop`, default since Python 3.8, cannot work
+    with Twisted.
+
+So on Python 3.8+ the event loop class needs to be changed.
+
+.. versionchanged:: 2.6.0
+   The event loop class is changed automatically when you change the
+   :setting:`TWISTED_REACTOR` setting or call
+   :func:`~scrapy.utils.reactor.install_reactor`.
+
+To change the event loop class manually, call the following code before
+installing the reactor::
+
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+You can put this in the same function that installs the reactor, if you do that
+yourself, or in some code that runs before the reactor is installed, e.g.
+``settings.py``.
+
+.. note:: Other libraries you use may require
+          :class:`~asyncio.ProactorEventLoop`, e.g. because it supports
+          subprocesses (this is the case with `playwright`_), so you cannot use
+          them together with Scrapy on Windows (but you should be able to use
+          them on WSL or native Linux).
+
+.. _playwright: https://github.com/microsoft/playwright-python
+
 
 .. _asyncio-await-dfd:
 

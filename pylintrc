@@ -112,6 +112,7 @@ disable=abstract-method,
         unused-private-member,
         unused-variable,
         unused-wildcard-import,
+        use-implicit-booleaness-not-comparison,
         used-before-assignment,
         useless-object-inheritance,  # Required for Python 2 support
         useless-return,

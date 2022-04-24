@@ -1,10 +1,8 @@
 import unittest
 from unittest import mock
-from warnings import catch_warnings, filterwarnings
 
 from w3lib.encoding import resolve_encoding
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
@@ -134,9 +132,6 @@ class BaseResponseTest(unittest.TestCase):
         assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            self.assertEqual(response.body_as_unicode(), body_unicode)
         self.assertEqual(response.text, body_unicode)
 
     def _assert_response_encoding(self, response, encoding):
@@ -345,12 +340,6 @@ class TextResponseTest(BaseResponseTest):
 
         original_string = unicode_string.encode('cp1251')
         r1 = self.response_class('http://www.example.com', body=original_string, encoding='cp1251')
-
-        # check body_as_unicode
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            self.assertTrue(isinstance(r1.body_as_unicode(), str))
-            self.assertEqual(r1.body_as_unicode(), unicode_string)
 
         # check response.text
         self.assertTrue(isinstance(r1.text, str))
@@ -682,13 +671,6 @@ class TextResponseTest(BaseResponseTest):
         response = self._links_response()
         with self.assertRaises(ValueError):
             response.follow_all(css='a[href*="example.com"]', xpath='//a[contains(@href, "example.com")]')
-
-    def test_body_as_unicode_deprecation_warning(self):
-        with catch_warnings(record=True) as warnings:
-            r1 = self.response_class("http://www.example.com", body='Hello', encoding='utf-8')
-            self.assertEqual(r1.body_as_unicode(), 'Hello')
-            self.assertEqual(len(warnings), 1)
-            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
     def test_json_response(self):
         json_body = b"""{"ip": "109.187.217.200"}"""

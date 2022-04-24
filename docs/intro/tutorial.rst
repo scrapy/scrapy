@@ -7,7 +7,7 @@ Scrapy Tutorial
 In this tutorial, we'll assume that Scrapy is already installed on your system.
 If that's not the case, see :ref:`intro-install`.
 
-We are going to scrape `quotes.toscrape.com <http://quotes.toscrape.com/>`_, a website
+We are going to scrape `quotes.toscrape.com <https://quotes.toscrape.com/>`_, a website
 that lists quotes from famous authors.
 
 This tutorial will walk you through these tasks:
@@ -93,8 +93,8 @@ This is the code for our first Spider. Save it in a file named
 
         def start_requests(self):
             urls = [
-                'http://quotes.toscrape.com/page/1/',
-                'http://quotes.toscrape.com/page/2/',
+                'https://quotes.toscrape.com/page/1/',
+                'https://quotes.toscrape.com/page/2/',
             ]
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
@@ -143,9 +143,9 @@ similar to this::
     2016-12-16 21:24:05 [scrapy.core.engine] INFO: Spider opened
     2016-12-16 21:24:05 [scrapy.extensions.logstats] INFO: Crawled 0 pages (at 0 pages/min), scraped 0 items (at 0 items/min)
     2016-12-16 21:24:05 [scrapy.extensions.telnet] DEBUG: Telnet console listening on 127.0.0.1:6023
-    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (404) <GET http://quotes.toscrape.com/robots.txt> (referer: None)
-    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
-    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/2/> (referer: None)
+    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (404) <GET https://quotes.toscrape.com/robots.txt> (referer: None)
+    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://quotes.toscrape.com/page/1/> (referer: None)
+    2016-12-16 21:24:05 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://quotes.toscrape.com/page/2/> (referer: None)
     2016-12-16 21:24:05 [quotes] DEBUG: Saved file quotes-1.html
     2016-12-16 21:24:05 [quotes] DEBUG: Saved file quotes-2.html
     2016-12-16 21:24:05 [scrapy.core.engine] INFO: Closing spider (finished)
@@ -184,8 +184,8 @@ for your spider::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
+            'https://quotes.toscrape.com/page/1/',
+            'https://quotes.toscrape.com/page/2/',
         ]
 
         def parse(self, response):
@@ -207,7 +207,7 @@ Extracting data
 The best way to learn how to extract data with Scrapy is trying selectors
 using the :ref:`Scrapy shell <topics-shell>`. Run::
 
-    scrapy shell 'http://quotes.toscrape.com/page/1/'
+    scrapy shell 'https://quotes.toscrape.com/page/1/'
 
 .. note::
 
@@ -217,18 +217,18 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
 
    On Windows, use double quotes instead::
 
-       scrapy shell "http://quotes.toscrape.com/page/1/"
+       scrapy shell "https://quotes.toscrape.com/page/1/"
 
 You will see something like::
 
     [ ... Scrapy log here ... ]
-    2016-09-19 12:09:27 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://quotes.toscrape.com/page/1/> (referer: None)
+    2016-09-19 12:09:27 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://quotes.toscrape.com/page/1/> (referer: None)
     [s] Available Scrapy objects:
     [s]   scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)
     [s]   crawler    <scrapy.crawler.Crawler object at 0x7fa91d888c90>
     [s]   item       {}
-    [s]   request    <GET http://quotes.toscrape.com/page/1/>
-    [s]   response   <200 http://quotes.toscrape.com/page/1/>
+    [s]   request    <GET https://quotes.toscrape.com/page/1/>
+    [s]   response   <200 https://quotes.toscrape.com/page/1/>
     [s]   settings   <scrapy.settings.Settings object at 0x7fa91d888c10>
     [s]   spider     <DefaultSpider 'default' at 0x7fa91c8af990>
     [s] Useful shortcuts:
@@ -241,7 +241,7 @@ object:
 
 .. invisible-code-block: python
 
-    response = load_response('http://quotes.toscrape.com/page/1/', 'quotes1.html')
+    response = load_response('https://quotes.toscrape.com/page/1/', 'quotes1.html')
 
 >>> response.css('title')
 [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
@@ -355,7 +355,7 @@ Extracting quotes and authors
 Now that you know a bit about selection and extraction, let's complete our
 spider by writing the code to extract the quotes from the web page.
 
-Each quote in http://quotes.toscrape.com is represented by HTML elements that look
+Each quote in https://quotes.toscrape.com is represented by HTML elements that look
 like this:
 
 .. code-block:: html
@@ -379,7 +379,7 @@ like this:
 Let's open up scrapy shell and play a bit to find out how to extract the data
 we want::
 
-    $ scrapy shell 'http://quotes.toscrape.com'
+    $ scrapy shell 'https://quotes.toscrape.com'
 
 We get a list of selectors for the quote HTML elements with:
 
@@ -444,8 +444,8 @@ in the callback, as you can see below::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'http://quotes.toscrape.com/page/1/',
-            'http://quotes.toscrape.com/page/2/',
+            'https://quotes.toscrape.com/page/1/',
+            'https://quotes.toscrape.com/page/2/',
         ]
 
         def parse(self, response):
@@ -458,9 +458,9 @@ in the callback, as you can see below::
 
 If you run this spider, it will output the extracted data with the log::
 
-    2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 https://quotes.toscrape.com/page/1/>
     {'tags': ['life', 'love'], 'author': 'André Gide', 'text': '“It is better to be hated for what you are than to be loved for what you are not.”'}
-    2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 http://quotes.toscrape.com/page/1/>
+    2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 https://quotes.toscrape.com/page/1/>
     {'tags': ['edison', 'failure', 'inspirational', 'paraphrased'], 'author': 'Thomas A. Edison', 'text': "“I have not failed. I've just found 10,000 ways that won't work.”"}
 
 
@@ -488,7 +488,7 @@ The `JSON Lines`_ format is useful because it's stream-like, you can easily
 append new records to it. It doesn't have the same problem of JSON when you run
 twice. Also, as each record is a separate line, you can process big files
 without having to fit everything in memory, there are tools like `JQ`_ to help
-doing that at the command-line.
+do that at the command-line.
 
 In small projects (like the one in this tutorial), that should be enough.
 However, if you want to perform more complex things with the scraped items, you
@@ -505,7 +505,7 @@ Following links
 ===============
 
 Let's say, instead of just scraping the stuff from the first two pages
-from http://quotes.toscrape.com, you want quotes from all the pages in the website.
+from https://quotes.toscrape.com, you want quotes from all the pages in the website.
 
 Now that you know how to extract data from pages, let's see how to follow links
 from them.
@@ -549,7 +549,7 @@ page, extracting data from it::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'http://quotes.toscrape.com/page/1/',
+            'https://quotes.toscrape.com/page/1/',
         ]
 
         def parse(self, response):
@@ -600,7 +600,7 @@ As a shortcut for creating Request objects you can use
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'http://quotes.toscrape.com/page/1/',
+            'https://quotes.toscrape.com/page/1/',
         ]
 
         def parse(self, response):
@@ -654,7 +654,7 @@ this time for scraping author information::
     class AuthorSpider(scrapy.Spider):
         name = 'author'
 
-        start_urls = ['http://quotes.toscrape.com/']
+        start_urls = ['https://quotes.toscrape.com/']
 
         def parse(self, response):
             author_page_links = response.css('.author + a')
@@ -727,7 +727,7 @@ with a specific tag, building the URL based on the argument::
         name = "quotes"
 
         def start_requests(self):
-            url = 'http://quotes.toscrape.com/'
+            url = 'https://quotes.toscrape.com/'
             tag = getattr(self, 'tag', None)
             if tag is not None:
                 url = url + 'tag/' + tag
@@ -747,7 +747,7 @@ with a specific tag, building the URL based on the argument::
 
 If you pass the ``tag=humor`` argument to this spider, you'll notice that it
 will only visit URLs from the ``humor`` tag, such as
-``http://quotes.toscrape.com/tag/humor``.
+``https://quotes.toscrape.com/tag/humor``.
 
 You can :ref:`learn more about handling spider arguments here <spiderargs>`.
 

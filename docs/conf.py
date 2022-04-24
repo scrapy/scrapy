@@ -272,7 +272,6 @@ coverage_ignore_pyobjects = [
     r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
 
     # Never documented before, and deprecated now.
-    r'^scrapy\.item\.DictItem$',
     r'^scrapy\.linkextractors\.FilteringLinkExtractor$',
 
     # Implementation detail of LxmlLinkExtractor
@@ -304,10 +303,14 @@ intersphinx_mapping = {
 hoverxref_auto_ref = True
 hoverxref_role_types = {
     "class": "tooltip",
+    "command": "tooltip",
     "confval": "tooltip",
     "hoverxref": "tooltip",
     "mod": "tooltip",
     "ref": "tooltip",
+    "reqmeta": "tooltip",
+    "setting": "tooltip",
+    "signal": "tooltip",
 }
 hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
 
