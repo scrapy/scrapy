@@ -30,7 +30,6 @@ from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -184,7 +183,6 @@ class S3FilesStore:
 
 
 class GCSFilesStore:
-
     GCS_PROJECT_ID = None
 
     CACHE_CONTROL = 'max-age=172800'
@@ -244,7 +242,6 @@ class GCSFilesStore:
 
 
 class FTPFilesStore:
-
     FTP_USERNAME = None
     FTP_PASSWORD = None
     USE_ACTIVE_MODE = None
@@ -284,6 +281,7 @@ class FTPFilesStore:
             # The file doesn't exist
             except Exception:
                 return {}
+
         return threads.deferToThread(_stat_file, path)
 
 
@@ -461,8 +459,11 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats(info.spider, status)
 
         try:
-            path = self.file_path(request, response=response, info=info, item=item)
-            checksum = self.file_downloaded(response, request, info, item=item)
+            """
+            You can save one step of function logic and do the same thing by commenting out the code 
+            so that the file_downloaded function returns the path.
+            """
+            checksum, path = self.file_downloaded(response, request, info, item=item)
         except FileException as exc:
             logger.warning(
                 'File (error): Error processing file from %(request)s '
@@ -497,7 +498,7 @@ class FilesPipeline(MediaPipeline):
         checksum = md5sum(buf)
         buf.seek(0)
         self.store.persist_file(path, buf, info)
-        return checksum
+        return checksum, path  # Add an additional path
 
     def item_completed(self, results, item, info):
         with suppress(KeyError):
