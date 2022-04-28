@@ -10,6 +10,7 @@ from contextlib import suppress
 from typing import Generator, Tuple
 from urllib.parse import urljoin
 
+import orjson
 import parsel
 from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
@@ -35,6 +36,7 @@ class TextResponse(Response):
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
+        self._cached_orjson = None
         super().__init__(*args, **kwargs)
 
     def _set_url(self, url):
@@ -73,6 +75,15 @@ class TextResponse(Response):
         if self._cached_decoded_json is _NONE:
             self._cached_decoded_json = json.loads(self.text)
         return self._cached_decoded_json
+
+    def orjson(self):
+        """
+        If you want to speed up serialization, you can use ORJSON instead of JSON
+        speed：orjson > json
+        """
+        if self._cached_orjson is None:
+            self._cached_orjson = orjson.loads(self.text)
+        return self._cached_orjson
 
     @property
     def text(self):
