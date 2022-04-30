@@ -15,10 +15,12 @@ from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
+from scrapy.utils.decorators import deprecated
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 
 
+@deprecated()
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
 
