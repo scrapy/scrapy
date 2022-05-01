@@ -5,24 +5,27 @@ See documentation in topics/media-pipeline.rst
 """
 import functools
 import hashlib
+import warnings
 from contextlib import suppress
 from io import BytesIO
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import DropItem, NotConfigured
+from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.decorators import deprecated
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 
 
-@deprecated()
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The NoimagesDrop class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
+        super().__init__(*args, **kwargs)
 
 
 class ImageException(FileException):
