@@ -41,6 +41,19 @@ Reporting bugs
 Well-written bug reports are very helpful, so keep in mind the following
 guidelines when you're going to report a new bug.
 
+Information to Include:
+  1. Steps to reproduce
+    - What did you do to encounter this bug? Provide as much detail as you can in order to reproduce this issue.
+  2. Details on Machine
+    - Provide all relevent information regarding your setup, the operating system used, and any depedencies that may be in effect.
+  3. Expected Behavior
+    - What should be appropriate behavior be, if you werent facing a bug?
+  4. Current Behavior
+    - Detail the current behavior of the situation, and where it deviates from its intended behavior.
+  5. Additional Information
+    - Please provide any additional information such as logs, screen captures, or anything else that may be relevent to the issue.
+
+
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
 
