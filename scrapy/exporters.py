@@ -139,6 +139,7 @@ class XmlItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
         self.item_element = kwargs.pop('item_element', 'item')
+        self.list_item_element = kwargs.pop('list_item_element', 'value')
         self.root_element = kwargs.pop('root_element', 'items')
         super().__init__(**kwargs)
         if not self.encoding:
@@ -149,9 +150,9 @@ class XmlItemExporter(BaseItemExporter):
         if self.indent is not None and (self.indent > 0 or new_item):
             self.xg.characters('\n')
 
-    def _beautify_indent(self, depth=1):
+    def _beautify_indent(self, breadcrumbs):
         if self.indent:
-            self.xg.characters(' ' * self.indent * depth)
+            self.xg.characters(' ' * self.indent * (len(breadcrumbs) + 1))
 
     def start_exporting(self):
         self.xg.startDocument()
@@ -159,12 +160,12 @@ class XmlItemExporter(BaseItemExporter):
         self._beautify_newline(new_item=True)
 
     def export_item(self, item):
-        self._beautify_indent(depth=1)
+        self._beautify_indent(breadcrumbs=tuple())
         self.xg.startElement(self.item_element, {})
         self._beautify_newline()
         for name, value in self._get_serialized_fields(item, default_value=''):
-            self._export_xml_field(name, value, depth=2)
-        self._beautify_indent(depth=1)
+            self._export_xml_field((name,), value)
+        self._beautify_indent(breadcrumbs=tuple())
         self.xg.endElement(self.item_element)
         self._beautify_newline(new_item=True)
 
@@ -172,24 +173,89 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
 
-    def _export_xml_field(self, name, serialized_value, depth):
-        self._beautify_indent(depth=depth)
-        self.xg.startElement(name, {})
+    def element(self, breadcrumbs, value):
+        """Return a dictionary indicating the XML element name and attributes
+        of a leaf `value` of an item being exported, given the `breadcrumbs`
+        that indicate the global position of that `value` within an item.
+
+        The return value must be a dictionary with the following keys:
+
+        -   ``name`` is the name of the XML element that will contain `value`.
+
+            For example, if you return ``{'name': 'foo'}`` for a `value`
+            ``'bar'``, ``'bar'`` is serialized as ``<foo>bar</foo>``.
+
+        -   ``attrs`` (optional) is a dictionary of key-value pairs to use as
+            attributes of the serialized XML element.
+
+            For example, if you return ``{'name': 'foo', 'attrs': {'k': 'v'}}``
+            for a `value` ``'bar'``, ``'bar'`` is serialized as
+            ``<foo k="v">bar</foo>``.
+
+        `breadcrumbs` is a non-empty tuple:
+
+        -   The first tuple item is a string containing the name of the
+            Scrapy item field that contains the `value`.
+
+            If that is the only tuple item, `value` is the field value of an
+            item. If the tuple has additional tuple items, `value` is just one
+            part of an item field value which is made of a list, a dictionary,
+            or a combination of both.
+
+        -   The remaining tuple items may be:
+
+            -   A string, representing a key in a dictionary.
+
+            -   An integer, representing a 0-based position in a list.
+
+        For example, given the item below, the source comments indicate the
+        breadcrumbs that you get for each leaf value within the item:
+
+        .. code-block:: python
+
+            {
+                'id': 'item1',  # ('id',)
+                'tags': [
+                    'foo'  # ('tags', 0)
+                ],
+                'metadata': {
+                    'size': 300,  # ('metadata', 'size')
+                },
+                'comments': [
+                    {
+                        'text': 'Lorem ipsum',  # ('comments', 0, 'text')
+                    },
+                ],
+            }
+
+        `value` is a serialized leaf value. For example, in the code above,
+        `value` would be as follows for each of the 4 calls to this method:
+        ``'item1'``, ``'foo'``, ``'300'``, ``'Lorem ipsum'``.
+        """
+        if isinstance(breadcrumbs[-1], int):
+            return {'name': self.list_item_element}
+        assert isinstance(breadcrumbs[-1], str)
+        return {'name': breadcrumbs[-1]}
+
+    def _export_xml_field(self, breadcrumbs, serialized_value):
+        self._beautify_indent(breadcrumbs=breadcrumbs)
+        element = self.element(breadcrumbs, serialized_value)
+        self.xg.startElement(element['name'], element.get('attrs', {}))
         if hasattr(serialized_value, 'items'):
             self._beautify_newline()
             for subname, value in serialized_value.items():
-                self._export_xml_field(subname, value, depth=depth + 1)
-            self._beautify_indent(depth=depth)
+                self._export_xml_field(breadcrumbs + (subname,), value)
+            self._beautify_indent(breadcrumbs=breadcrumbs)
         elif is_listlike(serialized_value):
             self._beautify_newline()
-            for value in serialized_value:
-                self._export_xml_field('value', value, depth=depth + 1)
-            self._beautify_indent(depth=depth)
+            for index, value in enumerate(serialized_value):
+                self._export_xml_field(breadcrumbs + (index,), value)
+            self._beautify_indent(breadcrumbs=breadcrumbs)
         elif isinstance(serialized_value, str):
             self.xg.characters(serialized_value)
         else:
             self.xg.characters(str(serialized_value))
-        self.xg.endElement(name)
+        self.xg.endElement(element['name'])
         self._beautify_newline()
 
 

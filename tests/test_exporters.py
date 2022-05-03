@@ -4,6 +4,7 @@ import marshal
 import pickle
 import tempfile
 import unittest
+from functools import partial
 from io import BytesIO
 from datetime import datetime
 from warnings import catch_warnings, filterwarnings
@@ -400,9 +401,10 @@ class XmlItemExporterTest(BaseItemExporterTest):
             return xmltuple(doc)
         return self.assertEqual(xmlsplit(first), xmlsplit(second), msg)
 
-    def assertExportResult(self, item, expected_value):
+    def assertExportResult(self, item, expected_value,
+                           exporter=XmlItemExporter):
         fp = BytesIO()
-        ie = XmlItemExporter(fp)
+        ie = exporter(fp)
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
@@ -485,6 +487,192 @@ class XmlItemExporterTest(BaseItemExporterTest):
                    </item>
                 </items>
             """
+        )
+
+    def test_custom_element_names(self):
+        item = TestItem(name='name', age=[18, 65])
+        self.assertExportResult(
+            item,
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <root>
+                    <node>
+                        <name>name</name>
+                        <age>
+                            <item>18</item>
+                            <item>65</item>
+                        </age>
+                    </node>'
+                </root>
+            ''',
+            exporter=partial(XmlItemExporter, root_element='root',
+                             item_element='node', list_item_element='item'),
+        )
+
+    def test_parent_based_list_item_element_names(self):
+
+        class CustomXmlItemExporter(XmlItemExporter):
+
+            def element(self, breadcrumbs, value):
+                if isinstance(breadcrumbs[-1], int):
+                    if (
+                        isinstance(breadcrumbs[-2], str)
+                        and breadcrumbs[-2].endswith('s')
+                    ):
+                        return {'name': breadcrumbs[-2][:-1]}
+                return super().element(breadcrumbs, value)
+
+        item = {'ages': [18, 65]}
+        self.assertExportResult(
+            item,
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <ages>
+                            <age>18</age>
+                            <age>65</age>
+                        </ages>
+                    </item>
+                </items>
+            ''',
+            exporter=CustomXmlItemExporter,
+        )
+
+    def test_list_item_element_numbered_names(self):
+
+        class CustomXmlItemExporter(XmlItemExporter):
+
+            def element(self, breadcrumbs, value):
+                from logging import getLogger
+                logger = getLogger(__name__)
+                logger.error(breadcrumbs[-1])
+                if isinstance(breadcrumbs[-1], int):
+                    name = self.list_item_element + str(breadcrumbs[-1] + 1)
+                    return {'name': name}
+                return super().element(breadcrumbs, value)
+
+        item = {'ages': [18, 65]}
+        self.assertExportResult(
+            item,
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <ages>
+                            <value1>18</value1>
+                            <value2>65</value2>
+                        </ages>
+                    </item>
+                </items>
+            ''',
+            exporter=CustomXmlItemExporter,
+        )
+
+    def test_indexed_list_item_elements(self):
+
+        class CustomXmlItemExporter(XmlItemExporter):
+
+            def element(self, breadcrumbs, value):
+                if isinstance(breadcrumbs[-1], int):
+                    return {'name': self.list_item_element,
+                            'attrs': {'index': str(breadcrumbs[-1])}}
+                return super().element(breadcrumbs, value)
+
+        item = {'ages': [18, 65]}
+        self.assertExportResult(
+            item,
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <ages>
+                            <value index="0">18</value>
+                            <value index="1">65</value>
+                        </ages>
+                    </item>
+                </items>
+            ''',
+            exporter=CustomXmlItemExporter,
+        )
+
+    def test_names_based_on_breadcrumbs(self):
+
+        class AnyInt(int):
+
+            def __eq__(self, value):
+                return isinstance(value, int)
+
+            def __hash__(self):
+                return super().__hash__()
+
+        any_index = AnyInt()
+
+        class CustomXmlItemExporter(XmlItemExporter):
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.mappings = {
+                    ('design', 'people', any_index): 'designer',
+                    ('programming', 'people', any_index): 'programmer',
+                }
+
+            def element(self, breadcrumbs, value):
+                if breadcrumbs in self.mappings:
+                    return {'name': self.mappings[breadcrumbs]}
+                return super().element(breadcrumbs, value)
+
+        item = {'design': {'people': ['John']},
+                'programming': {'people': ['Jane']}}
+        self.assertExportResult(
+            item,
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <design>
+                            <people>
+                                <designer>John</designer>
+                            </people>
+                        </design>
+                        <programming>
+                            <people>
+                                <programmer>Jane</programmer>
+                            </people>
+                        </programming>
+                    </item>
+                </items>
+            ''',
+            exporter=CustomXmlItemExporter,
+        )
+
+    def test_names_based_on_values(self):
+
+        class CustomXmlItemExporter(XmlItemExporter):
+
+            def element(self, breadcrumbs, value):
+                if isinstance(value, dict) and 'role' in value:
+                    return {'name': value['role']}
+                return super().element(breadcrumbs, value)
+
+        item = {'team': 'A',
+                'people': [{'name': 'Jane', 'role': 'programmer'},
+                           {'name': 'John', 'role': 'designer'}]}
+        self.assertExportResult(
+            item,
+            b'''<?xml version="1.0" encoding="utf-8"?>\n
+                <items>
+                    <item>
+                        <team>A</team>
+                        <people>
+                            <programmer>
+                                <name>Jane</name>
+                                <role>programmer</role>
+                            </programmer>
+                            <designer>
+                                <name>John</name>
+                                <role>designer</role>
+                            </designer>
+                        </people>
+                    </item>
+                </items>
+            ''',
+            exporter=CustomXmlItemExporter,
         )
 
 
