@@ -4,14 +4,16 @@ import random
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
+from warnings import catch_warnings
 
 import attr
 from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImagesPipeline
+from scrapy.pipelines.images import ImagesPipeline, NoimagesDrop
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
@@ -411,6 +413,22 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
                              expected_value)
+
+
+class NoimagesDropTestCase(unittest.TestCase):
+
+    def test_deprecation_warning(self):
+        arg = str()
+        with catch_warnings(record=True) as warnings:
+            NoimagesDrop(arg)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedNoimagesDrop(NoimagesDrop):
+                pass
+            SubclassedNoimagesDrop(arg)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 def _create_image(format, *a, **kw):
