@@ -6,6 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 import inspect
 from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
+from urllib.parse import urlencode
 
 from w3lib.url import safe_url_string
 
@@ -44,6 +45,7 @@ class Request(object_ref):
         url: str,
         callback: Optional[Callable] = None,
         method: str = "GET",
+        params: Optional[Union[dict, tuple]] = None,
         headers: Optional[dict] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[Union[dict, List[dict]]] = None,
@@ -57,6 +59,8 @@ class Request(object_ref):
     ) -> None:
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
+        if params:
+            url = f"{url[:-1] if url.endswith('?') else url}?{urlencode(params)}"
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
