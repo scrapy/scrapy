@@ -152,7 +152,7 @@ class CrawlerRun:
         self.itemerror = []
         self.itemresp = []
         self.headers = {}
-        self.bytes = defaultdict(lambda: list())
+        self.bytes = defaultdict(list)
         self.signals_caught = {}
         self.spider_class = spider_class
 

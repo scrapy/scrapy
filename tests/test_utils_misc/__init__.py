@@ -27,7 +27,7 @@ class UtilsMiscTestCase(unittest.TestCase):
     def test_load_object_exceptions(self):
         self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
-        self.assertRaises(TypeError, load_object, dict())
+        self.assertRaises(TypeError, load_object, {})
 
     def test_walk_modules(self):
         mods = walk_modules('tests.test_utils_misc.test_walk_modules')
