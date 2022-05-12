@@ -89,7 +89,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       methods of installed middleware is always called on every response.
 
       If it returns a :class:`~scrapy.Request` object, Scrapy will stop calling
-      process_request methods and reschedule the returned request. Once the newly returned
+      :meth:`process_request` methods and reschedule the returned request. Once the newly returned
       request is performed, the appropriate middleware chain will be called on
       the downloaded response.
 
@@ -323,8 +323,21 @@ HttpAuthMiddleware
     This middleware authenticates all requests generated from certain spiders
     using `Basic access authentication`_ (aka. HTTP auth).
 
-    To enable HTTP authentication from certain spiders, set the ``http_user``
-    and ``http_pass`` attributes of those spiders.
+    To enable HTTP authentication for a spider, set the ``http_user`` and
+    ``http_pass`` spider attributes to the authentication data and the
+    ``http_auth_domain`` spider attribute to the domain which requires this
+    authentication (its subdomains will be also handled in the same way).
+    You can set ``http_auth_domain`` to ``None`` to enable the
+    authentication for all requests but you risk leaking your authentication
+    credentials to unrelated domains.
+
+    .. warning::
+        In previous Scrapy versions HttpAuthMiddleware sent the authentication
+        data with all requests, which is a security problem if the spider
+        makes requests to several different domains. Currently if the
+        ``http_auth_domain`` attribute is not set, the middleware will use the
+        domain of the first request, which will work for some spiders but not
+        for others. In the future the middleware will produce an error instead.
 
     Example::
 
@@ -334,6 +347,7 @@ HttpAuthMiddleware
 
             http_user = 'someuser'
             http_pass = 'somepass'
+            http_auth_domain = 'intranet.example.com'
             name = 'intranet.example.com'
 
             # .. rest of the spider code omitted ...
@@ -352,7 +366,7 @@ HttpCacheMiddleware
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
 
-    Scrapy ships with three HTTP cache storage backends:
+    Scrapy ships with the following HTTP cache storage backends:
 
         * :ref:`httpcache-storage-fs`
         * :ref:`httpcache-storage-dbm`
@@ -690,13 +704,14 @@ HttpCompressionMiddleware
    sent/received from web sites.
 
    This middleware also supports decoding `brotli-compressed`_ as well as
-   `zstd-compressed`_ responses, provided that `brotlipy`_ or `zstandard`_ is
+   `zstd-compressed`_ responses, provided that `brotli`_ or `zstandard`_ is
    installed, respectively.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotlipy: https://pypi.org/project/brotlipy/
+.. _brotli: https://pypi.org/project/Brotli/
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
 .. _zstandard: https://pypi.org/project/zstandard/
+
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1005,7 +1020,7 @@ Parsers vary in several aspects:
   (shorter) rule
 
 Performance comparison of different parsers is available at `the following link
-<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+<https://github.com/scrapy/scrapy/issues/3969>`_.
 
 .. _protego-parser:
 

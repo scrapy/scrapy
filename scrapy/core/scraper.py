@@ -156,7 +156,7 @@ class Scraper:
             callback = result.request.callback or spider._parse
             warn_on_generator_with_return_value(spider, callback)
             dfd = defer_succeed(result)
-            dfd.addCallback(callback, **result.request.cb_kwargs)
+            dfd.addCallbacks(callback=callback, callbackKeywords=result.request.cb_kwargs)
         else:  # result is a Failure
             result.request = request
             warn_on_generator_with_return_value(spider, request.errback)

@@ -180,8 +180,8 @@ Same example but running the spiders sequentially by chaining the deferreds:
         # Your second spider definition
         ...
 
-    configure_logging()
     settings = get_project_settings()
+    configure_logging(settings)
     runner = CrawlerRunner(settings)
 
     @defer.inlineCallbacks
@@ -192,6 +192,25 @@ Same example but running the spiders sequentially by chaining the deferreds:
 
     crawl()
     reactor.run() # the script will block here until the last crawl call is finished
+
+Different spiders can set different values for the same setting, but when they
+run in the same process it may be impossible, by design or because of some
+limitations, to use these different values. What happens in practice is
+different for different settings:
+
+* :setting:`SPIDER_LOADER_CLASS` and the ones used by its value
+  (:setting:`SPIDER_MODULES`, :setting:`SPIDER_LOADER_WARN_ONLY` for the
+  default one) cannot be read from the per-spider settings. These are applied
+  when the :class:`~scrapy.crawler.CrawlerRunner` or
+  :class:`~scrapy.crawler.CrawlerProcess` object is created.
+* For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` the first
+  available value is used, and if a spider requests a different reactor an
+  exception will be raised. These are applied when the reactor is installed.
+* For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER` and the
+  ones used by the resolver (:setting:`DNSCACHE_ENABLED`,
+  :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy)
+  the first available value is used. These are applied when the reactor is
+  started.
 
 .. seealso:: :ref:`run-from-script`.
 
@@ -226,5 +245,39 @@ crawl::
     curl http://scrapy2.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=2
     curl http://scrapy3.mycompany.com:6800/schedule.json -d project=myproject -d spider=spider1 -d part=3
 
+.. _bans:
 
+Avoiding getting banned
+=======================
+
+Some websites implement certain measures to prevent bots from crawling them,
+with varying degrees of sophistication. Getting around those measures can be
+difficult and tricky, and may sometimes require special infrastructure. Please
+consider contacting `commercial support`_ if in doubt.
+
+Here are some tips to keep in mind when dealing with these kinds of sites:
+
+* rotate your user agent from a pool of well-known ones from browsers (google
+  around to get a list of them)
+* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
+  cookies to spot bot behaviour
+* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
+* if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
+  directly
+* use a pool of rotating IPs. For example, the free `Tor project`_ or paid
+  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
+  super proxy that you can attach your own proxies to.
+* use a highly distributed downloader that circumvents bans internally, so you
+  can just focus on parsing clean pages. One example of such downloaders is
+  `Zyte Smart Proxy Manager`_
+
+If you are still unable to prevent your bot getting banned, consider contacting
+`commercial support`_.
+
+.. _Tor project: https://www.torproject.org/
+.. _commercial support: https://scrapy.org/support/
+.. _ProxyMesh: https://proxymesh.com/
+.. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
+.. _scrapoxy: https://scrapoxy.io/
+.. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/

@@ -79,7 +79,7 @@ def create_deprecated_class(
         # for implementation details
         def __instancecheck__(cls, inst):
             return any(cls.__subclasscheck__(c)
-                       for c in {type(inst), inst.__class__})
+                       for c in (type(inst), inst.__class__))
 
         def __subclasscheck__(cls, sub):
             if cls is not DeprecatedClass.deprecated_class:

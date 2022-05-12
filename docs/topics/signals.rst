@@ -60,7 +60,7 @@ Let's take an example::
 
     class SignalSpider(scrapy.Spider):
         name = 'signals'
-        start_urls = ['http://quotes.toscrape.com/page/1/']
+        start_urls = ['https://quotes.toscrape.com/page/1/']
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
@@ -413,7 +413,7 @@ headers_received
 .. versionadded:: 2.5
 
 .. signal:: headers_received
-.. function:: headers_received(headers, request, spider)
+.. function:: headers_received(headers, body_length, request, spider)
 
     Sent by the HTTP 1.1 and S3 download handlers when the response headers are
     available for a given request, before downloading any additional content.

@@ -21,14 +21,6 @@ except ImportError:
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
-from twisted.web.test.test_webclient import (
-    ForeverTakingResource,
-    ErrorResource,
-    NoLengthResource,
-    HostHeaderResource,
-    PayloadResource,
-    BrokenDownloadResource,
-)
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
@@ -36,7 +28,15 @@ from scrapy.http import Request, Headers
 from scrapy.settings import Settings
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes, to_unicode
-from tests.mockserver import ssl_context_factory
+from tests.mockserver import (
+    BrokenDownloadResource,
+    ErrorResource,
+    ForeverTakingResource,
+    HostHeaderResource,
+    NoLengthResource,
+    PayloadResource,
+    ssl_context_factory,
+)
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):

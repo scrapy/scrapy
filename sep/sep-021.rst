@@ -22,7 +22,7 @@ Instead, the hooks are spread over:
 * Downloader handlers (DOWNLOADER_HANDLERS)
 * Item pipelines (ITEM_PIPELINES)
 * Feed exporters and storages (FEED_EXPORTERS, FEED_STORAGES)
-* Overrideable components (DUPEFILTER_CLASS, STATS_CLASS, SCHEDULER, SPIDER_MANAGER_CLASS, ITEM_PROCESSOR, etc)
+* Overridable components (DUPEFILTER_CLASS, STATS_CLASS, SCHEDULER, SPIDER_MANAGER_CLASS, ITEM_PROCESSOR, etc)
 * Generic extensions (EXTENSIONS)
 * CLI commands (COMMANDS_MODULE)
 

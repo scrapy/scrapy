@@ -12,6 +12,8 @@ testing.
 .. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 
+.. _getting-help:
+
 Getting help
 ============
 
@@ -24,12 +26,14 @@ Having trouble? We'd like to help!
 * Search for questions on the archives of the `scrapy-users mailing list`_.
 * Ask a question in the `#scrapy IRC channel`_,
 * Report bugs with Scrapy in our `issue tracker`_.
+* Join the Discord community `Scrapy Discord`_.
 
 .. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
+.. _Scrapy Discord: https://discord.gg/mv3yErfpvq
 
 
 First steps
@@ -155,7 +159,6 @@ Solving specific problems
    topics/debug
    topics/contracts
    topics/practices
-   topics/avoiding-bans
    topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
@@ -179,9 +182,6 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
-
-:doc:`topics/avoiding-bans`
-    Avoid getting banned from websites.
 
 :doc:`topics/broad-crawls`
     Tune Scrapy for crawling a lot domains in parallel.
