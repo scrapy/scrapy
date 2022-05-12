@@ -1,8 +1,8 @@
 import copy
-from typing import Iterator
 import unittest
 import warnings
 from collections.abc import Mapping, MutableMapping
+from typing import Iterator
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
@@ -144,8 +144,10 @@ class CaseInsensitiveDictMixin:
 
     def test_normkey(self):
         class MyDict(self.dict_class):
-            def normkey(self, key):
+            def _normkey(self, key):
                 return key.title()
+
+            normkey = _normkey  # deprecated CaselessDict class
 
         d = MyDict()
         d['key-one'] = 2
@@ -153,9 +155,11 @@ class CaseInsensitiveDictMixin:
 
     def test_normvalue(self):
         class MyDict(self.dict_class):
-            def normvalue(self, value):
+            def _normvalue(self, value):
                 if value is not None:
                     return value + 1
+
+            normvalue = _normvalue  # deprecated CaselessDict class
 
         d = MyDict({'key': 1})
         self.assertEqual(d['key'], 2)

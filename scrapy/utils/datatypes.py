@@ -80,9 +80,8 @@ class CaselessDict(dict):
 
 
 class CaseInsensitiveDict(collections.UserDict):
-    """A dict-like structure that accepts strings or bytes as keys and allows case-insensitive lookups.
-
-    It also allows overriding key and value normalization by defining custom `normkey` and `normvalue` methods.
+    """A dict-like structure that accepts strings or bytes
+    as keys and allows case-insensitive lookups.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -90,32 +89,32 @@ class CaseInsensitiveDict(collections.UserDict):
         super().__init__(*args, **kwargs)
 
     def __getitem__(self, key: AnyStr) -> Any:
-        normalized_key = self.normkey(key)
+        normalized_key = self._normkey(key)
         return super().__getitem__(self._keys[normalized_key.lower()])
 
     def __setitem__(self, key: AnyStr, value: Any) -> None:
-        normalized_key = self.normkey(key)
+        normalized_key = self._normkey(key)
         if normalized_key.lower() in self._keys:
             del self[self._keys[normalized_key.lower()]]
-        super().__setitem__(normalized_key, self.normvalue(value))
+        super().__setitem__(normalized_key, self._normvalue(value))
         self._keys[normalized_key.lower()] = normalized_key
 
     def __delitem__(self, key: AnyStr) -> None:
-        normalized_key = self.normkey(key)
+        normalized_key = self._normkey(key)
         stored_key = self._keys.pop(normalized_key.lower())
         super().__delitem__(stored_key)
 
     def __contains__(self, key: AnyStr) -> bool:  # type: ignore[override]
-        normalized_key = self.normkey(key)
+        normalized_key = self._normkey(key)
         return normalized_key.lower() in self._keys
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {super().__repr__()}>"
 
-    def normkey(self, key: AnyStr) -> AnyStr:
+    def _normkey(self, key: AnyStr) -> AnyStr:
         return key
 
-    def normvalue(self, value: Any) -> Any:
+    def _normvalue(self, value: Any) -> Any:
         return value
 
 
