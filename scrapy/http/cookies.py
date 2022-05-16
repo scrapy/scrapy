@@ -1,6 +1,7 @@
 import re
 import time
 from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
+from urllib.parse import urlunparse
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
@@ -28,23 +29,43 @@ class CookieJar:
         wreq = WrappedRequest(request)
         self.policy._now = self.jar._now = int(time.time())
 
-        # the cookiejar implementation iterates through all domains
-        # instead we restrict to potential matches on the domain
         req_host = urlparse_cached(request).hostname
         if not req_host:
             return
 
-        if not IPV4_RE.search(req_host):
-            hosts = potential_domain_matches(req_host)
-            if '.' not in req_host:
-                hosts += [req_host + ".local"]
-        else:
+        # TODO: Do we need to handle cookies for IP addresses? How? What about
+        # IPv6?
+        if IPV4_RE.search(req_host):
+            return
+
+        # https://bugs.python.org/issue46075
+        # Workaround from https://github.com/psf/requests/issues/5388
+        if '.' not in req_host:
+            req_host = f'{req_host}.local'
             hosts = [req_host]
+        else:
+            hosts = _potential_domain_matches(req_host)
 
         cookies = []
         for host in hosts:
-            if host in self.jar._cookies:
-                cookies += self.jar._cookies_for_domain(host, wreq)
+            if '.' not in host:
+                host = f'{host}.local'
+                wreq.is_local = True
+
+            if req_host == host and host in self.jar._cookies:
+                for host_cookie in self.jar._cookies_for_domain(host, wreq):
+                    cookies.append(host_cookie)
+
+            dot_host = '.' + host
+            if dot_host not in self.jar._cookies:
+                continue
+
+            for host_cookie in self.jar._cookies_for_domain(dot_host, wreq):
+                if (
+                    host == req_host
+                    or host_cookie.domain_specified
+                ):
+                    cookies.append(host_cookie)
 
         attrs = self.jar._cookie_attrs(cookies)
         if attrs:
@@ -87,6 +108,25 @@ class CookieJar:
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))
 
 
+def _potential_domain_matches(domain):
+    """Potential domain matches for a cookie
+
+    >>> _potential_domain_matches('www.example.com')
+    ['www.example.com', 'example.com', 'com']
+
+    """
+    matches = [domain]
+    try:
+        start = domain.index('.') + 1
+        while start:
+            matches.append(domain[start:])
+            start = domain.index('.', start) + 1
+    except ValueError:
+        pass
+    return matches
+
+
+# TODO: Deprecate
 def potential_domain_matches(domain):
     """Potential domain matches for a cookie
 
@@ -122,12 +162,23 @@ class WrappedRequest:
 
     def __init__(self, request):
         self.request = request
+        self.is_local = False
 
     def get_full_url(self):
-        return self.request.url
+        if not self.is_local:
+            return self.request.url
+        parsed = urlparse_cached(self.request)
+        netloc = f'{parsed.hostname}.local'
+        if parsed.port:
+            netloc = f'{netloc}:{parsed.post}'
+        new_parts = parsed._replace(netloc=netloc)
+        url = urlunparse(new_parts)
+        return url
 
     def get_host(self):
-        return urlparse_cached(self.request).netloc
+        suffix = '.local' if self.is_local else ''
+        host = f'{urlparse_cached(self.request).netloc}{suffix}'
+        return host
 
     def get_type(self):
         return urlparse_cached(self.request).scheme

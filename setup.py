@@ -24,6 +24,7 @@ install_requires = [
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
+    'publicsuffixlist>=0.7.1',
     'pyOpenSSL>=16.2.0',
     'queuelib>=1.4.2',
     'service_identity>=16.0.0',
