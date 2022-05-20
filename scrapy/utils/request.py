@@ -11,7 +11,7 @@ from weakref import WeakKeyDictionary
 from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
-from scrapy import Request, Spider
+from scrapy import Request, RequestList, Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
@@ -122,6 +122,30 @@ def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
     if d.get("errback") and spider:
         kwargs["errback"] = _get_method(spider, d["errback"])
     return request_cls(**kwargs)
+
+
+def request_list_from_dict(d: dict, *, spider: Optional[Spider] = None) -> RequestList:
+    """Create a :class:`~scrapy.RequestList` object from a dict.
+
+    If a spider is given, it will try to resolve the callbacks looking at the
+    spider for methods with the same name.
+    """
+    request_list_cls = load_object(d["_class"]) if "_class" in d else RequestList
+    callback = d["callback"]
+    if callback and spider:
+        callback = _get_method(spider, callback)
+    errback = d["errback"]
+    if errback and spider:
+        errback = _get_method(spider, errback)
+    requests = [request_from_dict(req, spider=spider) for req in d["requests"]]
+    return request_list_cls(
+        *requests,
+        callback=callback,
+        errback=errback,
+        priority=d["priority"],
+        cb_kwargs=d["cb_kwargs"],
+        meta=d["meta"],
+    )
 
 
 def _get_method(obj, name):

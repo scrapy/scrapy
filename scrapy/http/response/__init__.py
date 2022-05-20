@@ -4,13 +4,13 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator, Tuple
+from typing import Generator, List, Tuple
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
-from scrapy.http.request import Request
+from scrapy.http.request import Request, RequestList
 from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
@@ -215,3 +215,16 @@ class Response(object_ref):
             )
             for url in urls
         )
+
+
+class ResponseList(object_ref):
+    def __init__(self, request_list: RequestList, responses: List[Response]) -> None:
+        self.request_list: RequestList = request_list
+        self.responses: List[Response] = responses
+
+    @property
+    def meta(self) -> dict:
+        return self.request_list.meta
+
+    def __iter__(self):
+        return iter(self.responses)

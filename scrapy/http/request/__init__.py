@@ -192,6 +192,44 @@ class Request(object_ref):
         return d
 
 
+class RequestList(object_ref):
+
+    def __init__(
+        self,
+        *requests,
+        callback: Optional[Callable] = None,
+        errback: Optional[Callable] = None,
+        priority: int = 0,
+        cb_kwargs: Optional[dict] = None,
+        meta: Optional[dict] = None,
+    ) -> None:
+        self.requests: List[Request] = list(requests)
+        self.callback = callback
+        self.errback = errback
+        self.priority = priority
+        self.cb_kwargs = cb_kwargs or {}
+        self.meta = meta or {}
+        for req in self.requests:
+            req.meta["request_list"] = self
+
+    def to_dict(self, *, spider: Optional["scrapy.spiders.Spider"] = None) -> dict:
+        d = {
+            "requests": [],
+            "callback": _find_method(spider, self.callback) if callable(self.callback) else self.callback,
+            "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
+            "priority": self.priority,
+            "cb_kwargs": self.cb_kwargs,
+            "meta": self.meta,
+        }
+        for req in self.requests:
+            req_dict = req.to_dict(spider=spider)
+            req_dict["meta"].pop("request_list", None)
+            d["requests"].append(req_dict)
+        if type(self) is not RequestList:
+            d["_class"] = self.__module__ + "." + self.__class__.__name__
+        return d
+
+
 def _find_method(obj, func):
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``

@@ -12,14 +12,14 @@ from twisted.python.failure import Failure
 from scrapy import signals, Spider
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
-from scrapy.http import Request, Response
+from scrapy.http import Request, RequestList, Response, ResponseList
 from scrapy.utils.defer import defer_fail, defer_succeed, iter_errback, parallel
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
 
 
-QueueTuple = Tuple[Union[Response, Failure], Request, Deferred]
+QueueTuple = Tuple[Union[Response, Failure], Union[Request, RequestList], Deferred]
 
 
 logger = logging.getLogger(__name__)
@@ -33,12 +33,14 @@ class Slot:
     def __init__(self, max_active_size: int = 5000000):
         self.max_active_size = max_active_size
         self.queue: Deque[QueueTuple] = deque()
-        self.active: Set[Request] = set()
+        self.active: Set[Union[Request, RequestList]] = set()
         self.active_size: int = 0
         self.itemproc_size: int = 0
         self.closing: Optional[Deferred] = None
 
-    def add_response_request(self, result: Union[Response, Failure], request: Request) -> Deferred:
+    def add_response_request(
+        self, result: Union[Response, ResponseList, Failure], request: Union[Request, RequestList]
+    ) -> Deferred:
         deferred = Deferred()
         self.queue.append((result, request, deferred))
         if isinstance(result, Response):
@@ -102,7 +104,9 @@ class Scraper:
         if self.slot.closing and self.slot.is_idle():
             self.slot.closing.callback(spider)
 
-    def enqueue_scrape(self, result: Union[Response, Failure], request: Request, spider: Spider) -> Deferred:
+    def enqueue_scrape(
+        self, result: Union[Response, Failure], request: Union[Request, RequestList], spider: Spider
+    ) -> Deferred:
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         dfd = self.slot.add_response_request(result, request)
@@ -128,29 +132,41 @@ class Scraper:
             response, request, deferred = self.slot.next_response_request_deferred()
             self._scrape(response, request, spider).chainDeferred(deferred)
 
-    def _scrape(self, result: Union[Response, Failure], request: Request, spider: Spider) -> Deferred:
+    def _scrape(
+        self, result: Union[Response, ResponseList, Failure], request: Union[Request, RequestList], spider: Spider
+    ) -> Deferred:
         """
         Handle the downloaded response or failure through the spider callback/errback
         """
-        if not isinstance(result, (Response, Failure)):
-            raise TypeError(f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}")
+        if not isinstance(result, (Response, ResponseList, Failure)):
+            msg = f"Incorrect type: expected Response, ResponseList or Failure, got {type(result)}: {result!r}"
+            raise TypeError(msg)
         dfd = self._scrape2(result, request, spider)  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, result, spider)
         dfd.addCallback(self.handle_spider_output, request, result, spider)
         return dfd
 
-    def _scrape2(self, result: Union[Response, Failure], request: Request, spider: Spider) -> Deferred:
+    def _scrape2(
+        self, result: Union[Response, ResponseList, Failure], request: Union[Request, RequestList], spider: Spider
+    ) -> Deferred:
         """
         Handle the different cases of request's result been a Response or a Failure
         """
-        if isinstance(result, Response):
+        if isinstance(result, (Response, ResponseList)):
             return self.spidermw.scrape_response(self.call_spider, result, request, spider)
         else:  # result is a Failure
             dfd = self.call_spider(result, request, spider)
             return dfd.addErrback(self._log_download_errors, result, request, spider)
 
-    def call_spider(self, result: Union[Response, Failure], request: Request, spider: Spider) -> Deferred:
-        if isinstance(result, Response):
+    def call_spider(
+        self, result: Union[Response, ResponseList, Failure], request: Union[Request, RequestList], spider: Spider
+    ) -> Deferred:
+        if isinstance(result, ResponseList):
+            callback = request.callback or spider._parse
+            warn_on_generator_with_return_value(spider, callback)
+            dfd = defer_succeed(result)
+            dfd.addCallback(callback, **request.cb_kwargs)
+        elif isinstance(result, Response):
             if getattr(result, "request", None) is None:
                 result.request = request
             callback = result.request.callback or spider._parse
@@ -199,7 +215,7 @@ class Scraper:
         from the given spider
         """
         assert self.slot is not None  # typing
-        if isinstance(output, Request):
+        if isinstance(output, (Request, RequestList)):
             self.crawler.engine.crawl(request=output)
         elif is_item(output):
             self.slot.itemproc_size += 1
@@ -211,7 +227,7 @@ class Scraper:
         else:
             typename = type(output).__name__
             logger.error(
-                'Spider must return request, item, or None, got %(typename)r in %(request)s',
+                'Spider must return request, request list, item, or None, got %(typename)r in %(request)s',
                 {'request': request, 'typename': typename},
                 extra={'spider': spider},
             )

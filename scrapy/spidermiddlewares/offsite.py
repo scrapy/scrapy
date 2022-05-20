@@ -6,10 +6,14 @@ See documentation in docs/topics/spider-middleware.rst
 import re
 import logging
 import warnings
+from typing import Generator, Iterable, Union
 
 from scrapy import signals
-from scrapy.http import Request
+from scrapy.http.request import Request, RequestList
+from scrapy.http.response import Response, ResponseList
+from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,22 +29,33 @@ class OffsiteMiddleware:
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def process_spider_output(self, response, result, spider):
-        for x in result:
-            if isinstance(x, Request):
-                if x.dont_filter or self.should_follow(x, spider):
-                    yield x
-                else:
-                    domain = urlparse_cached(x).hostname
-                    if domain and domain not in self.domains_seen:
-                        self.domains_seen.add(domain)
-                        logger.debug(
-                            "Filtered offsite request to %(domain)r: %(request)s",
-                            {'domain': domain, 'request': x}, extra={'spider': spider})
-                        self.stats.inc_value('offsite/domains', spider=spider)
-                    self.stats.inc_value('offsite/filtered', spider=spider)
+    def process_spider_output(
+        self, response: Union[Response, ResponseList], result: Iterable, spider: Spider
+    ) -> Generator:
+        def _filter(request):
+            if request.dont_filter or self.should_follow(request, spider):
+                return True
             else:
-                yield x
+                domain = urlparse_cached(request).hostname
+                if domain and domain not in self.domains_seen:
+                    self.domains_seen.add(domain)
+                    logger.debug(
+                        "Filtered offsite request to %(domain)r: %(request)s",
+                        {'domain': domain, 'request': request}, extra={'spider': spider})
+                    self.stats.inc_value('offsite/domains', spider=spider)
+                self.stats.inc_value('offsite/filtered', spider=spider)
+                return False
+
+        for r in result:
+            if isinstance(r, RequestList):
+                r.requests = list(filter(_filter, r.requests))
+                if r.requests:
+                    yield r
+            elif isinstance(r, Request):
+                if _filter(r):
+                    yield r
+            else:
+                yield r
 
     def should_follow(self, request, spider):
         regex = self.host_regex

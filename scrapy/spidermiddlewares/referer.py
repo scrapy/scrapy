@@ -10,7 +10,7 @@ from w3lib.url import safe_url_string
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.http import Request, RequestList, Response
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
@@ -304,6 +304,7 @@ class RefererMiddleware:
 
         # Note: this hook is a bit of a hack to intercept redirections
         crawler.signals.connect(mw.request_scheduled, signal=signals.request_scheduled)
+        crawler.signals.connect(mw.request_list_scheduled, signal=signals.request_list_scheduled)
 
         return mw
 
@@ -334,12 +335,21 @@ class RefererMiddleware:
 
     def process_spider_output(self, response, result, spider):
         def _set_referer(r):
-            if isinstance(r, Request):
-                referrer = self.policy(response, r).referrer(response.url, r.url)
-                if referrer is not None:
-                    r.headers.setdefault('Referer', referrer)
-            return r
-        return (_set_referer(r) for r in result or ())
+            referrer = self.policy(response, r).referrer(response.url, r.url)
+            if referrer is not None:
+                r.headers.setdefault('Referer', referrer)
+
+        for r in result:
+            if isinstance(r, RequestList):
+                for req in r.requests:
+                    _set_referer(req)
+            elif isinstance(r, Request):
+                _set_referer(r)
+            yield r
+
+    def request_list_scheduled(self, request_list, spider):
+        for request in request_list.requests:
+            self.request_scheduled(request, spider)
 
     def request_scheduled(self, request, spider):
         # check redirected request to patch "Referer" header if necessary
