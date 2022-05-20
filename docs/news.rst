@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.6.2:
 
-Scrapy 2.6.2 (2022-03-15)
+Scrapy 2.6.2 (2022-0?-??)
 -------------------------
 
 Fixes additional regressions introduced in 2.6.0:
