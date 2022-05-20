@@ -19,6 +19,9 @@ Fixes additional regressions introduced in 2.6.0:
 -   The ``--output``/``-o`` command-line parameter supports again a value
     starting with a hyphen (:issue:`5444`, :issue:`5445`)
 
+-   The ``scrapy parse -h`` command no longer throws an error (:issue:`5481`,
+    :issue:`5482`)
+
 
 .. _release-2.6.1:
 
