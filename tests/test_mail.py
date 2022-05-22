@@ -25,6 +25,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg['subject'], 'subject')
         self.assertEqual(msg.get_payload(), 'body')
         self.assertEqual(msg.get('Content-Type'), 'text/plain')
+        self.assertEqual(msg.get_charset(), None)
 
     def test_send_single_values_to_and_cc(self):
         mailsender = MailSender(debug=True)
@@ -40,6 +41,7 @@ class MailSenderTest(unittest.TestCase):
         msg = self.catched_msg['msg']
         self.assertEqual(msg.get_payload(), '<p>body</p>')
         self.assertEqual(msg.get('Content-Type'), 'text/html')
+        self.assertEqual(msg.get_charset(), None)
 
     def test_send_attach(self):
         attach = BytesIO()
@@ -85,7 +87,7 @@ class MailSenderTest(unittest.TestCase):
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
-        self.assertEqual(msg.get_payload(), body)
+        self.assertEqual(msg.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(msg.get_charset(), Charset('utf-8'))
         self.assertEqual(msg.get('Content-Type'), 'text/plain; charset="utf-8"')
 
@@ -108,9 +110,9 @@ class MailSenderTest(unittest.TestCase):
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
-        self.assertEqual(msg.get_charset(), Charset('utf-8'))
+        self.assertEqual(msg.get_charset(), None)
         self.assertEqual(msg.get('Content-Type'),
-                         'multipart/mixed; charset="utf-8"')
+                         'multipart/mixed')
 
         payload = msg.get_payload()
         assert isinstance(payload, list)
