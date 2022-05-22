@@ -223,9 +223,10 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
 
+    @defer.inlineCallbacks
+    def test_crawlspider_not_exists_with_not_matched_url(self):
         status, out, stderr = yield self.execute([self.url('/invalid_url')])
         self.assertEqual(status, 0)
-        self.assertIn("""""", _textmode(stderr))
 
     @defer.inlineCallbacks
     def test_output_flag(self):
