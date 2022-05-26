@@ -91,6 +91,18 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg.get_charset(), Charset('utf-8'))
         self.assertEqual(msg.get('Content-Type'), 'text/plain; charset="utf-8"')
 
+    def test_send_utf8_and_verify_body_message_encoding (self):
+        subject = 'sübjèçt'
+        body = 'bödÿ-àéïöñß'
+        mailsender = MailSender(debug=True)
+        mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
+                        charset='utf-8', _callback=self._catch_mail_sent)
+
+        assert self.catched_msg
+        msg = self.catched_msg['msg']
+        self.assertEqual(msg.get_payload(decode=True).decode('utf-8'), body)
+        self.assertEqual(msg.get('Content-Type'), 'text/plain; charset="utf-8"')
+
     def test_send_attach_utf8(self):
         subject = 'sübjèçt'
         body = 'bödÿ-àéïöñß'
@@ -110,9 +122,9 @@ class MailSenderTest(unittest.TestCase):
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
-        self.assertEqual(msg.get_charset(), None)
+        self.assertEqual(msg.get_charset(), Charset('utf-8'))
         self.assertEqual(msg.get('Content-Type'),
-                         'multipart/mixed')
+                         'multipart/mixed; charset="utf-8"')
 
         payload = msg.get_payload()
         assert isinstance(payload, list)
