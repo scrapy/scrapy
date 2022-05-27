@@ -94,8 +94,11 @@ class CaseInsensitiveDict(collections.UserDict):
 
     def __setitem__(self, key: AnyStr, value: Any) -> None:
         normalized_key = self._normkey(key)
-        if normalized_key.lower() in self._keys:
-            del self[self._keys[normalized_key.lower()]]
+        try:
+            lower_key = self._keys[normalized_key.lower()]
+            del self[lower_key]
+        except KeyError:
+            pass
         super().__setitem__(normalized_key, self._normvalue(value))
         self._keys[normalized_key.lower()] = normalized_key
 
