@@ -25,12 +25,13 @@ class _BaseTest(unittest.TestCase):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider('example.com')
         self.tmpdir = tempfile.mkdtemp()
-        self.request = Request('http://www.example.com',
-                               headers={'User-Agent': 'test'})
-        self.response = Response('http://www.example.com',
-                                 headers={'Content-Type': 'text/html'},
-                                 body=b'test body',
-                                 status=202)
+        self.request = Request('http://www.example.com', headers={'User-Agent': 'test'})
+        self.response = HtmlResponse(
+            url='http://www.example.com',
+            headers={'Content-Type': 'text/html'},
+            body=b'test body',
+            status=202,
+        )
         self.crawler.stats.open_spider(self.spider)
 
     def tearDown(self):
@@ -109,7 +110,7 @@ class DefaultStorageTest(_BaseTest):
 
             storage.store_response(self.spider, self.request, self.response)
             response2 = storage.retrieve_response(self.spider, request2)
-            assert isinstance(response2, HtmlResponse)  # content-type header
+            assert isinstance(response2, HtmlResponse)
             self.assertEqualResponse(self.response, response2)
 
             time.sleep(2)  # wait for cache to expire

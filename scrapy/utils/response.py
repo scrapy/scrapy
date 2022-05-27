@@ -6,19 +6,22 @@ import os
 import re
 import tempfile
 import webbrowser
+from ipaddress import ip_address
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
-import scrapy
-from scrapy.http.response import Response
-
+from twisted.internet.ssl import Certificate
 from twisted.web import http
-from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.decorators import deprecated
 from w3lib import html
 
+import scrapy
+from scrapy.utils.decorators import deprecated
+from scrapy.utils.misc import load_object
+from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.request import request_from_dict
 
-_baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
+
+_baseurl_cache: "WeakKeyDictionary[scrapy.http.response.Response, str]" = WeakKeyDictionary()
 
 
 def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
@@ -29,7 +32,8 @@ def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
     return _baseurl_cache[response]
 
 
-_metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]" = WeakKeyDictionary()
+_metaref_cache: "WeakKeyDictionary[scrapy.http.response.Response, Union[Tuple[None, None], Tuple[float, str]]]"
+_metaref_cache = WeakKeyDictionary()
 
 
 def get_meta_refresh(
@@ -53,7 +57,7 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
 
 
 @deprecated
-def response_httprepr(response: Response) -> bytes:
+def response_httprepr(response: "scrapy.http.response.Response") -> bytes:
     """Return raw HTTP representation (as bytes) of the given response. This
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
@@ -90,9 +94,25 @@ def open_in_browser(
     elif isinstance(response, TextResponse):
         ext = '.txt'
     else:
-        raise TypeError("Unsupported response type: "
-                        f"{response.__class__.__name__}")
+        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)
     return _openfunc(f"file://{fname}")
+
+
+def response_from_dict(d: dict, *, spider: Optional["scrapy.Spider"] = None) -> "scrapy.http.response.Response":
+    """Create a :class:`~scrapy.http.response.Response` object from
+    a dict which keys match a Response's ``__init__`` parameters.
+
+    The optional ``spider`` argument is used when converting the response's
+    ``request`` back from a dict.
+    """
+    from scrapy.http.response import Response
+
+    response_cls = load_object(d["_class"]) if "_class" in d else Response
+    kwargs = {key: value for key, value in d.items() if key in response_cls.attributes}
+    kwargs["certificate"] = Certificate.loadPEM(d["certificate"]) if d["certificate"] else None
+    kwargs["request"] = request_from_dict(d["request"], spider=spider) if d["request"] else None
+    kwargs["ip_address"] = ip_address(d["ip_address"]) if d["ip_address"] else None
+    return response_cls(**kwargs)

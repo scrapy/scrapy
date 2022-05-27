@@ -4,9 +4,10 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator, Tuple
+from typing import Generator, Optional, Tuple
 from urllib.parse import urljoin
 
+import scrapy
 from scrapy.exceptions import NotSupported
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
@@ -27,7 +28,8 @@ class Response(object_ref):
     attributes of the class that are also keyword parameters of the
     ``__init__`` method.
 
-    Currently used by :meth:`Response.replace`.
+    Currently used by :meth:`Response.replace`, :meth:`Response.to_dict` and
+    :func:`~scrapy.utils.response.response_from_dict`.
     """
 
     def __init__(
@@ -215,3 +217,25 @@ class Response(object_ref):
             )
             for url in urls
         )
+
+    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> dict:
+        """Return a dictionary containing the Response's data.
+
+        The optional ``spider`` argument is used when converting the response's
+        ``request`` attribute to a dict.
+
+        Use :func:`~scrapy.utils.response.response_from_dict` to convert
+        back into a :class:`~scrapy.http.response.Response` object.
+        """
+        d = {
+            "url": self.url,
+            "headers": dict(self.headers),
+            "request": self.request.to_dict(spider=spider) if isinstance(self.request, Request) else None,
+            "certificate": self.certificate.dumpPEM() if self.certificate is not None else None,
+            "ip_address": str(self.ip_address) if self.ip_address is not None else None,
+        }
+        for attr in self.attributes:
+            d.setdefault(attr, getattr(self, attr))
+        if type(self) is not Response:
+            d["_class"] = self.__module__ + "." + self.__class__.__name__
+        return d

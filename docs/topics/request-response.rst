@@ -225,12 +225,6 @@ Request objects
     .. automethod:: to_dict
 
 
-Other functions related to requests
------------------------------------
-
-.. autofunction:: scrapy.utils.request.request_from_dict
-
-
 .. _topics-request-response-ref-request-callback-arguments:
 
 Passing additional data to callback functions
@@ -669,6 +663,12 @@ Sending a JSON POST request with a JSON payload::
    yield JsonRequest(url='http://www.example.com/post/action', data=data)
 
 
+Other functions related to requests
+-----------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
+
 Response objects
 ================
 
@@ -856,6 +856,8 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. automethod:: Response.to_dict
+
 
 .. _topics-request-response-ref-response-subclasses:
 
@@ -984,3 +986,9 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
+
+
+Other functions related to responses
+------------------------------------
+
+.. autofunction:: scrapy.utils.response.response_from_dict
