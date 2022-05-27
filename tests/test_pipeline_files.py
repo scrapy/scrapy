@@ -525,6 +525,29 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
 
+    @defer.inlineCallbacks
+    def test_blob_path_consistency(self):
+        """Test to make sure that paths used to store files is the same as the one used to get
+        already uploaded files.
+        """
+        assert_gcs_environ()
+        try:
+            import google.cloud.storage # noqa
+        except ModuleNotFoundError:
+            raise unittest.SkipTest("google-cloud-storage is not installed")
+        else:
+            with mock.patch('google.cloud.storage') as _:
+                with mock.patch('scrapy.pipelines.files.time') as _:
+                    uri = 'gs://my_bucket/my_prefix/'
+                    store = GCSFilesStore(uri)
+                    store.bucket = mock.Mock()
+                    path = 'full/my_data.txt'
+                    yield store.persist_file(path, mock.Mock(), info=None, meta=None, headers=None)
+                    yield store.stat_file(path, info=None)
+                    expected_blob_path = store.prefix + path
+                    store.bucket.blob.assert_called_with(expected_blob_path)
+                    store.bucket.get_blob.assert_called_with(expected_blob_path)
+
 
 class TestFTPFileStore(unittest.TestCase):
     @defer.inlineCallbacks
