@@ -167,6 +167,8 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_STORE_EMPTY": True,
             "FEED_URI_PARAMS": (1, 2, 3, 4),
             "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+            "FEED_EXPORT_BATCH_FILE_SIZE": "1B",
+            "FEED_EXPORT_BATCH_DURATION": "0:0:1",
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -176,6 +178,8 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "store_empty": True,
             "uri_params": (1, 2, 3, 4),
             "batch_item_count": 2,
+            "batch_duration": "0:0:1",
+            "batch_file_size": "1B",
             "item_export_kwargs": {},
         })
 
@@ -190,6 +194,8 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "FEED_EXPORT_INDENT": 42,
             "FEED_STORE_EMPTY": True,
             "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+            "FEED_EXPORT_BATCH_FILE_SIZE": "1B",
+            "FEED_EXPORT_BATCH_DURATION": "0:0:1",
         })
         new_feed = feed_complete_default_values_from_settings(feed, settings)
         self.assertEqual(new_feed, {
@@ -199,6 +205,8 @@ class FeedExportConfigTestCase(unittest.TestCase):
             "store_empty": True,
             "uri_params": None,
             "batch_item_count": 2,
+            "batch_duration": "0:0:1",
+            "batch_file_size": "1B",
             "item_export_kwargs": {},
         })
 

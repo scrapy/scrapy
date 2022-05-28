@@ -20,6 +20,7 @@ from zope.interface import implementer, Interface
 
 from scrapy import signals, Spider
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.extensions.batches import BatchHandler
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
@@ -58,7 +59,7 @@ class ItemFilter:
     feed_options: Optional[dict]
     item_classes: Tuple
 
-    def __init__(self, feed_options: Optional[dict]) -> None:
+    def __init__(self, feed_options: Optional[dict] = None) -> None:
         self.feed_options = feed_options
         if feed_options is not None:
             self.item_classes = tuple(
@@ -298,6 +299,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots = []
         self.filters = {}
+        self.batches = {}
 
         if not self.settings['FEEDS'] and not self.settings['FEED_URI']:
             raise NotConfigured
@@ -311,15 +313,19 @@ class FeedExporter:
             )
             uri = str(self.settings['FEED_URI'])  # handle pathlib.Path objects
             feed_options = {'format': self.settings.get('FEED_FORMAT', 'jsonlines')}
-            self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            feed_options = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.feeds[uri] = feed_options
             self.filters[uri] = self._load_filter(feed_options)
+            self.batches[uri] = self._load_batch(feed_options, uri)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict('FEEDS').items():
             uri = str(uri)  # handle pathlib.Path objects
-            self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            feed_options = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.feeds[uri] = feed_options
             self.filters[uri] = self._load_filter(feed_options)
+            self.batches[uri] = self._load_batch(feed_options, uri)
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
@@ -392,6 +398,8 @@ class FeedExporter:
         """
         storage = self._get_storage(uri, feed_options)
         file = storage.open(spider)
+        if self.batches[uri_template] is not None:
+            self.batches[uri_template].new_batch(file)
         if "postprocessing" in feed_options:
             file = PostProcessingManager(feed_options["postprocessing"], file, feed_options)
 
@@ -403,6 +411,17 @@ class FeedExporter:
             indent=feed_options['indent'],
             **feed_options['item_export_kwargs'],
         )
+
+        if exporter.file is not file:
+            warnings.warn(
+                "Detected using overriden file in exporter class. Using an overriden file"
+                "may cause batching functionality to fail. Instead try using post-processing"
+                "plugins to achieve same results. For more info on post-procesising"
+                "see: https://docs.scrapy.org/en/latest/topics/feed-exports.html#post-processing",
+                UserWarning,
+                stacklevel=2,
+            )
+
         slot = _FeedSlot(
             file=file,
             exporter=exporter,
@@ -428,11 +447,11 @@ class FeedExporter:
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
-            # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
-            if (
-                self.feeds[slot.uri_template]['batch_item_count']
-                and slot.itemcount >= self.feeds[slot.uri_template]['batch_item_count']
-            ):
+            batch_should_trigger = False
+            if self.batches[slot.uri_template] is not None:
+                batch_should_trigger = self.batches[slot.uri_template].item_added()
+
+            if batch_should_trigger:
                 uri_params = self._get_uri_params(spider, self.feeds[slot.uri_template]['uri_params'], slot)
                 self._close_slot(slot, spider)
                 slots.append(self._start_new_batch(
@@ -463,11 +482,11 @@ class FeedExporter:
 
     def _settings_are_valid(self):
         """
-        If FEED_EXPORT_BATCH_ITEM_COUNT setting or FEEDS.batch_item_count is specified uri has to contain
+        If batch class or related contraints are specified, uri has to contain
         %(batch_time)s or %(batch_id)d to distinguish different files of partial output
         """
         for uri_template, values in self.feeds.items():
-            if values['batch_item_count'] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
+            if self.batches[uri_template] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
                 logger.error(
                     '%%(batch_time)s or %%(batch_id)d must be in the feed URI (%s) if FEED_EXPORT_BATCH_ITEM_COUNT '
                     'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '
@@ -554,3 +573,11 @@ class FeedExporter:
         # load the item filter if declared else load the default filter class
         item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
         return item_filter_class(feed_options)
+
+    def _load_batch(self, feed_options, uri):
+        batch_class = load_object(feed_options.get("batch", BatchHandler))
+        try:
+            batch_obj = batch_class(feed_options)
+        except NotConfigured:
+            batch_obj = None
+        return batch_obj

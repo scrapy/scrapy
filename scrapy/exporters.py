@@ -144,6 +144,7 @@ class XmlItemExporter(BaseItemExporter):
         if not self.encoding:
             self.encoding = 'utf-8'
         self.xg = XMLGenerator(file, encoding=self.encoding)
+        self.file = file
 
     def _beautify_newline(self, new_item=False):
         if self.indent is not None and (self.indent > 0 or new_item):
@@ -209,6 +210,7 @@ class CsvItemExporter(BaseItemExporter):
             errors=errors,
         )
         self.csv_writer = csv.writer(self.stream, **self._kwargs)
+        self.file = file
         self._headers_not_written = True
         self._join_multivalued = join_multivalued
 
