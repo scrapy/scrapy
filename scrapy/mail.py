@@ -77,19 +77,19 @@ class MailSender:
             rcpts.extend(cc)
             msg['Cc'] = COMMASPACE.join(cc)
 
-        if charset:
-            msg.set_charset(charset)
-
         if attachs:
             msg.attach(MIMEText(body, 'plain', charset or 'us-ascii'))
             for attach_name, mimetype, f in attachs:
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
+                part.set_charset(charset)
                 Encoders.encode_base64(part)
                 part.add_header('Content-Disposition', 'attachment', filename=attach_name)
                 msg.attach(part)
+
         else:
-            msg.set_payload(body, charset)
+            msg.set_payload(body)
+            msg.set_charset(charset)
 
         if _callback:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
