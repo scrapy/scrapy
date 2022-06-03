@@ -1,8 +1,9 @@
 import inspect
 import json
-import optparse
+import argparse
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
@@ -17,10 +18,12 @@ from threading import Timer
 from unittest import skipIf
 
 from pytest import mark
+from twisted import version as twisted_version
+from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import view, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -34,18 +37,27 @@ class CommandSettings(unittest.TestCase):
     def setUp(self):
         self.command = ScrapyCommand()
         self.command.settings = Settings()
-        self.parser = optparse.OptionParser(
-            formatter=optparse.TitledHelpFormatter(),
-            conflict_handler='resolve',
-        )
+        self.parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
+                                              conflict_handler='resolve')
         self.command.add_options(self.parser)
 
     def test_settings_json_string(self):
         feeds_json = '{"data.json": {"format": "json"}, "data.xml": {"format": "xml"}}'
-        opts, args = self.parser.parse_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
+        opts, args = self.parser.parse_known_args(args=['-s', f'FEEDS={feeds_json}', 'spider.py'])
         self.command.process_options(args, opts)
         self.assertIsInstance(self.command.settings['FEEDS'], scrapy.settings.BaseSettings)
         self.assertEqual(dict(self.command.settings['FEEDS']), json.loads(feeds_json))
+
+    def test_help_formatter(self):
+        formatter = ScrapyHelpFormatter(prog='scrapy')
+        part_strings = ['usage: scrapy genspider [options] <name> <domain>\n\n',
+                        '\n', 'optional arguments:\n', '\n', 'Global Options:\n']
+        self.assertEqual(
+            formatter._join_parts(part_strings),
+            ('Usage\n=====\n  scrapy genspider [options] <name> <domain>\n\n\n'
+             'Optional Arguments\n==================\n\n'
+             'Global Options\n--------------\n')
+        )
 
 
 class ProjectTest(unittest.TestCase):
@@ -69,9 +81,14 @@ class ProjectTest(unittest.TestCase):
 
     def proc(self, *new_args, **popen_kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        p = subprocess.Popen(args, cwd=self.cwd, env=self.env,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             **popen_kwargs)
+        p = subprocess.Popen(
+            args,
+            cwd=popen_kwargs.pop('cwd', self.cwd),
+            env=self.env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **popen_kwargs,
+        )
 
         def kill_proc():
             p.kill()
@@ -87,11 +104,23 @@ class ProjectTest(unittest.TestCase):
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
+    def find_in_file(self, filename, regex):
+        """Find first pattern occurrence in file"""
+        pattern = re.compile(regex)
+        with open(filename, "r") as f:
+            for line in f:
+                match = pattern.search(line)
+                if match is not None:
+                    return match
+
 
 class StartprojectTest(ProjectTest):
 
     def test_startproject(self):
-        self.assertEqual(0, self.call('startproject', self.project_name))
+        p, out, err = self.proc('startproject', self.project_name)
+        print(out)
+        print(err, file=sys.stderr)
+        self.assertEqual(p.returncode, 0)
 
         assert exists(join(self.proj_path, 'scrapy.cfg'))
         assert exists(join(self.proj_path, 'testproject'))
@@ -125,6 +154,25 @@ class StartprojectTest(ProjectTest):
         self.assertEqual(1, self.call('startproject', 'sys'))
         self.assertEqual(2, self.call('startproject'))
         self.assertEqual(2, self.call('startproject', self.project_name, project_dir, 'another_params'))
+
+    def test_existing_project_dir(self):
+        project_dir = mkdtemp()
+        project_name = self.project_name + '_existing'
+        project_path = os.path.join(project_dir, project_name)
+        os.mkdir(project_path)
+
+        p, out, err = self.proc('startproject', project_name, cwd=project_dir)
+        print(out)
+        print(err, file=sys.stderr)
+        self.assertEqual(p.returncode, 0)
+
+        assert exists(join(abspath(project_path), 'scrapy.cfg'))
+        assert exists(join(abspath(project_path), project_name))
+        assert exists(join(join(abspath(project_path), project_name), '__init__.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'items.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'pipelines.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'settings.py'))
+        assert exists(join(join(abspath(project_path), project_name), 'spiders', '__init__.py'))
 
 
 def get_permissions_dict(path, renamings=None, ignore=None):
@@ -453,6 +501,26 @@ class GenspiderCommandTest(CommandTest):
     def test_same_filename_as_existing_spider_force(self):
         self.test_same_filename_as_existing_spider(force=True)
 
+    def test_url(self, url='test.com', domain="test.com"):
+        self.assertEqual(0, self.call('genspider', '--force', 'test_name', url))
+        self.assertEqual(domain,
+                         self.find_in_file(join(self.proj_mod_path,
+                                                'spiders', 'test_name.py'),
+                                           r'allowed_domains\s*=\s*\[\'(.+)\'\]').group(1))
+        self.assertEqual(f'http://{domain}/',
+                         self.find_in_file(join(self.proj_mod_path,
+                                                'spiders', 'test_name.py'),
+                                           r'start_urls\s*=\s*\[\'(.+)\'\]').group(1))
+
+    def test_url_schema(self):
+        self.test_url('http://test.com', 'test.com')
+
+    def test_url_path(self):
+        self.test_url('test.com/some/other/page', 'test.com')
+
+    def test_url_schema_path(self):
+        self.test_url('https://test.com/some/other/page', 'test.com')
+
 
 class GenspiderStandaloneCommandTest(ProjectTest):
 
@@ -615,9 +683,6 @@ class MySpider(scrapy.Spider):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.py", log)
 
-    # https://twistedmatrix.com/trac/ticket/9766
-    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
-            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_asyncio_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
@@ -630,6 +695,7 @@ class MySpider(scrapy.Spider):
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
     @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    @mark.skipif(twisted_version == Version('twisted', 21, 2, 0), reason='https://twistedmatrix.com/trac/ticket/10106')
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s',
@@ -639,16 +705,16 @@ class MySpider(scrapy.Spider):
         ])
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
-    # https://twistedmatrix.com/trac/ticket/9766
-    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
-            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_custom_asyncio_loop_enabled_false(self):
         log = self.get_log(self.debug_log_spider, args=[
             '-s', 'TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor'
         ])
         import asyncio
-        loop = asyncio.new_event_loop()
-        self.assertIn("Using asyncio event loop: %s.%s" % (loop.__module__, loop.__class__.__name__), log)
+        if sys.platform != 'win32':
+            loop = asyncio.new_event_loop()
+        else:
+            loop = asyncio.SelectorEventLoop()
+        self.assertIn(f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}", log)
 
     def test_output(self):
         spider_code = """
@@ -705,6 +771,7 @@ class MySpider(scrapy.Spider):
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
 
 
+@skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
 
     spider_filename = 'myspider.pyw'
@@ -717,35 +784,27 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_run_good_spider(self):
         super().test_run_good_spider()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider(self):
         super().test_runspider()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_dnscache_disabled(self):
         super().test_runspider_dnscache_disabled()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_log_level(self):
         super().test_runspider_log_level()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_log_short_names(self):
         super().test_runspider_log_short_names()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_runspider_no_spider_found(self):
         super().test_runspider_no_spider_found()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_output(self):
         super().test_output()
 
-    @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
     def test_overwrite_output(self):
         super().test_overwrite_output()
 
@@ -760,6 +819,21 @@ class BenchCommandTest(CommandTest):
                               '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         self.assertIn('INFO: Crawled', log)
         self.assertNotIn('Unhandled Error', log)
+
+
+class ViewCommandTest(CommandTest):
+
+    def test_methods(self):
+        command = view.Command()
+        command.settings = Settings()
+        parser = argparse.ArgumentParser(prog='scrapy', prefix_chars='-',
+                                         formatter_class=ScrapyHelpFormatter,
+                                         conflict_handler='resolve')
+        command.add_options(parser)
+        self.assertEqual(command.short_desc(),
+                         "Open URL in browser, as seen by Scrapy")
+        self.assertIn("URL using the Scrapy downloader and show its",
+                      command.long_desc())
 
 
 class CrawlCommandTest(CommandTest):

@@ -1,0 +1,10 @@
+/* Move lists closer to their introducing paragraph */
+.rst-content .section ol p, .rst-content .section ul p {
+    margin-bottom: 0px;
+}
+.rst-content p + ol, .rst-content p + ul {
+    margin-top: -18px; /* Compensates margin-top: 24px of p  */
+}
+.rst-content dl p + ol, .rst-content dl p + ul {
+    margin-top: -6px; /* Compensates margin-top: 12px of p  */
+}

@@ -36,7 +36,7 @@ class ScrapyUtilsTest(unittest.TestCase):
         )
         config_parser = ConfigParser()
         config_parser.read(tox_config_file_path)
-        pattern = r'Twisted==([\d.]+)'
+        pattern = r'Twisted\[http2\]==([\d.]+)'
         match = re.search(pattern, config_parser['pinned']['deps'])
         pinned_twisted_version_string = match[1]
 

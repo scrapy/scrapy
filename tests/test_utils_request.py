@@ -1,7 +1,7 @@
 import unittest
 import warnings
 from hashlib import sha1
-from typing import Dict, Mapping, Tuple, Union
+from typing import Dict, Mapping, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
 import pytest
@@ -53,7 +53,16 @@ class FingerprintTest(unittest.TestCase):
     maxDiff = None
 
     function = staticmethod(fingerprint)
-    cache = _fingerprint_cache
+    cache: Union[
+        WeakKeyDictionary[
+            Request,
+            Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes],
+        ],
+        WeakKeyDictionary[
+            Request,
+            Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str],
+        ]
+    ] = _fingerprint_cache
     default_cache_key = (None, False)
     known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
         (
@@ -444,7 +453,8 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         for request_object in REQUEST_OBJECTS_TO_TEST:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                fp = get_crawler().request_fingerprinter.fingerprint(request_object)
+                crawler = get_crawler(prevent_warnings=False)
+                fp = crawler.request_fingerprinter.fingerprint(request_object)
             old_fp = request_fingerprint_2_3(request_object)
             self.assertEqual(fp.hex(), old_fp)
 
@@ -482,7 +492,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
 
     def test_default_implementation(self):
         with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler()
+            crawler = get_crawler(prevent_warnings=False)
         request = Request('https://example.com')
         self.assertEqual(
             crawler.request_fingerprinter.fingerprint(request),

@@ -86,8 +86,8 @@ class RFPDupeFilterTest(unittest.TestCase):
         r2 = Request('http://scrapytest.org/2')
 
         path = tempfile.mkdtemp()
-        crawler = get_crawler(settings_dict={'JOBDIR': path})
         try:
+            crawler = get_crawler(settings_dict={'JOBDIR': path})
             scheduler = Scheduler.from_crawler(crawler)
             df = scheduler.df
             try:
@@ -97,7 +97,10 @@ class RFPDupeFilterTest(unittest.TestCase):
             finally:
                 df.close('finished')
 
-            df2 = RFPDupeFilter(path)
+            crawler2 = get_crawler(settings_dict={'JOBDIR': path})
+            scheduler2 = Scheduler.from_crawler(crawler2)
+            df2 = scheduler2.df
+            assert df != df2
             try:
                 df2.open()
                 assert df2.request_seen(r1)

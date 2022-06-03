@@ -173,7 +173,7 @@ class MediaPipeline:
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
             self._modify_media_request(request)
-            dfd = self.crawler.engine.download(request, info.spider)
+            dfd = self.crawler.engine.download(request)
             dfd.addCallbacks(
                 callback=self.media_downloaded, callbackArgs=(request, info), callbackKeywords={'item': item},
                 errback=self.media_failed, errbackArgs=(request, info))

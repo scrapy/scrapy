@@ -110,11 +110,10 @@ using the telnet console::
     Execution engine status
 
     time()-engine.start_time                        : 8.62972998619
-    engine.has_capacity()                           : False
     len(engine.downloader.active)                   : 16
     engine.scraper.is_idle()                        : False
     engine.spider.name                              : followall
-    engine.spider_is_idle(engine.spider)            : False
+    engine.spider_is_idle()                         : False
     engine.slot.closing                             : False
     len(engine.slot.inprogress)                     : 16
     len(engine.slot.scheduler.dqs or [])            : 0

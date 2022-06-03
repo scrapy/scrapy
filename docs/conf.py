@@ -122,7 +122,6 @@ html_theme = 'sphinx_rtd_theme'
 import sphinx_rtd_theme
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
@@ -182,6 +181,10 @@ html_copy_source = True
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Scrapydoc'
+
+html_css_files = [
+    'custom.css',
+]
 
 
 # Options for LaTeX output
@@ -269,7 +272,6 @@ coverage_ignore_pyobjects = [
     r'^scrapy\.extensions\.[a-z]\w*?\.[a-z]',  # helper functions
 
     # Never documented before, and deprecated now.
-    r'^scrapy\.item\.DictItem$',
     r'^scrapy\.linkextractors\.FilteringLinkExtractor$',
 
     # Implementation detail of LxmlLinkExtractor
@@ -302,10 +304,14 @@ intersphinx_mapping = {
 hoverxref_auto_ref = True
 hoverxref_role_types = {
     "class": "tooltip",
+    "command": "tooltip",
     "confval": "tooltip",
     "hoverxref": "tooltip",
     "mod": "tooltip",
     "ref": "tooltip",
+    "reqmeta": "tooltip",
+    "setting": "tooltip",
+    "signal": "tooltip",
 }
 hoverxref_roles = ['command', 'reqmeta', 'setting', 'signal']
 
