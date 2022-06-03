@@ -8,9 +8,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: 3.6
-          env:
-            TOXENV: windows-pinned
         - python-version: 3.7
           env:
             TOXENV: py

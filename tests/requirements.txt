@@ -1,6 +1,5 @@
 # Tests requirements
 attrs
-dataclasses; python_version == '3.6'
 pyftpdlib
 pytest
 pytest-cov==3.0.0
