@@ -10,6 +10,9 @@ jobs:
         include:
         - python-version: 3.7
           env:
+            TOXENV: windows-pinned
+        - python-version: 3.7
+          env:
             TOXENV: py
         - python-version: 3.8
           env:
