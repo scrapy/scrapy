@@ -54,14 +54,8 @@ class FingerprintTest(unittest.TestCase):
 
     function = staticmethod(fingerprint)
     cache: Union[
-        WeakKeyDictionary[
-            Request,
-            Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes],
-        ],
-        WeakKeyDictionary[
-            Request,
-            Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str],
-        ]
+        "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]",
+        "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]",
     ] = _fingerprint_cache
     default_cache_key = (None, False)
     known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
