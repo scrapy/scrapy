@@ -29,10 +29,10 @@ jobs:
             PYPY_VERSION: 3.7-v7.3.9
 
         # pinned deps
-        - python-version: 3.7.10
+        - python-version: 3.7.13
           env:
             TOXENV: pinned
-        - python-version: 3.7.10
+        - python-version: 3.7.13
           env:
             TOXENV: asyncio-pinned
         - python-version: pypy3
