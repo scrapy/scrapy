@@ -121,7 +121,7 @@ class MediaPipeline:
     def _make_compatible(self):
         """Make overridable methods of MediaPipeline and subclasses backwards compatible"""
         methods = [
-            "file_path", "media_to_download", "media_downloaded",
+            "file_path", "thumb_path", "media_to_download", "media_downloaded",
             "file_downloaded", "image_downloaded", "get_images"
         ]
 
