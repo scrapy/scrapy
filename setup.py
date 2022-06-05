@@ -19,16 +19,16 @@ def has_environment_marker_platform_impl_support():
 
 
 install_requires = [
-    'Twisted>=17.9.0',
-    'cryptography>=2.0',
+    'Twisted>=18.9.0',
+    'cryptography>=2.8',
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
-    'pyOpenSSL>=16.2.0',
+    'pyOpenSSL>=19.1.0',
     'queuelib>=1.4.2',
     'service_identity>=16.0.0',
     'w3lib>=1.17.0',
-    'zope.interface>=4.1.3',
+    'zope.interface>=5.1.0',
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
     'setuptools',
@@ -36,18 +36,13 @@ install_requires = [
 ]
 extras_require = {}
 cpython_dependencies = [
-    'lxml>=3.5.0',
+    'lxml>=4.3.0',
     'PyDispatcher>=2.0.5',
 ]
 if has_environment_marker_platform_impl_support():
     extras_require[':platform_python_implementation == "CPython"'] = cpython_dependencies
     extras_require[':platform_python_implementation == "PyPy"'] = [
-        # Earlier lxml versions are affected by
-        # https://foss.heptapod.net/pypy/pypy/-/issues/2498,
-        # which was fixed in Cython 0.26, released on 2017-06-19, and used to
-        # generate the C headers of lxml release tarballs published since then, the
-        # first of which was:
-        'lxml>=4.0.0',
+        'lxml>=4.3.0',
         'PyPyDispatcher>=2.1.0',
     ]
 else:
