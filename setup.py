@@ -33,16 +33,15 @@ install_requires = [
     'itemadapter>=0.1.0',
     'setuptools',
     'tldextract',
+    'lxml>=4.3.0',
 ]
 extras_require = {}
 cpython_dependencies = [
-    'lxml>=4.3.0',
     'PyDispatcher>=2.0.5',
 ]
 if has_environment_marker_platform_impl_support():
     extras_require[':platform_python_implementation == "CPython"'] = cpython_dependencies
     extras_require[':platform_python_implementation == "PyPy"'] = [
-        'lxml>=4.3.0',
         'PyPyDispatcher>=2.1.0',
     ]
 else:
