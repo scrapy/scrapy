@@ -21,6 +21,17 @@ class _InvalidOutput(TypeError):
     pass
 
 
+class TransientError(Exception):
+    """Indicates a temporary problem (e.g. connection error) that is likely to
+    not be permanent."""
+    pass
+
+
+class SerializationError(ValueError):
+    """Indicates an error with the serialization, usually of a request."""
+    pass
+
+
 # HTTP and crawling
 
 

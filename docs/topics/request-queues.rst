@@ -1,0 +1,166 @@
+.. _topics-request-queues:
+
+==============
+Request queues
+==============
+
+.. _priority-queues:
+.. setting:: SCHEDULER_PRIORITY_QUEUE
+
+Priority queues
+===============
+
+.. currentmodule:: scrapy.pqueues
+
+To decide the order in which requests are sent, the default :ref:`scheduler
+<topics-scheduler>` uses a queue called the *priority queue*.
+
+The :setting:`SCHEDULER_PRIORITY_QUEUE` setting determines the type of priority
+queue that Scrapy uses. Its default value is :class:`ScrapyPriorityQueue`.
+
+Scrapy provides the following priority queue implementations:
+
+.. autoclass:: DownloaderAwarePriorityQueue
+
+.. autoclass:: ScrapyPriorityQueue
+
+
+.. setting:: SCHEDULER_DISK_QUEUE
+.. setting:: SCHEDULER_MEMORY_QUEUE
+.. _downstream-queues:
+
+Downstream queues
+=================
+
+.. currentmodule:: scrapy.squeues
+
+The built-in :ref:`priority queues <priority-queues>` use queues internally to
+store pending requests. These internal queues are called *downstream queues*.
+
+The organization method used by the downstream queues, usually either
+FIFO or LIFO, affects the order in which requests are sent for requests
+that the :ref:`priority queue <priority-queues>` considers to have the same
+priority.
+
+The built-in :ref:`priority queues <priority-queues>` allow you to choose the
+type of downstream queue they use through a setting. Which setting, however,
+depends on the value of the :setting:`JOBDIR` setting (see :ref:`topics-jobs`):
+
+-   If :setting:`JOBDIR` is not set (default), the memory downstream queue type
+    defined in the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used, which
+    defaults to :class:`LifoMemoryQueue`.
+
+    Scrapy provides the following memory downstream queue classes:
+
+    .. autoclass:: FifoMemoryQueue
+
+    .. autoclass:: LifoMemoryQueue
+
+-   If :setting:`JOBDIR` is set, the disk downstream queue from the
+    :setting:`SCHEDULER_DISK_QUEUE` setting is used instead, which defaults to
+    :class:`PickleLifoDiskQueue`.
+
+    In addition to request order, which disk downstream queue you use can
+    affect request serialization speed (CPU usage) and size (disk usage). See
+    “Comparison with ``marshal``” in the documentation of :mod:`pickle` for
+    more information.
+
+    When request serialization fails, Scrapy falls back to using a memory
+    downstream queue.
+
+    Scrapy provides the following disk downstream queue classes:
+
+    .. autoclass:: MarshalFifoDiskQueue
+
+    .. autoclass:: MarshalLifoDiskQueue
+
+    .. autoclass:: PickleFifoDiskQueue
+
+    .. autoclass:: PickleLifoDiskQueue
+
+
+Writing your own disk downstream queue class
+--------------------------------------------
+
+If you want to define and use your own downstream queue implementation,
+it has to conform to the following interface:
+
+.. class:: MyExternalQueue
+
+   .. method:: __init__(self, crawler: scrapy.crawler.Crawler, downstream_queue_cls: Optional[T], key: str, state)
+
+      Initializes an instance of this downstream queue class.
+
+      *downstream_queue_cls* class of queues lying down on queue hierarchy, e.g.
+      priority queue manages disk or memory queues. ``None`` in case there is
+      no downstream queue
+
+      *key* is the unique ID of the downstream queue instance. It may be
+      used, for example, to create a unique file or folder to store the queue
+      content.
+
+      *state* is the data returned by the :meth:`close` method of this queue
+      during a prior execution, and should be used to restore the queue to that
+      prior state. If there is no prior execution, its value is ``None``.
+
+   .. method:: push(self, request: scrapy.http.Request) -> None
+
+      Push a request into the queue.
+
+      The helper function :func:`~scrapy.utils.reqser.request_to_dict` can be
+      used to convert the request into a dict that can then be easily
+      serialized with, for example, :func:`pickle.dumps` and stored on disk.
+
+      Scrapy falls back to the memory downstream queue for *request* if one of
+      the following exceptions is raised:
+
+      -     :exc:`TransientError`: indicates a temporary failure.
+
+            For example, if storing requests on a server, raise this exception
+            if you temporarily lose access to the server.
+
+        -   :exc:`SerializationError`: indicates that *request* could not be
+            serialized.
+
+   .. method:: pop(self) -> Optional[Request]
+
+      Pop a request from the queue.
+
+      In case of a temporary problem or empty queue, return ``None``.
+      Exceptions raised in this method woudln't be handled and may lead to
+      a halt of the crawler.
+
+      The helper function :func:`~scrapy.utils.reqser.request_from_dict` can
+      be used to convert a deserialized dict from disk back into a
+      :class:`~scrapy.http.Request` object.
+
+   .. method:: peek(self) -> Optional[Request]
+
+      Return the next object to be returned by :meth:`pop`,
+      but without removing it from the queue.
+
+      Implementing this method is optional. If implemented, but peek support
+      is not possible, raise :exc:`AttributeError`.
+
+      In case of a temporary problem or empty queue, return ``None``.
+
+   .. method:: close(self) -> Optional[Any]
+
+      Release internal resources (e.g. close files or sockets) and return an
+      object serializable by :func:`json.dump` (e.g. a :class:`dict`) that
+      represents the current internal state of this queue. When :ref:`resuming
+      a crawl <topics-jobs>`, this object is passed to the :meth:`__init__`
+      method of this queue class to restore the queue state.
+
+   .. method:: __len__(self)
+
+      Return the number of requests in the queue.
+
+      If the number of requests cannot be determined (e.g. because of a
+      connection problem), the method should neither return 0, which would
+      cause the queue to be closed, nor raise an exception, which would halt
+      the crawl. Returning 1 is enough in this case.
+
+.. autofunction:: scrapy.utils.reqser.request_from_dict
+
+.. autofunction:: scrapy.utils.reqser.request_to_dict

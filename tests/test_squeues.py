@@ -49,35 +49,18 @@ class FifoDiskQueueTestMixin:
     test_nonserializable_object = nonserializable_object_test
 
 
-class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
-    chunksize = 100000
+CRAWLER_MOCK = None
+
+
+class MarshalFifoDiskQueueTest(FifoDiskQueueTestMixin):
 
     def queue(self):
-        return _MarshalFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
+        return _MarshalFifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
 
-class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
-    chunksize = 1
-
-
-class ChunkSize2MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
-    chunksize = 2
-
-
-class ChunkSize3MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
-    chunksize = 3
-
-
-class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
-    chunksize = 4
-
-
-class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
-
-    chunksize = 100000
-
+class PickleFifoDiskQueueTest(FifoDiskQueueTestMixin):
     def queue(self):
-        return _PickleFifoSerializationDiskQueue(self.qpath, chunksize=self.chunksize)
+        return _PickleFifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
     def test_serialize_item(self):
         q = self.queue()
@@ -122,22 +105,6 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
             self.assertIsInstance(exc.__context__, TypeError)
 
 
-class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
-    chunksize = 1
-
-
-class ChunkSize2PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
-    chunksize = 2
-
-
-class ChunkSize3PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
-    chunksize = 3
-
-
-class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
-    chunksize = 4
-
-
 class LifoDiskQueueTestMixin:
 
     def test_serialize(self):
@@ -153,15 +120,14 @@ class LifoDiskQueueTestMixin:
 
 
 class MarshalLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
-
     def queue(self):
-        return _MarshalLifoSerializationDiskQueue(self.qpath)
+        return _MarshalLifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
 
 class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def queue(self):
-        return _PickleLifoSerializationDiskQueue(self.qpath)
+        return _PickleLifoSerializationDiskQueue(CRAWLER_MOCK, None, self.qpath, None)
 
     def test_serialize_item(self):
         q = self.queue()

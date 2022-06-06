@@ -1,16 +1,32 @@
+import collections
+import logging
+import pickle
 import shutil
 import tempfile
 import unittest
-import collections
 
+import pytest
+from queuelib import queue
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.crawler import Crawler
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
+from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http import Request
+from scrapy.pqueues import (
+    ScrapyPriorityQueue,
+)
 from scrapy.spiders import Spider
+from scrapy.squeues import (
+    FifoMemoryQueue,
+    PickleLifoDiskQueue,
+    _scrapy_serialization_queue,
+    _serializable_queue,
+    _with_mkdir,
+    _pickle_serialize,
+)
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
@@ -43,15 +59,15 @@ class MockDownloader:
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls, jobdir):
-
+    def __init__(self, priority_queue_cls, jobdir, disk_queue_cls, settings={}):
         settings = dict(
-            SCHEDULER_DEBUG=False,
-            SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
+            SCHEDULER_DEBUG=True,
+            SCHEDULER_DISK_QUEUE=disk_queue_cls,
             SCHEDULER_MEMORY_QUEUE='scrapy.squeues.LifoMemoryQueue',
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
+            **settings,
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -60,9 +76,13 @@ class MockCrawler(Crawler):
 class SchedulerHandler:
     priority_queue_cls = None
     jobdir = None
+    disk_queue_cls = 'scrapy.squeues.PickleLifoDiskQueue'
+    settings = {}
 
     def create_scheduler(self):
-        self.mock_crawler = MockCrawler(self.priority_queue_cls, self.jobdir)
+        self.mock_crawler = MockCrawler(
+            self.priority_queue_cls, self.jobdir, self.disk_queue_cls, self.settings
+        )
         self.scheduler = Scheduler.from_crawler(self.mock_crawler)
         self.spider = Spider(name='spider')
         self.scheduler.open(self.spider)
@@ -342,3 +362,179 @@ class TestIncompatibility(unittest.TestCase):
     def test_incompatibility(self):
         with self.assertRaises(ValueError):
             self._incompatible()
+
+
+class ConstantErrorQueue:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __len__(self):
+        return 0
+
+    def close(self):
+        return None
+
+    def push(self, request):
+        if getattr(self, 'counter', None) is None:
+            self.counter = 0
+
+        if self.counter == 0:
+            self.counter += 1
+            raise TransientError('This class raises an TransientError')
+
+        elif self.counter == 1:
+            self.counter += 1
+            raise SerializationError('This class raises an SerializationError')
+
+        elif self.counter == 2:
+            self.counter += 1
+            raise ValueError('This class raises an ValueError')
+
+
+def _find_in_logs(caplog, needle):
+    count = 0
+    for r in caplog.records:
+        try:
+            i = r.getMessage().index(needle)
+            if i != -1:
+                count += 1
+        except ValueError:
+            continue
+    return count
+
+
+class ErrorEmitter(SchedulerHandler, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+    disk_queue_cls = 'tests.test_scheduler.ConstantErrorQueue'
+
+    @pytest.fixture(autouse=True)
+    def _pass_fixtures(self, caplog):
+        self.caplog = caplog
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
+
+    def test_exceptions_handling(self):
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(
+            self.caplog,
+            'Unable to push request to queue'
+        )  # TransientError
+        assert self.scheduler.stats.get_value('scheduler/transient_error') == 1
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(
+            self.caplog,
+            'Unable to serialize request',
+        )  # SerializationError
+        assert self.scheduler.stats.get_value('scheduler/unserializable') == 1
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(
+            self.caplog,
+            'Usage of "ValueError" exception type for serialization',
+        )  # ValueError
+        assert self.scheduler.stats.get_value('scheduler/unserializable') == 2
+
+
+class FifoWithCrawlerAccess(queue.FifoDiskQueue):
+    def __init__(self, crawler, _, path, *__, **___):
+        self.hello_message = crawler.settings.get('HELLO_MESSAGE')
+        self.logger = logging.getLogger(__name__)
+        super().__init__(path)
+
+    def push(self, request):
+        self.logger.warning(self.hello_message)
+        super().push(request)
+
+
+TestedQueue = _scrapy_serialization_queue(
+    _serializable_queue(
+        _with_mkdir(FifoWithCrawlerAccess),
+        _pickle_serialize,
+        pickle.loads,
+    )
+)
+
+
+class CrawlerAccessTester(SchedulerHandler, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.ScrapyPriorityQueue'
+    disk_queue_cls = 'tests.test_scheduler.TestedQueue'
+    settings = {'HELLO_MESSAGE': 'hello world'}
+
+    @pytest.fixture(autouse=True)
+    def _pass_fixtures(self, caplog):
+        self.caplog = caplog
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
+
+    def test_access(self):
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        assert _find_in_logs(self.caplog, 'hello world') == 3
+
+
+class StateInClassQueue(PickleLifoDiskQueue):
+    STATE = 0
+
+    def __init__(self, crawler, _, path, state):
+        type(self).STATE = state
+        super().__init__(crawler, _, path)
+
+    def close(self):
+        super().close()
+        return type(self).STATE
+
+
+class StateTester(SchedulerHandler, unittest.TestCase):
+    priority_queue_cls = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+    disk_queue_cls = 'tests.test_scheduler.StateInClassQueue'
+
+    def setUp(self):
+        self.jobdir = tempfile.mkdtemp()
+        self.create_scheduler()
+
+    def tearDown(self):
+        self.close_scheduler()
+        shutil.rmtree(self.jobdir)
+        self.jobdir = None
+
+    def test_access(self):
+        self.scheduler.enqueue_request(Request('http://example.com/'))
+        StateInClassQueue.STATE = 5
+        self.close_scheduler()
+
+        StateInClassQueue.STATE = 0
+
+        self.create_scheduler()
+        assert StateInClassQueue.STATE == 5
+
+
+def test_obsolete_variant_for_pq():
+    mock_crawler = MockCrawler(
+        'scrapy.pqueue,ScrapyPriorityQueue',
+        None,
+        'scrapy.squeues.PickleLifoDiskQueue',
+        {},
+    )
+    priorities = [1, 2, 3]
+    pqueue = ScrapyPriorityQueue(
+        mock_crawler,
+        FifoMemoryQueue,
+        '',
+        priorities,
+    )
+    result = [p for p in pqueue.queues]
+    assert set(priorities) == set(result)

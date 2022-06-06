@@ -8,6 +8,7 @@ from typing import Optional, Type, TypeVar
 from twisted.internet.defer import Deferred
 
 from scrapy.crawler import Crawler
+from scrapy.exceptions import SerializationError, TransientError
 from scrapy.http.request import Request
 from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir
@@ -278,7 +279,24 @@ class Scheduler(BaseScheduler):
             return False
         try:
             self.dqs.push(request)
-        except ValueError as e:  # non serializable request
+        except TransientError as e:
+            msg = "Unable to push request to queue: %s"
+            logger.warning(msg, e, exc_info=True, extra={'spider': self.spider})
+            self.stats.inc_value('scheduler/transient_error', spider=self.spider)
+            return False
+        except (ValueError, SerializationError) as e:  # non serializable request
+            if not isinstance(e, SerializationError):
+                msg = ('Usage of "%(depr)s" exception type for serialization '
+                       'errors is deprecated. Please use "%(new)s" exception '
+                       'type for this')
+                logger.warning(
+                    msg,
+                    {
+                        'depr': type(e).__name__,
+                        'new': SerializationError.__name__
+                    },
+                )
+
             if self.logunser:
                 msg = ("Unable to serialize request: %(request)s - reason:"
                        " %(reason)s - no more unserializable requests will be"
@@ -301,21 +319,17 @@ class Scheduler(BaseScheduler):
 
     def _mq(self):
         """ Create a new priority queue instance, with in-memory storage """
-        return create_instance(self.pqclass,
-                               settings=None,
-                               crawler=self.crawler,
-                               downstream_queue_cls=self.mqclass,
-                               key='')
+        return self.pqclass(crawler=self.crawler,
+                            downstream_queue_cls=self.mqclass,
+                            key='')
 
     def _dq(self):
         """ Create a new priority queue instance, with disk storage """
         state = self._read_dqs_state(self.dqdir)
-        q = create_instance(self.pqclass,
-                            settings=None,
-                            crawler=self.crawler,
-                            downstream_queue_cls=self.dqclass,
-                            key=self.dqdir,
-                            startprios=state)
+        q = self.pqclass(crawler=self.crawler,
+                         downstream_queue_cls=self.dqclass,
+                         key=self.dqdir,
+                         state=state)
         if q:
             logger.info("Resuming crawl (%(queuesize)d requests scheduled)",
                         {'queuesize': len(q)}, extra={'spider': self.spider})
