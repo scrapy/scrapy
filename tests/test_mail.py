@@ -85,7 +85,8 @@ class MailSenderTest(unittest.TestCase):
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
-        self.assertEqual(msg.get_payload(), Charset('utf-8').body_encode(body))
+        self.assertEqual(msg.get_payload(), body)
+        self.assertEqual(msg.get_payload(), body)
         self.assertEqual(msg.get_charset(), Charset('utf-8'))
         self.assertEqual(msg.get('Content-Type'), 'text/plain; charset="utf-8"')
 
@@ -107,9 +108,10 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(self.catched_msg['body'], body)
 
         msg = self.catched_msg['msg']
-        self.assertEqual(msg['subject'], subject)
-        self.assertEqual(msg.get_charset(), None)
-        self.assertEqual(msg.get('Content-Type'), 'multipart/mixed')
+        self.assertEqual(msg.get_charset(), Charset('utf-8'))
+        self.assertEqual(msg.get('Content-Type'),
+                         'multipart/mixed; charset="utf-8"')
+        self.assertEqual(msg.get('Content-Type'), 'multipart/mixed; charset="utf-8"')
 
         payload = msg.get_payload()
         assert isinstance(payload, list)
@@ -119,6 +121,37 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(text.get_payload(decode=True).decode('utf-8'), body)
         self.assertEqual(text.get_charset(), Charset('utf-8'))
         self.assertEqual(attach.get_payload(decode=True).decode('utf-8'), body)
+
+    def test_encoded_body_with_utf8(self):
+        subject = 'sübjèçt'
+        body = 'bödÿ-àéïöñß'
+        attach = BytesIO()
+        attach.write(body.encode('utf-8'))
+        attach.seek(0)
+        attachs = [('attachment', 'text/plain', attach)]
+
+        mailsender = MailSender(debug=True)
+        mailsender.send(to=['test@scrapy.org'], subject=subject, body=body,
+                        attachs=attachs, charset='utf-8',
+                        _callback=self._catch_mail_sent)
+
+        assert self.catched_msg
+        self.assertEqual(self.catched_msg['body'], body.encode('ascii'))
+
+        msg = self.catched_msg['msg']
+        self.assertEqual(msg.get_charset(), Charset('utf-8'))
+        self.assertEqual(msg.get('Content-Type'),
+                         'multipart/mixed; charset="utf-8"')
+        self.assertEqual(msg.get('Content-Type'), 'multipart/mixed; charset="utf-8"')
+
+        payload = msg.get_payload()
+        assert isinstance(payload, list)
+        self.assertEqual(len(payload), 2)
+
+        text, attach = payload
+        self.assertEqual(text.get_payload(), body.encode('utf-8'))
+        self.assertEqual(text.get_charset(), Charset('utf-8'))
+        self.assertEqual(attach.get_payload(), body.encode('utf-8'))
 
 
 if __name__ == "__main__":
