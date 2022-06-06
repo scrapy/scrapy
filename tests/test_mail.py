@@ -108,6 +108,7 @@ class MailSenderTest(unittest.TestCase):
 
         msg = self.catched_msg['msg']
         self.assertEqual(msg['subject'], subject)
+        self.assertEqual(msg.get_charset(), Charset('utf-8'))
         self.assertEqual(msg.get('Content-Type'),
                          'multipart/mixed; charset="utf-8"')
 
