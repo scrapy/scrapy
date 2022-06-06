@@ -102,10 +102,7 @@ Additionally, ``dataclass`` items also allow to:
 * define custom field metadata through :func:`dataclasses.field`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-They work natively in Python 3.7 or later, or using the `dataclasses
-backport`_ in Python 3.6.
-
-.. _dataclasses backport: https://pypi.org/project/dataclasses/
+They work natively in Python 3.7 or later.
 
 Example::
 
