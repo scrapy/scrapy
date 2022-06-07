@@ -1,4 +1,5 @@
 from typing import Optional
+import io
 
 from testfixtures import LogCapture
 from twisted.trial import unittest
@@ -358,9 +359,12 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def get_media_requests(self, item, info):
         item_url = item['image_urls'][0]
+        output_img = io.BytesIO()
+        img = Image.new('RGB', (60, 30), color='red')
+        img.save(output_img, format='JPEG')
         return Request(
             item_url,
-            meta={'response': Response(item_url, status=200, body=b'data')}
+            meta={'response': Response(item_url, status=200, body=output_img.getvalue())}
         )
 
     def inc_stats(self, *args, **kwargs):
@@ -382,9 +386,13 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
         self._mockcalled.append('file_path')
         return super().file_path(request, response, info)
 
+    def thumb_path(self, request, thumb_id, response=None, info=None):
+        self._mockcalled.append('thumb_path')
+        return super(MockedMediaPipelineDeprecatedMethods, self).thumb_path(request, thumb_id, response, info)
+
     def get_images(self, response, request, info):
         self._mockcalled.append('get_images')
-        return []
+        return super(MockedMediaPipelineDeprecatedMethods, self).get_images(response, request, info)
 
     def image_downloaded(self, response, request, info):
         self._mockcalled.append('image_downloaded')
@@ -395,7 +403,10 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
     skip = skip_pillow
 
     def setUp(self):
-        settings_dict = {'IMAGES_STORE': 'store-uri'}
+        settings_dict = {
+            'IMAGES_STORE': 'store-uri',
+            'IMAGES_THUMBS': {'small': (50, 50)},
+        }
         crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
         self.pipe = MockedMediaPipelineDeprecatedMethods.from_crawler(crawler)
         self.pipe.download_func = _mocked_download_func
@@ -449,6 +460,16 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
             'please use file_path(self, request, response=None, info=None, *, item=None)'
         )
         self._assert_method_called_with_warnings('file_path', message, warnings)
+
+    @inlineCallbacks
+    def test_thumb_path_called(self):
+        yield self.pipe.process_item(self.item, None)
+        warnings = self.flushWarnings([MediaPipeline._compatible])
+        message = (
+            'thumb_path(self, request, thumb_id, response=None, info=None) is deprecated, '
+            'please use thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)'
+        )
+        self._assert_method_called_with_warnings('thumb_path', message, warnings)
 
     @inlineCallbacks
     def test_get_images_called(self):
