@@ -246,6 +246,9 @@ REDIRECT_PRIORITY_ADJUST = +2
 REFERER_ENABLED = True
 REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
+REQUEST_FINGERPRINTER_CLASS = 'scrapy.utils.request.RequestFingerprinter'
+REQUEST_FINGERPRINTER_IMPLEMENTATION = 'PREVIOUS_VERSION'
+
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]

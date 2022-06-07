@@ -104,7 +104,8 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             custom_settings = {
                 'LOG_LEVEL': 'INFO',
                 'LOG_FILE': log_file,
-                # disable telnet if not available to avoid an extra warning
+                # settings to avoid extra warnings
+                'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
                 'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
             }
 

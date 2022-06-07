@@ -25,6 +25,7 @@ from scrapy.pipelines.files import (
 from scrapy.settings import Settings
 from scrapy.utils.test import (
     assert_gcs_environ,
+    get_crawler,
     get_ftp_content_and_delete,
     get_gcs_content_and_delete,
     skip_if_no_boto,
@@ -47,7 +48,9 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        settings_dict = {'FILES_STORE': self.tempdir}
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
