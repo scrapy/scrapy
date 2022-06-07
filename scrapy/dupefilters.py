@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Optional, Set, Type, TypeVar
+from warnings import warn
 
 from twisted.internet.defer import Deferred
 
@@ -64,7 +65,7 @@ class RFPDupeFilter(BaseDupeFilter):
         try:
             return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
         except TypeError:
-            warnings.warn(
+            warn(
                 "RFPDupeFilter subclasses must either modify their '__init__' "
                 "method to support a 'fingerprinter' parameter or reimplement "
                 "the 'from_settings' class method.",
@@ -82,7 +83,7 @@ class RFPDupeFilter(BaseDupeFilter):
                 fingerprinter=crawler.request_fingerprinter,
             )
         except TypeError:
-            warnings.warn(
+            warn(
                 "RFPDupeFilter subclasses must either modify their overridden "
                 "'__init__' method and 'from_settings' class method to "
                 "support a 'fingerprinter' parameter, or reimplement the "
