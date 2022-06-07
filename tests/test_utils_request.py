@@ -365,13 +365,13 @@ class RequestFingerprintAsBytesTest(FingerprintTest):
         self.assertEqual(actual, expected)
 
 
-_fingerprint_cache_2_3: Mapping[Request, Tuple[None, bool]] = WeakKeyDictionary()
+_fingerprint_cache_2_6: Mapping[Request, Tuple[None, bool]] = WeakKeyDictionary()
 
 
-def request_fingerprint_2_3(request, include_headers=None, keep_fragments=False):
+def request_fingerprint_2_6(request, include_headers=None, keep_fragments=False):
     if include_headers:
         include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
-    cache = _fingerprint_cache_2_3.setdefault(request, {})
+    cache = _fingerprint_cache_2_6.setdefault(request, {})
     cache_key = (include_headers, keep_fragments)
     if cache_key not in cache:
         fp = sha1()
@@ -436,7 +436,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
                             include_headers=include_headers,
                             keep_fragments=keep_fragments,
                         )
-                    old_fp = request_fingerprint_2_3(
+                    old_fp = request_fingerprint_2_6(
                         request_object,
                         include_headers=include_headers,
                         keep_fragments=keep_fragments,
@@ -449,7 +449,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
                 warnings.simplefilter("ignore")
                 crawler = get_crawler(prevent_warnings=False)
                 fp = crawler.request_fingerprinter.fingerprint(request_object)
-            old_fp = request_fingerprint_2_3(request_object)
+            old_fp = request_fingerprint_2_6(request_object)
             self.assertEqual(fp.hex(), old_fp)
 
     def test_custom_component_backward_compatibility(self):
@@ -477,7 +477,7 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
                 }
                 crawler = get_crawler(settings_dict=settings)
                 fp = crawler.request_fingerprinter.fingerprint(request_object)
-            old_fp = request_fingerprint_2_3(request_object)
+            old_fp = request_fingerprint_2_6(request_object)
             self.assertEqual(fp.hex(), old_fp)
             self.assertFalse(logged_warnings)
 
