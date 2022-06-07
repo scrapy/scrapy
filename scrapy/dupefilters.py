@@ -7,6 +7,7 @@ from twisted.internet.defer import Deferred
 from scrapy.http.request import Request
 from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import referer_str, RequestFingerprinter
 
@@ -63,6 +64,12 @@ class RFPDupeFilter(BaseDupeFilter):
         try:
             return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
         except TypeError:
+            warnings.warn(
+                "RFPDupeFilter subclasses must either modify their '__init__' "
+                "method to support a 'fingerprinter' parameter or reimplement "
+                "the 'from_settings' class method.",
+                ScrapyDeprecationWarning,
+            )
             result = cls(job_dir(settings), debug)
             result.fingerprinter = fingerprinter
             return result
@@ -75,6 +82,13 @@ class RFPDupeFilter(BaseDupeFilter):
                 fingerprinter=crawler.request_fingerprinter,
             )
         except TypeError:
+            warnings.warn(
+                "RFPDupeFilter subclasses must either modify their overridden "
+                "'__init__' method and 'from_settings' class method to "
+                "support a 'fingerprinter' parameter, or reimplement the "
+                "'from_crawler' class method.",
+                ScrapyDeprecationWarning,
+            )
             result = cls.from_settings(crawler.settings)
             result.fingerprinter = crawler.request_fingerprinter
             return result
