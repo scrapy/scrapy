@@ -1,3 +1,13 @@
+Please follow these coding conventions when writing code for inclusion in Scrapy:
+
+- Unless otherwise specified, follow PEP 8.
+
+- It’s OK to use lines longer than 79 chars if it improves the code 
+  readability.
+
+- Don’t put your name in the code you contribute; git provides enough 
+metadata to identify author of the code. See https://help.github.com/en/github/using-git/setting-your-username-in-git for setup instructions.
+
 The guidelines for contributing are available here:
 https://docs.scrapy.org/en/master/contributing.html
 
