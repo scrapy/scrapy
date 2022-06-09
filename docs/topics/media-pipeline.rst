@@ -70,7 +70,7 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline requires Pillow_ 4.0.0 or greater. It is used for
+The Images Pipeline requires Pillow_ 7.1.0 or greater. It is used for
 thumbnailing and normalizing images to JPEG/RGB format.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
