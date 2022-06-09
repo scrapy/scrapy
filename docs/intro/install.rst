@@ -52,12 +52,6 @@ Scrapy is written in pure Python and depends on a few key Python packages (among
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
 
-The minimal versions which Scrapy is tested against are:
-
-* Twisted 18.9.0
-* lxml 4.3.0
-* pyOpenSSL 19.1.0
-
 Scrapy may work with older versions of these packages
 but it is not guaranteed it will continue working
 because it’s not being tested against them.
