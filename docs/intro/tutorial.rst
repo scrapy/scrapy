@@ -207,7 +207,7 @@ Extracting data
 The best way to learn how to extract data with Scrapy is trying selectors
 using the :ref:`Scrapy shell <topics-shell>`. Run::
 
-    scrapy shell 'https://quotes.toscrape.com/page/1/'
+    scrapy shell "https://quotes.toscrape.com/page/1/"
 
 .. note::
 
@@ -215,9 +215,9 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
    command-line, otherwise urls containing arguments (i.e. ``&`` character)
    will not work.
 
-   On Windows, use double quotes instead::
+   On Linux, use single quotes instead::
 
-       scrapy shell "https://quotes.toscrape.com/page/1/"
+       scrapy shell 'https://quotes.toscrape.com/page/1/'
 
 You will see something like::
 
@@ -379,7 +379,7 @@ like this:
 Let's open up scrapy shell and play a bit to find out how to extract the data
 we want::
 
-    $ scrapy shell 'https://quotes.toscrape.com'
+    $ scrapy shell "https://quotes.toscrape.com"
 
 We get a list of selectors for the quote HTML elements with:
 
@@ -651,8 +651,8 @@ this time for scraping author information::
     import scrapy
 
 
-    class AuthorSpider(scrapy.Spider):
-        name = 'author'
+    class QuotesAuthorSpider(scrapy.Spider):
+        name = 'quotes'
 
         start_urls = ['https://quotes.toscrape.com/']
 
