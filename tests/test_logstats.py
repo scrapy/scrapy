@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 
 from scrapy.extensions.logstats import LogStats
 from scrapy.utils.test import get_crawler
@@ -45,9 +46,18 @@ class TestLogStats(unittest.TestCase):
         self.assertEqual(logstats.pagesprev, 5187)
         self.assertEqual(logstats.itemsprev, 3492)
 
-        # Simulate when spider closes
-        self.stats.set_value("start_time", 1655100172088)
-        self.stats.set_value("finished_time", 1655101972088)  # 30 mins diff
+        # Simulate when spider closes after running for 30 mins
+        self.stats.set_value("start_time", datetime.fromtimestamp(1655100172))
+        self.stats.set_value("finished_time", datetime.fromtimestamp(1655101972))
         logstats.spider_closed(self.spider, "test reason")
         self.assertEqual(self.stats.get_value("responses_per_minute"), 172.9)
         self.assertEqual(self.stats.get_value("items_per_minute"), 116.4)
+
+    def test_stats_calculations_no_time(self):
+        """The stat values should be None since the start and finish time are
+        not available.
+        """
+        logstats = LogStats.from_crawler(self.crawler)
+        logstats.spider_closed(self.spider, "test reason")
+        self.assertIsNone(self.stats.get_value("responses_per_minute"))
+        self.assertIsNone(self.stats.get_value("items_per_minute"))

@@ -64,7 +64,11 @@ class LogStats:
     def calculate_final_stats(self, spider):
         start_time = self.stats.get_value('start_time')
         finished_time = self.stats.get_value('finished_time')
-        mins_elapsed = (finished_time - start_time) / 1000 / 60
+
+        if not start_time or not finished_time:
+            return None, None
+
+        mins_elapsed = (finished_time - start_time).seconds / 60
 
         items = self.stats.get_value('item_scraped_count', 0)
         pages = self.stats.get_value('response_received_count', 0)
