@@ -57,7 +57,7 @@ class LogStats:
         if self.task and self.task.running:
             self.task.stop()
 
-        rpm_final, ipm_final = self.calculate_final_stats()
+        rpm_final, ipm_final = self.calculate_final_stats(spider)
         self.stats.set_value('responses_per_minute', rpm_final)
         self.stats.set_value('items_per_minute', ipm_final)
 
