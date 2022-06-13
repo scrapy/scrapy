@@ -17,6 +17,8 @@ htmlcov/
 coverage.*
 test-output.*
 .cache/
+/docs/locales/pot/.doctrees/
+/docs/locales/*/LC_MESSAGES/**/*.mo
 .mypy_cache/
 /tests/keys/localhost.crt
 /tests/keys/localhost.key
