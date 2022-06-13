@@ -43,7 +43,6 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h["a"], b"c")
         self.assertEqual(h.get("a"), b"c")
         self.assertEqual(h.getlist("a"), [b"b", b"c"])
-        assert h.getlist("a") is not ["b", "c"]
 
     def test_encode_utf8(self):
         h = Headers({'key': '\xa3'}, encoding='utf-8')
