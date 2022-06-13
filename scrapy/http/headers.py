@@ -1,7 +1,8 @@
+from collections.abc import Mapping
+
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.python import to_unicode
-from collections.abc import Mapping
 
 
 class Headers(CaselessDict):
