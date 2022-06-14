@@ -101,9 +101,9 @@ def verify_installed_loop(loop_path):
     )
     specified = f"{loop_class.__module__}.{loop_class.__qualname__}"
     raise Exception(
-        f"Scrapy found an asyncio Twisted reactor already "
+        "Scrapy found an asyncio Twisted reactor already "
         f"installed, and its event loop class ({installed}) does "
-        f"not match the one specified in the ASYNCIO_EVENT_LOOP "
+        "not match the one specified in the ASYNCIO_EVENT_LOOP "
         f"setting ({specified})"
     )
 
