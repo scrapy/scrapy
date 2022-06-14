@@ -308,6 +308,33 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
         self.assertNotIn("ReactorAlreadyInstalledError", log)
 
+    def test_reactor_default(self):
+        log = self.run_script('reactor_default.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+        self.assertNotIn("ReactorAlreadyInstalledError", log)
+
+    def test_reactor_default_twisted_reactor_select(self):
+        log = self.run_script('reactor_default_twisted_reactor_select.py')
+        self.assertNotIn('Spider closed (finished)', log)
+        self.assertIn(
+            (
+                "does not match the requested one "
+                "(twisted.internet.selectreactor.SelectReactor)"
+            ),
+            log,
+        )
+
+    def test_reactor_select(self):
+        log = self.run_script('reactor_select.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertNotIn("ReactorAlreadyInstalledError", log)
+
+    def test_reactor_select_twisted_reactor_select(self):
+        log = self.run_script('reactor_select_twisted_reactor_select.py')
+        self.assertIn('Spider closed (finished)', log)
+        self.assertNotIn("ReactorAlreadyInstalledError", log)
+
     def test_asyncio_enabled_no_reactor(self):
         log = self.run_script('asyncio_enabled_no_reactor.py')
         self.assertIn('Spider closed (finished)', log)
@@ -340,33 +367,33 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             self.assertNotIn("TimeoutError", log)
             self.assertNotIn("twisted.internet.error.DNSLookupError", log)
 
-    def test_reactor_select(self):
+    def test_twisted_reactor_select(self):
         log = self.run_script("twisted_reactor_select.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
 
     @mark.skipif(platform.system() == 'Windows', reason="PollReactor is not supported on Windows")
-    def test_reactor_poll(self):
+    def test_twisted_reactor_poll(self):
         log = self.run_script("twisted_reactor_poll.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.pollreactor.PollReactor", log)
 
-    def test_reactor_asyncio(self):
+    def test_twisted_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-    def test_reactor_asyncio_custom_settings(self):
+    def test_twisted_reactor_asyncio_custom_settings(self):
         log = self.run_script("twisted_reactor_custom_settings.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-    def test_reactor_asyncio_custom_settings_same(self):
+    def test_twisted_reactor_asyncio_custom_settings_same(self):
         log = self.run_script("twisted_reactor_custom_settings_same.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-    def test_reactor_asyncio_custom_settings_conflict(self):
+    def test_twisted_reactor_asyncio_custom_settings_conflict(self):
         log = self.run_script("twisted_reactor_custom_settings_conflict.py")
         self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
         self.assertIn("(twisted.internet.selectreactor.SelectReactor) does not match the requested one", log)
