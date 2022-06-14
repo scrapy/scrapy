@@ -271,11 +271,17 @@ crawl
 
 Start crawling using a spider.
 
+Supported options:
+
+* ``--output-format`` or ``-o/-O``: select output format.
+
 Usage examples::
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
+    $ scrapy crawl -O <filename>.jsonl:jsonlines <my_spider>
+    [ ... <my_spider> outputs feed to <filename>.jsonl ... ]
 
 .. command:: check
 

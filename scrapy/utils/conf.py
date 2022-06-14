@@ -162,7 +162,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
         if len(output) == 1:
             check_valid_format(output_format)
             message = (
-                'The -t command line option is deprecated in favor of '
+                'The -t/--output-format command line option is deprecated in favor of '
                 'specifying the output format within the output URI. See the '
                 'documentation of the -o and -O options for more information.'
             )
