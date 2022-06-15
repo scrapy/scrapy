@@ -316,14 +316,31 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_reactor_default_twisted_reactor_select(self):
         log = self.run_script('reactor_default_twisted_reactor_select.py')
-        self.assertNotIn('Spider closed (finished)', log)
-        self.assertIn(
-            (
-                "does not match the requested one "
-                "(twisted.internet.selectreactor.SelectReactor)"
-            ),
-            log,
-        )
+        from twisted.internet import reactor
+        from twisted.internet.selectreactor import SelectReactor
+        if isinstance(reactor, SelectReactor):
+            self.assertIn('Spider closed (finished)', log)
+            # The goal of this test function is to test that, when a reactor is
+            # installed (the default one here) and a different reactor is
+            # configured (select here), an error raises.
+            #
+            # In Windows the default reactor is the select reactor, so that
+            # error does not raise.
+            #
+            # If that ever becomes the case on more platforms (i.e. if Linux
+            # also starts using the select reactor by default in a future
+            # version of Twisted), then we will need to rethink this test,
+            # hence the assert below.
+            assert platform.system() == 'Windows'
+        else:
+            self.assertNotIn('Spider closed (finished)', log)
+            self.assertIn(
+                (
+                    "does not match the requested one "
+                    "(twisted.internet.selectreactor.SelectReactor)"
+                ),
+                log,
+            )
 
     def test_reactor_select(self):
         log = self.run_script('reactor_select.py')
