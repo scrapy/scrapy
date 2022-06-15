@@ -318,7 +318,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script('reactor_default_twisted_reactor_select.py')
         from twisted.internet import reactor
         from twisted.internet.selectreactor import SelectReactor
-        if isinstance(reactor, SelectReactor):
+        if reactor.__class__ == SelectReactor:
             self.assertIn('Spider closed (finished)', log)
             # The goal of this test function is to test that, when a reactor is
             # installed (the default one here) and a different reactor is
@@ -351,6 +351,17 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script('reactor_select_twisted_reactor_select.py')
         self.assertIn('Spider closed (finished)', log)
         self.assertNotIn("ReactorAlreadyInstalledError", log)
+
+    def test_reactor_select_subclass_twisted_reactor_select(self):
+        log = self.run_script('reactor_select_subclass_twisted_reactor_select.py')
+        self.assertNotIn('Spider closed (finished)', log)
+        self.assertIn(
+            (
+                "does not match the requested one "
+                "(twisted.internet.selectreactor.SelectReactor)"
+            ),
+            log,
+        )
 
     def test_asyncio_enabled_no_reactor(self):
         log = self.run_script('asyncio_enabled_no_reactor.py')
