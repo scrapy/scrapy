@@ -4,7 +4,6 @@ import marshal
 import pickle
 import tempfile
 import unittest
-from collections import OrderedDict
 from io import BytesIO
 from datetime import datetime
 from warnings import catch_warnings, filterwarnings
@@ -114,11 +113,11 @@ class BaseItemExporterTest(unittest.TestCase):
         self.assertEqual(name, 'John\xa3')
 
         ie = self._get_exporter(
-            fields_to_export=OrderedDict([('name', u'名稱')])
+            fields_to_export={'name': '名稱'}
         )
         self.assertEqual(
             list(ie._get_serialized_fields(self.i)),
-            [(u'名稱', u'John\xa3')]
+            [('名稱', 'John\xa3')]
         )
 
     def test_field_custom_serializer(self):

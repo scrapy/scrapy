@@ -2,13 +2,13 @@
 Item Exporters are used to export/serialize items into different formats.
 """
 
-from collections import Mapping
 import csv
 import io
 import marshal
 import pickle
 import pprint
 import warnings
+from collections.abc import Mapping
 from xml.sax.saxutils import XMLGenerator
 
 from itemadapter import is_item, ItemAdapter

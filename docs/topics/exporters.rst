@@ -205,7 +205,7 @@ BaseItemExporter
 
               ['field1', 'field2']
 
-      -   A dict [3]_ where keys are fields and values are output names::
+      -   A dict where keys are fields and values are output names::
 
               {'field1': 'Field 1', 'field2': 'Field 2'}
 
@@ -214,14 +214,6 @@ BaseItemExporter
              all their possible fields, exporters that do not support exporting
              a different subset of fields per item will only export the fields 
              found in the first item exported.
-      .. [3] Dicts preserve insertion order since `Python 3.7`_
-             (`CPython 3.6`_, `PyPy 2.5`_). If you are using an older version
-             of Python, use an OrderedDict_ to enforce a specific field order.
-
-             .. _Python 3.7: https://docs.python.org/whatsnew/3.7.html
-             .. _CPython 3.6: https://docs.python.org/whatsnew/3.6.html#new-dict-implementation
-             .. _PyPy 2.5: https://morepypy.blogspot.com/2015/02/pypy-250-released.html
-             .. _OrderedDict: https://docs.python.org/library/collections.html#collections.OrderedDict
 
    .. attribute:: export_empty_fields
 

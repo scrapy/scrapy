@@ -11,7 +11,7 @@ import sys
 import tempfile
 import warnings
 from abc import ABC, abstractmethod
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
@@ -998,9 +998,7 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_items_field_names(self):
         items = [{'foo': 'bar'}]
-        header = OrderedDict((
-            ("foo", "Foo"),
-        ))
+        header = {'foo': 'Foo'}
         rows = [{'Foo': 'bar'}]
         settings = {'FEED_EXPORT_FIELDS': header}
         yield self.assertExported(items, list(header.values()), rows,
@@ -1023,9 +1021,7 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_items_json_field_names(self):
         items = [{'foo': 'bar'}]
-        header = OrderedDict((
-            ("foo", "Foo"),
-        ))
+        header = {'foo': 'Foo'}
         rows = [{'Foo': 'bar'}]
         settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
         yield self.assertExported(items, list(header.values()), rows,

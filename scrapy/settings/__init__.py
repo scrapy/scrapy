@@ -1,6 +1,5 @@
 import json
 import copy
-from collections import OrderedDict
 from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
@@ -199,7 +198,7 @@ class BaseSettings(MutableMapping):
         return dict(value)
 
     def getdictorlist(self, name, default=None):
-        """Get a setting value as either an ``OrderedDict`` or a list.
+        """Get a setting value as either a :class:`dict` or a :class:`list`.
 
         If the setting is already a dict or a list, a copy of it will be
         returned.
@@ -209,7 +208,7 @@ class BaseSettings(MutableMapping):
 
         For example, settings populated from the command line will return:
 
-        -   ``OrdetedDict([('key1', 'value1'), ('key2', 'value2')])`` if set to
+        -   ``{'key1': 'value1', 'key2': 'value2'}`` if set to
             ``'{"key1": "value1", "key2": "value2"}'``
 
         -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
@@ -222,10 +221,10 @@ class BaseSettings(MutableMapping):
         """
         value = self.get(name, default)
         if value is None:
-            return OrderedDict()
+            return {}
         if isinstance(value, str):
             try:
-                return json.loads(value, object_pairs_hook=OrderedDict)
+                return json.loads(value)
             except ValueError:
                 return value.split(',')
         return copy.deepcopy(value)
