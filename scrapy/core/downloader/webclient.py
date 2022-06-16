@@ -1,8 +1,9 @@
+import re
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
 
 from twisted.web.http import HTTPClient
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 
 from scrapy.http import Headers
@@ -32,6 +33,8 @@ def _parse(url):
     and is ascii-only.
     """
     url = url.strip()
+    if not re.match(r'^\w+://', url):
+        url = '//' + url
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
 
@@ -167,6 +170,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         p.followRedirect = self.followRedirect
         p.afterFoundGet = self.afterFoundGet
         if self.timeout:
+            from twisted.internet import reactor
             timeoutCall = reactor.callLater(self.timeout, p.timeout)
             self.deferred.addBoth(self._cancelTimeout, timeoutCall)
         return p

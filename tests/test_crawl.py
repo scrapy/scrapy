@@ -35,6 +35,8 @@ from tests.spiders import (
     DelaySpider,
     DuplicateStartRequestsSpider,
     FollowAllSpider,
+    HeadersReceivedCallbackSpider,
+    HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
 )
@@ -273,6 +275,28 @@ with multiples lines
         self.assertEqual(s['len(engine.scraper.slot.active)'], 1)
 
     @defer.inlineCallbacks
+    def test_format_engine_status(self):
+        from scrapy.utils.engine import format_engine_status
+        est = []
+
+        def cb(response):
+            est.append(format_engine_status(crawler.engine))
+
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=self.mockserver.url('/'), callback_func=cb, mockserver=self.mockserver)
+        self.assertEqual(len(est), 1, est)
+        est = est[0].split("\n")[2:-2]  # remove header & footer
+        # convert to dict
+        est = [x.split(":") for x in est]
+        est = [x for sublist in est for x in sublist]  # flatten
+        est = [x.lstrip().rstrip() for x in est]
+        it = iter(est)
+        s = dict(zip(it, it))
+
+        self.assertEqual(s['engine.spider.name'], crawler.spider.name)
+        self.assertEqual(s['len(engine.scraper.slot.active)'], '1')
+
+    @defer.inlineCallbacks
     def test_graceful_crawl_error_handling(self):
         """
         Test whether errors happening anywhere in Crawler.crawl() are properly
@@ -496,7 +520,7 @@ class CrawlSpiderTestCase(TestCase):
         self.assertEqual(str(ip_address), gethostbyname(expected_netloc))
 
     @defer.inlineCallbacks
-    def test_stop_download_callback(self):
+    def test_bytes_received_stop_download_callback(self):
         crawler = self.runner.create_crawler(BytesReceivedCallbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertIsNone(crawler.spider.meta.get("failure"))
@@ -505,7 +529,7 @@ class CrawlSpiderTestCase(TestCase):
         self.assertLess(len(crawler.spider.meta["response"].body), crawler.spider.full_response_length)
 
     @defer.inlineCallbacks
-    def test_stop_download_errback(self):
+    def test_bytes_received_stop_download_errback(self):
         crawler = self.runner.create_crawler(BytesReceivedErrbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertIsNone(crawler.spider.meta.get("response"))
@@ -518,3 +542,23 @@ class CrawlSpiderTestCase(TestCase):
         self.assertLess(
             len(crawler.spider.meta["failure"].value.response.body),
             crawler.spider.full_response_length)
+
+    @defer.inlineCallbacks
+    def test_headers_received_stop_download_callback(self):
+        crawler = self.runner.create_crawler(HeadersReceivedCallbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("failure"))
+        self.assertIsInstance(crawler.spider.meta["response"], Response)
+        self.assertEqual(crawler.spider.meta["response"].headers, crawler.spider.meta.get("headers_received"))
+
+    @defer.inlineCallbacks
+    def test_headers_received_stop_download_errback(self):
+        crawler = self.runner.create_crawler(HeadersReceivedErrbackSpider)
+        yield crawler.crawl(mockserver=self.mockserver)
+        self.assertIsNone(crawler.spider.meta.get("response"))
+        self.assertIsInstance(crawler.spider.meta["failure"], Failure)
+        self.assertIsInstance(crawler.spider.meta["failure"].value, StopDownload)
+        self.assertIsInstance(crawler.spider.meta["failure"].value.response, Response)
+        self.assertEqual(
+            crawler.spider.meta["failure"].value.response.headers,
+            crawler.spider.meta.get("headers_received"))

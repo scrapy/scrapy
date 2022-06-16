@@ -1,8 +1,10 @@
+from pytest import mark
 from twisted.trial import unittest
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
 from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
     iter_errback,
     mustbe_deferred,
     process_chain,
@@ -21,7 +23,7 @@ class MustbeDeferredTest(unittest.TestCase):
 
         dfd = mustbe_deferred(_append, 1)
         dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
-        steps.append(2)  # add another value, that should be catched by assertEqual
+        steps.append(2)  # add another value, that should be caught by assertEqual
         return dfd
 
     def test_unfired_deferred(self):
@@ -35,7 +37,7 @@ class MustbeDeferredTest(unittest.TestCase):
 
         dfd = mustbe_deferred(_append, 1)
         dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
-        steps.append(2)  # add another value, that should be catched by assertEqual
+        steps.append(2)  # add another value, that should be caught by assertEqual
         return dfd
 
 
@@ -117,3 +119,18 @@ class IterErrbackTest(unittest.TestCase):
         self.assertEqual(out, [0, 1, 2, 3, 4])
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0].value, ZeroDivisionError)
+
+
+class AsyncDefTestsuiteTest(unittest.TestCase):
+    @deferred_f_from_coro_f
+    async def test_deferred_f_from_coro_f(self):
+        pass
+
+    @deferred_f_from_coro_f
+    async def test_deferred_f_from_coro_f_generator(self):
+        yield
+
+    @mark.xfail(reason="Checks that the test is actually executed", strict=True)
+    @deferred_f_from_coro_f
+    async def test_deferred_f_from_coro_f_xfail(self):
+        raise Exception("This is expected to be raised")

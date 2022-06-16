@@ -34,7 +34,27 @@ for argument in safe_to_ignore_arguments:
     curl_parser.add_argument(*argument, action='store_true')
 
 
-def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
+def _parse_headers_and_cookies(parsed_args):
+    headers = []
+    cookies = {}
+    for header in parsed_args.headers or ():
+        name, val = header.split(':', 1)
+        name = name.strip()
+        val = val.strip()
+        if name.title() == 'Cookie':
+            for name, morsel in SimpleCookie(val).items():
+                cookies[name] = morsel.value
+        else:
+            headers.append((name, val))
+
+    if parsed_args.auth:
+        user, password = parsed_args.auth.split(':', 1)
+        headers.append(('Authorization', basic_auth_header(user, password)))
+
+    return headers, cookies
+
+
+def curl_to_request_kwargs(curl_command: str, ignore_unknown_options: bool = True) -> dict:
     """Convert a cURL command syntax to Request kwargs.
 
     :param str curl_command: string containing the curl command
@@ -70,21 +90,7 @@ def curl_to_request_kwargs(curl_command, ignore_unknown_options=True):
 
     result = {'method': method.upper(), 'url': url}
 
-    headers = []
-    cookies = {}
-    for header in parsed_args.headers or ():
-        name, val = header.split(':', 1)
-        name = name.strip()
-        val = val.strip()
-        if name.title() == 'Cookie':
-            for name, morsel in SimpleCookie(val).items():
-                cookies[name] = morsel.value
-        else:
-            headers.append((name, val))
-
-    if parsed_args.auth:
-        user, password = parsed_args.auth.split(':', 1)
-        headers.append(('Authorization', basic_auth_header(user, password)))
+    headers, cookies = _parse_headers_and_cookies(parsed_args)
 
     if headers:
         result['headers'] = headers

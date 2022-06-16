@@ -207,6 +207,7 @@ LOG_DATEFORMAT = '%Y-%m-%d %H:%M:%S'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
+LOG_FILE_APPEND = True
 LOG_SHORT_NAMES = False
 
 SCHEDULER_DEBUG = False
@@ -244,6 +245,9 @@ REDIRECT_PRIORITY_ADJUST = +2
 
 REFERER_ENABLED = True
 REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
+
+REQUEST_FINGERPRINTER_CLASS = 'scrapy.utils.request.RequestFingerprinter'
+REQUEST_FINGERPRINTER_IMPLEMENTATION = 'PREVIOUS_VERSION'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests

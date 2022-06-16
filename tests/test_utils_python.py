@@ -3,10 +3,10 @@ import gc
 import operator
 import platform
 import unittest
-from datetime import datetime
 from itertools import count
-from warnings import catch_warnings
+from warnings import catch_warnings, filterwarnings
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
     WeakKeyCache, get_func_args, to_bytes, to_unicode,
@@ -160,7 +160,11 @@ class UtilsPythonTestCase(unittest.TestCase):
             pass
 
         _values = count()
-        wk = WeakKeyCache(lambda k: next(_values))
+
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            wk = WeakKeyCache(lambda k: next(_values))
+
         k = _Weakme()
         v = wk[k]
         self.assertEqual(v, wk[k])
@@ -219,12 +223,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         elif platform.python_implementation() == 'PyPy':
             self.assertEqual(get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
             self.assertEqual(get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
-
-            build_date = datetime.strptime(platform.python_build()[1], '%b %d %Y')
-            if build_date >= datetime(2020, 4, 7):  # PyPy 3.6-v7.3.1
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
-            else:
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
