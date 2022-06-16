@@ -180,7 +180,18 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(crawler.stats.get_value('downloader/response_status_count/302'), 3)
 
 
+try:
+    from PIL import Image  # noqa: imported just to check for the import error
+except ImportError:
+    skip_pillow = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+else:
+    skip_pillow = None
+
+
 class ImageDownloadCrawlTestCase(FileDownloadCrawlTestCase):
+
+    skip = skip_pillow
+
     pipeline_class = 'scrapy.pipelines.images.ImagesPipeline'
     store_setting_key = 'IMAGES_STORE'
     media_key = 'images'

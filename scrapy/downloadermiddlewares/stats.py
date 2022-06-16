@@ -1,7 +1,22 @@
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.python import global_object_name, to_bytes
 from scrapy.utils.request import request_httprepr
-from scrapy.utils.response import response_httprepr
-from scrapy.utils.python import global_object_name
+
+from twisted.web import http
+
+
+def get_header_size(headers):
+    size = 0
+    for key, value in headers.items():
+        if isinstance(value, (list, tuple)):
+            for v in value:
+                size += len(b": ") + len(key) + len(v)
+    return size + len(b'\r\n') * (len(headers.keys()) - 1)
+
+
+def get_status_size(response_status):
+    return len(to_bytes(http.RESPONSES.get(response_status, b''))) + 15
+    # resp.status + b"\r\n" + b"HTTP/1.1 <100-599> "
 
 
 class DownloaderStats:
@@ -24,7 +39,8 @@ class DownloaderStats:
     def process_response(self, request, response, spider):
         self.stats.inc_value('downloader/response_count', spider=spider)
         self.stats.inc_value(f'downloader/response_status_count/{response.status}', spider=spider)
-        reslen = len(response_httprepr(response))
+        reslen = len(response.body) + get_header_size(response.headers) + get_status_size(response.status) + 4
+        # response.body + b"\r\n"+ response.header + b"\r\n" + response.status
         self.stats.inc_value('downloader/response_bytes', reslen, spider=spider)
         return response
 

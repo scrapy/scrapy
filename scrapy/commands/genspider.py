@@ -4,6 +4,7 @@ import string
 
 from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
+from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -22,6 +23,14 @@ def sanitize_module_name(module_name):
     return module_name
 
 
+def extract_domain(url):
+    """Extract domain name from URL string"""
+    o = urlparse(url)
+    if o.scheme == '' and o.netloc == '':
+        o = urlparse("//" + url.lstrip("/"))
+    return o.netloc
+
+
 class Command(ScrapyCommand):
 
     requires_project = False
@@ -35,16 +44,16 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-l", "--list", dest="list", action="store_true",
-                          help="List available templates")
-        parser.add_option("-e", "--edit", dest="edit", action="store_true",
-                          help="Edit spider after creating it")
-        parser.add_option("-d", "--dump", dest="dump", metavar="TEMPLATE",
-                          help="Dump template to standard output")
-        parser.add_option("-t", "--template", dest="template", default="basic",
-                          help="Uses a custom template.")
-        parser.add_option("--force", dest="force", action="store_true",
-                          help="If the spider already exists, overwrite it with the template")
+        parser.add_argument("-l", "--list", dest="list", action="store_true",
+                            help="List available templates")
+        parser.add_argument("-e", "--edit", dest="edit", action="store_true",
+                            help="Edit spider after creating it")
+        parser.add_argument("-d", "--dump", dest="dump", metavar="TEMPLATE",
+                            help="Dump template to standard output")
+        parser.add_argument("-t", "--template", dest="template", default="basic",
+                            help="Uses a custom template.")
+        parser.add_argument("--force", dest="force", action="store_true",
+                            help="If the spider already exists, overwrite it with the template")
 
     def run(self, args, opts):
         if opts.list:
@@ -59,7 +68,8 @@ class Command(ScrapyCommand):
         if len(args) != 2:
             raise UsageError()
 
-        name, domain = args[0:2]
+        name, url = args[0:2]
+        domain = extract_domain(url)
         module = sanitize_module_name(name)
 
         if self.settings.get('BOT_NAME') == module:
@@ -98,7 +108,7 @@ class Command(ScrapyCommand):
         print(f"Created spider {name!r} using template {template_name!r} ",
               end=('' if spiders_module else '\n'))
         if spiders_module:
-            print("in module:\n  {spiders_module.__name__}.{module}")
+            print(f"in module:\n  {spiders_module.__name__}.{module}")
 
     def _find_template(self, template):
         template_file = join(self.templates_dir, f'{template}.tmpl')

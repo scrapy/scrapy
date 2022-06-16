@@ -9,9 +9,10 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.6+, either the CPython implementation (default) or
-the PyPy 7.2.0+ implementation (see :ref:`python:implementations`).
+Scrapy requires Python 3.7+, either the CPython implementation (default) or
+the PyPy 7.3.5+ implementation (see :ref:`python:implementations`).
 
+.. _intro-install-scrapy:
 
 Installing Scrapy
 =================
@@ -29,12 +30,12 @@ you can install Scrapy and its dependencies from PyPI with::
 
     pip install Scrapy
 
+We strongly recommend that you install Scrapy in :ref:`a dedicated virtualenv <intro-using-virtualenv>`,
+to avoid conflicting with your system packages.
+
 Note that sometimes this may require solving compilation issues for some Scrapy
 dependencies depending on your operating system, so be sure to check the
 :ref:`intro-install-platform-notes`.
-
-We strongly recommend that you install Scrapy in :ref:`a dedicated virtualenv <intro-using-virtualenv>`,
-to avoid conflicting with your system packages.
 
 For more detailed and platform specifics instructions, as well as
 troubleshooting information, read on.
@@ -51,16 +52,6 @@ Scrapy is written in pure Python and depends on a few key Python packages (among
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
 
-The minimal versions which Scrapy is tested against are:
-
-* Twisted 14.0
-* lxml 3.4
-* pyOpenSSL 0.14
-
-Scrapy may work with older versions of these packages
-but it is not guaranteed it will continue working
-because it’s not being tested against them.
-
 Some of these packages themselves depends on non-Python packages
 that might require additional installation steps depending on your platform.
 Please check :ref:`platform-specific guides below <intro-install-platform-notes>`.
@@ -69,10 +60,9 @@ In case of any trouble related to these dependencies,
 please refer to their respective installation instructions:
 
 * `lxml installation`_
-* `cryptography installation`_
+* :doc:`cryptography installation <cryptography:installation>`
 
 .. _lxml installation: https://lxml.de/installation.html
-.. _cryptography installation: https://cryptography.io/en/latest/installation/
 
 
 .. _intro-using-virtualenv:
@@ -118,6 +108,27 @@ Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 
   conda install -c conda-forge scrapy
 
+To install Scrapy on Windows using ``pip``:
+
+.. warning::
+    This installation method requires “Microsoft Visual C++” for installing some 
+    Scrapy dependencies, which demands significantly more disk space than Anaconda.
+
+#. Download and execute `Microsoft C++ Build Tools`_ to install the Visual Studio Installer.
+
+#. Run the Visual Studio Installer.
+
+#. Under the Workloads section, select **C++ build tools**.
+
+#. Check the installation details and make sure following packages are selected as optional components:
+
+    * **MSVC**  (e.g MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.23) )
+    
+    * **Windows SDK**  (e.g Windows 10 SDK (10.0.18362.0))
+
+#. Install the Visual Studio Build Tools.
+
+Now, you should be able to :ref:`install Scrapy <intro-install-scrapy>` using ``pip``.
 
 .. _intro-install-ubuntu:
 
@@ -169,7 +180,7 @@ prevents ``pip`` from updating system packages. This has to be addressed to
 successfully install Scrapy and its dependencies. Here are some proposed
 solutions:
 
-* *(Recommended)* **Don't** use system python, install a new, updated version
+* *(Recommended)* **Don't** use system Python. Install a new, updated version
   that doesn't conflict with the rest of your system. Here's how to do it using
   the `homebrew`_ package manager:
 
@@ -213,8 +224,8 @@ For PyPy3, only Linux installation was tested.
 
 Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
 This means that these dependencies will be built during installation.
-On macOS, you are likely to face an issue with building Cryptography dependency,
-solution to this problem is described
+On macOS, you are likely to face an issue with building the Cryptography
+dependency. The solution to this problem is described
 `here <https://github.com/pyca/cryptography/issues/2692#issuecomment-272773481>`_,
 that is to ``brew install openssl`` and then export the flags that this command
 recommends (only needed when installing Scrapy). Installing on Linux has no special
@@ -265,10 +276,10 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
 .. _setuptools: https://pypi.python.org/pypi/setuptools
-.. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
-.. _Scrapinghub: https://scrapinghub.com
 .. _Anaconda: https://docs.anaconda.com/anaconda/
 .. _Miniconda: https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+.. _Visual Studio: https://docs.microsoft.com/en-us/visualstudio/install/install-visual-studio
+.. _Microsoft C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 .. _conda-forge: https://conda-forge.org/

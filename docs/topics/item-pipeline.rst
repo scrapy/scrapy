@@ -42,7 +42,7 @@ Each item pipeline component is a Python class that must implement the following
    :type item: :ref:`item object <item-types>`
 
    :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spiders.Spider` object
+   :type spider: :class:`~scrapy.Spider` object
 
 Additionally, they may also implement the following methods:
 
@@ -51,18 +51,18 @@ Additionally, they may also implement the following methods:
    This method is called when the spider is opened.
 
    :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.spiders.Spider` object
+   :type spider: :class:`~scrapy.Spider` object
 
 .. method:: close_spider(self, spider)
 
    This method is called when the spider is closed.
 
    :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.spiders.Spider` object
+   :type spider: :class:`~scrapy.Spider` object
 
-.. method:: from_crawler(cls, crawler)
+.. classmethod:: from_crawler(cls, crawler)
 
-   If present, this classmethod is called to create a pipeline instance
+   If present, this class method is called to create a pipeline instance
    from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
    of the pipeline. Crawler object provides access to all Scrapy core
    components like settings and signals; it is a way for pipeline to
@@ -190,6 +190,8 @@ item.
 
     import scrapy
     from itemadapter import ItemAdapter
+    from scrapy.utils.defer import maybe_deferred_to_future
+
 
     class ScreenshotPipeline:
         """Pipeline that uses Splash to render screenshot of
@@ -202,7 +204,7 @@ item.
             encoded_item_url = quote(adapter["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
             request = scrapy.Request(screenshot_url)
-            response = await spider.crawler.engine.download(request, spider)
+            response = await maybe_deferred_to_future(spider.crawler.engine.download(request, spider))
 
             if response.status != 200:
                 # Error happened, return item.

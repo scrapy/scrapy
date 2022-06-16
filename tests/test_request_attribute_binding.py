@@ -106,9 +106,9 @@ class CrawlTestCase(TestCase):
         """
         Downloader middleware which returns a response with an specific 'request' attribute.
 
-        * The spider callback should receive the overriden response.request
-        * Handlers listening to the response_received signal should receive the overriden response.request
-        * The "crawled" log message should show the overriden response.request
+        * The spider callback should receive the overridden response.request
+        * Handlers listening to the response_received signal should receive the overridden response.request
+        * The "crawled" log message should show the overridden response.request
         """
         signal_params = {}
 
@@ -144,7 +144,7 @@ class CrawlTestCase(TestCase):
         An exception is raised but caught by the next middleware, which
         returns a Response with a specific 'request' attribute.
 
-        The spider callback should receive the overriden response.request
+        The spider callback should receive the overridden response.request
         """
         url = self.mockserver.url("/status?n=200")
         runner = CrawlerRunner(settings={

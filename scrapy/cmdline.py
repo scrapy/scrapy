@@ -1,13 +1,13 @@
 import sys
 import os
-import optparse
+import argparse
 import cProfile
 import inspect
 import pkg_resources
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.commands import ScrapyCommand
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
@@ -123,8 +123,6 @@ def execute(argv=None, settings=None):
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
-    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(),
-                                   conflict_handler='resolve')
     if not cmdname:
         _print_commands(settings, inproject)
         sys.exit(0)
@@ -133,12 +131,14 @@ def execute(argv=None, settings=None):
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser.usage = f"scrapy {cmdname} {cmd.syntax()}"
-    parser.description = cmd.long_desc()
+    parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
+                                     usage=f"scrapy {cmdname} {cmd.syntax()}",
+                                     conflict_handler='resolve',
+                                     description=cmd.long_desc())
     settings.setdict(cmd.default_settings, priority='command')
     cmd.settings = settings
     cmd.add_options(parser)
-    opts, args = parser.parse_args(args=argv[1:])
+    opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
     cmd.crawler_process = CrawlerProcess(settings)

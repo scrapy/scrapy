@@ -50,18 +50,19 @@ value of one of their fields::
             self.year_to_exporter = {}
 
         def close_spider(self, spider):
-            for exporter in self.year_to_exporter.values():
+            for exporter, xml_file in self.year_to_exporter.values():
                 exporter.finish_exporting()
+                xml_file.close()
 
         def _exporter_for_item(self, item):
             adapter = ItemAdapter(item)
             year = adapter['year']
             if year not in self.year_to_exporter:
-                f = open(f'{year}.xml', 'wb')
-                exporter = XmlItemExporter(f)
+                xml_file = open(f'{year}.xml', 'wb')
+                exporter = XmlItemExporter(xml_file)
                 exporter.start_exporting()
-                self.year_to_exporter[year] = exporter
-            return self.year_to_exporter[year]
+                self.year_to_exporter[year] = (exporter, xml_file)
+            return self.year_to_exporter[year][0]
 
         def process_item(self, item, spider):
             exporter = self._exporter_for_item(item)
@@ -89,7 +90,7 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~.Item` you can declare a serializer in the
+If you use :class:`~scrapy.Item` you can declare a serializer in the
 :ref:`field metadata <topics-items-fields>`. The serializer must be
 a callable which receives a value and returns its serialized form.
 
@@ -121,9 +122,9 @@ Example::
       class ProductXmlExporter(XmlItemExporter):
 
           def serialize_field(self, field, name, value):
-              if field == 'price':
+              if name == 'price':
                   return f'$ {str(value)}'
-              return super(Product, self).serialize_field(field, name, value)
+              return super().serialize_field(field, name, value)
 
 .. _topics-exporters-reference:
 
@@ -171,7 +172,7 @@ BaseItemExporter
       :param field: the field being serialized. If the source :ref:`item object
           <item-types>` does not define field metadata, *field* is an empty
           :class:`dict`.
-      :type field: :class:`~scrapy.item.Field` object or a :class:`dict` instance
+      :type field: :class:`~scrapy.Field` object or a :class:`dict` instance
 
       :param name: the name of the field being serialized
       :type name: str
