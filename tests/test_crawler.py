@@ -333,6 +333,9 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             # hence the assert below.
             assert platform.system() == 'Windows'
         else:
+            from logging import getLogger
+            logger = getLogger(__name__)
+            logger.error(reactor.__class__)
             self.assertNotIn('Spider closed (finished)', log)
             self.assertIn(
                 (
