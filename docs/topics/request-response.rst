@@ -26,10 +26,6 @@ Request objects
 
 .. autoclass:: Request
 
-    A :class:`Request` object represents an HTTP request, which is usually
-    generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
-
     :param url: the URL of this request
 
         If the URL is invalid, a :exc:`ValueError` exception is raised.
@@ -39,7 +35,7 @@ Request objects
        request (once it's downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spiders.Spider.parse` method will be used.
+       :meth:`~scrapy.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
     :type callback: collections.abc.Callable
@@ -64,7 +60,7 @@ Request objects
 
         .. caution:: Cookies set via the ``Cookie`` header are not considered by the
             :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
     :type headers: dict
@@ -96,7 +92,7 @@ Request objects
 
         To create a request that does not send stored cookies and does not
         store received cookies, set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.http.Request.meta>`.
+        in :attr:`request.meta <scrapy.Request.meta>`.
 
         Example of a request that sends manually-defined cookies and ignores
         cookie storage::
@@ -111,8 +107,12 @@ Request objects
 
         .. caution:: Cookies set via the ``Cookie`` header are not considered by the
             :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`Request.cookies <scrapy.http.Request>` parameter. This is a known
+            :class:`Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
+
+        .. versionadded:: 2.6.0
+           Cookie values that are :class:`bool`, :class:`float` or :class:`int`
+           are casted to :class:`str`.
 
     :type cookies: dict or list
 
@@ -205,6 +205,8 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+    .. autoattribute:: Request.attributes
+
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. See also:
@@ -219,6 +221,15 @@ Request objects
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
     .. automethod:: from_curl
+
+    .. automethod:: to_dict
+
+
+Other functions related to requests
+-----------------------------------
+
+.. autofunction:: scrapy.utils.request.request_from_dict
+
 
 .. _topics-request-response-ref-request-callback-arguments:
 
@@ -293,7 +304,7 @@ errors if needed::
             "http://www.httpbin.org/status/404",    # Not found error
             "http://www.httpbin.org/status/500",    # server issue
             "http://www.httpbin.org:12345/",        # non-responding host, timeout expected
-            "http://www.httphttpbinbin.org/",       # DNS error expected
+            "https://example.invalid/",             # DNS error expected
         ]
 
         def start_requests(self):
@@ -328,6 +339,7 @@ errors if needed::
                 request = failure.request
                 self.logger.error('TimeoutError on %s', request.url)
 
+
 .. _errback-cb_kwargs:
 
 Accessing additional data in errback functions
@@ -353,6 +365,273 @@ achieve this by using ``Failure.request.cb_kwargs``::
             main_url=failure.request.cb_kwargs['main_url'],
         )
 
+
+.. _request-fingerprints:
+
+Request fingerprints
+--------------------
+
+There are some aspects of scraping, such as filtering out duplicate requests
+(see :setting:`DUPEFILTER_CLASS`) or caching responses (see
+:setting:`HTTPCACHE_POLICY`), where you need the ability to generate a short,
+unique identifier from a :class:`~scrapy.http.Request` object: a request
+fingerprint.
+
+You often do not need to worry about request fingerprints, the default request
+fingerprinter works for most projects.
+
+However, there is no universal way to generate a unique identifier from a
+request, because different situations require comparing requests differently.
+For example, sometimes you may need to compare URLs case-insensitively, include
+URL fragments, exclude certain URL query parameters, include some or all
+headers, etc.
+
+To change how request fingerprints are built for your requests, use the
+:setting:`REQUEST_FINGERPRINTER_CLASS` setting.
+
+.. setting:: REQUEST_FINGERPRINTER_CLASS
+
+REQUEST_FINGERPRINTER_CLASS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+Default: :class:`scrapy.utils.request.RequestFingerprinter`
+
+A :ref:`request fingerprinter class <custom-request-fingerprinter>` or its
+import path.
+
+.. autoclass:: scrapy.utils.request.RequestFingerprinter
+
+
+.. setting:: REQUEST_FINGERPRINTER_IMPLEMENTATION
+
+REQUEST_FINGERPRINTER_IMPLEMENTATION
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: VERSION
+
+Default: ``'PREVIOUS_VERSION'``
+
+Determines which request fingerprinting algorithm is used by the default
+request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
+
+Possible values are:
+
+-   ``'PREVIOUS_VERSION'`` (default)
+
+    This implementation uses the same request fingerprinting algorithm as
+    Scrapy PREVIOUS_VERSION and earlier versions.
+
+    Even though this is the default value for backward compatibility reasons,
+    it is a deprecated value.
+
+-   ``'VERSION'``
+
+    This implementation was introduced in Scrapy VERSION to fix an issue of the
+    previous implementation.
+
+    New projects should use this value. The :command:`startproject` command
+    sets this value in the generated ``settings.py`` file.
+
+If you are using the default value (``'PREVIOUS_VERSION'``) for this setting, and you are
+using Scrapy components where changing the request fingerprinting algorithm
+would cause undesired results, you need to carefully decide when to change the
+value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
+setting to a custom request fingerprinter class that implements the PREVIOUS_VERSION request
+fingerprinting algorithm and does not log this warning (
+:ref:`PREVIOUS_VERSION-request-fingerprinter` includes an example implementation of such a
+class).
+
+Scenarios where changing the request fingerprinting algorithm may cause
+undesired results include, for example, using the HTTP cache middleware (see
+:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
+Changing the request fingerprinting algorithm would invalidade the current
+cache, requiring you to redownload all requests again.
+
+Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'VERSION'`` in
+your settings to switch already to the request fingerprinting implementation
+that will be the only request fingerprinting implementation available in a
+future version of Scrapy, and remove the deprecation warning triggered by using
+the default value (``'PREVIOUS_VERSION'``).
+
+
+.. _PREVIOUS_VERSION-request-fingerprinter:
+.. _custom-request-fingerprinter:
+
+Writing your own request fingerprinter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A request fingerprinter is a class that must implement the following method:
+
+.. method:: fingerprint(self, request)
+
+   Return a :class:`bytes` object that uniquely identifies *request*.
+
+   See also :ref:`request-fingerprint-restrictions`.
+
+   :param request: request to fingerprint
+   :type request: scrapy.http.Request
+
+Additionally, it may also implement the following methods:
+
+.. classmethod:: from_crawler(cls, crawler)
+
+   If present, this class method is called to create a request fingerprinter
+   instance from a :class:`~scrapy.crawler.Crawler` object. It must return a
+   new instance of the request fingerprinter.
+
+   *crawler* provides access to all Scrapy core components like settings and
+   signals; it is a way for the request fingerprinter to access them and hook
+   its functionality into Scrapy.
+
+   :param crawler: crawler that uses this request fingerprinter
+   :type crawler: :class:`~scrapy.crawler.Crawler` object
+
+.. classmethod:: from_settings(cls, settings)
+
+   If present, and ``from_crawler`` is not defined, this class method is called
+   to create a request fingerprinter instance from a
+   :class:`~scrapy.settings.Settings` object. It must return a new instance of
+   the request fingerprinter.
+
+The ``fingerprint`` method of the default request fingerprinter,
+:class:`scrapy.utils.request.RequestFingerprinter`, uses
+:func:`scrapy.utils.request.fingerprint` with its default parameters. For some
+common use cases you can use :func:`~scrapy.utils.request.fingerprint` as well
+in your ``fingerprint`` method implementation:
+
+.. autofunction:: scrapy.utils.request.fingerprint
+
+For example, to take the value of a request header named ``X-ID`` into
+account::
+
+    # my_project/settings.py
+    REQUEST_FINGERPRINTER_CLASS = 'my_project.utils.RequestFingerprinter'
+
+    # my_project/utils.py
+    from scrapy.utils.request import fingerprint
+
+    class RequestFingerprinter:
+
+        def fingerprint(self, request):
+            return fingerprint(request, include_headers=['X-ID'])
+
+You can also write your own fingerprinting logic from scratch.
+
+However, if you do not use :func:`~scrapy.utils.request.fingerprint`, make sure
+you use :class:`~weakref.WeakKeyDictionary` to cache request fingerprints:
+
+-   Caching saves CPU by ensuring that fingerprints are calculated only once
+    per request, and not once per Scrapy component that needs the fingerprint
+    of a request.
+
+-   Using :class:`~weakref.WeakKeyDictionary` saves memory by ensuring that
+    request objects do not stay in memory forever just because you have
+    references to them in your cache dictionary.
+
+For example, to take into account only the URL of a request, without any prior
+URL canonicalization or taking the request method or body into account::
+
+    from hashlib import sha1
+    from weakref import WeakKeyDictionary
+
+    from scrapy.utils.python import to_bytes
+
+    class RequestFingerprinter:
+
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                fp = sha1()
+                fp.update(to_bytes(request.url))
+                self.cache[request] = fp.digest()
+            return self.cache[request]
+
+If you need to be able to override the request fingerprinting for arbitrary
+requests from your spider callbacks, you may implement a request fingerprinter
+that reads fingerprints from :attr:`request.meta <scrapy.http.Request.meta>`
+when available, and then falls back to
+:func:`~scrapy.utils.request.fingerprint`. For example::
+
+    from scrapy.utils.request import fingerprint
+
+    class RequestFingerprinter:
+
+        def fingerprint(self, request):
+            if 'fingerprint' in request.meta:
+                return request.meta['fingerprint']
+            return fingerprint(request)
+
+If you need to reproduce the same fingerprinting algorithm as Scrapy PREVIOUS_VERSION
+without using the deprecated ``'PREVIOUS_VERSION'`` value of the
+:setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` setting, use the following
+request fingerprinter::
+
+    from hashlib import sha1
+    from weakref import WeakKeyDictionary
+
+    from scrapy.utils.python import to_bytes
+    from w3lib.url import canonicalize_url
+
+    class RequestFingerprinter:
+
+        cache = WeakKeyDictionary()
+
+        def fingerprint(self, request):
+            if request not in self.cache:
+                fp = sha1()
+                fp.update(to_bytes(request.method))
+                fp.update(to_bytes(canonicalize_url(request.url)))
+                fp.update(request.body or b'')
+                self.cache[request] = fp.digest()
+            return self.cache[request]
+
+
+.. _request-fingerprint-restrictions:
+
+Request fingerprint restrictions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Scrapy components that use request fingerprints may impose additional
+restrictions on the format of the fingerprints that your :ref:`request
+fingerprinter <custom-request-fingerprinter>` generates.
+
+The following built-in Scrapy components have such restrictions:
+
+-   :class:`scrapy.extensions.httpcache.FilesystemCacheStorage` (default
+    value of :setting:`HTTPCACHE_STORAGE`)
+
+    Request fingerprints must be at least 1 byte long.
+
+    Path and filename length limits of the file system of
+    :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
+    the following directory structure is created:
+
+    -   :attr:`Spider.name <scrapy.spiders.Spider.name>`
+
+        -   first byte of a request fingerprint as hexadecimal
+
+            -   fingerprint as hexadecimal
+
+                -   filenames up to 16 characters long
+
+    For example, if a request fingerprint is made of 20 bytes (default),
+    :setting:`HTTPCACHE_DIR` is ``'/home/user/project/.scrapy/httpcache'``,
+    and the name of your spider is ``'my_spider'`` your file system must
+    support a file path like::
+
+        /home/user/project/.scrapy/httpcache/my_spider/01/0123456789abcdef0123456789abcdef01234567/response_headers
+
+-   :class:`scrapy.extensions.httpcache.DbmCacheStorage`
+
+    The underlying DBM implementation must support keys as long as twice
+    the number of bytes of a request fingerprint, plus 5. For example,
+    if a request fingerprint is made of 20 bytes (default),
+    45-character-long keys must be supported.
+
+
 .. _topics-request-meta:
 
 Request.meta special keys
@@ -363,26 +642,26 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
-* :reqmeta:`dont_redirect`
-* :reqmeta:`dont_retry`
-* :reqmeta:`handle_httpstatus_list`
-* :reqmeta:`handle_httpstatus_all`
-* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
+* :reqmeta:`dont_merge_cookies`
+* :reqmeta:`dont_obey_robotstxt`
+* :reqmeta:`dont_redirect`
+* :reqmeta:`dont_retry`
+* :reqmeta:`download_fail_on_dataloss`
+* :reqmeta:`download_latency`
+* :reqmeta:`download_maxsize`
+* :reqmeta:`download_timeout`
+* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
+* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`handle_httpstatus_all`
+* :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`max_retry_times`
+* :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
-* :reqmeta:`bindaddress`
-* :reqmeta:`dont_obey_robotstxt`
-* :reqmeta:`download_timeout`
-* :reqmeta:`download_maxsize`
-* :reqmeta:`download_latency`
-* :reqmeta:`download_fail_on_dataloss`
-* :reqmeta:`proxy`
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * :reqmeta:`referrer_policy`
-* :reqmeta:`max_retry_times`
 
 .. reqmeta:: bindaddress
 
@@ -432,9 +711,9 @@ The meta key is used set retry times per request. When initialized, the
 Stopping the download of a Response
 ===================================
 
-Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a
-:class:`~scrapy.signals.bytes_received` signal handler will stop the
-download of a given response. See the following example::
+Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a handler for the
+:class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
+signals will stop the download of a given response. See the following example::
 
     import scrapy
 
@@ -488,7 +767,9 @@ fields with form data from :class:`Response` objects.
 
 .. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
-.. class:: FormRequest(url, [formdata, ...])
+.. class:: scrapy.http.request.form.FormRequest
+.. class:: scrapy.http.FormRequest
+.. class:: scrapy.FormRequest(url, [formdata, ...])
 
     The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
@@ -642,6 +923,8 @@ dealing with JSON requests.
        data into JSON format.
    :type dumps_kwargs: dict
 
+   .. autoattribute:: JsonRequest.attributes
+
 JsonRequest usage example
 -------------------------
 
@@ -658,9 +941,6 @@ Response objects
 ================
 
 .. autoclass:: Response
-
-    A :class:`Response` object represents an HTTP response, which is usually
-    downloaded (by the Downloader) and fed to the Spiders for processing.
 
     :param url: the URL of this response
     :type url: str
@@ -685,7 +965,7 @@ Response objects
 
     :param request: the initial value of the :attr:`Response.request` attribute.
         This represents the :class:`Request` that generated this response.
-    :type request: scrapy.http.Request
+    :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
     :type certificate: twisted.internet.ssl.Certificate
@@ -693,8 +973,18 @@ Response objects
     :param ip_address: The IP address of the server from which the Response originated.
     :type ip_address: :class:`ipaddress.IPv4Address` or :class:`ipaddress.IPv6Address`
 
+    :param protocol: The protocol that was used to download the response.
+        For instance: "HTTP/1.0", "HTTP/1.1", "h2"
+    :type protocol: :class:`str`
+
+    .. versionadded:: 2.0.0
+       The ``certificate`` parameter.
+
     .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
+
+    .. versionadded:: 2.5.0
+       The ``protocol`` parameter.
 
     .. attribute:: Response.url
 
@@ -780,6 +1070,8 @@ Response objects
 
     .. attribute:: Response.certificate
 
+        .. versionadded:: 2.0.0
+
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
 
@@ -794,6 +1086,19 @@ Response objects
         This attribute is currently only populated by the HTTP 1.1 download
         handler, i.e. for ``http(s)`` responses. For other handlers,
         :attr:`ip_address` is always ``None``.
+
+    .. attribute:: Response.protocol
+
+        .. versionadded:: 2.5.0
+
+        The protocol that was used to download the response.
+        For instance: "HTTP/1.0", "HTTP/1.1"
+
+        This attribute is currently only populated by the HTTP download
+        handlers, i.e. for ``http(s)`` responses. For other handlers,
+        :attr:`protocol` is always ``None``.
+
+    .. autoattribute:: Response.attributes
 
     .. method:: Response.copy()
 
@@ -888,8 +1193,10 @@ TextResponse objects
 
     .. attribute:: TextResponse.selector
 
-        A :class:`~scrapy.selector.Selector` instance using the response as
+        A :class:`~scrapy.Selector` instance using the response as
         target. The selector is lazily instantiated on first access.
+
+    .. autoattribute:: TextResponse.attributes
 
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
@@ -914,6 +1221,14 @@ TextResponse objects
 
         Returns a Python object from deserialized JSON document.
         The result is cached after the first call.
+
+    .. method:: TextResponse.urljoin(url)
+
+        Constructs an absolute url by combining the Response's base url with
+        a possible relative url. The base url shall be extracted from the
+        ``<base>`` tag, or just the Response's :attr:`url` if there is no such
+        tag.
+
 
 
 HtmlResponse objects

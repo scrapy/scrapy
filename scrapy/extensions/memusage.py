@@ -33,8 +33,8 @@ class MemoryUsage:
         self.crawler = crawler
         self.warned = False
         self.notify_mails = crawler.settings.getlist('MEMUSAGE_NOTIFY_MAIL')
-        self.limit = crawler.settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
-        self.warning = crawler.settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
+        self.limit = crawler.settings.getint('MEMUSAGE_LIMIT_MB') * 1024 * 1024
+        self.warning = crawler.settings.getint('MEMUSAGE_WARNING_MB') * 1024 * 1024
         self.check_interval = crawler.settings.getfloat('MEMUSAGE_CHECK_INTERVAL_SECONDS')
         self.mail = MailSender.from_settings(crawler.settings)
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
@@ -77,7 +77,7 @@ class MemoryUsage:
     def _check_limit(self):
         if self.get_virtual_size() > self.limit:
             self.crawler.stats.set_value('memusage/limit_reached', 1)
-            mem = self.limit/1024/1024
+            mem = self.limit / 1024 / 1024
             logger.error("Memory usage exceeded %(memusage)dM. Shutting down Scrapy...",
                          {'memusage': mem}, extra={'crawler': self.crawler})
             if self.notify_mails:
@@ -88,19 +88,17 @@ class MemoryUsage:
                 self._send_report(self.notify_mails, subj)
                 self.crawler.stats.set_value('memusage/limit_notified', 1)
 
-            open_spiders = self.crawler.engine.open_spiders
-            if open_spiders:
-                for spider in open_spiders:
-                    self.crawler.engine.close_spider(spider, 'memusage_exceeded')
+            if self.crawler.engine.spider is not None:
+                self.crawler.engine.close_spider(self.crawler.engine.spider, 'memusage_exceeded')
             else:
                 self.crawler.stop()
 
     def _check_warning(self):
-        if self.warned: # warn only once
+        if self.warned:  # warn only once
             return
         if self.get_virtual_size() > self.warning:
             self.crawler.stats.set_value('memusage/warning_reached', 1)
-            mem = self.warning/1024/1024
+            mem = self.warning / 1024 / 1024
             logger.warning("Memory usage reached %(memusage)dM",
                            {'memusage': mem}, extra={'crawler': self.crawler})
             if self.notify_mails:

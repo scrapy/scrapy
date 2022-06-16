@@ -7,12 +7,14 @@ import unittest
 from collections import OrderedDict
 from io import BytesIO
 from datetime import datetime
+from warnings import catch_warnings, filterwarnings
 
 import lxml.etree
 from itemadapter import ItemAdapter
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import to_unicode
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter, PprintItemExporter, PickleItemExporter, CsvItemExporter,
     XmlItemExporter, JsonLinesItemExporter, JsonItemExporter,
@@ -181,10 +183,12 @@ class PythonItemExporterTest(BaseItemExporterTest):
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
 
     def test_export_binary(self):
-        exporter = PythonItemExporter(binary=True)
-        value = self.item_class(name='John\xa3', age='22')
-        expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
-        self.assertEqual(expected, exporter.export_item(value))
+        with catch_warnings():
+            filterwarnings('ignore', category=ScrapyDeprecationWarning)
+            exporter = PythonItemExporter(binary=True)
+            value = self.item_class(name='John\xa3', age='22')
+            expected = {b'name': b'John\xc2\xa3', b'age': b'22'}
+            self.assertEqual(expected, exporter.export_item(value))
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
@@ -369,14 +373,14 @@ class CsvItemExporterTest(BaseItemExporterTest):
     def test_errors_default(self):
         with self.assertRaises(UnicodeEncodeError):
             self.assertExportResult(
-                item=dict(text=u'W\u0275\u200Brd'),
+                item=dict(text='W\u0275\u200Brd'),
                 expected=None,
                 encoding='windows-1251',
             )
 
     def test_errors_xmlcharrefreplace(self):
         self.assertExportResult(
-            item=dict(text=u'W\u0275\u200Brd'),
+            item=dict(text='W\u0275\u200Brd'),
             include_headers_line=False,
             expected='W&#629;&#8203;rd\r\n',
             encoding='windows-1251',

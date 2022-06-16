@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from contextlib import suppress
 
 from twisted.internet import asyncioreactor, error
@@ -57,6 +58,10 @@ def install_reactor(reactor_path, event_loop_path=None):
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
+            if sys.version_info >= (3, 8) and sys.platform == "win32":
+                policy = asyncio.get_event_loop_policy()
+                if not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy):
+                    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
             if event_loop_path is not None:
                 event_loop_class = load_object(event_loop_path)
                 event_loop = event_loop_class()

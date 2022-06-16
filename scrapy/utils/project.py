@@ -1,5 +1,4 @@
 import os
-import pickle
 import warnings
 
 from importlib import import_module
@@ -68,18 +67,10 @@ def get_project_settings():
     if settings_module_path:
         settings.setmodule(settings_module_path, priority='project')
 
-    pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
-    if pickled_settings:
-        warnings.warn("Use of environment variable "
-                      "'SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE' "
-                      "is deprecated.", ScrapyDeprecationWarning)
-        settings.setdict(pickle.loads(pickled_settings), priority='project')
-
     scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if
                       k.startswith('SCRAPY_')}
     valid_envvars = {
         'CHECK',
-        'PICKLED_SETTINGS_TO_OVERRIDE',
         'PROJECT',
         'PYTHON_SHELL',
         'SETTINGS_MODULE',

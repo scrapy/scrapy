@@ -121,7 +121,7 @@ def feed_complete_default_values_from_settings(feed, settings):
     out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
     out.setdefault("uri_params", settings["FEED_URI_PARAMS"])
-    out.setdefault("item_export_kwargs", dict())
+    out.setdefault("item_export_kwargs", {})
     if settings["FEED_EXPORT_INDENT"] is None:
         out.setdefault("indent", None)
     else:
@@ -164,7 +164,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
             message = (
                 'The -t command line option is deprecated in favor of '
                 'specifying the output format within the output URI. See the '
-                'documentation of the -o and -O options for more information.',
+                'documentation of the -o and -O options for more information.'
             )
             warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}

@@ -1,8 +1,14 @@
+import re
 import time
-from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
+from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
+
+
+# Defined in the http.cookiejar module, but undocumented:
+# https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
+IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
 
 class CookieJar:
@@ -136,10 +142,6 @@ class WrappedRequest:
         """
         return self.request.meta.get('is_unverifiable', False)
 
-    def get_origin_req_host(self):
-        return urlparse_cached(self.request).hostname
-
-    # python3 uses attributes instead of methods
     @property
     def full_url(self):
         return self.get_full_url()
@@ -158,7 +160,7 @@ class WrappedRequest:
 
     @property
     def origin_req_host(self):
-        return self.get_origin_req_host()
+        return urlparse_cached(self.request).hostname
 
     def has_header(self, name):
         return name in self.request.headers

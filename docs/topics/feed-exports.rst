@@ -21,10 +21,10 @@ Serialization formats
 For serializing the scraped data, the feed exports use the :ref:`Item exporters
 <topics-exporters>`. These formats are supported out of the box:
 
- * :ref:`topics-feed-format-json`
- * :ref:`topics-feed-format-jsonlines`
- * :ref:`topics-feed-format-csv`
- * :ref:`topics-feed-format-xml`
+-   :ref:`topics-feed-format-json`
+-   :ref:`topics-feed-format-jsonlines`
+-   :ref:`topics-feed-format-csv`
+-   :ref:`topics-feed-format-xml`
 
 But you can also extend the supported format through the
 :setting:`FEED_EXPORTERS` setting.
@@ -34,54 +34,58 @@ But you can also extend the supported format through the
 JSON
 ----
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``json``
- * Exporter used: :class:`~scrapy.exporters.JsonItemExporter`
- * See :ref:`this warning <json-with-large-data>` if you're using JSON with
-   large feeds.
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``json``
+
+-   Exporter used: :class:`~scrapy.exporters.JsonItemExporter`
+
+-   See :ref:`this warning <json-with-large-data>` if you're using JSON with
+    large feeds.
 
 .. _topics-feed-format-jsonlines:
 
 JSON lines
 ----------
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``jsonlines``
- * Exporter used: :class:`~scrapy.exporters.JsonLinesItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``jsonlines``
+-   Exporter used: :class:`~scrapy.exporters.JsonLinesItemExporter`
 
 .. _topics-feed-format-csv:
 
 CSV
 ---
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``csv``
- * Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
- * To specify columns to export, their order and their column names, use
-   :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
-   option, but it is important for CSV because unlike many other export
-   formats CSV uses a fixed header.
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``csv``
+
+-   Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
+
+-   To specify columns to export, their order and their column names, use
+    :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
+    option, but it is important for CSV because unlike many other export
+    formats CSV uses a fixed header.
 
 .. _topics-feed-format-xml:
 
 XML
 ---
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``xml``
- * Exporter used: :class:`~scrapy.exporters.XmlItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``xml``
+-   Exporter used: :class:`~scrapy.exporters.XmlItemExporter`
 
 .. _topics-feed-format-pickle:
 
 Pickle
 ------
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``pickle``
- * Exporter used: :class:`~scrapy.exporters.PickleItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``pickle``
+-   Exporter used: :class:`~scrapy.exporters.PickleItemExporter`
 
 .. _topics-feed-format-marshal:
 
 Marshal
 -------
 
- * Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
- * Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
+-   Value for the ``format`` key in the :setting:`FEEDS` setting: ``marshal``
+-   Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
 
 
 .. _topics-feed-storage:
@@ -95,11 +99,11 @@ storage backend types which are defined by the URI scheme.
 
 The storages backends supported out of the box are:
 
- * :ref:`topics-feed-storage-fs`
- * :ref:`topics-feed-storage-ftp`
- * :ref:`topics-feed-storage-s3` (requires botocore_)
- * :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
- * :ref:`topics-feed-storage-stdout`
+-   :ref:`topics-feed-storage-fs`
+-   :ref:`topics-feed-storage-ftp`
+-   :ref:`topics-feed-storage-s3` (requires botocore_)
+-   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
+-   :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
 not available. For example, the S3 backend is only available if the botocore_
@@ -114,8 +118,8 @@ Storage URI parameters
 The storage URI can also contain parameters that get replaced when the feed is
 being created. These parameters are:
 
- * ``%(time)s`` - gets replaced by a timestamp when the feed is being created
- * ``%(name)s`` - gets replaced by the spider name
+-   ``%(time)s`` - gets replaced by a timestamp when the feed is being created
+-   ``%(name)s`` - gets replaced by the spider name
 
 Any other named parameter gets replaced by the spider attribute of the same
 name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
@@ -123,13 +127,16 @@ attribute the moment the feed is being created.
 
 Here are some examples to illustrate:
 
- * Store in FTP using one directory per spider:
+-   Store in FTP using one directory per spider:
 
-   * ``ftp://user:password@ftp.example.com/scraping/feeds/%(name)s/%(time)s.json``
+    -   ``ftp://user:password@ftp.example.com/scraping/feeds/%(name)s/%(time)s.json``
 
- * Store in S3 using one directory per spider:
+-   Store in S3 using one directory per spider:
 
-   * ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
+    -   ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
+
+.. note:: :ref:`Spider arguments <spiderargs>` become spider attributes, hence
+          they can also be used as storage URI parameters.
 
 
 .. _topics-feed-storage-backends:
@@ -144,9 +151,9 @@ Local filesystem
 
 The feeds are stored in the local filesystem.
 
- * URI scheme: ``file``
- * Example URI: ``file:///tmp/export.csv``
- * Required external libraries: none
+-   URI scheme: ``file``
+-   Example URI: ``file:///tmp/export.csv``
+-   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme if
 you specify an absolute path like ``/tmp/export.csv``. This only works on Unix
@@ -159,9 +166,9 @@ FTP
 
 The feeds are stored in a FTP server.
 
- * URI scheme: ``ftp``
- * Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
- * Required external libraries: none
+-   URI scheme: ``ftp``
+-   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``
+-   Required external libraries: none
 
 FTP supports two different connection modes: `active or passive
 <https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
@@ -178,23 +185,29 @@ S3
 
 The feeds are stored on `Amazon S3`_.
 
- * URI scheme: ``s3``
- * Example URIs:
+-   URI scheme: ``s3``
 
-   * ``s3://mybucket/path/to/export.csv``
-   * ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
+-   Example URIs:
 
- * Required external libraries: `botocore`_ >= 1.4.87
+    -   ``s3://mybucket/path/to/export.csv``
+
+    -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
+
+-   Required external libraries: `botocore`_ >= 1.4.87
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
 
- * :setting:`AWS_ACCESS_KEY_ID`
- * :setting:`AWS_SECRET_ACCESS_KEY`
+-   :setting:`AWS_ACCESS_KEY_ID`
+-   :setting:`AWS_SECRET_ACCESS_KEY`
+-   :setting:`AWS_SESSION_TOKEN` (only needed for `temporary security credentials`_)
 
-You can also define a custom ACL for exported feeds using this setting:
+.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
 
- * :setting:`FEED_STORAGE_S3_ACL`
+You can also define a custom ACL and custom endpoint for exported feeds using this setting:
+
+-   :setting:`FEED_STORAGE_S3_ACL`
+-   :setting:`AWS_ENDPOINT_URL`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -208,19 +221,20 @@ Google Cloud Storage (GCS)
 
 The feeds are stored on `Google Cloud Storage`_.
 
- * URI scheme: ``gs``
- * Example URIs:
+-   URI scheme: ``gs``
 
-   * ``gs://mybucket/path/to/export.csv``
+-   Example URIs:
 
- * Required external libraries: `google-cloud-storage`_.
+    -   ``gs://mybucket/path/to/export.csv``
+
+-   Required external libraries: `google-cloud-storage`_.
 
 For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
- * :setting:`FEED_STORAGE_GCS_ACL`
- * :setting:`GCS_PROJECT_ID`
+-   :setting:`FEED_STORAGE_GCS_ACL`
+-   :setting:`GCS_PROJECT_ID`
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -234,9 +248,9 @@ Standard output
 
 The feeds are written to the standard output of the Scrapy process.
 
- * URI scheme: ``stdout``
- * Example URI: ``stdout:``
- * Required external libraries: none
+-   URI scheme: ``stdout``
+-   Example URI: ``stdout:``
+-   Required external libraries: none
 
 
 .. _delayed-file-delivery:
@@ -259,21 +273,118 @@ soon as a file reaches the maximum item count, that file is delivered to the
 feed URI, allowing item delivery to start way before the end of the crawl.
 
 
+.. _item-filter:
+
+Item filtering
+==============
+
+.. versionadded:: 2.6.0
+
+You can filter items that you want to allow for a particular feed by using the
+``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
+the specified types will be added to the feed.
+
+The ``item_classes`` option is implemented by the :class:`~scrapy.extensions.feedexport.ItemFilter`
+class, which is the default value of the ``item_filter`` :ref:`feed option <feed-options>`.
+
+You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
+method ``accepts`` and taking ``feed_options`` as an argument.
+
+For instance::
+
+    class MyCustomFilter:
+
+        def __init__(self, feed_options):
+            self.feed_options = feed_options
+
+        def accepts(self, item):
+            if "field1" in item and item["field1"] == "expected_data":
+                return True
+            return False
+
+
+You can assign your custom filtering class to the ``item_filter`` :ref:`option of a feed <feed-options>`.
+See :setting:`FEEDS` for examples.
+
+ItemFilter
+----------
+
+.. autoclass:: scrapy.extensions.feedexport.ItemFilter
+   :members:
+
+
+.. _post-processing:
+
+Post-Processing
+===============
+
+.. versionadded:: 2.6.0
+
+Scrapy provides an option to activate plugins to post-process feeds before they are exported
+to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
+can create your own :ref:`plugins <custom-plugins>`.
+
+These plugins can be activated through the ``postprocessing`` option of a feed.
+The option must be passed a list of post-processing plugins in the order you want
+the feed to be processed. These plugins can be declared either as an import string
+or with the imported class of the plugin. Parameters to plugins can be passed
+through the feed options. See :ref:`feed options <feed-options>` for examples.
+
+.. _builtin-plugins:
+
+Built-in Plugins
+----------------
+
+.. autoclass:: scrapy.extensions.postprocessing.GzipPlugin
+
+.. autoclass:: scrapy.extensions.postprocessing.LZMAPlugin
+
+.. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
+
+.. _custom-plugins:
+
+Custom Plugins
+--------------
+
+Each plugin is a class that must implement the following methods:
+
+.. method:: __init__(self, file, feed_options)
+
+    Initialize the plugin.
+
+    :param file: file-like object having at least the `write`, `tell` and `close` methods implemented
+
+    :param feed_options: feed-specific :ref:`options <feed-options>`
+    :type feed_options: :class:`dict`
+
+.. method:: write(self, data)
+
+   Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
+   It must return number of bytes written.
+
+.. method:: close(self)
+
+    Close the target file object.
+
+To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You
+can then access those parameters from the ``__init__`` method of your plugin.
+
+
 Settings
 ========
 
 These are the settings used for configuring the feed exports:
 
- * :setting:`FEEDS` (mandatory)
- * :setting:`FEED_EXPORT_ENCODING`
- * :setting:`FEED_STORE_EMPTY`
- * :setting:`FEED_EXPORT_FIELDS`
- * :setting:`FEED_EXPORT_INDENT`
- * :setting:`FEED_STORAGES`
- * :setting:`FEED_STORAGE_FTP_ACTIVE`
- * :setting:`FEED_STORAGE_S3_ACL`
- * :setting:`FEED_EXPORTERS`
- * :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
+-   :setting:`FEEDS` (mandatory)
+-   :setting:`FEED_EXPORT_ENCODING`
+-   :setting:`FEED_STORE_EMPTY`
+-   :setting:`FEED_EXPORT_FIELDS`
+-   :setting:`FEED_EXPORT_INDENT`
+-   :setting:`FEED_STORAGES`
+-   :setting:`FEED_STORAGE_FTP_ACTIVE`
+-   :setting:`FEED_STORAGE_S3_ACL`
+-   :setting:`FEED_EXPORTERS`
+-   :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`
 
 .. currentmodule:: scrapy.extensions.feedexport
 
@@ -301,21 +412,26 @@ For instance::
             'format': 'json',
             'encoding': 'utf8',
             'store_empty': False,
+            'item_classes': [MyItemClass1, 'myproject.items.MyItemClass2'],
             'fields': None,
             'indent': 4,
             'item_export_kwargs': {
                'export_empty_fields': True,
             },
-        }, 
+        },
         '/home/user/documents/items.xml': {
             'format': 'xml',
             'fields': ['name', 'price'],
+            'item_filter': MyCustomFilter1,
             'encoding': 'latin1',
             'indent': 8,
         },
-        pathlib.Path('items.csv'): {
+        pathlib.Path('items.csv.gz'): {
             'format': 'csv',
             'fields': ['price', 'name'],
+            'item_filter': 'myproject.filters.MyCustomFilter2',
+            'postprocessing': [MyPlugin1, 'scrapy.extensions.postprocessing.GzipPlugin'],
+            'gzip_compresslevel': 5,
         },
     }
 
@@ -336,6 +452,18 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
+
+-   ``item_classes``: list of :ref:`item classes <topics-items>` to export.
+
+    If undefined or empty, all items are exported.
+
+    .. versionadded:: 2.6.0
+
+-   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
+
+    :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
+
+    .. versionadded:: 2.6.0
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
@@ -367,6 +495,11 @@ as a fallback value if that key is not provided for a specific feed definition:
 
 -   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
 
+-   ``postprocessing``: list of :ref:`plugins <post-processing>` to use for post-processing.
+
+    The plugins will be used in the order of the list passed.
+
+    .. versionadded:: 2.6.0
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -600,9 +733,12 @@ The function signature should be as follows:
    :type params: dict
 
    :param spider: source spider of the feed items
-   :type spider: scrapy.spiders.Spider
+   :type spider: scrapy.Spider
 
-For example, to include the :attr:`name <scrapy.spiders.Spider.name>` of the
+   .. caution:: The function should return a new dictionary, modifying
+                the received ``params`` in-place is deprecated.
+
+For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
 
 #.  Define the following function somewhere in your project::

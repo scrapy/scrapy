@@ -11,7 +11,6 @@ from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
-from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.log import failure_to_exc_info
 
@@ -77,6 +76,7 @@ class MediaPipeline:
         except AttributeError:
             pipe = cls()
         pipe.crawler = crawler
+        pipe._fingerprinter = crawler.request_fingerprinter
         return pipe
 
     def open_spider(self, spider):
@@ -86,11 +86,11 @@ class MediaPipeline:
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]
-        dfd = DeferredList(dlist, consumeErrors=1)
+        dfd = DeferredList(dlist, consumeErrors=True)
         return dfd.addCallback(self.item_completed, item, info)
 
     def _process_request(self, request, info, item):
-        fp = request_fingerprint(request)
+        fp = self._fingerprinter.fingerprint(request)
         cb = request.callback or (lambda _: _)
         eb = request.errback
         request.callback = None
@@ -121,7 +121,7 @@ class MediaPipeline:
     def _make_compatible(self):
         """Make overridable methods of MediaPipeline and subclasses backwards compatible"""
         methods = [
-            "file_path", "media_to_download", "media_downloaded",
+            "file_path", "thumb_path", "media_to_download", "media_downloaded",
             "file_downloaded", "image_downloaded", "get_images"
         ]
 
@@ -173,7 +173,7 @@ class MediaPipeline:
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
             self._modify_media_request(request)
-            dfd = self.crawler.engine.download(request, info.spider)
+            dfd = self.crawler.engine.download(request)
             dfd.addCallbacks(
                 callback=self.media_downloaded, callbackArgs=(request, info), callbackKeywords={'item': item},
                 errback=self.media_failed, errbackArgs=(request, info))

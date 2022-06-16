@@ -42,7 +42,7 @@ Disallow: /some/randome/page.html
 """.encode('utf-8')
         response = TextResponse('http://site.local/robots.txt', body=ROBOTS)
 
-        def return_response(request, spider):
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -79,7 +79,7 @@ Disallow: /some/randome/page.html
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt', body=b'GIF89a\xd3\x00\xfe\x00\xa2')
 
-        def return_response(request, spider):
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -102,7 +102,7 @@ Disallow: /some/randome/page.html
         crawler.settings.set('ROBOTSTXT_OBEY', True)
         response = Response('http://site.local/robots.txt')
 
-        def return_response(request, spider):
+        def return_response(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -122,7 +122,7 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
 
-        def return_failure(request, spider):
+        def return_failure(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
             return deferred
@@ -138,7 +138,7 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
         err = error.DNSLookupError('Robotstxt address not found')
 
-        def immediate_failure(request, spider):
+        def immediate_failure(request):
             deferred = Deferred()
             deferred.errback(failure.Failure(err))
             return deferred
@@ -150,7 +150,7 @@ Disallow: /some/randome/page.html
     def test_ignore_robotstxt_request(self):
         self.crawler.settings.set('ROBOTSTXT_OBEY', True)
 
-        def ignore_request(request, spider):
+        def ignore_request(request):
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
             return deferred
