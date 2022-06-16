@@ -316,10 +316,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_reactor_default_twisted_reactor_select(self):
         log = self.run_script('reactor_default_twisted_reactor_select.py')
-        from twisted.internet import reactor
-        from twisted.internet.selectreactor import SelectReactor
-        if reactor.__class__ == SelectReactor:
-            self.assertIn('Spider closed (finished)', log)
+        if platform.system() == 'Windows':
             # The goal of this test function is to test that, when a reactor is
             # installed (the default one here) and a different reactor is
             # configured (select here), an error raises.
@@ -329,13 +326,9 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             #
             # If that ever becomes the case on more platforms (i.e. if Linux
             # also starts using the select reactor by default in a future
-            # version of Twisted), then we will need to rethink this test,
-            # hence the assert below.
-            assert platform.system() == 'Windows'
+            # version of Twisted), then we will need to rethink this test.
+            self.assertIn('Spider closed (finished)', log)
         else:
-            from logging import getLogger
-            logger = getLogger(__name__)
-            logger.error(reactor.__class__)
             self.assertNotIn('Spider closed (finished)', log)
             self.assertIn(
                 (
