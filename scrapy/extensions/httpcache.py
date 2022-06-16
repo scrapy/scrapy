@@ -240,7 +240,7 @@ class DbmCacheStorage:
         status = data['status']
         headers = Headers(data['headers'])
         body = data['body']
-        respcls = responsetypes.from_args(headers=headers, url=url)
+        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
@@ -299,7 +299,7 @@ class FilesystemCacheStorage:
         url = metadata.get('response_url')
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
-        respcls = responsetypes.from_args(headers=headers, url=url)
+        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
