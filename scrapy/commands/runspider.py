@@ -14,7 +14,7 @@ def _import_file(filepath):
     if fext not in ('.py', '.pyw'):
         raise ValueError(f"Not a Python source file: {abspath}")
     if dirname:
-        sys.path = [dirname] + sys.path
+        sys.path.insert(0, dirname)
     try:
         module = import_module(fname)
     finally:
