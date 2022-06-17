@@ -21,7 +21,6 @@ from unittest import mock
 from urllib.parse import urljoin, quote
 from urllib.request import pathname2url
 
-import pytest
 import lxml.etree
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -731,7 +730,6 @@ class FeedExportTest(FeedExportTestBase):
         reader = csv.DictReader(to_unicode(data['csv']).splitlines())
         got_rows = list(reader)
         self.assertEqual(reader.fieldnames, header)
-
         self.assertEqual(rows, got_rows)
 
     @defer.inlineCallbacks
@@ -1815,7 +1813,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_filters(self):
-        import sys
         if "PyPy" in sys.version:
             # https://foss.heptapod.net/pypy/pypy/-/issues/3527
             raise unittest.SkipTest("lzma filters doesn't work in PyPy")
