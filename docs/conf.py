@@ -295,6 +295,7 @@ intersphinx_mapping = {
     'twisted': ('https://twistedmatrix.com/documents/current', None),
     'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
 }
+intersphinx_disabled_reftypes = []
 
 
 # Options for sphinx-hoverxref options

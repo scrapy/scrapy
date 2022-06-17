@@ -5,13 +5,18 @@ Release notes
 
 .. _release-2.6.2:
 
-Scrapy 2.6.2 (2022-0?-??)
--------------------------
+Scrapy 2.6.2 (to be determined)
+-------------------------------
 
 Fixes additional regressions introduced in 2.6.0:
 
 -   :class:`~scrapy.crawler.CrawlerProcess` supports again crawling multiple
     spiders (:issue:`5435`, :issue:`5436`)
+
+-   Installing a Twisted reactor before Scrapy does (e.g. importing
+    :mod:`twisted.internet.reactor` somewhere at the module level) no longer
+    prevents Scrapy from starting, as long as a different reactor is not
+    specified in :setting:`TWISTED_REACTOR` (:issue:`5525`, :issue:`5528`)
 
 -   Fixed an exception that was being logged after the spider finished under
     certain conditions (:issue:`5437`, :issue:`5440`)
