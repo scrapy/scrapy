@@ -1004,8 +1004,6 @@ class FeedExportTest(FeedExportTestBase):
         yield self.assertExported(items, list(header.values()), rows,
                                   settings=settings)
 
-    @pytest.mark.skipif(sys.version_info < (3, 7),
-                        reason='Only official in Python 3.7+')
     @defer.inlineCallbacks
     def test_export_items_dict_field_names(self):
         items = [{'foo': 'bar'}]
