@@ -726,11 +726,9 @@ class FeedExportTest(FeedExportTestBase):
             },
         })
         data = yield self.exported_data(items, settings)
-
         reader = csv.DictReader(to_unicode(data['csv']).splitlines())
-        got_rows = list(reader)
-        self.assertEqual(reader.fieldnames, header)
-        self.assertEqual(rows, got_rows)
+        self.assertEqual(reader.fieldnames, list(header))
+        self.assertEqual(rows, list(reader))
 
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
@@ -1141,7 +1139,7 @@ class FeedExportTest(FeedExportTestBase):
             {'egg': 'spam', 'foo': 'bar'}
         ]
         rows_jl = items
-        yield self.assertExportedCsv(items, ['egg', 'foo'], rows_csv)
+        yield self.assertExportedCsv(items, ['foo', 'egg'], rows_csv)
         yield self.assertExportedJsonLines(items, rows_jl)
 
     @defer.inlineCallbacks
