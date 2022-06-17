@@ -638,6 +638,7 @@ Default::
     {
         'json': 'scrapy.exporters.JsonItemExporter',
         'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
+        'jsonl': 'scrapy.exporters.JsonLinesItemExporter',
         'jl': 'scrapy.exporters.JsonLinesItemExporter',
         'csv': 'scrapy.exporters.CsvItemExporter',
         'xml': 'scrapy.exporters.XmlItemExporter',
@@ -763,7 +764,7 @@ source spider in the feed URI:
 
 #.  Use ``%(spider_name)s`` in your feed URI::
 
-        scrapy crawl <spider_name> -o "%(spider_name)s.jl"
+        scrapy crawl <spider_name> -o "%(spider_name)s.jsonl"
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
