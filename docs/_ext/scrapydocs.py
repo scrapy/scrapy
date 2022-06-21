@@ -17,7 +17,7 @@ class SettingsListDirective(Directive):
 def is_setting_index(node):
     if node.tagname == 'index':
         # index entries for setting directives look like:
-        # [(u'pair', u'SETTING_NAME; setting', u'std:setting-SETTING_NAME', '')]
+        # [('pair', 'SETTING_NAME; setting', 'std:setting-SETTING_NAME', '')]
         entry_type, info, refid = node['entries'][0][:3]
         return entry_type == 'pair' and info.endswith('; setting')
     return False

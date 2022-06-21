@@ -54,7 +54,7 @@ class StatsCollector:
 class MemoryStatsCollector(StatsCollector):
 
     def __init__(self, crawler):
-        super(MemoryStatsCollector, self).__init__(crawler)
+        super().__init__(crawler)
         self.spider_stats = {}
 
     def _persist_stats(self, stats, spider):

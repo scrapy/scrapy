@@ -15,7 +15,7 @@ class HttpError(IgnoreRequest):
 
     def __init__(self, response, *args, **kwargs):
         self.response = response
-        super(HttpError, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 class HttpErrorMiddleware:
@@ -32,7 +32,7 @@ class HttpErrorMiddleware:
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
-        if 'handle_httpstatus_all' in meta:
+        if meta.get('handle_httpstatus_all', False):
             return
         if 'handle_httpstatus_list' in meta:
             allowed_statuses = meta['handle_httpstatus_list']
@@ -48,7 +48,7 @@ class HttpErrorMiddleware:
         if isinstance(exception, HttpError):
             spider.crawler.stats.inc_value('httperror/response_ignored_count')
             spider.crawler.stats.inc_value(
-                'httperror/response_ignored_status_count/%s' % response.status
+                f'httperror/response_ignored_status_count/{response.status}'
             )
             logger.info(
                 "Ignoring response %(response)r: HTTP status code is not handled or not allowed",

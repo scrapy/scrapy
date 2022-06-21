@@ -86,27 +86,27 @@ class FTPDownloadHandler:
         password = request.meta.get("ftp_password", self.default_password)
         passive_mode = 1 if bool(request.meta.get("ftp_passive",
                                                   self.passive_mode)) else 0
-        creator = ClientCreator(reactor, FTPClient, user, password,
-            passive=passive_mode)
-        return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
-                                request, unquote(parsed_url.path))
+        creator = ClientCreator(reactor, FTPClient, user, password, passive=passive_mode)
+        dfd = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
+        return dfd.addCallback(self.gotClient, request, unquote(parsed_url.path))
 
     def gotClient(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
-        return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
-                        callbackArgs=(request, protocol),
-                        errback=self._failed,
-                        errbackArgs=(request,))
+        return client.retrieveFile(filepath, protocol).addCallbacks(
+            callback=self._build_response,
+            callbackArgs=(request, protocol),
+            errback=self._failed,
+            errbackArgs=(request,),
+        )
 
     def _build_response(self, result, request, protocol):
         self.result = result
-        respcls = responsetypes.from_args(url=request.url)
         protocol.close()
-        body = protocol.filename or protocol.body.read()
         headers = {"local filename": protocol.filename or '', "size": protocol.size}
-        return respcls(url=request.url, status=200, body=to_bytes(body), headers=headers)
+        body = to_bytes(protocol.filename or protocol.body.read())
+        respcls = responsetypes.from_args(url=request.url, body=body)
+        return respcls(url=request.url, status=200, body=body, headers=headers)
 
     def _failed(self, result, request):
         message = result.getErrorMessage()

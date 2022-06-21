@@ -1,24 +1,25 @@
-import logging
 import inspect
+import logging
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
-try:
-    from scrapy.utils.py36 import collect_asyncgen
-except SyntaxError:
-    collect_asyncgen = None
+from scrapy.utils.asyncgen import collect_asyncgen
 
 
 logger = logging.getLogger(__name__)
 
 
 def iterate_spider_output(result):
-    if collect_asyncgen and hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(result):
+    if inspect.isasyncgen(result):
         d = deferred_from_coro(collect_asyncgen(result))
         d.addCallback(iterate_spider_output)
         return d
-    return arg_to_iter(deferred_from_coro(result))
+    elif inspect.iscoroutine(result):
+        d = deferred_from_coro(result)
+        d.addCallback(iterate_spider_output)
+        return d
+    return arg_to_iter(result)
 
 
 def iter_spider_classes(module):
@@ -30,10 +31,12 @@ def iter_spider_classes(module):
     from scrapy.spiders import Spider
 
     for obj in vars(module).values():
-        if inspect.isclass(obj) and \
-           issubclass(obj, Spider) and \
-           obj.__module__ == module.__name__ and \
-           getattr(obj, 'name', None):
+        if (
+            inspect.isclass(obj)
+            and issubclass(obj, Spider)
+            and obj.__module__ == module.__name__
+            and getattr(obj, 'name', None)
+        ):
             yield obj
 
 

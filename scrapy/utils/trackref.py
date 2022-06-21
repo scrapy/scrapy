@@ -9,14 +9,15 @@ and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
-import weakref
-from time import time
-from operator import itemgetter
 from collections import defaultdict
+from operator import itemgetter
+from time import time
+from typing import DefaultDict
+from weakref import WeakKeyDictionary
 
 
 NoneType = type(None)
-live_refs = defaultdict(weakref.WeakKeyDictionary)
+live_refs: DefaultDict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
 
 
 class object_ref:
@@ -41,9 +42,7 @@ def format_live_refs(ignore=NoneType):
         if issubclass(cls, ignore):
             continue
         oldest = min(wdict.values())
-        s += "%-30s %6d   oldest: %ds ago\n" % (
-            cls.__name__, len(wdict), now - oldest
-        )
+        s += f"{cls.__name__:<30} {len(wdict):6}   oldest: {int(now - oldest)}s ago\n"
     return s
 
 

@@ -45,7 +45,7 @@ class ResponseTypes:
         elif mimetype in self.classes:
             return self.classes[mimetype]
         else:
-            basetype = "%s/*" % mimetype.split('/')[0]
+            basetype = f"{mimetype.split('/')[0]}/*"
             return self.classes.get(basetype, Response)
 
     def from_content_type(self, content_type, content_encoding=None):
@@ -58,9 +58,9 @@ class ResponseTypes:
 
     def from_content_disposition(self, content_disposition):
         try:
-            filename = to_unicode(content_disposition,
-                encoding='latin-1', errors='replace').split(';')[1].split('=')[1]
-            filename = filename.strip('"\'')
+            filename = to_unicode(
+                content_disposition, encoding='latin-1', errors='replace'
+            ).split(';')[1].split('=')[1].strip('"\'')
             return self.from_filename(filename)
         except IndexError:
             return Response
@@ -95,12 +95,14 @@ class ResponseTypes:
         chunk = to_bytes(chunk)
         if not binary_is_text(chunk):
             return self.from_mimetype('application/octet-stream')
-        elif b"<html>" in chunk.lower():
+        lowercase_chunk = chunk.lower()
+        if b"<html>" in lowercase_chunk:
             return self.from_mimetype('text/html')
-        elif b"<?xml" in chunk.lower():
+        if b"<?xml" in lowercase_chunk:
             return self.from_mimetype('text/xml')
-        else:
-            return self.from_mimetype('text')
+        if b'<!doctype html>' in lowercase_chunk:
+            return self.from_mimetype('text/html')
+        return self.from_mimetype('text')
 
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
