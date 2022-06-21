@@ -3,7 +3,7 @@ from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
 
 from twisted.web.http import HTTPClient
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 
 from scrapy.http import Headers
@@ -112,7 +112,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         request.meta['download_latency'] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self._url)
+        respcls = responsetypes.from_args(headers=headers, url=self._url, body=body)
         return respcls(url=self._url, status=status, headers=headers, body=body, protocol=to_unicode(self.version))
 
     def _set_connection_attributes(self, request):
@@ -170,6 +170,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         p.followRedirect = self.followRedirect
         p.afterFoundGet = self.afterFoundGet
         if self.timeout:
+            from twisted.internet import reactor
             timeoutCall = reactor.callLater(self.timeout, p.timeout)
             self.deferred.addBoth(self._cancelTimeout, timeoutCall)
         return p

@@ -275,6 +275,28 @@ with multiples lines
         self.assertEqual(s['len(engine.scraper.slot.active)'], 1)
 
     @defer.inlineCallbacks
+    def test_format_engine_status(self):
+        from scrapy.utils.engine import format_engine_status
+        est = []
+
+        def cb(response):
+            est.append(format_engine_status(crawler.engine))
+
+        crawler = self.runner.create_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=self.mockserver.url('/'), callback_func=cb, mockserver=self.mockserver)
+        self.assertEqual(len(est), 1, est)
+        est = est[0].split("\n")[2:-2]  # remove header & footer
+        # convert to dict
+        est = [x.split(":") for x in est]
+        est = [x for sublist in est for x in sublist]  # flatten
+        est = [x.lstrip().rstrip() for x in est]
+        it = iter(est)
+        s = dict(zip(it, it))
+
+        self.assertEqual(s['engine.spider.name'], crawler.spider.name)
+        self.assertEqual(s['len(engine.scraper.slot.active)'], '1')
+
+    @defer.inlineCallbacks
     def test_graceful_crawl_error_handling(self):
         """
         Test whether errors happening anywhere in Crawler.crawl() are properly

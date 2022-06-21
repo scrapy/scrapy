@@ -93,6 +93,22 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
 
+    def test_thumbnail_name_from_item(self):
+        """
+        Custom thumbnail name based on item data, overriding default implementation
+        """
+
+        class CustomImagesPipeline(ImagesPipeline):
+            def thumb_path(self, request, thumb_id, response=None, info=None, item=None):
+                return f"thumb/{thumb_id}/{item.get('path')}"
+
+        thumb_path = CustomImagesPipeline.from_settings(Settings(
+            {'IMAGES_STORE': self.tempdir}
+        )).thumb_path
+        item = dict(path='path-to-store-file')
+        request = Request("http://example.com")
+        self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
+
     def test_convert_image(self):
         SIZE = (100, 100)
         # straigh forward case: RGB and JPEG

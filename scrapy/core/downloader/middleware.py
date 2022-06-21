@@ -3,7 +3,7 @@ Downloader Middleware manager
 
 See documentation in docs/topics/downloader-middleware.rst
 """
-from typing import Callable, Union
+from typing import Callable, Union, cast
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -37,6 +37,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         @defer.inlineCallbacks
         def process_request(request: Request):
             for method in self.methods['process_request']:
+                method = cast(Callable, method)
                 response = yield deferred_from_coro(method(request=request, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
@@ -55,6 +56,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 return response
 
             for method in self.methods['process_response']:
+                method = cast(Callable, method)
                 response = yield deferred_from_coro(method(request=request, response=response, spider=spider))
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
@@ -69,6 +71,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         def process_exception(failure: Failure):
             exception = failure.value
             for method in self.methods['process_exception']:
+                method = cast(Callable, method)
                 response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
                 if response is not None and not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(

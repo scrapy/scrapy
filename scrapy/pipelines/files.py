@@ -85,7 +85,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
+    POLICY = 'private'  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
@@ -142,7 +142,7 @@ class S3FilesStore:
             **extra)
 
     def _headers_to_botocore_kwargs(self, headers):
-        """ Convert headers to botocore keyword agruments.
+        """ Convert headers to botocore keyword arguments.
         """
         # This is required while we need to support both boto and botocore.
         mapping = CaselessDict({
@@ -190,7 +190,7 @@ class GCSFilesStore:
     CACHE_CONTROL = 'max-age=172800'
 
     # The bucket's default object ACL will be applied to the object.
-    # Overriden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
     POLICY = None
 
     def __init__(self, uri):
@@ -222,8 +222,8 @@ class GCSFilesStore:
                 return {'checksum': checksum, 'last_modified': last_modified}
             else:
                 return {}
-
-        return threads.deferToThread(self.bucket.get_blob, path).addCallback(_onsuccess)
+        blob_path = self._get_blob_path(path)
+        return threads.deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess)
 
     def _get_content_type(self, headers):
         if headers and 'Content-Type' in headers:
@@ -231,8 +231,12 @@ class GCSFilesStore:
         else:
             return 'application/octet-stream'
 
+    def _get_blob_path(self, path):
+        return self.prefix + path
+
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        blob = self.bucket.blob(self.prefix + path)
+        blob_path = self._get_blob_path(path)
+        blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
         return threads.deferToThread(
@@ -291,7 +295,7 @@ class FilesPipeline(MediaPipeline):
     """Abstract pipeline that implement the file downloading
 
     This pipeline tries to minimize network transfers and file processing,
-    doing stat of the files and determining if file is new, uptodate or
+    doing stat of the files and determining if file is new, up-to-date or
     expired.
 
     ``new`` files are those that pipeline never processed and needs to be
