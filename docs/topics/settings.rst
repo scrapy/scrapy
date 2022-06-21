@@ -633,24 +633,40 @@ DOWNLOAD_DELAY
 
 Default: ``0``
 
-The amount of time (in secs) that the downloader should wait before downloading
-consecutive pages from the same website. This can be used to throttle the
-crawling speed to avoid hitting servers too hard. Decimal numbers are
-supported.  Example::
+Minimum seconds to wait between 2 consecutive requests to the same domain.
 
-    DOWNLOAD_DELAY = 0.25    # 250 ms of delay
+Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
+servers too hard.
+
+Decimal numbers are supported. For example, to send a maximum of 4 requests
+every 10 seconds::
+
+    DOWNLOAD_DELAY = 2.5
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
-amount of time between requests, but uses a random interval between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`.
+setting, which is enabled by default.
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
-per ip address instead of per domain.
+per IP address instead of per domain.
+
+Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
+concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
+time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
+concurrency for that domain is 1. When testing throttling configurations, it
+usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
+and only increase :setting:`DOWNLOAD_DELAY` once
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
+desired.
 
 .. _spider-download_delay-attribute:
 
-You can also change this setting per spider by setting ``download_delay``
+You can change this setting per spider by setting the ``download_delay``
 spider attribute.
+
+It is also possible to change this setting per domain, although it requires
+non-trivial code. See the implementation of the :ref:`AutoThrottle
+<topics-autothrottle>` extension for an example.
+
 
 .. setting:: DOWNLOAD_HANDLERS
 
