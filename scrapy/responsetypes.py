@@ -3,10 +3,8 @@ This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
 from mimetypes import MimeTypes
-from operator import truediv
 from pkgutil import get_data
 from io import StringIO
-from traceback import format_exception_only
 from urllib.parse import urlparse
 from warnings import warn
 
@@ -50,7 +48,7 @@ class ResponseTypes:
         self.mimetypes.readfp(StringIO(mimedata))
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
-        
+
         self.prioritized_mime_type_checkers = (
             is_html_mime_type,
             is_xml_mime_type,
@@ -124,13 +122,15 @@ class ResponseTypes:
         chunk = to_bytes(chunk)
         if not binary_is_text(chunk):
             return self.from_mimetype('application/octet-stream')
-        elif b"<html>" in chunk.lower():
+        lowercase_chunk = chunk.lower()
+        if b"<html>" in lowercase_chunk:
             return self.from_mimetype('text/html')
-        elif b"<?xml" in chunk.lower():
+        if b"<?xml" in lowercase_chunk:
             return self.from_mimetype('text/xml')
-        else:
-            return self.from_mimetype('text')
-    
+        if b'<!doctype html>' in lowercase_chunk:
+            return self.from_mimetype('text/html')
+        return self.from_mimetype('text')
+
     def _is_text_mime_type(self, mime_type):
         if (
             mime_type.startswith(b"text/")
@@ -164,7 +164,7 @@ class ResponseTypes:
         ):
             return TextResponse
         return Response
-    
+
     def _guess_type(self, filename=None):
         mimetype, encoding = self.mimetypes.guess_type(filename)
         if encoding:
@@ -181,11 +181,17 @@ class ResponseTypes:
             content_type_mime_type = None
 
         if headers and b'Content-Disposition' in headers:
-            content_disposition_mime_type = headers.get(b'Content-Disposition').split(b';')[-1].split(b'=')[-1].strip(b'"\'').decode()
+            content_disposition_mime_type = (
+                headers.get(b"Content-Disposition")
+                .split(b";")[-1]
+                .split(b"=")[-1]
+                .strip(b"\"'")
+                .decode()
+            )
             content_disposition_mime_type = self._guess_type(content_disposition_mime_type)
         else:
             content_disposition_mime_type = None
-        
+
         url_mime_type = self._guess_type(url) if url else None
         filename_mime_type = self._guess_type(filename) if filename else None
 
@@ -199,7 +205,7 @@ class ResponseTypes:
         for mime_type_checker in self.prioritized_mime_type_checkers:
             for candidate_mime_type in candidate_mime_types:
                 if (
-                    candidate_mime_type is not None 
+                    candidate_mime_type is not None
                     and mime_type_checker(candidate_mime_type)
                 ):
                     return candidate_mime_type

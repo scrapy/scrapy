@@ -90,6 +90,8 @@ class ResponseTypesTest(unittest.TestCase):
             ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
             ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
             ({'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'}, Response),
+            # https://codersblock.com/blog/the-smallest-valid-html5-page/
+            ({'body': b'<!DOCTYPE html>\n<title>.</title>'}, HtmlResponse),
             ({'body': b'\x01\x02', 'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
             ({'headers': Headers({'Content-Type': ['application/x-json']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/x-javascript']})}, TextResponse),
@@ -97,7 +99,7 @@ class ResponseTypesTest(unittest.TestCase):
             ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
               'url': 'http://www.example.com/page/'}, Response),
             ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
-                        ({'url': 'http://www.example.com/page/file.html',
+            ({'url': 'http://www.example.com/page/file.html',
               'headers': Headers({'Content-Type': 'application/octet-stream'})}, HtmlResponse),
             ({'url': 'http://www.example.com/item/file.xml',
               'headers': Headers({'Content-Type': 'application/octet-stream'})}, XmlResponse),
