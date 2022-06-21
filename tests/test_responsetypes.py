@@ -174,8 +174,8 @@ class ResponseTypesTest(unittest.TestCase):
     def test_custom_mime_types_loaded(self):
         """Check that mime.types files shipped with Scrapy are loaded."""
         self.assertEqual(
-          _MIME_TYPES.guess_type('x.scrapytest')[0],
-          'x-scrapy/test',
+            _MIME_TYPES.guess_type('x.scrapytest')[0],
+            'x-scrapy/test',
         )
 
 

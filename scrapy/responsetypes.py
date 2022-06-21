@@ -32,7 +32,8 @@ _CONTENT_ENCODING_MIME_TYPES = {
     'gzip': b'application/gzip',
 }
 _MIME_TYPES = MimeTypes()
-_MIME_TYPES.readfp(StringIO(get_data('scrapy', 'mime.types').decode()))
+_scrapy_mime_data = get_data('scrapy', 'mime.types') or b''
+_MIME_TYPES.readfp(StringIO(_scrapy_mime_data.decode()))
 
 
 def _is_other_text_mime_type(mime_type):
