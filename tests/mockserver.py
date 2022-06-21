@@ -14,10 +14,9 @@ from twisted.internet import defer, reactor, ssl
 from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
-from twisted.web.resource import EncodingResourceWrapper, Resource
+from twisted.web import resource, server
 from twisted.web.server import GzipEncoderFactory, NOT_DONE_YET, Site
 from twisted.web.static import File
-from twisted.web.test.test_webclient import PayloadResource
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
@@ -35,7 +34,70 @@ def getarg(request, name, default=None, type=None):
         return default
 
 
-class LeafResource(Resource):
+# most of the following resources are copied from twisted.web.test.test_webclient
+class ForeverTakingResource(resource.Resource):
+    """
+    L{ForeverTakingResource} is a resource which never finishes responding
+    to requests.
+    """
+
+    def __init__(self, write=False):
+        resource.Resource.__init__(self)
+        self._write = write
+
+    def render(self, request):
+        if self._write:
+            request.write(b"some bytes")
+        return server.NOT_DONE_YET
+
+
+class ErrorResource(resource.Resource):
+    def render(self, request):
+        request.setResponseCode(401)
+        if request.args.get(b"showlength"):
+            request.setHeader(b"content-length", b"0")
+        return b""
+
+
+class NoLengthResource(resource.Resource):
+    def render(self, request):
+        return b"nolength"
+
+
+class HostHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of the host header
+    from the request.
+    """
+
+    def render(self, request):
+        return request.requestHeaders.getRawHeaders(b"host")[0]
+
+
+class PayloadResource(resource.Resource):
+    """
+    A testing resource which renders itself as the contents of the request body
+    as long as the request body is 100 bytes long, otherwise which renders
+    itself as C{"ERROR"}.
+    """
+
+    def render(self, request):
+        data = request.content.read()
+        contentLength = request.requestHeaders.getRawHeaders(b"content-length")[0]
+        if len(data) != 100 or int(contentLength) != 100:
+            return b"ERROR"
+        return data
+
+
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        # only sends 3 bytes even though it claims to send 5
+        request.setHeader(b"content-length", b"5")
+        request.write(b"abc")
+        return b""
+
+
+class LeafResource(resource.Resource):
 
     isLeaf = True
 
@@ -175,10 +237,10 @@ class ArbitraryLengthPayloadResource(LeafResource):
         return request.content.read()
 
 
-class Root(Resource):
+class Root(resource.Resource):
 
     def __init__(self):
-        Resource.__init__(self)
+        resource.Resource.__init__(self)
         self.putChild(b"status", Status())
         self.putChild(b"follow", Follow())
         self.putChild(b"delay", Delay())
@@ -187,7 +249,7 @@ class Root(Resource):
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
-        self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"xpayload", resource.EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir

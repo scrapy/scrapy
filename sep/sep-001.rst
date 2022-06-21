@@ -260,7 +260,7 @@ ItemForm
    ia['width'] = x.x('//p[@class="width"]')
    ia['volume'] = x.x('//p[@class="volume"]')
 
-   # another example passing parametes on instance
+   # another example passing parameters on instance
    ia = NewsForm(response, encoding='utf-8')
    ia['name'] = x.x('//p[@class="name"]')
 
