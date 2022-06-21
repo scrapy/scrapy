@@ -94,6 +94,20 @@ class ResponseTypesTest(unittest.TestCase):
             ({'headers': Headers({'Content-Type': ['application/x-json']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/x-javascript']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/json-amazonui-streaming']})}, TextResponse),
+            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
+              'url': 'http://www.example.com/page/'}, Response),
+            ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
+                        ({'url': 'http://www.example.com/page/file.html',
+              'headers': Headers({'Content-Type': 'application/octet-stream'})}, HtmlResponse),
+            ({'url': 'http://www.example.com/item/file.xml',
+              'headers': Headers({'Content-Type': 'application/octet-stream'})}, XmlResponse),
+            ({'url': 'http://www.example.com/item/file.html',
+              'headers': Headers({'Content-Type': 'application/octet-stream'})}, HtmlResponse),
+            ({'url': 'http://www.example.com/item/file.xml',
+              'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"'],
+                                  'Content-Type': 'application/octet-stream'})}, XmlResponse),
+            ({'url': 'http://www.example.com/item/file.pdf'}, Response),
+            ({'filename': 'file.pdf'}, Response),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
@@ -103,13 +117,10 @@ class ResponseTypesTest(unittest.TestCase):
         """Each of the following test cases got affected after
         using xtractmime for MIME sniffing"""
         mappings = [
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
-              'url': 'http://www.example.com/page/'}, TextResponse),
             ({'body': b'\x00\x01\xff', 'url': 'http://www.example.com/item/',
               'headers': Headers({'Content-Type': ['text/plain']})}, Response),
             ({'filename': '/tmp/temp^'}, TextResponse),
             ({'body': b'%PDF-1.4'}, Response),
-            ({'headers': Headers({'Content-Type': ['application/pdf']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/ecmascript']})}, TextResponse),
             ({'headers': Headers({'Content-Type': ['application/ld+json']})}, TextResponse),
             ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/html']})},
@@ -119,21 +130,10 @@ class ResponseTypesTest(unittest.TestCase):
             ({'body': b'Non HTML', 'headers': Headers({'Content-Encoding': ['zip'],
                                                        'Content-Type': ['text/html']})}, HtmlResponse),
             ({'body': b'Some plain text', 'headers': Headers({'Content-Type': 'application/octet-stream'})},
-             TextResponse),
-            ({'url': b'http://www.example.com/page/file.html',
-              'headers': Headers({'Content-Type': 'application/octet-stream'})}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.xml',
-              'headers': Headers({'Content-Type': 'application/octet-stream'})}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.html',
-              'headers': Headers({'Content-Type': 'application/octet-stream'})}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.xml',
-              'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"'],
-                                  'Content-Type': 'application/octet-stream'})}, TextResponse),
+             Response),
             ({'body': b'\x0c\x1b'}, TextResponse),
             ({'body': b'this is not <html>'}, TextResponse),
             ({'body': b'this is not <?xml'}, TextResponse),
-            ({'filename': 'file.pdf'}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.pdf'}, TextResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
