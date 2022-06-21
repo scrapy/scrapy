@@ -5,6 +5,7 @@ from warnings import warn
 
 from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
@@ -35,7 +36,11 @@ class BaseDupeFilter:
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
-        pass
+        warn(
+            "Calling BaseDupeFilter.log() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
 
 RFPDupeFilterTV = TypeVar("RFPDupeFilterTV", bound="RFPDupeFilter")
