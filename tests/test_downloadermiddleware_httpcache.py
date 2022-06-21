@@ -128,7 +128,7 @@ class DefaultStorageTest(_BaseTest):
         with self._storage() as storage:
             assert storage.retrieve_response(self.spider, self.request) is None
             response = Response(
-                'http://www.example.com/',
+                'http://www.example.com',
                 body=b'<!DOCTYPE html>\n<title>.</title>',
                 status=202,
             )

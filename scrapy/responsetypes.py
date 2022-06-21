@@ -8,7 +8,11 @@ from io import StringIO
 from urllib.parse import urlparse
 from warnings import warn
 
-from xtractmime import RESOURCE_HEADER_BUFFER_LENGTH, extract_mime, is_binary_data
+from xtractmime import (
+    RESOURCE_HEADER_BUFFER_LENGTH,
+    extract_mime,
+    is_binary_data,
+)
 from xtractmime.mimegroups import (
     is_html_mime_type,
     is_javascript_mime_type,
@@ -22,13 +26,13 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
-_CONTENT_ENCODING_MAP = {
+_CONTENT_ENCODING_MIME_TYPES = {
     'br': b'application/brotli',
     'deflate': b'application/zip',
     'gzip': b'application/gzip',
 }
-_MIMETYPES = MimeTypes()
-_MIMETYPES.readfp(StringIO(get_data('scrapy', 'mime.types').decode()))
+_MIME_TYPES = MimeTypes()
+_MIME_TYPES.readfp(StringIO(get_data('scrapy', 'mime.types').decode()))
 
 
 def _is_other_text_mime_type(mime_type):
@@ -94,14 +98,16 @@ def _content_type_from_metadata(*, headers=None, url_path=None, filename=None):
         or url_mime_type
     )
 
+
 def _mime_type_from_path(path):
-    mimetype, encoding = _MIMETYPES.guess_type(path, strict=False)
-    encoding_mime_type = _CONTENT_ENCODING_MAP.get(encoding, None)
+    mimetype, encoding = _MIME_TYPES.guess_type(path, strict=False)
+    encoding_mime_type = _CONTENT_ENCODING_MIME_TYPES.get(encoding, None)
     if encoding_mime_type:
         return encoding_mime_type
     if mimetype:
         return mimetype.encode()
     return None
+
 
 def _remove_nul_byte_from_text(text):
     """Return the text with removed null byte (b'\x00') if there are no other
@@ -117,6 +123,7 @@ def _remove_nul_byte_from_text(text):
             return text
 
     return text.replace(b'\x00', b'')
+
 
 def _response_type_from_mime_type(mime_type):
     if not mime_type:
@@ -204,7 +211,7 @@ class ResponseTypes:
         """Return the most appropriate Response class from a file name"""
         warn('ResponseTypes.from_filename is deprecated, '
              'please use ResponseTypes.from_args instead', ScrapyDeprecationWarning)
-        mimetype, encoding = _MIMETYPES.guess_type(filename)
+        mimetype, encoding = _MIME_TYPES.guess_type(filename)
         if mimetype and not encoding:
             return self.from_mimetype(mimetype)
         else:

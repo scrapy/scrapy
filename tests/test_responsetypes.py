@@ -1,7 +1,13 @@
 import unittest
-from scrapy.responsetypes import _MIMETYPES, responsetypes, ResponseTypes
 
-from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
+from scrapy.http import (
+    Headers,
+    HtmlResponse,
+    Response,
+    TextResponse,
+    XmlResponse,
+)
+from scrapy.responsetypes import _MIME_TYPES, responsetypes, ResponseTypes
 
 
 class PreXtractmimeResponseTypes(ResponseTypes):
@@ -168,7 +174,7 @@ class ResponseTypesTest(unittest.TestCase):
     def test_custom_mime_types_loaded(self):
         """Check that mime.types files shipped with Scrapy are loaded."""
         self.assertEqual(
-          _MIMETYPES.guess_type('x.scrapytest')[0],
+          _MIME_TYPES.guess_type('x.scrapytest')[0],
           'x-scrapy/test',
         )
 
