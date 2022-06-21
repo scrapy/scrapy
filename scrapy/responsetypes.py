@@ -22,6 +22,114 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
+_CONTENT_ENCODING_MAP = {
+    'br': b'application/brotli',
+    'deflate': b'application/zip',
+    'gzip': b'application/gzip',
+}
+_MIMETYPES = MimeTypes()
+_MIMETYPES.readfp(StringIO(get_data('scrapy', 'mime.types').decode()))
+
+
+def _is_other_text_mime_type(mime_type):
+    value = (
+        mime_type.startswith(b'text/')
+        or is_json_mime_type(mime_type)
+        or is_javascript_mime_type(mime_type)
+        or mime_type in (
+            b'application/x-json',
+            b'application/json-amazonui-streaming',
+            b'application/x-javascript',
+        )
+    )
+    return value
+
+
+_PRIORITIZED_MIME_TYPE_CHECKERS = (
+    is_html_mime_type,
+    is_xml_mime_type,
+    _is_other_text_mime_type,
+)
+
+
+def _content_type_from_metadata(*, headers=None, url_path=None, filename=None):
+    if headers and b'Content-Type' in headers:
+        content_type_mime_type = headers.getlist(b'Content-Type')[-1]
+    else:
+        content_type_mime_type = None
+
+    if headers and b'Content-Disposition' in headers:
+        _filename = (
+            headers.get(b"Content-Disposition")
+            .split(b";")[-1]
+            .split(b"=")[-1]
+            .strip(b"\"'")
+            .decode()
+        )
+        content_disposition_mime_type = _mime_type_from_path(_filename)
+    else:
+        content_disposition_mime_type = None
+
+    filename_mime_type = _mime_type_from_path(filename) if filename else None
+    url_mime_type = _mime_type_from_path(url_path) if url_path else None
+
+    candidate_mime_types = tuple(
+        mime_type
+        for mime_type in (
+            content_type_mime_type,
+            content_disposition_mime_type,
+            filename_mime_type,
+            url_mime_type,
+        )
+        if mime_type is not None
+    )
+    for mime_type_checker in _PRIORITIZED_MIME_TYPE_CHECKERS:
+        for candidate_mime_type in candidate_mime_types:
+            if mime_type_checker(candidate_mime_type):
+                return candidate_mime_type
+    return (
+        content_type_mime_type
+        or content_disposition_mime_type
+        or filename_mime_type
+        or url_mime_type
+    )
+
+def _mime_type_from_path(path):
+    mimetype, encoding = _MIMETYPES.guess_type(path, strict=False)
+    encoding_mime_type = _CONTENT_ENCODING_MAP.get(encoding, None)
+    if encoding_mime_type:
+        return encoding_mime_type
+    if mimetype:
+        return mimetype.encode()
+    return None
+
+def _remove_nul_byte_from_text(text):
+    """Return the text with removed null byte (b'\x00') if there are no other
+    binary bytes in the text, otherwise return the text as-is.
+
+    Based on https://github.com/scrapy/scrapy/issues/2481
+    """
+    for index in range(len(text)):
+        if (
+            text[index:index + 1] != b'\x00'
+            and is_binary_data(text[index:index + 1])
+        ):
+            return text
+
+    return text.replace(b'\x00', b'')
+
+def _response_type_from_mime_type(mime_type):
+    if not mime_type:
+        return Response
+    if is_html_mime_type(mime_type):
+        return HtmlResponse
+    if is_xml_mime_type(mime_type):
+        return XmlResponse
+    if _is_other_text_mime_type(mime_type):
+        return TextResponse
+    return Response
+
+
 class ResponseTypes:
 
     CLASSES = {
@@ -43,17 +151,8 @@ class ResponseTypes:
 
     def __init__(self):
         self.classes = {}
-        self.mimetypes = MimeTypes()
-        mimedata = get_data('scrapy', 'mime.types').decode('utf8')
-        self.mimetypes.readfp(StringIO(mimedata))
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
-
-        self.prioritized_mime_type_checkers = (
-            is_html_mime_type,
-            is_xml_mime_type,
-            self._is_text_mime_type,
-        )
 
     def from_mimetype(self, mimetype):
         """Return the most appropriate Response class for the given mimetype"""
@@ -105,7 +204,7 @@ class ResponseTypes:
         """Return the most appropriate Response class from a file name"""
         warn('ResponseTypes.from_filename is deprecated, '
              'please use ResponseTypes.from_args instead', ScrapyDeprecationWarning)
-        mimetype, encoding = self.mimetypes.guess_type(filename)
+        mimetype, encoding = _MIMETYPES.guess_type(filename)
         if mimetype and not encoding:
             return self.from_mimetype(mimetype)
         else:
@@ -131,112 +230,25 @@ class ResponseTypes:
             return self.from_mimetype('text/html')
         return self.from_mimetype('text')
 
-    def _is_text_mime_type(self, mime_type):
-        if (
-            mime_type.startswith(b"text/")
-            or is_json_mime_type(mime_type)
-            or is_javascript_mime_type(mime_type)
-            or mime_type in (
-                b"application/x-json",
-                b"application/json-amazonui-streaming",
-                b"application/x-javascript",
-            )
-        ):
-            return True
-        return False
-
-    def _guess_response_type(self, mime_type):
-        if not mime_type:
-            return Response
-        if is_html_mime_type(mime_type):
-            return HtmlResponse
-        if is_xml_mime_type(mime_type):
-            return XmlResponse
-        if (
-            mime_type.startswith(b"text/")
-            or is_json_mime_type(mime_type)
-            or is_javascript_mime_type(mime_type)
-            or mime_type in (
-                b"application/x-json",
-                b"application/json-amazonui-streaming",
-                b"application/x-javascript",
-            )
-        ):
-            return TextResponse
-        return Response
-
-    def _guess_type(self, filename=None):
-        mimetype, encoding = self.mimetypes.guess_type(filename)
-        if encoding:
-            mimetype = f"application/{encoding}".encode()
-        elif mimetype:
-            mimetype = mimetype.encode()
-
-        return mimetype
-
-    def _guess_content_type(self, body=None, headers=None, url=None, filename=None):
-        if headers and b'Content-Type' in headers:
-            content_type_mime_type = headers.getlist(b'Content-Type')[-1]
-        else:
-            content_type_mime_type = None
-
-        if headers and b'Content-Disposition' in headers:
-            content_disposition_mime_type = (
-                headers.get(b"Content-Disposition")
-                .split(b";")[-1]
-                .split(b"=")[-1]
-                .strip(b"\"'")
-                .decode()
-            )
-            content_disposition_mime_type = self._guess_type(content_disposition_mime_type)
-        else:
-            content_disposition_mime_type = None
-
-        url_mime_type = self._guess_type(url) if url else None
-        filename_mime_type = self._guess_type(filename) if filename else None
-
-        candidate_mime_types = (
-            content_type_mime_type,
-            content_disposition_mime_type,
-            url_mime_type,
-            filename_mime_type,
-        )
-
-        for mime_type_checker in self.prioritized_mime_type_checkers:
-            for candidate_mime_type in candidate_mime_types:
-                if (
-                    candidate_mime_type is not None
-                    and mime_type_checker(candidate_mime_type)
-                ):
-                    return candidate_mime_type
-        return (
-            content_type_mime_type
-            or content_disposition_mime_type
-            or url_mime_type
-            or filename_mime_type
-        )
-
-    def _remove_nul_byte_from_text(self, text):
-        """Return the text with removed null byte (b"\x00") if there are no other
-        binary bytes in the text, otherwise return the text as-is.
-
-        Based on https://github.com/scrapy/scrapy/issues/2481"""
-        for index in range(len(text)):
-            if text[index:index + 1] != b"\x00" and is_binary_data(text[index:index + 1]):
-                return text
-
-        return text.replace(b"\x00", b"")
-
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
         the given arguments."""
         body = body or b''
-        body = self._remove_nul_byte_from_text(body[:RESOURCE_HEADER_BUFFER_LENGTH])
-        http_origin = not url or urlparse(url).scheme in ("http", "https")
-        content_types = (self._guess_content_type(body=body, headers=headers, url=url, filename=filename),)
-        content_types = None if content_types == (None,) else content_types
-        mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
-        return self._guess_response_type(mime_type)
+        body = _remove_nul_byte_from_text(body[:RESOURCE_HEADER_BUFFER_LENGTH])
+        url_parts = urlparse(url) if url else url
+        content_type = _content_type_from_metadata(
+            headers=headers,
+            url_path=url_parts.path if url_parts else url_parts,
+            filename=filename,
+        )
+        content_types = (content_type,) if content_type else None
+        http_origin = not url or url_parts.scheme in ("http", "https")
+        mime_type = extract_mime(
+            body,
+            content_types=content_types,
+            http_origin=http_origin,
+        )
+        return _response_type_from_mime_type(mime_type)
 
 
 responsetypes = ResponseTypes()

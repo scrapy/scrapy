@@ -1,7 +1,24 @@
 import unittest
-from scrapy.responsetypes import responsetypes
+from scrapy.responsetypes import _MIMETYPES, responsetypes, ResponseTypes
 
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
+
+
+class PreXtractmimeResponseTypes(ResponseTypes):
+    def from_args(self, headers=None, url=None, filename=None, body=None):
+        cls = Response
+        if headers is not None:
+            cls = self.from_headers(headers)
+        if cls is Response and url is not None:
+            cls = self.from_filename(url)
+        if cls is Response and filename is not None:
+            cls = self.from_filename(filename)
+        if cls is Response and body is not None:
+            cls = self.from_body(body)
+        return cls
+
+
+_PRE_XTRACTMIME_RESPONSE_TYPES = PreXtractmimeResponseTypes()
 
 
 class ResponseTypesTest(unittest.TestCase):
@@ -110,10 +127,14 @@ class ResponseTypesTest(unittest.TestCase):
                                   'Content-Type': 'application/octet-stream'})}, XmlResponse),
             ({'url': 'http://www.example.com/item/file.pdf'}, Response),
             ({'filename': 'file.pdf'}, Response),
+            ({'body': b'<!DOCTYPE html>\n<title>.</title>', 'url': 'http://www.example.com'}, HtmlResponse),
         ]
         for source, cls in mappings:
-            retcls = responsetypes.from_args(**source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+            old_cls = _PRE_XTRACTMIME_RESPONSE_TYPES.from_args(**source)
+            new_cls = responsetypes.from_args(**source)
+            message = f"{source} ==> {old_cls} (old) != {new_cls} (current)"
+            assert old_cls == new_cls, message
+            assert new_cls is cls, f"{source} ==> {new_cls} != {cls}"
 
     def test_from_args_post_xtractmime(self):
         """Each of the following test cases got affected after
@@ -138,12 +159,18 @@ class ResponseTypesTest(unittest.TestCase):
             ({'body': b'this is not <?xml'}, TextResponse),
         ]
         for source, cls in mappings:
-            retcls = responsetypes.from_args(**source)
-            assert retcls is cls, f"{source} ==> {retcls} != {cls}"
+            old_cls = _PRE_XTRACTMIME_RESPONSE_TYPES.from_args(**source)
+            new_cls = responsetypes.from_args(**source)
+            message = f"{source} ==> {old_cls} (old) == {new_cls} (current)"
+            assert old_cls != new_cls, message
+            assert new_cls is cls, f"{source} ==> {new_cls} != {cls}"
 
     def test_custom_mime_types_loaded(self):
-        # check that mime.types files shipped with scrapy are loaded
-        self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
+        """Check that mime.types files shipped with Scrapy are loaded."""
+        self.assertEqual(
+          _MIMETYPES.guess_type('x.scrapytest')[0],
+          'x-scrapy/test',
+        )
 
 
 if __name__ == "__main__":
