@@ -235,7 +235,6 @@ class ResponseTypes:
         http_origin = not url or urlparse(url).scheme in ("http", "https")
         content_types = (self._guess_content_type(body=body, headers=headers, url=url, filename=filename),)
         content_types = None if content_types == (None,) else content_types
-        print(content_types)
         mime_type = extract_mime(body, content_types=content_types, http_origin=http_origin)
         return self._guess_response_type(mime_type)
 

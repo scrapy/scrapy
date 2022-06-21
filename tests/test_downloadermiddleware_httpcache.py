@@ -134,7 +134,6 @@ class DefaultStorageTest(_BaseTest):
             )
             storage.store_response(self.spider, self.request, response)
             cached_response = storage.retrieve_response(self.spider, self.request)
-            print(cached_response)
             self.assertIsInstance(cached_response, HtmlResponse)
             self.assertEqualResponse(response, cached_response)
 
