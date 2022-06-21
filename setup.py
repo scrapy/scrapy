@@ -34,6 +34,7 @@ install_requires = [
     'setuptools',
     'tldextract',
     'lxml>=4.3.0',
+    'xtractmime>=0.1.0',
 ]
 extras_require = {}
 cpython_dependencies = [
