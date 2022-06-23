@@ -70,21 +70,29 @@ The quick way::
 See the install section in the documentation at
 https://docs.scrapy.org/en/latest/intro/install.html for more details.
 
+----------------------------------------------------------------
+
 Documentation
 =============
 
 Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
 directory.
 
+----------------------------------------------------------------
+
 Releases
 ========
 
 You can check https://docs.scrapy.org/en/latest/news.html for the release notes.
 
+----------------------------------------------------------------
+
 Community (blog, twitter, mail list, IRC)
 =========================================
 
 See https://scrapy.org/community/ for details.
+
+----------------------------------------------------------------
 
 Contributing
 ============
@@ -100,10 +108,14 @@ Please note that this project is released with a Contributor Code of Conduct
 By participating in this project you agree to abide by its terms.
 Please report unacceptable behavior to opensource@zyte.com.
 
+----------------------------------------------------------------
+
 Companies using Scrapy
 ======================
 
 See https://scrapy.org/companies/ for a list.
+
+----------------------------------------------------------------
 
 Commercial Support
 ==================
