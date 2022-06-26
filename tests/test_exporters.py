@@ -112,6 +112,14 @@ class BaseItemExporterTest(unittest.TestCase):
         assert isinstance(name, str)
         self.assertEqual(name, 'John\xa3')
 
+        ie = self._get_exporter(
+            fields_to_export={'name': '名稱'}
+        )
+        self.assertEqual(
+            list(ie._get_serialized_fields(self.i)),
+            [('名稱', 'John\xa3')]
+        )
+
     def test_field_custom_serializer(self):
         i = self.custom_field_item_class(name='John\xa3', age='22')
         a = ItemAdapter(i)
@@ -272,6 +280,7 @@ class MarshalItemExporterDataclassTest(MarshalItemExporterTest):
 
 class CsvItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
+        self.output = tempfile.TemporaryFile()
         return CsvItemExporter(self.output, **kwargs)
 
     def assertCsvEqual(self, first, second, msg=None):
@@ -283,7 +292,8 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return self.assertEqual(split_csv(first), split_csv(second), msg=msg)
 
     def _check_output(self):
-        self.assertCsvEqual(to_unicode(self.output.getvalue()), 'age,name\r\n22,John\xa3\r\n')
+        self.output.seek(0)
+        self.assertCsvEqual(to_unicode(self.output.read()), 'age,name\r\n22,John\xa3\r\n')
 
     def assertExportResult(self, item, expected, **kwargs):
         fp = BytesIO()

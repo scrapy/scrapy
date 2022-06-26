@@ -8,6 +8,7 @@ import marshal
 import pickle
 import pprint
 import warnings
+from collections.abc import Mapping
 from xml.sax.saxutils import XMLGenerator
 
 from itemadapter import is_item, ItemAdapter
@@ -68,6 +69,14 @@ class BaseItemExporter:
                 field_iter = item.field_names()
             else:
                 field_iter = item.keys()
+        elif isinstance(self.fields_to_export, Mapping):
+            if include_empty:
+                field_iter = self.fields_to_export.items()
+            else:
+                field_iter = (
+                    (x, y) for x, y in self.fields_to_export.items()
+                    if x in item
+                )
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -75,13 +84,17 @@ class BaseItemExporter:
                 field_iter = (x for x in self.fields_to_export if x in item)
 
         for field_name in field_iter:
-            if field_name in item:
-                field_meta = item.get_field_meta(field_name)
-                value = self.serialize_field(field_meta, field_name, item[field_name])
+            if isinstance(field_name, str):
+                item_field, output_field = field_name, field_name
+            else:
+                item_field, output_field = field_name
+            if item_field in item:
+                field_meta = item.get_field_meta(item_field)
+                value = self.serialize_field(field_meta, output_field, item[item_field])
             else:
                 value = default_value
 
-            yield field_name, value
+            yield output_field, value
 
 
 class JsonLinesItemExporter(BaseItemExporter):
@@ -246,7 +259,11 @@ class CsvItemExporter(BaseItemExporter):
             if not self.fields_to_export:
                 # use declared field names, or keys if the item is a dict
                 self.fields_to_export = ItemAdapter(item).field_names()
-            row = list(self._build_row(self.fields_to_export))
+            if isinstance(self.fields_to_export, Mapping):
+                fields = self.fields_to_export.values()
+            else:
+                fields = self.fields_to_export
+            row = list(self._build_row(fields))
             self.csv_writer.writerow(row)
 
 

@@ -7,6 +7,7 @@ import os
 import random
 import shutil
 import string
+import sys
 import tempfile
 import warnings
 from abc import ABC, abstractmethod
@@ -655,8 +656,8 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         return data
 
     @defer.inlineCallbacks
-    def assertExported(self, items, header, rows, settings=None, ordered=True):
-        yield self.assertExportedCsv(items, header, rows, settings, ordered)
+    def assertExported(self, items, header, rows, settings=None):
+        yield self.assertExportedCsv(items, header, rows, settings)
         yield self.assertExportedJsonLines(items, rows, settings)
         yield self.assertExportedXml(items, rows, settings)
         yield self.assertExportedPickle(items, rows, settings)
@@ -717,7 +718,7 @@ class FeedExportTest(FeedExportTestBase):
         return content
 
     @defer.inlineCallbacks
-    def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
+    def assertExportedCsv(self, items, header, rows, settings=None):
         settings = settings or {}
         settings.update({
             'FEEDS': {
@@ -725,15 +726,9 @@ class FeedExportTest(FeedExportTestBase):
             },
         })
         data = yield self.exported_data(items, settings)
-
         reader = csv.DictReader(to_unicode(data['csv']).splitlines())
-        got_rows = list(reader)
-        if ordered:
-            self.assertEqual(reader.fieldnames, header)
-        else:
-            self.assertEqual(set(reader.fieldnames), set(header))
-
-        self.assertEqual(rows, got_rows)
+        self.assertEqual(reader.fieldnames, list(header))
+        self.assertEqual(rows, list(reader))
 
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
@@ -884,7 +879,7 @@ class FeedExportTest(FeedExportTestBase):
             {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}
         ]
         header = self.MyItem.fields.keys()
-        yield self.assertExported(items, header, rows, ordered=False)
+        yield self.assertExported(items, header, rows)
 
     @defer.inlineCallbacks
     def test_export_no_items_not_store_empty(self):
@@ -956,25 +951,72 @@ class FeedExportTest(FeedExportTestBase):
             {'egg': 'spam4', 'foo': '', 'baz': ''},
         ]
         rows_jl = [dict(row) for row in items]
-        yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
+        yield self.assertExportedCsv(items, header, rows_csv)
         yield self.assertExportedJsonLines(items, rows_jl)
 
-        # edge case: FEED_EXPORT_FIELDS==[] means the same as default None
+    @defer.inlineCallbacks
+    def test_export_items_empty_field_list(self):
+        # FEED_EXPORT_FIELDS==[] means the same as default None
+        items = [{'foo': 'bar'}]
+        header = ["foo"]
+        rows = [{'foo': 'bar'}]
         settings = {'FEED_EXPORT_FIELDS': []}
-        yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
-        yield self.assertExportedJsonLines(items, rows_jl, settings)
+        yield self.assertExportedCsv(items, header, rows)
+        yield self.assertExportedJsonLines(items, rows, settings)
 
-        # it is possible to override fields using FEED_EXPORT_FIELDS
-        header = ["foo", "baz", "hello"]
+    @defer.inlineCallbacks
+    def test_export_items_field_list(self):
+        items = [{'foo': 'bar'}]
+        header = ["foo", "baz"]
+        rows = [{'foo': 'bar', 'baz': ''}]
         settings = {'FEED_EXPORT_FIELDS': header}
-        rows = [
-            {'foo': 'bar1', 'baz': '', 'hello': ''},
-            {'foo': 'bar2', 'baz': '', 'hello': 'world2'},
-            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
-            {'foo': '', 'baz': '', 'hello': 'world4'},
-        ]
-        yield self.assertExported(items, header, rows,
-                                  settings=settings, ordered=True)
+        yield self.assertExported(items, header, rows, settings=settings)
+
+    @defer.inlineCallbacks
+    def test_export_items_comma_separated_field_list(self):
+        items = [{'foo': 'bar'}]
+        header = ["foo", "baz"]
+        rows = [{'foo': 'bar', 'baz': ''}]
+        settings = {'FEED_EXPORT_FIELDS': ",".join(header)}
+        yield self.assertExported(items, header, rows, settings=settings)
+
+    @defer.inlineCallbacks
+    def test_export_items_json_field_list(self):
+        items = [{'foo': 'bar'}]
+        header = ["foo", "baz"]
+        rows = [{'foo': 'bar', 'baz': ''}]
+        settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
+        yield self.assertExported(items, header, rows, settings=settings)
+
+    @defer.inlineCallbacks
+    def test_export_items_field_names(self):
+        items = [{'foo': 'bar'}]
+        header = {'foo': 'Foo'}
+        rows = [{'Foo': 'bar'}]
+        settings = {'FEED_EXPORT_FIELDS': header}
+        yield self.assertExported(items, list(header.values()), rows,
+                                  settings=settings)
+
+    @defer.inlineCallbacks
+    def test_export_items_dict_field_names(self):
+        items = [{'foo': 'bar'}]
+        header = {
+            'baz': 'Baz',
+            'foo': 'Foo',
+        }
+        rows = [{'Baz': '', 'Foo': 'bar'}]
+        settings = {'FEED_EXPORT_FIELDS': header}
+        yield self.assertExported(items, ['Baz', 'Foo'], rows,
+                                  settings=settings)
+
+    @defer.inlineCallbacks
+    def test_export_items_json_field_names(self):
+        items = [{'foo': 'bar'}]
+        header = {'foo': 'Foo'}
+        rows = [{'Foo': 'bar'}]
+        settings = {'FEED_EXPORT_FIELDS': json.dumps(header)}
+        yield self.assertExported(items, list(header.values()), rows,
+                                  settings=settings)
 
     @defer.inlineCallbacks
     def test_export_based_on_item_classes(self):
@@ -1097,7 +1139,7 @@ class FeedExportTest(FeedExportTestBase):
             {'egg': 'spam', 'foo': 'bar'}
         ]
         rows_jl = items
-        yield self.assertExportedCsv(items, ['egg', 'foo'], rows_csv, ordered=False)
+        yield self.assertExportedCsv(items, ['foo', 'egg'], rows_csv)
         yield self.assertExportedJsonLines(items, rows_jl)
 
     @defer.inlineCallbacks
@@ -1118,7 +1160,7 @@ class FeedExportTest(FeedExportTestBase):
                 {'egg': 'spam2', 'foo': 'bar2', 'baz': 'quux2'}
             ]
             yield self.assertExported(items, ['foo', 'baz', 'egg'], rows,
-                                      settings=settings, ordered=True)
+                                      settings=settings)
 
             # export a subset of columns
             settings = {'FEED_EXPORT_FIELDS': 'egg,baz'}
@@ -1127,7 +1169,7 @@ class FeedExportTest(FeedExportTestBase):
                 {'egg': 'spam2', 'baz': 'quux2'}
             ]
             yield self.assertExported(items, ['egg', 'baz'], rows,
-                                      settings=settings, ordered=True)
+                                      settings=settings)
 
     @defer.inlineCallbacks
     def test_export_encoding(self):
@@ -1769,7 +1811,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_filters(self):
-        import sys
         if "PyPy" in sys.version:
             # https://foss.heptapod.net/pypy/pypy/-/issues/3527
             raise unittest.SkipTest("lzma filters doesn't work in PyPy")
@@ -2016,7 +2057,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             self.assertEqual(expected_batch, got_batch)
 
     @defer.inlineCallbacks
-    def assertExportedCsv(self, items, header, rows, settings=None, ordered=True):
+    def assertExportedCsv(self, items, header, rows, settings=None):
         settings = settings or {}
         settings.update({
             'FEEDS': {
