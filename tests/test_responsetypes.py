@@ -16,10 +16,17 @@ from .test_utils_response import (
 )
 
 
+def _unmark(item):
+    return pytest.param(*item.values)
+
+
 @pytest.mark.parametrize(
     "kwargs,response_class",
     (
-        *PRE_XTRACTMIME_SCENARIOS,
+        *(
+            item if not hasattr(item, "marks") else _unmark(item)
+            for item in PRE_XTRACTMIME_SCENARIOS
+        ),
         *(
             pytest.param(
                 kwargs,

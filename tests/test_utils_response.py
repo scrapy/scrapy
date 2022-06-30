@@ -24,6 +24,36 @@ __doctests__ = ['scrapy.utils.response']
 # Scenarios that work the same with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 PRE_XTRACTMIME_SCENARIOS = (
+    # Even if the body is binary, if the Content-Type says it is text, we
+    # interpret it as text, as long as the Content-Type is not one of the 4
+    # affected by the Apache bug.
+    #
+    # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+    (
+        {
+            'body': b'\x00\x01\xff',
+            'headers': Headers({'Content-Type': ['text/json']}),
+        },
+        TextResponse,
+    ),
+    *(
+        pytest.param(
+            {
+                'body': b'\x00\x01\xff',
+                'headers': Headers({'Content-Type': [content_type]}),
+            },
+            TextResponse,
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="https://github.com/scrapy/xtractmime/issues/13",
+            ),
+        )
+        for content_type in (
+            'text/plain; charset=Iso-8859-1',
+            'text/plain; charset=utf-8',
+            'text/plain; charset=windows-1252',
+        )
+    ),
     *(
         (
             {
@@ -172,14 +202,30 @@ PRE_XTRACTMIME_SCENARIOS = (
 # Scenarios that work differently with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 POST_XTRACTMIME_SCENARIOS = (
-    (
-        {
-            'body': b'\x00\x01\xff',
-            'url': 'http://www.example.com/item/',
-            'headers': Headers({'Content-Type': ['text/plain']}),
-        },
-        Response,
+    # A known Apache bug may cause a server to send files with Content-Type set
+    # to "text/plain", "text/plain; charset=ISO-8859-1",
+    # "text/plain; charset=iso-8859-1", or "text/plain; charset=UTF-8",
+    # regardless of the actual file content.
+    #
+    # They should be treated as binary if their content is binary.
+    #
+    # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+    *(
+        (
+            {
+                'body': b'\x00\x01\xff',
+                'headers': Headers({'Content-Type': [content_type]}),
+            },
+            Response,
+        )
+        for content_type in (
+            'text/plain',
+            'text/plain; charset=ISO-8859-1',
+            'text/plain; charset=iso-8859-1',
+            'text/plain; charset=UTF-8',
+        )
     ),
+
     ({'filename': '/tmp/temp^'}, TextResponse),
     ({'body': b'%PDF-1.4'}, Response),
     (
@@ -236,6 +282,7 @@ POST_XTRACTMIME_SCENARIOS = (
     ),
 )
 def test_get_response_class_http(kwargs, response_class):
+    kwargs = dict(kwargs)
     if 'headers' in kwargs:
         kwargs['http_headers'] = kwargs.pop('headers')
     if 'filename' in kwargs:
