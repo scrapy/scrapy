@@ -2,7 +2,7 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
-from warnings import warn
+from warnings import catch_warnings, simplefilter, warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
@@ -29,6 +29,17 @@ class ResponseTypes:
         'text/xml': 'scrapy.http.XmlResponse',
         'text/*': 'scrapy.http.TextResponse',
     }
+
+    def __new__(cls, *args, **kwargs):
+        warn(
+            (
+                'scrapy.responsetypes.ResponseTypes is deprecated, use '
+                'scrapy.utils.response.get_response_class instead'
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return super().__new__(cls)
 
     def __init__(self):
         self.classes = {}
@@ -131,4 +142,6 @@ class ResponseTypes:
         return cls
 
 
-responsetypes = ResponseTypes()
+with catch_warnings():
+    simplefilter("ignore")
+    responsetypes = ResponseTypes()
