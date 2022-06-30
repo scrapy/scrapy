@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from scrapy.http import (
     Headers,
     HtmlResponse,
@@ -7,24 +9,37 @@ from scrapy.http import (
     TextResponse,
     XmlResponse,
 )
-from scrapy.responsetypes import _MIME_TYPES, responsetypes, ResponseTypes
+from scrapy.responsetypes import responsetypes
+from .test_utils_response import (
+    POST_XTRACTMIME_SCENARIOS,
+    PRE_XTRACTMIME_SCENARIOS,
+)
 
 
-class PreXtractmimeResponseTypes(ResponseTypes):
-    def from_args(self, headers=None, url=None, filename=None, body=None):
-        cls = Response
-        if headers is not None:
-            cls = self.from_headers(headers)
-        if cls is Response and url is not None:
-            cls = self.from_filename(url)
-        if cls is Response and filename is not None:
-            cls = self.from_filename(filename)
-        if cls is Response and body is not None:
-            cls = self.from_body(body)
-        return cls
-
-
-_PRE_XTRACTMIME_RESPONSE_TYPES = PreXtractmimeResponseTypes()
+@pytest.mark.parametrize(
+    "kwargs,response_class",
+    (
+        *PRE_XTRACTMIME_SCENARIOS,
+        *(
+            pytest.param(
+                kwargs,
+                response_class,
+                marks=pytest.mark.xfail(
+                    strict=True,
+                    reason=(
+                        "Expected failure of deprecated "
+                        "scrapy.responsetypes.responsetypes.from_args, works "
+                        "with its replacement "
+                        "scrapy.utils.response.get_response_class"
+                    ),
+                ),
+            )
+            for kwargs, response_class in POST_XTRACTMIME_SCENARIOS
+        ),
+    ),
+)
+def test_from_args(kwargs, response_class):
+    assert responsetypes.from_args(**kwargs) == response_class
 
 
 class ResponseTypesTest(unittest.TestCase):
@@ -77,6 +92,8 @@ class ResponseTypesTest(unittest.TestCase):
             (b'\x03\x02\xdf\xdd\x23', Response),
             (b'Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
             (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            # https://codersblock.com/blog/the-smallest-valid-html5-page/
+            (b'<!DOCTYPE html>\n<title>.</title>', HtmlResponse),
             (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
         ]
         for source, cls in mappings:
@@ -95,88 +112,9 @@ class ResponseTypesTest(unittest.TestCase):
             retcls = responsetypes.from_headers(source)
             assert retcls is cls, f"{source} ==> {retcls} != {cls}"
 
-    def test_from_args_pre_xtractmime(self):
-        """Each of the following test cases remains unaffected after
-        using xtractmime for MIME sniffing"""
-        mappings = [
-            ({'url': 'http://www.example.com/data.csv'}, TextResponse),
-            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
-              'url': 'http://www.example.com/item/'}, HtmlResponse),
-            ({'body': b'\x01\x02', 'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
-              'url': 'http://www.example.com/page/'}, Response),
-            ({'body': b'Some plain\0 text data with\0 tabs and null bytes\0'}, TextResponse),
-            ({'body': b'\x03\x02\xdf\xdd\x23', 'headers': Headers({'Content-Encoding': 'UTF-8'})},
-             Response),
-            ({'body': b'\x00\x01\xff', 'url': '://www.example.com/item/',
-              'headers': Headers({'Content-Type': ['text/plain']})}, TextResponse),
-            ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
-            ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
-            ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
-            ({'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'}, Response),
-            # https://codersblock.com/blog/the-smallest-valid-html5-page/
-            ({'body': b'<!DOCTYPE html>\n<title>.</title>'}, HtmlResponse),
-            ({'body': b'\x01\x02', 'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
-            ({'headers': Headers({'Content-Type': ['application/x-json']})}, TextResponse),
-            ({'headers': Headers({'Content-Type': ['application/x-javascript']})}, TextResponse),
-            ({'headers': Headers({'Content-Type': ['application/json-amazonui-streaming']})}, TextResponse),
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}),
-              'url': 'http://www.example.com/page/'}, Response),
-            ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
-            ({'url': 'http://www.example.com/page/file.html',
-              'headers': Headers({'Content-Type': 'application/octet-stream'})}, HtmlResponse),
-            ({'url': 'http://www.example.com/item/file.xml',
-              'headers': Headers({'Content-Type': 'application/octet-stream'})}, XmlResponse),
-            ({'url': 'http://www.example.com/item/file.html',
-              'headers': Headers({'Content-Type': 'application/octet-stream'})}, HtmlResponse),
-            ({'url': 'http://www.example.com/item/file.xml',
-              'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"'],
-                                  'Content-Type': 'application/octet-stream'})}, XmlResponse),
-            ({'url': 'http://www.example.com/item/file.pdf'}, Response),
-            ({'filename': 'file.pdf'}, Response),
-            ({'body': b'<!DOCTYPE html>\n<title>.</title>', 'url': 'http://www.example.com'}, HtmlResponse),
-        ]
-        for source, cls in mappings:
-            old_cls = _PRE_XTRACTMIME_RESPONSE_TYPES.from_args(**source)
-            new_cls = responsetypes.from_args(**source)
-            message = f"{source} ==> {old_cls} (old) != {new_cls} (current)"
-            assert old_cls == new_cls, message
-            assert new_cls is cls, f"{source} ==> {new_cls} != {cls}"
-
-    def test_from_args_post_xtractmime(self):
-        """Each of the following test cases got affected after
-        using xtractmime for MIME sniffing"""
-        mappings = [
-            ({'body': b'\x00\x01\xff', 'url': 'http://www.example.com/item/',
-              'headers': Headers({'Content-Type': ['text/plain']})}, Response),
-            ({'filename': '/tmp/temp^'}, TextResponse),
-            ({'body': b'%PDF-1.4'}, Response),
-            ({'headers': Headers({'Content-Type': ['application/ecmascript']})}, TextResponse),
-            ({'headers': Headers({'Content-Type': ['application/ld+json']})}, TextResponse),
-            ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/html']})},
-             HtmlResponse),
-            ({'headers': Headers({'Content-Encoding': ['zip'], 'Content-Type': ['text/plain']})},
-             TextResponse),
-            ({'body': b'Non HTML', 'headers': Headers({'Content-Encoding': ['zip'],
-                                                       'Content-Type': ['text/html']})}, HtmlResponse),
-            ({'body': b'Some plain text', 'headers': Headers({'Content-Type': 'application/octet-stream'})},
-             Response),
-            ({'body': b'\x0c\x1b'}, TextResponse),
-            ({'body': b'this is not <html>'}, TextResponse),
-            ({'body': b'this is not <?xml'}, TextResponse),
-        ]
-        for source, cls in mappings:
-            old_cls = _PRE_XTRACTMIME_RESPONSE_TYPES.from_args(**source)
-            new_cls = responsetypes.from_args(**source)
-            message = f"{source} ==> {old_cls} (old) == {new_cls} (current)"
-            assert old_cls != new_cls, message
-            assert new_cls is cls, f"{source} ==> {new_cls} != {cls}"
-
     def test_custom_mime_types_loaded(self):
-        """Check that mime.types files shipped with Scrapy are loaded."""
-        self.assertEqual(
-            _MIME_TYPES.guess_type('x.scrapytest')[0],
-            'x-scrapy/test',
-        )
+        # check that mime.types files shipped with scrapy are loaded
+        self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
 
 
 if __name__ == "__main__":

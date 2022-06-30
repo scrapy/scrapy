@@ -13,12 +13,11 @@ from urllib.parse import urljoin
 import parsel
 from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
                             http_content_type_encoding, resolve_encoding)
-from w3lib.html import strip_html5_whitespace
+from w3lib.html import get_base_url, strip_html5_whitespace
 
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
-from scrapy.utils.response import get_base_url
 
 _NONE = object()
 
@@ -32,6 +31,7 @@ class TextResponse(Response):
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
+        self._cached_base_url = None
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
@@ -42,6 +42,7 @@ class TextResponse(Response):
             self._url = to_unicode(url, self.encoding)
         else:
             super()._set_url(url)
+        self._cached_base_url = None
 
     def _set_body(self, body):
         self._body = b''  # used by encoding detection
@@ -52,6 +53,7 @@ class TextResponse(Response):
             self._body = body.encode(self._encoding)
         else:
             super()._set_body(body)
+        self._cached_base_url = None
 
     @property
     def encoding(self):
@@ -85,10 +87,21 @@ class TextResponse(Response):
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
+    @property
+    def base_url(self) -> str:
+        """Base URL"""
+        if self._cached_base_url is None:
+            self._cached_base_url = get_base_url(
+                self.text[:4096],
+                self.url,
+                self.encoding,
+            )
+        return self._cached_base_url
+
     def urljoin(self, url):
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
-        return urljoin(get_base_url(self), url)
+        return urljoin(self.base_url, url)
 
     @memoizemethod_noargs
     def _headers_encoding(self):

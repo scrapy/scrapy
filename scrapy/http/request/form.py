@@ -15,7 +15,6 @@ from w3lib.html import strip_html5_whitespace
 from scrapy.http.request import Request
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import to_bytes, is_listlike
-from scrapy.utils.response import get_base_url
 
 
 FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
@@ -98,7 +97,7 @@ def _get_form(
     formxpath: Optional[str],
 ) -> FormElement:
     """Find the wanted form element within the given response."""
-    root = create_root_node(response.text, HTMLParser, base_url=get_base_url(response))
+    root = create_root_node(response.text, HTMLParser, base_url=response.base_url)
     forms = root.xpath('//form')
     if not forms:
         raise ValueError(f"No <form> element found in {response}")

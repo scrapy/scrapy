@@ -2,13 +2,233 @@ import os
 import unittest
 from urllib.parse import urlparse
 
-from scrapy.http import Response, TextResponse, HtmlResponse
+import pytest
+
+from scrapy.http import HtmlResponse, Response, TextResponse, XmlResponse
+from scrapy.http.headers import Headers
 from scrapy.utils.python import to_bytes
-from scrapy.utils.response import (response_httprepr, open_in_browser,
-                                   get_meta_refresh, get_base_url, response_status_message)
+from scrapy.utils.response import (
+    get_meta_refresh,
+    get_response_class,
+    open_in_browser,
+    response_httprepr,
+    response_status_message,
+)
 
 
 __doctests__ = ['scrapy.utils.response']
+
+
+# Scenarios that work the same with the previously-used, deprecated
+# scrapy.responsetypes.responsetypes.from_args
+PRE_XTRACTMIME_SCENARIOS = (
+    (
+        {
+            'url': 'http://www.example.com/data.csv',
+        },
+        TextResponse,
+    ),
+    (
+        {
+            'url': 'http://www.example.com/item/',
+            'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
+        },
+        HtmlResponse,
+    ),
+    (
+        {
+            'url': 'http://www.example.com/page/',
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="data.xml.gz"',
+                    ]
+                }
+            ),
+            'body': b'\x01\x02',
+        },
+        Response,
+    ),
+    (
+        {'body': b'Some plain\0 text data with\0 tabs and null bytes\0'},
+        TextResponse,
+    ),
+    (
+        {
+            'body': b'\x03\x02\xdf\xdd\x23',
+            'headers': Headers({'Content-Encoding': 'UTF-8'}),
+        },
+        Response,
+    ),
+    (
+        {
+            'body': b'\x00\x01\xff',
+            'url': '://www.example.com/item/',
+            'headers': Headers({'Content-Type': ['text/plain']}),
+        },
+        TextResponse,
+    ),
+    ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
+    ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
+    ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
+    (
+        {'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'},
+        Response,
+    ),
+    # https://codersblock.com/blog/the-smallest-valid-html5-page/
+    ({'body': b'<!DOCTYPE html>\n<title>.</title>'}, HtmlResponse),
+    (
+        {
+            'body': b'\x01\x02',
+            'headers': Headers({'Content-Type': ['application/pdf']}),
+        },
+        Response,
+    ),
+    (
+        {'headers': Headers({'Content-Type': ['application/x-json']})},
+        TextResponse,
+    ),
+    (
+        {'headers': Headers({'Content-Type': ['application/x-javascript']})},
+        TextResponse,
+    ),
+    (
+        {
+            'headers': Headers(
+                {'Content-Type': ['application/json-amazonui-streaming']}
+            )
+        },
+        TextResponse,
+    ),
+    (
+        {
+            'headers': Headers(
+                {'Content-Disposition': ['attachment; filename="data.xml.gz"']}
+            ),
+            'url': 'http://www.example.com/page/',
+        },
+        Response,
+    ),
+    ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
+    (
+        {
+            'url': 'http://www.example.com/page/file.html',
+            'headers': Headers({'Content-Type': 'application/octet-stream'}),
+        },
+        HtmlResponse,
+    ),
+    (
+        {
+            'url': 'http://www.example.com/item/file.xml',
+            'headers': Headers({'Content-Type': 'application/octet-stream'}),
+        },
+        XmlResponse,
+    ),
+    (
+        {
+            'url': 'http://www.example.com/item/file.html',
+            'headers': Headers({'Content-Type': 'application/octet-stream'}),
+        },
+        HtmlResponse,
+    ),
+    (
+        {
+            'url': 'http://www.example.com/item/file.xml',
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="data.xml.gz"'
+                    ],
+                    'Content-Type': 'application/octet-stream',
+                }
+            ),
+        },
+        XmlResponse,
+    ),
+    ({'url': 'http://www.example.com/item/file.pdf'}, Response),
+    ({'filename': 'file.pdf'}, Response),
+    (
+        {
+            'body': b'<!DOCTYPE html>\n<title>.</title>',
+            'url': 'http://www.example.com',
+        },
+        HtmlResponse,
+    ),
+)
+
+# Scenarios that work differently with the previously-used, deprecated
+# scrapy.responsetypes.responsetypes.from_args
+POST_XTRACTMIME_SCENARIOS = (
+    (
+        {
+            'body': b'\x00\x01\xff',
+            'url': 'http://www.example.com/item/',
+            'headers': Headers({'Content-Type': ['text/plain']}),
+        },
+        Response,
+    ),
+    ({'filename': '/tmp/temp^'}, TextResponse),
+    ({'body': b'%PDF-1.4'}, Response),
+    (
+        {'headers': Headers({'Content-Type': ['application/ecmascript']})},
+        TextResponse,
+    ),
+    (
+        {'headers': Headers({'Content-Type': ['application/ld+json']})},
+        TextResponse,
+    ),
+    (
+        {
+            'headers': Headers(
+                {'Content-Encoding': ['zip'], 'Content-Type': ['text/html']}
+            )
+        },
+        HtmlResponse,
+    ),
+    (
+        {
+            'headers': Headers(
+                {'Content-Encoding': ['zip'], 'Content-Type': ['text/plain']}
+            )
+        },
+        TextResponse,
+    ),
+    (
+        {
+            'body': b'Non HTML',
+            'headers': Headers(
+                {'Content-Encoding': ['zip'], 'Content-Type': ['text/html']}
+            ),
+        },
+        HtmlResponse,
+    ),
+    (
+        {
+            'body': b'Some plain text',
+            'headers': Headers({'Content-Type': 'application/octet-stream'}),
+        },
+        Response,
+    ),
+    ({'body': b'\x0c\x1b'}, TextResponse),
+    ({'body': b'this is not <html>'}, TextResponse),
+    ({'body': b'this is not <?xml'}, TextResponse),
+)
+
+
+@pytest.mark.parametrize(
+    'kwargs,response_class',
+    (
+        *PRE_XTRACTMIME_SCENARIOS,
+        *POST_XTRACTMIME_SCENARIOS,
+    ),
+)
+def test_get_response_class_http(kwargs, response_class):
+    if 'headers' in kwargs:
+        kwargs['http_headers'] = kwargs.pop('headers')
+    if 'filename' in kwargs:
+        assert 'url' not in kwargs
+        kwargs['url'] = kwargs.pop('filename')
+    assert get_response_class(**kwargs) == response_class
 
 
 class ResponseUtilsTest(unittest.TestCase):
@@ -66,18 +286,6 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertEqual(get_meta_refresh(r1), (5.0, 'http://example.org/newpage'))
         self.assertEqual(get_meta_refresh(r2), (None, None))
         self.assertEqual(get_meta_refresh(r3), (None, None))
-
-    def test_get_base_url(self):
-        resp = HtmlResponse("http://www.example.com", body=b"""
-        <html>
-        <head><base href="http://www.example.com/img/" target="_blank"></head>
-        <body>blahablsdfsal&amp;</body>
-        </html>""")
-        self.assertEqual(get_base_url(resp), "http://www.example.com/img/")
-
-        resp2 = HtmlResponse("http://www.example.com", body=b"""
-        <html><body>blahablsdfsal&amp;</body></html>""")
-        self.assertEqual(get_base_url(resp2), "http://www.example.com")
 
     def test_response_status_message(self):
         self.assertEqual(response_status_message(200), '200 OK')

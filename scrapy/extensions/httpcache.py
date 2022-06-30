@@ -10,10 +10,10 @@ from weakref import WeakKeyDictionary
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 
 from scrapy.http import Headers, Response
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.response import get_response_class
 
 
 logger = logging.getLogger(__name__)
@@ -240,7 +240,7 @@ class DbmCacheStorage:
         status = data['status']
         headers = Headers(data['headers'])
         body = data['body']
-        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
+        respcls = get_response_class(http_headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
@@ -299,7 +299,7 @@ class FilesystemCacheStorage:
         url = metadata.get('response_url')
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
-        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
+        respcls = get_response_class(http_headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 

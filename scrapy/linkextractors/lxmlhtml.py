@@ -13,7 +13,6 @@ from scrapy.link import Link
 from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.response import get_base_url
 
 
 # from lxml/src/lxml/html/__init__.py
@@ -82,8 +81,12 @@ class LxmlParserLinkExtractor:
         return self._deduplicate_if_needed(links)
 
     def extract_links(self, response):
-        base_url = get_base_url(response)
-        return self._extract_links(response.selector, response.url, response.encoding, base_url)
+        return self._extract_links(
+            response.selector,
+            response.url,
+            response.encoding,
+            response.base_url,
+        )
 
     def _process_links(self, links):
         """ Normalize and filter extracted links
@@ -148,7 +151,6 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
 
         Duplicate links are omitted.
         """
-        base_url = get_base_url(response)
         if self.restrict_xpaths:
             docs = [
                 subdoc
@@ -159,6 +161,11 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             docs = [response.selector]
         all_links = []
         for doc in docs:
-            links = self._extract_links(doc, response.url, response.encoding, base_url)
+            links = self._extract_links(
+                doc,
+                response.url,
+                response.encoding,
+                response.base_url,
+            )
             all_links.extend(self._process_links(links))
         return unique_list(all_links)

@@ -27,7 +27,6 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Headers, HtmlResponse, Request
 from scrapy.http.response.text import TextResponse
-from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
@@ -1190,7 +1189,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype_encoding(self):
         def _test(response):
             self.assertEqual(response.text, 'A brief note')
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
+            self.assertIsInstance(response, TextResponse)
             self.assertEqual(response.encoding, "US-ASCII")
 
         request = Request("data:,A%20brief%20note")
@@ -1199,7 +1198,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype(self):
         def _test(response):
             self.assertEqual(response.text, '\u038e\u03a3\u038e')
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
+            self.assertIsInstance(response, TextResponse)
             self.assertEqual(response.encoding, "iso-8859-7")
 
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
@@ -1217,7 +1216,7 @@ class DataURITestCase(unittest.TestCase):
     def test_mediatype_parameters(self):
         def _test(response):
             self.assertEqual(response.text, '\u038e\u03a3\u038e')
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
+            self.assertIsInstance(response, TextResponse)
             self.assertEqual(response.encoding, "utf-8")
 
         request = Request('data:text/plain;foo=%22foo;bar%5C%22%22;'

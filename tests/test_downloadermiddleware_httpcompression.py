@@ -8,8 +8,8 @@ from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, ACCEPTED_ENCODINGS
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
+from scrapy.utils.response import get_response_class
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
@@ -247,7 +247,11 @@ class HttpCompressionTest(TestCase):
         }
         plainbody = (b'<html><head><title>Some page</title>'
                      b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">')
-        respcls = responsetypes.from_args(url="http://www.example.com/index", headers=headers, body=plainbody)
+        respcls = get_response_class(
+            url="http://www.example.com/index",
+            http_headers=headers,
+            body=plainbody,
+        )
         response = respcls("http://www.example.com/index", headers=headers, body=plainbody)
         request = Request("http://www.example.com/index")
 

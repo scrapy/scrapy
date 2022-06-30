@@ -10,7 +10,7 @@ import zipfile
 from io import BytesIO
 from tempfile import mktemp
 
-from scrapy.responsetypes import responsetypes
+from scrapy.utils.response import get_response_class
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class DecompressionMiddleware:
             return
 
         body = tar_file.extractfile(tar_file.members[0]).read()
-        respcls = responsetypes.from_args(filename=tar_file.members[0].name, body=body)
+        respcls = get_response_class(url=tar_file.members[0].name, body=body)
         return response.replace(body=body, cls=respcls)
 
     def _is_zip(self, response):
@@ -48,7 +48,7 @@ class DecompressionMiddleware:
 
         namelist = zip_file.namelist()
         body = zip_file.read(namelist[0])
-        respcls = responsetypes.from_args(filename=namelist[0], body=body)
+        respcls = get_response_class(url=namelist[0], body=body)
         return response.replace(body=body, cls=respcls)
 
     def _is_gzip(self, response):
@@ -58,7 +58,7 @@ class DecompressionMiddleware:
         except IOError:
             return
 
-        respcls = responsetypes.from_args(body=body)
+        respcls = get_response_class(body=body)
         return response.replace(body=body, cls=respcls)
 
     def _is_bzip2(self, response):
@@ -67,7 +67,7 @@ class DecompressionMiddleware:
         except IOError:
             return
 
-        respcls = responsetypes.from_args(body=body)
+        respcls = get_response_class(body=body)
         return response.replace(body=body, cls=respcls)
 
     def process_response(self, request, response, spider):
