@@ -9,13 +9,13 @@ import tarfile
 import zipfile
 from io import BytesIO
 from tempfile import mktemp
-import warnings
+from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.responsetypes import responsetypes
 
 
-warnings.warn(
+warn(
     'scrapy.downloadermiddlewares.decompression is deprecated',
     ScrapyDeprecationWarning,
     stacklevel=2,
