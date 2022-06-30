@@ -51,10 +51,10 @@ from scrapy.utils.python import to_bytes, to_unicode
 
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
-_CONTENT_ENCODING_MIME_TYPES = {
-    'br': b'application/brotli',
-    'deflate': b'application/zip',
-    'gzip': b'application/gzip',
+_ENCODING_MIME_TYPES = {
+    b'br': b'application/brotli',
+    b'compress': b'application/x-compress',
+    b'deflate': b'application/zip',
 }
 _MIME_TYPES = MimeTypes()
 _mime_overrides = get_data('scrapy', 'mime.types') or b''
@@ -103,10 +103,12 @@ def _get_best_mime_type(mime_types):
     return mime_types[0]
 
 
-def _get_http_header_mime_types(headers: Headers) -> Sequence[bytes]:
+def _get_encoding_or_mime_types_from_headers(
+    headers: Headers,
+) -> Sequence[bytes]:
     mime_types = []
-    if b'Content-Type' in headers:
-        mime_types.append(headers[b'Content-Type'].split(b';')[0])
+    if b'Content-Encoding' in headers:
+        return headers.getlist(b'Content-Encoding')[-1], None
     if b'Content-Disposition' in headers:
         path = (
             headers.get(b"Content-Disposition")
@@ -115,18 +117,29 @@ def _get_http_header_mime_types(headers: Headers) -> Sequence[bytes]:
             .strip(b"\"'")
             .decode()
         )
-        mime_types.append(_get_mime_type_from_path(path))
-    return mime_types
+        encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
+        if encoding:
+            return encoding, None
+        mime_types.append(mime_type)
+    if b'Content-Type' in headers:
+        mime_types.append(headers[b'Content-Type'].split(b';')[0])
+    return None, mime_types
 
 
-def _get_mime_type_from_path(path):
+def _get_mime_type_from_encoding(encoding):
+    return (
+        _ENCODING_MIME_TYPES.get(encoding, None)
+        or b"application/" + encoding
+    )
+
+
+def _get_encoding_or_mime_type_from_path(path):
     mimetype, encoding = _MIME_TYPES.guess_type(path, strict=False)
-    encoding_mime_type = _CONTENT_ENCODING_MIME_TYPES.get(encoding, None)
-    if encoding_mime_type:
-        return encoding_mime_type
+    if encoding:
+        return encoding.encode(), None
     if mimetype:
-        return mimetype.encode()
-    return None
+        return None, mimetype.encode()
+    return None, None
 
 
 def _get_response_class_from_mime_type(mime_type):
@@ -195,16 +208,29 @@ def get_response_class(
     """Guess the most appropriate Response class based on the given
     arguments."""
     mime_types = list(declared_mime_types or [])
+    encoding = None  # as in compression (e.g. gzip), not charset
     if http_headers:
-        mime_types.extend(_get_http_header_mime_types(http_headers))
+        encoding, header_mime_types = (
+            _get_encoding_or_mime_types_from_headers(http_headers)
+        )
+        if not encoding:
+            mime_types.extend(header_mime_types)
     if url is not None:
         url_parts = urlparse(url)
         http_origin = url_parts.scheme in ("http", "https")
-        mime_types.append(_get_mime_type_from_path(url_parts.path))
+        if not encoding:
+            encoding, path_mime_type = (
+                _get_encoding_or_mime_type_from_path(url_parts.path)
+            )
+            if not encoding:
+                mime_types.append(path_mime_type)
     else:
         http_origin = True
     body = _remove_nul_byte_from_text((body or b'')[:BODY_LIMIT])
-    if mime_types:
+    if encoding:
+        best_mime_type = _get_mime_type_from_encoding(encoding)
+        content_types = (best_mime_type,)
+    elif mime_types:
         best_mime_type = _get_best_mime_type(mime_types)
         content_types = (best_mime_type,) if best_mime_type else best_mime_type
     else:

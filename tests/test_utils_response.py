@@ -54,6 +54,67 @@ PRE_XTRACTMIME_SCENARIOS = (
             'text/plain; charset=windows-1252',
         )
     ),
+
+    # JavaScript MIME types should trigger a TextResponse.
+    #
+    # https://mimesniff.spec.whatwg.org/#javascript-mime-type
+    *(
+        (
+            {'headers': Headers({'Content-Type': [content_type]})},
+            TextResponse,
+        )
+        for content_type in (
+            'application/javascript',
+            'application/x-javascript',
+            'text/ecmascript',
+            'text/javascript',
+            'text/javascript1.0',
+            'text/javascript1.1',
+            'text/javascript1.2',
+            'text/javascript1.3',
+            'text/javascript1.4',
+            'text/javascript1.5',
+            'text/jscript',
+            'text/livescript',
+            'text/x-ecmascript',
+            'text/x-javascript',
+        )
+    ),
+
+    # JSON MIME types should trigger a TextResponse.
+    #
+    # https://mimesniff.spec.whatwg.org/#json-mime-type
+    *(
+        (
+            {'headers': Headers({'Content-Type': [content_type]})},
+            TextResponse,
+        )
+        for content_type in (
+            'application/json',
+            'text/json',
+        )
+    ),
+
+    # Compressed content should be of type Response until uncompressed.
+    *(
+        (
+            {
+                'headers': Headers(
+                    {
+                        'Content-Encoding': ['zip'],
+                        'Content-Type': [content_type],
+                    }
+                )
+            },
+            Response,
+        )
+        for content_type in (
+            'text/html',
+            'text/xml',
+            'text/plain',
+        )
+    ),
+
     *(
         (
             {
@@ -174,20 +235,6 @@ PRE_XTRACTMIME_SCENARIOS = (
         },
         HtmlResponse,
     ),
-    (
-        {
-            'url': 'http://www.example.com/item/file.xml',
-            'headers': Headers(
-                {
-                    'Content-Disposition': [
-                        'attachment; filename="data.xml.gz"'
-                    ],
-                    'Content-Type': 'application/octet-stream',
-                }
-            ),
-        },
-        XmlResponse,
-    ),
     ({'url': 'http://www.example.com/item/file.pdf'}, Response),
     ({'filename': 'file.pdf'}, Response),
     (
@@ -207,7 +254,8 @@ POST_XTRACTMIME_SCENARIOS = (
     # "text/plain; charset=iso-8859-1", or "text/plain; charset=UTF-8",
     # regardless of the actual file content.
     #
-    # They should be treated as binary if their content is binary.
+    # They should be treated as binary if their content is binary, and as
+    # text/plain otherwise.
     #
     # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
     *(
@@ -226,32 +274,46 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    ({'filename': '/tmp/temp^'}, TextResponse),
+    # If the body is empty, it contains no binary data bytes, hence body-based
+    # MIME type detection must interpret the result as text.
+    #
+    # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
+    ({}, TextResponse),
+    ({'url': '/tmp/temp^'}, TextResponse),
+
+    # Body-based PDF detection
+    #
+    # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
     ({'body': b'%PDF-1.4'}, Response),
-    (
-        {'headers': Headers({'Content-Type': ['application/ecmascript']})},
-        TextResponse,
+
+    # JavaScript MIME types should trigger a TextResponse.
+    #
+    # https://mimesniff.spec.whatwg.org/#javascript-mime-type
+    *(
+        (
+            {'headers': Headers({'Content-Type': [content_type]})},
+            TextResponse,
+        )
+        for content_type in (
+            'application/ecmascript',
+            'application/x-ecmascript',
+        )
     ),
-    (
-        {'headers': Headers({'Content-Type': ['application/ld+json']})},
-        TextResponse,
+
+    # JSON MIME types should trigger a TextResponse.
+    #
+    # https://mimesniff.spec.whatwg.org/#json-mime-type
+    *(
+        (
+            {'headers': Headers({'Content-Type': [content_type]})},
+            TextResponse,
+        )
+        for content_type in (
+            'application/foo+json',
+            'application/ld+json',
+        )
     ),
-    (
-        {
-            'headers': Headers(
-                {'Content-Encoding': ['zip'], 'Content-Type': ['text/html']}
-            )
-        },
-        HtmlResponse,
-    ),
-    (
-        {
-            'headers': Headers(
-                {'Content-Encoding': ['zip'], 'Content-Type': ['text/plain']}
-            )
-        },
-        TextResponse,
-    ),
+
     (
         {
             'body': b'Non HTML',
@@ -259,7 +321,7 @@ POST_XTRACTMIME_SCENARIOS = (
                 {'Content-Encoding': ['zip'], 'Content-Type': ['text/html']}
             ),
         },
-        HtmlResponse,
+        Response,
     ),
     (
         {
@@ -271,6 +333,20 @@ POST_XTRACTMIME_SCENARIOS = (
     ({'body': b'\x0c\x1b'}, TextResponse),
     ({'body': b'this is not <html>'}, TextResponse),
     ({'body': b'this is not <?xml'}, TextResponse),
+    (
+        {
+            'url': 'http://www.example.com/item/file.xml',
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="data.xml.gz"'
+                    ],
+                    'Content-Type': 'application/octet-stream',
+                }
+            ),
+        },
+        Response,
+    ),
 )
 
 
