@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import tempfile
+from base64 import b64encode
 from typing import Optional, Type
 from unittest import mock
 
@@ -1236,4 +1237,16 @@ class DataURITestCase(unittest.TestCase):
             self.assertIsNone(response.protocol)
 
         request = Request("data:,")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_body_mime_type(self):
+        """Test that the body, and not only the declared MIME type, is taken
+        into account when choosing a response class."""
+        def _test(response):
+            self.assertIsInstance(response, HtmlResponse)
+
+        html = '<!DOCTYPE html>\n<title>.</title>'
+        base64_html = b64encode(html.encode()).decode()
+        data_uri = f'data:application/unknown;base64,{base64_html}'
+        request = Request(data_uri)
         return self.download_request(request, self.spider).addCallback(_test)
