@@ -56,7 +56,10 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
     def __init__(self):
         self.classes = {}
         self.mimetypes = _MIME_TYPES
-        for mimetype, cls in self.CLASSES.items():
+        with catch_warnings():
+            simplefilter("ignore")
+            classes_items = self.CLASSES.items()
+        for mimetype, cls in classes_items:
             self.classes[mimetype] = load_object(cls)
 
     def __getattribute__(self, name):

@@ -126,6 +126,10 @@ class ResponseTypesTest(unittest.TestCase):
         )
         messages = {str(warning.message) for warning in warnings}
         self.assertIn(expected_message, messages)
+        unxepected_message = (
+            'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated'
+        )
+        self.assertNotIn(unxepected_message, messages)
 
     def test_class_classes_deprecation(self):
         with catch_warnings(record=True) as warnings:
