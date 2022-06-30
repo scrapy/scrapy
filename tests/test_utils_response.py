@@ -314,15 +314,72 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    (
-        {
-            'body': b'Non HTML',
-            'headers': Headers(
-                {'Content-Encoding': ['zip'], 'Content-Type': ['text/html']}
-            ),
-        },
-        Response,
-    ),
+
+    # Compressed content should be of type Response until uncompressed.
+    #
+    # When it comes to compression, we trust the encoding from the following
+    # sources, in the following order:
+    #
+    # 1,  Content-Encoding HTTP header
+    #
+    # 2.  File extension of the file name of the Content-Disposition HTTP
+    #     header.
+    #
+    # 3.  File extension of the file name if the resource comes through a
+    #     file-based protocol (FTP, local file system).
+    #(
+        #{
+            #'url': 'file.html',
+            #'body': b'<!DOCTYPE html>\n<title>.</title>',
+            #'headers': Headers(
+                #{
+                    #'Content-Disposition': [
+                        #'attachment; filename="file.html"'
+                    #],
+                    #'Content-Encoding': ['zip'],
+                    #'Content-Type': ['text/html'],
+                #}
+            #),
+        #},
+        #Response,
+    #),
+    #(
+        #{
+            #'url': 'file.html',
+            #'body': b'<!DOCTYPE html>\n<title>.</title>',
+            #'headers': Headers(
+                #{
+                    #'Content-Disposition': [
+                        #'attachment; filename="file.html.zip"'
+                    #],
+                    #'Content-Type': ['text/html'],
+                #}
+            #),
+        #},
+        #Response,
+    #),
+    #(
+        #{
+            #'url': 'file.html.zip',
+            #'body': b'<!DOCTYPE html>\n<title>.</title>',
+        #},
+        #Response,
+    #),
+
+    # HTTP headers take priority over local file extensions.
+    #(
+        #{
+            #'url': 'file.html.zip',
+            #'body': b'<!DOCTYPE html>\n<title>.</title>',
+            #'headers': Headers(
+                #{
+                    #'Content-Type': ['text/html'],
+                #}
+            #),
+        #},
+        #HtmlResponse,
+    #),
+
     (
         {
             'body': b'Some plain text',

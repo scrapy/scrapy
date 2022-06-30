@@ -51,14 +51,21 @@ from scrapy.utils.python import to_bytes, to_unicode
 
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
-_ENCODING_MIME_TYPES = {
+_ENCODING_MIME_TYPE_MAP = {
     b'br': b'application/brotli',
     b'compress': b'application/x-compress',
     b'deflate': b'application/zip',
+    b'gzip': b'application/gzip',
+    b'zstd': b'application/zstd',
 }
+_ENCODING_MIME_TYPES = {*_ENCODING_MIME_TYPE_MAP.values()}
 _MIME_TYPES = MimeTypes()
 _mime_overrides = get_data('scrapy', 'mime.types') or b''
 _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
+
+
+def _is_compressed_mime_type(mime_type):
+    return mime_type in _ENCODING_MIME_TYPES
 
 
 def _is_html_mime_type(mime_type):
@@ -84,6 +91,7 @@ def _is_other_text_mime_type(mime_type):
 
 
 _PRIORITIZED_MIME_TYPE_CHECKERS = (
+    _is_compressed_mime_type,
     _is_html_mime_type,
     is_xml_mime_type,
     _is_other_text_mime_type,
@@ -108,7 +116,9 @@ def _get_encoding_or_mime_types_from_headers(
 ) -> Sequence[bytes]:
     mime_types = []
     if b'Content-Encoding' in headers:
-        return headers.getlist(b'Content-Encoding')[-1], None
+        encodings = headers.getlist(b'Content-Encoding')
+        if encodings:
+            return encodings[-1], None
     if b'Content-Disposition' in headers:
         path = (
             headers.get(b"Content-Disposition")
@@ -128,7 +138,7 @@ def _get_encoding_or_mime_types_from_headers(
 
 def _get_mime_type_from_encoding(encoding):
     return (
-        _ENCODING_MIME_TYPES.get(encoding, None)
+        _ENCODING_MIME_TYPE_MAP.get(encoding, None)
         or b"application/" + encoding
     )
 
