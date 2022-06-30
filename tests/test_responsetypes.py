@@ -1,5 +1,4 @@
 import unittest
-from warnings import catch_warnings
 
 import pytest
 
@@ -10,7 +9,7 @@ from scrapy.http import (
     TextResponse,
     XmlResponse,
 )
-from scrapy.responsetypes import responsetypes, ResponseTypes
+from scrapy.responsetypes import responsetypes
 from .test_utils_response import (
     POST_XTRACTMIME_SCENARIOS,
     PRE_XTRACTMIME_SCENARIOS,

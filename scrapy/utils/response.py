@@ -61,7 +61,6 @@ _mime_overrides = get_data('scrapy', 'mime.types') or b''
 _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
 
 
-
 def _is_html_mime_type(mime_type):
     if mime_type in {
         b'application/xhtml+xml',
