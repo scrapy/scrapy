@@ -70,8 +70,8 @@ class HttpCompressionMiddleware:
                 )
                 kwargs = dict(cls=respcls, body=decoded_body)
                 if issubclass(respcls, TextResponse):
-                    # force recalculating the encoding until we make sure the
-                    # responsetypes guessing is reliable
+                    # Force recalculating the encoding based on the new,
+                    # decoded (uncompressed) body.
                     kwargs['encoding'] = None
                 response = response.replace(**kwargs)
                 if not content_encoding:
