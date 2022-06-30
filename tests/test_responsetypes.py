@@ -127,6 +127,24 @@ class ResponseTypesTest(unittest.TestCase):
         messages = {str(warning.message) for warning in warnings}
         self.assertIn(expected_message, messages)
 
+    def test_class_classes_deprecation(self):
+        with catch_warnings(record=True) as warnings:
+            ResponseTypes.CLASSES
+        expected_message = (
+            'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated'
+        )
+        messages = {str(warning.message) for warning in warnings}
+        self.assertIn(expected_message, messages)
+
+    def test_instance_classes_deprecation(self):
+        with catch_warnings(record=True) as warnings:
+            responsetypes.CLASSES
+        expected_message = (
+            'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated'
+        )
+        messages = {str(warning.message) for warning in warnings}
+        self.assertIn(expected_message, messages)
+
 
 if __name__ == "__main__":
     unittest.main()

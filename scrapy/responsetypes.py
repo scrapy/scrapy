@@ -11,7 +11,19 @@ from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 from scrapy.utils.response import _MIME_TYPES
 
 
-class ResponseTypes:
+class _ResponseTypesMeta(type):
+
+    def __getattribute__(self, name):
+        if name == 'CLASSES':
+            warn(
+                'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated',
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        return type.__getattribute__(self, name)
+
+
+class ResponseTypes(metaclass=_ResponseTypesMeta):
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
@@ -46,6 +58,15 @@ class ResponseTypes:
         self.mimetypes = _MIME_TYPES
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
+
+    def __getattribute__(self, name):
+        if name == 'CLASSES':
+            warn(
+                'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated',
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        return super().__getattribute__(name)
 
     def from_mimetype(self, mimetype):
         """Return the most appropriate Response class for the given mimetype"""
