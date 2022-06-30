@@ -2,7 +2,7 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
-from warnings import catch_warnings, simplefilter, warn
+from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
@@ -11,19 +11,17 @@ from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 from scrapy.utils.response import _MIME_TYPES
 
 
-class _ResponseTypesMeta(type):
-
-    def __getattribute__(self, name):
-        if name == 'CLASSES':
-            warn(
-                'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated',
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-        return type.__getattribute__(self, name)
+warn(
+    (
+        'scrapy.responsetypes is deprecated, use '
+        'scrapy.utils.response.get_response_class instead'
+    ),
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 
-class ResponseTypes(metaclass=_ResponseTypesMeta):
+class ResponseTypes:
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
@@ -42,39 +40,14 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
         'text/*': 'scrapy.http.TextResponse',
     }
 
-    def __new__(cls, *args, **kwargs):
-        warn(
-            (
-                'scrapy.responsetypes.ResponseTypes is deprecated, use '
-                'scrapy.utils.response.get_response_class instead'
-            ),
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return super().__new__(cls)
-
     def __init__(self):
         self.classes = {}
         self.mimetypes = _MIME_TYPES
-        with catch_warnings():
-            simplefilter("ignore")
-            classes_items = self.CLASSES.items()
-        for mimetype, cls in classes_items:
+        for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
-
-    def __getattribute__(self, name):
-        if name == 'CLASSES':
-            warn(
-                'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated',
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-        return super().__getattribute__(name)
 
     def from_mimetype(self, mimetype):
         """Return the most appropriate Response class for the given mimetype"""
-        warn('ResponseTypes.from_mimetype is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         if mimetype is None:
             return Response
         elif mimetype in self.classes:
@@ -86,16 +59,12 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
     def from_content_type(self, content_type, content_encoding=None):
         """Return the most appropriate Response class from an HTTP Content-Type
         header """
-        warn('ResponseTypes.from_content_type is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         if content_encoding:
             return Response
         mimetype = to_unicode(content_type).split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):
-        warn('ResponseTypes.from_content_disposition is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         try:
             filename = to_unicode(
                 content_disposition, encoding='latin-1', errors='replace'
@@ -107,8 +76,6 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
     def from_headers(self, headers):
         """Return the most appropriate Response class by looking at the HTTP
         headers"""
-        warn('ResponseTypes.from_headers is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         cls = Response
         if b'Content-Type' in headers:
             cls = self.from_content_type(
@@ -121,8 +88,6 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
 
     def from_filename(self, filename):
         """Return the most appropriate Response class from a file name"""
-        warn('ResponseTypes.from_filename is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         mimetype, encoding = self.mimetypes.guess_type(filename)
         if mimetype and not encoding:
             return self.from_mimetype(mimetype)
@@ -134,8 +99,6 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
         This method is a bit magic and could be improved in the future, but
         it's not meant to be used except for special cases where response types
         cannot be guess using more straightforward methods."""
-        warn('ResponseTypes.from_body is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         chunk = body[:5000]
         chunk = to_bytes(chunk)
         if not binary_is_text(chunk):
@@ -152,8 +115,6 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
     def from_args(self, headers=None, url=None, filename=None, body=None):
         """Guess the most appropriate Response class based on
         the given arguments."""
-        warn('ResponseTypes.from_args is deprecated, '
-             'please use scrapy.utils.response.get_response_class instead', ScrapyDeprecationWarning)
         cls = Response
         if headers is not None:
             cls = self.from_headers(headers)
@@ -166,6 +127,4 @@ class ResponseTypes(metaclass=_ResponseTypesMeta):
         return cls
 
 
-with catch_warnings():
-    simplefilter("ignore")
-    responsetypes = ResponseTypes()
+responsetypes = ResponseTypes()

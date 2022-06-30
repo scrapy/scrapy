@@ -117,38 +117,6 @@ class ResponseTypesTest(unittest.TestCase):
         # check that mime.types files shipped with scrapy are loaded
         self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
 
-    def test_class_deprecation(self):
-        with catch_warnings(record=True) as warnings:
-            ResponseTypes()
-        expected_message = (
-            'scrapy.responsetypes.ResponseTypes is deprecated, use '
-            'scrapy.utils.response.get_response_class instead'
-        )
-        messages = {str(warning.message) for warning in warnings}
-        self.assertIn(expected_message, messages)
-        unxepected_message = (
-            'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated'
-        )
-        self.assertNotIn(unxepected_message, messages)
-
-    def test_class_classes_deprecation(self):
-        with catch_warnings(record=True) as warnings:
-            ResponseTypes.CLASSES
-        expected_message = (
-            'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated'
-        )
-        messages = {str(warning.message) for warning in warnings}
-        self.assertIn(expected_message, messages)
-
-    def test_instance_classes_deprecation(self):
-        with catch_warnings(record=True) as warnings:
-            responsetypes.CLASSES
-        expected_message = (
-            'scrapy.responsetypes.ResponseTypes.CLASSES is deprecated'
-        )
-        messages = {str(warning.message) for warning in warnings}
-        self.assertIn(expected_message, messages)
-
 
 if __name__ == "__main__":
     unittest.main()
