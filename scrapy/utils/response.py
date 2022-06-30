@@ -61,6 +61,16 @@ _mime_overrides = get_data('scrapy', 'mime.types') or b''
 _MIME_TYPES.readfp(StringIO(_mime_overrides.decode()))
 
 
+
+def _is_html_mime_type(mime_type):
+    if mime_type in {
+        b'application/xhtml+xml',
+        b'application/vnd.wap.xhtml+xml',
+    }:
+        return True
+    return is_html_mime_type(mime_type)
+
+
 def _is_other_text_mime_type(mime_type):
     return (
         mime_type.startswith(b'text/')
@@ -75,7 +85,7 @@ def _is_other_text_mime_type(mime_type):
 
 
 _PRIORITIZED_MIME_TYPE_CHECKERS = (
-    is_html_mime_type,
+    _is_html_mime_type,
     is_xml_mime_type,
     _is_other_text_mime_type,
 )
@@ -123,7 +133,7 @@ def _get_mime_type_from_path(path):
 def _get_response_class_from_mime_type(mime_type):
     if not mime_type:
         return Response
-    if is_html_mime_type(mime_type):
+    if _is_html_mime_type(mime_type):
         return HtmlResponse
     if is_xml_mime_type(mime_type):
         return XmlResponse

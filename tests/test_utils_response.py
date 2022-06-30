@@ -6,6 +6,8 @@ import pytest
 
 from scrapy.http import HtmlResponse, Response, TextResponse, XmlResponse
 from scrapy.http.headers import Headers
+from scrapy.responsetypes import ResponseTypes
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     get_meta_refresh,
@@ -22,6 +24,17 @@ __doctests__ = ['scrapy.utils.response']
 # Scenarios that work the same with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 PRE_XTRACTMIME_SCENARIOS = (
+    *(
+        (
+            {
+                'headers': Headers(
+                    {'Content-Type': [mime_type]}
+                ),
+            },
+            load_object(class_path),
+        )
+        for mime_type, class_path in ResponseTypes.CLASSES.items()
+    ),
     (
         {
             'url': 'http://www.example.com/data.csv',
