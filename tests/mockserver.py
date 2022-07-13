@@ -1,23 +1,27 @@
+import argparse
 import json
 import os
 import random
 import sys
+from pathlib import Path
+from shutil import rmtree
 from subprocess import Popen, PIPE
+from tempfile import mkdtemp
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
-from twisted.web.static import File
-from twisted.web.test.test_webclient import PayloadResource
-from twisted.web.server import GzipEncoderFactory
-from twisted.web.resource import EncodingResourceWrapper
-from twisted.web.util import redirectTo
-from twisted.internet import reactor, ssl
+from twisted.internet import defer, reactor, ssl
 from twisted.internet.task import deferLater
+from twisted.names import dns, error
+from twisted.names.server import DNSServerFactory
+from twisted.web import resource, server
+from twisted.web.server import GzipEncoderFactory, NOT_DONE_YET, Site
+from twisted.web.static import File
+from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
+from scrapy.utils.test import get_testenv
 
 
 def getarg(request, name, default=None, type=None):
@@ -30,7 +34,70 @@ def getarg(request, name, default=None, type=None):
         return default
 
 
-class LeafResource(Resource):
+# most of the following resources are copied from twisted.web.test.test_webclient
+class ForeverTakingResource(resource.Resource):
+    """
+    L{ForeverTakingResource} is a resource which never finishes responding
+    to requests.
+    """
+
+    def __init__(self, write=False):
+        resource.Resource.__init__(self)
+        self._write = write
+
+    def render(self, request):
+        if self._write:
+            request.write(b"some bytes")
+        return server.NOT_DONE_YET
+
+
+class ErrorResource(resource.Resource):
+    def render(self, request):
+        request.setResponseCode(401)
+        if request.args.get(b"showlength"):
+            request.setHeader(b"content-length", b"0")
+        return b""
+
+
+class NoLengthResource(resource.Resource):
+    def render(self, request):
+        return b"nolength"
+
+
+class HostHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of the host header
+    from the request.
+    """
+
+    def render(self, request):
+        return request.requestHeaders.getRawHeaders(b"host")[0]
+
+
+class PayloadResource(resource.Resource):
+    """
+    A testing resource which renders itself as the contents of the request body
+    as long as the request body is 100 bytes long, otherwise which renders
+    itself as C{"ERROR"}.
+    """
+
+    def render(self, request):
+        data = request.content.read()
+        contentLength = request.requestHeaders.getRawHeaders(b"content-length")[0]
+        if len(data) != 100 or int(contentLength) != 100:
+            return b"ERROR"
+        return data
+
+
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        # only sends 3 bytes even though it claims to send 5
+        request.setHeader(b"content-length", b"5")
+        request.write(b"abc")
+        return b""
+
+
+class LeafResource(resource.Resource):
 
     isLeaf = True
 
@@ -68,7 +135,7 @@ class Follow(LeafResource):
         for nl in nlist:
             args[b"n"] = [to_bytes(str(nl))]
             argstr = urlencode(args, doseq=True)
-            s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
+            s += f"<a href='/follow?{argstr}'>follow {nl}</a><br>"
         s += """</body>"""
         request.write(to_bytes(s))
         request.finish()
@@ -86,7 +153,7 @@ class Delay(LeafResource):
         return NOT_DONE_YET
 
     def _delayedRender(self, request, n):
-        request.write(to_bytes("Response delayed for %0.3f seconds\n" % n))
+        request.write(to_bytes(f"Response delayed for {n:.3f} seconds\n"))
         request.finish()
 
 
@@ -164,10 +231,16 @@ class Drop(Partial):
             request.finish()
 
 
-class Root(Resource):
+class ArbitraryLengthPayloadResource(LeafResource):
+
+    def render(self, request):
+        return request.content.read()
+
+
+class Root(resource.Resource):
 
     def __init__(self):
-        Resource.__init__(self)
+        resource.Resource.__init__(self)
         self.putChild(b"status", Status())
         self.putChild(b"follow", Follow())
         self.putChild(b"delay", Delay())
@@ -176,7 +249,8 @@ class Root(Resource):
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
-        self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"xpayload", resource.EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
             self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
@@ -191,12 +265,10 @@ class Root(Resource):
         return b'Scrapy mock HTTP server\n'
 
 
-class MockServer():
+class MockServer:
 
     def __enter__(self):
-        from scrapy.utils.test import get_testenv
-
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'http'],
                           stdout=PIPE, env=get_testenv())
         http_address = self.proc.stdout.readline().strip().decode('ascii')
         https_address = self.proc.stdout.readline().strip().decode('ascii')
@@ -211,39 +283,109 @@ class MockServer():
         self.proc.communicate()
 
     def url(self, path, is_secure=False):
-        host = self.http_address.replace('0.0.0.0', '127.0.0.1')
-        if is_secure:
-            host = self.https_address
+        host = self.https_address if is_secure else self.http_address
+        host = host.replace('0.0.0.0', '127.0.0.1')
         return host + path
+
+
+class MockDNSResolver:
+    """
+    Implements twisted.internet.interfaces.IResolver partially
+    """
+
+    def _resolve(self, name):
+        record = dns.Record_A(address=b"127.0.0.1")
+        answer = dns.RRHeader(name=name, payload=record)
+        return [answer], [], []
+
+    def query(self, query, timeout=None):
+        if query.type == dns.A:
+            return defer.succeed(self._resolve(query.name.name))
+        return defer.fail(error.DomainError())
+
+    def lookupAllRecords(self, name, timeout=None):
+        return defer.succeed(self._resolve(name))
+
+
+class MockDNSServer:
+
+    def __enter__(self):
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
+                          stdout=PIPE, env=get_testenv())
+        self.host = '127.0.0.1'
+        self.port = int(self.proc.stdout.readline().strip().decode('ascii').split(":")[1])
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.proc.kill()
+        self.proc.communicate()
+
+
+class MockFTPServer:
+    """Creates an FTP server on port 2121 with a default passwordless user
+    (anonymous) and a temporary root path that you can read from the
+    :attr:`path` attribute."""
+
+    def __enter__(self):
+        self.path = Path(mkdtemp())
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
+                          stderr=PIPE, env=get_testenv())
+        for line in self.proc.stderr:
+            if b'starting FTP server' in line:
+                break
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        rmtree(str(self.path))
+        self.proc.kill()
+        self.proc.communicate()
+
+    def url(self, path):
+        return 'ftp://127.0.0.1:2121/' + path
 
 
 def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
     factory = ssl.DefaultOpenSSLContextFactory(
-         os.path.join(os.path.dirname(__file__), keyfile),
-         os.path.join(os.path.dirname(__file__), certfile),
-         )
+        os.path.join(os.path.dirname(__file__), keyfile),
+        os.path.join(os.path.dirname(__file__), certfile),
+    )
     if cipher_string:
         ctx = factory.getContext()
-        # disabling TLS1.2+ because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_2 | SSL_OP_NO_TLSv1_3)
+        # disabling TLS1.3 because it unconditionally enables some strong ciphers
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 
 
 if __name__ == "__main__":
-    root = Root()
-    factory = Site(root)
-    httpPort = reactor.listenTCP(0, factory)
-    contextFactory = ssl_context_factory()
-    httpsPort = reactor.listenSSL(0, factory, contextFactory)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--type", type=str, choices=("http", "dns"), default="http")
+    args = parser.parse_args()
 
-    def print_listening():
-        httpHost = httpPort.getHost()
-        httpsHost = httpsPort.getHost()
-        httpAddress = 'http://%s:%d' % (httpHost.host, httpHost.port)
-        httpsAddress = 'https://%s:%d' % (httpsHost.host, httpsHost.port)
-        print(httpAddress)
-        print(httpsAddress)
+    if args.type == "http":
+        root = Root()
+        factory = Site(root)
+        httpPort = reactor.listenTCP(0, factory)
+        contextFactory = ssl_context_factory()
+        httpsPort = reactor.listenSSL(0, factory, contextFactory)
+
+        def print_listening():
+            httpHost = httpPort.getHost()
+            httpsHost = httpsPort.getHost()
+            httpAddress = f'http://{httpHost.host}:{httpHost.port}'
+            httpsAddress = f'https://{httpsHost.host}:{httpsHost.port}'
+            print(httpAddress)
+            print(httpsAddress)
+
+    elif args.type == "dns":
+        clients = [MockDNSResolver()]
+        factory = DNSServerFactory(clients=clients)
+        protocol = dns.DNSDatagramProtocol(controller=factory)
+        listener = reactor.listenUDP(0, protocol)
+
+        def print_listening():
+            host = listener.getHost()
+            print(f"{host.host}:{host.port}")
 
     reactor.callWhenRunning(print_listening)
     reactor.run()

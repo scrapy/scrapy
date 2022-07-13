@@ -9,14 +9,23 @@ import tarfile
 import zipfile
 from io import BytesIO
 from tempfile import mktemp
+from warnings import warn
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.responsetypes import responsetypes
+
+
+warn(
+    'scrapy.downloadermiddlewares.decompression is deprecated',
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
-class DecompressionMiddleware(object):
+class DecompressionMiddleware:
     """ This middleware tries to recognise and extract the possibly compressed
     responses that may arrive. """
 

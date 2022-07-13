@@ -6,8 +6,6 @@
 Command line tool
 =================
 
-.. versionadded:: 0.10
-
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
@@ -29,7 +27,7 @@ in standard locations:
 1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
 2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
    for global (user-wide) settings, and
-3. ``scrapy.cfg`` inside a scrapy project's root (see next section).
+3. ``scrapy.cfg`` inside a Scrapy project's root (see next section).
 
 Settings from these files are merged in the listed order of preference:
 user-defined values have higher priority than system-wide defaults
@@ -232,10 +230,16 @@ Usage example::
 genspider
 ---------
 
-* Syntax: ``scrapy genspider [-t template] <name> <domain>``
+* Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+.. versionadded:: 2.6.0
+   The ability to pass a URL instead of a domain.
+
+Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+
+.. note:: Even if an HTTPS URL is specified, the protocol used in
+          ``start_urls`` is always HTTP. This is a known issue: :issue:`3553`.
 
 Usage example::
 
@@ -468,7 +472,7 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
-* ``--meta`` or ``-m``: additional request meta that will be passed to the callback 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
   request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
 
 * ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
@@ -490,6 +494,10 @@ Supported options:
   recursively (default: 1)
 
 * ``--verbose`` or ``-v``: display information for each depth level
+
+* ``--output`` or ``-o``: dump scraped items to a file
+
+  .. versionadded:: 2.3
 
 .. skip: start
 
@@ -562,8 +570,6 @@ and Platform info, which is useful for bug reports.
 bench
 -----
 
-.. versionadded:: 0.17
-
 * Syntax: ``scrapy bench``
 * Requires project: *no*
 
@@ -597,8 +603,6 @@ Example:
 
 Register commands via setup.py entry points
 -------------------------------------------
-
-.. note:: This is an experimental feature, use with caution.
 
 You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``

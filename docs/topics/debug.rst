@@ -5,7 +5,7 @@ Debugging Spiders
 =================
 
 This document explains the most common techniques for debugging spiders.
-Consider the following scrapy spider below::
+Consider the following Scrapy spider below::
 
     import scrapy
     from myproject.items import MyItem
@@ -36,7 +36,7 @@ Consider the following scrapy spider below::
 
 Basically this is a simple spider which parses two pages of items (the
 start_urls). Items also have a details page with additional information, so we
-use the ``cb_kwargs`` functionality of :class:`~scrapy.http.Request` to pass a
+use the ``cb_kwargs`` functionality of :class:`~scrapy.Request` to pass a
 partially populated item.
 
 

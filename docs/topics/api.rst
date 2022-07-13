@@ -4,8 +4,6 @@
 Core API
 ========
 
-.. versionadded:: 0.15
-
 This section documents the Scrapy core API, and it's intended for developers of
 extensions and middlewares.
 
@@ -31,8 +29,15 @@ how you :ref:`configure the downloader middlewares
 .. class:: Crawler(spidercls, settings)
 
     The Crawler object must be instantiated with a
-    :class:`scrapy.spiders.Spider` subclass and a
+    :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
+
+    .. attribute:: request_fingerprinter
+
+        The request fingerprint builder of this crawler.
+
+        This is used from extensions and middlewares to build short, unique
+        identifiers for requests. See :ref:`request-fingerprints`.
 
     .. attribute:: settings
 
@@ -91,7 +96,7 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(\*args, \**kwargs)
+    .. method:: crawl(*args, **kwargs)
 
         Starts the crawler by instantiating its spider class with the given
         ``args`` and ``kwargs`` arguments, while setting the execution engine in
@@ -198,7 +203,7 @@ SpiderLoader API
        match the request's url against the domains of the spiders.
 
        :param request: queried request
-       :type request: :class:`~scrapy.http.Request` instance
+       :type request: :class:`~scrapy.Request` instance
 
 .. _topics-api-signals:
 

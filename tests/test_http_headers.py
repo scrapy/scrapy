@@ -38,20 +38,26 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h.getlist('X-Forwarded-For'), [b'ip1', b'ip2'])
         assert h.getlist('X-Forwarded-For') is not hlist
 
+    def test_multivalue_for_one_header(self):
+        h = Headers((("a", "b"), ("a", "c")))
+        self.assertEqual(h["a"], b"c")
+        self.assertEqual(h.get("a"), b"c")
+        self.assertEqual(h.getlist("a"), [b"b", b"c"])
+
     def test_encode_utf8(self):
-        h = Headers({u'key': u'\xa3'}, encoding='utf-8')
+        h = Headers({'key': '\xa3'}, encoding='utf-8')
         key, val = dict(h).popitem()
         assert isinstance(key, bytes), key
         assert isinstance(val[0], bytes), val[0]
         self.assertEqual(val[0], b'\xc2\xa3')
 
     def test_encode_latin1(self):
-        h = Headers({u'key': u'\xa3'}, encoding='latin1')
+        h = Headers({'key': '\xa3'}, encoding='latin1')
         key, val = dict(h).popitem()
         self.assertEqual(val[0], b'\xa3')
 
     def test_encode_multiple(self):
-        h = Headers({u'key': [u'\xa3']}, encoding='utf-8')
+        h = Headers({'key': ['\xa3']}, encoding='utf-8')
         key, val = dict(h).popitem()
         self.assertEqual(val[0], b'\xc2\xa3')
 

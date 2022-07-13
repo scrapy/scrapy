@@ -37,8 +37,20 @@ class CloseSpider(Exception):
     """Raise this from callbacks to request the spider to be closed"""
 
     def __init__(self, reason='cancelled'):
-        super(CloseSpider, self).__init__()
+        super().__init__()
         self.reason = reason
+
+
+class StopDownload(Exception):
+    """
+    Stop the download of the body for a given response.
+    The 'fail' boolean parameter indicates whether or not the resulting partial response
+    should be handled by the request errback. Note that 'fail' is a keyword-only argument.
+    """
+
+    def __init__(self, *, fail=True):
+        super().__init__()
+        self.fail = fail
 
 
 # Items
@@ -59,9 +71,10 @@ class NotSupported(Exception):
 
 class UsageError(Exception):
     """To indicate a command-line usage error"""
+
     def __init__(self, *a, **kw):
         self.print_help = kw.pop('print_help', True)
-        super(UsageError, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
 
 
 class ScrapyDeprecationWarning(Warning):

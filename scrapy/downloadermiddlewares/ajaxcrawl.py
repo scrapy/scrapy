@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import re
 import logging
 
@@ -11,7 +10,7 @@ from scrapy.http import HtmlResponse
 logger = logging.getLogger(__name__)
 
 
-class AjaxCrawlMiddleware(object):
+class AjaxCrawlMiddleware:
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
@@ -47,7 +46,7 @@ class AjaxCrawlMiddleware(object):
             return response
 
         # scrapy already handles #! links properly
-        ajax_crawl_request = request.replace(url=request.url+'#!')
+        ajax_crawl_request = request.replace(url=request.url + '#!')
         logger.debug("Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
                      {'ajax_crawl_request': ajax_crawl_request, 'request': request},
                      extra={'spider': spider})

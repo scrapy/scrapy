@@ -15,7 +15,7 @@ class SpiderMiddlewareTestCase(TestCase):
     def setUp(self):
         self.request = Request('http://example.com/index.html')
         self.response = Response(self.request.url, request=self.request)
-        self.crawler = get_crawler(Spider)
+        self.crawler = get_crawler(Spider, {'SPIDER_MIDDLEWARES_BASE': {}})
         self.spider = self.crawler._create_spider('foo')
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
 
@@ -94,7 +94,7 @@ class ProcessSpiderExceptionReRaise(SpiderMiddlewareTestCase):
 
         class RaiseExceptionProcessSpiderOutputMiddleware:
             def process_spider_output(self, response, result, spider):
-                1/0
+                1 / 0
 
         self.mwman._add_middleware(ProcessSpiderExceptionReturnNoneMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())

@@ -34,7 +34,6 @@ class WrappedRequestTest(TestCase):
         self.assertTrue(self.wrapped.unverifiable)
 
     def test_get_origin_req_host(self):
-        self.assertEqual(self.wrapped.get_origin_req_host(), 'www.example.com')
         self.assertEqual(self.wrapped.origin_req_host, 'www.example.com')
 
     def test_has_header(self):
@@ -63,9 +62,6 @@ class WrappedResponseTest(TestCase):
 
     def test_info(self):
         self.assertIs(self.wrapped.info(), self.wrapped)
-
-    def test_getheaders(self):
-        self.assertEqual(self.wrapped.getheaders('content-type'), ['text/html'])
 
     def test_get_all(self):
         # get_all result must be native string

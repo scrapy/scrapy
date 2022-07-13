@@ -5,11 +5,8 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.decorators import defers
 
 
-class DataURIDownloadHandler(object):
+class DataURIDownloadHandler:
     lazy = False
-
-    def __init__(self, settings):
-        super(DataURIDownloadHandler, self).__init__()
 
     @defers
     def download_request(self, request, spider):

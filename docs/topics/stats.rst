@@ -32,7 +32,7 @@ Common Stats Collector uses
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
 attribute. Here is an example of an extension that access stats::
 
-    class ExtensionThatAccessStats(object):
+    class ExtensionThatAccessStats:
 
         def __init__(self, stats):
             self.stats = stats
@@ -57,15 +57,15 @@ Set stat value only if lower than previous::
 
     stats.min_value('min_free_memory_percent', value)
 
-Get stat value::
+Get stat value:
 
-    >>> stats.get_value('custom_count')
-    1
+>>> stats.get_value('custom_count')
+1
 
-Get all stats::
+Get all stats:
 
-    >>> stats.get_stats()
-    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+>>> stats.get_stats()
+{'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 Available Stats Collectors
 ==========================

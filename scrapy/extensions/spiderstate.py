@@ -6,7 +6,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
 
 
-class SpiderState(object):
+class SpiderState:
     """Store and load spider state during a scraping job"""
 
     def __init__(self, jobdir=None):
@@ -26,7 +26,7 @@ class SpiderState(object):
     def spider_closed(self, spider):
         if self.jobdir:
             with open(self.statefn, 'wb') as f:
-                pickle.dump(spider.state, f, protocol=2)
+                pickle.dump(spider.state, f, protocol=4)
 
     def spider_opened(self, spider):
         if self.jobdir and os.path.exists(self.statefn):

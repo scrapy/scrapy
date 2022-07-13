@@ -6,13 +6,11 @@ See documentation in docs/topics/extensions.rst
 
 from collections import defaultdict
 
-from twisted.internet import reactor
-
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 
 
-class CloseSpider(object):
+class CloseSpider:
 
     def __init__(self, crawler):
         self.crawler = crawler
@@ -22,7 +20,7 @@ class CloseSpider(object):
             'itemcount': crawler.settings.getint('CLOSESPIDER_ITEMCOUNT'),
             'pagecount': crawler.settings.getint('CLOSESPIDER_PAGECOUNT'),
             'errorcount': crawler.settings.getint('CLOSESPIDER_ERRORCOUNT'),
-            }
+        }
 
         if not any(self.close_on.values()):
             raise NotConfigured
@@ -54,9 +52,10 @@ class CloseSpider(object):
             self.crawler.engine.close_spider(spider, 'closespider_pagecount')
 
     def spider_opened(self, spider):
-        self.task = reactor.callLater(self.close_on['timeout'], \
-            self.crawler.engine.close_spider, spider, \
-            reason='closespider_timeout')
+        from twisted.internet import reactor
+        self.task = reactor.callLater(self.close_on['timeout'],
+                                      self.crawler.engine.close_spider, spider,
+                                      reason='closespider_timeout')
 
     def item_scraped(self, item, spider):
         self.counter['itemcount'] += 1
