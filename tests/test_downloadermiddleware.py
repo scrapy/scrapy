@@ -1,13 +1,11 @@
 import asyncio
-from unittest import mock, SkipTest
+from unittest import mock
 
 from pytest import mark
-from twisted import version as twisted_version
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
-from twisted.python.versions import Version
 
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
@@ -218,16 +216,6 @@ class MiddlewareUsingCoro(ManagerTestCase):
     """Middlewares using asyncio coroutines should work"""
 
     def test_asyncdef(self):
-        if (
-            self.reactor_pytest == 'asyncio'
-            and twisted_version < Version('twisted', 18, 4, 0)
-        ):
-            raise SkipTest(
-                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
-                'hangs when using AsyncIO and Twisted versions lower than '
-                '18.4.0'
-            )
-
         resp = Response('http://example.com/index.html')
 
         class CoroMiddleware:
@@ -248,12 +236,6 @@ class MiddlewareUsingCoro(ManagerTestCase):
 
     @mark.only_asyncio()
     def test_asyncdef_asyncio(self):
-        if twisted_version < Version('twisted', 18, 4, 0):
-            raise SkipTest(
-                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
-                'hangs when using Twisted versions lower than 18.4.0'
-            )
-
         resp = Response('http://example.com/index.html')
 
         class CoroMiddleware:

@@ -60,9 +60,9 @@ Additionally, they may also implement the following methods:
    :param spider: the spider which was closed
    :type spider: :class:`~scrapy.Spider` object
 
-.. method:: from_crawler(cls, crawler)
+.. classmethod:: from_crawler(cls, crawler)
 
-   If present, this classmethod is called to create a pipeline instance
+   If present, this class method is called to create a pipeline instance
    from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
    of the pipeline. Crawler object provides access to all Scrapy core
    components like settings and signals; it is a way for pipeline to
@@ -99,11 +99,11 @@ contain a price::
                 raise DropItem(f"Missing price in {item}")
 
 
-Write items to a JSON file
---------------------------
+Write items to a JSON lines file
+--------------------------------
 
 The following pipeline stores all scraped items (from all spiders) into a
-single ``items.jl`` file, containing one item per line serialized in JSON
+single ``items.jsonl`` file, containing one item per line serialized in JSON
 format::
 
    import json
@@ -113,7 +113,7 @@ format::
    class JsonWriterPipeline:
 
        def open_spider(self, spider):
-           self.file = open('items.jl', 'w')
+           self.file = open('items.jsonl', 'w')
 
        def close_spider(self, spider):
            self.file.close()

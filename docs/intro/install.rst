@@ -9,8 +9,8 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.6+, either the CPython implementation (default) or
-the PyPy 7.2.0+ implementation (see :ref:`python:implementations`).
+Scrapy requires Python 3.7+, either the CPython implementation (default) or
+the PyPy 7.3.5+ implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
 
@@ -51,16 +51,6 @@ Scrapy is written in pure Python and depends on a few key Python packages (among
 * `w3lib`_, a multi-purpose helper for dealing with URLs and web page encodings
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
-
-The minimal versions which Scrapy is tested against are:
-
-* Twisted 14.0
-* lxml 3.4
-* pyOpenSSL 0.14
-
-Scrapy may work with older versions of these packages
-but it is not guaranteed it will continue working
-because it’s not being tested against them.
 
 Some of these packages themselves depends on non-Python packages
 that might require additional installation steps depending on your platform.

@@ -294,7 +294,9 @@ intersphinx_mapping = {
     'tox': ('https://tox.readthedocs.io/en/latest', None),
     'twisted': ('https://twistedmatrix.com/documents/current', None),
     'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
+    'w3lib': ('https://w3lib.readthedocs.io/en/latest', None),
 }
+intersphinx_disabled_reftypes = []
 
 
 # Options for sphinx-hoverxref options

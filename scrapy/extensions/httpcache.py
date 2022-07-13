@@ -14,7 +14,6 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.request import request_fingerprint
 
 
 logger = logging.getLogger(__name__)
@@ -228,6 +227,8 @@ class DbmCacheStorage:
 
         logger.debug("Using DBM cache storage in %(cachepath)s", {'cachepath': dbpath}, extra={'spider': spider})
 
+        self._fingerprinter = spider.crawler.request_fingerprinter
+
     def close_spider(self, spider):
         self.db.close()
 
@@ -239,12 +240,12 @@ class DbmCacheStorage:
         status = data['status']
         headers = Headers(data['headers'])
         body = data['body']
-        respcls = responsetypes.from_args(headers=headers, url=url)
+        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
     def store_response(self, spider, request, response):
-        key = self._request_key(request)
+        key = self._fingerprinter.fingerprint(request).hex()
         data = {
             'status': response.status,
             'url': response.url,
@@ -255,7 +256,7 @@ class DbmCacheStorage:
         self.db[f'{key}_time'] = str(time())
 
     def _read_data(self, spider, request):
-        key = self._request_key(request)
+        key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f'{key}_time'
         if tkey not in db:
@@ -266,9 +267,6 @@ class DbmCacheStorage:
             return  # expired
 
         return pickle.loads(db[f'{key}_data'])
-
-    def _request_key(self, request):
-        return request_fingerprint(request)
 
 
 class FilesystemCacheStorage:
@@ -282,6 +280,8 @@ class FilesystemCacheStorage:
     def open_spider(self, spider):
         logger.debug("Using filesystem cache storage in %(cachedir)s", {'cachedir': self.cachedir},
                      extra={'spider': spider})
+
+        self._fingerprinter = spider.crawler.request_fingerprinter
 
     def close_spider(self, spider):
         pass
@@ -299,7 +299,7 @@ class FilesystemCacheStorage:
         url = metadata.get('response_url')
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
-        respcls = responsetypes.from_args(headers=headers, url=url)
+        respcls = responsetypes.from_args(headers=headers, url=url, body=body)
         response = respcls(url=url, headers=headers, status=status, body=body)
         return response
 
@@ -329,7 +329,7 @@ class FilesystemCacheStorage:
             f.write(request.body)
 
     def _get_request_path(self, spider, request):
-        key = request_fingerprint(request)
+        key = self._fingerprinter.fingerprint(request).hex()
         return os.path.join(self.cachedir, spider.name, key[0:2], key)
 
     def _read_meta(self, spider, request):

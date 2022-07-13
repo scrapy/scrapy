@@ -25,6 +25,7 @@ from scrapy.pipelines.files import (
 from scrapy.settings import Settings
 from scrapy.utils.test import (
     assert_gcs_environ,
+    get_crawler,
     get_ftp_content_and_delete,
     get_gcs_content_and_delete,
     skip_if_no_boto,
@@ -47,7 +48,9 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        settings_dict = {'FILES_STORE': self.tempdir}
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
@@ -524,6 +527,29 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
+
+    @defer.inlineCallbacks
+    def test_blob_path_consistency(self):
+        """Test to make sure that paths used to store files is the same as the one used to get
+        already uploaded files.
+        """
+        assert_gcs_environ()
+        try:
+            import google.cloud.storage # noqa
+        except ModuleNotFoundError:
+            raise unittest.SkipTest("google-cloud-storage is not installed")
+        else:
+            with mock.patch('google.cloud.storage') as _:
+                with mock.patch('scrapy.pipelines.files.time') as _:
+                    uri = 'gs://my_bucket/my_prefix/'
+                    store = GCSFilesStore(uri)
+                    store.bucket = mock.Mock()
+                    path = 'full/my_data.txt'
+                    yield store.persist_file(path, mock.Mock(), info=None, meta=None, headers=None)
+                    yield store.stat_file(path, info=None)
+                    expected_blob_path = store.prefix + path
+                    store.bucket.blob.assert_called_with(expected_blob_path)
+                    store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
 class TestFTPFileStore(unittest.TestCase):
