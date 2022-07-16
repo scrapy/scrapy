@@ -590,11 +590,11 @@ Request Generator
 
        def generate_requests(self, response):
            """
-           Extract and process new requets from response
+           Extract and process new requests from response
            """
            requests = []
            for ext in self._request_extractors:
-               requets.extend(ext.extract_requests(response))
+               requests.extend(ext.extract_requests(response))
 
            for proc in self._request_processors:
                requests = proc(requests)
