@@ -3,6 +3,7 @@ import os
 import tempfile
 import shutil
 import contextlib
+import warnings
 
 from pytest import warns
 
@@ -68,20 +69,21 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         envvars = {
             'SCRAPY_SETTINGS_MODULE': value,
         }
-        with set_env(**envvars), warns(None) as warnings:
-            settings = get_project_settings()
-        assert not warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            with set_env(**envvars):
+                settings = get_project_settings()
+
         assert settings.get('SETTINGS_MODULE') == value
 
     def test_invalid_envvar(self):
         envvars = {
             'SCRAPY_FOO': 'bar',
         }
-        with set_env(**envvars), warns(None) as warnings:
-            get_project_settings()
-        assert len(warnings) == 1
-        assert warnings[0].category == ScrapyDeprecationWarning
-        assert str(warnings[0].message).endswith(': FOO')
+        with warns(ScrapyDeprecationWarning, match=': FOO') as record:
+            with set_env(**envvars):
+                get_project_settings()
+        assert len(record) == 1
 
     def test_valid_and_invalid_envvars(self):
         value = 'tests.test_cmdline.settings'
@@ -89,9 +91,8 @@ class GetProjectSettingsTestCase(unittest.TestCase):
             'SCRAPY_FOO': 'bar',
             'SCRAPY_SETTINGS_MODULE': value,
         }
-        with set_env(**envvars), warns(None) as warnings:
-            settings = get_project_settings()
-        assert len(warnings) == 1
-        assert warnings[0].category == ScrapyDeprecationWarning
-        assert str(warnings[0].message).endswith(': FOO')
+        with warns(ScrapyDeprecationWarning, match=': FOO') as record:
+            with set_env(**envvars):
+                settings = get_project_settings()
+        assert len(record) == 1
         assert settings.get('SETTINGS_MODULE') == value
