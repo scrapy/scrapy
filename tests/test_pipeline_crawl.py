@@ -64,6 +64,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.tmpmediastore = self.mktemp()
         os.mkdir(self.tmpmediastore)
         self.settings = {
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
             'ITEM_PIPELINES': {self.pipeline_class: 1},
             self.store_setting_key: self.tmpmediastore,
         }
@@ -78,8 +79,10 @@ class FileDownloadCrawlTestCase(TestCase):
     def _on_item_scraped(self, item):
         self.items.append(item)
 
-    def _create_crawler(self, spider_class, **kwargs):
-        crawler = self.runner.create_crawler(spider_class, **kwargs)
+    def _create_crawler(self, spider_class, runner=None, **kwargs):
+        if runner is None:
+            runner = self.runner
+        crawler = runner.create_crawler(spider_class, **kwargs)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
         return crawler
 
@@ -167,9 +170,8 @@ class FileDownloadCrawlTestCase(TestCase):
     def test_download_media_redirected_allowed(self):
         settings = dict(self.settings)
         settings.update({'MEDIA_ALLOW_REDIRECTS': True})
-        self.runner = CrawlerRunner(settings)
-
-        crawler = self._create_crawler(RedirectedMediaDownloadSpider)
+        runner = CrawlerRunner(settings)
+        crawler = self._create_crawler(RedirectedMediaDownloadSpider, runner=runner)
         with LogCapture() as log:
             yield crawler.crawl(
                 self.mockserver.url("/files/images/"),

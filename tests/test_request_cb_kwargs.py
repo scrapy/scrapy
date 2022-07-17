@@ -3,7 +3,7 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
-from scrapy.crawler import CrawlerRunner
+from scrapy.utils.test import get_crawler
 from tests.spiders import MockServerSpider
 from tests.mockserver import MockServer
 
@@ -140,14 +140,13 @@ class CallbackKeywordArgumentsTestCase(TestCase):
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
-        self.runner = CrawlerRunner()
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_callback_kwargs(self):
-        crawler = self.runner.create_crawler(KeywordArgumentsSpider)
+        crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:
             yield crawler.crawl(mockserver=self.mockserver)
         self.assertTrue(all(crawler.spider.checks))
