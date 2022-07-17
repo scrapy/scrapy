@@ -94,7 +94,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         class MySpider(scrapy.Spider):
             name = 'spider'
 
-        crawler = get_crawler(MySpider)
+        get_crawler(MySpider)
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
@@ -151,7 +151,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             }
 
         configure_logging()
-        crawler = get_crawler(MySpider)
+        get_crawler(MySpider)
         logging.debug('debug message')
 
         with open(log_file, 'rb') as fo:
