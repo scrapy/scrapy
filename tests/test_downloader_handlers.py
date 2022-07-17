@@ -4,7 +4,7 @@ import shutil
 import sys
 import tempfile
 from typing import Optional, Type
-from unittest import mock
+from unittest import mock, SkipTest
 
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
@@ -32,6 +32,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
+from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import (
     Echo,
     ForeverTakingResource,
@@ -791,6 +792,8 @@ class Http11ProxyTestCase(HttpProxyTestCase):
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
         """ Test TunnelingTCP4ClientEndpoint """
+        if NON_EXISTING_RESOLVABLE:
+            raise SkipTest("Non-existing hosts are resolvable")
         http_proxy = self.getURL('')
         domain = 'https://no-such-domain.nosuch'
         request = Request(
