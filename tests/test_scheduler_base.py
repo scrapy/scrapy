@@ -21,7 +21,7 @@ URLS = [urljoin("https://example.org", p) for p in PATHS]
 
 class MinimalScheduler:
     def __init__(self) -> None:
-        self.requests: Dict[str, Request] = {}
+        self.requests: Dict[bytes, Request] = {}
 
     def has_pending_requests(self) -> bool:
         return bool(self.requests)
