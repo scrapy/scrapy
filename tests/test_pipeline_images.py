@@ -4,6 +4,7 @@ import random
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
+import dataclasses
 
 import attr
 from itemadapter import ItemAdapter
@@ -14,13 +15,6 @@ from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
-
-
-try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
 
 
 try:
@@ -203,25 +197,19 @@ class ImagesPipelineTestCaseFieldsItem(ImagesPipelineTestCaseFieldsMixin, unitte
     item_class = ImagesPipelineTestItem
 
 
-@skipIf(not make_dataclass, "dataclasses module is not available")
-class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
-    item_class = None
+@dataclasses.dataclass
+class ImagesPipelineTestDataClass:
+    name: str
+    # default fields
+    image_urls: list = dataclasses.field(default_factory=list)
+    images: list = dataclasses.field(default_factory=list)
+    # overridden fields
+    custom_image_urls: list = dataclasses.field(default_factory=list)
+    custom_images: list = dataclasses.field(default_factory=list)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "FilesPipelineTestDataClass",
-                [
-                    ("name", str),
-                    # default fields
-                    ("image_urls", list, dataclass_field(default_factory=list)),
-                    ("images", list, dataclass_field(default_factory=list)),
-                    # overridden fields
-                    ("custom_image_urls", list, dataclass_field(default_factory=list)),
-                    ("custom_images", list, dataclass_field(default_factory=list)),
-                ],
-            )
+
+class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestDataClass
 
 
 @attr.s
