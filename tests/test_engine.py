@@ -17,6 +17,7 @@ import warnings
 from collections import defaultdict
 from urllib.parse import urlparse
 
+import pytest
 import attr
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
@@ -414,21 +415,20 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_spiders_downloader(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.open_spiders is deprecated, "
+                                "please use ExecutionEngine.spider instead"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             yield e.open_spider(TestSpider(), [])
             self.assertEqual(len(e.open_spiders), 1)
             yield e.close()
             self.assertEqual(len(e.open_spiders), 0)
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
-            )
 
     @defer.inlineCallbacks
     def test_close_engine_spiders_downloader(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.open_spiders is deprecated, "
+                                "please use ExecutionEngine.spider instead"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             yield e.open_spider(TestSpider(), [])
             e.start()
@@ -436,61 +436,47 @@ class EngineTest(unittest.TestCase):
             yield e.close()
             self.assertFalse(e.running)
             self.assertEqual(len(e.open_spiders), 0)
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
-            )
 
     @defer.inlineCallbacks
     def test_crawl_deprecated_spider_arg(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="Passing a 'spider' argument to "
+                                "ExecutionEngine.crawl is deprecated"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
             e.crawl(Request("data:,"), spider)
             yield e.close()
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "Passing a 'spider' argument to ExecutionEngine.crawl is deprecated",
-            )
 
     @defer.inlineCallbacks
     def test_download_deprecated_spider_arg(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="Passing a 'spider' argument to "
+                                "ExecutionEngine.download is deprecated"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
             e.download(Request("data:,"), spider)
             yield e.close()
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "Passing a 'spider' argument to ExecutionEngine.download is deprecated",
-            )
 
     @defer.inlineCallbacks
     def test_deprecated_schedule(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.schedule is deprecated, please use "
+                                "ExecutionEngine.crawl or ExecutionEngine.download instead"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
             e.schedule(Request("data:,"), spider)
             yield e.close()
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "ExecutionEngine.schedule is deprecated, please use "
-                "ExecutionEngine.crawl or ExecutionEngine.download instead",
-            )
 
     @defer.inlineCallbacks
     def test_deprecated_has_capacity(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.has_capacity is deprecated"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             self.assertTrue(e.has_capacity())
             spider = TestSpider()
@@ -499,8 +485,6 @@ class EngineTest(unittest.TestCase):
             e.start()
             yield e.close()
             self.assertTrue(e.has_capacity())
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(str(warning_list[0].message), "ExecutionEngine.has_capacity is deprecated")
 
 
 if __name__ == "__main__":
