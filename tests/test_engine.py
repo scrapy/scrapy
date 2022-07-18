@@ -15,6 +15,7 @@ import re
 import sys
 from collections import defaultdict
 from urllib.parse import urlparse
+from dataclasses import dataclass
 
 import pytest
 import attr
@@ -48,6 +49,13 @@ class AttrsItem:
     name = attr.ib(default="")
     url = attr.ib(default="")
     price = attr.ib(default=0)
+
+
+@dataclass
+class DataClassItem:
+    name: str = ""
+    url: str = ""
+    price: int = 0
 
 
 class TestSpider(Spider):
@@ -92,17 +100,8 @@ class AttrsItemsSpider(TestSpider):
     item_cls = AttrsItem
 
 
-try:
-    from dataclasses import make_dataclass
-except ImportError:
-    DataClassItemsSpider = None
-else:
-    TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
-
-    class DataClassItemsSpider(DictItemsSpider):  # type: ignore[no-redef]
-        def parse_item(self, response):
-            item = super().parse_item(response)
-            return TestDataClass(**item)
+class DataClassItemsSpider(TestSpider):
+    item_cls = DataClassItem
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
@@ -239,8 +238,6 @@ class EngineTest(unittest.TestCase):
     def test_crawler(self):
 
         for spider in (TestSpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider):
-            if spider is None:
-                continue
             run = CrawlerRun(spider)
             yield run.run()
             self._assert_visited_urls(run)

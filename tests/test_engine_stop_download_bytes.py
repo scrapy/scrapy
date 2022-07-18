@@ -23,8 +23,6 @@ class BytesReceivedEngineTest(EngineTest):
     @defer.inlineCallbacks
     def test_crawler(self):
         for spider in (TestSpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider):
-            if spider is None:
-                continue
             run = BytesReceivedCrawlerRun(spider)
             with LogCapture() as log:
                 yield run.run()
