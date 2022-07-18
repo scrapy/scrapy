@@ -7,10 +7,10 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
 
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.request import fingerprint
+from scrapy.utils.test import get_crawler
 
 from tests.mockserver import MockServer
 
@@ -149,10 +149,10 @@ class MinimalSchedulerCrawlTest(TwistedTestCase):
         with MockServer() as mockserver:
             settings = {
                 "SCHEDULER": self.scheduler_cls,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": 'VERSION'
             }
             with LogCapture() as log:
-                yield CrawlerRunner(settings).crawl(TestSpider, mockserver)
+                crawler = get_crawler(TestSpider, settings)
+                yield crawler.crawl(mockserver)
             for path in PATHS:
                 self.assertIn(f"{{'path': '{path}'}}", str(log))
             self.assertIn(f"'item_scraped_count': {len(PATHS)}", str(log))

@@ -334,9 +334,8 @@ class TestIncompatibility(unittest.TestCase):
         settings = dict(
             SCHEDULER_PRIORITY_QUEUE='scrapy.pqueues.DownloaderAwarePriorityQueue',
             CONCURRENT_REQUESTS_PER_IP=1,
-            REQUEST_FINGERPRINTER_IMPLEMENTATION='VERSION',
         )
-        crawler = Crawler(Spider, settings)
+        crawler = get_crawler(Spider, settings)
         scheduler = Scheduler.from_crawler(crawler)
         spider = Spider(name='spider')
         scheduler.open(spider)
