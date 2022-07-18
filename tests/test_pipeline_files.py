@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import mock, skipIf
+from unittest import mock
 from urllib.parse import urlparse
 import dataclasses
 

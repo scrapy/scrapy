@@ -3,7 +3,6 @@ import io
 import random
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import skipIf
 import dataclasses
 
 import attr
