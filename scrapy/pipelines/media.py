@@ -1,6 +1,6 @@
 import functools
 import logging
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from inspect import signature
 from warnings import warn
 
@@ -18,14 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class MediaPipeline:
-
     LOG_FAILED_RESULTS = True
 
     class SpiderInfo:
         def __init__(self, spider):
             self.spider = spider
             self.downloading = set()
-            self.downloaded = {}
+            self.downloaded = OrderedDict()
             self.waiting = defaultdict(list)
 
     def __init__(self, download_func=None, settings=None):
@@ -40,6 +39,10 @@ class MediaPipeline:
         self.allow_redirects = settings.getbool(
             resolve('MEDIA_ALLOW_REDIRECTS'), False
         )
+        self.cache_downloaded_size = settings.getint(
+            resolve('CACHE_DOWNLOADED_SIZE'), 10000
+        )
+
         self._handle_statuses(self.allow_redirects)
 
         # Check if deprecated methods are being used and make them compatible
@@ -62,9 +65,9 @@ class MediaPipeline:
         class_name = self.__class__.__name__
         formatted_key = f"{class_name.upper()}_{key}"
         if (
-            not base_class_name
-            or class_name == base_class_name
-            or settings and not settings.get(formatted_key)
+                not base_class_name
+                or class_name == base_class_name
+                or settings and not settings.get(formatted_key)
         ):
             return key
         return formatted_key
@@ -115,7 +118,7 @@ class MediaPipeline:
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
         dfd.addErrback(lambda f: logger.error(
             f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
-        )
+                       )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
     def _make_compatible(self):
@@ -212,6 +215,8 @@ class MediaPipeline:
                 setattr(result.value, '__context__', None)
 
         info.downloading.remove(fp)
+        if len(info.downloaded) >= self.cache_downloaded_size:
+            info.downloaded.popitem()
         info.downloaded[fp] = result  # cache result
         for wad in info.waiting.pop(fp):
             defer_result(result).chainDeferred(wad)
