@@ -4,6 +4,7 @@ import marshal
 import pickle
 import tempfile
 import unittest
+import dataclasses
 from io import BytesIO
 from datetime import datetime
 from warnings import catch_warnings, filterwarnings
@@ -21,13 +22,13 @@ from scrapy.exporters import (
 )
 
 
+def custom_serializer(value):
+    return str(int(value) + 2)
+
+
 class TestItem(Item):
     name = Field()
     age = Field()
-
-
-def custom_serializer(value):
-    return str(int(value) + 2)
 
 
 class CustomFieldItem(Item):
@@ -35,17 +36,16 @@ class CustomFieldItem(Item):
     age = Field(serializer=custom_serializer)
 
 
-try:
-    from dataclasses import make_dataclass, field
-except ImportError:
-    TestDataClass = None
-    CustomFieldDataclass = None
-else:
-    TestDataClass = make_dataclass("TestDataClass", [("name", str), ("age", int)])
-    CustomFieldDataclass = make_dataclass(
-        "CustomFieldDataclass",
-        [("name", str), ("age", int, field(metadata={"serializer": custom_serializer}))]
-    )
+@dataclasses.dataclass
+class TestDataClass:
+    name: str
+    age: int
+
+
+@dataclasses.dataclass
+class CustomFieldDataclass:
+    name: str
+    age: int = dataclasses.field(metadata={"serializer": custom_serializer})
 
 
 class BaseItemExporterTest(unittest.TestCase):
@@ -54,8 +54,6 @@ class BaseItemExporterTest(unittest.TestCase):
     custom_field_item_class = CustomFieldItem
 
     def setUp(self):
-        if self.item_class is None:
-            raise unittest.SkipTest("item class is None")
         self.i = self.item_class(name='John\xa3', age='22')
         self.output = BytesIO()
         self.ie = self._get_exporter()

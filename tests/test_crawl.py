@@ -3,6 +3,7 @@ import logging
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
+import unittest
 
 from pytest import mark
 from testfixtures import LogCapture
@@ -18,6 +19,7 @@ from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
+from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import MockServer
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
@@ -137,6 +139,8 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
+        if NON_EXISTING_RESOLVABLE:
+            raise unittest.SkipTest("Non-existing hosts are resolvable")
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
             # try to fetch the homepage of a non-existent domain
