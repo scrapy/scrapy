@@ -10,7 +10,6 @@ from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
 from scrapy.core.scheduler import Scheduler
 from scrapy.utils.python import to_bytes
-from scrapy.utils.job import job_dir
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
@@ -29,8 +28,7 @@ class FromCrawlerRFPDupeFilter(RFPDupeFilter):
 
     @classmethod
     def from_crawler(cls, crawler):
-        debug = crawler.settings.getbool('DUPEFILTER_DEBUG')
-        df = cls(job_dir(crawler.settings), debug)
+        df = super().from_crawler(crawler)
         df.method = 'from_crawler'
         return df
 
@@ -38,9 +36,8 @@ class FromCrawlerRFPDupeFilter(RFPDupeFilter):
 class FromSettingsRFPDupeFilter(RFPDupeFilter):
 
     @classmethod
-    def from_settings(cls, settings):
-        debug = settings.getbool('DUPEFILTER_DEBUG')
-        df = cls(job_dir(settings), debug)
+    def from_settings(cls, settings, *, fingerprinter=None):
+        df = super().from_settings(settings, fingerprinter=fingerprinter)
         df.method = 'from_settings'
         return df
 
@@ -53,7 +50,8 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_crawler_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': FromCrawlerRFPDupeFilter}
+                    'DUPEFILTER_CLASS': FromCrawlerRFPDupeFilter,
+                    'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
@@ -61,14 +59,16 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_df_from_settings_scheduler(self):
         settings = {'DUPEFILTER_DEBUG': True,
-                    'DUPEFILTER_CLASS': FromSettingsRFPDupeFilter}
+                    'DUPEFILTER_CLASS': FromSettingsRFPDupeFilter,
+                    'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, 'from_settings')
 
     def test_df_direct_scheduler(self):
-        settings = {'DUPEFILTER_CLASS': DirectDupeFilter}
+        settings = {'DUPEFILTER_CLASS': DirectDupeFilter,
+                    'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'}
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertEqual(scheduler.df.method, 'n/a')
@@ -171,7 +171,8 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log(self):
         with LogCapture() as log:
             settings = {'DUPEFILTER_DEBUG': False,
-                        'DUPEFILTER_CLASS': FromCrawlerRFPDupeFilter}
+                        'DUPEFILTER_CLASS': FromCrawlerRFPDupeFilter,
+                        'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
             dupefilter = _get_dupefilter(crawler=crawler)
@@ -197,7 +198,8 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_log_debug(self):
         with LogCapture() as log:
             settings = {'DUPEFILTER_DEBUG': True,
-                        'DUPEFILTER_CLASS': FromCrawlerRFPDupeFilter}
+                        'DUPEFILTER_CLASS': FromCrawlerRFPDupeFilter,
+                        'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
             dupefilter = _get_dupefilter(crawler=crawler)
@@ -230,7 +232,8 @@ class RFPDupeFilterTest(unittest.TestCase):
 
     def test_log_debug_default_dupefilter(self):
         with LogCapture() as log:
-            settings = {'DUPEFILTER_DEBUG': True}
+            settings = {'DUPEFILTER_DEBUG': True,
+                        'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'}
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
             dupefilter = _get_dupefilter(crawler=crawler)

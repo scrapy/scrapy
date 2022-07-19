@@ -13,11 +13,13 @@ from twisted.trial import unittest
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
+from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
@@ -34,9 +36,6 @@ class BaseCrawlerTest(unittest.TestCase):
 
 class CrawlerTestCase(BaseCrawlerTest):
 
-    def setUp(self):
-        self.crawler = Crawler(DefaultSpider, Settings())
-
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
@@ -46,7 +45,9 @@ class CrawlerTestCase(BaseCrawlerTest):
 
         settings = Settings()
         settings.setdict(project_settings, priority='project')
-        crawler = Crawler(CustomSettingsSpider, settings)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            crawler = Crawler(CustomSettingsSpider, settings)
 
         self.assertEqual(crawler.settings.get('TEST1'), 'spider')
         self.assertEqual(crawler.settings.get('TEST2'), 'spider')
@@ -56,12 +57,14 @@ class CrawlerTestCase(BaseCrawlerTest):
         self.assertTrue(crawler.settings.frozen)
 
     def test_crawler_accepts_dict(self):
-        crawler = Crawler(DefaultSpider, {'foo': 'bar'})
+        crawler = get_crawler(DefaultSpider, {'foo': 'bar'})
         self.assertEqual(crawler.settings['foo'], 'bar')
         self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
 
     def test_crawler_accepts_None(self):
-        crawler = Crawler(DefaultSpider)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            crawler = Crawler(DefaultSpider)
         self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
 
     def test_crawler_rejects_spider_objects(self):
@@ -77,7 +80,7 @@ class SpiderSettingsTestCase(unittest.TestCase):
                 'AUTOTHROTTLE_ENABLED': True
             }
 
-        crawler = Crawler(MySpider, {})
+        crawler = get_crawler(MySpider)
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         self.assertIn(AutoThrottle, enabled_exts)
 
@@ -91,7 +94,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         class MySpider(scrapy.Spider):
             name = 'spider'
 
-        Crawler(MySpider, {})
+        get_crawler(MySpider)
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
@@ -111,7 +114,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
 
         configure_logging()
         self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
-        crawler = Crawler(MySpider, {})
+        crawler = get_crawler(MySpider)
         self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
         info_count = crawler.stats.get_value('log_count/INFO')
         logging.debug('debug message')
@@ -148,7 +151,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             }
 
         configure_logging()
-        Crawler(MySpider, {})
+        get_crawler(MySpider)
         logging.debug('debug message')
 
         with open(log_file, 'rb') as fo:
@@ -229,22 +232,25 @@ class NoRequestsSpider(scrapy.Spider):
 @mark.usefixtures('reactor_pytest')
 class CrawlerRunnerHasSpider(unittest.TestCase):
 
+    def _runner(self):
+        return CrawlerRunner({'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'})
+
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
-        runner = CrawlerRunner()
+        runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
         self.assertEqual(runner.bootstrap_failed, False)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful_for_several(self):
-        runner = CrawlerRunner()
+        runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
         self.assertEqual(runner.bootstrap_failed, False)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_failed(self):
-        runner = CrawlerRunner()
+        runner = self._runner()
 
         try:
             yield runner.crawl(ExceptionSpider)
@@ -257,7 +263,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_failed_for_several(self):
-        runner = CrawlerRunner()
+        runner = self._runner()
 
         try:
             yield runner.crawl(ExceptionSpider)
@@ -275,12 +281,14 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         if self.reactor_pytest == 'asyncio':
             CrawlerRunner(settings={
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "VERSION",
             })
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
                 runner = CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "VERSION",
                 })
                 yield runner.crawl(NoRequestsSpider)
 

@@ -308,13 +308,22 @@ class RequestFingerprintTest(FingerprintTest):
         ),
     )
 
+    def setUp(self) -> None:
+        warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+
+    def tearDown(self) -> None:
+        warnings.simplefilter("default", ScrapyDeprecationWarning)
+
     @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
     def test_part_separation(self):
         super().test_part_separation()
 
+
+class RequestFingerprintDeprecationTest(unittest.TestCase):
+
     def test_deprecation_default_parameters(self):
         with pytest.warns(ScrapyDeprecationWarning) as warnings:
-            self.function(Request("http://www.example.com"))
+            request_fingerprint(Request("http://www.example.com"))
         messages = [str(warning.message) for warning in warnings]
         self.assertTrue(
             any(
@@ -326,7 +335,7 @@ class RequestFingerprintTest(FingerprintTest):
 
     def test_deprecation_non_default_parameters(self):
         with pytest.warns(ScrapyDeprecationWarning) as warnings:
-            self.function(Request("http://www.example.com"), keep_fragments=True)
+            request_fingerprint(Request("http://www.example.com"), keep_fragments=True)
         messages = [str(warning.message) for warning in warnings]
         self.assertTrue(
             any(
