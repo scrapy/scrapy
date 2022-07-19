@@ -955,7 +955,7 @@ default because HTTP specs say so.
 .. setting:: RETRY_PRIORITY_ADJUST
 
 RETRY_PRIORITY_ADJUST
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Default: ``-1``
 
