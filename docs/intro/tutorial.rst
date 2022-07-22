@@ -312,10 +312,11 @@ the response page from the shell in your web browser using ``view(response)``.
 You can use your browser's developer tools to inspect the HTML and come up
 with a selector (see :ref:`topics-developer-tools`).
 
-`Selector Gadget`_ is also a nice tool to quickly find CSS selector for
-visually selected elements, which works in many browsers.
+`Selector Gadget`_ (for Chrome) or `Scrape Mate`_ (for FireFox) are also nice tools
+to quickly find CSS selector for visually selected elements.
 
 .. _Selector Gadget: https://selectorgadget.com/
+.. _Scrape Mate: https://addons.mozilla.org/en-US/firefox/addon/scrapemate/
 
 
 XPath: a brief intro
