@@ -123,6 +123,11 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
             start_index = 10
         return {i: c for c, i in enumerate(mw_classes, start=start_index)}
 
+    def _scrape_func(self, *args, **kwargs):
+        yield {'foo': 1}
+        yield {'foo': 2}
+        yield {'foo': 3}
+
     @defer.inlineCallbacks
     def _get_middleware_result(self, *mw_classes, start_index: Optional[int] = None):
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
@@ -201,11 +206,6 @@ class ProcessSpiderOutputSimple(BaseAsyncSpiderMiddlewareTestCase):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
 
-    def _scrape_func(self, *args, **kwargs):
-        yield {'foo': 1}
-        yield {'foo': 2}
-        yield {'foo': 3}
-
     def test_simple(self):
         """ Simple mw """
         return self._test_simple_base(self.MW_SIMPLE)
@@ -283,6 +283,45 @@ class ProcessSpiderOutputAsyncGen(ProcessSpiderOutputSimple):
         return self._test_simple_base(self.MW_UNIVERSAL,
                                       self.MW_SIMPLE,
                                       downgrade=True)
+
+
+class ProcessSpiderOutputNonIterableMiddleware:
+    def process_spider_output(self, response, result, spider):
+        return
+
+
+class ProcessSpiderOutputCoroutineMiddleware:
+    async def process_spider_output(self, response, result, spider):
+        results = []
+        for r in result:
+            results.append(r)
+        return results
+
+
+class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
+
+    @defer.inlineCallbacks
+    def test_non_iterable(self):
+        with self.assertRaisesRegex(
+            _InvalidOutput,
+            (
+                "\.process_spider_output must return an iterable, got <class "
+                "'NoneType'>"
+            ),
+        ):
+            yield self._get_middleware_result(
+                ProcessSpiderOutputNonIterableMiddleware,
+            )
+
+    @defer.inlineCallbacks
+    def test_coroutine(self):
+        with self.assertRaisesRegex(
+            _InvalidOutput,
+            "\.process_spider_output must be an asynchronous generator",
+        ):
+            yield self._get_middleware_result(
+                ProcessSpiderOutputCoroutineMiddleware,
+            )
 
 
 class ProcessStartRequestsSimpleMiddleware:
@@ -386,11 +425,6 @@ class BuiltinMiddlewareSimpleTest(BaseAsyncSpiderMiddlewareTestCase):
     MW_SIMPLE = ProcessSpiderOutputSimpleMiddleware
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
-
-    def _scrape_func(self, *args, **kwargs):
-        yield {'foo': 1}
-        yield {'foo': 2}
-        yield {'foo': 3}
 
     @defer.inlineCallbacks
     def _get_middleware_result(self, *mw_classes, start_index: Optional[int] = None):
