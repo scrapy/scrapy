@@ -2,8 +2,6 @@ import functools
 import gc
 import operator
 import platform
-import unittest
-from datetime import datetime
 from itertools import count
 from warnings import catch_warnings, filterwarnings
 

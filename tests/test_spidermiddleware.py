@@ -305,8 +305,8 @@ class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
         with self.assertRaisesRegex(
             _InvalidOutput,
             (
-                "\.process_spider_output must return an iterable, got <class "
-                "'NoneType'>"
+                r"\.process_spider_output must return an iterable, got <class "
+                r"'NoneType'>"
             ),
         ):
             yield self._get_middleware_result(
@@ -317,7 +317,7 @@ class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
     def test_coroutine(self):
         with self.assertRaisesRegex(
             _InvalidOutput,
-            "\.process_spider_output must be an asynchronous generator",
+            r"\.process_spider_output must be an asynchronous generator",
         ):
             yield self._get_middleware_result(
                 ProcessSpiderOutputCoroutineMiddleware,
