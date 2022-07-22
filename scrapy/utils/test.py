@@ -54,7 +54,7 @@ def get_ftp_content_and_delete(
     return "".join(ftp_data)
 
 
-def get_crawler(spidercls=None, settings_dict=None):
+def get_crawler(spidercls=None, settings_dict=None, prevent_warnings=True):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
     priority.
@@ -62,7 +62,12 @@ def get_crawler(spidercls=None, settings_dict=None):
     from scrapy.crawler import CrawlerRunner
     from scrapy.spiders import Spider
 
-    runner = CrawlerRunner(settings_dict)
+    # Set by default settings that prevent deprecation warnings.
+    settings = {}
+    if prevent_warnings:
+        settings['REQUEST_FINGERPRINTER_IMPLEMENTATION'] = 'VERSION'
+    settings.update(settings_dict or {})
+    runner = CrawlerRunner(settings)
     return runner.create_crawler(spidercls or Spider)
 
 

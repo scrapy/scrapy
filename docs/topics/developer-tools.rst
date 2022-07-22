@@ -19,14 +19,14 @@ Caveats with inspecting the live browser DOM
 
 Since Developer Tools operate on a live browser DOM, what you'll actually see
 when inspecting the page source is not the original HTML, but a modified one
-after applying some browser clean up and executing Javascript code.  Firefox,
+after applying some browser clean up and executing JavaScript code.  Firefox,
 in particular, is known for adding ``<tbody>`` elements to tables.  Scrapy, on
 the other hand, does not modify the original page HTML, so you won't be able to
 extract any data if you use ``<tbody>`` in your XPath expressions.
 
 Therefore, you should keep in mind the following things:
 
-* Disable Javascript while inspecting the DOM looking for XPaths to be
+* Disable JavaScript while inspecting the DOM looking for XPaths to be
   used in Scrapy (in the Developer Tools settings click `Disable JavaScript`)
 
 * Never use full XPath paths, use relative and clever ones based on attributes

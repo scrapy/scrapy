@@ -96,7 +96,10 @@ class SpiderLoaderTest(unittest.TestCase):
 
     def test_crawler_runner_loading(self):
         module = 'tests.test_spiderloader.test_spiders.spider1'
-        runner = CrawlerRunner({'SPIDER_MODULES': [module]})
+        runner = CrawlerRunner({
+            'SPIDER_MODULES': [module],
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
+        })
 
         self.assertRaisesRegex(KeyError, 'Spider not found',
                                runner.create_crawler, 'spider2')

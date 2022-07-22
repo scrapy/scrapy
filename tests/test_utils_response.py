@@ -1,7 +1,9 @@
 import os
 import unittest
+import warnings
 from urllib.parse import urlparse
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (response_httprepr, open_in_browser,
@@ -15,14 +17,21 @@ class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body=b'dummy_response')
 
     def test_response_httprepr(self):
-        r1 = Response("http://www.example.com")
-        self.assertEqual(response_httprepr(r1), b'HTTP/1.1 200 OK\r\n\r\n')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
 
-        r1 = Response("http://www.example.com", status=404, headers={"Content-type": "text/html"}, body=b"Some body")
-        self.assertEqual(response_httprepr(r1), b'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body')
+            r1 = Response("http://www.example.com")
+            self.assertEqual(response_httprepr(r1), b'HTTP/1.1 200 OK\r\n\r\n')
 
-        r1 = Response("http://www.example.com", status=6666, headers={"Content-type": "text/html"}, body=b"Some body")
-        self.assertEqual(response_httprepr(r1), b'HTTP/1.1 6666 \r\nContent-Type: text/html\r\n\r\nSome body')
+            r1 = Response("http://www.example.com", status=404,
+                          headers={"Content-type": "text/html"}, body=b"Some body")
+            self.assertEqual(response_httprepr(r1),
+                             b'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body')
+
+            r1 = Response("http://www.example.com", status=6666,
+                          headers={"Content-type": "text/html"}, body=b"Some body")
+            self.assertEqual(response_httprepr(r1),
+                             b'HTTP/1.1 6666 \r\nContent-Type: text/html\r\n\r\nSome body')
 
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"

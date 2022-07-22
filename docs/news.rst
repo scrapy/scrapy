@@ -1643,7 +1643,7 @@ New features
     :issue:`4370`)
 
 *   A new ``keep_fragments`` parameter of
-    :func:`scrapy.utils.request.request_fingerprint` allows to generate
+    ``scrapy.utils.request.request_fingerprint`` allows to generate
     different fingerprints for requests with different fragments in their URL
     (:issue:`4104`)
 

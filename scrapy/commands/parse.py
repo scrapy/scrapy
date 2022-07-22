@@ -146,7 +146,8 @@ class Command(BaseRunSpiderCommand):
 
         def _start_requests(spider):
             yield self.prepare_request(spider, Request(url), opts)
-        self.spidercls.start_requests = _start_requests
+        if self.spidercls:
+            self.spidercls.start_requests = _start_requests
 
     def start_parsing(self, url, opts):
         self.crawler_process.crawl(self.spidercls, **opts.spargs)

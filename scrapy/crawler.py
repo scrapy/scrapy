@@ -51,6 +51,7 @@ class Crawler:
         self.spidercls.update_settings(self.settings)
 
         self.signals = SignalManager(self)
+
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get('LOG_LEVEL'))
@@ -70,6 +71,12 @@ class Crawler:
 
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
+
+        self.request_fingerprinter = create_instance(
+            load_object(self.settings['REQUEST_FINGERPRINTER_CLASS']),
+            settings=self.settings,
+            crawler=self,
+        )
 
         reactor_class = self.settings.get("TWISTED_REACTOR")
         if init_reactor:

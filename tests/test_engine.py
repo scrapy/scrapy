@@ -13,10 +13,11 @@ module with the ``runserver`` argument::
 import os
 import re
 import sys
-import warnings
 from collections import defaultdict
 from urllib.parse import urlparse
+from dataclasses import dataclass
 
+import pytest
 import attr
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
@@ -48,6 +49,13 @@ class AttrsItem:
     name = attr.ib(default="")
     url = attr.ib(default="")
     price = attr.ib(default=0)
+
+
+@dataclass
+class DataClassItem:
+    name: str = ""
+    url: str = ""
+    price: int = 0
 
 
 class TestSpider(Spider):
@@ -92,17 +100,8 @@ class AttrsItemsSpider(TestSpider):
     item_cls = AttrsItem
 
 
-try:
-    from dataclasses import make_dataclass
-except ImportError:
-    DataClassItemsSpider = None
-else:
-    TestDataClass = make_dataclass("TestDataClass", [("name", str), ("url", str), ("price", int)])
-
-    class DataClassItemsSpider(DictItemsSpider):  # type: ignore[no-redef]
-        def parse_item(self, response):
-            item = super().parse_item(response)
-            return TestDataClass(**item)
+class DataClassItemsSpider(TestSpider):
+    item_cls = DataClassItem
 
 
 class ItemZeroDivisionErrorSpider(TestSpider):
@@ -188,7 +187,7 @@ class CrawlerRun:
         return self.deferred
 
     def stop(self):
-        self.port.stopListening()
+        self.port.stopListening()  # FIXME: wait for this Deferred
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 disconnect_all(signal)
@@ -239,79 +238,77 @@ class EngineTest(unittest.TestCase):
     def test_crawler(self):
 
         for spider in (TestSpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider):
-            if spider is None:
-                continue
-            self.run = CrawlerRun(spider)
-            yield self.run.run()
-            self._assert_visited_urls()
-            self._assert_scheduled_requests(count=9)
-            self._assert_downloaded_responses(count=9)
-            self._assert_scraped_items()
-            self._assert_signals_caught()
-            self._assert_bytes_received()
+            run = CrawlerRun(spider)
+            yield run.run()
+            self._assert_visited_urls(run)
+            self._assert_scheduled_requests(run, count=9)
+            self._assert_downloaded_responses(run, count=9)
+            self._assert_scraped_items(run)
+            self._assert_signals_caught(run)
+            self._assert_bytes_received(run)
 
     @defer.inlineCallbacks
     def test_crawler_dupefilter(self):
-        self.run = CrawlerRun(TestDupeFilterSpider)
-        yield self.run.run()
-        self._assert_scheduled_requests(count=8)
-        self._assert_dropped_requests()
+        run = CrawlerRun(TestDupeFilterSpider)
+        yield run.run()
+        self._assert_scheduled_requests(run, count=8)
+        self._assert_dropped_requests(run)
 
     @defer.inlineCallbacks
     def test_crawler_itemerror(self):
-        self.run = CrawlerRun(ItemZeroDivisionErrorSpider)
-        yield self.run.run()
-        self._assert_items_error()
+        run = CrawlerRun(ItemZeroDivisionErrorSpider)
+        yield run.run()
+        self._assert_items_error(run)
 
     @defer.inlineCallbacks
     def test_crawler_change_close_reason_on_idle(self):
-        self.run = CrawlerRun(ChangeCloseReasonSpider)
-        yield self.run.run()
-        self.assertEqual({'spider': self.run.spider, 'reason': 'custom_reason'},
-                         self.run.signals_caught[signals.spider_closed])
+        run = CrawlerRun(ChangeCloseReasonSpider)
+        yield run.run()
+        self.assertEqual({'spider': run.spider, 'reason': 'custom_reason'},
+                         run.signals_caught[signals.spider_closed])
 
-    def _assert_visited_urls(self):
+    def _assert_visited_urls(self, run: CrawlerRun):
         must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
-        urls_visited = {rp[0].url for rp in self.run.respplug}
-        urls_expected = {self.run.geturl(p) for p in must_be_visited}
+        urls_visited = {rp[0].url for rp in run.respplug}
+        urls_expected = {run.geturl(p) for p in must_be_visited}
         assert urls_expected <= urls_visited, f"URLs not visited: {list(urls_expected - urls_visited)}"
 
-    def _assert_scheduled_requests(self, count=None):
-        self.assertEqual(count, len(self.run.reqplug))
+    def _assert_scheduled_requests(self, run: CrawlerRun, count=None):
+        self.assertEqual(count, len(run.reqplug))
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
-        urls_requested = {rq[0].url for rq in self.run.reqplug}
-        urls_expected = {self.run.geturl(p) for p in paths_expected}
+        urls_requested = {rq[0].url for rq in run.reqplug}
+        urls_expected = {run.geturl(p) for p in paths_expected}
         assert urls_expected <= urls_requested
-        scheduled_requests_count = len(self.run.reqplug)
-        dropped_requests_count = len(self.run.reqdropped)
-        responses_count = len(self.run.respplug)
+        scheduled_requests_count = len(run.reqplug)
+        dropped_requests_count = len(run.reqdropped)
+        responses_count = len(run.respplug)
         self.assertEqual(scheduled_requests_count,
                          dropped_requests_count + responses_count)
-        self.assertEqual(len(self.run.reqreached),
+        self.assertEqual(len(run.reqreached),
                          responses_count)
 
-    def _assert_dropped_requests(self):
-        self.assertEqual(len(self.run.reqdropped), 1)
+    def _assert_dropped_requests(self, run: CrawlerRun):
+        self.assertEqual(len(run.reqdropped), 1)
 
-    def _assert_downloaded_responses(self, count):
+    def _assert_downloaded_responses(self, run: CrawlerRun, count):
         # response tests
-        self.assertEqual(count, len(self.run.respplug))
-        self.assertEqual(count, len(self.run.reqreached))
+        self.assertEqual(count, len(run.respplug))
+        self.assertEqual(count, len(run.reqreached))
 
-        for response, _ in self.run.respplug:
-            if self.run.getpath(response.url) == '/item999.html':
+        for response, _ in run.respplug:
+            if run.getpath(response.url) == '/item999.html':
                 self.assertEqual(404, response.status)
-            if self.run.getpath(response.url) == '/redirect':
+            if run.getpath(response.url) == '/redirect':
                 self.assertEqual(302, response.status)
 
-    def _assert_items_error(self):
-        self.assertEqual(2, len(self.run.itemerror))
-        for item, response, spider, failure in self.run.itemerror:
+    def _assert_items_error(self, run: CrawlerRun):
+        self.assertEqual(2, len(run.itemerror))
+        for item, response, spider, failure in run.itemerror:
             self.assertEqual(failure.value.__class__, ZeroDivisionError)
-            self.assertEqual(spider, self.run.spider)
+            self.assertEqual(spider, run.spider)
 
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
@@ -321,9 +318,9 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
 
-    def _assert_scraped_items(self):
-        self.assertEqual(2, len(self.run.itemresp))
-        for item, response in self.run.itemresp:
+    def _assert_scraped_items(self, run: CrawlerRun):
+        self.assertEqual(2, len(run.itemresp))
+        for item, response in run.itemresp:
             item = ItemAdapter(item)
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
@@ -333,26 +330,26 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
 
-    def _assert_headers_received(self):
-        for headers in self.run.headers.values():
+    def _assert_headers_received(self, run: CrawlerRun):
+        for headers in run.headers.values():
             self.assertIn(b"Server", headers)
             self.assertIn(b"TwistedWeb", headers[b"Server"])
             self.assertIn(b"Date", headers)
             self.assertIn(b"Content-Type", headers)
 
-    def _assert_bytes_received(self):
-        self.assertEqual(9, len(self.run.bytes))
-        for request, data in self.run.bytes.items():
+    def _assert_bytes_received(self, run: CrawlerRun):
+        self.assertEqual(9, len(run.bytes))
+        for request, data in run.bytes.items():
             joined_data = b"".join(data)
-            if self.run.getpath(request.url) == "/":
+            if run.getpath(request.url) == "/":
                 self.assertEqual(joined_data, get_testdata("test_site", "index.html"))
-            elif self.run.getpath(request.url) == "/item1.html":
+            elif run.getpath(request.url) == "/item1.html":
                 self.assertEqual(joined_data, get_testdata("test_site", "item1.html"))
-            elif self.run.getpath(request.url) == "/item2.html":
+            elif run.getpath(request.url) == "/item2.html":
                 self.assertEqual(joined_data, get_testdata("test_site", "item2.html"))
-            elif self.run.getpath(request.url) == "/redirected":
+            elif run.getpath(request.url) == "/redirected":
                 self.assertEqual(joined_data, b"Redirected here")
-            elif self.run.getpath(request.url) == '/redirect':
+            elif run.getpath(request.url) == '/redirect':
                 self.assertEqual(
                     joined_data,
                     b"\n<html>\n"
@@ -364,7 +361,7 @@ class EngineTest(unittest.TestCase):
                     b"    </body>\n"
                     b"</html>\n"
                 )
-            elif self.run.getpath(request.url) == "/tem999.html":
+            elif run.getpath(request.url) == "/tem999.html":
                 self.assertEqual(
                     joined_data,
                     b"\n<html>\n"
@@ -375,27 +372,27 @@ class EngineTest(unittest.TestCase):
                     b"  </body>\n"
                     b"</html>\n"
                 )
-            elif self.run.getpath(request.url) == "/numbers":
+            elif run.getpath(request.url) == "/numbers":
                 # signal was fired multiple times
                 self.assertTrue(len(data) > 1)
                 # bytes were received in order
                 numbers = [str(x).encode("utf8") for x in range(2**18)]
                 self.assertEqual(joined_data, b"".join(numbers))
 
-    def _assert_signals_caught(self):
-        assert signals.engine_started in self.run.signals_caught
-        assert signals.engine_stopped in self.run.signals_caught
-        assert signals.spider_opened in self.run.signals_caught
-        assert signals.spider_idle in self.run.signals_caught
-        assert signals.spider_closed in self.run.signals_caught
-        assert signals.headers_received in self.run.signals_caught
+    def _assert_signals_caught(self, run: CrawlerRun):
+        assert signals.engine_started in run.signals_caught
+        assert signals.engine_stopped in run.signals_caught
+        assert signals.spider_opened in run.signals_caught
+        assert signals.spider_idle in run.signals_caught
+        assert signals.spider_closed in run.signals_caught
+        assert signals.headers_received in run.signals_caught
 
-        self.assertEqual({'spider': self.run.spider},
-                         self.run.signals_caught[signals.spider_opened])
-        self.assertEqual({'spider': self.run.spider},
-                         self.run.signals_caught[signals.spider_idle])
-        self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
-                         self.run.signals_caught[signals.spider_closed])
+        self.assertEqual({'spider': run.spider},
+                         run.signals_caught[signals.spider_opened])
+        self.assertEqual({'spider': run.spider},
+                         run.signals_caught[signals.spider_idle])
+        self.assertEqual({'spider': run.spider, 'reason': 'finished'},
+                         run.signals_caught[signals.spider_closed])
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
@@ -407,28 +404,29 @@ class EngineTest(unittest.TestCase):
         e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
         yield e.open_spider(TestSpider(), [])
         e.start()
-        yield self.assertFailure(e.start(), RuntimeError).addBoth(
-            lambda exc: self.assertEqual(str(exc), "Engine already running")
-        )
-        yield e.stop()
+        try:
+            yield self.assertFailure(e.start(), RuntimeError).addBoth(
+                lambda exc: self.assertEqual(str(exc), "Engine already running")
+            )
+        finally:
+            yield e.stop()
 
     @defer.inlineCallbacks
     def test_close_spiders_downloader(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.open_spiders is deprecated, "
+                                "please use ExecutionEngine.spider instead"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             yield e.open_spider(TestSpider(), [])
             self.assertEqual(len(e.open_spiders), 1)
             yield e.close()
             self.assertEqual(len(e.open_spiders), 0)
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
-            )
 
     @defer.inlineCallbacks
     def test_close_engine_spiders_downloader(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.open_spiders is deprecated, "
+                                "please use ExecutionEngine.spider instead"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             yield e.open_spider(TestSpider(), [])
             e.start()
@@ -436,61 +434,47 @@ class EngineTest(unittest.TestCase):
             yield e.close()
             self.assertFalse(e.running)
             self.assertEqual(len(e.open_spiders), 0)
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
-            )
 
     @defer.inlineCallbacks
     def test_crawl_deprecated_spider_arg(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="Passing a 'spider' argument to "
+                                "ExecutionEngine.crawl is deprecated"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
             e.crawl(Request("data:,"), spider)
             yield e.close()
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "Passing a 'spider' argument to ExecutionEngine.crawl is deprecated",
-            )
 
     @defer.inlineCallbacks
     def test_download_deprecated_spider_arg(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="Passing a 'spider' argument to "
+                                "ExecutionEngine.download is deprecated"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
             e.download(Request("data:,"), spider)
             yield e.close()
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "Passing a 'spider' argument to ExecutionEngine.download is deprecated",
-            )
 
     @defer.inlineCallbacks
     def test_deprecated_schedule(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.schedule is deprecated, please use "
+                                "ExecutionEngine.crawl or ExecutionEngine.download instead"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             spider = TestSpider()
             yield e.open_spider(spider, [])
             e.start()
             e.schedule(Request("data:,"), spider)
             yield e.close()
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(
-                str(warning_list[0].message),
-                "ExecutionEngine.schedule is deprecated, please use "
-                "ExecutionEngine.crawl or ExecutionEngine.download instead",
-            )
 
     @defer.inlineCallbacks
     def test_deprecated_has_capacity(self):
-        with warnings.catch_warnings(record=True) as warning_list:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="ExecutionEngine.has_capacity is deprecated"):
             e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
             self.assertTrue(e.has_capacity())
             spider = TestSpider()
@@ -499,8 +483,6 @@ class EngineTest(unittest.TestCase):
             e.start()
             yield e.close()
             self.assertTrue(e.has_capacity())
-            self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(str(warning_list[0].message), "ExecutionEngine.has_capacity is deprecated")
 
 
 if __name__ == "__main__":

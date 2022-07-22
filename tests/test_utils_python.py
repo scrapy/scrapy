@@ -2,6 +2,7 @@ import functools
 import gc
 import operator
 import platform
+import unittest
 from datetime import datetime
 from itertools import count
 from warnings import catch_warnings, filterwarnings
@@ -278,12 +279,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         elif platform.python_implementation() == 'PyPy':
             self.assertEqual(get_func_args(str.split, stripself=True), ['sep', 'maxsplit'])
             self.assertEqual(get_func_args(operator.itemgetter(2), stripself=True), ['obj'])
-
-            build_date = datetime.strptime(platform.python_build()[1], '%b %d %Y')
-            if build_date >= datetime(2020, 4, 7):  # PyPy 3.6-v7.3.1
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
-            else:
-                self.assertEqual(get_func_args(" ".join, stripself=True), ['list'])
+            self.assertEqual(get_func_args(" ".join, stripself=True), ['iterable'])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])

@@ -8,6 +8,7 @@ class AsyncioReactorSpider1(scrapy.Spider):
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     }
 
+
 class AsyncioReactorSpider2(scrapy.Spider):
     name = 'asyncio_reactor2'
     custom_settings = {
