@@ -6,9 +6,11 @@ from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
 from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
-                              LogCounterHandler, StreamLogger)
+                              LogCounterHandler, StreamLogger, logformatter_adapter)
 from scrapy.utils.test import get_crawler
 from scrapy.extensions import telnet
+from scrapy.exceptions import ScrapyDeprecationWarning
+from warnings import catch_warnings
 
 
 class FailureToExcInfoTest(unittest.TestCase):
@@ -106,3 +108,18 @@ class StreamLoggerTest(unittest.TestCase):
         with LogCapture() as log:
             print('test log msg')
         log.check(('test', 'ERROR', 'test log msg'))
+
+
+class LogFormatterAdapterTest(unittest.TestCase):
+
+    def test_adapter_return_values(self):
+        self.assertEqual(len(logformatter_adapter({'level': 20, 'msg': 'The message to log.', 'args': None})), 2)
+        self.assertEqual(len(logformatter_adapter({'level': 20, 'msg': 'The %s to log.', 'args': ('message', )})), 3)
+        self.assertEqual(len(logformatter_adapter({'level': 20, 'msg': 'The %s to log.', 'args': {}})), 2)
+
+    def test_adapter_input_values(self):
+        with catch_warnings(record=True) as _warnings:
+            logformatter_adapter({'level': 20, 'msg': 'This is a message.', 'args': None, 'format': 'deprecated'})
+            logformatter_adapter({'level': 20, 'msg': 'This is a message.'})
+            self.assertEqual(len(_warnings), 2)
+            self.assertTrue(all(i.category == ScrapyDeprecationWarning for i in _warnings))
