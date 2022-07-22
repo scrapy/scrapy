@@ -215,8 +215,6 @@ def logformatter_adapter(logkws):
 
     level = logkws.get('level', logging.INFO)
     message = logkws.get('format', logkws.get('msg'))
-    # NOTE: This also handles 'args' being an empty dict, that case doesn't
-    # play well in logger.log calls
-    args = logkws if not logkws.get('args') else logkws['args']
+    args = logkws.get('args')
 
-    return (level, message, args)
+    return (level, message, args) if args else (level, message)         # do not return args if they are not provided
