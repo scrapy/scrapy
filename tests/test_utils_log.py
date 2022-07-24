@@ -121,6 +121,6 @@ class LogFormatterAdapterTest(unittest.TestCase):
     def test_adapter_input_values(self):
         with catch_warnings(record=True) as _warnings:
             logformatter_adapter({'level': 20, 'msg': 'This is a message.', 'args': None, 'format': 'deprecated'})
-            logformatter_adapter({'level': 20, 'msg': 'This is a message.'})
+            logformatter_adapter({'msg': 'This is a message.'})
             self.assertEqual(len(_warnings), 2)
             self.assertTrue(all(i.category == ScrapyDeprecationWarning for i in _warnings))

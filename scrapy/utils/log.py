@@ -204,7 +204,7 @@ def logformatter_adapter(logkws):
     and adapts it into a tuple of positional arguments for logger.log calls,
     handling backward compatibility as well.
     """
-    if not {'level', 'msg', 'args'} <= set(logkws):
+    if not {'level', 'msg'} <= set(logkws):
         warnings.warn('Missing keys in LogFormatter method',
                       ScrapyDeprecationWarning)
 
