@@ -1,17 +1,16 @@
-import logging
 import sys
+import logging
 import unittest
-from warnings import catch_warnings
 
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.extensions import telnet
-from scrapy.utils.log import (LogCounterHandler, StreamLogger,
-                              TopLevelFormatter, failure_to_exc_info,
-                              logformatter_adapter)
+from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
+                              LogCounterHandler, StreamLogger, logformatter_adapter)
 from scrapy.utils.test import get_crawler
+from scrapy.extensions import telnet
+from scrapy.exceptions import ScrapyDeprecationWarning
+from warnings import catch_warnings
 
 
 class FailureToExcInfoTest(unittest.TestCase):
