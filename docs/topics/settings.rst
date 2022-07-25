@@ -1355,35 +1355,33 @@ Default: ``'scrapy.squeues.LifoMemoryQueue'``
 Type of in-memory queue used by scheduler. Other available type is:
 ``scrapy.squeues.FifoMemoryQueue``.
 
-
 .. setting:: SCHEDULER_PRIORITY_QUEUE
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
-
 Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
-Queue class for the schedule to store requests sorted by priority.
-
-Scrapy provides the following built-in priority queues:
-
-.. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
-
-.. autoclass:: scrapy.pqueues.ScrapyPriorityQueue
-
+Type of priority queue used by the scheduler. Another available type is
+``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
+``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
+does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
 
 .. setting:: SCHEDULER_DELAY_QUEUE
 
 SCHEDULER_DELAY_QUEUE
 ---------------------
-
-Default: ``'scrapy.pqueues.ScrapyDelayedRequestsPriorityQueue'``
+Default: ``scrapy.pqueues.ScrapyDelayedRequestsPriorityQueue``
 
 Queue class for the scheduler to store delayed requests.
 
-The specified class must comply with the same API requirements for
-:setting:`SCHEDULER_PRIORITY_QUEUE`.
+Scrapy provides the following built-in delay queue:
 
+.. autoclass:: scrapy.pqueues.ScrapyDelayedRequestsPriorityQueue
+
+A class assigned to this setting must have the same API as a class assigned to
+the :setting:`SCHEDULER_PRIORITY_QUEUE` setting.
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 
