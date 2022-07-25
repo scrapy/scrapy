@@ -1,10 +1,8 @@
 import unittest
 from unittest import mock
-from warnings import catch_warnings
 
 from w3lib.encoding import resolve_encoding
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
                          XmlResponse, Headers)
 from scrapy.selector import Selector
@@ -19,7 +17,7 @@ class BaseResponseTest(unittest.TestCase):
     response_class = Response
 
     def test_init(self):
-        # Response requires url in the consturctor
+        # Response requires url in the constructor
         self.assertRaises(Exception, self.response_class)
         self.assertTrue(isinstance(self.response_class('http://example.com/'), self.response_class))
         self.assertRaises(TypeError, self.response_class, b"http://example.com")
@@ -134,7 +132,6 @@ class BaseResponseTest(unittest.TestCase):
         assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_bytes)
-        self.assertEqual(response.body_as_unicode(), body_unicode)
         self.assertEqual(response.text, body_unicode)
 
     def _assert_response_encoding(self, response, encoding):
@@ -344,10 +341,6 @@ class TextResponseTest(BaseResponseTest):
         original_string = unicode_string.encode('cp1251')
         r1 = self.response_class('http://www.example.com', body=original_string, encoding='cp1251')
 
-        # check body_as_unicode
-        self.assertTrue(isinstance(r1.body_as_unicode(), str))
-        self.assertEqual(r1.body_as_unicode(), unicode_string)
-
         # check response.text
         self.assertTrue(isinstance(r1.text, str))
         self.assertEqual(r1.text, unicode_string)
@@ -388,7 +381,7 @@ class TextResponseTest(BaseResponseTest):
     def test_declared_encoding_invalid(self):
         """Check that unknown declared encodings are ignored"""
         r = self.response_class("http://www.example.com",
-                                headers={"Content-type": ["text/html; charset=UKNOWN"]},
+                                headers={"Content-type": ["text/html; charset=UNKNOWN"]},
                                 body=b"\xc2\xa3")
         self.assertEqual(r._declared_encoding(), None)
         self._assert_response_values(r, 'utf-8', "\xa3")
@@ -679,13 +672,6 @@ class TextResponseTest(BaseResponseTest):
         with self.assertRaises(ValueError):
             response.follow_all(css='a[href*="example.com"]', xpath='//a[contains(@href, "example.com")]')
 
-    def test_body_as_unicode_deprecation_warning(self):
-        with catch_warnings(record=True) as warnings:
-            r1 = self.response_class("http://www.example.com", body='Hello', encoding='utf-8')
-            self.assertEqual(r1.body_as_unicode(), 'Hello')
-            self.assertEqual(len(warnings), 1)
-            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
-
     def test_json_response(self):
         json_body = b"""{"ip": "109.187.217.200"}"""
         json_response = self.response_class("http://www.example.com", body=json_body)
@@ -816,3 +802,62 @@ class XmlResponseTest(TextResponseTest):
             response.xpath("//s1:elem/text()", namespaces={'s1': 'http://scrapy.org'}).getall(),
             response.selector.xpath("//s2:elem/text()").getall(),
         )
+
+
+class CustomResponse(TextResponse):
+    attributes = TextResponse.attributes + ("foo", "bar")
+
+    def __init__(self, *args, **kwargs) -> None:
+        self.foo = kwargs.pop("foo", None)
+        self.bar = kwargs.pop("bar", None)
+        self.lost = kwargs.pop("lost", None)
+        super().__init__(*args, **kwargs)
+
+
+class CustomResponseTest(TextResponseTest):
+    response_class = CustomResponse
+
+    def test_copy(self):
+        super().test_copy()
+        r1 = self.response_class(url="https://example.org", status=200, foo="foo", bar="bar", lost="lost")
+        r2 = r1.copy()
+        self.assertIsInstance(r2, self.response_class)
+        self.assertEqual(r1.foo, r2.foo)
+        self.assertEqual(r1.bar, r2.bar)
+        self.assertEqual(r1.lost, "lost")
+        self.assertIsNone(r2.lost)
+
+    def test_replace(self):
+        super().test_replace()
+        r1 = self.response_class(url="https://example.org", status=200, foo="foo", bar="bar", lost="lost")
+
+        r2 = r1.replace(foo="new-foo", bar="new-bar", lost="new-lost")
+        self.assertIsInstance(r2, self.response_class)
+        self.assertEqual(r1.foo, "foo")
+        self.assertEqual(r1.bar, "bar")
+        self.assertEqual(r1.lost, "lost")
+        self.assertEqual(r2.foo, "new-foo")
+        self.assertEqual(r2.bar, "new-bar")
+        self.assertEqual(r2.lost, "new-lost")
+
+        r3 = r1.replace(foo="new-foo", bar="new-bar")
+        self.assertIsInstance(r3, self.response_class)
+        self.assertEqual(r1.foo, "foo")
+        self.assertEqual(r1.bar, "bar")
+        self.assertEqual(r1.lost, "lost")
+        self.assertEqual(r3.foo, "new-foo")
+        self.assertEqual(r3.bar, "new-bar")
+        self.assertIsNone(r3.lost)
+
+        r4 = r1.replace(foo="new-foo")
+        self.assertIsInstance(r4, self.response_class)
+        self.assertEqual(r1.foo, "foo")
+        self.assertEqual(r1.bar, "bar")
+        self.assertEqual(r1.lost, "lost")
+        self.assertEqual(r4.foo, "new-foo")
+        self.assertEqual(r4.bar, "bar")
+        self.assertIsNone(r4.lost)
+
+        with self.assertRaises(TypeError) as ctx:
+            r1.replace(unknown="unknown")
+        self.assertTrue(str(ctx.exception).endswith("__init__() got an unexpected keyword argument 'unknown'"))

@@ -92,6 +92,7 @@ class ImagesPipeline(FilesPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_SESSION_TOKEN = settings['AWS_SESSION_TOKEN']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
         s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
         s3store.AWS_USE_SSL = settings['AWS_USE_SSL']
@@ -140,7 +141,7 @@ class ImagesPipeline(FilesPipeline):
         yield path, image, buf
 
         for thumb_id, size in self.thumbs.items():
-            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
+            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info, item=item)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
 
@@ -178,6 +179,6 @@ class ImagesPipeline(FilesPipeline):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f'full/{image_guid}.jpg'
 
-    def thumb_path(self, request, thumb_id, response=None, info=None):
+    def thumb_path(self, request, thumb_id, response=None, info=None, *, item=None):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f'thumbs/{thumb_id}/{thumb_guid}.jpg'

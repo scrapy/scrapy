@@ -14,11 +14,11 @@ from w3lib.html import replace_entities
 
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.python import flatten, to_unicode
-from scrapy.item import _BaseItem
+from scrapy.item import Item
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 
 
-_ITERABLE_SINGLE_VALUES = dict, _BaseItem, str, bytes
+_ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
 
 
 def arg_to_iter(arg):
@@ -50,7 +50,7 @@ def load_object(path):
             return path
         else:
             raise TypeError("Unexpected argument type, expected string "
-                            "or object, got: %s" % type(path))
+                            f"or object, got: {type(path)}")
 
     try:
         dot = path.rindex('.')
@@ -138,7 +138,7 @@ def md5sum(file):
 
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and 'nofollow' in rel.split()
+    return rel is not None and 'nofollow' in rel.replace(',', ' ').split()
 
 
 def create_instance(objcls, settings, crawler, *args, **kwargs):

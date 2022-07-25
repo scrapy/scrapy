@@ -39,6 +39,8 @@ a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
+.. _topics-keeping-persistent-state-between-batches:
+
 Keeping persistent state between batches
 ========================================
 
@@ -74,10 +76,10 @@ on cookies.
 Request serialization
 ---------------------
 
-For persistence to work, :class:`~scrapy.http.Request` objects must be
+For persistence to work, :class:`~scrapy.Request` objects must be
 serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
 values passed to their ``__init__`` method, which must be methods of the
-running :class:`~scrapy.spiders.Spider` class.
+running :class:`~scrapy.Spider` class.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.

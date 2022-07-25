@@ -7,7 +7,7 @@ import warnings
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -98,8 +98,9 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     with this endpoint comes from the pool and a CONNECT has already been issued
     for it.
     """
-
-    _responseMatcher = re.compile(br'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,32})')
+    _truncatedLength = 1000
+    _responseAnswer = r'HTTP/1\.. (?P<status>\d{3})(?P<reason>.{,' + str(_truncatedLength) + r'})'
+    _responseMatcher = re.compile(_responseAnswer.encode())
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory, timeout=30, bindAddress=None):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
@@ -144,7 +145,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
                 extra = {'status': int(respm.group('status')),
                          'reason': respm.group('reason').strip()}
             else:
-                extra = rcvd_bytes[:32]
+                extra = rcvd_bytes[:self._truncatedLength]
             self._tunnelReadyDeferred.errback(
                 TunnelError('Could not open CONNECT tunnel with proxy '
                             f'{self._host}:{self._port} [{extra!r}]')
@@ -212,7 +213,7 @@ class TunnelingAgent(Agent):
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
-        key = key + self._proxyConf
+        key += self._proxyConf
         return super()._requestWithEndpoint(
             key=key,
             endpoint=endpoint,
@@ -275,16 +276,16 @@ class ScrapyAgent:
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
-            _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
+            proxyScheme, proxyNetloc, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
             proxyHost = to_unicode(proxyHost)
             omitConnectTunnel = b'noconnect' in proxyParams
             if omitConnectTunnel:
                 warnings.warn(
                     "Using HTTPS proxies in the noconnect mode is deprecated. "
-                    "If you use Zyte Smart Proxy Manager (formerly Crawlera), "
-                    "it doesn't require this mode anymore, so you should "
-                    "update scrapy-crawlera to 1.3.0+ and remove '?noconnect' "
+                    "If you use Zyte Smart Proxy Manager, it doesn't require "
+                    "this mode anymore, so you should update scrapy-crawlera "
+                    "to scrapy-zyte-smartproxy and remove '?noconnect' "
                     "from the Zyte Smart Proxy Manager URL.",
                     ScrapyDeprecationWarning,
                 )
@@ -300,9 +301,13 @@ class ScrapyAgent:
                     pool=self._pool,
                 )
             else:
+                proxyScheme = proxyScheme or b'http'
+                proxyHost = to_bytes(proxyHost, encoding='ascii')
+                proxyPort = to_bytes(str(proxyPort), encoding='ascii')
+                proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
                 return self._ProxyAgent(
                     reactor=reactor,
-                    proxyURI=to_bytes(proxy, encoding='ascii'),
+                    proxyURI=to_bytes(proxyURI, encoding='ascii'),
                     connectTimeout=timeout,
                     bindAddress=bindaddress,
                     pool=self._pool,

@@ -107,7 +107,7 @@ gUsing default_builder
 
 
 This will use default_builder as the builder for every field in the item class.
-As a reducer is not set reducers will be set based on Item Field classess.
+As a reducer is not set reducers will be set based on Item Field classes.
 
 gReset default_builder for a field
 ==================================

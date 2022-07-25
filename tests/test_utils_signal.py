@@ -1,13 +1,10 @@
 import asyncio
-from unittest import SkipTest
 
 from pydispatch import dispatcher
 from pytest import mark
 from testfixtures import LogCapture
-from twisted import version as twisted_version
 from twisted.internet import defer, reactor
 from twisted.python.failure import Failure
-from twisted.python.versions import Version
 from twisted.trial import unittest
 
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
@@ -81,16 +78,6 @@ class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
         return "OK"
 
     def test_send_catch_log(self):
-        if (
-            self.reactor_pytest == 'asyncio'
-            and twisted_version < Version('twisted', 18, 4, 0)
-        ):
-            raise SkipTest(
-                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
-                'fails due to a timeout when using AsyncIO and Twisted '
-                'versions lower than 18.4.0'
-            )
-
         return super().test_send_catch_log()
 
 
@@ -104,13 +91,6 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
         return await get_from_asyncio_queue("OK")
 
     def test_send_catch_log(self):
-        if twisted_version < Version('twisted', 18, 4, 0):
-            raise SkipTest(
-                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
-                'fails due to a timeout when using Twisted versions lower '
-                'than 18.4.0'
-            )
-
         return super().test_send_catch_log()
 
 

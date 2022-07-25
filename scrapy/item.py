@@ -9,45 +9,15 @@ from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
 from typing import Dict
-from warnings import warn
 
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
-
-
-class _BaseItem(object_ref):
-    """
-    Temporary class used internally to avoid the deprecation
-    warning raised by isinstance checks using BaseItem.
-    """
-    pass
-
-
-class _BaseItemMeta(ABCMeta):
-    def __instancecheck__(cls, instance):
-        if cls is BaseItem:
-            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
-        return super().__instancecheck__(instance)
-
-
-class BaseItem(_BaseItem, metaclass=_BaseItemMeta):
-    """
-    Deprecated, please use :class:`scrapy.item.Item` instead
-    """
-
-    def __new__(cls, *args, **kwargs):
-        if issubclass(cls, BaseItem) and not issubclass(cls, (Item, DictItem)):
-            warn('scrapy.item.BaseItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
-        return super().__new__(cls, *args, **kwargs)
 
 
 class Field(dict):
     """Container of field metadata"""
 
 
-class ItemMeta(_BaseItemMeta):
+class ItemMeta(ABCMeta):
     """Metaclass_ of :class:`Item` that handles field definitions.
 
     .. _metaclass: https://realpython.com/python-metaclasses
@@ -74,15 +44,30 @@ class ItemMeta(_BaseItemMeta):
         return super().__new__(mcs, class_name, bases, new_attrs)
 
 
-class DictItem(MutableMapping, BaseItem):
+class Item(MutableMapping, object_ref, metaclass=ItemMeta):
+    """
+    Base class for scraped items.
 
-    fields: Dict[str, Field] = {}
+    In Scrapy, an object is considered an ``item`` if it is an instance of either
+    :class:`Item` or :class:`dict`, or any subclass. For example, when the output of a
+    spider callback is evaluated, only instances of :class:`Item` or
+    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
 
-    def __new__(cls, *args, **kwargs):
-        if issubclass(cls, DictItem) and not issubclass(cls, Item):
-            warn('scrapy.item.DictItem is deprecated, please use scrapy.item.Item instead',
-                 ScrapyDeprecationWarning, stacklevel=2)
-        return super().__new__(cls, *args, **kwargs)
+    If you need instances of a custom class to be considered items by Scrapy,
+    you must inherit from either :class:`Item` or :class:`dict`.
+
+    Items must declare :class:`Field` attributes, which are processed and stored
+    in the ``fields`` attribute. This restricts the set of allowed field names
+    and prevents typos, raising ``KeyError`` when referring to undefined fields.
+    Additionally, fields can be used to define metadata and control the way
+    data is processed internally. Please refer to the :ref:`documentation
+    about fields <topics-items-fields>` for additional information.
+
+    Unlike instances of :class:`dict`, instances of :class:`Item` may be
+    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+    """
+
+    fields: Dict[str, Field]
 
     def __init__(self, *args, **kwargs):
         self._values = {}
@@ -118,7 +103,7 @@ class DictItem(MutableMapping, BaseItem):
     def __iter__(self):
         return iter(self._values)
 
-    __hash__ = BaseItem.__hash__
+    __hash__ = object_ref.__hash__
 
     def keys(self):
         return self._values.keys()
@@ -133,27 +118,3 @@ class DictItem(MutableMapping, BaseItem):
         """Return a :func:`~copy.deepcopy` of this item.
         """
         return deepcopy(self)
-
-
-class Item(DictItem, metaclass=ItemMeta):
-    """
-    Base class for scraped items.
-
-    In Scrapy, an object is considered an ``item`` if it is an instance of either
-    :class:`Item` or :class:`dict`, or any subclass. For example, when the output of a
-    spider callback is evaluated, only instances of :class:`Item` or
-    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
-
-    If you need instances of a custom class to be considered items by Scrapy,
-    you must inherit from either :class:`Item` or :class:`dict`.
-
-    Items must declare :class:`Field` attributes, which are processed and stored
-    in the ``fields`` attribute. This restricts the set of allowed field names
-    and prevents typos, raising ``KeyError`` when referring to undefined fields.
-    Additionally, fields can be used to define metadata and control the way
-    data is processed internally. Please refer to the :ref:`documentation
-    about fields <topics-items-fields>` for additional information.
-
-    Unlike instances of :class:`dict`, instances of :class:`Item` may be
-    :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
-    """

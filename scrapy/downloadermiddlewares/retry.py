@@ -2,7 +2,7 @@
 An extension to retry failed requests that are potentially caused by temporary
 problems such as a connection timeout or HTTP 500 error.
 
-You can change the behaviour of this middleware by modifing the scraping settings:
+You can change the behaviour of this middleware by modifying the scraping settings:
 RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 
@@ -98,7 +98,7 @@ def get_retry_request(
             {'request': request, 'retry_times': retry_times, 'reason': reason},
             extra={'spider': spider}
         )
-        new_request = request.copy()
+        new_request: Request = request.copy()
         new_request.meta['retry_times'] = retry_times
         new_request.dont_filter = True
         if priority_adjust is None:

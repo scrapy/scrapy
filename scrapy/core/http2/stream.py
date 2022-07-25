@@ -285,8 +285,8 @@ class Stream:
 
             self._protocol.conn.send_data(self.stream_id, data_chunk, end_stream=False)
 
-            bytes_to_send_size = bytes_to_send_size - chunk_size
-            self.metadata['remaining_content_length'] = self.metadata['remaining_content_length'] - chunk_size
+            bytes_to_send_size -= chunk_size
+            self.metadata['remaining_content_length'] -= chunk_size
 
         self.metadata['remaining_content_length'] = max(0, self.metadata['remaining_content_length'])
 

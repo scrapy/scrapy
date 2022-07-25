@@ -88,7 +88,7 @@ class LxmlParserLinkExtractor:
     def _process_links(self, links):
         """ Normalize and filter extracted links
 
-        The subclass should override it if neccessary
+        The subclass should override it if necessary
         """
         return self._deduplicate_if_needed(links)
 

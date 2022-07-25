@@ -4,10 +4,7 @@ Tests borrowed from the twisted.web.client tests.
 """
 import os
 import shutil
-import sys
-from pkg_resources import parse_version
 
-import cryptography
 import OpenSSL.SSL
 from twisted.trial import unittest
 from twisted.web import server, static, util, resource
@@ -21,14 +18,6 @@ except ImportError:
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
-from twisted.web.test.test_webclient import (
-    ForeverTakingResource,
-    ErrorResource,
-    NoLengthResource,
-    HostHeaderResource,
-    PayloadResource,
-    BrokenDownloadResource,
-)
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
@@ -36,7 +25,15 @@ from scrapy.http import Request, Headers
 from scrapy.settings import Settings
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes, to_unicode
-from tests.mockserver import ssl_context_factory
+from tests.mockserver import (
+    BrokenDownloadResource,
+    ErrorResource,
+    ForeverTakingResource,
+    HostHeaderResource,
+    NoLengthResource,
+    PayloadResource,
+    ssl_context_factory,
+)
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
@@ -417,8 +414,6 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         ).addCallback(self.assertEqual, to_bytes(s))
 
     def testPayloadDisabledCipher(self):
-        if sys.implementation.name == "pypy" and parse_version(cryptography.__version__) <= parse_version("2.3.1"):
-            self.skipTest("This test expects a failure, but the code does work in PyPy with cryptography<=2.3.1")
         s = "0123456789" * 10
         settings = Settings({'DOWNLOADER_CLIENT_TLS_CIPHERS': 'ECDHE-RSA-AES256-GCM-SHA384'})
         client_context_factory = create_instance(ScrapyClientContextFactory, settings=settings, crawler=None)
