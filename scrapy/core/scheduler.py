@@ -268,14 +268,33 @@ class Scheduler(BaseScheduler):
             self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
 
     def enqueue_request(self, request: Request) -> bool:
-        """
-        Unless the received request is filtered out by the Dupefilter, attempt to push
-        it into the disk queue, falling back to pushing it into the memory queue.
+        """Store *request*.
 
-        Increment the appropriate stats, such as: ``scheduler/enqueued``,
-        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.
+        Stored requests can be extracted through :meth:`next_request`.
 
-        Return ``True`` if the request was stored successfully, ``False`` otherwise.
+        If the :attr:`~scrapy.Request.dont_filter` attribute of *request* is
+        not ``True``, and the duplicate filter determines that *request* is a
+        duplicate of a previously-seen request, *request* is not stored and
+        ``False`` is returned. The ``dupefilter/filtered``
+        :ref:`stat <topics-stats>` accounts for there requests when the
+        duplicate filter class is :class:`scrapy.dupefilters.RFPDupeFilter`.
+
+        Otherwise, ``True`` is returned, the ``scheduler/enqueued`` stat is
+        increased, and *request* is stored in one of the following internal
+        queues:
+
+        -   If the request metadata contains :reqmeta:`request_delay`,
+            *request* is stored in the internal queue for delayed requests,
+            and the ``scheduler/enqueued/delayed/memory`` stat is increased.
+
+        -   Otherwise, *request* is stored in the internal disk-based priority
+            queue, if any, and the ``scheduler/enqueued/disk`` stat is
+            increased.
+
+        -   If there is no internal disk-based priority queue, or the
+            serialization of *request* fails, *request* is stored in the
+            internal memory-based priority queue, and the
+            ``scheduler/enqueued/memory`` stat is increased.
         """
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
