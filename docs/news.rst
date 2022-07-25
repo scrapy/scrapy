@@ -3,8 +3,61 @@
 Release notes
 =============
 
-.. note:: Scrapy 1.x will be the last series supporting Python 2. Scrapy 2.0,
-          planned for Q4 2019 or Q1 2020, will support **Python 3 only**.
+.. note:: Scrapy 1.x is the last series supporting Python 2. Scrapy 2.x
+          supports **Python 3 only**.
+
+.. _release-1.8.3:
+
+Scrapy 1.8.3 (2022-07-25)
+-------------------------
+
+**Security bug fix:**
+
+-   When :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`
+    processes a request with :reqmeta:`proxy` metadata, and that
+    :reqmeta:`proxy` metadata includes proxy credentials,
+    :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` sets
+    the ``Proxy-Authentication`` header, but only if that header is not already
+    set.
+
+    There are third-party proxy-rotation downloader middlewares that set
+    different :reqmeta:`proxy` metadata every time they process a request.
+
+    Because of request retries and redirects, the same request can be processed
+    by downloader middlewares more than once, including both
+    :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` and
+    any third-party proxy-rotation downloader middleware.
+
+    These third-party proxy-rotation downloader middlewares could change the
+    :reqmeta:`proxy` metadata of a request to a new value, but fail to remove
+    the ``Proxy-Authentication`` header from the previous value of the
+    :reqmeta:`proxy` metadata, causing the credentials of one proxy to be sent
+    to a different proxy.
+
+    To prevent the unintended leaking of proxy credentials, the behavior of
+    :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` is now
+    as follows when processing a request:
+
+    -   If the request being processed defines :reqmeta:`proxy` metadata that
+        includes credentials, the ``Proxy-Authorization`` header is always
+        updated to feature those credentials.
+
+    -   If the request being processed defines :reqmeta:`proxy` metadata
+        without credentials, the ``Proxy-Authorization`` header is removed
+        *unless* it was originally defined for the same proxy URL.
+
+        To remove proxy credentials while keeping the same proxy URL, remove
+        the ``Proxy-Authorization`` header.
+
+    -   If the request has no :reqmeta:`proxy` metadata, or that metadata is a
+        falsy value (e.g. ``None``), the ``Proxy-Authorization`` header is
+        removed.
+
+        It is no longer possible to set a proxy URL through the
+        :reqmeta:`proxy` metadata but set the credentials through the
+        ``Proxy-Authorization`` header. Set proxy credentials through the
+        :reqmeta:`proxy` metadata instead.
+
 
 .. _release-1.8.2:
 
