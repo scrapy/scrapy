@@ -170,8 +170,14 @@ class DownloaderInterface:
 
 class DownloaderAwarePriorityQueue:
     """ PriorityQueue which takes Downloader activity into account:
-    domains (slots) with the least amount of active downloads are dequeued
-    first.
+    requests for domains (slots) with the least amount of active downloads are
+    dequeued first.
+
+    It works better than :class:`~scrapy.pqueues.ScrapyPriorityQueue` when you
+    crawl many different domains in parallel.
+
+    It does not work together with the :setting:`CONCURRENT_REQUESTS_PER_IP`
+    setting.
     """
 
     @classmethod
