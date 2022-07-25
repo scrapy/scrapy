@@ -168,6 +168,10 @@ class Scheduler(BaseScheduler):
 
     :param crawler: The crawler object corresponding to the current crawl.
     :type crawler: :class:`scrapy.crawler.Crawler`
+
+    :param dpqclass: A class to store delayed requests.
+                     The value for the :setting:`SCHEDULER_DELAY_QUEUE` setting is used by default.
+    :type dpqclass: class
     """
     def __init__(
         self,
