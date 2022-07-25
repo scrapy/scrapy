@@ -129,6 +129,12 @@ class Scheduler(BaseScheduler):
     queue if a serialization error occurs. If the disk queue is not present, the memory one
     is used directly.
 
+    Requests with the :reqmeta:`request_delay` request metadata key are stored
+    into a separate queue, of type :setting:`SCHEDULER_DELAY_QUEUE` and backed
+    by memory queues (:setting:`SCHEDULER_MEMORY_QUEUE`), and are moved onto
+    the regular scheduler priority queues at some point after their delay time
+    has passed.
+
     :param dupefilter: An object responsible for checking and filtering duplicate requests.
                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
     :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
