@@ -432,8 +432,7 @@ The meta key is used set retry times per request. When initialized, the
 request_delay
 -------------
 
-The amount of time (in secs) that the scheduler will keep a request in the queue
-before the dequeuing.
+Minimum seconds that the request must remain in the scheduler.
 
 
 .. _topics-stop-response-download:
