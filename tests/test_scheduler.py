@@ -3,14 +3,17 @@ import shutil
 import tempfile
 import unittest
 import collections
-from freezegun import freeze_time
+from typing import Optional
 
+from freezegun import freeze_time
+from pytest import warns
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
-from scrapy.crawler import Crawler
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
+from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
@@ -456,3 +459,71 @@ class TestIncompatibility(unittest.TestCase):
     def test_incompatibility(self):
         with self.assertRaises(ValueError):
             self._incompatible()
+
+
+def test_scheduler_subclassing_no_dpqclass():
+
+    class SchedulerSubclass(Scheduler):
+        def __init__(
+            self,
+            dupefilter,
+            jobdir: Optional[str] = None,
+            dqclass=None,
+            mqclass=None,
+            logunser: bool = False,
+            stats=None,
+            pqclass=None,
+            crawler: Optional[Crawler] = None,
+        ):
+            self.df = dupefilter
+            self.dqdir = self._dqdir(jobdir)
+            self.pqclass = pqclass
+            self.dqclass = dqclass
+            self.mqclass = mqclass
+            self.logunser = logunser
+            self.stats = stats
+            self.crawler = crawler
+
+    class_path = (
+        'tests.test_scheduler.test_scheduler_subclassing_no_dpqclass'
+        '.<locals>.SchedulerSubclass'
+    )
+    message = (
+        f"The scheduler class {class_path} does not support the 'dpqclass' "
+        "keyword argument."
+    )
+    with warns(ScrapyDeprecationWarning, match=message):
+        scheduler = SchedulerSubclass.from_crawler(get_crawler())
+
+    assert hasattr(scheduler, 'dpqclass')
+
+
+def test_scheduler_subclassing_use_dpqclass():
+    custom_object = object()
+
+    class SchedulerSubclass(Scheduler):
+        def __init__(
+            self,
+            dupefilter,
+            jobdir: Optional[str] = None,
+            dqclass=None,
+            mqclass=None,
+            logunser: bool = False,
+            stats=None,
+            pqclass=None,
+            crawler: Optional[Crawler] = None,
+            *,
+            dpqclass=None,
+        ):
+            self.df = dupefilter
+            self.dqdir = self._dqdir(jobdir)
+            self.pqclass = pqclass
+            self.dpqclass = custom_object
+            self.dqclass = dqclass
+            self.mqclass = mqclass
+            self.logunser = logunser
+            self.stats = stats
+            self.crawler = crawler
+
+    scheduler = SchedulerSubclass.from_crawler(get_crawler())
+    assert scheduler.dpqclass == custom_object

@@ -4,10 +4,12 @@ import os
 from abc import abstractmethod
 from os.path import exists, join
 from typing import Optional, Type, TypeVar
+from warnings import warn
 
 from twisted.internet.defer import Deferred
 
 from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir
@@ -183,6 +185,7 @@ class Scheduler(BaseScheduler):
         stats=None,
         pqclass=None,
         crawler: Optional[Crawler] = None,
+        *,
         dpqclass=None,
     ):
         self.df = dupefilter
@@ -201,19 +204,34 @@ class Scheduler(BaseScheduler):
         Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
         dupefilter_cls = load_object(crawler.settings['DUPEFILTER_CLASS'])
-        dpqclass = load_object(crawler.settings['SCHEDULER_DELAY_QUEUE'])
-        scheduler = cls(
-            dupefilter=create_instance(dupefilter_cls, crawler.settings, crawler),
-            jobdir=job_dir(crawler.settings),
-            dqclass=load_object(crawler.settings['SCHEDULER_DISK_QUEUE']),
-            mqclass=load_object(crawler.settings['SCHEDULER_MEMORY_QUEUE']),
-            logunser=crawler.settings.getbool('SCHEDULER_DEBUG'),
-            stats=crawler.stats,
-            pqclass=load_object(crawler.settings['SCHEDULER_PRIORITY_QUEUE']),
-            crawler=crawler,
-        )
-        scheduler.dpqclass = dpqclass
-        return scheduler
+        dupefilter = create_instance(dupefilter_cls, crawler.settings, crawler)
+        pqclass = load_object(crawler.settings['SCHEDULER_PRIORITY_QUEUE'])
+        kwargs = {
+            'dupefilter': dupefilter,
+            'jobdir': job_dir(crawler.settings),
+            'dqclass': load_object(crawler.settings['SCHEDULER_DISK_QUEUE']),
+            'mqclass': load_object(crawler.settings['SCHEDULER_MEMORY_QUEUE']),
+            'logunser': crawler.settings.getbool('SCHEDULER_DEBUG'),
+            'stats': crawler.stats,
+            'pqclass': pqclass,
+            'crawler': crawler,
+            'dpqclass': load_object(crawler.settings['SCHEDULER_DELAY_QUEUE']),
+        }
+        try:
+            return cls(**kwargs)
+        except TypeError:
+            warn(
+                (
+                    f"The scheduler class "
+                    f"{cls.__module__}.{cls.__qualname__} does not "
+                    f"support the 'dpqclass' keyword argument."
+                ),
+                ScrapyDeprecationWarning,
+            )
+            dpqclass = kwargs.pop('dpqclass')
+            scheduler = cls(**kwargs)
+            scheduler.dpqclass = dpqclass
+            return scheduler
 
     def has_pending_requests(self) -> bool:
         return len(self) > 0
