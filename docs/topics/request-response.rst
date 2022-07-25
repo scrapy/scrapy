@@ -713,6 +713,10 @@ request_delay
 
 Minimum seconds that the request must remain in the scheduler.
 
+For details about the management of request delays, such as the order in which
+delayed requests leave the scheduler, see the documentation of your scheduler
+class (:setting:`SCHEDULER`).
+
 
 .. _topics-stop-response-download:
 

@@ -133,9 +133,25 @@ class Scheduler(BaseScheduler):
 
     Requests with the :reqmeta:`request_delay` request metadata key are stored
     into a separate queue, of type :setting:`SCHEDULER_DELAY_QUEUE` and backed
-    by memory queues (:setting:`SCHEDULER_MEMORY_QUEUE`), and are moved onto
-    the regular scheduler priority queues at some point after their delay time
-    has passed.
+    by memory queues (:setting:`SCHEDULER_MEMORY_QUEUE`), and scheduled onto
+    the scheduler priority queues when their delay time passes (which is
+    checked at the beginning of every call to :meth:`next_request`).
+
+    Once the delay time of a request passes, the order in which the request
+    leaves the scheduler follows the same rules as any other request:
+
+    -   There is no guarantee that a delayed request will leave the scheduler
+        before a request without a delay.
+
+    -   There is no guarantee that requests delayed for a longer time will
+        leave the scheduler later. It is technically possible that, given a
+        request A delayed 1 second and a request B delayed 2 seconds, request B
+        leaves the scheduler earlier.
+
+    :setting:`SCHEDULER_PRIORITY_QUEUE` determines how you can influence the
+    order of requests, but you can usually rely on request priority. For
+    example, if you wish delayed request to leave the scheduler before other
+    requests, increase the priority of delayed requests.
 
     :param dupefilter: An object responsible for checking and filtering duplicate requests.
                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
