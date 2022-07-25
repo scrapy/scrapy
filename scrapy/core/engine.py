@@ -136,7 +136,9 @@ class ExecutionEngine:
         self.paused = False
 
     def _next_request(self) -> None:
-        assert self.slot is not None  # typing
+        if self.slot is None:
+            return
+
         assert self.spider is not None  # typing
 
         if self.paused:
@@ -184,7 +186,8 @@ class ExecutionEngine:
         d.addErrback(lambda f: logger.info('Error while removing request from slot',
                                            exc_info=failure_to_exc_info(f),
                                            extra={'spider': self.spider}))
-        d.addBoth(lambda _: self.slot.nextcall.schedule())
+        slot = self.slot
+        d.addBoth(lambda _: slot.nextcall.schedule())
         d.addErrback(lambda f: logger.info('Error while scheduling new request',
                                            exc_info=failure_to_exc_info(f),
                                            extra={'spider': self.spider}))
