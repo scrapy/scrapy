@@ -292,7 +292,7 @@ class Scheduler(BaseScheduler):
         not ``True``, and the duplicate filter determines that *request* is a
         duplicate of a previously-seen request, *request* is not stored and
         ``False`` is returned. The ``dupefilter/filtered``
-        :ref:`stat <topics-stats>` accounts for there requests when the
+        :ref:`stat <topics-stats>` accounts for these requests when the
         duplicate filter class is :class:`scrapy.dupefilters.RFPDupeFilter`.
 
         Otherwise, ``True`` is returned, the ``scheduler/enqueued`` stat is
