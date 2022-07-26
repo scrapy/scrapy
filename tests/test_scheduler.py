@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import unittest
 import collections
+from contextlib import contextmanager
 from typing import Optional
 
 from freezegun import freeze_time
@@ -48,8 +49,7 @@ class MockDownloader:
 
 
 class MockCrawler(Crawler):
-    def __init__(self, priority_queue_cls, jobdir):
-
+    def __init__(self, priority_queue_cls, jobdir, *, settings=None):
         settings = dict(
             SCHEDULER_DEBUG=False,
             SCHEDULER_DISK_QUEUE='scrapy.squeues.PickleLifoDiskQueue',
@@ -58,6 +58,7 @@ class MockCrawler(Crawler):
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
             REQUEST_FINGERPRINTER_IMPLEMENTATION='VERSION',
+            **(settings or {}),
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -83,6 +84,22 @@ class SchedulerHandler:
 
     def tearDown(self):
         self.close_scheduler()
+
+    @contextmanager
+    def custom_scheduler(self, settings):
+        crawler = MockCrawler(
+            self.priority_queue_cls,
+            self.jobdir,
+            settings=settings,
+        )
+        scheduler = Scheduler.from_crawler(crawler)
+        scheduler.open(self.spider)
+        try:
+            yield scheduler
+        finally:
+            scheduler.close('finished')
+            crawler.stop()
+            crawler.engine.downloader.close()
 
 
 _PRIORITIES = [("http://foo.com/a", -2),
@@ -237,6 +254,43 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
                          ['http://foo.com/b',
                           'http://foo.com/a',
                           'http://foo.com/c'])
+
+    def test_delay_priority_adjust_default(self):
+        with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}))
+            frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
+            request = self.scheduler.next_request()
+        self.assertEqual(request.priority, 0)
+
+    def test_delay_priority_adjust_from_non_default(self):
+        """Example covering a scenario where DELAY_PRIORITY_ADJUST and the
+        final request priority do not match, to make sure DELAY_PRIORITY_ADJUST
+        is added to the priority, and not only replacing it."""
+        settings = {'DELAY_PRIORITY_ADJUST': 1}
+        with self.custom_scheduler(settings=settings) as scheduler:
+            with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+                scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}, priority=1))
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
+                request = scheduler.next_request()
+        self.assertEqual(request.priority, 2)
+
+    def test_delay_priority_adjust_negative(self):
+        settings = {'DELAY_PRIORITY_ADJUST': -1}
+        with self.custom_scheduler(settings=settings) as scheduler:
+            with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+                scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}))
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
+                request = scheduler.next_request()
+        self.assertEqual(request.priority, -1)
+
+    def test_delay_priority_adjust_positive(self):
+        settings = {'DELAY_PRIORITY_ADJUST': 1}
+        with self.custom_scheduler(settings=settings) as scheduler:
+            with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
+                scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}))
+                frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
+                request = scheduler.next_request()
+        self.assertEqual(request.priority, 1)
 
 
 class BaseSchedulerOnDiskTester(SchedulerHandler):
