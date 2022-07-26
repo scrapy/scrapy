@@ -309,7 +309,7 @@ class Scheduler(BaseScheduler):
 
         -   If there is no internal disk-based priority queue, or the
             serialization of *request* fails, *request* is stored in the
-            internal memory-based priority queue, and the
+            internal memory-based priority queue instead, and the
             ``scheduler/enqueued/memory`` stat is increased.
         """
         if not request.dont_filter and self.df.request_seen(request):
