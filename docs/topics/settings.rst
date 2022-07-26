@@ -376,6 +376,24 @@ The default headers used for Scrapy HTTP Requests. They're populated in the
     :class:`Request.cookies <scrapy.Request>` parameter. This is a known
     current limitation that is being worked on.
 
+
+.. setting:: DELAY_PRIORITY_ADJUST
+
+DELAY_PRIORITY_ADJUST
+---------------------
+
+Default: ``0``
+
+Adjust the priority of a delayed request in the scheduler, once its delay
+time passes, before it is enqueued among other requests.
+
+For example, use ``1`` to increase the priority of delayed requests by 1,
+so they have a higher priority and leave the scheduler earlier.
+
+See also: :setting:`DEPTH_PRIORITY`, :setting:`REDIRECT_PRIORITY_ADJUST`,
+:setting:`RETRY_PRIORITY_ADJUST`.
+
+
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT
@@ -411,8 +429,8 @@ also :ref:`faq-bfo-dfo`.
 .. note::
 
     This setting adjusts priority **in the opposite way** compared to
-    other priority settings :setting:`REDIRECT_PRIORITY_ADJUST`
-    and :setting:`RETRY_PRIORITY_ADJUST`.
+    other priority settings: :setting:`DELAY_PRIORITY_ADJUST`,
+    :setting:`REDIRECT_PRIORITY_ADJUST`, :setting:`RETRY_PRIORITY_ADJUST`.
 
 .. setting:: DEPTH_STATS_VERBOSE
 
@@ -1252,6 +1270,7 @@ multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
 
+
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
@@ -1265,6 +1284,10 @@ Adjust redirect request priority relative to original request:
 
 - **a positive priority adjust (default) means higher priority.**
 - a negative priority adjust means lower priority.
+
+See also: :setting:`DELAY_PRIORITY_ADJUST`, :setting:`DEPTH_PRIORITY`,
+:setting:`RETRY_PRIORITY_ADJUST`.
+
 
 .. setting:: ROBOTSTXT_OBEY
 

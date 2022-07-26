@@ -151,7 +151,8 @@ class Scheduler(BaseScheduler):
     :setting:`SCHEDULER_PRIORITY_QUEUE` determines how you can influence the
     order of requests, but you can usually rely on request priority. For
     example, if you wish delayed request to leave the scheduler before other
-    requests, increase the priority of delayed requests.
+    requests, use :setting:`DELAY_PRIORITY_ADJUST` or manually increase the
+    priority of delayed requests.
 
     :param dupefilter: An object responsible for checking and filtering duplicate requests.
                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
@@ -202,8 +203,10 @@ class Scheduler(BaseScheduler):
         pqclass=None,
         crawler: Optional[Crawler] = None,
         *,
+        delay_priority_adjust=0,
         dpqclass=None,
     ):
+        self.delay_priority_adjust = delay_priority_adjust
         self.df = dupefilter
         self.dqdir = self._dqdir(jobdir)
         self.pqclass = pqclass
@@ -222,6 +225,7 @@ class Scheduler(BaseScheduler):
         dupefilter_cls = load_object(crawler.settings['DUPEFILTER_CLASS'])
         dupefilter = create_instance(dupefilter_cls, crawler.settings, crawler)
         pqclass = load_object(crawler.settings['SCHEDULER_PRIORITY_QUEUE'])
+        dpa = crawler.settings.getint('DELAY_PRIORITY_ADJUST')
         kwargs = {
             'dupefilter': dupefilter,
             'jobdir': job_dir(crawler.settings),
@@ -231,6 +235,7 @@ class Scheduler(BaseScheduler):
             'stats': crawler.stats,
             'pqclass': pqclass,
             'crawler': crawler,
+            'delay_priority_adjust': dpa,
             'dpqclass': load_object(crawler.settings['SCHEDULER_DELAY_QUEUE']),
         }
         try:
@@ -240,12 +245,15 @@ class Scheduler(BaseScheduler):
                 (
                     f"The scheduler class "
                     f"{cls.__module__}.{cls.__qualname__} does not "
-                    f"support the 'dpqclass' keyword argument."
+                    f"support the 'delay_priority_adjust' or 'dpqclass' "
+                    "keyword arguments."
                 ),
                 ScrapyDeprecationWarning,
             )
+            delay_priority_adjust = kwargs.pop('delay_priority_adjust')
             dpqclass = kwargs.pop('dpqclass')
             scheduler = cls(**kwargs)
+            scheduler.delay_priority_adjust = delay_priority_adjust
             scheduler.dpqclass = dpqclass
             return scheduler
 
@@ -336,6 +344,7 @@ class Scheduler(BaseScheduler):
         delayed_request = self.dpqs.pop()
         if delayed_request:
             self.stats.inc_value('scheduler/dequeued/delayed/memory', spider=self.spider)
+            delayed_request.priority += self.delay_priority_adjust
             self._enqueue_request(delayed_request)
         request = self.mqs.pop()
         if request is not None:
