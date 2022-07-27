@@ -47,7 +47,7 @@ Enforcing component requirements
 ================================
 
 Sometimes, your components may only be intended to work under certain
-conditions. For example, the may require a minimum version of Scrapy to work as
+conditions. For example, they may require a minimum version of Scrapy to work as
 intended, or they may require certain settings to have specific values.
 
 In addition to describing those conditions in the documentation of your
