@@ -265,7 +265,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
     def test_delay_priority_adjust_from_non_default(self):
         """Example covering a scenario where DELAY_PRIORITY_ADJUST and the
         final request priority do not match, to make sure DELAY_PRIORITY_ADJUST
-        is added to the priority, and not only replacing it."""
+        is added to the priority, and not only replaces it."""
         settings = {'DELAY_PRIORITY_ADJUST': 1}
         with self.custom_scheduler(settings=settings) as scheduler:
             with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
@@ -543,8 +543,8 @@ def test_scheduler_subclassing_no_dpqclass():
         '.<locals>.SchedulerSubclass'
     )
     message = (
-        f"The scheduler class {class_path} does not support the 'dpqclass' "
-        "keyword argument."
+        f"The scheduler class {class_path} does not support the "
+        "'delay_priority_adjust' or 'dpqclass' keyword argument."
     )
     with warns(ScrapyDeprecationWarning, match=message):
         scheduler = SchedulerSubclass.from_crawler(get_crawler())
@@ -567,11 +567,13 @@ def test_scheduler_subclassing_use_dpqclass():
             pqclass=None,
             crawler: Optional[Crawler] = None,
             *,
+            delay_priority_adjust=0,
             dpqclass=None,
         ):
             self.df = dupefilter
             self.dqdir = self._dqdir(jobdir)
             self.pqclass = pqclass
+            self.delay_priority_adjust = custom_object
             self.dpqclass = custom_object
             self.dqclass = dqclass
             self.mqclass = mqclass
@@ -580,4 +582,5 @@ def test_scheduler_subclassing_use_dpqclass():
             self.crawler = crawler
 
     scheduler = SchedulerSubclass.from_crawler(get_crawler())
+    assert scheduler.delay_priority_adjust == custom_object
     assert scheduler.dpqclass == custom_object
