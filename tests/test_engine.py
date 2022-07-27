@@ -12,8 +12,10 @@ module with the ``runserver`` argument::
 
 import os
 import re
+import subprocess
 import sys
 from collections import defaultdict
+from threading import Timer
 from urllib.parse import urlparse
 from dataclasses import dataclass
 
@@ -483,6 +485,37 @@ class EngineTest(unittest.TestCase):
             e.start()
             yield e.close()
             self.assertTrue(e.has_capacity())
+
+    def test_short_timeout(self):
+        args = (
+            sys.executable,
+            '-m',
+            'scrapy.cmdline',
+            'fetch',
+            '-s',
+            'CLOSESPIDER_TIMEOUT=0.001',
+            '-s',
+            'LOG_LEVEL=DEBUG',
+            'http://toscrape.com',
+        )
+        p = subprocess.Popen(
+            args,
+            stderr=subprocess.PIPE,
+        )
+
+        def kill_proc():
+            p.kill()
+            p.communicate()
+            assert False, 'Command took too much time to complete'
+
+        timer = Timer(15, kill_proc)
+        try:
+            timer.start()
+            _, stderr = p.communicate()
+        finally:
+            timer.cancel()
+
+        self.assertNotIn(b'Traceback', stderr)
 
 
 if __name__ == "__main__":
