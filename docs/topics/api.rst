@@ -32,6 +32,13 @@ how you :ref:`configure the downloader middlewares
     :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
+    .. attribute:: request_fingerprinter
+
+        The request fingerprint builder of this crawler.
+
+        This is used from extensions and middlewares to build short, unique
+        identifiers for requests. See :ref:`request-fingerprints`.
+
     .. attribute:: settings
 
         The settings manager of this crawler.

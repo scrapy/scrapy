@@ -825,12 +825,8 @@ Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
-The default (``RFPDupeFilter``) filters based on request fingerprint using
-the ``scrapy.utils.request.request_fingerprint`` function. In order to change
-the way duplicates are checked you could subclass ``RFPDupeFilter`` and
-override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.Request` object and return its fingerprint
-(a string).
+The default (``RFPDupeFilter``) filters based on the
+:setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
 You can disable filtering of duplicate requests by setting
 :setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
@@ -1597,7 +1593,7 @@ In order to use the reactor installed by Scrapy::
         def start_requests(self):
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ['https://quotes.toscrape.com/page/1']
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
@@ -1625,7 +1621,7 @@ which raises :exc:`Exception`, becomes::
             from twisted.internet import reactor
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ['https://quotes.toscrape.com/page/1']
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
@@ -1638,8 +1634,8 @@ which raises :exc:`Exception`, becomes::
 
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will not attempt to install any specific reactor, and the
-default reactor defined by Twisted for the current platform will be used. This
+means that Scrapy will use the existing reactor if one is already installed, or
+install the default reactor defined by Twisted for the current platform. This
 is to maintain backward compatibility and avoid possible problems caused by
 using a non-default reactor.
 

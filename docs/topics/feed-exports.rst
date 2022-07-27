@@ -58,7 +58,7 @@ CSV
 
 -   Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
 
--   To specify columns to export and their order use
+-   To specify columns to export, their order and their column names, use
     :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
     option, but it is important for CSV because unlike many other export
     formats CSV uses a fixed header.
@@ -278,7 +278,7 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 Item filtering
 ==============
 
-.. versionadded:: VERSION
+.. versionadded:: 2.6.0
 
 You can filter items that you want to allow for a particular feed by using the
 ``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
@@ -318,11 +318,11 @@ ItemFilter
 Post-Processing
 ===============
 
-.. versionadded:: VERSION
+.. versionadded:: 2.6.0
 
 Scrapy provides an option to activate plugins to post-process feeds before they are exported
 to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
-can create your own :ref:`plugins <custom-plugins>`. 
+can create your own :ref:`plugins <custom-plugins>`.
 
 These plugins can be activated through the ``postprocessing`` option of a feed.
 The option must be passed a list of post-processing plugins in the order you want
@@ -366,7 +366,7 @@ Each plugin is a class that must implement the following methods:
 
     Close the target file object.
 
-To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You 
+To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You
 can then access those parameters from the ``__init__`` method of your plugin.
 
 
@@ -457,13 +457,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     If undefined or empty, all items are exported.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
@@ -499,7 +499,7 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     The plugins will be used in the order of the list passed.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.6.0
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -522,18 +522,9 @@ FEED_EXPORT_FIELDS
 
 Default: ``None``
 
-A list of fields to export, optional.
-Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
-
-Use FEED_EXPORT_FIELDS option to define fields to export and their order.
-
-When FEED_EXPORT_FIELDS is empty or None (default), Scrapy uses the fields
-defined in :ref:`item objects <topics-items>` yielded by your spider.
-
-If an exporter requires a fixed set of fields (this is the case for
-:ref:`CSV <topics-feed-format-csv>` export format) and FEED_EXPORT_FIELDS
-is empty or None, then Scrapy tries to infer field names from the
-exported data - currently it uses field names from the first item.
+Use the ``FEED_EXPORT_FIELDS`` setting to define the fields to export, their
+order and their output names. See :attr:`BaseItemExporter.fields_to_export
+<scrapy.exporters.BaseItemExporter.fields_to_export>` for more information.
 
 .. setting:: FEED_EXPORT_INDENT
 
@@ -638,6 +629,7 @@ Default::
     {
         'json': 'scrapy.exporters.JsonItemExporter',
         'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
+        'jsonl': 'scrapy.exporters.JsonLinesItemExporter',
         'jl': 'scrapy.exporters.JsonLinesItemExporter',
         'csv': 'scrapy.exporters.CsvItemExporter',
         'xml': 'scrapy.exporters.XmlItemExporter',
@@ -744,6 +736,9 @@ The function signature should be as follows:
    :param spider: source spider of the feed items
    :type spider: scrapy.Spider
 
+   .. caution:: The function should return a new dictionary, modifying
+                the received ``params`` in-place is deprecated.
+
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
 
@@ -760,7 +755,7 @@ source spider in the feed URI:
 
 #.  Use ``%(spider_name)s`` in your feed URI::
 
-        scrapy crawl <spider_name> -o "%(spider_name)s.jl"
+        scrapy crawl <spider_name> -o "%(spider_name)s.jsonl"
 
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier

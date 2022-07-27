@@ -1,5 +1,4 @@
-.. image:: /artwork/scrapy-logo.jpg
-   :width: 400px
+.. image:: https://scrapy.org/img/scrapylogo.png
    :target: https://scrapy.org/
    
 ======
@@ -59,7 +58,7 @@ including a list of features.
 Requirements
 ============
 
-* Python 3.6+
+* Python 3.7+
 * Works on Linux, Windows, macOS, BSD
 
 Install

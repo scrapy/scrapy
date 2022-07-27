@@ -3,7 +3,7 @@ import io
 import random
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import skipIf
+import dataclasses
 
 import attr
 from itemadapter import ItemAdapter
@@ -14,13 +14,6 @@ from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
-
-
-try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
 
 
 try:
@@ -92,6 +85,22 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     response=Response("file:///tmp/some.name/foo"),
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+
+    def test_thumbnail_name_from_item(self):
+        """
+        Custom thumbnail name based on item data, overriding default implementation
+        """
+
+        class CustomImagesPipeline(ImagesPipeline):
+            def thumb_path(self, request, thumb_id, response=None, info=None, item=None):
+                return f"thumb/{thumb_id}/{item.get('path')}"
+
+        thumb_path = CustomImagesPipeline.from_settings(Settings(
+            {'IMAGES_STORE': self.tempdir}
+        )).thumb_path
+        item = dict(path='path-to-store-file')
+        request = Request("http://example.com")
+        self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -187,25 +196,19 @@ class ImagesPipelineTestCaseFieldsItem(ImagesPipelineTestCaseFieldsMixin, unitte
     item_class = ImagesPipelineTestItem
 
 
-@skipIf(not make_dataclass, "dataclasses module is not available")
-class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
-    item_class = None
+@dataclasses.dataclass
+class ImagesPipelineTestDataClass:
+    name: str
+    # default fields
+    image_urls: list = dataclasses.field(default_factory=list)
+    images: list = dataclasses.field(default_factory=list)
+    # overridden fields
+    custom_image_urls: list = dataclasses.field(default_factory=list)
+    custom_images: list = dataclasses.field(default_factory=list)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "FilesPipelineTestDataClass",
-                [
-                    ("name", str),
-                    # default fields
-                    ("image_urls", list, dataclass_field(default_factory=list)),
-                    ("images", list, dataclass_field(default_factory=list)),
-                    # overridden fields
-                    ("custom_image_urls", list, dataclass_field(default_factory=list)),
-                    ("custom_images", list, dataclass_field(default_factory=list)),
-                ],
-            )
+
+class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestDataClass
 
 
 @attr.s

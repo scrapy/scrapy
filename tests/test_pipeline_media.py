@@ -1,4 +1,5 @@
 from typing import Optional
+import io
 
 from testfixtures import LogCapture
 from twisted.trial import unittest
@@ -6,17 +7,17 @@ from twisted.python.failure import Failure
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
+from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
-from scrapy.utils.request import request_fingerprint
+from scrapy.pipelines.files import FileException
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
-from scrapy.pipelines.files import FileException
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
-from scrapy import signals
+from scrapy.utils.test import get_crawler
 
 
 try:
@@ -38,11 +39,14 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
     settings = None
 
     def setUp(self):
-        self.spider = Spider('media.com')
-        self.pipe = self.pipeline_class(download_func=_mocked_download_func,
-                                        settings=Settings(self.settings))
+        spider_cls = Spider
+        self.spider = spider_cls('media.com')
+        crawler = get_crawler(spider_cls, self.settings)
+        self.pipe = self.pipeline_class.from_crawler(crawler)
+        self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo
+        self.fingerprint = crawler.request_fingerprinter.fingerprint
 
     def tearDown(self):
         for name, signal in vars(signals).items():
@@ -155,7 +159,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.assertEqual(failure.value.__context__, def_gen_return_exc)
 
         # Let's calculate the request fingerprint and fake some runtime data...
-        fp = request_fingerprint(request)
+        fp = self.fingerprint(request)
         info = self.pipe.spiderinfo
         info.downloading.add(fp)
         info.waiting[fp] = []
@@ -272,7 +276,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
-        assert request_fingerprint(req) in self.info.downloaded
+        self.assertIn(self.fingerprint(req), self.info.downloaded)
 
         # returns iterable of Requests
         req1 = Request('http://url1')
@@ -280,8 +284,8 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=iter([req1, req2]))
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
-        assert request_fingerprint(req1) in self.info.downloaded
-        assert request_fingerprint(req2) in self.info.downloaded
+        assert self.fingerprint(req1) in self.info.downloaded
+        assert self.fingerprint(req2) in self.info.downloaded
 
     @inlineCallbacks
     def test_results_are_cached_across_multiple_items(self):
@@ -297,7 +301,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req2)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertTrue(new_item is item)
-        self.assertEqual(request_fingerprint(req1), request_fingerprint(req2))
+        self.assertEqual(self.fingerprint(req1), self.fingerprint(req2))
         self.assertEqual(new_item['results'], [(True, rsp1)])
 
     @inlineCallbacks
@@ -313,7 +317,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_wait_if_request_is_downloading(self):
         def _check_downloading(response):
-            fp = request_fingerprint(req1)
+            fp = self.fingerprint(req1)
             self.assertTrue(fp in self.info.downloading)
             self.assertTrue(fp in self.info.waiting)
             self.assertTrue(fp not in self.info.downloaded)
@@ -350,14 +354,17 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def __init__(self, *args, **kwargs):
-        super(MockedMediaPipelineDeprecatedMethods, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._mockcalled = []
 
     def get_media_requests(self, item, info):
         item_url = item['image_urls'][0]
+        output_img = io.BytesIO()
+        img = Image.new('RGB', (60, 30), color='red')
+        img.save(output_img, format='JPEG')
         return Request(
             item_url,
-            meta={'response': Response(item_url, status=200, body=b'data')}
+            meta={'response': Response(item_url, status=200, body=output_img.getvalue())}
         )
 
     def inc_stats(self, *args, **kwargs):
@@ -365,34 +372,44 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def media_to_download(self, request, info):
         self._mockcalled.append('media_to_download')
-        return super(MockedMediaPipelineDeprecatedMethods, self).media_to_download(request, info)
+        return super().media_to_download(request, info)
 
     def media_downloaded(self, response, request, info):
         self._mockcalled.append('media_downloaded')
-        return super(MockedMediaPipelineDeprecatedMethods, self).media_downloaded(response, request, info)
+        return super().media_downloaded(response, request, info)
 
     def file_downloaded(self, response, request, info):
         self._mockcalled.append('file_downloaded')
-        return super(MockedMediaPipelineDeprecatedMethods, self).file_downloaded(response, request, info)
+        return super().file_downloaded(response, request, info)
 
     def file_path(self, request, response=None, info=None):
         self._mockcalled.append('file_path')
-        return super(MockedMediaPipelineDeprecatedMethods, self).file_path(request, response, info)
+        return super().file_path(request, response, info)
+
+    def thumb_path(self, request, thumb_id, response=None, info=None):
+        self._mockcalled.append('thumb_path')
+        return super(MockedMediaPipelineDeprecatedMethods, self).thumb_path(request, thumb_id, response, info)
 
     def get_images(self, response, request, info):
         self._mockcalled.append('get_images')
-        return []
+        return super(MockedMediaPipelineDeprecatedMethods, self).get_images(response, request, info)
 
     def image_downloaded(self, response, request, info):
         self._mockcalled.append('image_downloaded')
-        return super(MockedMediaPipelineDeprecatedMethods, self).image_downloaded(response, request, info)
+        return super().image_downloaded(response, request, info)
 
 
 class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
     skip = skip_pillow
 
     def setUp(self):
-        self.pipe = MockedMediaPipelineDeprecatedMethods(store_uri='store-uri', download_func=_mocked_download_func)
+        settings_dict = {
+            'IMAGES_STORE': 'store-uri',
+            'IMAGES_THUMBS': {'small': (50, 50)},
+        }
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipe = MockedMediaPipelineDeprecatedMethods.from_crawler(crawler)
+        self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(None)
         self.item = dict(image_urls=['http://picsum.photos/id/1014/200/300'], images=[])
 
@@ -443,6 +460,16 @@ class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
             'please use file_path(self, request, response=None, info=None, *, item=None)'
         )
         self._assert_method_called_with_warnings('file_path', message, warnings)
+
+    @inlineCallbacks
+    def test_thumb_path_called(self):
+        yield self.pipe.process_item(self.item, None)
+        warnings = self.flushWarnings([MediaPipeline._compatible])
+        message = (
+            'thumb_path(self, request, thumb_id, response=None, info=None) is deprecated, '
+            'please use thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)'
+        )
+        self._assert_method_called_with_warnings('thumb_path', message, warnings)
 
     @inlineCallbacks
     def test_get_images_called(self):
