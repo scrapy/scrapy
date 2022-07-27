@@ -258,7 +258,7 @@ Extending Scrapy
     components.
 
 :doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality
+    Use it on extensions and middlewares to extend Scrapy functionality.
 
 
 All the rest
