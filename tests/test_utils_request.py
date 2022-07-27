@@ -52,7 +52,7 @@ class UtilsRequestTest(unittest.TestCase):
 class FingerprintTest(unittest.TestCase):
     maxDiff = None
 
-    function = staticmethod(fingerprint)
+    function: staticmethod = staticmethod(fingerprint)
     cache: Union[
         "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]",
         "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]",

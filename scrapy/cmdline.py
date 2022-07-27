@@ -14,6 +14,15 @@ from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
 
 
+class ScrapyArgumentParser(argparse.ArgumentParser):
+    def _parse_optional(self, arg_string):
+        # if starts with -: it means that is a parameter not a argument
+        if arg_string[:2] == '-:':
+            return None
+
+        return super()._parse_optional(arg_string)
+
+
 def _iter_command_classes(module_name):
     # TODO: add `name` attribute to commands and and merge this function with
     # scrapy.utils.spider.iter_spider_classes
@@ -131,10 +140,10 @@ def execute(argv=None, settings=None):
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
-                                     usage=f"scrapy {cmdname} {cmd.syntax()}",
-                                     conflict_handler='resolve',
-                                     description=cmd.long_desc())
+    parser = ScrapyArgumentParser(formatter_class=ScrapyHelpFormatter,
+                                  usage=f"scrapy {cmdname} {cmd.syntax()}",
+                                  conflict_handler='resolve',
+                                  description=cmd.long_desc())
     settings.setdict(cmd.default_settings, priority='command')
     cmd.settings = settings
     cmd.add_options(parser)
