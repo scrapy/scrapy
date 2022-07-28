@@ -28,24 +28,21 @@ class DepthMiddleware:
         return cls(maxdepth, crawler.stats, verbose, prio)
 
     def process_spider_output(self, response, result, spider):
-        # base case (depth=0)
-        if 'depth' not in response.meta:
-            response.meta['depth'] = 0
-            if self.verbose_stats:
-                self.stats.inc_value('request_depth_count/0', spider=spider)
-
+        self._init_depth(response, spider)
         return (r for r in result or () if self._filter(r, response, spider))
 
     async def process_spider_output_async(self, response, result, spider):
+        self._init_depth(response, spider)
+        async for r in result or ():
+            if self._filter(r, response, spider):
+                yield r
+
+    def _init_depth(self, response, spider):
         # base case (depth=0)
         if 'depth' not in response.meta:
             response.meta['depth'] = 0
             if self.verbose_stats:
                 self.stats.inc_value('request_depth_count/0', spider=spider)
-
-        async for r in result or ():
-            if self._filter(r, response, spider):
-                yield r
 
     def _filter(self, request, response, spider):
         if not isinstance(request, Request):
