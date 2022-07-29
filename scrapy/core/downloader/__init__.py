@@ -1,4 +1,3 @@
-import logging
 import random
 from time import time
 from datetime import datetime
@@ -12,8 +11,6 @@ from scrapy.resolver import dnscache
 from scrapy import signals
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import DownloadHandlers
-
-logger = logging.getLogger(__name__)
 
 
 class Slot:
