@@ -26,21 +26,27 @@ class OffsiteMiddleware:
         return o
 
     def process_spider_output(self, response, result, spider):
-        for x in result:
-            if isinstance(x, Request):
-                if x.dont_filter or self.should_follow(x, spider):
-                    yield x
-                else:
-                    domain = urlparse_cached(x).hostname
-                    if domain and domain not in self.domains_seen:
-                        self.domains_seen.add(domain)
-                        logger.debug(
-                            "Filtered offsite request to %(domain)r: %(request)s",
-                            {'domain': domain, 'request': x}, extra={'spider': spider})
-                        self.stats.inc_value('offsite/domains', spider=spider)
-                    self.stats.inc_value('offsite/filtered', spider=spider)
-            else:
-                yield x
+        return (r for r in result or () if self._filter(r, spider))
+
+    async def process_spider_output_async(self, response, result, spider):
+        async for r in result or ():
+            if self._filter(r, spider):
+                yield r
+
+    def _filter(self, request, spider) -> bool:
+        if not isinstance(request, Request):
+            return True
+        if request.dont_filter or self.should_follow(request, spider):
+            return True
+        domain = urlparse_cached(request).hostname
+        if domain and domain not in self.domains_seen:
+            self.domains_seen.add(domain)
+            logger.debug(
+                "Filtered offsite request to %(domain)r: %(request)s",
+                {'domain': domain, 'request': request}, extra={'spider': spider})
+            self.stats.inc_value('offsite/domains', spider=spider)
+        self.stats.inc_value('offsite/filtered', spider=spider)
+        return False
 
     def should_follow(self, request, spider):
         regex = self.host_regex

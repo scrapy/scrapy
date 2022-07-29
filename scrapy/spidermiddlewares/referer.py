@@ -333,13 +333,18 @@ class RefererMiddleware:
         return cls() if cls else self.default_policy()
 
     def process_spider_output(self, response, result, spider):
-        def _set_referer(r):
-            if isinstance(r, Request):
-                referrer = self.policy(response, r).referrer(response.url, r.url)
-                if referrer is not None:
-                    r.headers.setdefault('Referer', referrer)
-            return r
-        return (_set_referer(r) for r in result or ())
+        return (self._set_referer(r, response) for r in result or ())
+
+    async def process_spider_output_async(self, response, result, spider):
+        async for r in result or ():
+            yield self._set_referer(r, response)
+
+    def _set_referer(self, r, response):
+        if isinstance(r, Request):
+            referrer = self.policy(response, r).referrer(response.url, r.url)
+            if referrer is not None:
+                r.headers.setdefault('Referer', referrer)
+        return r
 
     def request_scheduled(self, request, spider):
         # check redirected request to patch "Referer" header if necessary
