@@ -267,7 +267,7 @@ class ExecutionEngine:
                 logger.warning("The spider '%s' does not match the open spider", spider.name)
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request, spider).addBoth(self._downloaded, request, spider)  # type: ignore
+        return self._download(request, spider).addBoth(self._downloaded, request, spider)
 
     def _downloaded(
         self, result: Union[Response, Request], request: Request, spider: Spider
@@ -276,10 +276,13 @@ class ExecutionEngine:
         self.slot.remove_request(request)
         return self.download(result, spider) if isinstance(result, Request) else result
 
-    def _download(self, request: Request, spider: Spider) -> Deferred:
+    def _download(self, request: Request, spider: Optional[Spider]) -> Deferred:
         assert self.slot is not None  # typing
 
         self.slot.add_request(request)
+
+        if spider is None:
+            spider = self.spider
 
         def _on_success(result: Union[Response, Request]) -> Union[Response, Request]:
             if not isinstance(result, (Response, Request)):
