@@ -267,7 +267,7 @@ class ExecutionEngine:
                 logger.warning("The spider '%s' does not match the open spider", spider.name)
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request, spider).addBoth(self._downloaded, request, spider)
+        return self._download(request, spider).addBoth(self._downloaded, request, spider)  # type: ignore
 
     def _downloaded(
         self, result: Union[Response, Request], request: Request, spider: Spider
