@@ -86,7 +86,9 @@ class IFeedStorage(Interface):
 
     def __init__(uri, *, feed_options=None):
         """Initialize the storage with the parameters given in the URI and the
-        feed-specific options (see :setting:`FEEDS`)"""
+        feed-specific options (see :setting:`FEEDS`).
+        CAREFUL: in `feed_options` the default `overwrite=True` will cause you to 
+        lose the previous version of your data"""
 
     def open(spider):
         """Open the storage for the given spider. It must return a file-like
