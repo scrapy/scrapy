@@ -172,7 +172,7 @@ class S3FeedStorage(BlockingFeedStorage):
             aws_secret_access_key=self.secret_key,
             aws_session_token=self.session_token,
             endpoint_url=self.endpoint_url)
-        if feed_options and feed_options.get('overwrite', True) is False:
+        if feed_options is not None and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
                            'suppress this warning, remove the overwrite '
                            'option from your FEEDS setting or set it to True.')
@@ -201,12 +201,16 @@ class S3FeedStorage(BlockingFeedStorage):
 
 class GCSFeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, project_id, acl):
+    def __init__(self, uri, project_id, acl, feed_options=None):
         self.project_id = project_id
         self.acl = acl
         u = urlparse(uri)
         self.bucket_name = u.hostname
         self.blob_name = u.path[1:]  # remove first "/"
+        if feed_options is not None and feed_options.get('overwrite', True) is False:
+            logger.warning('Google Cloud Storage does not support appending to files. To '
+                           'suppress this warning, remove the overwrite '
+                           'option from your FEEDS setting or set it to True.')
 
     @classmethod
     def from_crawler(cls, crawler, uri):
