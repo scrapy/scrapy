@@ -204,5 +204,4 @@ class Downloader:
         mintime = time() - age
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
-                inactive_slot = self.slots.pop(key)
-                inactive_slot.close()
+                self.slots.pop(key).close()
