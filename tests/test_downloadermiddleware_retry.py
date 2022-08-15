@@ -119,6 +119,27 @@ class RetryTest(unittest.TestCase):
         req = self.mw.process_exception(req, exception, self.spider)
         self.assertEqual(req, None)
 
+    def test_separate_requests_fail(self):
+        # we send a request and it doesn't pass
+        req1 = Request('http://www.example.com', meta={"important_data": "data_to_pass"})
+        rsp1 = Response('http://www.example.com', body=b'', status=503, request=req1)
+        # we retry it
+        req1 = self.mw.process_response(req1, rsp1, self.spider)
+        assert isinstance(req1, Request)
+
+        # it passes
+        rsp1 = Response('http://www.example.com', body=b'', status=200, request=req1)
+        rsp1 = self.mw.process_response(req1, rsp1, self.spider)
+        assert isinstance(rsp1, Response)
+
+        # we send a new request that carries data from first request meta
+        req2 = Request('http://www.example.com?p=2', meta=rsp1.meta)
+        rsp2 = Response('http://www.example.com?p=2', body=b'', status=503, request=req2)
+        req2 = self.mw.process_response(req2, rsp2, self.spider)
+        assert isinstance(req2, Request)
+
+        self.assertEqual(req2.meta['retry_times'], 1)
+
 
 class MaxRetryTimesTest(unittest.TestCase):
 
