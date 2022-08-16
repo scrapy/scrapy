@@ -9,6 +9,7 @@ from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
+from functools import partial
 
 from w3lib.html import replace_entities
 
@@ -226,7 +227,11 @@ def is_generator_with_return_value(callable):
         return value is None or isinstance(value, ast.NameConstant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
-        code = re.sub(r"^[\t ]+", "", inspect.getsource(callable))
+        func = callable
+        while isinstance(func, partial):
+            func = func.func
+
+        code = re.sub(r"^[\t ]+", "", inspect.getsource(func))
         tree = ast.parse(code)
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
