@@ -181,9 +181,10 @@ scrapy.Spider
        scraped data and/or more URLs to follow. Other Requests callbacks have
        the same requirements as the :class:`Spider` class.
 
-       This method, as well as any other Request callback, must return an
-       iterable of :class:`~scrapy.Request` and/or :ref:`item objects
-       <topics-items>`.
+       This method, as well as any other Request callback, must return a
+       :class:`~scrapy.Request` object, an :ref:`item object <topics-items>`, an
+       iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects
+       <topics-items>`, or ``None``.
 
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
