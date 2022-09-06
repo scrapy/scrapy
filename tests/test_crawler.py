@@ -23,6 +23,8 @@ from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
+from pkg_resources import parse_version
+from w3lib import __version__ as w3lib_version
 
 from tests.mockserver import MockServer
 
@@ -381,10 +383,13 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
-        self.assertIn(
-            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
-            log)
+        if parse_version(w3lib_version) < parse_version("2.0.0"):
+            self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
+            self.assertIn(
+                "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
+                log)
+        else:
+            self.assertIn("ValueError: invalid hostname:", log)
 
     def test_caching_hostname_resolver_ipv6(self):
         log = self.run_script("caching_hostname_resolver_ipv6.py")

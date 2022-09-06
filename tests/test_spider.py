@@ -22,6 +22,8 @@ from scrapy.spiders import (
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
+from pkg_resources import parse_version
+from w3lib import __version__ as w3lib_version
 
 
 class SpiderTest(unittest.TestCase):
@@ -360,10 +362,12 @@ class CrawlSpiderTest(SpiderTest):
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
-        self.assertEqual([r.url for r in output],
-                         ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
-                          'http://EXAMPLE.ORG/ABOUT.HTML',
-                          'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
+        urls = ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
+                'http://EXAMPLE.ORG/ABOUT.HTML',
+                'http://EXAMPLE.ORG/NOFOLLOW.HTML']
+        if parse_version(w3lib_version) >= parse_version('2.0.0'):
+            urls = list(map(lambda u: u.replace("EXAMPLE.ORG", "example.org"), urls))
+        self.assertEqual([r.url for r in output], urls)
 
     def test_process_request_instance_method_with_response(self):
 
