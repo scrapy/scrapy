@@ -380,16 +380,15 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn('Spider closed (finished)', log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    @mark.skipif(parse_version(w3lib_version) >= parse_version("2.0.0"),
+                 reason='w3lib 2.0.0 and later do not allow invalid domains.')
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)
-        if parse_version(w3lib_version) < parse_version("2.0.0"):
-            self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
-            self.assertIn(
-                "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
-                log)
-        else:
-            self.assertIn("ValueError: invalid hostname:", log)
+        self.assertIn("'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,", log)
+        self.assertIn(
+            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1.",
+            log)
 
     def test_caching_hostname_resolver_ipv6(self):
         log = self.run_script("caching_hostname_resolver_ipv6.py")
