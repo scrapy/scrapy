@@ -43,6 +43,7 @@ def get_retry_request(
     max_retry_times: Optional[int] = None,
     priority_adjust: Optional[int] = None,
     logger: Logger = retry_logger,
+    logger_give_up_level: int = 40,
     stats_base_key: str = 'retry',
 ):
     """
@@ -82,6 +83,9 @@ def get_retry_request(
 
     *logger* is the logging.Logger object to be used when logging messages
 
+    *logger_give_up_level* is the level that should be used for give up logs.
+    40 is the default level for ERROR logs.
+
     *stats_base_key* is a string to be used as the base key for the
     retry-related job stats
     """
@@ -115,7 +119,8 @@ def get_retry_request(
         return new_request
     else:
         stats.inc_value(f'{stats_base_key}/max_reached')
-        logger.error(
+        logger.log(
+            logger_give_up_level,
             "Gave up retrying %(request)s (failed %(retry_times)d times): "
             "%(reason)s",
             {'request': request, 'retry_times': retry_times, 'reason': reason},
