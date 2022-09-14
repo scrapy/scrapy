@@ -400,6 +400,9 @@ class TestHttpProxyMiddleware(TestCase):
         self.assertNotIn(b'Proxy-Authorization', request.headers)
 
     def test_proxy_authentication_header_proxy_without_credentials(self):
+        """As long as the proxy URL in request metadata remains the same, the
+        Proxy-Authorization header is used and kept, and may even be
+        changed."""
         middleware = HttpProxyMiddleware()
         request = Request(
             'https://example.com',
@@ -408,7 +411,16 @@ class TestHttpProxyMiddleware(TestCase):
         )
         assert middleware.process_request(request, spider) is None
         self.assertEqual(request.meta['proxy'], 'https://example.com')
-        self.assertNotIn(b'Proxy-Authorization', request.headers)
+        self.assertEqual(request.headers['Proxy-Authorization'], b'Basic foo')
+
+        assert middleware.process_request(request, spider) is None
+        self.assertEqual(request.meta['proxy'], 'https://example.com')
+        self.assertEqual(request.headers['Proxy-Authorization'], b'Basic foo')
+
+        request.headers['Proxy-Authorization'] = b'Basic bar'
+        assert middleware.process_request(request, spider) is None
+        self.assertEqual(request.meta['proxy'], 'https://example.com')
+        self.assertEqual(request.headers['Proxy-Authorization'], b'Basic bar')
 
     def test_proxy_authentication_header_proxy_with_same_credentials(self):
         middleware = HttpProxyMiddleware()
