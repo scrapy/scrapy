@@ -28,6 +28,11 @@ The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
 Python :ref:`import search path <tut-searchpath>`.
 
+.. note::
+    Configuring settings of python types that are not compatible with the
+    `pickle <https://github.com/python/cpython/blob/3.10/Lib/pickle.py>`_
+    module will cause Scrapy to fail.
+
 .. _populating-settings:
 
 Populating the settings
