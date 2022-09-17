@@ -52,10 +52,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Run dist-upgrade
+      run: |
+        sudo apt-get update
+        sudo apt-get -y dist-upgrade
+
     - name: Install system libraries
       if: matrix.python-version == 'pypy3' || contains(matrix.env.TOXENV, 'pinned') || matrix.python-version == '3.10.0-beta.4'
       run: |
-        sudo apt-get update
         # libxml2 2.9.12 from ondrej/php PPA breaks lxml so we pin it to the bionic-updates repo version
         sudo apt-get install libxml2-dev/bionic-updates libxslt-dev
 
