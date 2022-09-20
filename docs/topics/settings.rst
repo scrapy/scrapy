@@ -99,12 +99,9 @@ The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
 Compatability with pickle
-========================
+=========================
 
-Configuring settings to python types that are not compatible with the
-:mod:`pickle` module will cause Scrapy to fail. See the
-:ref:`Python pickle documentation <pickle-picklable>` for more information
-on what types of objects can be pickled.
+Setting values must be :ref:`picklable <pickle-picklable>`.
 
 Import paths and classes
 ========================
