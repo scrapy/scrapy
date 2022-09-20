@@ -98,7 +98,7 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
-Compatability with pickle
+Compatibility with pickle
 =========================
 
 Setting values must be :ref:`picklable <pickle-picklable>`.
