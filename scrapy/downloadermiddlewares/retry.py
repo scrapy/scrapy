@@ -144,6 +144,7 @@ class RetryMiddleware:
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
+        self.logger_give_up_level = settings.getint('RETRY_LOG_GIVE_UP_LEVEL')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -167,10 +168,12 @@ class RetryMiddleware:
     def _retry(self, request, reason, spider):
         max_retry_times = request.meta.get('max_retry_times', self.max_retry_times)
         priority_adjust = request.meta.get('priority_adjust', self.priority_adjust)
+        logger_give_up_level = request.meta.get('logger_give_up_level', self.logger_give_up_level)
         return get_retry_request(
             request,
             reason=reason,
             spider=spider,
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
+            logger_give_up_level=logger_give_up_level,
         )

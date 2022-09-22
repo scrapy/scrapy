@@ -254,6 +254,7 @@ RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429]
 RETRY_PRIORITY_ADJUST = -1
+RETRY_LOG_GIVE_UP_LEVEL = 40
 
 ROBOTSTXT_OBEY = False
 ROBOTSTXT_PARSER = 'scrapy.robotstxt.ProtegoRobotParser'
