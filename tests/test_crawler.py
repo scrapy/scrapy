@@ -327,7 +327,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_reactor_default_twisted_reactor_select(self):
         log = self.run_script('reactor_default_twisted_reactor_select.py')
-        if platform.system() == 'Windows':
+        if platform.system() in ['Windows', 'Darwin']:
             # The goal of this test function is to test that, when a reactor is
             # installed (the default one here) and a different reactor is
             # configured (select here), an error raises.
