@@ -19,14 +19,14 @@ def has_environment_marker_platform_impl_support():
 
 
 install_requires = [
-    'Twisted>=17.9.0',
-    'cryptography>=2.0',
+    'Twisted>=18.9.0',
+    'cryptography>=3.3',
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
-    'pyOpenSSL>=16.2.0',
+    'pyOpenSSL>=21.0.0',
     'queuelib>=1.4.2',
-    'service_identity>=16.0.0',
+    'service_identity>=18.1.0',
     'w3lib>=1.17.0',
     'zope.interface>=4.1.3',
     'protego>=0.1.15',
