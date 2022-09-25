@@ -564,7 +564,6 @@ This setting must be one of these string values:
   set this if you want the behavior of Scrapy<1.1
 - ``'TLSv1.1'``: forces TLS version 1.1
 - ``'TLSv1.2'``: forces TLS version 1.2
-- ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
