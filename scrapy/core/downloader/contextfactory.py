@@ -21,7 +21,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     which allows TLS protocol negotiation
 
     'A TLS/SSL connection established with [this method] may
-     understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols.'
+     understand the TLSv1, TLSv1.1 and TLSv1.2 protocols.'
     """
 
     def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
