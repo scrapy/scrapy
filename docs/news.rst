@@ -8,7 +8,8 @@ Release notes
 Scrapy 2.6.3 (to be determined)
 -------------------------------
 
-Support pyOpenSSL_ 22.1.0 (:issue:`5634`, :issue:`5635`, :issue:`5636`).
+Support pyOpenSSL_ 22.1.0, removing support for SSLv3 (:issue:`5634`,
+:issue:`5635`, :issue:`5636`).
 
 
 .. _release-2.6.2:
