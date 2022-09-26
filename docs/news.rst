@@ -21,9 +21,11 @@ Scrapy 2.6.3 (to be determined)
 
     -   Twisted_: 17.9.0 → 18.9.0
 
-    -   zope.interface_: 4.1.3 → 4.4.2
+    -   zope.interface_: 4.1.3 → 5.0.0
 
     (:issue:`5621`, :issue:`5632`)
+
+-   Fixed the documentation build (:issue:`5631`).
 
 
 .. _release-2.6.2:
