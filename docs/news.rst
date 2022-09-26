@@ -8,8 +8,18 @@ Release notes
 Scrapy 2.6.3 (to be determined)
 -------------------------------
 
-Support pyOpenSSL_ 22.1.0, removing support for SSLv3 (:issue:`5634`,
-:issue:`5635`, :issue:`5636`).
+-   Added support for pyOpenSSL_ 22.1.0, removing support for SSLv3
+    (:issue:`5634`, :issue:`5635`, :issue:`5636`).
+
+-   Upgraded the minimum versions of the following dependencies:
+
+    -   cryptography_: 2.0 → 3.3
+
+    -   pyOpenSSL_: 16.2.0 → 21.0.0
+
+    -   service_identity_: 16.0.0 → 18.1.0
+
+    -   Twisted_: 17.9.0 → 18.9.0
 
 
 .. _release-2.6.2:
