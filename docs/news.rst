@@ -25,7 +25,8 @@ Scrapy 2.6.3 (to be determined)
 
     (:issue:`5621`, :issue:`5632`)
 
--   Fixed the documentation build (:issue:`5631`).
+-   Fixes test and documentation issues (:issue:`5612`, :issue:`5617`,
+    :issue:`5631`).
 
 
 .. _release-2.6.2:
