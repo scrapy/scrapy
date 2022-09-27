@@ -3,6 +3,32 @@
 Release notes
 =============
 
+.. _release-2.6.3:
+
+Scrapy 2.6.3 (2022-09-27)
+-------------------------
+
+-   Added support for pyOpenSSL_ 22.1.0, removing support for SSLv3
+    (:issue:`5634`, :issue:`5635`, :issue:`5636`).
+
+-   Upgraded the minimum versions of the following dependencies:
+
+    -   cryptography_: 2.0 → 3.3
+
+    -   pyOpenSSL_: 16.2.0 → 21.0.0
+
+    -   service_identity_: 16.0.0 → 18.1.0
+
+    -   Twisted_: 17.9.0 → 18.9.0
+
+    -   zope.interface_: 4.1.3 → 5.0.0
+
+    (:issue:`5621`, :issue:`5632`)
+
+-   Fixes test and documentation issues (:issue:`5612`, :issue:`5617`,
+    :issue:`5631`).
+
+
 .. _release-2.6.2:
 
 Scrapy 2.6.2 (2022-07-25)
