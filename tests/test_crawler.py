@@ -21,6 +21,8 @@ from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
+from pkg_resources import parse_version
+from w3lib import __version__ as w3lib_version
 
 from tests.mockserver import MockServer
 
@@ -316,7 +318,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_reactor_default_twisted_reactor_select(self):
         log = self.run_script('reactor_default_twisted_reactor_select.py')
-        if platform.system() == 'Windows':
+        if platform.system() in ['Windows', 'Darwin']:
             # The goal of this test function is to test that, when a reactor is
             # installed (the default one here) and a different reactor is
             # configured (select here), an error raises.
@@ -369,6 +371,8 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn('Spider closed (finished)', log)
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
+    @mark.skipif(parse_version(w3lib_version) >= parse_version("2.0.0"),
+                 reason='w3lib 2.0.0 and later do not allow invalid domains.')
     def test_ipv6_default_name_resolver(self):
         log = self.run_script('default_name_resolver.py')
         self.assertIn('Spider closed (finished)', log)

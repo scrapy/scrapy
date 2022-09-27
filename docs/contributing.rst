@@ -214,7 +214,7 @@ Tests
 =====
 
 Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:core/development/policy/test-standard>`. Running tests requires
+<twisted:development/test-standard>`. Running tests requires
 :doc:`tox <tox:index>`.
 
 .. _running-tests:
