@@ -13,7 +13,9 @@ from scrapy.utils.defer import deferred_f_from_coro_f, aiter_errback
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
     WeakKeyCache, get_func_args, to_bytes, to_unicode,
-    without_none_values, MutableChain, MutableAsyncChain)
+    without_none_values, MutableChain, MutableAsyncChain,
+    strtobool
+)
 
 
 __doctests__ = ['scrapy.utils.python']
@@ -285,6 +287,14 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(
             without_none_values({'one': 1, 'none': None, 'three': 3, 'four': 4}),
             {'one': 1, 'three': 3, 'four': 4})
+
+    def test_strtobool(self):
+        for yes in ('y', 'yes', 't', 'true', 'on', '1'):
+            self.assertTrue(strtobool(yes))
+        for no in ('n', 'no', 'f', 'false', 'off', '0'):
+            self.assertFalse(strtobool(no))
+        for no_valid in ('nope', 'yepe', 'foo', 'bar'):
+            self.assertRaises(ValueError, strtobool, no_valid)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
+from scrapy.utils.python import strtobool
 
 
 class Spider(object_ref):
@@ -45,9 +46,50 @@ class Spider(object_ref):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
+        annotations = {
+            **cls.get_class_attributes_annotations(),
+            **cls.get_init_parameters_annotations()
+        }
+        kwargs = cls.cast_typed_parameters(annotations, kwargs)
         spider = cls(*args, **kwargs)
         spider._set_crawler(crawler)
         return spider
+
+    @classmethod
+    def get_class_attributes_annotations(cls):
+        """ Get a dict with the name and type of annotated class attributes
+        for the whole spider hierarchy
+        """
+        return cls.get_annotations(lambda x: x.__annotations__)
+
+    @classmethod
+    def get_init_parameters_annotations(cls):
+        """ Get a dict with the name and type of annotated param from __init__
+        for the whole spider hierarchy
+        """
+        return cls.get_annotations(lambda x: x.__init__.__annotations__)
+
+    @classmethod
+    def get_annotations(cls, func):
+        annotations = {}
+        for _class in cls.mro():
+            try:
+                annotations.update(**func(_class))
+            except AttributeError:
+                continue
+        return annotations
+
+    @staticmethod
+    def cast_typed_parameters(typed_parameters, kwargs):
+        for parameter, parameter_class in typed_parameters.items():
+            if parameter not in kwargs:
+                continue
+            elif parameter_class in (int, float, str):
+                kwargs[parameter] = parameter_class(kwargs[parameter])
+            elif parameter_class == bool:
+                kwargs[parameter] = strtobool(kwargs[parameter])
+            # TODO: Array Class and Dict-like
+        return kwargs
 
     def _set_crawler(self, crawler):
         self.crawler = crawler

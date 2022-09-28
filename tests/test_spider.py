@@ -113,6 +113,100 @@ class SpiderTest(unittest.TestCase):
             spider.log('test log msg', 'INFO')
         mock_logger.log.assert_called_once_with('INFO', 'test log msg')
 
+    def test_get_class_attributes_annotations(self):
+
+        class ParentTypedSpider(Spider):
+            param_int: int
+
+        class TypedSpider(ParentTypedSpider):
+            param_float: float
+
+        annotations = ParentTypedSpider.get_class_attributes_annotations()
+        self.assertEqual(annotations['param_int'], int)
+        annotations = TypedSpider.get_class_attributes_annotations()
+        self.assertEqual(annotations['param_float'], float)
+
+    def test_get_init_parameters_annotations(self):
+
+        class ParentTypedSpider(Spider):
+
+            def __init__(self, param_bool: bool, **kwargs):
+                super().__init__(param_bool=param_bool, **kwargs)
+
+        class TypedSpider(ParentTypedSpider):
+
+            def __init__(self, param_str: str, **kwargs):
+                super().__init__(param_str=param_str, param_bool=False, **kwargs)
+
+        annotations = ParentTypedSpider.get_init_parameters_annotations()
+        self.assertEqual(annotations['param_bool'], bool)
+
+        annotations = TypedSpider.get_init_parameters_annotations()
+        self.assertEqual(annotations['param_str'], str)
+        self.assertEqual(annotations['param_bool'], bool)
+
+    def test_cast_typed_parameters(self):
+
+        kwargs = {
+            'param_int': '1',
+            'param_bool': 'no',
+            'param_float': '0.5',
+            'param_str': 'foo',
+            'param_dict': '{}',
+            'param_list': '[]',
+        }
+
+        annotations = {'param_int': int}
+        self.spider_class.cast_typed_parameters(annotations, kwargs)
+        self.assertEqual(kwargs['param_int'], 1)
+        self.assertEqual(kwargs['param_float'], '0.5')
+
+        annotations = {'param_int': int, 'param_float': float}
+        self.spider_class.cast_typed_parameters(annotations, kwargs)
+        self.assertEqual(kwargs['param_int'], 1)
+        self.assertEqual(kwargs['param_float'], 0.5)
+
+        annotations = {'param_float': int}
+        self.spider_class.cast_typed_parameters(annotations, kwargs)
+        self.assertEqual(kwargs['param_float'], 0)
+
+        annotations = {
+            'param_int': int,
+            'param_float': float,
+            'param_bool': bool,
+            'param_str': str,
+            'param_dict': dict,
+            'param_list': list,
+        }
+        self.spider_class.cast_typed_parameters(annotations, kwargs)
+        self.assertEqual(kwargs['param_bool'], False)
+        self.assertEqual(kwargs['param_str'], 'foo')
+        self.assertEqual(kwargs['param_dict'], '{}')
+        self.assertEqual(kwargs['param_list'], '[]')
+
+    def test_from_crawler_with_typed_params(self):
+        crawler = get_crawler()
+
+        class ParentAttributedTypedSpider(Spider):
+            param_int: int = 5
+
+        class ASpider(ParentAttributedTypedSpider):
+            param_bool: bool = True
+
+        spider = ASpider.from_crawler(crawler, param_int='10', param_bool='false', name='foo')
+        self.assertEqual(spider.param_int, 10)
+        self.assertEqual(spider.param_bool, False)
+
+        class InitTypedSpider(Spider):
+
+            def __init__(self, param_int: int, **kwargs):
+                super().__init__(**kwargs)
+                self.param_int = param_int
+
+        spider = InitTypedSpider.from_crawler(crawler, param_int='10', param_bool='false', name='foo')
+        self.assertEqual(spider.param_int, 10)
+        self.assertEqual(spider.param_bool, 'false')
+
 
 class InitSpiderTest(SpiderTest):
 
