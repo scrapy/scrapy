@@ -4,19 +4,12 @@ Scrapy
 ======
 
 [![PyPI Version](https://img.shields.io/pypi/v/Scrapy.svg)](https://pypi.python.org/pypi/Scrapy)
-
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/Scrapy.svg)](https://pypi.python.org/pypi/Scrapy)
-
 [![Ubuntu](https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg)](https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu)
-
 [![macOS](https://github.com/scrapy/scrapy/workflows/macOS/badge.svg)](https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS)
-
 [![Windows](https://github.com/scrapy/scrapy/workflows/Windows/badge.svg)](https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows)
-
 [![Wheel Status](https://img.shields.io/badge/wheel-yes-brightgreen.svg)](https://pypi.python.org/pypi/Scrapy)
-
 [![Coverage report](https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg)](https://codecov.io/github/scrapy/scrapy?branch=master)
-
 [![Conda Version](https://anaconda.org/conda-forge/scrapy/badges/version.svg)](https://anaconda.org/conda-forge/scrapy)
 
 Overview
