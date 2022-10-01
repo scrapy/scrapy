@@ -64,7 +64,9 @@ Requirements
 Install
 =======
 
-The quick way::
+The quick way:
+
+.. code:: bash
 
     pip install scrapy
 
