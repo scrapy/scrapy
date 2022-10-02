@@ -25,6 +25,9 @@ jobs:
         - python-version: "3.10"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs
+        - python-version: "3.10"
+          env:
+            TOXENV: twinecheck
 
     steps:
     - uses: actions/checkout@v2
@@ -39,8 +42,3 @@ jobs:
       run: |
         pip install -U tox
         tox
-    - name: Twine check
-      run: |
-        pip install twine
-        python setup.py sdist
-        twine check dist/*
