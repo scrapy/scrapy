@@ -6,7 +6,7 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
-from typing import Sequence
+from typing import Awaitable, Sequence
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
@@ -109,9 +109,11 @@ class CrawlSpider(Spider):
         rule = self._rules[failure.request.meta['rule']]
         return self._handle_failure(failure, rule.errback)
 
-    def _parse_response(self, response, callback, cb_kwargs, follow=True):
+    async def _parse_response(self, response, callback, cb_kwargs, follow=True):
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
+            if isinstance(cb_res, Awaitable):
+                cb_res = await cb_res
             cb_res = self.process_results(response, cb_res)
             for request_or_item in iterate_spider_output(cb_res):
                 yield request_or_item
