@@ -6,11 +6,12 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
-from typing import Awaitable, Sequence
+from typing import AsyncIterable, Awaitable, Sequence
 
-from scrapy.http import Request, HtmlResponse
+from scrapy.http import Request, Response, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -78,7 +79,7 @@ class CrawlSpider(Spider):
     def parse_start_url(self, response, **kwargs):
         return []
 
-    def process_results(self, response, results):
+    def process_results(self, response: Response, results: list):
         return results
 
     def _build_request(self, rule_index, link):
@@ -112,7 +113,9 @@ class CrawlSpider(Spider):
     async def _parse_response(self, response, callback, cb_kwargs, follow=True):
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
-            if isinstance(cb_res, Awaitable):
+            if isinstance(cb_res, AsyncIterable):
+                cb_res = await collect_asyncgen(cb_res)
+            elif isinstance(cb_res, Awaitable):
                 cb_res = await cb_res
             cb_res = self.process_results(response, cb_res)
             for request_or_item in iterate_spider_output(cb_res):

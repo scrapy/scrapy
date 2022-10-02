@@ -38,6 +38,7 @@ from tests.spiders import (
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
+    CrawlSpiderWithAsyncGeneratorCallback,
     CrawlSpiderWithErrback,
     CrawlSpiderWithParseMethod,
     DelaySpider,
@@ -401,6 +402,16 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn("[parse_async] status 200 (foo: None)", str(log))
         self.assertIn("[parse_async] status 201 (foo: None)", str(log))
         self.assertIn("[parse_async] status 202 (foo: bar)", str(log))
+
+    @defer.inlineCallbacks
+    def test_crawlspider_with_async_generator_callback(self):
+        crawler = get_crawler(CrawlSpiderWithAsyncGeneratorCallback)
+        with LogCapture() as log:
+            yield crawler.crawl(mockserver=self.mockserver)
+
+        self.assertIn("[parse_async_gen] status 200 (foo: None)", str(log))
+        self.assertIn("[parse_async_gen] status 201 (foo: None)", str(log))
+        self.assertIn("[parse_async_gen] status 202 (foo: bar)", str(log))
 
     @defer.inlineCallbacks
     def test_crawlspider_with_errback(self):

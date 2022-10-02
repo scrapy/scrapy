@@ -381,6 +381,18 @@ class CrawlSpiderWithAsyncCallback(CrawlSpiderWithParseMethod):
         return Request(self.mockserver.url("/status?n=202"), self.parse_async, cb_kwargs={"foo": "bar"})
 
 
+class CrawlSpiderWithAsyncGeneratorCallback(CrawlSpiderWithParseMethod):
+    """A CrawlSpider with an async generator callback"""
+    name = 'crawl_spider_with_async_generator_callback'
+    rules = (
+        Rule(LinkExtractor(), callback='parse_async_gen', follow=True),
+    )
+
+    async def parse_async_gen(self, response, foo=None):
+        self.logger.info('[parse_async_gen] status %i (foo: %s)', response.status, foo)
+        yield Request(self.mockserver.url("/status?n=202"), self.parse_async_gen, cb_kwargs={"foo": "bar"})
+
+
 class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
     name = 'crawl_spider_with_errback'
     rules = (
