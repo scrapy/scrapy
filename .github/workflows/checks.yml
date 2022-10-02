@@ -39,3 +39,8 @@ jobs:
       run: |
         pip install -U tox
         tox
+    - name: Twine check
+      run: |
+        pip install twine
+        python setup.py sdist
+        twine check dist/*
