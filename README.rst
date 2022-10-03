@@ -74,7 +74,7 @@ https://docs.scrapy.org/en/latest/intro/install.html for more details.
 Documentation
 =============
 
-Documentation is available online at https://docs.scrapy.org/ and in the `docs <./docs>`_ directory.
+Documentation is available online at https://docs.scrapy.org/ and in the `docs <https://github.com/scrapy/scrapy/blob/master/docs>`_ directory.
 
 Releases
 ========
@@ -94,7 +94,7 @@ See https://docs.scrapy.org/en/master/contributing.html for details.
 Code of Conduct
 ---------------
 
-Please note that this project is released with a Contributor `Code of Conduct <./CODE_OF_CONDUCT.md>`_.
+Please note that this project is released with a Contributor `Code of Conduct <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_.
 
 By participating in this project you agree to abide by its terms.
 Please report unacceptable behavior to opensource@zyte.com.
