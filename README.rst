@@ -74,7 +74,8 @@ https://docs.scrapy.org/en/latest/intro/install.html for more details.
 Documentation
 =============
 
-Documentation is available online at https://docs.scrapy.org/ and in the `docs <https://github.com/scrapy/scrapy/blob/master/docs>`_ directory.
+Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
+directory.
 
 Releases
 ========
