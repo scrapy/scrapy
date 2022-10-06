@@ -130,6 +130,8 @@ To install Scrapy on Windows using ``pip``:
 
 Now, you should be able to :ref:`install Scrapy <intro-install-scrapy>` using ``pip``.
 
+To install Scrapy on Windows with `WSL`_, follow the Unbuntu instructions.
+
 .. _intro-install-ubuntu:
 
 Ubuntu 14.04 or above
