@@ -159,7 +159,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
             raise UsageError(
                 f"-t/--output-format is a deprecated command line option"
                 f" and does not work in combination with -O/--overwrite-output."
-                f" To specifiy a format please specify it after a colon at the end of the"
+                f" To specify a format please specify it after a colon at the end of the"
                 f" output URI (i.e. -O <URI>:<FORMAT>)."
                 f" Example working in the tutorial: "
                 f"scrapy crawl quotes -O quotes.json:json"
@@ -172,7 +172,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
             check_valid_format(output_format)
             message = (
                 "The -t/--output-format command line option is deprecated in favor of "
-                "pecifying the output format within the output URI using the -o/--output or the"
+                "specifying the output format within the output URI using the -o/--output or the"
                 " -O/--overwrite-output option (i.e. -o/-O <URI>:<FORMAT>). See the documentation"
                 " of the -o or -O option or the following examples for more information. "
                 "Examples working in the tutorial: "
