@@ -5,7 +5,7 @@ sphinx:
   fail_on_warning: true
 
 build:
-  os: ubuntu-20.04
+  os: ubuntu-latest
   tools:
     # For available versions, see:
     # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-tools-python
