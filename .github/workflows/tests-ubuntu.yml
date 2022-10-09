@@ -60,8 +60,7 @@ jobs:
       if: matrix.python-version == 'pypy3.9' || contains(matrix.env.TOXENV, 'pinned') || matrix.python-version == '3.11.0-rc.2'
       run: |
         sudo apt-get update
-        # libxml2 2.9.12 from ondrej/php PPA breaks lxml so we pin it to the bionic-updates repo version
-        sudo apt-get install libxml2-dev/bionic-updates libxslt-dev
+        sudo apt-get install libxml2-dev libxslt-dev
 
     - name: Run tests
       env: ${{ matrix.env }}
