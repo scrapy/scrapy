@@ -705,7 +705,8 @@ class HtmlResponseTest(TextResponseTest):
 
     def test_html_encoding(self):
 
-        body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+        body = b"""<html><head><title>Some page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
         """
         r1 = self.response_class("http://www.example.com", body=body)
@@ -719,7 +720,8 @@ class HtmlResponseTest(TextResponseTest):
         self._assert_response_values(r2, 'iso-8859-1', body)
 
         # for conflicting declarations headers must take precedence
-        body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        body = b"""<html><head><title>Some page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         </head><body>Price: \xa3100</body></html>'
         """
         r3 = self.response_class("http://www.example.com", body=body,
