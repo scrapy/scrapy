@@ -4,6 +4,8 @@ max-line-length = 119
 ignore = W503
 
 exclude =
+    docs/conf.py
+
 # Exclude files that are meant to provide top-level imports
 # E402: Module level import not at top of file
 # F401: Module imported but unused
