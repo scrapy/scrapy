@@ -109,7 +109,7 @@ class FileTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        with open(self.tmpname + '^', 'w') as f:
+        with open(self.tmpname + '^', 'w', encoding="utf-8") as f:
             f.write('0123456789')
         handler = create_instance(FileDownloadHandler, None, get_crawler())
         self.download_request = handler.download_request
@@ -722,8 +722,7 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b'CONNECT':
             return request.uri
-        else:
-            return b''
+        return b''
 
 
 class HttpProxyTestCase(unittest.TestCase):

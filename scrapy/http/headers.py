@@ -37,12 +37,11 @@ class Headers(CaselessDict):
     def _tobytes(self, x):
         if isinstance(x, bytes):
             return x
-        elif isinstance(x, str):
+        if isinstance(x, str):
             return x.encode(self.encoding)
-        elif isinstance(x, int):
+        if isinstance(x, int):
             return str(x).encode(self.encoding)
-        else:
-            raise TypeError(f'Unsupported value type: {type(x)}')
+        raise TypeError(f'Unsupported value type: {type(x)}')
 
     def __getitem__(self, key):
         try:

@@ -380,7 +380,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
         scheme = urlparse(request).scheme
         if scheme == 'https':
             return b'https://python.org/'
-        elif scheme == 'http':
+        if scheme == 'http':
             return b'http://python.org/'
 
 

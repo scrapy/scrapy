@@ -138,8 +138,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
                            {'csvlnum': csv_r.line_num, 'csvrow': len(row),
                             'csvheader': len(headers)})
             continue
-        else:
-            yield dict(zip(headers, row))
+        yield dict(zip(headers, row))
 
 
 def _body_or_str(obj, unicode=True):
@@ -152,11 +151,9 @@ def _body_or_str(obj, unicode=True):
     if isinstance(obj, Response):
         if not unicode:
             return obj.body
-        elif isinstance(obj, TextResponse):
+        if isinstance(obj, TextResponse):
             return obj.text
-        else:
-            return obj.body.decode('utf-8')
-    elif isinstance(obj, str):
+        return obj.body.decode('utf-8')
+    if isinstance(obj, str):
         return obj if unicode else obj.encode('utf-8')
-    else:
-        return obj.decode('utf-8') if unicode else obj
+    return obj.decode('utf-8') if unicode else obj

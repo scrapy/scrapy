@@ -65,7 +65,7 @@ class OffsiteMiddleware:
         for domain in allowed_domains:
             if domain is None:
                 continue
-            elif url_pattern.match(domain):
+            if url_pattern.match(domain):
                 message = ("allowed_domains accepts only domains, not URLs. "
                            f"Ignoring URL entry {domain} in allowed_domains.")
                 warnings.warn(message, URLWarning)

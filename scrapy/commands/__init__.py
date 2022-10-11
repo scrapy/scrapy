@@ -93,7 +93,7 @@ class ScrapyCommand:
             self.settings.set('LOG_ENABLED', False, priority='cmdline')
 
         if opts.pidfile:
-            with open(opts.pidfile, "w") as f:
+            with open(opts.pidfile, "w", encoding="utf-8") as f:
                 f.write(str(os.getpid()) + os.linesep)
 
         if opts.pdb:

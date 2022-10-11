@@ -164,7 +164,7 @@ class RequestHeaders(LeafResource):
 
 
 def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
-    with open(key_file, 'r') as key, open(certificate_file, 'r') as certificate:
+    with open(key_file, 'r', encoding="utf-8") as key, open(certificate_file, 'r', encoding="utf-8") as certificate:
         pem = ''.join(key.readlines()) + ''.join(certificate.readlines())
 
     return PrivateCertificate.loadPEM(pem)

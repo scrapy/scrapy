@@ -102,7 +102,7 @@ class BaseResponseTest(unittest.TestCase):
         r1 = CustomResponse('http://www.example.com')
         r2 = r1.copy()
 
-        assert type(r2) is CustomResponse
+        assert isinstance(r2, CustomResponse)
 
     def test_replace(self):
         """Test Response.replace() method"""

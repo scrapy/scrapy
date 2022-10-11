@@ -8,12 +8,12 @@ class CheckCommandTest(CommandTest):
     command = 'check'
 
     def setUp(self):
-        super(CheckCommandTest, self).setUp()
+        super().setUp()
         self.spider_name = 'check_spider'
         self.spider = abspath(join(self.proj_mod_path, 'spiders', 'checkspider.py'))
 
     def _write_contract(self, contracts, parse_def):
-        with open(self.spider, 'w') as file:
+        with open(self.spider, 'w', encoding="utf-8") as file:
             file.write(f"""
 import scrapy
 

@@ -24,7 +24,7 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
         super().setUp()
         self.spider_name = 'parse_spider'
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
-        with open(fname, 'w') as f:
+        with open(fname, 'w', encoding="utf-8") as f:
             f.write(f"""
 import scrapy
 from scrapy.linkextractors import LinkExtractor
@@ -89,7 +89,7 @@ class MyBadCrawlSpider(CrawlSpider):
 """)
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
-        with open(fname, 'w') as f:
+        with open(fname, 'w', encoding="utf-8") as f:
             f.write("""
 import logging
 
@@ -102,7 +102,7 @@ class MyPipeline:
 """)
 
         fname = abspath(join(self.proj_mod_path, 'settings.py'))
-        with open(fname, 'a') as f:
+        with open(fname, 'a', encoding="utf-8") as f:
             f.write(f"""
 ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
 """)
@@ -246,7 +246,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertTrue(isfile(file_path))
 
         content = '[\n{},\n{"foo": "bar"}\n]'
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding="utf-8") as f:
             self.assertEqual(f.read(), content)
 
     def test_parse_add_options(self):

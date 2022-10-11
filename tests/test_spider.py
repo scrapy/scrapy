@@ -7,6 +7,7 @@ from unittest import mock
 from testfixtures import LogCapture
 from twisted.trial import unittest
 
+from w3lib.url import safe_url_string
 from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
@@ -22,7 +23,6 @@ from scrapy.spiders import (
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
-from w3lib.url import safe_url_string
 
 
 class SpiderTest(unittest.TestCase):

@@ -12,12 +12,11 @@ logger = logging.getLogger(__name__)
 def iterate_spider_output(result):
     if inspect.isasyncgen(result):
         return result
-    elif inspect.iscoroutine(result):
+    if inspect.iscoroutine(result):
         d = deferred_from_coro(result)
         d.addCallback(iterate_spider_output)
         return d
-    else:
-        return arg_to_iter(deferred_from_coro(result))
+    return arg_to_iter(deferred_from_coro(result))
 
 
 def iter_spider_classes(module):

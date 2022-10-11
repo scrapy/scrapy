@@ -129,7 +129,7 @@ class CookiesMiddleware:
         """
         if not request.cookies:
             return []
-        elif isinstance(request.cookies, dict):
+        if isinstance(request.cookies, dict):
             cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
         else:
             cookies = request.cookies

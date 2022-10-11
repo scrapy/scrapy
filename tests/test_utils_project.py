@@ -18,7 +18,7 @@ def inside_a_project():
 
     try:
         os.chdir(project_dir)
-        with open('scrapy.cfg', 'w') as f:
+        with open('scrapy.cfg', 'w', encoding="utf-8") as f:
             # create an empty scrapy.cfg
             f.close()
 

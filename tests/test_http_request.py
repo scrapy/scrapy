@@ -223,7 +223,7 @@ class RequestTest(unittest.TestCase):
         r1 = CustomRequest('http://www.example.com')
         r2 = r1.copy()
 
-        assert type(r2) is CustomRequest
+        assert isinstance(r2, CustomRequest)
 
     def test_replace(self):
         """Test Request.replace() method"""

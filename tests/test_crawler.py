@@ -11,6 +11,9 @@ from twisted.internet import defer
 from twisted.python.versions import Version
 from twisted.trial import unittest
 
+from pkg_resources import parse_version
+from w3lib import __version__ as w3lib_version
+
 import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -23,8 +26,6 @@ from scrapy.utils.test import get_crawler
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.extensions import telnet
 from scrapy.utils.test import get_testenv
-from pkg_resources import parse_version
-from w3lib import __version__ as w3lib_version
 
 from tests.mockserver import MockServer
 

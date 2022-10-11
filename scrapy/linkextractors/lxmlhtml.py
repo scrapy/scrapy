@@ -5,7 +5,7 @@ import operator
 from functools import partial
 from urllib.parse import urljoin
 
-import lxml.etree as etree
+from lxml import etree
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 

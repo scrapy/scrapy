@@ -55,7 +55,7 @@ class RFPDupeFilter(BaseDupeFilter):
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = open(os.path.join(path, 'requests.seen'), 'a+')
+            self.file = open(os.path.join(path, 'requests.seen'), 'a+', encoding="utf-8")
             self.file.seek(0)
             self.fingerprints.update(x.rstrip() for x in self.file)
 
