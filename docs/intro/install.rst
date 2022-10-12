@@ -10,7 +10,7 @@ Supported Python versions
 =========================
 
 Scrapy requires Python 3.7+, either the CPython implementation (default) or
-the PyPy 7.3.5+ implementation (see :ref:`python:implementations`).
+the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
 
@@ -219,7 +219,7 @@ After any of these workarounds you should be able to install Scrapy::
 PyPy
 ----
 
-We recommend using the latest PyPy version. The version tested is 5.9.0.
+We recommend using the latest PyPy version.
 For PyPy3, only Linux installation was tested.
 
 Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.
