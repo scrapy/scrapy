@@ -43,7 +43,7 @@ def get_retry_request(
     max_retry_times: Optional[int] = None,
     priority_adjust: Optional[int] = None,
     logger: Logger = retry_logger,
-    logger_give_up_level: int = 40,
+    give_up_log_level: int = 40,
     stats_base_key: str = 'retry',
 ):
     """
@@ -83,7 +83,7 @@ def get_retry_request(
 
     *logger* is the logging.Logger object to be used when logging messages
 
-    *logger_give_up_level* is the level that should be used for give up logs.
+    *give_up_log_level* is the level that should be used for give up logs.
     40 is the default level for ERROR logs.
 
     *stats_base_key* is a string to be used as the base key for the
@@ -120,7 +120,7 @@ def get_retry_request(
     else:
         stats.inc_value(f'{stats_base_key}/max_reached')
         logger.log(
-            logger_give_up_level,
+            give_up_log_level,
             "Gave up retrying %(request)s (failed %(retry_times)d times): "
             "%(reason)s",
             {'request': request, 'retry_times': retry_times, 'reason': reason},
@@ -144,7 +144,7 @@ class RetryMiddleware:
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
-        self.logger_give_up_level = settings.getint('RETRY_LOG_GIVE_UP_LEVEL')
+        self.give_up_log_level = settings.getint('RETRY_GIVE_UP_LOG_LEVEL')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -168,12 +168,12 @@ class RetryMiddleware:
     def _retry(self, request, reason, spider):
         max_retry_times = request.meta.get('max_retry_times', self.max_retry_times)
         priority_adjust = request.meta.get('priority_adjust', self.priority_adjust)
-        logger_give_up_level = request.meta.get('logger_give_up_level', self.logger_give_up_level)
+        give_up_log_level = request.meta.get('logger_give_up_level', self.give_up_log_level)
         return get_retry_request(
             request,
             reason=reason,
             spider=spider,
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
-            logger_give_up_level=logger_give_up_level,
+            give_up_log_level=give_up_log_level,
         )
