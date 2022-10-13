@@ -122,6 +122,21 @@ class DefaultStorageTest(_BaseTest):
             time.sleep(0.5)  # give the chance to expire
             assert storage.retrieve_response(self.spider, self.request)
 
+    def test_storage_no_content_type_header(self):
+        """Test that the response body is used to get the right response class
+        even if there is no Content-Type header"""
+        with self._storage() as storage:
+            assert storage.retrieve_response(self.spider, self.request) is None
+            response = Response(
+                'http://www.example.com',
+                body=b'<!DOCTYPE html>\n<title>.</title>',
+                status=202,
+            )
+            storage.store_response(self.spider, self.request, response)
+            cached_response = storage.retrieve_response(self.spider, self.request)
+            self.assertIsInstance(cached_response, HtmlResponse)
+            self.assertEqualResponse(response, cached_response)
+
 
 class DbmStorageTest(DefaultStorageTest):
 

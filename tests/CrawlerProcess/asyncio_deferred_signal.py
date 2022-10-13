@@ -1,10 +1,10 @@
 import asyncio
 import sys
+from typing import Optional
 
 from scrapy import Spider
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.defer import deferred_from_coro
-from twisted.internet.defer import Deferred
 
 
 class UppercasePipeline:
@@ -31,6 +31,7 @@ class UrlSpider(Spider):
 
 
 if __name__ == "__main__":
+    ASYNCIO_EVENT_LOOP: Optional[str]
     try:
         ASYNCIO_EVENT_LOOP = sys.argv[1]
     except IndexError:

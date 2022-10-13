@@ -94,15 +94,6 @@ How can I scrape an item with attributes in different pages?
 
 See :ref:`topics-request-response-ref-request-callback-arguments`.
 
-
-Scrapy crashes with: ImportError: No module named win32api
-----------------------------------------------------------
-
-You need to install `pywin32`_ because of `this Twisted bug`_.
-
-.. _pywin32: https://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: https://twistedmatrix.com/trac/ticket/3707
-
 How can I simulate a user login in my spider?
 ---------------------------------------------
 
@@ -144,6 +135,41 @@ How can I make Scrapy consume less memory?
 ------------------------------------------
 
 See previous question.
+
+How can I prevent memory errors due to many allowed domains?
+------------------------------------------------------------
+
+If you have a spider with a long list of
+:attr:`~scrapy.Spider.allowed_domains` (e.g. 50,000+), consider
+replacing the default
+:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
+with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
+less memory. For example:
+
+-   If your domain names are similar enough, use your own regular expression
+    instead joining the strings in
+    :attr:`~scrapy.Spider.allowed_domains` into a complex regular
+    expression.
+
+-   If you can `meet the installation requirements`_, use pyre2_ instead of
+    Python’s re_ to compile your URL-filtering regular expression. See
+    :issue:`1908`.
+
+See also other suggestions at `StackOverflow`_.
+
+.. note:: Remember to disable
+   :class:`scrapy.spidermiddlewares.offsite.OffsiteMiddleware` when you enable
+   your custom implementation::
+
+       SPIDER_MIDDLEWARES = {
+           'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
+           'myproject.middlewares.CustomOffsiteMiddleware': 500,
+       }
+
+.. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
+.. _pyre2: https://github.com/andreasvc/pyre2
+.. _re: https://docs.python.org/library/re.html
+.. _StackOverflow: https://stackoverflow.com/q/36440681/939364
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -315,6 +341,7 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+
 .. _faq-split-item:
 
 How to split an item into multiple items in an item pipeline?
@@ -363,14 +390,26 @@ How can I cancel the download of a given response?
 --------------------------------------------------
 
 In some situations, it might be useful to stop the download of a certain response.
-For instance, if you only need the first part of a large response and you would like
-to save resources by avoiding the download of the whole body.
-In that case, you could attach a handler to the :class:`~scrapy.signals.bytes_received`
-signal and raise a :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to
-the :ref:`topics-stop-response-download` topic for additional information and examples.
+For instance, sometimes you can determine whether or not you need the full contents
+of a response by inspecting its headers or the first bytes of its body. In that case,
+you could save resources by attaching a handler to the :class:`~scrapy.signals.bytes_received`
+or :class:`~scrapy.signals.headers_received` signals and raising a
+:exc:`~scrapy.exceptions.StopDownload` exception. Please refer to the
+:ref:`topics-stop-response-download` topic for additional information and examples.
+
+
+Running ``runspider`` I get ``error: No spider found in file: <filename>``
+--------------------------------------------------------------------------
+
+This may happen if your Scrapy project has a spider module with a name that
+conflicts with the name of one of the `Python standard library modules`_, such
+as ``csv.py`` or ``os.py``, or any `Python package`_ that you have installed.
+See :issue:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
+.. _Python standard library modules: https://docs.python.org/py-modindex.html
+.. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search

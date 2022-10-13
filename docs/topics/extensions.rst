@@ -7,8 +7,7 @@ Extensions
 The extensions framework provides a mechanism for inserting your own
 custom functionality into Scrapy.
 
-Extensions are just regular classes that are instantiated at Scrapy startup,
-when extensions are initialized.
+Extensions are just regular classes.
 
 Extension settings
 ==================
@@ -27,8 +26,8 @@ Loading & activating extensions
 ===============================
 
 Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class ``__init__`` method.
+instance of the extension class per spider being run. All the extension
+initialization code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
@@ -323,6 +322,11 @@ This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
+
+Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
+full list of parameters, including examples on how to instantiate
+:class:`~scrapy.mail.MailSender` and use mail settings, see
+:ref:`topics-email`.
 
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
