@@ -1642,6 +1642,11 @@ install the default reactor defined by Twisted for the current platform. This
 is to maintain backward compatibility and avoid possible problems caused by
 using a non-default reactor.
 
+.. versionchanged:: VERSION
+   The :command:`startproject` command now sets this setting to
+   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
+   ``settings.py`` file.
+
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
