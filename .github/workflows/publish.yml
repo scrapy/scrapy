@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   publish:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     if: startsWith(github.event.ref, 'refs/tags/')
 
     steps:
