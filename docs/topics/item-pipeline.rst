@@ -99,11 +99,11 @@ contain a price::
                 raise DropItem(f"Missing price in {item}")
 
 
-Write items to a JSON file
---------------------------
+Write items to a JSON lines file
+--------------------------------
 
 The following pipeline stores all scraped items (from all spiders) into a
-single ``items.jl`` file, containing one item per line serialized in JSON
+single ``items.jsonl`` file, containing one item per line serialized in JSON
 format::
 
    import json
@@ -113,7 +113,7 @@ format::
    class JsonWriterPipeline:
 
        def open_spider(self, spider):
-           self.file = open('items.jl', 'w')
+           self.file = open('items.jsonl', 'w')
 
        def close_spider(self, spider):
            self.file.close()

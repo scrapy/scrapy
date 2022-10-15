@@ -1,9 +1,8 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
-
 import logging
 from collections import deque
-from typing import Any, Deque, Iterable, Optional, Set, Tuple, Union
+from typing import Any, AsyncGenerator, AsyncIterable, Deque, Generator, Iterable, Optional, Set, Tuple, Union
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -13,7 +12,15 @@ from scrapy import signals, Spider
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.defer import defer_fail, defer_succeed, iter_errback, parallel
+from scrapy.utils.defer import (
+    aiter_errback,
+    defer_fail,
+    defer_succeed,
+    iter_errback,
+    parallel,
+    parallel_async,
+)
+
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
@@ -185,12 +192,19 @@ class Scraper:
             spider=spider
         )
 
-    def handle_spider_output(self, result: Iterable, request: Request, response: Response, spider: Spider) -> Deferred:
+    def handle_spider_output(self, result: Union[Iterable, AsyncIterable], request: Request,
+                             response: Response, spider: Spider) -> Deferred:
         if not result:
             return defer_succeed(None)
-        it = iter_errback(result, self.handle_spider_error, request, response, spider)
-        dfd = parallel(it, self.concurrent_items, self._process_spidermw_output,
-                       request, response, spider)
+        it: Union[Generator, AsyncGenerator]
+        if isinstance(result, AsyncIterable):
+            it = aiter_errback(result, self.handle_spider_error, request, response, spider)
+            dfd = parallel_async(it, self.concurrent_items, self._process_spidermw_output,
+                                 request, response, spider)
+        else:
+            it = iter_errback(result, self.handle_spider_error, request, response, spider)
+            dfd = parallel(it, self.concurrent_items, self._process_spidermw_output,
+                           request, response, spider)
         return dfd
 
     def _process_spidermw_output(self, output: Any, request: Request, response: Response,

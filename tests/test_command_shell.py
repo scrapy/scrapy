@@ -6,7 +6,7 @@ from twisted.internet import defer
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
 
-from tests import tests_datadir
+from tests import tests_datadir, NON_EXISTING_RESOLVABLE
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
@@ -109,6 +109,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_dns_failures(self):
+        if NON_EXISTING_RESOLVABLE:
+            raise unittest.SkipTest("Non-existing hosts are resolvable")
         url = 'www.somedomainthatdoesntexi.st'
         errcode, out, err = yield self.execute([url, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)

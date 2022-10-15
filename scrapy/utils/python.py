@@ -8,11 +8,12 @@ import re
 import sys
 import warnings
 import weakref
-from collections.abc import Iterable
 from functools import partial, wraps
 from itertools import chain
+from typing import AsyncGenerator, AsyncIterable, Iterable, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.decorators import deprecated
 
 
@@ -179,23 +180,6 @@ def binary_is_text(data):
     return all(c not in _BINARYCHARS for c in data)
 
 
-def _getargspec_py23(func):
-    """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
-                                                        defaults)
-
-    Was identical to inspect.getargspec() in python2, but uses
-    inspect.getfullargspec() for python3 behind the scenes to avoid
-    DeprecationWarning.
-
-    >>> def f(a, b=2, *ar, **kw):
-    ...     pass
-
-    >>> _getargspec_py23(f)
-    ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
-    """
-    return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
-
-
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
@@ -247,9 +231,9 @@ def get_spec(func):
     """
 
     if inspect.isfunction(func) or inspect.ismethod(func):
-        spec = _getargspec_py23(func)
+        spec = inspect.getfullargspec(func)
     elif hasattr(func, '__call__'):
-        spec = _getargspec_py23(func.__call__)
+        spec = inspect.getfullargspec(func.__call__)
     else:
         raise TypeError(f'{type(func)} is not callable')
 
@@ -344,7 +328,7 @@ class MutableChain(Iterable):
     def __init__(self, *args: Iterable):
         self.data = chain.from_iterable(args)
 
-    def extend(self, *iterables: Iterable):
+    def extend(self, *iterables: Iterable) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
     def __iter__(self):
@@ -356,3 +340,27 @@ class MutableChain(Iterable):
     @deprecated("scrapy.utils.python.MutableChain.__next__")
     def next(self):
         return self.__next__()
+
+
+async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
+    for it in iterables:
+        async for o in as_async_generator(it):
+            yield o
+
+
+class MutableAsyncChain(AsyncIterable):
+    """
+    Similar to MutableChain but for async iterables
+    """
+
+    def __init__(self, *args: Union[Iterable, AsyncIterable]):
+        self.data = _async_chain(*args)
+
+    def extend(self, *iterables: Union[Iterable, AsyncIterable]) -> None:
+        self.data = _async_chain(self.data, _async_chain(*iterables))
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return await self.data.__anext__()

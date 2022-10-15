@@ -98,6 +98,10 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+Compatibility with pickle
+=========================
+
+Setting values must be :ref:`picklable <pickle-picklable>`.
 
 Import paths and classes
 ========================
@@ -560,7 +564,6 @@ This setting must be one of these string values:
   set this if you want the behavior of Scrapy<1.1
 - ``'TLSv1.1'``: forces TLS version 1.1
 - ``'TLSv1.2'``: forces TLS version 1.2
-- ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
@@ -1634,9 +1637,10 @@ which raises :exc:`Exception`, becomes::
 
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will install the default reactor defined by Twisted for the
-current platform. This is to maintain backward compatibility and avoid possible
-problems caused by using a non-default reactor.
+means that Scrapy will use the existing reactor if one is already installed, or
+install the default reactor defined by Twisted for the current platform. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 

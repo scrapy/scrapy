@@ -11,8 +11,13 @@ from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 import parsel
-from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
-                            http_content_type_encoding, resolve_encoding)
+from w3lib.encoding import (
+    html_body_declared_encoding,
+    html_to_unicode,
+    http_content_type_encoding,
+    resolve_encoding,
+    read_bom,
+)
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http import Request
@@ -60,6 +65,7 @@ class TextResponse(Response):
     def _declared_encoding(self):
         return (
             self._encoding
+            or self._bom_encoding()
             or self._headers_encoding()
             or self._body_declared_encoding()
         )
@@ -116,6 +122,10 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _body_declared_encoding(self):
         return html_body_declared_encoding(self.body)
+
+    @memoizemethod_noargs
+    def _bom_encoding(self):
+        return read_bom(self.body)[0]
 
     @property
     def selector(self):

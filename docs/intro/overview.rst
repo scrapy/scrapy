@@ -45,9 +45,9 @@ https://quotes.toscrape.com, following the pagination::
 Put this in a text file, name it to something like ``quotes_spider.py``
 and run the spider using the :command:`runspider` command::
 
-    scrapy runspider quotes_spider.py -o quotes.jl
+    scrapy runspider quotes_spider.py -o quotes.jsonl
 
-When this finishes you will have in the ``quotes.jl`` file a list of the
+When this finishes you will have in the ``quotes.jsonl`` file a list of the
 quotes in JSON Lines format, containing text and author, looking like this::
 
     {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}

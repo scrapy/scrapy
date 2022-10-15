@@ -104,8 +104,8 @@ class CookiesMiddleware:
         for key in ("name", "value", "path", "domain"):
             if cookie.get(key) is None:
                 if key in ("name", "value"):
-                    msg = "Invalid cookie found in request {}: {} ('{}' is missing)"
-                    logger.warning(msg.format(request, cookie, key))
+                    msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
+                    logger.warning(msg)
                     return
                 continue
             if isinstance(cookie[key], (bool, float, int, str)):

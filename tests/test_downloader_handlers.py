@@ -4,7 +4,7 @@ import shutil
 import sys
 import tempfile
 from typing import Optional, Type
-from unittest import mock
+from unittest import mock, SkipTest
 
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
@@ -25,13 +25,14 @@ from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Headers, Request
+from scrapy.http import Headers, HtmlResponse, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
+from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import (
     Echo,
     ForeverTakingResource,
@@ -388,6 +389,23 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(lambda r: r.headers[b'content-length'])
         d.addCallback(self.assertEqual, b'159')
         return d
+
+    def _test_response_class(self, filename, body, response_class):
+        def _test(response):
+            self.assertEqual(type(response), response_class)
+
+        request = Request(self.getURL(filename), body=body)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
+
+    def test_response_class_from_url(self):
+        return self._test_response_class('foo.html', b'', HtmlResponse)
+
+    def test_response_class_from_body(self):
+        return self._test_response_class(
+            'foo',
+            b"<!DOCTYPE html>\n<title>.</title>",
+            HtmlResponse,
+        )
 
 
 class Http10TestCase(HttpTestCase):
@@ -774,6 +792,8 @@ class Http11ProxyTestCase(HttpProxyTestCase):
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
         """ Test TunnelingTCP4ClientEndpoint """
+        if NON_EXISTING_RESOLVABLE:
+            raise SkipTest("Non-existing hosts are resolvable")
         http_proxy = self.getURL('')
         domain = 'https://no-such-domain.nosuch'
         request = Request(
@@ -971,6 +991,12 @@ class BaseFTPTestCase(unittest.TestCase):
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
 
+    test_files = (
+        ('file.txt', b"I have the power!"),
+        ('file with spaces.txt', b"Moooooooooo power!"),
+        ('html-file-without-extension', b"<!DOCTYPE html>\n<title>.</title>"),
+    )
+
     def setUp(self):
         from twisted.protocols.ftp import FTPRealm, FTPFactory
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -981,8 +1007,8 @@ class BaseFTPTestCase(unittest.TestCase):
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
         fp = FilePath(userdir)
-        fp.child('file.txt').setContent(b"I have the power!")
-        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
+        for filename, content in self.test_files:
+            fp.child(filename).setContent(content)
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -1069,6 +1095,27 @@ class BaseFTPTestCase(unittest.TestCase):
 
         return self._add_test_callbacks(d, _test)
 
+    def _test_response_class(self, filename, response_class):
+        f, local_fname = tempfile.mkstemp()
+        local_fname = to_bytes(local_fname)
+        os.close(f)
+        meta = {}
+        meta.update(self.req_meta)
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/{filename}",
+                          meta=meta)
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(type(r), response_class)
+            os.remove(local_fname)
+        return self._add_test_callbacks(d, _test)
+
+    def test_response_class_from_url(self):
+        return self._test_response_class('file.txt', TextResponse)
+
+    def test_response_class_from_body(self):
+        return self._test_response_class('html-file-without-extension', HtmlResponse)
+
 
 class FTPTestCase(BaseFTPTestCase):
 
@@ -1104,8 +1151,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         os.mkdir(self.directory)
 
         fp = FilePath(self.directory)
-        fp.child('file.txt').setContent(b"I have the power!")
-        fp.child('file with spaces.txt').setContent(b"Moooooooooo power!")
+        for filename, content in self.test_files:
+            fp.child(filename).setContent(content)
 
         # setup server for anonymous access
         realm = FTPRealm(anonymousRoot=self.directory)

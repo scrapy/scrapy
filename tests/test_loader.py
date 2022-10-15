@@ -1,4 +1,5 @@
 import unittest
+import dataclasses
 
 import attr
 from itemadapter import ItemAdapter
@@ -8,13 +9,6 @@ from scrapy.http import HtmlResponse, Response
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
-
-
-try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
 
 
 # test items
@@ -39,6 +33,11 @@ class TestNestedItem(Item):
 @attr.s
 class AttrsNameItem:
     name = attr.ib(default="")
+
+
+@dataclasses.dataclass
+class TestDataClass:
+    name: list = dataclasses.field(default_factory=list)
 
 
 # test item loaders
@@ -187,16 +186,8 @@ class InitializationFromAttrsItemTest(InitializationTestMixin, unittest.TestCase
     item_class = AttrsNameItem
 
 
-@unittest.skipIf(not make_dataclass, "dataclasses module is not available")
 class InitializationFromDataClassTest(InitializationTestMixin, unittest.TestCase):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "TestDataClass",
-                [("name", list, dataclass_field(default_factory=list))],
-            )
+    item_class = TestDataClass
 
 
 class BaseNoInputReprocessingLoader(ItemLoader):
