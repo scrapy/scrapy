@@ -34,7 +34,7 @@ from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     install_reactor,
     is_asyncio_reactor_installed,
-    verify_installed_loop,
+    verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
 
@@ -96,7 +96,7 @@ class Crawler:
         if reactor_class:
             verify_installed_reactor(reactor_class)
             if is_asyncio_reactor_installed() and event_loop:
-                verify_installed_loop(event_loop)
+                verify_installed_asyncio_event_loop(event_loop)
 
         self.extensions = ExtensionManager.from_crawler(self)
 

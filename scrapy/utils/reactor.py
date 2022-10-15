@@ -90,7 +90,7 @@ def verify_installed_reactor(reactor_path):
         raise Exception(msg)
 
 
-def verify_installed_loop(loop_path):
+def verify_installed_asyncio_event_loop(loop_path):
     from twisted.internet import reactor
     loop_class = load_object(loop_path)
     if isinstance(reactor._asyncioEventloop, loop_class):
