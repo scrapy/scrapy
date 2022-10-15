@@ -464,6 +464,8 @@ Writing your own request fingerprinter
 
 A request fingerprinter is a class that must implement the following method:
 
+.. currentmodule:: None
+
 .. method:: fingerprint(self, request)
 
    Return a :class:`bytes` object that uniquely identifies *request*.
@@ -476,6 +478,7 @@ A request fingerprinter is a class that must implement the following method:
 Additionally, it may also implement the following methods:
 
 .. classmethod:: from_crawler(cls, crawler)
+   :noindex:
 
    If present, this class method is called to create a request fingerprinter
    instance from a :class:`~scrapy.crawler.Crawler` object. It must return a
@@ -495,11 +498,13 @@ Additionally, it may also implement the following methods:
    :class:`~scrapy.settings.Settings` object. It must return a new instance of
    the request fingerprinter.
 
-The ``fingerprint`` method of the default request fingerprinter,
+.. currentmodule:: scrapy.http
+
+The :meth:`fingerprint` method of the default request fingerprinter,
 :class:`scrapy.utils.request.RequestFingerprinter`, uses
 :func:`scrapy.utils.request.fingerprint` with its default parameters. For some
-common use cases you can use :func:`~scrapy.utils.request.fingerprint` as well
-in your ``fingerprint`` method implementation:
+common use cases you can use :func:`scrapy.utils.request.fingerprint` as well
+in your :meth:`fingerprint` method implementation:
 
 .. autofunction:: scrapy.utils.request.fingerprint
 
@@ -519,7 +524,7 @@ account::
 
 You can also write your own fingerprinting logic from scratch.
 
-However, if you do not use :func:`~scrapy.utils.request.fingerprint`, make sure
+However, if you do not use :func:`scrapy.utils.request.fingerprint`, make sure
 you use :class:`~weakref.WeakKeyDictionary` to cache request fingerprints:
 
 -   Caching saves CPU by ensuring that fingerprints are calculated only once
@@ -553,7 +558,7 @@ If you need to be able to override the request fingerprinting for arbitrary
 requests from your spider callbacks, you may implement a request fingerprinter
 that reads fingerprints from :attr:`request.meta <scrapy.http.Request.meta>`
 when available, and then falls back to
-:func:`~scrapy.utils.request.fingerprint`. For example::
+:func:`scrapy.utils.request.fingerprint`. For example::
 
     from scrapy.utils.request import fingerprint
 
