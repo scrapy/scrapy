@@ -107,9 +107,11 @@ Bug fixes
     .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
     .. _HTML living standard: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
--   MIME sniffing can now detect HTML 5 responses based on their body, and
-    takes the response body into account in FTP and HTTP/1.0 requests, as well
-    as in cached requests (:issue:`4873`).
+-   MIME sniffing takes the response body into account in FTP and HTTP/1.0
+    requests, as well as in cached request (:issue:`4873`).
+
+-   MIME sniffing now detects valid HTML 5 documents even if the ``html`` tag
+    is missing (:issue:`4873`).
 
 -   An exception is now raised if :setting:`ASYNCIO_EVENT_LOOP` has a value
     that does not match the asyncio event loop actually installed
