@@ -100,11 +100,12 @@ Bug fixes
     available spider, an exception is no longer raised (:issue:`3264`,
     :issue:`3265`, :issue:`5375`, :issue:`5376`, :issue:`5497`).
 
--   :class:`~scrapy.http.TextResponse` now takes into account the `byte order
-    mark`_ when determining the text encoding of the response body
-    (:issue:`5601`, :issue:`5611`).
+-   :class:`~scrapy.http.TextResponse` now gives higher priority to the `byte
+    order mark`_ when determining the text encoding of the response body,
+    following the `HTML living standard`_ (:issue:`5601`, :issue:`5611`).
 
     .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+    .. _HTML living standard: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 -   MIME sniffing can now detect HTML 5 responses based on their body, and
     takes the response body into account in FTP and HTTP/1.0 requests, as well
