@@ -64,8 +64,10 @@ New features
     :issue:`5679`).
 
 -   The :setting:`FEED_EXPORT_FIELDS` setting can now be defiend as a
-    dictionary to customize the output name of item fields, allowing them to
-    include non-ASCII characters (:issue:`1008`, :issue:`3266`, :issue:`3696`).
+    dictionary to customize the output name of item fields, lifting the
+    restriction that required output names to be valid Python identifiers, e.g.
+    preventing them to have whitespace (:issue:`1008`, :issue:`3266`,
+    :issue:`3696`).
 
 -   ``jsonl`` is now supported and encouraged as a file extension for `JSON
     Lines`_ files (:issue:`4848`).
