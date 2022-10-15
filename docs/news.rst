@@ -108,7 +108,7 @@ Bug fixes
     .. _HTML living standard: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 
 -   MIME sniffing takes the response body into account in FTP and HTTP/1.0
-    requests, as well as in cached request (:issue:`4873`).
+    requests, as well as in cached requests (:issue:`4873`).
 
 -   MIME sniffing now detects valid HTML 5 documents even if the ``html`` tag
     is missing (:issue:`4873`).
