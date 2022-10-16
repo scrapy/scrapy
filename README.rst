@@ -37,6 +37,36 @@ Scrapy
    :target: https://anaconda.org/conda-forge/scrapy
    :alt: Conda Version
 
+Table of Contents:
+========
+* Overview_
+* Requirements_
+* Install_
+* Documentation_
+* Releases_
+* Community_
+* Contributing_
+* `Code of Conduct`_
+* `Companies using Scrapy`_
+* `Commercial Support`_
+
+.. _Overview: https://scrapy.org
+.. _Requirements: https://docs.scrapy.org/en/master/intro/install.html
+.. _Install: https://docs.scrapy.org/en/master/intro/install.html
+.. _Documentation: https://docs.scrapy.org/en/master/intro/overview.html
+.. _Releases: https://docs.scrapy.org/en/master/news.html
+.. _Community: https://scrapy.org/community/
+.. _Contributing: https://docs.scrapy.org/en/master/contributing.html
+.. _Code of Conduct: https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md
+.. _Companies using Scrapy: https://scrapy.org/companies/
+.. _Commercial Support: https://scrapy.org/support/
+
+Welcome
+========
+From the developer and moderator community at Scrapy, we would like to welcome you to the Scrapy open source project!
+With the generosity of the open source community, as well as your continued support and kindness, we have been able to
+create and maintain a product that is near and dear to our hearts as a community. Thank you and make yourself at home!
+
 
 Overview
 ========
@@ -53,7 +83,6 @@ contributors`_.
 
 Check the Scrapy homepage at https://scrapy.org for more information,
 including a list of features.
-
 
 Requirements
 ============
@@ -93,6 +122,38 @@ Contributing
 ============
 
 See https://docs.scrapy.org/en/master/contributing.html for details.
+
+If you are a new contributor, you may benefit from starting at the following locations. This will provide you
+a place to begin your contribution journey:
+
+* `Overview of Scrapy`_
+* `Writing New Patches`_
+* `Submitting Patches`_
+* `Reporting Bugs`_
+* `Documentation Policies`_
+
+.. _Overview of Scrapy: https://docs.scrapy.org/en/master/intro/overview.html
+.. _Writing New Patches: https://docs.scrapy.org/en/master/contributing.html#writing-patches
+.. _Reporting Bugs: https://docs.scrapy.org/en/master/contributing.html#reporting-bugs
+.. _Submitting Patches: https://docs.scrapy.org/en/master/contributing.html#submitting-patches
+.. _Coding Style: https://docs.scrapy.org/en/master/contributing.html#coding-style
+.. _Documentation Policies: https://docs.scrapy.org/en/master/contributing.html#documentation-policies
+
+Also, join our social media communities and get acquainted with the developer community! This will help you learn and
+improve your understanding of Scrapy!
+
+* `Scrapy Reddit`_
+* `Scrapy Stack Overflow`_
+* `Scrapy Discord`_
+* `IRC Chat`_
+* `Scrapy Twitter`_
+
+.. _Scrapy Twitter: https://twitter.com/ScrapyProject
+.. _IRC Chat: https://web.libera.chat/?channel=#scrapy
+.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
+.. _Scrapy Reddit: https://reddit.com/r/scrapy
+.. _Scrapy Stack Overflow: https://stackoverflow.com/questions/tagged/scrapy
+
 
 Code of Conduct
 ---------------
