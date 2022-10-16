@@ -11,9 +11,6 @@ from tests.keys import generate_keys
 def _py_files(folder):
     return (str(p) for p in Path(folder).rglob('*.py'))
 
-
-extensions = ['sphinx.ext.autosectionlabel']
-
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
