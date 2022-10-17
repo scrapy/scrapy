@@ -110,7 +110,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
                 'LOG_LEVEL': 'INFO',
                 'LOG_FILE': log_file,
                 # settings to avoid extra warnings
-                'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
+                'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
                 'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
             }
 
@@ -235,7 +235,7 @@ class NoRequestsSpider(scrapy.Spider):
 class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def _runner(self):
-        return CrawlerRunner({'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'})
+        return CrawlerRunner({'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7'})
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
@@ -283,14 +283,14 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         if self.reactor_pytest == 'asyncio':
             CrawlerRunner(settings={
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "VERSION",
+                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             })
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
                 runner = CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "VERSION",
+                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
                 })
                 yield runner.crawl(NoRequestsSpider)
 

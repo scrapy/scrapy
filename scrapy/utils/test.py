@@ -65,7 +65,7 @@ def get_crawler(spidercls=None, settings_dict=None, prevent_warnings=True):
     # Set by default settings that prevent deprecation warnings.
     settings = {}
     if prevent_warnings:
-        settings['REQUEST_FINGERPRINTER_IMPLEMENTATION'] = 'VERSION'
+        settings['REQUEST_FINGERPRINTER_IMPLEMENTATION'] = '2.7'
     settings.update(settings_dict or {})
     runner = CrawlerRunner(settings)
     return runner.create_crawler(spidercls or Spider)

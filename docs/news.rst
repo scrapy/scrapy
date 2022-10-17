@@ -3,6 +3,195 @@
 Release notes
 =============
 
+.. _release-2.7.0:
+
+Scrapy 2.7.0 (to be released)
+-----------------------------
+
+Highlights:
+
+-   Added Python 3.11 support, dropped Python 3.6 support
+-   Improved support for :ref:`asynchronous callbacks <topics-coroutines>`
+-   :ref:`Asyncio support <using-asyncio>` is enabled by default on new
+    projects
+-   Output names of item fields can now be arbitrary strings
+-   Centralized :ref:`request fingerprinting <request-fingerprints>`
+    configuration is now possible
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+Python 3.7 or greater is now required; support for Python 3.6 has been dropped.
+Support for the upcoming Python 3.11 has been added.
+
+The minimum required version of some dependencies has changed as well:
+
+-   lxml_: 3.5.0 → 4.3.0
+
+-   Pillow_ (:ref:`images pipeline <images-pipeline>`): 4.0.0 → 7.1.0
+
+-   zope.interface_: 5.0.0 → 5.1.0
+
+(:issue:`5512`, :issue:`5514`, :issue:`5524`, :issue:`5563`, :issue:`5664`,
+:issue:`5670`, :issue:`5678`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :meth:`ImagesPipeline.thumb_path
+    <scrapy.pipelines.images.ImagesPipeline.thumb_path>` must now accept an
+    ``item`` parameter (:issue:`5504`, :issue:`5508`).
+
+-   The ``scrapy.downloadermiddlewares.decompression`` module is now
+    deprecated (:issue:`5546`, :issue:`5547`).
+
+
+New features
+~~~~~~~~~~~~
+
+-   The
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
+    method of :ref:`spider middlewares <topics-spider-middleware>` can now be
+    defined as an :term:`asynchronous generator` (:issue:`4978`).
+
+-   The output of :class:`~scrapy.Request` callbacks defined as
+    :ref:`coroutines <topics-coroutines>` is now processed asynchronously
+    (:issue:`4978`).
+
+-   :class:`~scrapy.spiders.crawl.CrawlSpider` now supports :ref:`asynchronous
+    callbacks <topics-coroutines>` (:issue:`5657`).
+
+-   New projects created with the :command:`startproject` command have
+    :ref:`asyncio support <using-asyncio>` enabled by default (:issue:`5590`,
+    :issue:`5679`).
+
+-   The :setting:`FEED_EXPORT_FIELDS` setting can now be defined as a
+    dictionary to customize the output name of item fields, lifting the
+    restriction that required output names to be valid Python identifiers, e.g.
+    preventing them to have whitespace (:issue:`1008`, :issue:`3266`,
+    :issue:`3696`).
+
+-   You can now customize :ref:`request fingerprinting <request-fingerprints>`
+    through the new :setting:`REQUEST_FINGERPRINTER_CLASS` setting, instead of
+    having to change it on every Scrapy component that relies on request
+    fingerprinting (:issue:`900`, :issue:`3420`, :issue:`4113`, :issue:`4762`,
+    :issue:`4524`).
+
+-   ``jsonl`` is now supported and encouraged as a file extension for `JSON
+    Lines`_ files (:issue:`4848`).
+
+    .. _JSON Lines: https://jsonlines.org/
+
+-   :meth:`ImagesPipeline.thumb_path
+    <scrapy.pipelines.images.ImagesPipeline.thumb_path>` now receives the
+    source :ref:`item <topics-items>` (:issue:`5504`, :issue:`5508`).
+
+
+Bug fixes
+~~~~~~~~~
+
+-   When using Google Cloud Storage with a :ref:`media pipeline
+    <topics-media-pipeline>`, :setting:`FILES_EXPIRES` now also works when
+    :setting:`FILES_STORE` does not point at the root of your Google Cloud
+    Storage bucket (:issue:`5317`, :issue:`5318`).
+
+-   The :command:`parse` command now supports :ref:`asynchronous callbacks
+    <topics-coroutines>` (:issue:`5424`, :issue:`5577`).
+
+-   When using the :command:`parse` command with a URL for which there is no
+    available spider, an exception is no longer raised (:issue:`3264`,
+    :issue:`3265`, :issue:`5375`, :issue:`5376`, :issue:`5497`).
+
+-   :class:`~scrapy.http.TextResponse` now gives higher priority to the `byte
+    order mark`_ when determining the text encoding of the response body,
+    following the `HTML living standard`_ (:issue:`5601`, :issue:`5611`).
+
+    .. _byte order mark: https://en.wikipedia.org/wiki/Byte_order_mark
+    .. _HTML living standard: https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
+
+-   MIME sniffing takes the response body into account in FTP and HTTP/1.0
+    requests, as well as in cached requests (:issue:`4873`).
+
+-   MIME sniffing now detects valid HTML 5 documents even if the ``html`` tag
+    is missing (:issue:`4873`).
+
+-   An exception is now raised if :setting:`ASYNCIO_EVENT_LOOP` has a value
+    that does not match the asyncio event loop actually installed
+    (:issue:`5529`).
+
+-   Fixed :meth:`Headers.getlist <scrapy.http.headers.Headers.getlist>`
+    returning only the last header (:issue:`5515`, :issue:`5526`).
+
+-   Fixed :class:`LinkExtractor
+    <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` not ignoring the
+    ``tar.gz`` file extension by default (:issue:`1837`, :issue:`2067`,
+    :issue:`4066`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Clarified the return type of :meth:`Spider.parse <scrapy.Spider.parse>`
+    (:issue:`5602`, :issue:`5608`).
+
+-   To enable
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    to do `brotli compression`_, installing brotli_ is now recommended instead
+    of installing brotlipy_, as the former provides a more recent version of
+    brotli.
+
+    .. _brotli: https://github.com/google/brotli
+    .. _brotli compression: https://www.ietf.org/rfc/rfc7932.txt
+
+-   :ref:`Signal documentation <topics-signals>` now mentions :ref:`coroutine
+    support <topics-coroutines>` and uses it in code examples (:issue:`4852`,
+    :issue:`5358`).
+
+-   :ref:`bans` now recommends `Common Crawl`_ instead of `Google cache`_
+    (:issue:`3582`, :issue:`5432`).
+
+    .. _Common Crawl: https://commoncrawl.org/
+    .. _Google cache: http://www.googleguide.com/cached_pages.html
+
+-   The new :ref:`topics-components` topic covers enforcing requirements on
+    Scrapy components, like :ref:`downloader middlewares
+    <topics-downloader-middleware>`, :ref:`extensions <topics-extensions>`,
+    :ref:`item pipelines <topics-item-pipeline>`, :ref:`spider middlewares
+    <topics-spider-middleware>`, and more; :ref:`enforce-asyncio-requirement`
+    has also been added (:issue:`4978`).
+
+-   :ref:`topics-settings` now indicates that setting values must be
+    :ref:`picklable <pickle-picklable>` (:issue:`5607`, :issue:`5629`).
+
+-   Removed outdated documentation (:issue:`5446`, :issue:`5373`,
+    :issue:`5369`, :issue:`5370`, :issue:`5554`).
+
+-   Fixed typos (:issue:`5442`, :issue:`5455`, :issue:`5457`, :issue:`5461`,
+    :issue:`5538`, :issue:`5553`, :issue:`5558`, :issue:`5624`, :issue:`5631`).
+
+-   Fixed other issues (:issue:`5283`, :issue:`5284`, :issue:`5559`,
+    :issue:`5567`, :issue:`5648`, :issue:`5659`, :issue:`5665`).
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added a continuous integration job to run `twine check`_ (:issue:`5655`,
+    :issue:`5656`).
+
+    .. _twine check: https://twine.readthedocs.io/en/stable/#twine-check
+
+-   Addressed test issues and warnings (:issue:`5560`, :issue:`5561`,
+    :issue:`5612`, :issue:`5617`, :issue:`5639`, :issue:`5645`, :issue:`5662`,
+    :issue:`5671`, :issue:`5675`).
+
+-   Cleaned up code (:issue:`4991`, :issue:`4995`, :issue:`5451`,
+    :issue:`5487`, :issue:`5542`, :issue:`5667`, :issue:`5668`, :issue:`5672`).
+
+-   Applied minor code improvements (:issue:`5661`).
+
+
 .. _release-2.6.3:
 
 Scrapy 2.6.3 (2022-09-27)
@@ -3139,7 +3328,7 @@ New Features
 ~~~~~~~~~~~~
 
 - Accept proxy credentials in :reqmeta:`proxy` request meta key (:issue:`2526`)
-- Support `brotli`_-compressed content; requires optional `brotlipy`_
+- Support `brotli-compressed`_ content; requires optional `brotlipy`_
   (:issue:`2535`)
 - New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
@@ -3176,7 +3365,7 @@ New Features
 - ``python -m scrapy`` as a more explicit alternative to ``scrapy`` command
   (:issue:`2740`)
 
-.. _brotli: https://github.com/google/brotli
+.. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
 .. _brotlipy: https://github.com/python-hyper/brotlipy/
 
 Bug fixes
