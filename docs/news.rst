@@ -66,7 +66,7 @@ New features
     :ref:`asyncio support <using-asyncio>` enabled by default (:issue:`5590`,
     :issue:`5679`).
 
--   The :setting:`FEED_EXPORT_FIELDS` setting can now be defiend as a
+-   The :setting:`FEED_EXPORT_FIELDS` setting can now be defined as a
     dictionary to customize the output name of item fields, lifting the
     restriction that required output names to be valid Python identifiers, e.g.
     preventing them to have whitespace (:issue:`1008`, :issue:`3266`,
