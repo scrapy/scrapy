@@ -3,8 +3,9 @@ Scheduler queues
 """
 
 import marshal
-import os
 import pickle
+from os import PathLike
+from pathlib import Path
 
 from queuelib import queue
 
@@ -16,10 +17,10 @@ def _with_mkdir(queue_class):
 
     class DirectoriesCreated(queue_class):
 
-        def __init__(self, path, *args, **kwargs):
-            dirname = os.path.dirname(path)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname, exist_ok=True)
+        def __init__(self, path: str | PathLike[str], *args, **kwargs):
+            dirname = Path(path).parent
+            if not dirname.exists():
+                dirname.mkdir(parents=True, exist_ok=True)
             super().__init__(path, *args, **kwargs)
 
     return DirectoriesCreated

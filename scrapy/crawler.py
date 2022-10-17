@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import logging
 import pprint
 import signal
 import warnings
+from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
@@ -32,6 +35,9 @@ from scrapy.utils.log import (
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import install_reactor, verify_installed_reactor
+
+if TYPE_CHECKING:
+    from scrapy.utils.request import RequestFingerprinter
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +78,7 @@ class Crawler:
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
 
-        self.request_fingerprinter = create_instance(
+        self.request_fingerprinter: RequestFingerprinter = create_instance(
             load_object(self.settings['REQUEST_FINGERPRINTER_CLASS']),
             settings=self.settings,
             crawler=self,

@@ -264,7 +264,7 @@ class RequestFingerprinter:
                 f'and \'VERSION\'.'
             )
 
-    def fingerprint(self, request):
+    def fingerprint(self, request: Request):
         return self._fingerprint(request)
 
 

@@ -2,6 +2,7 @@ import os
 import re
 from configparser import ConfigParser
 from importlib import import_module
+from pathlib import Path
 
 from twisted import version as twisted_version
 from twisted.trial import unittest
@@ -29,11 +30,7 @@ class ScrapyUtilsTest(unittest.TestCase):
         if not os.environ.get('_SCRAPY_PINNED', None):
             self.skipTest('Not in a pinned environment')
 
-        tox_config_file_path = os.path.join(
-            os.path.dirname(__file__),
-            '..',
-            'tox.ini',
-        )
+        tox_config_file_path = Path(__file__) / '..' / 'tox.ini'
         config_parser = ConfigParser()
         config_parser.read(tox_config_file_path)
         pattern = r'Twisted\[http2\]==([\d.]+)'

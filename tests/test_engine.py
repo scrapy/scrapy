@@ -10,11 +10,11 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
-import os
 import re
 import subprocess
 import sys
 from collections import defaultdict
+from pathlib import Path
 from threading import Timer
 from urllib.parse import urlparse
 from dataclasses import dataclass
@@ -127,8 +127,8 @@ class ChangeCloseReasonSpider(TestSpider):
 
 
 def start_test_site(debug=False):
-    root_dir = os.path.join(tests_datadir, "test_site")
-    r = static.File(root_dir)
+    root_dir = Path(tests_datadir, "test_site")
+    r = static.File(str(root_dir))
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
     r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
     numbers = [str(x).encode("utf8") for x in range(2**18)]

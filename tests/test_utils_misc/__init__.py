@@ -1,6 +1,7 @@
 import sys
 import os
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from scrapy.item import Item, Field
@@ -55,7 +56,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertRaises(ImportError, walk_modules, 'nomodule999')
 
     def test_walk_modules_egg(self):
-        egg = os.path.join(os.path.dirname(__file__), 'test.egg')
+        egg = str(Path(__file__).parent / 'test.egg')
         sys.path.append(egg)
         try:
             mods = walk_modules('testegg')

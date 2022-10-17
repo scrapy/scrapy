@@ -1,5 +1,5 @@
-import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -22,21 +22,20 @@ from cryptography.x509.oid import NameOID
 
 # https://cryptography.io/en/latest/x509/tutorial/#creating-a-self-signed-certificate
 def generate_keys():
-    folder = os.path.dirname(__file__)
+    folder = Path(__file__).parent
 
     key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
         backend=default_backend(),
     )
-    with open(os.path.join(folder, 'localhost.key'), "wb") as f:
-        f.write(
-            key.private_bytes(
-                encoding=Encoding.PEM,
-                format=PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=NoEncryption(),
-            )
-        )
+    (folder / 'localhost.key').write_bytes(
+        key.private_bytes(
+            encoding=Encoding.PEM,
+            format=PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=NoEncryption(),
+        ),
+    )
 
     subject = issuer = Name(
         [
@@ -59,5 +58,4 @@ def generate_keys():
         )
         .sign(key, SHA256(), default_backend())
     )
-    with open(os.path.join(folder, 'localhost.crt'), "wb") as f:
-        f.write(cert.public_bytes(Encoding.PEM))
+    (folder / 'localhost.crt').write_bytes(cert.public_bytes(Encoding.PEM))

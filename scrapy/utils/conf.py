@@ -4,6 +4,8 @@ import sys
 import warnings
 from configparser import ConfigParser
 from operator import itemgetter
+from pathlib import Path
+from typing import Optional
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 
@@ -65,17 +67,17 @@ def arglist_to_dict(arglist):
     return dict(x.split('=', 1) for x in arglist)
 
 
-def closest_scrapy_cfg(path='.', prevpath=None):
+def closest_scrapy_cfg(path: str | os.PathLike[str] = '.', prevpath: Optional[str | os.PathLike] = None) -> str:
     """Return the path to the closest scrapy.cfg file by traversing the current
     directory and its parents
     """
-    if path == prevpath:
+    if prevpath is not None and str(path) == str(prevpath):
         return ''
-    path = os.path.abspath(path)
-    cfgfile = os.path.join(path, 'scrapy.cfg')
-    if os.path.exists(cfgfile):
-        return cfgfile
-    return closest_scrapy_cfg(os.path.dirname(path), path)
+    path = Path(path).resolve()
+    cfgfile = path / 'scrapy.cfg'
+    if cfgfile.exists():
+        return str(cfgfile)
+    return closest_scrapy_cfg(path.parent, path)
 
 
 def init_env(project='default', set_syspath=True):
@@ -88,7 +90,7 @@ def init_env(project='default', set_syspath=True):
         os.environ['SCRAPY_SETTINGS_MODULE'] = cfg.get('settings', project)
     closest = closest_scrapy_cfg()
     if closest:
-        projdir = os.path.dirname(closest)
+        projdir = str(Path(closest).parent)
         if set_syspath and projdir not in sys.path:
             sys.path.append(projdir)
 
@@ -101,13 +103,13 @@ def get_config(use_closest=True):
     return cfg
 
 
-def get_sources(use_closest=True):
-    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
+def get_sources(use_closest=True) -> list[str]:
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or Path('~/.config').expanduser()
     sources = [
         '/etc/scrapy.cfg',
         r'c:\scrapy\scrapy.cfg',
-        xdg_config_home + '/scrapy.cfg',
-        os.path.expanduser('~/.scrapy.cfg'),
+        str(Path(xdg_config_home) / 'scrapy.cfg'),
+        str(Path('~/.scrapy.cfg').expanduser()),
     ]
     if use_closest:
         sources.append(closest_scrapy_cfg())
@@ -129,8 +131,8 @@ def feed_complete_default_values_from_settings(feed, settings):
     return out
 
 
-def feed_process_params_from_cli(settings, output, output_format=None,
-                                 overwrite_output=None):
+def feed_process_params_from_cli(settings, output: list[str], output_format=None,
+                                 overwrite_output: Optional[list[str]] = None):
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
@@ -180,7 +182,7 @@ def feed_process_params_from_cli(settings, output, output_format=None,
             feed_uri, feed_format = element.rsplit(':', 1)
         except ValueError:
             feed_uri = element
-            feed_format = os.path.splitext(element)[1].replace('.', '')
+            feed_format = Path(element).suffix.replace('.', '')
         else:
             if feed_uri == '-':
                 feed_uri = 'stdout:'

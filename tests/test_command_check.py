@@ -1,5 +1,3 @@
-from os.path import join, abspath
-
 from tests.test_commands import CommandTest
 
 
@@ -10,11 +8,10 @@ class CheckCommandTest(CommandTest):
     def setUp(self):
         super(CheckCommandTest, self).setUp()
         self.spider_name = 'check_spider'
-        self.spider = abspath(join(self.proj_mod_path, 'spiders', 'checkspider.py'))
+        self.spider = (self.proj_mod_path / 'spiders' / 'checkspider.py').resolve()
 
     def _write_contract(self, contracts, parse_def):
-        with open(self.spider, 'w') as file:
-            file.write(f"""
+        self.spider.write_text(f"""
 import scrapy
 
 class CheckSpider(scrapy.Spider):
@@ -27,7 +24,7 @@ class CheckSpider(scrapy.Spider):
         {contracts}
         \"\"\"
         {parse_def}
-            """)
+        """)
 
     def _test_contract(self, contracts='', parse_def='pass'):
         self._write_contract(contracts, parse_def)

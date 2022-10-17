@@ -1,6 +1,6 @@
 from gzip import GzipFile
 from io import BytesIO
-from os.path import join
+from pathlib import Path
 from unittest import TestCase, SkipTest
 from warnings import catch_warnings
 
@@ -15,7 +15,7 @@ from tests import tests_datadir
 from w3lib.encoding import resolve_encoding
 
 
-SAMPLEDIR = join(tests_datadir, 'compressed')
+SAMPLEDIR = Path(tests_datadir, 'compressed')
 
 FORMAT = {
     'gzip': ('html-gzip.bin', 'gzip'),
@@ -46,8 +46,7 @@ class HttpCompressionTest(TestCase):
 
         samplefile, contentencoding = FORMAT[coding]
 
-        with open(join(SAMPLEDIR, samplefile), 'rb') as sample:
-            body = sample.read()
+        body = (SAMPLEDIR / samplefile).read_bytes()
 
         headers = {
             'Server': 'Yaws/1.49 Yet Another Web Server',

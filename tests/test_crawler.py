@@ -1,9 +1,9 @@
 import logging
-import os
 import platform
 import subprocess
 import sys
 import warnings
+from pathlib import Path
 
 from pytest import raises, mark
 from twisted import version as twisted_version
@@ -100,15 +100,14 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         assert get_scrapy_root_handler() is None
 
     def test_spider_custom_settings_log_level(self):
-        log_file = self.mktemp()
-        with open(log_file, 'wb') as fo:
-            fo.write('previous message\n'.encode('utf-8'))
+        log_file = Path(self.mktemp())
+        log_file.write_text('previous message\n', encoding='utf-8')
 
         class MySpider(scrapy.Spider):
             name = 'spider'
             custom_settings = {
                 'LOG_LEVEL': 'INFO',
-                'LOG_FILE': log_file,
+                'LOG_FILE': str(log_file),
                 # settings to avoid extra warnings
                 'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
                 'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
@@ -124,8 +123,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         logging.warning('warning message')
         logging.error('error message')
 
-        with open(log_file, 'rb') as fo:
-            logged = fo.read().decode('utf-8')
+        logged = log_file.read_text(encoding='utf-8')
 
         self.assertIn('previous message', logged)
         self.assertNotIn('debug message', logged)
@@ -139,14 +137,13 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(crawler.stats.get_value('log_count/DEBUG', 0), 0)
 
     def test_spider_custom_settings_log_append(self):
-        log_file = self.mktemp()
-        with open(log_file, 'wb') as fo:
-            fo.write('previous message\n'.encode('utf-8'))
+        log_file = Path(self.mktemp())
+        log_file.write_text('previous message\n', encoding='utf-8')
 
         class MySpider(scrapy.Spider):
             name = 'spider'
             custom_settings = {
-                'LOG_FILE': log_file,
+                'LOG_FILE': str(log_file),
                 'LOG_FILE_APPEND': False,
                 # disable telnet if not available to avoid an extra warning
                 'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
@@ -156,8 +153,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         get_crawler(MySpider)
         logging.debug('debug message')
 
-        with open(log_file, 'rb') as fo:
-            logged = fo.read().decode('utf-8')
+        logged = log_file.read_text(encoding='utf-8')
 
         self.assertNotIn('previous message', logged)
         self.assertIn('debug message', logged)
@@ -296,9 +292,9 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 
 class ScriptRunnerMixin:
-    def run_script(self, script_name, *script_args):
-        script_path = os.path.join(self.script_dir, script_name)
-        args = [sys.executable, script_path] + list(script_args)
+    def run_script(self, script_name: str, *script_args):
+        script_path = self.script_dir / script_name
+        args = [sys.executable, str(script_path)] + list(script_args)
         p = subprocess.Popen(args, env=get_testenv(),
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -306,7 +302,7 @@ class ScriptRunnerMixin:
 
 
 class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
-    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerProcess')
+    script_dir = Path(__file__).parent.resolve() / 'CrawlerProcess'
 
     def test_simple(self):
         log = self.run_script('simple.py')
@@ -463,7 +459,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
-    script_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'CrawlerRunner')
+    script_dir = Path(__file__).parent.resolve() / 'CrawlerRunner'
 
     def test_response_ip_address(self):
         log = self.run_script("ip_address.py")

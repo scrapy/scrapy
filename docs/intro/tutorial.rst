@@ -85,6 +85,8 @@ page content to extract data.
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project::
 
+    from pathlib import Path
+
     import scrapy
 
 
@@ -102,8 +104,7 @@ This is the code for our first Spider. Save it in a file named
         def parse(self, response):
             page = response.url.split("/")[-2]
             filename = f'quotes-{page}.html'
-            with open(filename, 'wb') as f:
-                f.write(response.body)
+            Path(filename).write_bytes(response.body)
             self.log(f'Saved file {filename}')
 
 
@@ -178,6 +179,8 @@ with a list of URLs. This list will then be used by the default implementation
 of :meth:`~scrapy.Spider.start_requests` to create the initial requests
 for your spider::
 
+    from pathlib import Path
+
     import scrapy
 
 
@@ -191,8 +194,7 @@ for your spider::
         def parse(self, response):
             page = response.url.split("/")[-2]
             filename = f'quotes-{page}.html'
-            with open(filename, 'wb') as f:
-                f.write(response.body)
+            Path(filename).write_bytes(response.body)
 
 The :meth:`~scrapy.Spider.parse` method will be called to handle each
 of the requests for those URLs, even though we haven't explicitly told Scrapy

@@ -1,5 +1,5 @@
-import os
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
+from pathlib import Path
 
 from scrapy.http.response.html import HtmlResponse
 from sybil import Sybil
@@ -12,10 +12,9 @@ from sybil.parsers.doctest import DocTestParser
 from sybil.parsers.skip import skip
 
 
-def load_response(url, filename):
-    input_path = os.path.join(os.path.dirname(__file__), '_tests', filename)
-    with open(input_path, 'rb') as input_file:
-        return HtmlResponse(url, body=input_file.read())
+def load_response(url: str, filename: str) -> HtmlResponse:
+    input_path = Path(__file__).parent / '_tests' / filename
+    return HtmlResponse(url, body=input_path.read_bytes())
 
 
 def setup(namespace):

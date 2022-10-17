@@ -3,6 +3,7 @@ Base class for Scrapy commands
 """
 import os
 import argparse
+from pathlib import Path
 from typing import Any, Dict
 
 from twisted.python import failure
@@ -93,8 +94,7 @@ class ScrapyCommand:
             self.settings.set('LOG_ENABLED', False, priority='cmdline')
 
         if opts.pidfile:
-            with open(opts.pidfile, "w") as f:
-                f.write(str(os.getpid()) + os.linesep)
+            Path(opts.pidfile).write_text(str(os.getpid()) + os.linesep)
 
         if opts.pdb:
             failure.startDebugMode()
