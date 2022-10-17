@@ -14,6 +14,9 @@ Highlights:
 -   Improved support for :ref:`asynchronous callbacks <topics-coroutines>`
 -   :ref:`Asyncio support <using-asyncio>` is enabled by default on new
     projects
+-   Output names of item fields can now be arbitrary strings
+-   Centralized :ref:`request fingerprinting <request-fingerprints>`
+    configuration is now possible
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -69,6 +72,12 @@ New features
     preventing them to have whitespace (:issue:`1008`, :issue:`3266`,
     :issue:`3696`).
 
+-   You can now customize :ref:`request fingerprinting <request-fingerprints>`
+    through the new :setting:`REQUEST_FINGERPRINTER_CLASS` setting, instead of
+    having to change it on every Scrapy component that relies on request
+    fingerprinting (:issue:`900`, :issue:`3420`, :issue:`4113`, :issue:`4762`,
+    :issue:`4524`).
+
 -   ``jsonl`` is now supported and encouraged as a file extension for `JSON
     Lines`_ files (:issue:`4848`).
 
@@ -77,12 +86,6 @@ New features
 -   :meth:`ImagesPipeline.thumb_path
     <scrapy.pipelines.images.ImagesPipeline.thumb_path>` now receives the
     source :ref:`item <topics-items>` (:issue:`5504`, :issue:`5508`).
-
--   You can now customize :ref:`request fingerprinting <request-fingerprints>`
-    through the new :setting:`REQUEST_FINGERPRINTER_CLASS` setting, instead of
-    having to change it on every Scrapy component that relies on request
-    fingerprinting (:issue:`900`, :issue:`3420`, :issue:`4113`, :issue:`4762`,
-    :issue:`4524`).
 
 
 Bug fixes
