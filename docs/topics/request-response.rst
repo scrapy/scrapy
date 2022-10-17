@@ -446,7 +446,7 @@ class).
 Scenarios where changing the request fingerprinting algorithm may cause
 undesired results include, for example, using the HTTP cache middleware (see
 :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
-Changing the request fingerprinting algorithm would invalidade the current
+Changing the request fingerprinting algorithm would invalidate the current
 cache, requiring you to redownload all requests again.
 
 Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'VERSION'`` in
