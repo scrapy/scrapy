@@ -187,7 +187,7 @@ solutions:
   * Install `homebrew`_ following the instructions in https://brew.sh/
 
   * Update your ``PATH`` variable to state that homebrew packages should be
-    used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly
+    used before system packages (Change ``.bashrc`` to ``.zshrc`` accordingly
     if you're using `zsh`_ as default shell)::
 
       echo "export PATH=/usr/local/bin:/usr/local/sbin:$PATH" >> ~/.bashrc
