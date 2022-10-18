@@ -74,7 +74,7 @@ class AutoThrottle:
         target_delay = latency / self.target_concurrency
 
         # Adjust the delay to make it closer to target_delay
-        new_delay = (slot.delay + target_delay) / 2.0
+        new_delay = (slot.delay + target_delay) / 2
 
         # If target delay is bigger than old delay, then use it instead of mean.
         # It works better with problematic sites.
