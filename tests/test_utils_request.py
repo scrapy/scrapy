@@ -505,7 +505,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
 
     def test_deprecated_implementation(self):
         settings = {
-            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'PREVIOUS_VERSION',
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.6',
         }
         with warnings.catch_warnings(record=True) as logged_warnings:
             crawler = get_crawler(settings_dict=settings)
@@ -518,7 +518,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
 
     def test_recommended_implementation(self):
         settings = {
-            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
         }
         with warnings.catch_warnings(record=True) as logged_warnings:
             crawler = get_crawler(settings_dict=settings)
