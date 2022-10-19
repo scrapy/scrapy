@@ -15,7 +15,7 @@ from scrapy.exceptions import UsageError
 class ScrapyCommand:
 
     requires_project = False
-    crawler_process = None
+    crawler_process: Any = None
 
     # default settings to be used for this command instead of global defaults
     default_settings: Dict[str, Any] = {}
@@ -23,7 +23,7 @@ class ScrapyCommand:
     exitcode = 0
 
     def __init__(self):
-        self.settings = None  # set in scrapy.cmdline
+        self.settings: Any = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler):
         if hasattr(self, '_crawler'):

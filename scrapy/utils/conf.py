@@ -5,7 +5,7 @@ import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 
@@ -176,7 +176,7 @@ def feed_process_params_from_cli(settings, output: List[str], output_format=None
                 'URIs are specified'
             )
 
-    result = {}
+    result: Dict[str, Dict[str, Any]] = {}
     for element in output:
         try:
             feed_uri, feed_format = element.rsplit(':', 1)

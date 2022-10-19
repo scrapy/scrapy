@@ -112,6 +112,7 @@ class ProjectTest(unittest.TestCase):
                 match = pattern.search(line)
                 if match is not None:
                     return match
+        return None
 
 
 class StartprojectTest(ProjectTest):

@@ -292,6 +292,8 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 
 class ScriptRunnerMixin:
+    script_dir: Path
+
     def run_script(self, script_name: str, *script_args):
         script_path = self.script_dir / script_name
         args = [sys.executable, str(script_path)] + list(script_args)

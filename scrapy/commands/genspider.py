@@ -4,7 +4,7 @@ import string
 
 from pathlib import Path
 from importlib import import_module
-from typing import Optional
+from typing import Optional, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -116,6 +116,7 @@ class Command(ScrapyCommand):
             return template_file
         print(f"Unable to find template: {template}\n")
         print('Use "scrapy genspider --list" to see all available templates.')
+        return None
 
     def _list_templates(self):
         print("Available templates:")
@@ -144,7 +145,7 @@ class Command(ScrapyCommand):
 
         # a file with the same name exists in the target directory
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-        spiders_dir = Path(spiders_module.__file__).parent
+        spiders_dir = Path(cast(str, spiders_module.__file__)).parent
         spiders_dir_abs = spiders_dir.resolve()
         path = spiders_dir_abs / (name + ".py")
         if path.exists():
