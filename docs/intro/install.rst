@@ -138,25 +138,36 @@ Ubuntu 14.04 or above
 Scrapy is currently tested with recent-enough versions of lxml,
 twisted and pyOpenSSL, and is compatible with recent Ubuntu distributions.
 But it should support older versions of Ubuntu too, like Ubuntu 14.04,
-albeit with potential issues with TLS connections.
+albeit with potential issues with TLS connections (for security reasons, 
+you should use currently supported versions of Ubuntu distributions).
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
 typically too old and slow to catch up with latest Scrapy.
 
-
 To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
 these dependencies::
 
-    sudo apt-get install python3 python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
+    sudo apt-get install python3 python3-dev python3-pip python3-venv libxml2-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev
 
 - ``python3-dev``, ``zlib1g-dev``, ``libxml2-dev`` and ``libxslt1-dev``
   are required for ``lxml``
 - ``libssl-dev`` and ``libffi-dev`` are required for ``cryptography``
 
 Inside a :ref:`virtualenv <intro-using-virtualenv>`,
-you can install Scrapy with ``pip`` after that::
+you can install Scrapy with ``pip`` after that:
 
-    pip install scrapy
+#. Create a virtual environment called ``ve_scrapy``::
+
+    python3 -m venv ve_scrapy
+
+#. Activate it::
+
+    source ve_scrapy/bin/activate
+    
+#. Install Scrapy with ``pip`` inside it::
+  
+    python3 -m pip install scrapy
+  
 
 .. note::
     The same non-Python dependencies can be used to install Scrapy in Debian
