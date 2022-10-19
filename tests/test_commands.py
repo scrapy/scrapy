@@ -547,7 +547,7 @@ class GenspiderStandaloneCommandTest(ProjectTest):
             self.assertNotEqual(file_contents_after, file_contents_before)
         else:
             p, out, err = self.proc('genspider', file_name, 'example.com')
-            self.assertIn(f"{Path(self.temp_path, file_name + '.py')} already exists", out)
+            self.assertIn(f"{Path(self.temp_path, file_name + '.py').resolve()} already exists", out)
             modify_time_after = file_path.stat().st_mtime
             self.assertEqual(modify_time_after, modify_time_before)
             file_contents_after = file_path.read_text()
