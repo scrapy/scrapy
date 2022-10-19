@@ -14,7 +14,7 @@ from shutil import rmtree, copytree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import mkdtemp
 from threading import Timer
-from typing import Generator, Optional
+from typing import Dict, Generator, Optional, Union
 from unittest import skipIf
 
 from pytest import mark
@@ -104,7 +104,7 @@ class ProjectTest(unittest.TestCase):
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
-    def find_in_file(self, filename: str | os.PathLike[str], regex) -> Optional[re.Match]:
+    def find_in_file(self, filename: Union[str, os.PathLike], regex) -> Optional[re.Match]:
         """Find first pattern occurrence in file"""
         pattern = re.compile(regex)
         with Path(filename).open("r") as f:
@@ -175,7 +175,7 @@ class StartprojectTest(ProjectTest):
         assert Path(project_path, project_name, 'spiders', '__init__.py').exists()
 
 
-def get_permissions_dict(path: str | os.PathLike[str], renamings=None, ignore=None) -> dict[str, str]:
+def get_permissions_dict(path: Union[str, os.PathLike], renamings=None, ignore=None) -> Dict[str, str]:
 
     def get_permissions(path: Path) -> str:
         return oct(path.stat().st_mode)

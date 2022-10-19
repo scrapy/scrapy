@@ -6,6 +6,7 @@ import marshal
 import pickle
 from os import PathLike
 from pathlib import Path
+from typing import Union
 
 from queuelib import queue
 
@@ -17,7 +18,7 @@ def _with_mkdir(queue_class):
 
     class DirectoriesCreated(queue_class):
 
-        def __init__(self, path: str | PathLike[str], *args, **kwargs):
+        def __init__(self, path: Union[str, PathLike], *args, **kwargs):
             dirname = Path(path).parent
             if not dirname.exists():
                 dirname.mkdir(parents=True, exist_ok=True)

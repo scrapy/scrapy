@@ -3,13 +3,14 @@ from os import PathLike
 from pathlib import Path
 from importlib import import_module
 from types import ModuleType
+from typing import Union
 
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.exceptions import UsageError
 from scrapy.commands import BaseRunSpiderCommand
 
 
-def _import_file(filepath: str | PathLike[str]) -> ModuleType:
+def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
     abspath = Path(filepath).resolve()
     dirname = str(abspath.parent)
     if abspath.suffix not in ('.py', '.pyw'):

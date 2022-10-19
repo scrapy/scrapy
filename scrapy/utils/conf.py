@@ -5,7 +5,7 @@ import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 
@@ -67,7 +67,7 @@ def arglist_to_dict(arglist):
     return dict(x.split('=', 1) for x in arglist)
 
 
-def closest_scrapy_cfg(path: str | os.PathLike[str] = '.', prevpath: Optional[str | os.PathLike] = None) -> str:
+def closest_scrapy_cfg(path: Union[str, os.PathLike] = '.', prevpath: Optional[Union[str, os.PathLike]] = None) -> str:
     """Return the path to the closest scrapy.cfg file by traversing the current
     directory and its parents
     """
@@ -103,7 +103,7 @@ def get_config(use_closest=True):
     return cfg
 
 
-def get_sources(use_closest=True) -> list[str]:
+def get_sources(use_closest=True) -> List[str]:
     xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or Path('~/.config').expanduser()
     sources = [
         '/etc/scrapy.cfg',
@@ -131,8 +131,8 @@ def feed_complete_default_values_from_settings(feed, settings):
     return out
 
 
-def feed_process_params_from_cli(settings, output: list[str], output_format=None,
-                                 overwrite_output: Optional[list[str]] = None):
+def feed_process_params_from_cli(settings, output: List[str], output_format=None,
+                                 overwrite_output: Optional[List[str]] = None):
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
