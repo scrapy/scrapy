@@ -12,9 +12,9 @@ from scrapy.commands import BaseRunSpiderCommand
 
 def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
     abspath = Path(filepath).resolve()
-    dirname = str(abspath.parent)
     if abspath.suffix not in ('.py', '.pyw'):
         raise ValueError(f"Not a Python source file: {abspath}")
+    dirname = str(abspath.parent)
     if dirname:
         sys.path = [dirname] + sys.path
     try:
