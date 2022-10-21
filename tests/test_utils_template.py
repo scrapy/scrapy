@@ -28,7 +28,7 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
         template_path.write_text(template, encoding='utf8')
         assert template_path.is_file()  # Failure of test itself
 
-        render_templatefile(str(template_path), **context)
+        render_templatefile(template_path, **context)
 
         self.assertFalse(template_path.exists())
         self.assertEqual(render_path.read_text(encoding='utf8'), rendered)
