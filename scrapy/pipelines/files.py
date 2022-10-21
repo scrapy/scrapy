@@ -14,7 +14,7 @@ from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
+from typing import DefaultDict, Optional, Set
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -46,7 +46,7 @@ class FSFilesStore:
             basedir = basedir.split('://', 1)[1]
         self.basedir = basedir
         self._mkdir(Path(self.basedir))
-        self.created_directories: defaultdict[str, set[str]] = defaultdict(set)
+        self.created_directories: DefaultDict[str, Set[str]] = defaultdict(set)
 
     def persist_file(self, path: str, buf, info, meta=None, headers=None):
         absolute_path = self._get_filesystem_path(path)
