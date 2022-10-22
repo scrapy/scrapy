@@ -15,13 +15,11 @@ def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
     if abspath.suffix not in ('.py', '.pyw'):
         raise ValueError(f"Not a Python source file: {abspath}")
     dirname = str(abspath.parent)
-    if dirname:
-        sys.path = [dirname] + sys.path
+    sys.path = [dirname] + sys.path
     try:
         module = import_module(abspath.stem)
     finally:
-        if dirname:
-            sys.path.pop(0)
+        sys.path.pop(0)
     return module
 
 
