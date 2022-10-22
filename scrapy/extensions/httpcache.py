@@ -293,7 +293,7 @@ class FilesystemCacheStorage:
         metadata = self._read_meta(spider, request)
         if metadata is None:
             return  # not cached
-        rpath = self._get_request_path(spider, request)
+        rpath = Path(self._get_request_path(spider, request))
         with self._open(rpath / 'response_body', 'rb') as f:
             body = f.read()
         with self._open(rpath / 'response_headers', 'rb') as f:
@@ -307,7 +307,7 @@ class FilesystemCacheStorage:
 
     def store_response(self, spider: Spider, request: Request, response):
         """Store the given response in the cache."""
-        rpath = self._get_request_path(spider, request)
+        rpath = Path(self._get_request_path(spider, request))
         if not rpath.exists():
             rpath.mkdir(parents=True)
         metadata = {
@@ -330,12 +330,12 @@ class FilesystemCacheStorage:
         with self._open(rpath / 'request_body', 'wb') as f:
             f.write(request.body)
 
-    def _get_request_path(self, spider: Spider, request: Request) -> Path:
+    def _get_request_path(self, spider: Spider, request: Request) -> str:
         key = self._fingerprinter.fingerprint(request).hex()
-        return Path(self.cachedir, spider.name, key[0:2], key)
+        return str(Path(self.cachedir, spider.name, key[0:2], key))
 
     def _read_meta(self, spider: Spider, request: Request):
-        rpath = self._get_request_path(spider, request)
+        rpath = Path(self._get_request_path(spider, request))
         metapath = rpath / 'pickled_meta'
         if not metapath.exists():
             return  # not found
