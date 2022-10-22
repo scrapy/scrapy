@@ -133,6 +133,10 @@ class Command(ScrapyCommand):
                 return True
             return False
 
+        assert (
+            self.crawler_process is not None
+        ), "crawler_process must be set before calling run"
+
         try:
             spidercls = self.crawler_process.spider_loader.load(name)
         except KeyError:

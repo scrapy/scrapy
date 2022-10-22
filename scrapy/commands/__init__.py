@@ -4,9 +4,10 @@ Base class for Scrapy commands
 import os
 import argparse
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from twisted.python import failure
+from scrapy.crawler import CrawlerProcess
 
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.exceptions import UsageError
@@ -15,7 +16,7 @@ from scrapy.exceptions import UsageError
 class ScrapyCommand:
 
     requires_project = False
-    crawler_process: Any = None
+    crawler_process: Optional[CrawlerProcess] = None
 
     # default settings to be used for this command instead of global defaults
     default_settings: Dict[str, Any] = {}
