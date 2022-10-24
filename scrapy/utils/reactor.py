@@ -59,8 +59,11 @@ def install_reactor(reactor_path, event_loop_path=None):
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
             policy = asyncio.get_event_loop_policy()
-            if sys.version_info >= (3, 8) and sys.platform == "win32":
-                if not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy):
+            if (
+                sys.version_info >= (3, 8)
+                and sys.platform == "win32"
+                and not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy)
+            ):
                     policy = asyncio.WindowsSelectorEventLoopPolicy()
                     asyncio.set_event_loop_policy(policy)
 
