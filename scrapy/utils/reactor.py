@@ -64,8 +64,8 @@ def install_reactor(reactor_path, event_loop_path=None):
                 and sys.platform == "win32"
                 and not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy)
             ):
-                    policy = asyncio.WindowsSelectorEventLoopPolicy()
-                    asyncio.set_event_loop_policy(policy)
+                policy = asyncio.WindowsSelectorEventLoopPolicy()
+                asyncio.set_event_loop_policy(policy)
 
             if event_loop_path is not None:
                 event_loop_class = load_object(event_loop_path)
