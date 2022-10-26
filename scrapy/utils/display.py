@@ -5,7 +5,7 @@ pprint and pformat wrappers with colorization support
 import ctypes
 import platform
 import sys
-from distutils.version import LooseVersion as parse_version
+from packaging.version import Version as parse_version
 from pprint import pformat as pformat_
 
 

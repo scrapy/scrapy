@@ -22,7 +22,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     If you are using any custom or third-party :ref:`spider middleware
     <topics-spider-middleware>`, see :ref:`sync-async-spider-middleware`.
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.7
        Output of async callbacks is now processed asynchronously instead of
        collecting all of it first.
 
@@ -49,7 +49,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     See also :ref:`sync-async-spider-middleware` and
     :ref:`universal-spider-middleware`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.7
 
 General usage
 =============
@@ -129,7 +129,7 @@ Common use cases for asynchronous code include:
 Mixing synchronous and asynchronous spider middlewares
 ======================================================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.7
 
 The output of a :class:`~scrapy.Request` callback is passed as the ``result``
 parameter to the
@@ -182,10 +182,10 @@ process_spider_output_async method <universal-spider-middleware>`.
 Universal spider middlewares
 ============================
 
-.. versionadded:: VERSION
+.. versionadded:: 2.7
 
 To allow writing a spider middleware that supports asynchronous execution of
-its ``process_spider_output`` method in Scrapy VERSION and later (avoiding
+its ``process_spider_output`` method in Scrapy 2.7 and later (avoiding
 :ref:`asynchronous-to-synchronous conversions <sync-async-spider-middleware>`)
 while maintaining support for older Scrapy versions, you may define
 ``process_spider_output`` as a synchronous method and define an
@@ -206,7 +206,7 @@ For example::
                 yield r
 
 .. note:: This is an interim measure to allow, for a time, to write code that
-          works in Scrapy VERSION and later without requiring
+          works in Scrapy 2.7 and later without requiring
           asynchronous-to-synchronous conversions, and works in earlier Scrapy
           versions as well.
 

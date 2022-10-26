@@ -1,7 +1,7 @@
 from typing import AsyncGenerator, AsyncIterable, Iterable, Union
 
 
-async def collect_asyncgen(result: AsyncIterable):
+async def collect_asyncgen(result: AsyncIterable) -> list:
     results = []
     async for x in result:
         results.append(x)
