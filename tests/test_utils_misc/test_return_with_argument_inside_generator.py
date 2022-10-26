@@ -165,6 +165,89 @@ https://example.org
             warn_on_generator_with_return_value(None, l2)
             self.assertEqual(len(w), 0)
 
+    def test_generators_return_none_with_decorator(self):
+        def decorator(func):
+            def inner_func():
+                func()
+            return inner_func
+
+        @decorator
+        def f3():
+            yield 1
+            return None
+
+        @decorator
+        def g3():
+            yield 1
+            return
+
+        @decorator
+        def h3():
+            yield 1
+
+        @decorator
+        def i3():
+            yield 1
+            yield from generator_that_returns_stuff()
+
+        @decorator
+        def j3():
+            yield 1
+
+            def helper():
+                return 0
+
+            yield helper()
+
+        @decorator
+        def k3():
+            """
+docstring
+            """
+            url = """
+https://example.org
+        """
+            yield url
+            return
+
+        @decorator
+        def l3():
+            return
+
+        assert not is_generator_with_return_value(top_level_return_none)
+        assert not is_generator_with_return_value(f3)
+        assert not is_generator_with_return_value(g3)
+        assert not is_generator_with_return_value(h3)
+        assert not is_generator_with_return_value(i3)
+        assert not is_generator_with_return_value(j3)  # not recursive
+        assert not is_generator_with_return_value(k3)  # not recursive
+        assert not is_generator_with_return_value(l3)
+
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, top_level_return_none)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, f3)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, g3)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, h3)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, i3)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, j3)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, k3)
+            self.assertEqual(len(w), 0)
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(None, l3)
+            self.assertEqual(len(w), 0)
+
     @mock.patch("scrapy.utils.misc.is_generator_with_return_value", new=_indentation_error)
     def test_indentation_error(self):
         with warnings.catch_warnings(record=True) as w:

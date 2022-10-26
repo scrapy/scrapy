@@ -34,6 +34,7 @@ def url_has_any_extension(url, extensions):
     lowercase_path = parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
+
 def parse_url(url, encoding=None):
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
