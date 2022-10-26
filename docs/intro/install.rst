@@ -52,7 +52,7 @@ Scrapy is written in pure Python and depends on a few key Python packages (among
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
 
-Some of these packages themselves depends on non-Python packages
+Some of these packages themselves depend on non-Python packages
 that might require additional installation steps depending on your platform.
 Please check :ref:`platform-specific guides below <intro-install-platform-notes>`.
 
