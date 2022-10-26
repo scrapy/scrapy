@@ -226,7 +226,14 @@ def is_generator_with_return_value(callable):
         return value is None or isinstance(value, ast.NameConstant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
-        code = re.sub(r"^[\t ]+", "", inspect.getsource(callable))
+        src = inspect.getsource(callable)
+        pattern = re.compile(r"(^[\t ]+)")
+        code = pattern.sub("", src)
+
+        match = pattern.match(src)  # finds indentation
+        if match:
+            code = re.sub(f"\n{match.group(0)}", "\n", code)  # remove indentation
+
         tree = ast.parse(code)
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
