@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   checks:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -19,18 +19,21 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: pylint
-        - python-version: 3.6
+        - python-version: 3.7
           env:
             TOXENV: typing
         - python-version: "3.10"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs
+        - python-version: "3.10"
+          env:
+            TOXENV: twinecheck
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 

@@ -955,7 +955,7 @@ default because HTTP specs say so.
 .. setting:: RETRY_PRIORITY_ADJUST
 
 RETRY_PRIORITY_ADJUST
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Default: ``-1``
 
@@ -1119,7 +1119,7 @@ In order to use this parser:
 .. _support-for-new-robots-parser:
 
 Implementing support for a new parser
--------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can implement support for a new robots.txt_ parser by subclassing
 the abstract base class :class:`~scrapy.robotstxt.RobotParser` and

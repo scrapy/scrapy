@@ -5,8 +5,9 @@ from datetime import datetime
 from io import BytesIO
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import mock, skipIf
+from unittest import mock
 from urllib.parse import urlparse
+import dataclasses
 
 import attr
 from itemadapter import ItemAdapter
@@ -25,17 +26,11 @@ from scrapy.pipelines.files import (
 from scrapy.settings import Settings
 from scrapy.utils.test import (
     assert_gcs_environ,
+    get_crawler,
     get_ftp_content_and_delete,
     get_gcs_content_and_delete,
     skip_if_no_boto,
 )
-
-
-try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
 
 
 def _mocked_download_func(request, info):
@@ -47,7 +42,9 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        settings_dict = {'FILES_STORE': self.tempdir}
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
@@ -223,24 +220,19 @@ class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest
     item_class = FilesPipelineTestItem
 
 
-@skipIf(not make_dataclass, "dataclasses module is not available")
-class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+@dataclasses.dataclass
+class FilesPipelineTestDataClass:
+    name: str
+    # default fields
+    file_urls: list = dataclasses.field(default_factory=list)
+    files: list = dataclasses.field(default_factory=list)
+    # overridden fields
+    custom_file_urls: list = dataclasses.field(default_factory=list)
+    custom_files: list = dataclasses.field(default_factory=list)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "FilesPipelineTestDataClass",
-                [
-                    ("name", str),
-                    # default fields
-                    ("file_urls", list, dataclass_field(default_factory=list)),
-                    ("files", list, dataclass_field(default_factory=list)),
-                    # overridden fields
-                    ("custom_file_urls", list, dataclass_field(default_factory=list)),
-                    ("custom_files", list, dataclass_field(default_factory=list)),
-                ],
-            )
+
+class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestDataClass
 
 
 @attr.s
@@ -524,6 +516,29 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
+
+    @defer.inlineCallbacks
+    def test_blob_path_consistency(self):
+        """Test to make sure that paths used to store files is the same as the one used to get
+        already uploaded files.
+        """
+        assert_gcs_environ()
+        try:
+            import google.cloud.storage # noqa
+        except ModuleNotFoundError:
+            raise unittest.SkipTest("google-cloud-storage is not installed")
+        else:
+            with mock.patch('google.cloud.storage') as _:
+                with mock.patch('scrapy.pipelines.files.time') as _:
+                    uri = 'gs://my_bucket/my_prefix/'
+                    store = GCSFilesStore(uri)
+                    store.bucket = mock.Mock()
+                    path = 'full/my_data.txt'
+                    yield store.persist_file(path, mock.Mock(), info=None, meta=None, headers=None)
+                    yield store.stat_file(path, info=None)
+                    expected_blob_path = store.prefix + path
+                    store.bucket.blob.assert_called_with(expected_blob_path)
+                    store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
 class TestFTPFileStore(unittest.TestCase):

@@ -146,7 +146,7 @@ class ImagesPipeline(FilesPipeline):
         yield path, image, buf
 
         for thumb_id, size in self.thumbs.items():
-            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
+            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info, item=item)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
 
@@ -165,7 +165,14 @@ class ImagesPipeline(FilesPipeline):
 
         if size:
             image = image.copy()
-            image.thumbnail(size, self._Image.ANTIALIAS)
+            try:
+                # Image.Resampling.LANCZOS was added in Pillow 9.1.0
+                # remove this try except block,
+                # when updating the minimum requirements for Pillow.
+                resampling_filter = self._Image.Resampling.LANCZOS
+            except AttributeError:
+                resampling_filter = self._Image.ANTIALIAS
+            image.thumbnail(size, resampling_filter)
 
         buf = BytesIO()
         image.save(buf, 'JPEG')
@@ -184,6 +191,6 @@ class ImagesPipeline(FilesPipeline):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f'full/{image_guid}.jpg'
 
-    def thumb_path(self, request, thumb_id, response=None, info=None):
+    def thumb_path(self, request, thumb_id, response=None, info=None, *, item=None):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f'thumbs/{thumb_id}/{thumb_guid}.jpg'

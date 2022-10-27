@@ -689,8 +689,15 @@ class MySpider(scrapy.Spider):
         ])
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-    def test_asyncio_enabled_false(self):
+    def test_asyncio_enabled_default(self):
         log = self.get_log(self.debug_log_spider, args=[])
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_asyncio_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.selectreactor.SelectReactor'
+        ])
+        self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
@@ -769,6 +776,21 @@ class MySpider(scrapy.Spider):
         args = ['-o', 'example1.json', '-O', 'example2.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
+
+    def test_output_stdout(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
+        return []
+"""
+        args = ['-o', '-:json']
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}", log)
 
 
 @skipIf(platform.system() != 'Windows', "Windows required for .pyw files")
@@ -915,3 +937,17 @@ class MySpider(scrapy.Spider):
         args = ['-o', 'example1.json', '-O', 'example2.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn("error: Please use only one of -o/--output and -O/--overwrite-output", log)
+
+
+class HelpMessageTest(CommandTest):
+
+    def setUp(self):
+        super().setUp()
+        self.commands = ["parse", "startproject", "view", "crawl", "edit",
+                         "list", "fetch", "settings", "shell", "runspider",
+                         "version", "genspider", "check", "bench"]
+
+    def test_help_messages(self):
+        for command in self.commands:
+            _, out, _ = self.proc(command, "-h")
+            self.assertIn("Usage", out)

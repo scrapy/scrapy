@@ -1,6 +1,7 @@
 import os
 import argparse
 from os.path import join, abspath, isfile, exists
+
 from twisted.internet import defer
 from scrapy.commands import parse
 from scrapy.settings import Settings
@@ -28,7 +29,15 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
+from scrapy.utils.test import get_from_asyncio_queue
 
+class AsyncDefAsyncioSpider(scrapy.Spider):
+
+    name = 'asyncdef{self.spider_name}'
+
+    async def parse(self, response):
+        status = await get_from_asyncio_queue(response.status)
+        return [scrapy.Item(), dict(foo='bar')]
 
 class MySpider(scrapy.Spider):
     name = '{self.spider_name}'
@@ -160,6 +169,13 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertIn("INFO: It Works!", _textmode(stderr))
 
     @defer.inlineCallbacks
+    def test_asyncio_parse_items(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'asyncdef' + self.spider_name, '-c', 'parse', self.url('/html')]
+        )
+        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+
+    @defer.inlineCallbacks
     def test_parse_items(self):
         status, out, stderr = yield self.execute(
             ['--spider', self.spider_name, '-c', 'parse', self.url('/html')]
@@ -221,6 +237,11 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         )
         self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
+
+    @defer.inlineCallbacks
+    def test_crawlspider_not_exists_with_not_matched_url(self):
+        status, out, stderr = yield self.execute([self.url('/invalid_url')])
+        self.assertEqual(status, 0)
 
     @defer.inlineCallbacks
     def test_output_flag(self):

@@ -384,8 +384,7 @@ class ScrapyAgent:
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": request, "handler": handler.__qualname__})
                 txresponse._transport.stopProducing()
-                with suppress(AttributeError):
-                    txresponse._transport._producer.loseConnection()
+                txresponse._transport.loseConnection()
                 return {
                     "txresponse": txresponse,
                     "body": b"",
@@ -417,7 +416,7 @@ class ScrapyAgent:
 
             logger.warning(warning_msg, warning_args)
 
-            txresponse._transport._producer.loseConnection()
+            txresponse._transport.loseConnection()
             raise defer.CancelledError(warning_msg % warning_args)
 
         if warnsize and expected_size > warnsize:
@@ -543,7 +542,7 @@ class _ResponseReader(protocol.Protocol):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": self._request, "handler": handler.__qualname__})
                 self.transport.stopProducing()
-                self.transport._producer.loseConnection()
+                self.transport.loseConnection()
                 failure = result if result.value.fail else None
                 self._finish_response(flags=["download_stopped"], failure=failure)
 

@@ -70,7 +70,7 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline requires Pillow_ 4.0.0 or greater. It is used for
+The Images Pipeline requires Pillow_ 7.1.0 or greater. It is used for
 thumbnailing and normalizing images to JPEG/RGB format.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
@@ -655,6 +655,26 @@ See here the methods that you can override in your custom Images Pipeline:
 
       .. versionadded:: 2.4
          The *item* parameter.
+
+   .. method:: ImagesPipeline.thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)
+
+      This method is called for every item of  :setting:`IMAGES_THUMBS` per downloaded item. It returns the
+      thumbnail download path of the image originating from the specified
+      :class:`response <scrapy.http.Response>`.
+
+      In addition to ``response``, this method receives the original
+      :class:`request <scrapy.Request>`,
+      ``thumb_id``,
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and
+      :class:`item <scrapy.Item>`.
+
+      You can override this method to customize the thumbnail download path of each image.
+      You can use the ``item`` to determine the file path based on some item
+      property.
+
+      By default the :meth:`thumb_path` method returns
+      ``thumbs/<size name>/<request URL hash>.<extension>``.
+
 
    .. method:: ImagesPipeline.get_media_requests(item, info)
 

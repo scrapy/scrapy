@@ -222,8 +222,8 @@ class GCSFilesStore:
                 return {'checksum': checksum, 'last_modified': last_modified}
             else:
                 return {}
-
-        return threads.deferToThread(self.bucket.get_blob, path).addCallback(_onsuccess)
+        blob_path = self._get_blob_path(path)
+        return threads.deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess)
 
     def _get_content_type(self, headers):
         if headers and 'Content-Type' in headers:
@@ -231,8 +231,12 @@ class GCSFilesStore:
         else:
             return 'application/octet-stream'
 
+    def _get_blob_path(self, path):
+        return self.prefix + path
+
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        blob = self.bucket.blob(self.prefix + path)
+        blob_path = self._get_blob_path(path)
+        blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
         return threads.deferToThread(

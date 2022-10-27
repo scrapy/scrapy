@@ -17,7 +17,7 @@ settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
 avoid collision with existing (and future) extensions. For example, a
-hypothetic extension to handle `Google Sitemaps`_ would use settings like
+hypothetical extension to handle `Google Sitemaps`_ would use settings like
 ``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
 .. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps

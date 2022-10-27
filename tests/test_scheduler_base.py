@@ -7,10 +7,10 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
 
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.request import request_fingerprint
+from scrapy.utils.request import fingerprint
+from scrapy.utils.test import get_crawler
 
 from tests.mockserver import MockServer
 
@@ -21,13 +21,13 @@ URLS = [urljoin("https://example.org", p) for p in PATHS]
 
 class MinimalScheduler:
     def __init__(self) -> None:
-        self.requests: Dict[str, Request] = {}
+        self.requests: Dict[bytes, Request] = {}
 
     def has_pending_requests(self) -> bool:
         return bool(self.requests)
 
     def enqueue_request(self, request: Request) -> bool:
-        fp = request_fingerprint(request)
+        fp = fingerprint(request)
         if fp not in self.requests:
             self.requests[fp] = request
             return True
@@ -147,9 +147,12 @@ class MinimalSchedulerCrawlTest(TwistedTestCase):
     @defer.inlineCallbacks
     def test_crawl(self):
         with MockServer() as mockserver:
-            settings = {"SCHEDULER": self.scheduler_cls}
+            settings = {
+                "SCHEDULER": self.scheduler_cls,
+            }
             with LogCapture() as log:
-                yield CrawlerRunner(settings).crawl(TestSpider, mockserver)
+                crawler = get_crawler(TestSpider, settings)
+                yield crawler.crawl(mockserver)
             for path in PATHS:
                 self.assertIn(f"{{'path': '{path}'}}", str(log))
             self.assertIn(f"'item_scraped_count': {len(PATHS)}", str(log))

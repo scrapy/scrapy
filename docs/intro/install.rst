@@ -9,8 +9,8 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.6+, either the CPython implementation (default) or
-the PyPy 7.2.0+ implementation (see :ref:`python:implementations`).
+Scrapy requires Python 3.7+, either the CPython implementation (default) or
+the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
 
@@ -52,17 +52,7 @@ Scrapy is written in pure Python and depends on a few key Python packages (among
 * `twisted`_, an asynchronous networking framework
 * `cryptography`_ and `pyOpenSSL`_, to deal with various network-level security needs
 
-The minimal versions which Scrapy is tested against are:
-
-* Twisted 14.0
-* lxml 3.4
-* pyOpenSSL 0.14
-
-Scrapy may work with older versions of these packages
-but it is not guaranteed it will continue working
-because it’s not being tested against them.
-
-Some of these packages themselves depends on non-Python packages
+Some of these packages themselves depend on non-Python packages
 that might require additional installation steps depending on your platform.
 Please check :ref:`platform-specific guides below <intro-install-platform-notes>`.
 
@@ -197,7 +187,7 @@ solutions:
   * Install `homebrew`_ following the instructions in https://brew.sh/
 
   * Update your ``PATH`` variable to state that homebrew packages should be
-    used before system packages (Change ``.bashrc`` to ``.zshrc`` accordantly
+    used before system packages (Change ``.bashrc`` to ``.zshrc`` accordingly
     if you're using `zsh`_ as default shell)::
 
       echo "export PATH=/usr/local/bin:/usr/local/sbin:$PATH" >> ~/.bashrc
@@ -229,7 +219,7 @@ After any of these workarounds you should be able to install Scrapy::
 PyPy
 ----
 
-We recommend using the latest PyPy version. The version tested is 5.9.0.
+We recommend using the latest PyPy version.
 For PyPy3, only Linux installation was tested.
 
 Most Scrapy dependencies now have binary wheels for CPython, but not for PyPy.

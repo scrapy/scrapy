@@ -379,7 +379,7 @@ like this:
 Let's open up scrapy shell and play a bit to find out how to extract the data
 we want::
 
-    $ scrapy shell 'https://quotes.toscrape.com'
+    scrapy shell 'https://quotes.toscrape.com'
 
 We get a list of selectors for the quote HTML elements with:
 
@@ -482,7 +482,7 @@ to append new content to any existing file. However, appending to a JSON file
 makes the file contents invalid JSON. When appending to a file, consider
 using a different serialization format, such as `JSON Lines`_::
 
-    scrapy crawl quotes -o quotes.jl
+    scrapy crawl quotes -o quotes.jsonl
 
 The `JSON Lines`_ format is useful because it's stream-like, you can easily
 append new records to it. It doesn't have the same problem of JSON when you run
