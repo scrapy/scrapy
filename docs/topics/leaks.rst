@@ -154,7 +154,7 @@ Too many spiders?
 If your project has too many spiders executed in parallel,
 the output of :func:`prefs()` can be difficult to read.
 For this reason, that function has a ``ignore`` argument which can be used to
-ignore a particular class (and all its subclases). For
+ignore a particular class (and all its subclasses). For
 example, this won't show any live references to spiders:
 
 >>> from scrapy.spiders import Spider

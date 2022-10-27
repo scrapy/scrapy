@@ -25,7 +25,3 @@ process = CrawlerProcess(settings={
 
 process.crawl(NoRequestsSpider)
 process.start()
-
-
-
-

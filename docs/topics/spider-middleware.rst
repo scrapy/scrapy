@@ -105,17 +105,17 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
-        .. versionchanged:: VERSION
+        .. versionchanged:: 2.7
            This method may be defined as an :term:`asynchronous generator`, in
            which case ``result`` is an :term:`asynchronous iterable`.
 
         Consider defining this method as an :term:`asynchronous generator`,
         which will be a requirement in a future version of Scrapy. However, if
         you plan on sharing your spider middleware with other people, consider
-        either :ref:`enforcing Scrapy VERSION <enforce-component-requirements>`
+        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
         as a minimum requirement of your spider middleware, or :ref:`making
         your spider middleware universal <universal-spider-middleware>` so that
-        it works with Scrapy versions earlier than Scrapy VERSION.
+        it works with Scrapy versions earlier than Scrapy 2.7.
 
         :param response: the response which generated this output from the
           spider
@@ -130,7 +130,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
     .. method:: process_spider_output_async(response, result, spider)
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.7
 
         If defined, this method must be an :term:`asynchronous generator`,
         which will be called instead of :meth:`process_spider_output` if

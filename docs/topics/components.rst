@@ -75,9 +75,9 @@ If your requirement is a minimum Scrapy version, you may use
     class MyComponent:
 
         def __init__(self):
-            if parse_version(scrapy.__version__) < parse_version('VERSION'):
+            if parse_version(scrapy.__version__) < parse_version('2.7'):
                 raise RuntimeError(
-                    f"{MyComponent.__qualname__} requires Scrapy VERSION or "
+                    f"{MyComponent.__qualname__} requires Scrapy 2.7 or "
                     f"later, which allow defining the process_spider_output "
                     f"method of spider middlewares as an asynchronous "
                     f"generator."

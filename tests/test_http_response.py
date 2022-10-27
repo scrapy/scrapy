@@ -1,3 +1,4 @@
+import codecs
 import unittest
 from unittest import mock
 
@@ -358,6 +359,8 @@ class TextResponseTest(BaseResponseTest):
                                  headers={"Content-type": ["text/html; charset=gb2312"]})
         r7 = self.response_class("http://www.example.com", body=b"\xa8D",
                                  headers={"Content-type": ["text/html; charset=gbk"]})
+        r8 = self.response_class("http://www.example.com", body=codecs.BOM_UTF8 + b"\xc2\xa3",
+                                 headers={"Content-type": ["text/html; charset=cp1251"]})
 
         self.assertEqual(r1._headers_encoding(), "utf-8")
         self.assertEqual(r2._headers_encoding(), None)
@@ -367,7 +370,10 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r3._declared_encoding(), "cp1252")
         self.assertEqual(r4._headers_encoding(), None)
         self.assertEqual(r5._headers_encoding(), None)
+        self.assertEqual(r8._headers_encoding(), "cp1251")
+        self.assertEqual(r8._declared_encoding(), "utf-8")
         self._assert_response_encoding(r5, "utf-8")
+        self._assert_response_encoding(r8, "utf-8")
         assert r4._body_inferred_encoding() is not None and r4._body_inferred_encoding() != 'ascii'
         self._assert_response_values(r1, 'utf-8', "\xa3")
         self._assert_response_values(r2, 'utf-8', "\xa3")
@@ -699,7 +705,8 @@ class HtmlResponseTest(TextResponseTest):
 
     def test_html_encoding(self):
 
-        body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+        body = b"""<html><head><title>Some page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
         """
         r1 = self.response_class("http://www.example.com", body=body)
@@ -713,7 +720,8 @@ class HtmlResponseTest(TextResponseTest):
         self._assert_response_values(r2, 'iso-8859-1', body)
 
         # for conflicting declarations headers must take precedence
-        body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        body = b"""<html><head><title>Some page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         </head><body>Price: \xa3100</body></html>'
         """
         r3 = self.response_class("http://www.example.com", body=body,
