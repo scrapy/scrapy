@@ -271,11 +271,31 @@ crawl
 
 Start crawling using a spider.
 
+Supported options:
+
+* ``-h, --help``: show a help message and exit
+
+* ``-a NAME=VALUE``: set a spider argument (may be repeated)
+
+* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout), to define format set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file, to define format set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
+
+* ``--output-format FORMAT`` or ``-t FORMAT``: deprecated way to define format to use for dumping items, does not work in combination with ``-O``
+
 Usage examples::
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
+    $ scrapy -o myfile:csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
+
+    $ scrapy -O myfile:json myspider
+    [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
+
+    $ scrapy -o myfile -t csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
 
