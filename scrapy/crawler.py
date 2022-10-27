@@ -31,7 +31,12 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
-from scrapy.utils.reactor import install_reactor, verify_installed_reactor
+from scrapy.utils.reactor import (
+    install_reactor,
+    is_asyncio_reactor_installed,
+    verify_installed_asyncio_event_loop,
+    verify_installed_reactor,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -78,17 +83,20 @@ class Crawler:
             crawler=self,
         )
 
-        reactor_class = self.settings.get("TWISTED_REACTOR")
+        reactor_class = self.settings["TWISTED_REACTOR"]
+        event_loop = self.settings["ASYNCIO_EVENT_LOOP"]
         if init_reactor:
             # this needs to be done after the spider settings are merged,
             # but before something imports twisted.internet.reactor
             if reactor_class:
-                install_reactor(reactor_class, self.settings["ASYNCIO_EVENT_LOOP"])
+                install_reactor(reactor_class, event_loop)
             else:
                 from twisted.internet import reactor  # noqa: F401
             log_reactor_info()
         if reactor_class:
             verify_installed_reactor(reactor_class)
+            if is_asyncio_reactor_installed() and event_loop:
+                verify_installed_asyncio_event_loop(event_loop)
 
         self.extensions = ExtensionManager.from_crawler(self)
 

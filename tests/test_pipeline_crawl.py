@@ -64,7 +64,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.tmpmediastore = self.mktemp()
         os.mkdir(self.tmpmediastore)
         self.settings = {
-            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
             'ITEM_PIPELINES': {self.pipeline_class: 1},
             self.store_setting_key: self.tmpmediastore,
         }

@@ -52,7 +52,7 @@ class MockCrawler(Crawler):
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
-            REQUEST_FINGERPRINTER_IMPLEMENTATION='VERSION',
+            REQUEST_FINGERPRINTER_IMPLEMENTATION='2.7',
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())

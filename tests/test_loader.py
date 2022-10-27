@@ -295,7 +295,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
         l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), ['Marta'])
-    
+
     def test_init_method_with_base_response(self):
         """Selector should be None after initialization"""
         response = Response("https://scrapy.org")

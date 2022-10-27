@@ -379,7 +379,7 @@ like this:
 Let's open up scrapy shell and play a bit to find out how to extract the data
 we want::
 
-    $ scrapy shell 'https://quotes.toscrape.com'
+    scrapy shell 'https://quotes.toscrape.com'
 
 We get a list of selectors for the quote HTML elements with:
 

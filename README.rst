@@ -64,7 +64,9 @@ Requirements
 Install
 =======
 
-The quick way::
+The quick way:
+
+.. code:: bash
 
     pip install scrapy
 
@@ -95,8 +97,7 @@ See https://docs.scrapy.org/en/master/contributing.html for details.
 Code of Conduct
 ---------------
 
-Please note that this project is released with a Contributor Code of Conduct
-(see https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md).
+Please note that this project is released with a Contributor `Code of Conduct <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_.
 
 By participating in this project you agree to abide by its terms.
 Please report unacceptable behavior to opensource@zyte.com.
