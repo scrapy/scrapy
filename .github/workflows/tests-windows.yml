@@ -23,6 +23,13 @@ jobs:
         - python-version: "3.10"
           env:
             TOXENV: asyncio
+# no binary package for lxml for 3.11 yet
+#        - python-version: "3.11"
+#          env:
+#            TOXENV: py
+#        - python-version: "3.11"
+#          env:
+#            TOXENV: asyncio
 
     steps:
     - uses: actions/checkout@v3
