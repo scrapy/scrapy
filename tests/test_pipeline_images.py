@@ -4,7 +4,6 @@ import io
 import random
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import skipIf
 from warnings import catch_warnings
 
 import attr
