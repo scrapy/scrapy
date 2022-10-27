@@ -269,7 +269,8 @@ def deferred_from_coro(o) -> Any:
             return ensureDeferred(o)
         else:
             # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-            return Deferred.fromFuture(asyncio.ensure_future(o))
+            event_loop = get_asyncio_event_loop_policy().get_event_loop()
+            return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
     return o
 
 
