@@ -41,6 +41,7 @@ from tests.spiders import (
     CrawlSpiderWithAsyncGeneratorCallback,
     CrawlSpiderWithErrback,
     CrawlSpiderWithParseMethod,
+    CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
     DuplicateStartRequestsSpider,
     FollowAllSpider,
@@ -425,6 +426,16 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn("[errback] status 404", str(log))
         self.assertIn("[errback] status 500", str(log))
         self.assertIn("[errback] status 501", str(log))
+
+    @defer.inlineCallbacks
+    def test_crawlspider_process_request_cb_kwargs(self):
+        crawler = get_crawler(CrawlSpiderWithProcessRequestCallbackKeywordArguments)
+        with LogCapture() as log:
+            yield crawler.crawl(mockserver=self.mockserver)
+
+        self.assertIn("[parse] status 200 (foo: process_request)", str(log))
+        self.assertIn("[parse] status 201 (foo: process_request)", str(log))
+        self.assertIn("[parse] status 202 (foo: bar)", str(log))
 
     @defer.inlineCallbacks
     def test_async_def_parse(self):
