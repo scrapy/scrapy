@@ -1,5 +1,6 @@
 import unittest
 import warnings
+from functools import partial
 from unittest import mock
 
 from scrapy.utils.misc import is_generator_with_return_value, warn_on_generator_with_return_value
@@ -254,3 +255,10 @@ https://example.org
             warn_on_generator_with_return_value(None, top_level_return_none)
             self.assertEqual(len(w), 1)
             self.assertIn('Unable to determine', str(w[0].message))
+
+    def test_partial(self):
+        def cb(arg1, arg2):
+            yield {}
+
+        partial_cb = partial(cb, arg1=42)
+        assert not is_generator_with_return_value(partial_cb)
