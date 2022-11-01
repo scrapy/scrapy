@@ -3,6 +3,57 @@
 Release notes
 =============
 
+.. _release-2.7.1:
+
+Scrapy 2.7.1 (Not relased yet)
+------------------------------
+
+New features
+~~~~~~~~~~~~
+
+-   Relaxed the restriction introduced in 2.6.2 so that the
+    ``Proxy-Authentication`` header can again be set explicitly, as long as the
+    proxy URL in the :reqmeta:`proxy` metadata has no other credentials, and
+    for as long as that proxy URL remains the same (:issue:`5626`).
+
+Bug fixes
+~~~~~~~~~
+
+-   Using ``-O``/``--overwrite-output`` and ``-t``/``--output-format`` options
+    together now produces an error instead of ignoring the former option
+    (:issue:`5516`, :issue:`5605`).
+
+-   Replaced deprecated :mod:`asyncio` APIs that implicitly use the current
+    event loop with code that explicitly requests a loop from the event loop
+    policy (:issue:`5685`, :issue:`5689`).
+
+-   Fixed uses of deprecated Scrapy APIs in the Scrapy itself (:issue:`5588`,
+    :issue:`5589`).
+
+-   Fixed uses of a deprecated Pillow API (:issue:`5684`, :issue:`5692`).
+
+-   Improved code that checks if generators return values, so that it no longer
+    fails on decorated methods and partial methods (:issue:`5323`,
+    :issue:`5592`, :issue:`5599`, :issue:`5691`).
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Upgraded the Code of Conduct to Contributor Covenant v2.1 (:issue:`5698`).
+
+-   Fixed typos (:issue:`5681`, :issue:`5694`).
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Re-enabled some erroneously disabled flake8 checks (:issue:`5688`).
+
+-   Ignored harmless deprecation warnings from :mod:`typing` in tests
+    (:issue:`5686`, :issue:`5697`).
+
+-   Modernized CI configuration (:issue:`5695`, :issue:`5696`).
+
+
 .. _release-2.7.0:
 
 Scrapy 2.7.0 (2022-10-17)
