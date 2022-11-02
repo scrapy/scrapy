@@ -188,7 +188,8 @@ class ProcessSpiderExceptionAsyncIterableMiddleware:
         from twisted.internet import reactor
         reactor.callLater(0, d.callback, None)
         await maybe_deferred_to_future(d)
-        yield from ({'foo': 2}, {'foo': 3})
+        yield {'foo': 2}
+        yield {'foo': 3}
 
 
 class ProcessSpiderOutputSimple(BaseAsyncSpiderMiddlewareTestCase):
