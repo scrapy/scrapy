@@ -14,7 +14,8 @@ New features
 -   Relaxed the restriction introduced in 2.6.2 so that the
     ``Proxy-Authentication`` header can again be set explicitly, as long as the
     proxy URL in the :reqmeta:`proxy` metadata has no other credentials, and
-    for as long as that proxy URL remains the same (:issue:`5626`).
+    for as long as that proxy URL remains the same; this restores compatibility
+    with scrapy-zyte-smartproxy 2.1.0 and older (:issue:`5626`).
 
 Bug fixes
 ~~~~~~~~~
@@ -27,7 +28,7 @@ Bug fixes
     event loop with code that explicitly requests a loop from the event loop
     policy (:issue:`5685`, :issue:`5689`).
 
--   Fixed uses of deprecated Scrapy APIs in the Scrapy itself (:issue:`5588`,
+-   Fixed uses of deprecated Scrapy APIs in Scrapy itself (:issue:`5588`,
     :issue:`5589`).
 
 -   Fixed uses of a deprecated Pillow API (:issue:`5684`, :issue:`5692`).
@@ -51,7 +52,7 @@ Quality assurance
 -   Ignored harmless deprecation warnings from :mod:`typing` in tests
     (:issue:`5686`, :issue:`5697`).
 
--   Modernized CI configuration (:issue:`5695`, :issue:`5696`).
+-   Modernized our CI configuration (:issue:`5695`, :issue:`5696`).
 
 
 .. _release-2.7.0:
