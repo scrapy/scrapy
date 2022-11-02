@@ -124,9 +124,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
         return {i: c for c, i in enumerate(mw_classes, start=start_index)}
 
     def _scrape_func(self, *args, **kwargs):
-        yield {'foo': 1}
-        yield {'foo': 2}
-        yield {'foo': 3}
+        yield from ({'foo': 1}, {'foo': 2}, {'foo': 3})
 
     @defer.inlineCallbacks
     def _get_middleware_result(self, *mw_classes, start_index: Optional[int] = None):
@@ -160,8 +158,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
 
 class ProcessSpiderOutputSimpleMiddleware:
     def process_spider_output(self, response, result, spider):
-        for r in result:
-            yield r
+        yield from result
 
 
 class ProcessSpiderOutputAsyncGenMiddleware:
@@ -172,8 +169,7 @@ class ProcessSpiderOutputAsyncGenMiddleware:
 
 class ProcessSpiderOutputUniversalMiddleware:
     def process_spider_output(self, response, result, spider):
-        for r in result:
-            yield r
+        yield from result
 
     async def process_spider_output_async(self, response, result, spider):
         async for r in result:
@@ -182,9 +178,7 @@ class ProcessSpiderOutputUniversalMiddleware:
 
 class ProcessSpiderExceptionSimpleIterableMiddleware:
     def process_spider_exception(self, response, exception, spider):
-        yield {'foo': 1}
-        yield {'foo': 2}
-        yield {'foo': 3}
+        yield from ({'foo': 1}, {'foo': 2}, {'foo': 3})
 
 
 class ProcessSpiderExceptionAsyncIterableMiddleware:
@@ -194,8 +188,7 @@ class ProcessSpiderExceptionAsyncIterableMiddleware:
         from twisted.internet import reactor
         reactor.callLater(0, d.callback, None)
         await maybe_deferred_to_future(d)
-        yield {'foo': 2}
-        yield {'foo': 3}
+        yield from ({'foo': 2}, {'foo': 3})
 
 
 class ProcessSpiderOutputSimple(BaseAsyncSpiderMiddlewareTestCase):
@@ -326,8 +319,7 @@ class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
 
 class ProcessStartRequestsSimpleMiddleware:
     def process_start_requests(self, start_requests, spider):
-        for r in start_requests:
-            yield r
+        yield from start_requests
 
 
 class ProcessStartRequestsSimple(BaseAsyncSpiderMiddlewareTestCase):
