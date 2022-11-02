@@ -5,8 +5,8 @@ Release notes
 
 .. _release-2.7.1:
 
-Scrapy 2.7.1 (Not relased yet)
-------------------------------
+Scrapy 2.7.1 (2022-11-02)
+-------------------------
 
 New features
 ~~~~~~~~~~~~
