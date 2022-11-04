@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.python import to_unicode
@@ -9,6 +11,13 @@ class Headers(CaselessDict):
     def __init__(self, seq=None, encoding='utf-8'):
         self.encoding = encoding
         super().__init__(seq)
+
+    def update(self, seq):
+        seq = seq.items() if isinstance(seq, Mapping) else seq
+        iseq = {}
+        for k, v in seq:
+            iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
+        super().update(iseq)
 
     def normkey(self, key):
         """Normalize key to bytes"""
@@ -86,4 +95,5 @@ class Headers(CaselessDict):
 
     def __copy__(self):
         return self.__class__(self)
+
     copy = __copy__

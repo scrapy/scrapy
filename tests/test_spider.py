@@ -21,6 +21,8 @@ from scrapy.spiders import (
 )
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.test import get_crawler
+from tests import get_testdata
+from w3lib.url import safe_url_string
 
 
 class SpiderTest(unittest.TestCase):
@@ -166,6 +168,23 @@ class XMLFeedSpiderTest(SpiderTest):
 class CSVFeedSpiderTest(SpiderTest):
 
     spider_class = CSVFeedSpider
+
+    def test_parse_rows(self):
+        body = get_testdata('feeds', 'feed-sample6.csv')
+        response = Response("http://example.org/dummy.csv", body=body)
+
+        class _CrawlSpider(self.spider_class):
+            name = "test"
+            delimiter = ","
+            quotechar = "'"
+
+            def parse_row(self, response, row):
+                return row
+
+        spider = _CrawlSpider()
+        rows = list(spider.parse_rows(response))
+        assert rows[0] == {'id': '1', 'name': 'alpha', 'value': 'foobar'}
+        assert len(rows) == 4
 
 
 class CrawlSpiderTest(SpiderTest):
@@ -343,9 +362,9 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                         ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
-                          'http://EXAMPLE.ORG/ABOUT.HTML',
-                          'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
+                         [safe_url_string('http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML'),
+                          safe_url_string('http://EXAMPLE.ORG/ABOUT.HTML'),
+                          safe_url_string('http://EXAMPLE.ORG/NOFOLLOW.HTML')])
 
     def test_process_request_instance_method_with_response(self):
 
@@ -583,39 +602,6 @@ class DeprecationTest(unittest.TestCase):
     def test_crawl_spider(self):
         assert issubclass(CrawlSpider, Spider)
         assert isinstance(CrawlSpider(name='foo'), Spider)
-
-    def test_make_requests_from_url_deprecated(self):
-        class MySpider4(Spider):
-            name = 'spider1'
-            start_urls = ['http://example.com']
-
-        class MySpider5(Spider):
-            name = 'spider2'
-            start_urls = ['http://example.com']
-
-            def make_requests_from_url(self, url):
-                return Request(url + "/foo", dont_filter=True)
-
-        with warnings.catch_warnings(record=True) as w:
-            # spider without overridden make_requests_from_url method
-            # doesn't issue a warning
-            spider1 = MySpider4()
-            self.assertEqual(len(list(spider1.start_requests())), 1)
-            self.assertEqual(len(w), 0)
-
-            # spider without overridden make_requests_from_url method
-            # should issue a warning when called directly
-            request = spider1.make_requests_from_url("http://www.example.com")
-            self.assertTrue(isinstance(request, Request))
-            self.assertEqual(len(w), 1)
-
-            # spider with overridden make_requests_from_url issues a warning,
-            # but the method still works
-            spider2 = MySpider5()
-            requests = list(spider2.start_requests())
-            self.assertEqual(len(requests), 1)
-            self.assertEqual(requests[0].url, 'http://example.com/foo')
-            self.assertEqual(len(w), 2)
 
 
 class NoParseMethodSpiderTest(unittest.TestCase):

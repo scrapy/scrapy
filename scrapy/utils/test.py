@@ -54,7 +54,7 @@ def get_ftp_content_and_delete(
     return "".join(ftp_data)
 
 
-def get_crawler(spidercls=None, settings_dict=None):
+def get_crawler(spidercls=None, settings_dict=None, prevent_warnings=True):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
     priority.
@@ -62,7 +62,12 @@ def get_crawler(spidercls=None, settings_dict=None):
     from scrapy.crawler import CrawlerRunner
     from scrapy.spiders import Spider
 
-    runner = CrawlerRunner(settings_dict)
+    # Set by default settings that prevent deprecation warnings.
+    settings = {}
+    if prevent_warnings:
+        settings['REQUEST_FINGERPRINTER_IMPLEMENTATION'] = '2.7'
+    settings.update(settings_dict or {})
+    runner = CrawlerRunner(settings)
     return runner.create_crawler(spidercls or Spider)
 
 
@@ -110,3 +115,10 @@ def mock_google_cloud_storage():
     bucket_mock.blob.return_value = blob_mock
 
     return (client_mock, bucket_mock, blob_mock)
+
+
+def get_web_client_agent_req(url):
+    from twisted.internet import reactor
+    from twisted.web.client import Agent  # imports twisted.internet.reactor
+    agent = Agent(reactor)
+    return agent.request(b'GET', url.encode('utf-8'))

@@ -230,10 +230,16 @@ Usage example::
 genspider
 ---------
 
-* Syntax: ``scrapy genspider [-t template] <name> <domain>``
+* Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+.. versionadded:: 2.6.0
+   The ability to pass a URL instead of a domain.
+
+Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+
+.. note:: Even if an HTTPS URL is specified, the protocol used in
+          ``start_urls`` is always HTTP. This is a known issue: :issue:`3553`.
 
 Usage example::
 
@@ -265,11 +271,31 @@ crawl
 
 Start crawling using a spider.
 
+Supported options:
+
+* ``-h, --help``: show a help message and exit
+
+* ``-a NAME=VALUE``: set a spider argument (may be repeated)
+
+* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout), to define format set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file, to define format set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
+
+* ``--output-format FORMAT`` or ``-t FORMAT``: deprecated way to define format to use for dumping items, does not work in combination with ``-O``
+
 Usage examples::
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
+    $ scrapy -o myfile:csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
+
+    $ scrapy -O myfile:json myspider
+    [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
+
+    $ scrapy -o myfile -t csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
 
@@ -597,8 +623,6 @@ Example:
 
 Register commands via setup.py entry points
 -------------------------------------------
-
-.. note:: This is an experimental feature, use with caution.
 
 You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``

@@ -379,6 +379,20 @@ class FormRequestTest(RequestTest):
         r1 = self.request_class("http://www.example.com", formdata={})
         self.assertEqual(r1.body, b'')
 
+    def test_formdata_overrides_querystring(self):
+        data = (('a', 'one'), ('a', 'two'), ('b', '2'))
+        url = self.request_class('http://www.example.com/?a=0&b=1&c=3#fragment',
+                                 method='GET', formdata=data).url.split('#')[0]
+        fs = _qs(self.request_class(url, method='GET', formdata=data))
+        self.assertEqual(set(fs[b'a']), {b'one', b'two'})
+        self.assertEqual(fs[b'b'], [b'2'])
+        self.assertIsNone(fs.get(b'c'))
+
+        data = {'a': '1', 'b': '2'}
+        fs = _qs(self.request_class('http://www.example.com/', method='GET', formdata=data))
+        self.assertEqual(fs[b'a'], [b'1'])
+        self.assertEqual(fs[b'b'], [b'2'])
+
     def test_default_encoding_bytes(self):
         # using default encoding (utf-8)
         data = {b'one': b'two', b'price': b'\xc2\xa3 100'}
@@ -1203,18 +1217,17 @@ class FormRequestTest(RequestTest):
                           response, formcss="input[name='abc']")
 
     def test_from_response_valid_form_methods(self):
-        body = """<form action="post.php" method="%s">
-            <input type="hidden" name="one" value="1">
-            </form>"""
+        form_methods = [[method, method] for method in self.request_class.valid_form_methods]
+        form_methods.append(['UNKNOWN', 'GET'])
 
-        for method in self.request_class.valid_form_methods:
-            response = _buildresponse(body % method)
+        for method, expected in form_methods:
+            response = _buildresponse(
+                f'<form action="post.php" method="{method}">'
+                '<input type="hidden" name="one" value="1">'
+                '</form>'
+            )
             r = self.request_class.from_response(response)
-            self.assertEqual(r.method, method)
-
-        response = _buildresponse(body % 'UNKNOWN')
-        r = self.request_class.from_response(response)
-        self.assertEqual(r.method, 'GET')
+            self.assertEqual(r.method, expected)
 
 
 def _buildresponse(body, **kwargs):

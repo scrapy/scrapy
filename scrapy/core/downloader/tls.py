@@ -11,7 +11,6 @@ from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
 logger = logging.getLogger(__name__)
 
 
-METHOD_SSLv3 = 'SSLv3'
 METHOD_TLS = 'TLS'
 METHOD_TLSv10 = 'TLSv1.0'
 METHOD_TLSv11 = 'TLSv1.1'
@@ -20,7 +19,6 @@ METHOD_TLSv12 = 'TLSv1.2'
 
 openssl_methods = {
     METHOD_TLS: SSL.SSLv23_METHOD,                      # protocol negotiation (recommended)
-    METHOD_SSLv3: SSL.SSLv3_METHOD,                     # SSL 3 (NOT recommended)
     METHOD_TLSv10: SSL.TLSv1_METHOD,                    # TLS 1.0 only
     METHOD_TLSv11: getattr(SSL, 'TLSv1_1_METHOD', 5),   # TLS 1.1 only
     METHOD_TLSv12: getattr(SSL, 'TLSv1_2_METHOD', 6),   # TLS 1.2 only
@@ -65,14 +63,14 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                 verifyHostname(connection, self._hostnameASCII)
             except (CertificateError, VerificationError) as e:
                 logger.warning(
-                    'Remote certificate is not valid for hostname "{}"; {}'.format(
-                        self._hostnameASCII, e))
+                    'Remote certificate is not valid for hostname "%s"; %s',
+                    self._hostnameASCII, e)
 
             except ValueError as e:
                 logger.warning(
                     'Ignoring error while verifying certificate '
-                    'from host "{}" (exception: {})'.format(
-                        self._hostnameASCII, repr(e)))
+                    'from host "%s" (exception: %r)',
+                    self._hostnameASCII, e)
 
 
 DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString('DEFAULT')
