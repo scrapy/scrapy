@@ -247,6 +247,12 @@ class CsvItemExporter(BaseItemExporter):
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
+    def finish_exporting(self):
+        # Detaching stream in order to avoid file closing.
+        # The file will be closed with slot.storage.store
+        # https://github.com/scrapy/scrapy/issues/5043
+        self.stream.detach()
+
     def _build_row(self, values):
         for s in values:
             try:
