@@ -267,9 +267,8 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
 Custom Amazon S3 headers
 ''''''''''''''''''''''''
 
-Steps to pass Headers to scrapy FilesPipeline using AWS S3
-
-Configuration:
+To send custom headers to AWS S3 when using :class:`~scrapy.pipelines.files.FilesPipeline`
+or :class:`~scrapy.pipelines.images.ImagesPipeline`, follow these steps:
 
 Subclass :class:`~scrapy.pipelines.files.S3FilesStore`, Extend its ``HEADERS`` class attribute in your subclass to define the headers you want with the values you want.
 For reference, `S3 <https://botocore.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html>`_ , `Common Request Headers <https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonRequestHeaders.html>`_ , `Common Response Headers <https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonResponseHeaders.html>`_ , `Request Response Data Mapping <https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html>`_.
