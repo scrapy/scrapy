@@ -368,7 +368,7 @@ used to control Scrapy behavior, this one is supposed to be read-only.
 .. reqmeta:: download_slot
 
 download_slot
-----------------
+-------------
 
 By default, it stores the hostname of the website to which request is destined.
 Scrapy uses slots as queues to process requests and `download_slot` represent the slot
