@@ -7,7 +7,6 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
 from unittest.mock import patch
-from warnings import catch_warnings
 
 import attr
 from itemadapter import ItemAdapter
@@ -90,6 +89,22 @@ class ImagesPipelineTestCase(unittest.TestCase):
                                     response=Response("file:///tmp/some.name/foo"),
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+
+    def test_thumbnail_name_from_item(self):
+        """
+        Custom thumbnail name based on item data, overriding default implementation
+        """
+
+        class CustomImagesPipeline(ImagesPipeline):
+            def thumb_path(self, request, thumb_id, response=None, info=None, item=None):
+                return f"thumb/{thumb_id}/{item.get('path')}"
+
+        thumb_path = CustomImagesPipeline.from_settings(Settings(
+            {'IMAGES_STORE': self.tempdir}
+        )).thumb_path
+        item = dict(path='path-to-store-file')
+        request = Request("http://example.com")
+        self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
 
     def test_get_images_exception(self):
         self.pipeline.min_width = 100
@@ -230,22 +245,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-    def test_thumbnail_name_from_item(self):
-        """
-        Custom thumbnail name based on item data, overriding default implementation
-        """
-
-        class CustomImagesPipeline(ImagesPipeline):
-            def thumb_path(self, request, thumb_id, response=None, info=None, item=None):
-                return f"thumb/{thumb_id}/{item.get('path')}"
-
-        thumb_path = CustomImagesPipeline.from_settings(Settings(
-            {'IMAGES_STORE': self.tempdir}
-        )).thumb_path
-        item = dict(path='path-to-store-file')
-        request = Request("http://example.com")
-        self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
 
 
 class DeprecatedImagesPipeline(ImagesPipeline):
@@ -536,11 +535,11 @@ class NoimagesDropTestCase(unittest.TestCase):
 
     def test_deprecation_warning(self):
         arg = str()
-        with catch_warnings(record=True) as warnings:
+        with warnings.catch_warnings(record=True) as warnings:
             NoimagesDrop(arg)
             self.assertEqual(len(warnings), 1)
             self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
-        with catch_warnings(record=True) as warnings:
+        with warnings.catch_warnings(record=True) as warnings:
             class SubclassedNoimagesDrop(NoimagesDrop):
                 pass
             SubclassedNoimagesDrop(arg)
