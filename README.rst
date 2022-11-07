@@ -1,3 +1,6 @@
+.. image:: https://scrapy.org/img/scrapylogo.png
+   :target: https://scrapy.org/
+   
 ======
 Scrapy
 ======
@@ -10,9 +13,17 @@ Scrapy
    :target: https://pypi.python.org/pypi/Scrapy
    :alt: Supported Python Versions
 
-.. image:: https://img.shields.io/travis/scrapy/scrapy/master.svg
-   :target: https://travis-ci.org/scrapy/scrapy
-   :alt: Build Status
+.. image:: https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu
+   :alt: Ubuntu
+
+.. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
+   :alt: macOS
+
+.. image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows
+   :alt: Windows
 
 .. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
    :target: https://pypi.python.org/pypi/Scrapy
@@ -34,19 +45,28 @@ Scrapy is a fast high-level web crawling and web scraping framework, used to
 crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
+Scrapy is maintained by Zyte_ (formerly Scrapinghub) and `many other
+contributors`_.
+
+.. _many other contributors: https://github.com/scrapy/scrapy/graphs/contributors
+.. _Zyte: https://www.zyte.com/
+
 Check the Scrapy homepage at https://scrapy.org for more information,
 including a list of features.
+
 
 Requirements
 ============
 
-* Python 3.6+
+* Python 3.7+
 * Works on Linux, Windows, macOS, BSD
 
 Install
 =======
 
-The quick way::
+The quick way:
+
+.. code:: bash
 
     pip install scrapy
 
@@ -77,11 +97,10 @@ See https://docs.scrapy.org/en/master/contributing.html for details.
 Code of Conduct
 ---------------
 
-Please note that this project is released with a Contributor Code of Conduct
-(see https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md).
+Please note that this project is released with a Contributor `Code of Conduct <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_.
 
 By participating in this project you agree to abide by its terms.
-Please report unacceptable behavior to opensource@scrapinghub.com.
+Please report unacceptable behavior to opensource@zyte.com.
 
 Companies using Scrapy
 ======================

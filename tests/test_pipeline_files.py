@@ -1,11 +1,13 @@
 import os
 import random
 import time
+from datetime import datetime
 from io import BytesIO
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import mock, skipIf
+from unittest import mock
 from urllib.parse import urlparse
+import dataclasses
 
 import attr
 from itemadapter import ItemAdapter
@@ -22,21 +24,13 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
-from scrapy.utils.boto import is_botocore
 from scrapy.utils.test import (
-    assert_aws_environ,
     assert_gcs_environ,
+    get_crawler,
     get_ftp_content_and_delete,
     get_gcs_content_and_delete,
-    get_s3_content_and_delete,
+    skip_if_no_boto,
 )
-
-
-try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
 
 
 def _mocked_download_func(request, info):
@@ -48,7 +42,9 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        settings_dict = {'FILES_STORE': self.tempdir}
+        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
@@ -224,24 +220,19 @@ class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest
     item_class = FilesPipelineTestItem
 
 
-@skipIf(not make_dataclass, "dataclasses module is not available")
-class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+@dataclasses.dataclass
+class FilesPipelineTestDataClass:
+    name: str
+    # default fields
+    file_urls: list = dataclasses.field(default_factory=list)
+    files: list = dataclasses.field(default_factory=list)
+    # overridden fields
+    custom_file_urls: list = dataclasses.field(default_factory=list)
+    custom_files: list = dataclasses.field(default_factory=list)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "FilesPipelineTestDataClass",
-                [
-                    ("name", str),
-                    # default fields
-                    ("file_urls", list, dataclass_field(default_factory=list)),
-                    ("files", list, dataclass_field(default_factory=list)),
-                    # overridden fields
-                    ("custom_file_urls", list, dataclass_field(default_factory=list)),
-                    ("custom_files", list, dataclass_field(default_factory=list)),
-                ],
-            )
+
+class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestDataClass
 
 
 @attr.s
@@ -415,38 +406,88 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
 
 
 class TestS3FilesStore(unittest.TestCase):
+
     @defer.inlineCallbacks
     def test_persist(self):
-        assert_aws_environ()
-        uri = os.environ.get('S3_TEST_FILE_URI')
-        if not uri:
-            raise unittest.SkipTest("No S3 URI available for testing")
-        data = b"TestS3FilesStore: \xe2\x98\x83"
-        buf = BytesIO(data)
+        skip_if_no_boto()
+
+        bucket = 'mybucket'
+        key = 'export.csv'
+        uri = f's3://{bucket}/{key}'
+        buffer = mock.MagicMock()
         meta = {'foo': 'bar'}
         path = ''
+        content_type = 'image/png'
+
         store = S3FilesStore(uri)
-        yield store.persist_file(
-            path, buf, info=None, meta=meta,
-            headers={'Content-Type': 'image/png'})
-        s = yield store.stat_file(path, info=None)
-        self.assertIn('last_modified', s)
-        self.assertIn('checksum', s)
-        self.assertEqual(s['checksum'], '3187896a9657a28163abb31667df64c8')
-        u = urlparse(uri)
-        content, key = get_s3_content_and_delete(
-            u.hostname, u.path[1:], with_key=True)
-        self.assertEqual(content, data)
-        if is_botocore():
-            self.assertEqual(key['Metadata'], {'foo': 'bar'})
+        from botocore.stub import Stubber
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                'put_object',
+                expected_params={
+                    'ACL': S3FilesStore.POLICY,
+                    'Body': buffer,
+                    'Bucket': bucket,
+                    'CacheControl': S3FilesStore.HEADERS['Cache-Control'],
+                    'ContentType': content_type,
+                    'Key': key,
+                    'Metadata': meta,
+                },
+                service_response={},
+            )
+
+            yield store.persist_file(
+                path,
+                buffer,
+                info=None,
+                meta=meta,
+                headers={'Content-Type': content_type},
+            )
+
+            stub.assert_no_pending_responses()
             self.assertEqual(
-                key['CacheControl'], S3FilesStore.HEADERS['Cache-Control'])
-            self.assertEqual(key['ContentType'], 'image/png')
-        else:
-            self.assertEqual(key.metadata, {'foo': 'bar'})
+                buffer.method_calls,
+                [
+                    mock.call.seek(0),
+                    # The call to read does not happen with Stubber
+                ]
+            )
+
+    @defer.inlineCallbacks
+    def test_stat(self):
+        skip_if_no_boto()
+
+        bucket = 'mybucket'
+        key = 'export.csv'
+        uri = f's3://{bucket}/{key}'
+        checksum = '3187896a9657a28163abb31667df64c8'
+        last_modified = datetime(2019, 12, 1)
+
+        store = S3FilesStore(uri)
+        from botocore.stub import Stubber
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                'head_object',
+                expected_params={
+                    'Bucket': bucket,
+                    'Key': key,
+                },
+                service_response={
+                    'ETag': f'"{checksum}"',
+                    'LastModified': last_modified,
+                },
+            )
+
+            file_stats = yield store.stat_file('', info=None)
             self.assertEqual(
-                key.cache_control, S3FilesStore.HEADERS['Cache-Control'])
-            self.assertEqual(key.content_type, 'image/png')
+                file_stats,
+                {
+                    'checksum': checksum,
+                    'last_modified': last_modified.timestamp(),
+                },
+            )
+
+            stub.assert_no_pending_responses()
 
 
 class TestGCSFilesStore(unittest.TestCase):
@@ -475,6 +516,29 @@ class TestGCSFilesStore(unittest.TestCase):
         self.assertEqual(blob.cache_control, GCSFilesStore.CACHE_CONTROL)
         self.assertEqual(blob.content_type, 'application/octet-stream')
         self.assertIn(expected_policy, acl)
+
+    @defer.inlineCallbacks
+    def test_blob_path_consistency(self):
+        """Test to make sure that paths used to store files is the same as the one used to get
+        already uploaded files.
+        """
+        assert_gcs_environ()
+        try:
+            import google.cloud.storage # noqa
+        except ModuleNotFoundError:
+            raise unittest.SkipTest("google-cloud-storage is not installed")
+        else:
+            with mock.patch('google.cloud.storage') as _:
+                with mock.patch('scrapy.pipelines.files.time') as _:
+                    uri = 'gs://my_bucket/my_prefix/'
+                    store = GCSFilesStore(uri)
+                    store.bucket = mock.Mock()
+                    path = 'full/my_data.txt'
+                    yield store.persist_file(path, mock.Mock(), info=None, meta=None, headers=None)
+                    yield store.stat_file(path, info=None)
+                    expected_blob_path = store.prefix + path
+                    store.bucket.blob.assert_called_with(expected_blob_path)
+                    store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
 class TestFTPFileStore(unittest.TestCase):

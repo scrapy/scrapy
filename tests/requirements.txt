@@ -1,0 +1,16 @@
+# Tests requirements
+attrs
+pyftpdlib
+pytest
+pytest-cov==3.0.0
+pytest-xdist
+sybil >= 1.3.0  # https://github.com/cjw296/sybil/issues/20#issuecomment-605433422
+testfixtures
+uvloop; platform_system != "Windows"
+
+# optional for shell wrapper tests
+bpython
+brotli  # optional for HTTP compress downloader middleware tests
+zstandard; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
+ipython
+pywin32; sys_platform == "win32"

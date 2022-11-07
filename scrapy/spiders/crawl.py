@@ -6,14 +6,12 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
-import warnings
-from typing import Sequence
+from typing import AsyncIterable, Awaitable, Sequence
 
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Request, HtmlResponse
+from scrapy.http import Request, Response, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
-from scrapy.utils.python import get_func_args
+from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -37,15 +35,22 @@ _default_link_extractor = LinkExtractor()
 
 class Rule:
 
-    def __init__(self, link_extractor=None, callback=None, cb_kwargs=None, follow=None,
-                 process_links=None, process_request=None, errback=None):
+    def __init__(
+        self,
+        link_extractor=None,
+        callback=None,
+        cb_kwargs=None,
+        follow=None,
+        process_links=None,
+        process_request=None,
+        errback=None,
+    ):
         self.link_extractor = link_extractor or _default_link_extractor
         self.callback = callback
         self.errback = errback
         self.cb_kwargs = cb_kwargs or {}
         self.process_links = process_links or _identity
         self.process_request = process_request or _identity_process_request
-        self.process_request_argcount = None
         self.follow = follow if follow is not None else not callback
 
     def _compile(self, spider):
@@ -53,22 +58,6 @@ class Rule:
         self.errback = _get_method(self.errback, spider)
         self.process_links = _get_method(self.process_links, spider)
         self.process_request = _get_method(self.process_request, spider)
-        self.process_request_argcount = len(get_func_args(self.process_request))
-        if self.process_request_argcount == 1:
-            warnings.warn(
-                "Rule.process_request should accept two arguments "
-                "(request, response), accepting only one is deprecated",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
-    def _process_request(self, request, response):
-        """
-        Wrapper around the request processing function to maintain backward
-        compatibility with functions that do not take a Response object
-        """
-        args = [request] if self.process_request_argcount == 1 else [request, response]
-        return self.process_request(*args)
 
 
 class CrawlSpider(Spider):
@@ -90,7 +79,7 @@ class CrawlSpider(Spider):
     def parse_start_url(self, response, **kwargs):
         return []
 
-    def process_results(self, response, results):
+    def process_results(self, response: Response, results: list):
         return results
 
     def _build_request(self, rule_index, link):
@@ -111,19 +100,23 @@ class CrawlSpider(Spider):
             for link in rule.process_links(links):
                 seen.add(link)
                 request = self._build_request(rule_index, link)
-                yield rule._process_request(request, response)
+                yield rule.process_request(request, response)
 
-    def _callback(self, response):
+    def _callback(self, response, **cb_kwargs):
         rule = self._rules[response.meta['rule']]
-        return self._parse_response(response, rule.callback, rule.cb_kwargs, rule.follow)
+        return self._parse_response(response, rule.callback, {**rule.cb_kwargs, **cb_kwargs}, rule.follow)
 
     def _errback(self, failure):
         rule = self._rules[failure.request.meta['rule']]
         return self._handle_failure(failure, rule.errback)
 
-    def _parse_response(self, response, callback, cb_kwargs, follow=True):
+    async def _parse_response(self, response, callback, cb_kwargs, follow=True):
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
+            if isinstance(cb_res, AsyncIterable):
+                cb_res = await collect_asyncgen(cb_res)
+            elif isinstance(cb_res, Awaitable):
+                cb_res = await cb_res
             cb_res = self.process_results(response, cb_res)
             for request_or_item in iterate_spider_output(cb_res):
                 yield request_or_item

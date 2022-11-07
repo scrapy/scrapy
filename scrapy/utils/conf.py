@@ -118,9 +118,10 @@ def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
     out.setdefault("batch_item_count", settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT'))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
-    out.setdefault("fields", settings.getlist("FEED_EXPORT_FIELDS") or None)
+    out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
     out.setdefault("uri_params", settings["FEED_URI_PARAMS"])
+    out.setdefault("item_export_kwargs", {})
     if settings["FEED_EXPORT_INDENT"] is None:
         out.setdefault("indent", None)
     else:
@@ -154,6 +155,15 @@ def feed_process_params_from_cli(settings, output, output_format=None,
             raise UsageError(
                 "Please use only one of -o/--output and -O/--overwrite-output"
             )
+        if output_format:
+            raise UsageError(
+                "-t/--output-format is a deprecated command line option"
+                " and does not work in combination with -O/--overwrite-output."
+                " To specify a format please specify it after a colon at the end of the"
+                " output URI (i.e. -O <URI>:<FORMAT>)."
+                " Example working in the tutorial: "
+                "scrapy crawl quotes -O quotes.json:json"
+            )
         output = overwrite_output
         overwrite = True
 
@@ -161,9 +171,13 @@ def feed_process_params_from_cli(settings, output, output_format=None,
         if len(output) == 1:
             check_valid_format(output_format)
             message = (
-                'The -t command line option is deprecated in favor of '
-                'specifying the output format within the output URI. See the '
-                'documentation of the -o and -O options for more information.',
+                "The -t/--output-format command line option is deprecated in favor of "
+                "specifying the output format within the output URI using the -o/--output or the"
+                " -O/--overwrite-output option (i.e. -o/-O <URI>:<FORMAT>). See the documentation"
+                " of the -o or -O option or the following examples for more information. "
+                "Examples working in the tutorial: "
+                "scrapy crawl quotes -o quotes.csv:csv   or   "
+                "scrapy crawl quotes -O quotes.json:json"
             )
             warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}

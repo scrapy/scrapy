@@ -23,7 +23,7 @@ class NoMetaRefreshRedirect(util.Redirect):
     def render(self, request):
         content = util.Redirect.render(self, request)
         return content.replace(b'http-equiv=\"refresh\"',
-            b'http-no-equiv=\"do-not-refresh-me\"')
+                               b'http-no-equiv=\"do-not-refresh-me\"')
 
 
 def test_site():

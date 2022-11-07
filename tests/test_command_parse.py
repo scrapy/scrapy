@@ -1,6 +1,10 @@
 import os
+import argparse
 from os.path import join, abspath, isfile, exists
+
 from twisted.internet import defer
+from scrapy.commands import parse
+from scrapy.settings import Settings
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
 from scrapy.utils.python import to_unicode
@@ -25,7 +29,15 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
+from scrapy.utils.test import get_from_asyncio_queue
 
+class AsyncDefAsyncioSpider(scrapy.Spider):
+
+    name = 'asyncdef{self.spider_name}'
+
+    async def parse(self, response):
+        status = await get_from_asyncio_queue(response.status)
+        return [scrapy.Item(), dict(foo='bar')]
 
 class MySpider(scrapy.Spider):
     name = '{self.spider_name}'
@@ -157,6 +169,13 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertIn("INFO: It Works!", _textmode(stderr))
 
     @defer.inlineCallbacks
+    def test_asyncio_parse_items(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'asyncdef' + self.spider_name, '-c', 'parse', self.url('/html')]
+        )
+        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+
+    @defer.inlineCallbacks
     def test_parse_items(self):
         status, out, stderr = yield self.execute(
             ['--spider', self.spider_name, '-c', 'parse', self.url('/html')]
@@ -220,6 +239,11 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
 
     @defer.inlineCallbacks
+    def test_crawlspider_not_exists_with_not_matched_url(self):
+        status, out, stderr = yield self.execute([self.url('/invalid_url')])
+        self.assertEqual(status, 0)
+
+    @defer.inlineCallbacks
     def test_output_flag(self):
         """Checks if a file was created successfully having
         correct format containing correct data in it.
@@ -239,3 +263,19 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         content = '[\n{},\n{"foo": "bar"}\n]'
         with open(file_path, 'r') as f:
             self.assertEqual(f.read(), content)
+
+    def test_parse_add_options(self):
+        command = parse.Command()
+        command.settings = Settings()
+        parser = argparse.ArgumentParser(
+            prog='scrapy', formatter_class=argparse.HelpFormatter,
+            conflict_handler='resolve', prefix_chars='-'
+        )
+        command.add_options(parser)
+        namespace = parser.parse_args(
+            ['--verbose', '--nolinks', '-d', '2', '--spider', self.spider_name]
+        )
+        self.assertTrue(namespace.nolinks)
+        self.assertEqual(namespace.depth, 2)
+        self.assertEqual(namespace.spider, self.spider_name)
+        self.assertTrue(namespace.verbose)

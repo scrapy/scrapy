@@ -5,8 +5,8 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TwistedTestCase
 
-from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import DropItem
+from scrapy.utils.test import get_crawler
 from scrapy.http import Request, Response
 from scrapy.item import Item, Field
 from scrapy.logformatter import LogFormatter
@@ -193,7 +193,7 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
         self.base_settings = {
             'LOG_LEVEL': 'DEBUG',
             'ITEM_PIPELINES': {
-                __name__ + '.DropSomeItemsPipeline': 300,
+                DropSomeItemsPipeline: 300,
             },
         }
 
@@ -202,7 +202,7 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
 
     @defer.inlineCallbacks
     def test_show_messages(self):
-        crawler = CrawlerRunner(self.base_settings).create_crawler(ItemSpider)
+        crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
             yield crawler.crawl(mockserver=self.mockserver)
         self.assertIn("Scraped from <200 http://127.0.0.1:", str(lc))
@@ -212,8 +212,8 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
     @defer.inlineCallbacks
     def test_skip_messages(self):
         settings = self.base_settings.copy()
-        settings['LOG_FORMATTER'] = __name__ + '.SkipMessagesLogFormatter'
-        crawler = CrawlerRunner(settings).create_crawler(ItemSpider)
+        settings['LOG_FORMATTER'] = SkipMessagesLogFormatter
+        crawler = get_crawler(ItemSpider, settings)
         with LogCapture() as lc:
             yield crawler.crawl(mockserver=self.mockserver)
         self.assertNotIn("Scraped from <200 http://127.0.0.1:", str(lc))

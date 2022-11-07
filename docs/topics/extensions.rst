@@ -7,8 +7,7 @@ Extensions
 The extensions framework provides a mechanism for inserting your own
 custom functionality into Scrapy.
 
-Extensions are just regular classes that are instantiated at Scrapy startup,
-when extensions are initialized.
+Extensions are just regular classes.
 
 Extension settings
 ==================
@@ -18,7 +17,7 @@ settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
 avoid collision with existing (and future) extensions. For example, a
-hypothetic extension to handle `Google Sitemaps`_ would use settings like
+hypothetical extension to handle `Google Sitemaps`_ would use settings like
 ``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
 .. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
@@ -27,8 +26,8 @@ Loading & activating extensions
 ===============================
 
 Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class ``__init__`` method.
+instance of the extension class per spider being run. All the extension
+initialization code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
@@ -257,6 +256,12 @@ settings:
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
+.. note::
+
+   When a certain closing condition is met, requests which are 
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS` 
+   requests) are still processed.
+
 .. setting:: CLOSESPIDER_TIMEOUT
 
 CLOSESPIDER_TIMEOUT
@@ -279,8 +284,6 @@ Default: ``0``
 An integer which specifies a number of items. If the spider scrapes more than
 that amount and those items are passed by the item pipeline, the
 spider will be closed with the reason ``closespider_itemcount``.
-Requests which  are currently in the downloader queue (up to
-:setting:`CONCURRENT_REQUESTS` requests) are still processed.
 If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
@@ -319,6 +322,11 @@ This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
+
+Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
+full list of parameters, including examples on how to instantiate
+:class:`~scrapy.mail.MailSender` and use mail settings, see
+:ref:`topics-email`.
 
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy

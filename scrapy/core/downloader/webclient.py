@@ -1,13 +1,14 @@
+import re
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
 
 from twisted.web.http import HTTPClient
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.responsetypes import responsetypes
 
 
@@ -32,6 +33,8 @@ def _parse(url):
     and is ascii-only.
     """
     url = url.strip()
+    if not re.match(r'^\w+://', url):
+        url = '//' + url
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
 
@@ -109,8 +112,8 @@ class ScrapyHTTPClientFactory(ClientFactory):
         request.meta['download_latency'] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self._url)
-        return respcls(url=self._url, status=status, headers=headers, body=body)
+        respcls = responsetypes.from_args(headers=headers, url=self._url, body=body)
+        return respcls(url=self._url, status=status, headers=headers, body=body, protocol=to_unicode(self.version))
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
@@ -167,6 +170,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         p.followRedirect = self.followRedirect
         p.afterFoundGet = self.afterFoundGet
         if self.timeout:
+            from twisted.internet import reactor
             timeoutCall = reactor.callLater(self.timeout, p.timeout)
             self.deferred.addBoth(self._cancelTimeout, timeoutCall)
         return p

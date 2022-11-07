@@ -1,3 +1,4 @@
+import dataclasses
 import hashlib
 import io
 import random
@@ -6,34 +7,30 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import skipIf
 from unittest.mock import patch
+from warnings import catch_warnings
 
 import attr
 from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImageException, ImagesPipeline
+from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
 
 try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
-
-
-skip = False
-try:
     from PIL import Image
 except ImportError:
-    skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+    skip_pillow = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
     encoders = {'jpeg_encoder', 'jpeg_decoder'}
     if not encoders.issubset(set(Image.core.__dict__)):
-        skip = 'Missing JPEG encoders'
+        skip_pillow = 'Missing JPEG encoders'
+    else:
+        skip_pillow = None
 
 
 def _mocked_download_func(request, info):
@@ -43,7 +40,7 @@ def _mocked_download_func(request, info):
 
 class ImagesPipelineTestCase(unittest.TestCase):
 
-    skip = skip
+    skip = skip_pillow
 
     def setUp(self):
         self.tempdir = mkdtemp()
@@ -234,6 +231,22 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(converted.mode, 'RGB')
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
+    def test_thumbnail_name_from_item(self):
+        """
+        Custom thumbnail name based on item data, overriding default implementation
+        """
+
+        class CustomImagesPipeline(ImagesPipeline):
+            def thumb_path(self, request, thumb_id, response=None, info=None, item=None):
+                return f"thumb/{thumb_id}/{item.get('path')}"
+
+        thumb_path = CustomImagesPipeline.from_settings(Settings(
+            {'IMAGES_STORE': self.tempdir}
+        )).thumb_path
+        item = dict(path='path-to-store-file')
+        request = Request("http://example.com")
+        self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
+
 
 class DeprecatedImagesPipeline(ImagesPipeline):
     def file_key(self, url):
@@ -249,6 +262,8 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
 
 class ImagesPipelineTestCaseFieldsMixin:
+
+    skip = skip_pillow
 
     def test_item_fields_default(self):
         url = 'http://www.example.com/images/1.jpg'
@@ -297,25 +312,19 @@ class ImagesPipelineTestCaseFieldsItem(ImagesPipelineTestCaseFieldsMixin, unitte
     item_class = ImagesPipelineTestItem
 
 
-@skipIf(not make_dataclass, "dataclasses module is not available")
-class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
-    item_class = None
+@dataclasses.dataclass
+class ImagesPipelineTestDataClass:
+    name: str
+    # default fields
+    image_urls: list = dataclasses.field(default_factory=list)
+    images: list = dataclasses.field(default_factory=list)
+    # overridden fields
+    custom_image_urls: list = dataclasses.field(default_factory=list)
+    custom_images: list = dataclasses.field(default_factory=list)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "FilesPipelineTestDataClass",
-                [
-                    ("name", str),
-                    # default fields
-                    ("image_urls", list, dataclass_field(default_factory=list)),
-                    ("images", list, dataclass_field(default_factory=list)),
-                    # overridden fields
-                    ("custom_image_urls", list, dataclass_field(default_factory=list)),
-                    ("custom_images", list, dataclass_field(default_factory=list)),
-                ],
-            )
+
+class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = ImagesPipelineTestDataClass
 
 
 @attr.s
@@ -334,6 +343,9 @@ class ImagesPipelineTestCaseFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin, u
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
+
+    skip = skip_pillow
+
     img_cls_attribute_names = [
         # Pipeline attribute names with corresponding setting names.
         ("EXPIRES", "IMAGES_EXPIRES"),
@@ -518,6 +530,22 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
                              expected_value)
+
+
+class NoimagesDropTestCase(unittest.TestCase):
+
+    def test_deprecation_warning(self):
+        arg = str()
+        with catch_warnings(record=True) as warnings:
+            NoimagesDrop(arg)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+        with catch_warnings(record=True) as warnings:
+            class SubclassedNoimagesDrop(NoimagesDrop):
+                pass
+            SubclassedNoimagesDrop(arg)
+            self.assertEqual(len(warnings), 1)
+            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
 
 
 def _create_image(format, *a, **kw):

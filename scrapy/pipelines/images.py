@@ -10,9 +10,8 @@ from contextlib import suppress
 from io import BytesIO
 
 from itemadapter import ItemAdapter
-from PIL import Image
 
-from scrapy.exceptions import DropItem, ScrapyDeprecationWarning
+from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.pipelines.files import FileException, FilesPipeline
 # TODO: from scrapy.pipelines.media import MediaPipeline
@@ -23,6 +22,10 @@ from scrapy.utils.python import get_func_args, to_bytes
 
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The NoimagesDrop class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
+        super().__init__(*args, **kwargs)
 
 
 class ImageException(FileException):
@@ -46,6 +49,14 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     def __init__(self, store_uri, download_func=None, settings=None):
+        try:
+            from PIL import Image
+            self._Image = Image
+        except ImportError:
+            raise NotConfigured(
+                'ImagesPipeline requires installing Pillow 4.0.0 or later'
+            )
+
         super().__init__(store_uri, settings=settings, download_func=download_func)
 
         if isinstance(settings, dict) or settings is None:
@@ -88,6 +99,7 @@ class ImagesPipeline(FilesPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_SESSION_TOKEN = settings['AWS_SESSION_TOKEN']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
         s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
         s3store.AWS_USE_SSL = settings['AWS_USE_SSL']
@@ -124,7 +136,7 @@ class ImagesPipeline(FilesPipeline):
 
     def get_images(self, response, request, info, *, item=None):
         path = self.file_path(request, response=response, info=info, item=item)
-        orig_image = Image.open(BytesIO(response.body))
+        orig_image = self._Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
         if width < self.min_width or height < self.min_height:
@@ -146,7 +158,7 @@ class ImagesPipeline(FilesPipeline):
         yield path, image, buf
 
         for thumb_id, size in self.thumbs.items():
-            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
+            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info, item=item)
             if self._deprecated_convert_image:
                 thumb_image, thumb_buf = self.convert_image(image, size)
             else:
@@ -160,12 +172,12 @@ class ImagesPipeline(FilesPipeline):
                           category=ScrapyDeprecationWarning, stacklevel=2)
 
         if image.format == 'PNG' and image.mode == 'RGBA':
-            background = Image.new('RGBA', image.size, (255, 255, 255))
+            background = self._Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert('RGB')
         elif image.mode == 'P':
             image = image.convert("RGBA")
-            background = Image.new('RGBA', image.size, (255, 255, 255))
+            background = self._Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert('RGB')
         elif image.mode != 'RGB':
@@ -173,7 +185,14 @@ class ImagesPipeline(FilesPipeline):
 
         if size:
             image = image.copy()
-            image.thumbnail(size, Image.ANTIALIAS)
+            try:
+                # Image.Resampling.LANCZOS was added in Pillow 9.1.0
+                # remove this try except block,
+                # when updating the minimum requirements for Pillow.
+                resampling_filter = self._Image.Resampling.LANCZOS
+            except AttributeError:
+                resampling_filter = self._Image.ANTIALIAS
+            image.thumbnail(size, resampling_filter)
         elif response_body is not None and image.format == 'JPEG':
             return image, response_body
 
@@ -194,6 +213,6 @@ class ImagesPipeline(FilesPipeline):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f'full/{image_guid}.jpg'
 
-    def thumb_path(self, request, thumb_id, response=None, info=None):
+    def thumb_path(self, request, thumb_id, response=None, info=None, *, item=None):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f'thumbs/{thumb_id}/{thumb_guid}.jpg'

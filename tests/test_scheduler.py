@@ -22,7 +22,7 @@ MockSlot = collections.namedtuple('MockSlot', ['active'])
 
 class MockDownloader:
     def __init__(self):
-        self.slots = dict()
+        self.slots = {}
 
     def _get_slot_key(self, request, spider):
         if Downloader.DOWNLOAD_SLOT in request.meta:
@@ -31,7 +31,7 @@ class MockDownloader:
         return urlparse_cached(request).hostname or ''
 
     def increment(self, slot_key):
-        slot = self.slots.setdefault(slot_key, MockSlot(active=list()))
+        slot = self.slots.setdefault(slot_key, MockSlot(active=[]))
         slot.active.append(1)
 
     def decrement(self, slot_key):
@@ -52,6 +52,7 @@ class MockCrawler(Crawler):
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
+            REQUEST_FINGERPRINTER_IMPLEMENTATION='2.7',
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -114,7 +115,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         for url, priority in _PRIORITIES:
             self.scheduler.enqueue_request(Request(url, priority=priority))
 
-        priorities = list()
+        priorities = []
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
@@ -167,7 +168,7 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.close_scheduler()
         self.create_scheduler()
 
-        priorities = list()
+        priorities = []
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
@@ -259,7 +260,7 @@ class DownloaderAwareSchedulerTestMixin:
             self.close_scheduler()
             self.create_scheduler()
 
-        dequeued_slots = list()
+        dequeued_slots = []
         requests = []
         downloader = self.mock_crawler.engine.downloader
         while self.scheduler.has_pending_requests():
@@ -334,7 +335,7 @@ class TestIncompatibility(unittest.TestCase):
             SCHEDULER_PRIORITY_QUEUE='scrapy.pqueues.DownloaderAwarePriorityQueue',
             CONCURRENT_REQUESTS_PER_IP=1,
         )
-        crawler = Crawler(Spider, settings)
+        crawler = get_crawler(Spider, settings)
         scheduler = Scheduler.from_crawler(crawler)
         spider = Spider(name='spider')
         scheduler.open(spider)

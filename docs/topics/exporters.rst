@@ -50,18 +50,19 @@ value of one of their fields::
             self.year_to_exporter = {}
 
         def close_spider(self, spider):
-            for exporter in self.year_to_exporter.values():
+            for exporter, xml_file in self.year_to_exporter.values():
                 exporter.finish_exporting()
+                xml_file.close()
 
         def _exporter_for_item(self, item):
             adapter = ItemAdapter(item)
             year = adapter['year']
             if year not in self.year_to_exporter:
-                f = open(f'{year}.xml', 'wb')
-                exporter = XmlItemExporter(f)
+                xml_file = open(f'{year}.xml', 'wb')
+                exporter = XmlItemExporter(xml_file)
                 exporter.start_exporting()
-                self.year_to_exporter[year] = exporter
-            return self.year_to_exporter[year]
+                self.year_to_exporter[year] = (exporter, xml_file)
+            return self.year_to_exporter[year][0]
 
         def process_item(self, item, spider):
             exporter = self._exporter_for_item(item)
@@ -89,7 +90,7 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-If you use :class:`~.Item` you can declare a serializer in the
+If you use :class:`~scrapy.Item` you can declare a serializer in the
 :ref:`field metadata <topics-items-fields>`. The serializer must be
 a callable which receives a value and returns its serialized form.
 
@@ -116,14 +117,14 @@ after your custom code.
 
 Example::
 
-      from scrapy.exporter import XmlItemExporter
+      from scrapy.exporters import XmlItemExporter
 
       class ProductXmlExporter(XmlItemExporter):
 
           def serialize_field(self, field, name, value):
-              if field == 'price':
+              if name == 'price':
                   return f'$ {str(value)}'
-              return super(Product, self).serialize_field(field, name, value)
+              return super().serialize_field(field, name, value)
 
 .. _topics-exporters-reference:
 
@@ -171,7 +172,7 @@ BaseItemExporter
       :param field: the field being serialized. If the source :ref:`item object
           <item-types>` does not define field metadata, *field* is an empty
           :class:`dict`.
-      :type field: :class:`~scrapy.item.Field` object or a :class:`dict` instance
+      :type field: :class:`~scrapy.Field` object or a :class:`dict` instance
 
       :param name: the name of the field being serialized
       :type name: str
@@ -194,17 +195,25 @@ BaseItemExporter
 
    .. attribute:: fields_to_export
 
-      A list with the name of the fields that will be exported, or ``None`` if
-      you want to export all fields. Defaults to ``None``.
+      Fields to export, their order [1]_ and their output names.
 
-      Some exporters (like :class:`CsvItemExporter`) respect the order of the
-      fields defined in this attribute.
+      Possible values are:
 
-      When using :ref:`item objects <item-types>` that do not expose all their
-      possible fields, exporters that do not support exporting a different
-      subset of fields per item will only export the fields found in the first
-      item exported. Use ``fields_to_export`` to define all the fields to be
-      exported.
+      -   ``None`` (all fields [2]_, default)
+
+      -   A list of fields::
+
+              ['field1', 'field2']
+
+      -   A dict where keys are fields and values are output names::
+
+              {'field1': 'Field 1', 'field2': 'Field 2'}
+
+      .. [1] Not all exporters respect the specified field order.
+      .. [2] When using :ref:`item objects <item-types>` that do not expose
+             all their possible fields, exporters that do not support exporting
+             a different subset of fields per item will only export the fields 
+             found in the first item exported.
 
    .. attribute:: export_empty_fields
 
@@ -296,8 +305,8 @@ CsvItemExporter
 
    Exports items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
-   CSV columns and their order. The :attr:`export_empty_fields` attribute has
-   no effect on this exporter.
+   CSV columns, their order and their column names. The
+   :attr:`export_empty_fields` attribute has no effect on this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)

@@ -211,6 +211,7 @@ class MiddlewareUsingDeferreds(ManagerTestCase):
         self.assertFalse(download_func.called)
 
 
+@mark.usefixtures('reactor_pytest')
 class MiddlewareUsingCoro(ManagerTestCase):
     """Middlewares using asyncio coroutines should work"""
 

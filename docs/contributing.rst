@@ -140,7 +140,7 @@ original pull request author hasn't had time to address them.
 In this case consider picking up this pull request: open
 a new pull request with all commits from the original pull request, as well as
 additional changes to address the raised issues. Doing so helps a lot; it is
-not considered rude as soon as the original author is acknowledged by keeping
+not considered rude as long as the original author is acknowledged by keeping
 his/her commits.
 
 You can pull an existing pull request to a local branch
@@ -214,7 +214,7 @@ Tests
 =====
 
 Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:core/development/policy/test-standard>`. Running tests requires
+<twisted:development/test-standard>`. Running tests requires
 :doc:`tox <tox:index>`.
 
 .. _running-tests:
@@ -232,15 +232,15 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
 To run the tests on a specific :doc:`tox <tox:index>` environment, use
 ``-e <name>`` with an environment name from ``tox.ini``. For example, to run
-the tests with Python 3.6 use::
+the tests with Python 3.7 use::
 
-    tox -e py36
+    tox -e py37
 
 You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py36,py38 -p auto
+    tox -e py37,py38 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
@@ -250,9 +250,9 @@ default positional arguments (``scrapy tests``) after ``--`` as well::
     tox -- scrapy tests -x  # stop after first failure
 
 You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
-the Python 3.6 :doc:`tox <tox:index>` environment using all your CPU cores::
+the Python 3.7 :doc:`tox <tox:index>` environment using all your CPU cores::
 
-    tox -e py36 -- scrapy tests -n auto
+    tox -e py37 -- scrapy tests -n auto
 
 To see coverage report install :doc:`coverage <coverage:index>`
 (``pip install coverage``) and run:

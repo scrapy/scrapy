@@ -4,7 +4,7 @@
 Scrapy at a glance
 ==================
 
-Scrapy is an application framework for crawling web sites and extracting
+Scrapy (/ˈskreɪpaɪ/) is an application framework for crawling web sites and extracting
 structured data which can be used for a wide range of useful applications, like
 data mining, information processing or historical archival.
 
@@ -20,7 +20,7 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-http://quotes.toscrape.com, following the pagination::
+https://quotes.toscrape.com, following the pagination::
 
     import scrapy
 
@@ -28,7 +28,7 @@ http://quotes.toscrape.com, following the pagination::
     class QuotesSpider(scrapy.Spider):
         name = 'quotes'
         start_urls = [
-            'http://quotes.toscrape.com/tag/humor/',
+            'https://quotes.toscrape.com/tag/humor/',
         ]
 
         def parse(self, response):
@@ -45,9 +45,9 @@ http://quotes.toscrape.com, following the pagination::
 Put this in a text file, name it to something like ``quotes_spider.py``
 and run the spider using the :command:`runspider` command::
 
-    scrapy runspider quotes_spider.py -o quotes.jl
+    scrapy runspider quotes_spider.py -o quotes.jsonl
 
-When this finishes you will have in the ``quotes.jl`` file a list of the
+When this finishes you will have in the ``quotes.jsonl`` file a list of the
 quotes in JSON Lines format, containing text and author, looking like this::
 
     {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}

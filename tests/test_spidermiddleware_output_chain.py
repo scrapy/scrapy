@@ -16,11 +16,21 @@ class LogExceptionMiddleware:
 
 # ================================================================================
 # (0) recover from an exception on a spider callback
+class RecoveryMiddleware:
+    def process_spider_exception(self, response, exception, spider):
+        spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
+        return [
+            {'from': 'process_spider_exception'},
+            Request(response.url, meta={'dont_fail': True}, dont_filter=True),
+        ]
+
+
 class RecoverySpider(Spider):
     name = 'RecoverySpider'
     custom_settings = {
+        'SPIDER_MIDDLEWARES_BASE': {},
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.RecoveryMiddleware': 10,
+            RecoveryMiddleware: 10,
         },
     }
 
@@ -34,13 +44,12 @@ class RecoverySpider(Spider):
             raise TabError()
 
 
-class RecoveryMiddleware:
-    def process_spider_exception(self, response, exception, spider):
-        spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
-        return [
-            {'from': 'process_spider_exception'},
-            Request(response.url, meta={'dont_fail': True}, dont_filter=True),
-        ]
+class RecoveryAsyncGenSpider(RecoverySpider):
+    name = 'RecoveryAsyncGenSpider'
+
+    async def parse(self, response):
+        for r in super().parse(response):
+            yield r
 
 
 # ================================================================================
@@ -56,9 +65,8 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
             # spider
-            __name__ + '.LogExceptionMiddleware': 10,
-            __name__ + '.FailProcessSpiderInputMiddleware': 8,
-            __name__ + '.LogExceptionMiddleware': 6,
+            FailProcessSpiderInputMiddleware: 8,
+            LogExceptionMiddleware: 6,
             # engine
         }
     }
@@ -87,7 +95,7 @@ class GeneratorCallbackSpider(Spider):
     name = 'GeneratorCallbackSpider'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 10,
+            LogExceptionMiddleware: 10,
         },
     }
 
@@ -100,13 +108,20 @@ class GeneratorCallbackSpider(Spider):
         raise ImportError()
 
 
+class AsyncGeneratorCallbackSpider(GeneratorCallbackSpider):
+    async def parse(self, response):
+        yield {'test': 1}
+        yield {'test': 2}
+        raise ImportError()
+
+
 # ================================================================================
 # (2.1) exceptions from a spider callback (generator, middleware right after callback)
 class GeneratorCallbackSpiderMiddlewareRightAfterSpider(GeneratorCallbackSpider):
     name = 'GeneratorCallbackSpiderMiddlewareRightAfterSpider'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 100000,
+            LogExceptionMiddleware: 100000,
         },
     }
 
@@ -117,7 +132,7 @@ class NotGeneratorCallbackSpider(Spider):
     name = 'NotGeneratorCallbackSpider'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 10,
+            LogExceptionMiddleware: 10,
         },
     }
 
@@ -134,32 +149,13 @@ class NotGeneratorCallbackSpiderMiddlewareRightAfterSpider(NotGeneratorCallbackS
     name = 'NotGeneratorCallbackSpiderMiddlewareRightAfterSpider'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.LogExceptionMiddleware': 100000,
+            LogExceptionMiddleware: 100000,
         },
     }
 
 
 # ================================================================================
 # (4) exceptions from a middleware process_spider_output method (generator)
-class GeneratorOutputChainSpider(Spider):
-    name = 'GeneratorOutputChainSpider'
-    custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            __name__ + '.GeneratorFailMiddleware': 10,
-            __name__ + '.GeneratorDoNothingAfterFailureMiddleware': 8,
-            __name__ + '.GeneratorRecoverMiddleware': 5,
-            __name__ + '.GeneratorDoNothingAfterRecoveryMiddleware': 3,
-        },
-    }
-
-    def start_requests(self):
-        yield Request(self.mockserver.url('/status?n=200'))
-
-    def parse(self, response):
-        yield {'processed': ['parse-first-item']}
-        yield {'processed': ['parse-second-item']}
-
-
 class _GeneratorDoNothingMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
@@ -205,25 +201,27 @@ class GeneratorDoNothingAfterRecoveryMiddleware(_GeneratorDoNothingMiddleware):
     pass
 
 
-# ================================================================================
-# (5) exceptions from a middleware process_spider_output method (not generator)
-class NotGeneratorOutputChainSpider(Spider):
-    name = 'NotGeneratorOutputChainSpider'
+class GeneratorOutputChainSpider(Spider):
+    name = 'GeneratorOutputChainSpider'
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
-            __name__ + '.NotGeneratorFailMiddleware': 10,
-            __name__ + '.NotGeneratorDoNothingAfterFailureMiddleware': 8,
-            __name__ + '.NotGeneratorRecoverMiddleware': 5,
-            __name__ + '.NotGeneratorDoNothingAfterRecoveryMiddleware': 3,
+            GeneratorFailMiddleware: 10,
+            GeneratorDoNothingAfterFailureMiddleware: 8,
+            GeneratorRecoverMiddleware: 5,
+            GeneratorDoNothingAfterRecoveryMiddleware: 3,
         },
     }
 
     def start_requests(self):
-        return [Request(self.mockserver.url('/status?n=200'))]
+        yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
-        return [{'processed': ['parse-first-item']}, {'processed': ['parse-second-item']}]
+        yield {'processed': ['parse-first-item']}
+        yield {'processed': ['parse-second-item']}
 
+
+# ================================================================================
+# (5) exceptions from a middleware process_spider_output method (not generator)
 
 class _NotGeneratorDoNothingMiddleware:
     def process_spider_output(self, response, result, spider):
@@ -276,6 +274,24 @@ class NotGeneratorDoNothingAfterRecoveryMiddleware(_NotGeneratorDoNothingMiddlew
     pass
 
 
+class NotGeneratorOutputChainSpider(Spider):
+    name = 'NotGeneratorOutputChainSpider'
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            NotGeneratorFailMiddleware: 10,
+            NotGeneratorDoNothingAfterFailureMiddleware: 8,
+            NotGeneratorRecoverMiddleware: 5,
+            NotGeneratorDoNothingAfterRecoveryMiddleware: 3,
+        },
+    }
+
+    def start_requests(self):
+        return [Request(self.mockserver.url('/status?n=200'))]
+
+    def parse(self, response):
+        return [{'processed': ['parse-first-item']}, {'processed': ['parse-second-item']}]
+
+
 # ================================================================================
 class TestSpiderMiddleware(TestCase):
     @classmethod
@@ -303,6 +319,16 @@ class TestSpiderMiddleware(TestCase):
         was enqueued from the recovery middleware)
         """
         log = yield self.crawl_log(RecoverySpider)
+        self.assertIn("Middleware: TabError exception caught", str(log))
+        self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
+        self.assertIn("'item_scraped_count': 3", str(log))
+
+    @defer.inlineCallbacks
+    def test_recovery_asyncgen(self):
+        """
+        Same as test_recovery but with an async callback.
+        """
+        log = yield self.crawl_log(RecoveryAsyncGenSpider)
         self.assertIn("Middleware: TabError exception caught", str(log))
         self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
         self.assertIn("'item_scraped_count': 3", str(log))
@@ -339,6 +365,15 @@ class TestSpiderMiddleware(TestCase):
         exception is raised should be processed normally.
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
+        self.assertIn("Middleware: ImportError exception caught", str(log2))
+        self.assertIn("'item_scraped_count': 2", str(log2))
+
+    @defer.inlineCallbacks
+    def test_async_generator_callback(self):
+        """
+        Same as test_generator_callback but with an async callback.
+        """
+        log2 = yield self.crawl_log(AsyncGeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
         self.assertIn("'item_scraped_count': 2", str(log2))
 

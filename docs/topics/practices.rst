@@ -63,7 +63,7 @@ project as example.
     process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
-    process.crawl('followall', domain='scrapinghub.com')
+    process.crawl('followall', domain='scrapy.org')
     process.start() # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
@@ -119,6 +119,7 @@ Here is an example that runs multiple spiders simultaneously:
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
+    from scrapy.utils.project import get_project_settings
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -128,7 +129,8 @@ Here is an example that runs multiple spiders simultaneously:
         # Your second spider definition
         ...
 
-    process = CrawlerProcess()
+    settings = get_project_settings()
+    process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start() # the script will block here until all crawling jobs are finished
@@ -141,6 +143,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -151,7 +154,8 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
         ...
 
     configure_logging()
-    runner = CrawlerRunner()
+    settings = get_project_settings()
+    runner = CrawlerRunner(settings)
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
@@ -166,6 +170,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
@@ -175,8 +180,9 @@ Same example but running the spiders sequentially by chaining the deferreds:
         # Your second spider definition
         ...
 
-    configure_logging()
-    runner = CrawlerRunner()
+    settings = get_project_settings()
+    configure_logging(settings)
+    runner = CrawlerRunner(settings)
 
     @defer.inlineCallbacks
     def crawl():
@@ -186,6 +192,25 @@ Same example but running the spiders sequentially by chaining the deferreds:
 
     crawl()
     reactor.run() # the script will block here until the last crawl call is finished
+
+Different spiders can set different values for the same setting, but when they
+run in the same process it may be impossible, by design or because of some
+limitations, to use these different values. What happens in practice is
+different for different settings:
+
+* :setting:`SPIDER_LOADER_CLASS` and the ones used by its value
+  (:setting:`SPIDER_MODULES`, :setting:`SPIDER_LOADER_WARN_ONLY` for the
+  default one) cannot be read from the per-spider settings. These are applied
+  when the :class:`~scrapy.crawler.CrawlerRunner` or
+  :class:`~scrapy.crawler.CrawlerProcess` object is created.
+* For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` the first
+  available value is used, and if a spider requests a different reactor an
+  exception will be raised. These are applied when the reactor is installed.
+* For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER` and the
+  ones used by the resolver (:setting:`DNSCACHE_ENABLED`,
+  :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy)
+  the first available value is used. These are applied when the reactor is
+  started.
 
 .. seealso:: :ref:`run-from-script`.
 
@@ -237,14 +262,14 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
   cookies to spot bot behaviour
 * use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
-* if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
+* if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
   services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
 * use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such downloaders is
-  `Crawlera`_
+  `Zyte Smart Proxy Manager`_
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
@@ -252,7 +277,7 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: https://scrapy.org/support/
 .. _ProxyMesh: https://proxymesh.com/
-.. _Google cache: http://www.googleguide.com/cached_pages.html
+.. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Crawlera: https://scrapinghub.com/crawlera
 .. _scrapoxy: https://scrapoxy.io/
+.. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/

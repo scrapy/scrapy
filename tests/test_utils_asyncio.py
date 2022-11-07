@@ -1,6 +1,5 @@
-import platform
-import sys
-from unittest import skipIf, TestCase
+import warnings
+from unittest import TestCase
 
 from pytest import mark
 
@@ -14,9 +13,7 @@ class AsyncioTest(TestCase):
         # the result should depend only on the pytest --reactor argument
         self.assertEqual(is_asyncio_reactor_installed(), self.reactor_pytest == 'asyncio')
 
-    # https://twistedmatrix.com/trac/ticket/9766
-    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
-            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_install_asyncio_reactor(self):
-        # this should do nothing
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        with warnings.catch_warnings(record=True) as w:
+            install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+            self.assertEqual(len(w), 0)

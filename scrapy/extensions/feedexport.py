@@ -11,15 +11,17 @@ import sys
 import warnings
 from datetime import datetime
 from tempfile import NamedTemporaryFile
+from typing import Any, Callable, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 from zope.interface import implementer, Interface
 
-from scrapy import signals
+from scrapy import signals, Spider
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.utils.boto import is_botocore
+from scrapy.extensions.postprocessing import PostProcessingManager
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -36,14 +38,47 @@ def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
         kwargs['feed_options'] = feed_options
     else:
         warnings.warn(
-            "{} does not support the 'feed_options' keyword argument. Add a "
+            f"{builder.__qualname__} does not support the 'feed_options' keyword argument. Add a "
             "'feed_options' parameter to its signature to remove this "
             "warning. This parameter will become mandatory in a future "
-            "version of Scrapy."
-            .format(builder.__qualname__),
+            "version of Scrapy.",
             category=ScrapyDeprecationWarning
         )
     return builder(*preargs, uri, *args, **kwargs)
+
+
+class ItemFilter:
+    """
+    This will be used by FeedExporter to decide if an item should be allowed
+    to be exported to a particular feed.
+
+    :param feed_options: feed specific options passed from FeedExporter
+    :type feed_options: dict
+    """
+    feed_options: Optional[dict]
+    item_classes: Tuple
+
+    def __init__(self, feed_options: Optional[dict]) -> None:
+        self.feed_options = feed_options
+        if feed_options is not None:
+            self.item_classes = tuple(
+                load_object(item_class) for item_class in feed_options.get("item_classes") or ()
+            )
+        else:
+            self.item_classes = tuple()
+
+    def accepts(self, item: Any) -> bool:
+        """
+        Return ``True`` if `item` should be exported or ``False`` otherwise.
+
+        :param item: scraped item which user wants to check if is acceptable
+        :type item: :ref:`Scrapy items <topics-items>`
+        :return: `True` if accepted, `False` otherwise
+        :rtype: bool
+        """
+        if self.item_classes:
+            return isinstance(item, self.item_classes)
+        return True  # accept all items by default
 
 
 class IFeedStorage(Interface):
@@ -118,24 +153,25 @@ class FileFeedStorage:
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri, access_key=None, secret_key=None, acl=None, *,
-                 feed_options=None):
+    def __init__(self, uri, access_key=None, secret_key=None, acl=None, endpoint_url=None, *,
+                 feed_options=None, session_token=None):
+        if not is_botocore_available():
+            raise NotConfigured('missing botocore library')
         u = urlparse(uri)
         self.bucketname = u.hostname
         self.access_key = u.username or access_key
         self.secret_key = u.password or secret_key
-        self.is_botocore = is_botocore()
+        self.session_token = session_token
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
-        if self.is_botocore:
-            import botocore.session
-            session = botocore.session.get_session()
-            self.s3_client = session.create_client(
-                's3', aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key)
-        else:
-            import boto
-            self.connect_s3 = boto.connect_s3
+        self.endpoint_url = endpoint_url
+        import botocore.session
+        session = botocore.session.get_session()
+        self.s3_client = session.create_client(
+            's3', aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            aws_session_token=self.session_token,
+            endpoint_url=self.endpoint_url)
         if feed_options and feed_options.get('overwrite', True) is False:
             logger.warning('S3 does not support appending to files. To '
                            'suppress this warning, remove the overwrite '
@@ -148,24 +184,18 @@ class S3FeedStorage(BlockingFeedStorage):
             uri,
             access_key=crawler.settings['AWS_ACCESS_KEY_ID'],
             secret_key=crawler.settings['AWS_SECRET_ACCESS_KEY'],
+            session_token=crawler.settings['AWS_SESSION_TOKEN'],
             acl=crawler.settings['FEED_STORAGE_S3_ACL'] or None,
+            endpoint_url=crawler.settings['AWS_ENDPOINT_URL'] or None,
             feed_options=feed_options,
         )
 
     def _store_in_thread(self, file):
         file.seek(0)
-        if self.is_botocore:
-            kwargs = {'ACL': self.acl} if self.acl else {}
-            self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file,
-                **kwargs)
-        else:
-            conn = self.connect_s3(self.access_key, self.secret_key)
-            bucket = conn.get_bucket(self.bucketname, validate=False)
-            key = bucket.new_key(self.keyname)
-            kwargs = {'policy': self.acl} if self.acl else {}
-            key.set_contents_from_file(file, **kwargs)
-            key.close()
+        kwargs = {'ACL': self.acl} if self.acl else {}
+        self.s3_client.put_object(
+            Bucket=self.bucketname, Key=self.keyname, Body=file,
+            **kwargs)
         file.close()
 
 
@@ -226,7 +256,7 @@ class FTPFeedStorage(BlockingFeedStorage):
 
 
 class _FeedSlot:
-    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, uri_template):
+    def __init__(self, file, exporter, storage, uri, format, store_empty, batch_id, uri_template, filter):
         self.file = file
         self.exporter = exporter
         self.storage = storage
@@ -236,6 +266,7 @@ class _FeedSlot:
         self.store_empty = store_empty
         self.uri_template = uri_template
         self.uri = uri
+        self.filter = filter
         # flags
         self.itemcount = 0
         self._exporting = False
@@ -266,6 +297,7 @@ class FeedExporter:
         self.settings = crawler.settings
         self.feeds = {}
         self.slots = []
+        self.filters = {}
 
         if not self.settings['FEEDS'] and not self.settings['FEED_URI']:
             raise NotConfigured
@@ -280,12 +312,14 @@ class FeedExporter:
             uri = str(self.settings['FEED_URI'])  # handle pathlib.Path objects
             feed_options = {'format': self.settings.get('FEED_FORMAT', 'jsonlines')}
             self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.filters[uri] = self._load_filter(feed_options)
         # End: Backward compatibility for FEED_URI and FEED_FORMAT settings
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict('FEEDS').items():
             uri = str(uri)  # handle pathlib.Path objects
             self.feeds[uri] = feed_complete_default_values_from_settings(feed_options, self.settings)
+            self.filters[uri] = self._load_filter(feed_options)
 
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
@@ -321,26 +355,30 @@ class FeedExporter:
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
         slot.finish_exporting()
-        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
-        log_args = {'format': slot.format,
-                    'itemcount': slot.itemcount,
-                    'uri': slot.uri}
+        logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
-        # Use `largs=log_args` to copy log_args into function's scope
-        # instead of using `log_args` from the outer scope
         d.addCallback(
-            lambda _, largs=log_args: logger.info(
-                logfmt % "Stored", largs, extra={'spider': spider}
-            )
+            self._handle_store_success, logmsg, spider, type(slot.storage).__name__
         )
         d.addErrback(
-            lambda f, largs=log_args: logger.error(
-                logfmt % "Error storing", largs,
-                exc_info=failure_to_exc_info(f), extra={'spider': spider}
-            )
+            self._handle_store_error, logmsg, spider, type(slot.storage).__name__
         )
         return d
+
+    def _handle_store_error(self, f, logmsg, spider, slot_type):
+        logger.error(
+            "Error storing %s", logmsg,
+            exc_info=failure_to_exc_info(f), extra={'spider': spider}
+        )
+        self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
+
+    def _handle_store_success(self, f, logmsg, spider, slot_type):
+        logger.info(
+            "Stored %s", logmsg,
+            extra={'spider': spider}
+        )
+        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
         """
@@ -354,12 +392,16 @@ class FeedExporter:
         """
         storage = self._get_storage(uri, feed_options)
         file = storage.open(spider)
+        if "postprocessing" in feed_options:
+            file = PostProcessingManager(feed_options["postprocessing"], file, feed_options)
+
         exporter = self._get_exporter(
             file=file,
             format=feed_options['format'],
             fields_to_export=feed_options['fields'],
             encoding=feed_options['encoding'],
             indent=feed_options['indent'],
+            **feed_options['item_export_kwargs'],
         )
         slot = _FeedSlot(
             file=file,
@@ -370,6 +412,7 @@ class FeedExporter:
             store_empty=feed_options['store_empty'],
             batch_id=batch_id,
             uri_template=uri_template,
+            filter=self.filters[uri_template]
         )
         if slot.store_empty:
             slot.start_exporting()
@@ -378,6 +421,10 @@ class FeedExporter:
     def item_scraped(self, item, spider):
         slots = []
         for slot in self.slots:
+            if not slot.filter.accepts(item):
+                slots.append(slot)    # if slot doesn't accept item, continue with next slot
+                continue
+
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
@@ -422,10 +469,10 @@ class FeedExporter:
         for uri_template, values in self.feeds.items():
             if values['batch_item_count'] and not re.search(r'%\(batch_time\)s|%\(batch_id\)', uri_template):
                 logger.error(
-                    '%(batch_time)s or %(batch_id)d must be in the feed URI ({}) if FEED_EXPORT_BATCH_ITEM_COUNT '
+                    '%%(batch_time)s or %%(batch_id)d must be in the feed URI (%s) if FEED_EXPORT_BATCH_ITEM_COUNT '
                     'setting or FEEDS.batch_item_count is specified and greater than 0. For more info see: '
-                    'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count'
-                    ''.format(uri_template)
+                    'https://docs.scrapy.org/en/latest/topics/feed-exports.html#feed-export-batch-item-count',
+                    uri_template
                 )
                 return False
         return True
@@ -462,7 +509,7 @@ class FeedExporter:
         crawler = getattr(self, 'crawler', None)
 
         def build_instance(builder, *preargs):
-            return build_storage(builder, uri, preargs=preargs)
+            return build_storage(builder, uri, feed_options=feed_options, preargs=preargs)
 
         if crawler and hasattr(feedcls, 'from_crawler'):
             instance = build_instance(feedcls.from_crawler, crawler)
@@ -474,10 +521,15 @@ class FeedExporter:
             instance = build_instance(feedcls)
             method_name = '__new__'
         if instance is None:
-            raise TypeError("%s.%s returned None" % (feedcls.__qualname__, method_name))
+            raise TypeError(f"{feedcls.__qualname__}.{method_name} returned None")
         return instance
 
-    def _get_uri_params(self, spider, uri_params, slot=None):
+    def _get_uri_params(
+        self,
+        spider: Spider,
+        uri_params_function: Optional[Union[str, Callable[[dict, Spider], dict]]],
+        slot: Optional[_FeedSlot] = None,
+    ) -> dict:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
@@ -485,6 +537,20 @@ class FeedExporter:
         params['time'] = utc_now.replace(microsecond=0).isoformat().replace(':', '-')
         params['batch_time'] = utc_now.isoformat().replace(':', '-')
         params['batch_id'] = slot.batch_id + 1 if slot is not None else 1
-        uripar_function = load_object(uri_params) if uri_params else lambda x, y: None
-        uripar_function(params, spider)
-        return params
+        original_params = params.copy()
+        uripar_function = load_object(uri_params_function) if uri_params_function else lambda params, _: params
+        new_params = uripar_function(params, spider)
+        if new_params is None or original_params != params:
+            warnings.warn(
+                'Modifying the params dictionary in-place in the function defined in '
+                'the FEED_URI_PARAMS setting or in the uri_params key of the FEEDS '
+                'setting is deprecated. The function must return a new dictionary '
+                'instead.',
+                category=ScrapyDeprecationWarning
+            )
+        return new_params if new_params is not None else params
+
+    def _load_filter(self, feed_options):
+        # load the item filter if declared else load the default filter class
+        item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
+        return item_filter_class(feed_options)

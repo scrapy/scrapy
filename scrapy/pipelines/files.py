@@ -11,7 +11,6 @@ import os
 import time
 from collections import defaultdict
 from contextlib import suppress
-from email.utils import mktime_tz, parsedate_tz
 from ftplib import FTP
 from io import BytesIO
 from urllib.parse import urlparse
@@ -23,7 +22,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.boto import is_botocore
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaselessDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -80,100 +79,70 @@ class FSFilesStore:
 class S3FilesStore:
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
+    AWS_SESSION_TOKEN = None
     AWS_ENDPOINT_URL = None
     AWS_REGION_NAME = None
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = 'private'  # Overriden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
+    POLICY = 'private'  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
     HEADERS = {
         'Cache-Control': 'max-age=172800',
     }
 
     def __init__(self, uri):
-        self.is_botocore = is_botocore()
-        if self.is_botocore:
-            import botocore.session
-            session = botocore.session.get_session()
-            self.s3_client = session.create_client(
-                's3',
-                aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
-                endpoint_url=self.AWS_ENDPOINT_URL,
-                region_name=self.AWS_REGION_NAME,
-                use_ssl=self.AWS_USE_SSL,
-                verify=self.AWS_VERIFY
-            )
-        else:
-            from boto.s3.connection import S3Connection
-            self.S3Connection = S3Connection
+        if not is_botocore_available():
+            raise NotConfigured('missing botocore library')
+        import botocore.session
+        session = botocore.session.get_session()
+        self.s3_client = session.create_client(
+            's3',
+            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
+            aws_session_token=self.AWS_SESSION_TOKEN,
+            endpoint_url=self.AWS_ENDPOINT_URL,
+            region_name=self.AWS_REGION_NAME,
+            use_ssl=self.AWS_USE_SSL,
+            verify=self.AWS_VERIFY
+        )
         if not uri.startswith("s3://"):
             raise ValueError(f"Incorrect URI scheme in {uri}, expected 's3'")
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
     def stat_file(self, path, info):
         def _onsuccess(boto_key):
-            if self.is_botocore:
-                checksum = boto_key['ETag'].strip('"')
-                last_modified = boto_key['LastModified']
-                modified_stamp = time.mktime(last_modified.timetuple())
-            else:
-                checksum = boto_key.etag.strip('"')
-                last_modified = boto_key.last_modified
-                modified_tuple = parsedate_tz(last_modified)
-                modified_stamp = int(mktime_tz(modified_tuple))
+            checksum = boto_key['ETag'].strip('"')
+            last_modified = boto_key['LastModified']
+            modified_stamp = time.mktime(last_modified.timetuple())
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
         return self._get_boto_key(path).addCallback(_onsuccess)
 
-    def _get_boto_bucket(self):
-        # disable ssl (is_secure=False) because of this python bug:
-        # https://bugs.python.org/issue5103
-        c = self.S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
-        return c.get_bucket(self.bucket, validate=False)
-
     def _get_boto_key(self, path):
         key_name = f'{self.prefix}{path}'
-        if self.is_botocore:
-            return threads.deferToThread(
-                self.s3_client.head_object,
-                Bucket=self.bucket,
-                Key=key_name)
-        else:
-            b = self._get_boto_bucket()
-            return threads.deferToThread(b.get_key, key_name)
+        return threads.deferToThread(
+            self.s3_client.head_object,
+            Bucket=self.bucket,
+            Key=key_name)
 
     def persist_file(self, path, buf, info, meta=None, headers=None):
         """Upload file to S3 storage"""
         key_name = f'{self.prefix}{path}'
         buf.seek(0)
-        if self.is_botocore:
-            extra = self._headers_to_botocore_kwargs(self.HEADERS)
-            if headers:
-                extra.update(self._headers_to_botocore_kwargs(headers))
-            return threads.deferToThread(
-                self.s3_client.put_object,
-                Bucket=self.bucket,
-                Key=key_name,
-                Body=buf,
-                Metadata={k: str(v) for k, v in (meta or {}).items()},
-                ACL=self.POLICY,
-                **extra)
-        else:
-            b = self._get_boto_bucket()
-            k = b.new_key(key_name)
-            if meta:
-                for metakey, metavalue in meta.items():
-                    k.set_metadata(metakey, str(metavalue))
-            h = self.HEADERS.copy()
-            if headers:
-                h.update(headers)
-            return threads.deferToThread(
-                k.set_contents_from_string, buf.getvalue(),
-                headers=h, policy=self.POLICY)
+        extra = self._headers_to_botocore_kwargs(self.HEADERS)
+        if headers:
+            extra.update(self._headers_to_botocore_kwargs(headers))
+        return threads.deferToThread(
+            self.s3_client.put_object,
+            Bucket=self.bucket,
+            Key=key_name,
+            Body=buf,
+            Metadata={k: str(v) for k, v in (meta or {}).items()},
+            ACL=self.POLICY,
+            **extra)
 
     def _headers_to_botocore_kwargs(self, headers):
-        """ Convert headers to botocore keyword agruments.
+        """ Convert headers to botocore keyword arguments.
         """
         # This is required while we need to support both boto and botocore.
         mapping = CaselessDict({
@@ -221,7 +190,7 @@ class GCSFilesStore:
     CACHE_CONTROL = 'max-age=172800'
 
     # The bucket's default object ACL will be applied to the object.
-    # Overriden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
     POLICY = None
 
     def __init__(self, uri):
@@ -253,8 +222,8 @@ class GCSFilesStore:
                 return {'checksum': checksum, 'last_modified': last_modified}
             else:
                 return {}
-
-        return threads.deferToThread(self.bucket.get_blob, path).addCallback(_onsuccess)
+        blob_path = self._get_blob_path(path)
+        return threads.deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess)
 
     def _get_content_type(self, headers):
         if headers and 'Content-Type' in headers:
@@ -262,8 +231,12 @@ class GCSFilesStore:
         else:
             return 'application/octet-stream'
 
+    def _get_blob_path(self, path):
+        return self.prefix + path
+
     def persist_file(self, path, buf, info, meta=None, headers=None):
-        blob = self.bucket.blob(self.prefix + path)
+        blob_path = self._get_blob_path(path)
+        blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
         return threads.deferToThread(
@@ -322,7 +295,7 @@ class FilesPipeline(MediaPipeline):
     """Abstract pipeline that implement the file downloading
 
     This pipeline tries to minimize network transfers and file processing,
-    doing stat of the files and determining if file is new, uptodate or
+    doing stat of the files and determining if file is new, up-to-date or
     expired.
 
     ``new`` files are those that pipeline never processed and needs to be
@@ -382,6 +355,7 @@ class FilesPipeline(MediaPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+        s3store.AWS_SESSION_TOKEN = settings['AWS_SESSION_TOKEN']
         s3store.AWS_ENDPOINT_URL = settings['AWS_ENDPOINT_URL']
         s3store.AWS_REGION_NAME = settings['AWS_REGION_NAME']
         s3store.AWS_USE_SSL = settings['AWS_USE_SSL']

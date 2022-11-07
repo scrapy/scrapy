@@ -6,17 +6,20 @@ See documentation in docs/topics/request-response.rst
 """
 
 import json
-import warnings
 from contextlib import suppress
-from typing import Generator
+from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 import parsel
-from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
-                            http_content_type_encoding, resolve_encoding)
+from w3lib.encoding import (
+    html_body_declared_encoding,
+    html_to_unicode,
+    http_content_type_encoding,
+    resolve_encoding,
+    read_bom,
+)
 from w3lib.html import strip_html5_whitespace
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
@@ -29,6 +32,8 @@ class TextResponse(Response):
 
     _DEFAULT_ENCODING = 'ascii'
     _cached_decoded_json = _NONE
+
+    attributes: Tuple[str, ...] = Response.attributes + ("encoding",)
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
@@ -53,10 +58,6 @@ class TextResponse(Response):
         else:
             super()._set_body(body)
 
-    def replace(self, *args, **kwargs):
-        kwargs.setdefault('encoding', self.encoding)
-        return Response.replace(self, *args, **kwargs)
-
     @property
     def encoding(self):
         return self._declared_encoding() or self._body_inferred_encoding()
@@ -64,16 +65,10 @@ class TextResponse(Response):
     def _declared_encoding(self):
         return (
             self._encoding
+            or self._bom_encoding()
             or self._headers_encoding()
             or self._body_declared_encoding()
         )
-
-    def body_as_unicode(self):
-        """Return body as unicode"""
-        warnings.warn('Response.body_as_unicode() is deprecated, '
-                      'please use Response.text instead.',
-                      ScrapyDeprecationWarning, stacklevel=2)
-        return self.text
 
     def json(self):
         """
@@ -127,6 +122,10 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _body_declared_encoding(self):
         return html_body_declared_encoding(self.body)
+
+    @memoizemethod_noargs
+    def _bom_encoding(self):
+        return read_bom(self.body)[0]
 
     @property
     def selector(self):

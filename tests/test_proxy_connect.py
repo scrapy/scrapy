@@ -1,12 +1,9 @@
 import json
 import os
-import platform
 import re
 import sys
 from subprocess import Popen, PIPE
 from urllib.parse import urlsplit, urlunsplit
-from unittest import skipIf
-
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -57,13 +54,14 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-@skipIf("pypy" in sys.executable,
-        "mitmproxy does not support PyPy")
-@skipIf(platform.system() == 'Windows' and sys.version_info < (3, 7),
-        "mitmproxy does not support Windows when running Python < 3.7")
 class ProxyConnectTestCase(TestCase):
 
     def setUp(self):
+        try:
+            import mitmproxy  # noqa: F401
+        except ImportError:
+            self.skipTest('mitmproxy is not installed')
+
         self.mockserver = MockServer()
         self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
