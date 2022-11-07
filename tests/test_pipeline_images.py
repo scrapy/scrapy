@@ -5,7 +5,6 @@ import random
 import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import skipIf
 from unittest.mock import patch
 
 import attr
@@ -535,16 +534,16 @@ class NoimagesDropTestCase(unittest.TestCase):
 
     def test_deprecation_warning(self):
         arg = str()
-        with warnings.catch_warnings(record=True) as warnings:
+        with warnings.catch_warnings(record=True) as w:
             NoimagesDrop(arg)
-            self.assertEqual(len(warnings), 1)
-            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
-        with warnings.catch_warnings(record=True) as warnings:
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
             class SubclassedNoimagesDrop(NoimagesDrop):
                 pass
             SubclassedNoimagesDrop(arg)
-            self.assertEqual(len(warnings), 1)
-            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
 
 
 def _create_image(format, *a, **kw):
