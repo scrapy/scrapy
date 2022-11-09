@@ -79,7 +79,6 @@ def walk_modules(path):
 
     mods = []
     mod = import_module(path)
-    mods.append(mod)
     if hasattr(mod, '__path__'):
         for _, subpath, ispkg in iter_modules(mod.__path__):
             fullpath = path + '.' + subpath
