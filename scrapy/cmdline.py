@@ -7,7 +7,7 @@ import pkg_resources
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
@@ -32,7 +32,7 @@ def _iter_command_classes(module_name):
                 inspect.isclass(obj)
                 and issubclass(obj, ScrapyCommand)
                 and obj.__module__ == module.__name__
-                and not obj == ScrapyCommand
+                and obj not in (ScrapyCommand, BaseRunSpiderCommand)
             ):
                 yield obj
 
