@@ -274,7 +274,7 @@ When you know you just want the first result, as in this case, you can do:
 
 As an alternative, you could've written:
 
->>> response.css('title::text')[0].get()
+>>> response.css('title::text').getall()[0]
 'Quotes to Scrape'
 
 Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will 
