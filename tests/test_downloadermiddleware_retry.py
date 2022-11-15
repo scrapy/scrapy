@@ -629,6 +629,52 @@ class GetRetryRequestTest(unittest.TestCase):
         for stat in (f"{stats_key}/count", f"{stats_key}/reason_count/{expected_reason}"):
             self.assertEqual(spider.crawler.stats.get_value(stat), 1)
 
+    def test_flags_present(self):
+        flags = ["test_flag1", "test_flag2"]
+        request = Request(
+            'https://example.com', flags=flags
+        )
+        spider = self.get_spider()
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+            )
+        expected_retry_times = 1
+        expected_reason = "unspecified"
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "DEBUG",
+                f"Retrying {request} {flags} (failed {expected_retry_times} times): "
+                f"{expected_reason}",
+            )
+        )
+
+    def test_flags_max_retries_reached(self):
+        flags = ["test_flag1", "test_flag2"]
+        max_retry_times = 0
+        request = Request(
+            'https://example.com', flags=flags
+        )
+        spider = self.get_spider()
+        with LogCapture() as log:
+            get_retry_request(
+                request,
+                spider=spider,
+                max_retry_times=max_retry_times,
+            )
+        failure_count = max_retry_times + 1
+        expected_reason = "unspecified"
+        log.check_present(
+            (
+                "scrapy.downloadermiddlewares.retry",
+                "ERROR",
+                f"Gave up retrying {request} {flags} (failed {failure_count} times): "
+                f"{expected_reason}",
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
