@@ -80,7 +80,7 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
+        elif re.search(r'\.xml(\.gz)?(\?|$)', response.url):
             return response.body
 
 
