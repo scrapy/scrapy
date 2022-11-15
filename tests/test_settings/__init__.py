@@ -55,6 +55,12 @@ class SettingsAttributeTest(unittest.TestCase):
         self.assertEqual(repr(self.attribute),
                          "<SettingsAttribute value='value' priority=10>")
 
+    def test_setter_and_deleter(self):
+        self.attribute.value = "foo"
+        assert self.attribute._value == "foo"
+        del self.attribute.value
+        assert "_value" not in dir(self.attribute)
+
 
 class BaseSettingsTest(unittest.TestCase):
 

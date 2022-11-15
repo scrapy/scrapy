@@ -298,6 +298,25 @@ project name). This name will be used for the logging too.
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
 
+.. setting:: CHECK_SETTINGS_ENABLED
+
+CHECK_SETTINGS_ENABLED
+----------------------
+
+Default: ``True``
+
+Whether to enable the :class:`~scrapy.extensions.checksettings.CheckSettings`
+extension. Optionally a list of variables to ignore.
+
+.. setting:: CHECK_SETTINGS_IGNORED
+
+CHECK_SETTINGS_IGNORED
+----------------------
+
+Default: ``[]``
+
+List of settings variables to ignore by Check Settings extension.
+
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
