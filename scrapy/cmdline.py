@@ -78,7 +78,8 @@ def _pop_command_name(argv):
 def _print_header(settings, inproject):
     version = scrapy.__version__
     if inproject:
-        print(f"Scrapy {version} - project: {settings['BOT_NAME']}\n")
+        print(f"Scrapy {version} - active project: {settings['BOT_NAME']}\n")
+
     else:
         print(f"Scrapy {version} - no active project\n")
 
