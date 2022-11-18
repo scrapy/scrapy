@@ -70,6 +70,6 @@ class CrawlTestCase(TestCase):
         tolerance = 0.3
 
         delays_real = {k: v[1] - v[0] for k, v in times.items()}
-        error_delta = {k: 1 - delays_real[k] / v.delay for k, v in slots.items()}
+        error_delta = {k: 1 - min(delays_real[k], v.delay) / max(delays_real[k], v.delay)  for k, v in slots.items()}
 
         self.assertTrue(max(list(error_delta.values())) < tolerance)
