@@ -50,7 +50,7 @@ class FormRequest(Request):
         formnumber: Optional[int] = 0,
         formdata: FormdataType = None,
         clickdata: Optional[dict] = None,
-        dont_click: bool = False,
+        dontclick: bool = False,
         formxpath: Optional[str] = None,
         formcss: Optional[str] = None,
         **kwargs,
@@ -62,7 +62,7 @@ class FormRequest(Request):
             formxpath = HTMLTranslator().css_to_xpath(formcss)
 
         form = _get_form(response, formname, formid, formnumber, formxpath)
-        formdata = _get_inputs(form, formdata, dont_click, clickdata)
+        formdata = _get_inputs(form, formdata, dontclick, clickdata)
         url = _get_form_url(form, kwargs.pop('url', None))
 
         method = kwargs.pop('method', form.method)
@@ -139,7 +139,7 @@ def _get_form(
 def _get_inputs(
     form: FormElement,
     formdata: FormdataType,
-    dont_click: bool,
+    dontclick: bool,
     clickdata: Optional[dict],
 ) -> List[Tuple[str, str]]:
     """Return a list of key-value pairs for the inputs found in the given form."""
@@ -163,7 +163,7 @@ def _get_inputs(
         if k and k not in formdata_keys
     ]
 
-    if not dont_click:
+    if not dontclick:
         clickable = _get_clickable(clickdata, form)
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
@@ -216,7 +216,7 @@ def _get_clickable(clickdata: Optional[dict], form: FormElement) -> Optional[Tup
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
         el = clickables[0]
-        return (el.get('name'), el.get('value') or '')
+        return el.get('name'), el.get('value') or ''
 
     # If clickdata is given, we compare it to the clickable elements to find a
     # match. We first look to see if the number is specified in clickdata,
@@ -228,14 +228,14 @@ def _get_clickable(clickdata: Optional[dict], form: FormElement) -> Optional[Tup
         except IndexError:
             pass
         else:
-            return (el.get('name'), el.get('value') or '')
+            return el.get('name'), el.get('value') or ''
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
     xpath = './/*' + ''.join(f'[@{k}="{v}"]' for k, v in clickdata.items())
     el = form.xpath(xpath)
     if len(el) == 1:
-        return (el[0].get('name'), el[0].get('value') or '')
+        return el[0].get('name'), el[0].get('value') or ''
     elif len(el) > 1:
         raise ValueError(f"Multiple elements found ({el!r}) matching the "
                          f"criteria in clickdata: {clickdata!r}")
