@@ -1,20 +1,16 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import errno
 import gc
 import inspect
 import re
 import sys
-import warnings
 import weakref
 from functools import partial, wraps
 from itertools import chain
 from typing import AsyncGenerator, AsyncIterable, Iterable, Union
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
-from scrapy.utils.decorators import deprecated
 
 
 def flatten(x):
@@ -110,12 +106,6 @@ def to_bytes(text, encoding=None, errors='strict'):
     if encoding is None:
         encoding = 'utf-8'
     return text.encode(encoding, errors)
-
-
-@deprecated('to_unicode')
-def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of ``text``. """
-    return to_unicode(text, encoding, errors)
 
 
 def re_rsearch(pattern, text, chunk_size=1024):
@@ -263,30 +253,6 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache:
-
-    def __init__(self, default_factory):
-        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
-        self.default_factory = default_factory
-        self._weakdict = weakref.WeakKeyDictionary()
-
-    def __getitem__(self, key):
-        if key not in self._weakdict:
-            self._weakdict[key] = self.default_factory(key)
-        return self._weakdict[key]
-
-
-@deprecated
-def retry_on_eintr(function, *args, **kw):
-    """Run a function and retry it while getting EINTR errors"""
-    while True:
-        try:
-            return function(*args, **kw)
-        except IOError as e:
-            if e.errno != errno.EINTR:
-                raise
-
-
 def without_none_values(iterable):
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
@@ -336,10 +302,6 @@ class MutableChain(Iterable):
 
     def __next__(self):
         return next(self.data)
-
-    @deprecated("scrapy.utils.python.MutableChain.__next__")
-    def next(self):
-        return self.__next__()
 
 
 async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
