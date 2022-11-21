@@ -1,12 +1,9 @@
 import pickle
 import re
 import unittest
-from warnings import catch_warnings
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
-from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from tests import get_testdata
 
@@ -517,32 +514,3 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
 
     def test_restrict_xpaths_with_html_entities(self):
         super().test_restrict_xpaths_with_html_entities()
-
-    def test_filteringlinkextractor_deprecation_warning(self):
-        """Make sure the FilteringLinkExtractor deprecation warning is not
-        issued for LxmlLinkExtractor"""
-        with catch_warnings(record=True) as warnings:
-            LxmlLinkExtractor()
-            self.assertEqual(len(warnings), 0)
-
-            class SubclassedLxmlLinkExtractor(LxmlLinkExtractor):
-                pass
-
-            SubclassedLxmlLinkExtractor()
-            self.assertEqual(len(warnings), 0)
-
-
-class FilteringLinkExtractorTest(unittest.TestCase):
-
-    def test_deprecation_warning(self):
-        args = [None] * 10
-        with catch_warnings(record=True) as warnings:
-            FilteringLinkExtractor(*args)
-            self.assertEqual(len(warnings), 1)
-            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
-        with catch_warnings(record=True) as warnings:
-            class SubclassedFilteringLinkExtractor(FilteringLinkExtractor):
-                pass
-            SubclassedFilteringLinkExtractor(*args)
-            self.assertEqual(len(warnings), 1)
-            self.assertEqual(warnings[0].category, ScrapyDeprecationWarning)
