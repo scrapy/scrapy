@@ -6,7 +6,7 @@ from os.path import join, dirname, abspath, isabs, exists
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 from scrapy.settings import Settings
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 
 
 ENVVAR = 'SCRAPY_SETTINGS_MODULE'
@@ -67,23 +67,16 @@ def get_project_settings():
     if settings_module_path:
         settings.setmodule(settings_module_path, priority='project')
 
-    scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if
-                      k.startswith('SCRAPY_')}
     valid_envvars = {
         'CHECK',
         'PROJECT',
         'PYTHON_SHELL',
         'SETTINGS_MODULE',
     }
-    setting_envvars = {k for k in scrapy_envvars if k not in valid_envvars}
-    if setting_envvars:
-        setting_envvar_list = ', '.join(sorted(setting_envvars))
-        warnings.warn(
-            'Use of environment variables prefixed with SCRAPY_ to override '
-            'settings is deprecated. The following environment variables are '
-            f'currently defined: {setting_envvar_list}',
-            ScrapyDeprecationWarning
-        )
+
+    scrapy_envvars = {k[7:]: v for k, v in os.environ.items() if
+                      k.startswith('SCRAPY_') and k.replace('SCRAPY_', '') in valid_envvars}
+
     settings.setdict(scrapy_envvars, priority='project')
 
     return settings
