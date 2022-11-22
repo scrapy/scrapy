@@ -75,7 +75,8 @@ class MemoryUsage:
         self.crawler.stats.max_value('memusage/max', self.get_virtual_size())
 
     def _check_limit(self):
-        if self.get_virtual_size() > self.limit:
+        current_mem_usage = self.get_virtual_size()
+        if current_mem_usage > self.limit:
             self.crawler.stats.set_value('memusage/limit_reached', 1)
             mem = self.limit / 1024 / 1024
             logger.error("Memory usage exceeded %(memusage)dM. Shutting down Scrapy...",
@@ -93,7 +94,7 @@ class MemoryUsage:
             else:
                 self.crawler.stop()
         else:
-            logger.info("Current memory usage is %(virtualsize)dM", {'virtualsize': self.get_virtual_size()})
+            logger.info("Current memory usage is %(virtualsize)dM", {'virtualsize': current_mem_usage / 1024 / 1024})
 
     def _check_warning(self):
         if self.warned:  # warn only once
