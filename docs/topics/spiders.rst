@@ -189,6 +189,32 @@ scrapy.Spider
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
 
+   .. method:: set_cookie_jar(cj)
+
+       Initiate the spider's cookie jar from an existing one
+
+   .. method:: add_cookie(cookie)
+
+       Add cookie to the spider's cookiejar
+
+   .. method:: get_cookies(name, names, return_type)
+
+       :param name: name of cookie to fetch, default = None
+       :type name: str
+
+       :param names: names of cookies to fetch, default = None
+       :type names: List[str]
+
+       :param return_type: return format if multiple cookies, default = list, options are list, dict
+       :type return_type: object
+
+       Get cookie by name or the cookies whose name is in names.
+       If names is used, then the return value will be in the format of the return_type
+
+   .. method:: clear_cookies()
+
+       Erase spider's cookiejar
+
    .. method:: log(message, [level, component])
 
        Wrapper that sends a log message through the Spider's :attr:`logger`,

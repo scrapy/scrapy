@@ -166,6 +166,7 @@ Solving specific problems
    topics/jobs
    topics/coroutines
    topics/asyncio
+   topics/storage
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -211,6 +212,9 @@ Solving specific problems
 
 :doc:`topics/asyncio`
     Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
+
+:doc:`topics/storage`
+    Use for the storage of cookies.
 
 .. _extending-scrapy:
 

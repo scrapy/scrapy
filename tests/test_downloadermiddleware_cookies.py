@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import pytest
 
-from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
+from scrapy.downloadermiddlewares.cookies import CookiesMiddleware, AccessCookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
@@ -693,3 +693,112 @@ class CookiesMiddlewareTest(TestCase):
             'co.uk',
             cookies=True,
         )
+
+class AccessCookiesMiddlewareTest(TestCase):
+
+    def assertCookieValEqual(self, first, second, msg=None):
+        def split_cookies(cookies):
+            return sorted([s.strip() for s in to_bytes(cookies).split(b";")])
+
+        return self.assertEqual(split_cookies(first), split_cookies(second), msg=msg)
+
+    def setUp(self):
+        self.spider = Spider('foo')
+        self.mw = AccessCookiesMiddleware()
+
+        self.redirect_middleware = RedirectMiddleware(settings=Settings())
+
+    def tearDown(self):
+        del self.mw
+        del self.redirect_middleware
+
+    def test_basic(self):
+        req = Request('http://scrapytest.org/')
+        headers = {'Set-Cookie': 'C1=value1; path=/'}
+        res = Response('http://scrapytest.org/', headers=headers)
+
+        assert self.mw.process_request(req, self.spider) is None
+        assert 'Cookie' not in req.headers
+        assert self.mw.process_response(req, res, self.spider) is res
+
+        temp = self.spider.get_cookies()
+        n = next(temp)
+        self.assertEqual(n.value, "value1")
+        self.assertEqual(n.name, "C1")
+        self.assertEqual(n.domain, "scrapytest.org")
+
+        req2 = Request('http://scrapytest.org/sub1/')
+        headers2 = {'Set-Cookie': 'C2=value2; path=/sub1'}
+        res2 = Response('http://scrapytest.org/sub1/', headers=headers2)
+        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_response(req2, res2, self.spider) is res2
+
+        temp = self.spider.get_cookies()
+        n = next(temp)
+        self.assertEqual(n.value, "value1")
+        self.assertEqual(n.name, "C1")
+        self.assertEqual(n.domain, "scrapytest.org")
+        self.assertEqual(n.path, "/")
+
+        n2 = next(temp)
+        self.assertEqual(n2.value, "value2")
+        self.assertEqual(n2.name, "C2")
+        self.assertEqual(n2.domain, "scrapytest.org")
+        self.assertEqual(n2.path, "/sub1")
+
+        self.assertEqual(req2.headers.get('Cookie'), b"C1=value1")
+
+    def test_complex(self):
+        # merge some cookies into jar
+        cookies = [
+            {'name': 'C1', 'value': 'value1', 'path': '/foo', 'domain': 'scrapytest.org'},
+            {'name': 'C2', 'value': 'value2', 'path': '/bar', 'domain': 'scrapytest.org'},
+            {'name': 'C3', 'value': 'value3', 'path': '/foo', 'domain': 'scrapytest.org'},
+            {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'},
+        ]
+
+        headers_c1 = {'Set-Cookie': ['C1=value1; path=/foo',  'C3=value3; path=/foo'] }
+        headers_c2 = {'Set-Cookie': 'C2=value2; path=/bar'}
+
+        req = Request('http://scrapytest.org/foo', cookies=cookies)
+        res = Response('http://scrapytest.org/foo', headers=headers_c1)
+        self.mw.process_request(req, self.spider)
+        self.mw.process_response(req, res, self.spider)
+
+        assert req.headers.get('Cookie') in (b'C1=value1; C3=value3', b'C3=value3; C1=value1')
+
+        it = iter(self.spider.get_cookies())
+        cookie_count = 0
+
+        while True:
+            c = next(it, None)
+            if c is None:
+                break
+            cookie_count += 1
+            assert c.value in ("value1", "value2", "value3")
+
+        assert cookie_count is 5
+        # embed C2 for scrapytest.org/bar
+        req = Request('http://scrapytest.org/bar')
+        res = Response('http://scrapytest.org/foo', headers=headers_c2)
+        self.mw.process_request(req, self.spider)
+        self.mw.process_response(req, res, self.spider)
+
+        self.assertEqual(req.headers.get('Cookie'), b'C2=value2')
+
+        # embed nothing for scrapytest.org/baz
+        req = Request('http://scrapytest.org/baz')
+        self.mw.process_request(req, self.spider)
+        assert 'Cookie' not in req.headers
+
+        it = iter(self.spider.get_cookies())
+
+        cookie_count = 0
+
+        while True:
+            c = next(it, None)
+            if c is None:
+                break
+            cookie_count += 1
+            assert c.value in ("value1", "value2", "value3")
+        assert cookie_count is 6
