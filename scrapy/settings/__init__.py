@@ -51,10 +51,8 @@ class SettingsAttribute:
             self.value = value
             self.priority = priority
 
-    def __str__(self):
+    def __repr__(self):
         return f"<SettingsAttribute value={self.value!r} priority={self.priority}>"
-
-    __repr__ = __str__
 
 
 class BaseSettings(MutableMapping):
