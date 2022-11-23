@@ -126,9 +126,7 @@ def _clspath(cls, forced=None):
     return f'{cls.__module__}.{cls.__name__}'
 
 
-DEPRECATION_RULES = [
-    ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
-]
+DEPRECATION_RULES = []
 
 
 def update_classpath(path):
