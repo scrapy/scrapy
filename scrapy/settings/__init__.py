@@ -435,30 +435,6 @@ class BaseSettings(MutableMapping):
             p.text(pformat(self.copy_to_dict()))
 
 
-class _DictProxy(MutableMapping):
-
-    def __init__(self, settings, priority):
-        self.o = {}
-        self.settings = settings
-        self.priority = priority
-
-    def __len__(self):
-        return len(self.o)
-
-    def __getitem__(self, k):
-        return self.o[k]
-
-    def __setitem__(self, k, v):
-        self.settings.set(k, v, priority=self.priority)
-        self.o[k] = v
-
-    def __delitem__(self, k):
-        del self.o[k]
-
-    def __iter__(self, k, v):
-        return iter(self.o)
-
-
 class Settings(BaseSettings):
     """
     This object stores Scrapy settings for the configuration of internal
