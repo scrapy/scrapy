@@ -24,7 +24,7 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Headers, HtmlResponse, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
@@ -756,18 +756,6 @@ class HttpProxyTestCase(unittest.TestCase):
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
         return self.download_request(request, Spider('foo')).addCallback(_test)
-
-    def test_download_with_proxy_https_noconnect(self):
-        def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'https://example.com')
-
-        http_proxy = f'{self.getURL("")}?noconnect'
-        request = Request('https://example.com', meta={'proxy': http_proxy})
-        with self.assertWarnsRegex(ScrapyDeprecationWarning,
-                                   r'Using HTTPS proxies in the noconnect mode is deprecated'):
-            return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_download_without_proxy(self):
         def _test(response):
