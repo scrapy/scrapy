@@ -151,7 +151,7 @@ class Stream:
 
         self._deferred_response = Deferred(_cancel)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Stream(id={self.stream_id!r})'
 
     @property
