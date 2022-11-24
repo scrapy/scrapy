@@ -44,14 +44,12 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
                 raise ValueError(f'Invalid value {value} for component {name}, '
                                  'please provide a real number or None instead')
 
-    # BEGIN Backward compatibility for old (base, custom) call signature
     if isinstance(custom, (list, tuple)):
         _check_components(custom)
         return type(custom)(convert(c) for c in custom)
 
     if custom is not None:
         compdict.update(custom)
-    # END Backward compatibility
 
     _validate_values(compdict)
     compdict = without_none_values(_map_keys(compdict))
