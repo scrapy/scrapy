@@ -60,8 +60,8 @@ def _get_concurrency_delay(concurrency, spider, settings):
     if hasattr(spider, 'download_delay'):
         delay = spider.download_delay
 
-    if hasattr(spider, 'max_concurrent_requests'):
-        concurrency = spider.max_concurrent_requests
+    if hasattr(spider, 'slot_concurrent_requests'):
+        concurrency = spider.slot_concurrent_requests
 
     return concurrency, delay
 

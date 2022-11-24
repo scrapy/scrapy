@@ -17,7 +17,7 @@ class QPSSpider(Spider):
     benchurl = 'http://localhost:8880/'
 
     # Max concurrency is limited by global CONCURRENT_REQUESTS setting
-    max_concurrent_requests = 8
+    slot_concurrent_requests = 8
     # Requests per second goal
     qps = None # same as: 1 / download_delay
     download_delay = None
