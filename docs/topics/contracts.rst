@@ -102,7 +102,7 @@ override three methods:
     .. method:: Contract.post_process(output)
 
         This allows processing the output of the callback. Iterators are
-        converted listified before being passed to this hook.
+        converted to lists before being passed to this hook.
 
 Raise :class:`~scrapy.exceptions.ContractFail` from
 :class:`~scrapy.contracts.Contract.pre_process` or

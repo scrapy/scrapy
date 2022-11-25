@@ -6,9 +6,6 @@ import contextlib
 import warnings
 from pathlib import Path
 
-from pytest import warns
-
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.project import data_path, get_project_settings
 
 
@@ -79,10 +76,10 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         envvars = {
             'SCRAPY_FOO': 'bar',
         }
-        with warns(ScrapyDeprecationWarning, match=': FOO') as record:
-            with set_env(**envvars):
-                get_project_settings()
-        assert len(record) == 1
+        with set_env(**envvars):
+            settings = get_project_settings()
+
+        assert settings.get("SCRAPY_FOO") is None
 
     def test_valid_and_invalid_envvars(self):
         value = 'tests.test_cmdline.settings'
@@ -90,8 +87,7 @@ class GetProjectSettingsTestCase(unittest.TestCase):
             'SCRAPY_FOO': 'bar',
             'SCRAPY_SETTINGS_MODULE': value,
         }
-        with warns(ScrapyDeprecationWarning, match=': FOO') as record:
-            with set_env(**envvars):
-                settings = get_project_settings()
-        assert len(record) == 1
+        with set_env(**envvars):
+            settings = get_project_settings()
         assert settings.get('SETTINGS_MODULE') == value
+        assert settings.get('SCRAPY_FOO') is None

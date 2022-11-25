@@ -109,7 +109,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
                 'LOG_LEVEL': 'INFO',
                 'LOG_FILE': str(log_file),
                 # settings to avoid extra warnings
-                'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
+                'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
                 'TELNETCONSOLE_ENABLED': telnet.TWISTED_CONCH_AVAILABLE,
             }
 
@@ -231,7 +231,7 @@ class NoRequestsSpider(scrapy.Spider):
 class CrawlerRunnerHasSpider(unittest.TestCase):
 
     def _runner(self):
-        return CrawlerRunner({'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION'})
+        return CrawlerRunner({'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7'})
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
@@ -279,14 +279,14 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         if self.reactor_pytest == 'asyncio':
             CrawlerRunner(settings={
                 "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "VERSION",
+                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             })
         else:
             msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
             with self.assertRaisesRegex(Exception, msg):
                 runner = CrawlerRunner(settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "VERSION",
+                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
                 })
                 yield runner.crawl(NoRequestsSpider)
 
@@ -451,6 +451,29 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
         self.assertIn("async pipeline opened!", log)
+
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    @mark.skipif(twisted_version == Version('twisted', 21, 2, 0), reason='https://twistedmatrix.com/trac/ticket/10106')
+    def test_asyncio_enabled_reactor_same_loop(self):
+        log = self.run_script("asyncio_enabled_reactor_same_loop.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
+
+    @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')
+    @mark.skipif(platform.system() == 'Windows', reason='uvloop does not support Windows')
+    @mark.skipif(twisted_version == Version('twisted', 21, 2, 0), reason='https://twistedmatrix.com/trac/ticket/10106')
+    def test_asyncio_enabled_reactor_different_loop(self):
+        log = self.run_script("asyncio_enabled_reactor_different_loop.py")
+        self.assertNotIn("Spider closed (finished)", log)
+        self.assertIn(
+            (
+                "does not match the one specified in the ASYNCIO_EVENT_LOOP "
+                "setting (uvloop.Loop)"
+            ),
+            log,
+        )
 
     def test_default_loop_asyncio_deferred_signal(self):
         log = self.run_script("asyncio_deferred_signal.py")

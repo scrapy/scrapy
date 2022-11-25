@@ -78,4 +78,7 @@ class HttpProxyMiddleware:
                     del request.headers[b'Proxy-Authorization']
                 del request.meta['_auth_proxy']
         elif b'Proxy-Authorization' in request.headers:
-            del request.headers[b'Proxy-Authorization']
+            if proxy_url:
+                request.meta['_auth_proxy'] = proxy_url
+            else:
+                del request.headers[b'Proxy-Authorization']

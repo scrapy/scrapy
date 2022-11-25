@@ -419,6 +419,17 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
         self.logger.info('[errback] status %i', failure.value.response.status)
 
 
+class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParseMethod):
+    name = 'crawl_spider_with_process_request_cb_kwargs'
+    rules = (
+        Rule(LinkExtractor(), callback='parse', follow=True, process_request="process_request"),
+    )
+
+    def process_request(self, request, response):
+        request.cb_kwargs["foo"] = "process_request"
+        return request
+
+
 class BytesReceivedCallbackSpider(MetaSpider):
 
     full_response_length = 2**18

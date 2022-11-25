@@ -3,7 +3,7 @@ on: [push]
 
 jobs:
   publish:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     if: startsWith(github.event.ref, 'refs/tags/')
 
     steps:
@@ -12,7 +12,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: "3.11"
 
     - name: Check Tag
       id: check-release-tag
