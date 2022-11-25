@@ -236,10 +236,10 @@ class RequestFingerprinter:
                 'REQUEST_FINGERPRINTER_IMPLEMENTATION'
             )
         else:
-            implementation = 'PREVIOUS_VERSION'
-        if implementation == 'PREVIOUS_VERSION':
+            implementation = '2.6'
+        if implementation == '2.6':
             message = (
-                '\'PREVIOUS_VERSION\' is a deprecated value for the '
+                '\'2.6\' is a deprecated value for the '
                 '\'REQUEST_FINGERPRINTER_IMPLEMENTATION\' setting.\n'
                 '\n'
                 'It is also the default value. In other words, it is normal '
@@ -254,14 +254,14 @@ class RequestFingerprinter:
             )
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
             self._fingerprint = _request_fingerprint_as_bytes
-        elif implementation == 'VERSION':
+        elif implementation == '2.7':
             self._fingerprint = fingerprint
         else:
             raise ValueError(
                 f'Got an invalid value on setting '
                 f'\'REQUEST_FINGERPRINTER_IMPLEMENTATION\': '
-                f'{implementation!r}. Valid values are \'PREVIOUS_VERSION\' (deprecated) '
-                f'and \'VERSION\'.'
+                f'{implementation!r}. Valid values are \'2.6\' (deprecated) '
+                f'and \'2.7\'.'
             )
 
     def fingerprint(self, request):

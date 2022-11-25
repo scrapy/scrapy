@@ -1,18 +1,14 @@
 import functools
-import gc
 import operator
 import platform
-from itertools import count
-from warnings import catch_warnings, filterwarnings
 
 from twisted.trial import unittest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import deferred_f_from_coro_f, aiter_errback
 from scrapy.utils.python import (
     memoizemethod_noargs, binary_is_text, equal_attributes,
-    WeakKeyCache, get_func_args, to_bytes, to_unicode,
+    get_func_args, to_bytes, to_unicode,
     without_none_values, MutableChain, MutableAsyncChain)
 
 
@@ -27,12 +23,7 @@ class MutableChainTest(unittest.TestCase):
         m.extend([9, 10], (11, 12))
         self.assertEqual(next(m), 0)
         self.assertEqual(m.__next__(), 1)
-        with catch_warnings(record=True) as warnings:
-            self.assertEqual(m.next(), 2)
-            self.assertEqual(len(warnings), 1)
-            self.assertIn('scrapy.utils.python.MutableChain.__next__',
-                          str(warnings[0].message))
-        self.assertEqual(list(m), list(range(3, 13)))
+        self.assertEqual(list(m), list(range(2, 13)))
 
 
 class MutableAsyncChainTest(unittest.TestCase):
@@ -208,27 +199,6 @@ class UtilsPythonTestCase(unittest.TestCase):
         # fail z equality
         a.meta['z'] = 2
         self.assertFalse(equal_attributes(a, b, [compare_z, 'x']))
-
-    def test_weakkeycache(self):
-        class _Weakme:
-            pass
-
-        _values = count()
-
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            wk = WeakKeyCache(lambda k: next(_values))
-
-        k = _Weakme()
-        v = wk[k]
-        self.assertEqual(v, wk[k])
-        self.assertNotEqual(v, wk[_Weakme()])
-        self.assertEqual(v, wk[k])
-        del k
-        for _ in range(100):
-            if wk._weakdict:
-                gc.collect()
-        self.assertFalse(len(wk._weakdict))
 
     def test_get_func_args(self):
         def f1(a, b, c):

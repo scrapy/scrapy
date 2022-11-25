@@ -689,8 +689,15 @@ class MySpider(scrapy.Spider):
         ])
         self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
-    def test_asyncio_enabled_false(self):
+    def test_asyncio_enabled_default(self):
         log = self.get_log(self.debug_log_spider, args=[])
+        self.assertIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
+
+    def test_asyncio_enabled_false(self):
+        log = self.get_log(self.debug_log_spider, args=[
+            '-s', 'TWISTED_REACTOR=twisted.internet.selectreactor.SelectReactor'
+        ])
+        self.assertIn("Using reactor: twisted.internet.selectreactor.SelectReactor", log)
         self.assertNotIn("Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log)
 
     @mark.skipif(sys.implementation.name == 'pypy', reason='uvloop does not support pypy properly')

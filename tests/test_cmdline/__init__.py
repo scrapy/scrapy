@@ -31,10 +31,6 @@ class CmdlineTest(unittest.TestCase):
         self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s',
                                        'TEST1=override'), 'override')
 
-    def test_override_settings_using_envvar(self):
-        self.env['SCRAPY_TEST1'] = 'override'
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), 'override')
-
     def test_profiling(self):
         path = tempfile.mkdtemp()
         filename = os.path.join(path, 'res.prof')

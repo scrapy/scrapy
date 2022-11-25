@@ -242,21 +242,6 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     def getURL(self, path):
         return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
-    def test_download_with_proxy_https_noconnect(self):
-        def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'/')
-
-        http_proxy = f"{self.getURL('')}?noconnect"
-        request = Request('https://example.com', meta={'proxy': http_proxy})
-        with self.assertWarnsRegex(
-            Warning,
-            r'Using HTTPS proxies in the noconnect mode is not supported by the '
-            r'downloader handler.'
-        ):
-            return self.download_request(request, Spider('foo')).addCallback(_test)
-
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
         with self.assertRaises(NotImplementedError):

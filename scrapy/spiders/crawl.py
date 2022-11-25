@@ -102,9 +102,9 @@ class CrawlSpider(Spider):
                 request = self._build_request(rule_index, link)
                 yield rule.process_request(request, response)
 
-    def _callback(self, response):
+    def _callback(self, response, **cb_kwargs):
         rule = self._rules[response.meta['rule']]
-        return self._parse_response(response, rule.callback, rule.cb_kwargs, rule.follow)
+        return self._parse_response(response, rule.callback, {**rule.cb_kwargs, **cb_kwargs}, rule.follow)
 
     def _errback(self, failure):
         rule = self._rules[failure.request.meta['rule']]

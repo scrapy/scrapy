@@ -151,10 +151,8 @@ class Stream:
 
         self._deferred_response = Deferred(_cancel)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f'Stream(id={self.stream_id!r})'
-
-    __repr__ = __str__
 
     @property
     def _log_warnsize(self) -> bool:

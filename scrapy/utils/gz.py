@@ -2,17 +2,6 @@ import struct
 from gzip import GzipFile
 from io import BytesIO
 
-from scrapy.utils.decorators import deprecated
-
-
-# - GzipFile's read() has issues returning leftover uncompressed data when
-#   input is corrupted
-# - read1(), which fetches data before raising EOFError on next call
-#   works here
-@deprecated('GzipFile.read1')
-def read1(gzf, size=-1):
-    return gzf.read1(size)
-
 
 def gunzip(data):
     """Gunzip the given data and return as much data as possible.
