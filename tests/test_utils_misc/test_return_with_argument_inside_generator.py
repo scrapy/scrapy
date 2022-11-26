@@ -12,7 +12,7 @@ def _indentation_error(*args, **kwargs):
 
 def top_level_return_something():
     """
-    docstring
+docstring
     """
     url = """
 https://example.org
@@ -23,7 +23,7 @@ https://example.org
 
 def top_level_return_none():
     """
-    docstring
+docstring
     """
     url = """
 https://example.org
@@ -60,7 +60,7 @@ class UtilsMiscPy3TestCase(unittest.TestCase):
 
         def i1():
             """
-            docstring
+docstring
             """
             url = """
 https://example.org
@@ -121,7 +121,7 @@ https://example.org
 
         def k2():
             """
-            docstring
+docstring
             """
             url = """
 https://example.org
@@ -203,7 +203,7 @@ https://example.org
         @decorator
         def k3():
             """
-            docstring
+docstring
             """
             url = """
 https://example.org
