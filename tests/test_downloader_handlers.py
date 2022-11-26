@@ -109,7 +109,8 @@ class FileTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        with open(self.tmpname + '^', 'w', encoding="utf-8") as f:
+        # add a special char to check that they are handled correctly
+        with open(self.tmpname + '^', 'w') as f:
             f.write('0123456789')
         handler = create_instance(FileDownloadHandler, None, get_crawler())
         self.download_request = handler.download_request
