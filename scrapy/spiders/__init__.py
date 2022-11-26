@@ -3,13 +3,18 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
 
 
 class Spider(object_ref):
@@ -17,7 +22,7 @@ class Spider(object_ref):
     class.
     """
 
-    name: Optional[str] = None
+    name: str
     custom_settings: Optional[dict] = None
 
     def __init__(self, name=None, **kwargs):
@@ -49,7 +54,7 @@ class Spider(object_ref):
         spider._set_crawler(crawler)
         return spider
 
-    def _set_crawler(self, crawler):
+    def _set_crawler(self, crawler: Crawler):
         self.crawler = crawler
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)

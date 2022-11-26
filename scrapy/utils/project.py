@@ -2,7 +2,7 @@ import os
 import warnings
 
 from importlib import import_module
-from os.path import join, dirname, abspath, isabs, exists
+from pathlib import Path
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 from scrapy.settings import Settings
@@ -25,36 +25,37 @@ def inside_project():
     return bool(closest_scrapy_cfg())
 
 
-def project_data_dir(project='default'):
+def project_data_dir(project='default') -> str:
     """Return the current project data dir, creating it if it doesn't exist"""
     if not inside_project():
         raise NotConfigured("Not inside a project")
     cfg = get_config()
     if cfg.has_option(DATADIR_CFG_SECTION, project):
-        d = cfg.get(DATADIR_CFG_SECTION, project)
+        d = Path(cfg.get(DATADIR_CFG_SECTION, project))
     else:
         scrapy_cfg = closest_scrapy_cfg()
         if not scrapy_cfg:
             raise NotConfigured("Unable to find scrapy.cfg file to infer project data dir")
-        d = abspath(join(dirname(scrapy_cfg), '.scrapy'))
-    if not exists(d):
-        os.makedirs(d)
-    return d
+        d = (Path(scrapy_cfg).parent / '.scrapy').resolve()
+    if not d.exists():
+        d.mkdir(parents=True)
+    return str(d)
 
 
-def data_path(path, createdir=False):
+def data_path(path: str, createdir=False) -> str:
     """
     Return the given path joined with the .scrapy data directory.
     If given an absolute path, return it unmodified.
     """
-    if not isabs(path):
+    path_obj = Path(path)
+    if not path_obj.is_absolute():
         if inside_project():
-            path = join(project_data_dir(), path)
+            path_obj = Path(project_data_dir(), path)
         else:
-            path = join('.scrapy', path)
-    if createdir and not exists(path):
-        os.makedirs(path)
-    return path
+            path_obj = Path('.scrapy', path)
+    if createdir and not path_obj.exists():
+        path_obj.mkdir(parents=True)
+    return str(path_obj)
 
 
 def get_project_settings():

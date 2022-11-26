@@ -1,8 +1,7 @@
 import json
 import logging
-import os
 from abc import abstractmethod
-from os.path import exists, join
+from pathlib import Path
 from typing import Optional, Type, TypeVar
 
 from twisted.internet.defer import Deferred
@@ -324,19 +323,19 @@ class Scheduler(BaseScheduler):
     def _dqdir(self, jobdir: Optional[str]) -> Optional[str]:
         """ Return a folder name to keep disk queue state at """
         if jobdir is not None:
-            dqdir = join(jobdir, 'requests.queue')
-            if not exists(dqdir):
-                os.makedirs(dqdir)
-            return dqdir
+            dqdir = Path(jobdir, 'requests.queue')
+            if not dqdir.exists():
+                dqdir.mkdir(parents=True)
+            return str(dqdir)
         return None
 
     def _read_dqs_state(self, dqdir: str) -> list:
-        path = join(dqdir, 'active.json')
-        if not exists(path):
+        path = Path(dqdir, 'active.json')
+        if not path.exists():
             return []
-        with open(path) as f:
+        with path.open() as f:
             return json.load(f)
 
     def _write_dqs_state(self, dqdir: str, state: list) -> None:
-        with open(join(dqdir, 'active.json'), 'w') as f:
+        with Path(dqdir, 'active.json').open('w') as f:
             json.dump(state, f)

@@ -2,8 +2,9 @@ import os
 import shutil
 import string
 
+from pathlib import Path
 from importlib import import_module
-from os.path import join, dirname, abspath, exists, splitext
+from typing import Optional, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -62,8 +63,7 @@ class Command(ScrapyCommand):
         if opts.dump:
             template_file = self._find_template(opts.dump)
             if template_file:
-                with open(template_file, "r") as f:
-                    print(f.read())
+                print(template_file.read_text())
             return
         if len(args) != 2:
             raise UsageError()
@@ -98,11 +98,11 @@ class Command(ScrapyCommand):
         }
         if self.settings.get('NEWSPIDER_MODULE'):
             spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-            spiders_dir = abspath(dirname(spiders_module.__file__))
+            spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
             spiders_module = None
-            spiders_dir = "."
-        spider_file = f"{join(spiders_dir, module)}.py"
+            spiders_dir = Path(".")
+        spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
         print(f"Created spider {name!r} using template {template_name!r} ",
@@ -110,26 +110,32 @@ class Command(ScrapyCommand):
         if spiders_module:
             print(f"in module:\n  {spiders_module.__name__}.{module}")
 
-    def _find_template(self, template):
-        template_file = join(self.templates_dir, f'{template}.tmpl')
-        if exists(template_file):
+    def _find_template(self, template: str) -> Optional[Path]:
+        template_file = Path(self.templates_dir, f'{template}.tmpl')
+        if template_file.exists():
             return template_file
         print(f"Unable to find template: {template}\n")
         print('Use "scrapy genspider --list" to see all available templates.')
+        return None
 
     def _list_templates(self):
         print("Available templates:")
-        for filename in sorted(os.listdir(self.templates_dir)):
-            if filename.endswith('.tmpl'):
-                print(f"  {splitext(filename)[0]}")
+        for file in sorted(Path(self.templates_dir).iterdir()):
+            if file.suffix == '.tmpl':
+                print(f"  {file.stem}")
 
-    def _spider_exists(self, name):
+    def _spider_exists(self, name: str) -> bool:
         if not self.settings.get('NEWSPIDER_MODULE'):
             # if run as a standalone command and file with same filename already exists
-            if exists(name + ".py"):
-                print(f"{abspath(name + '.py')} already exists")
+            path = Path(name + ".py")
+            if path.exists():
+                print(f"{path.resolve()} already exists")
                 return True
             return False
+
+        assert (
+            self.crawler_process is not None
+        ), "crawler_process must be set before calling run"
 
         try:
             spidercls = self.crawler_process.spider_loader.load(name)
@@ -143,17 +149,18 @@ class Command(ScrapyCommand):
 
         # a file with the same name exists in the target directory
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
-        spiders_dir = dirname(spiders_module.__file__)
-        spiders_dir_abs = abspath(spiders_dir)
-        if exists(join(spiders_dir_abs, name + ".py")):
-            print(f"{join(spiders_dir_abs, (name + '.py'))} already exists")
+        spiders_dir = Path(cast(str, spiders_module.__file__)).parent
+        spiders_dir_abs = spiders_dir.resolve()
+        path = spiders_dir_abs / (name + ".py")
+        if path.exists():
+            print(f"{path} already exists")
             return True
 
         return False
 
     @property
-    def templates_dir(self):
-        return join(
-            self.settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], 'templates'),
+    def templates_dir(self) -> str:
+        return str(Path(
+            self.settings['TEMPLATES_DIR'] or Path(scrapy.__path__[0], 'templates'),
             'spiders'
-        )
+        ))

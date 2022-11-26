@@ -13,6 +13,8 @@ from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
+from pathlib import Path
+from typing import DefaultDict, Optional, Set
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -39,41 +41,40 @@ class FileException(Exception):
 
 
 class FSFilesStore:
-    def __init__(self, basedir):
+    def __init__(self, basedir: str):
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
         self.basedir = basedir
-        self._mkdir(self.basedir)
-        self.created_directories = defaultdict(set)
+        self._mkdir(Path(self.basedir))
+        self.created_directories: DefaultDict[str, Set[str]] = defaultdict(set)
 
-    def persist_file(self, path, buf, info, meta=None, headers=None):
+    def persist_file(self, path: str, buf, info, meta=None, headers=None):
         absolute_path = self._get_filesystem_path(path)
-        self._mkdir(os.path.dirname(absolute_path), info)
-        with open(absolute_path, 'wb') as f:
-            f.write(buf.getvalue())
+        self._mkdir(absolute_path.parent, info)
+        absolute_path.write_bytes(buf.getvalue())
 
-    def stat_file(self, path, info):
+    def stat_file(self, path: str, info):
         absolute_path = self._get_filesystem_path(path)
         try:
-            last_modified = os.path.getmtime(absolute_path)
+            last_modified = absolute_path.stat().st_mtime
         except os.error:
             return {}
 
-        with open(absolute_path, 'rb') as f:
+        with absolute_path.open('rb') as f:
             checksum = md5sum(f)
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
-    def _get_filesystem_path(self, path):
+    def _get_filesystem_path(self, path: str) -> Path:
         path_comps = path.split('/')
-        return os.path.join(self.basedir, *path_comps)
+        return Path(self.basedir, *path_comps)
 
-    def _mkdir(self, dirname, domain=None):
+    def _mkdir(self, dirname: Path, domain: Optional[str] = None):
         seen = self.created_directories[domain] if domain else set()
-        if dirname not in seen:
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-            seen.add(dirname)
+        if str(dirname) not in seen:
+            if not dirname.exists():
+                dirname.mkdir(parents=True)
+            seen.add(str(dirname))
 
 
 class S3FilesStore:
@@ -374,8 +375,8 @@ class FilesPipeline(MediaPipeline):
         store_uri = settings['FILES_STORE']
         return cls(store_uri, settings=settings)
 
-    def _get_store(self, uri):
-        if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
+    def _get_store(self, uri: str):
+        if Path(uri).is_absolute():  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse(uri).scheme
@@ -510,7 +511,7 @@ class FilesPipeline(MediaPipeline):
 
     def file_path(self, request, response=None, info=None, *, item=None):
         media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
-        media_ext = os.path.splitext(request.url)[1]
+        media_ext = Path(request.url).suffix
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
         if media_ext not in mimetypes.types_map:

@@ -1,7 +1,7 @@
 import sys
-import os
 import shutil
 import warnings
+from pathlib import Path
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -17,10 +17,10 @@ from scrapy.settings import Settings
 from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
 
-module_dir = os.path.dirname(os.path.abspath(__file__))
+module_dir = Path(__file__).resolve().parent
 
 
-def _copytree(source, target):
+def _copytree(source: Path, target: Path):
     try:
         shutil.copytree(source, target)
     except shutil.Error:
@@ -30,18 +30,18 @@ def _copytree(source, target):
 class SpiderLoaderTest(unittest.TestCase):
 
     def setUp(self):
-        orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
-        self.tmpdir = tempfile.mkdtemp()
-        self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
+        orig_spiders_dir = module_dir / 'test_spiders'
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.spiders_dir = self.tmpdir / 'test_spiders_xxx'
         _copytree(orig_spiders_dir, self.spiders_dir)
-        sys.path.append(self.tmpdir)
+        sys.path.append(str(self.tmpdir))
         settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
         self.spider_loader = SpiderLoader.from_settings(settings)
 
     def tearDown(self):
         del self.spider_loader
         del sys.modules['test_spiders_xxx']
-        sys.path.remove(self.tmpdir)
+        sys.path.remove(str(self.tmpdir))
 
     def test_interface(self):
         verifyObject(ISpiderLoader, self.spider_loader)
@@ -135,22 +135,22 @@ class SpiderLoaderTest(unittest.TestCase):
 class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 
     def setUp(self):
-        orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
-        self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
+        orig_spiders_dir = module_dir / 'test_spiders'
+        self.tmpdir = Path(self.mktemp())
+        self.tmpdir.mkdir()
+        self.spiders_dir = self.tmpdir / 'test_spiders_xxx'
         _copytree(orig_spiders_dir, self.spiders_dir)
-        sys.path.append(self.tmpdir)
+        sys.path.append(str(self.tmpdir))
         self.settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
 
     def tearDown(self):
         del sys.modules['test_spiders_xxx']
-        sys.path.remove(self.tmpdir)
+        sys.path.remove(str(self.tmpdir))
 
     def test_dupename_warning(self):
         # copy 1 spider module so as to have duplicate spider name
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider3.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider3dupe.py'))
+        shutil.copyfile(self.tmpdir / 'test_spiders_xxx' / 'spider3.py',
+                        self.tmpdir / 'test_spiders_xxx' / 'spider3dupe.py')
 
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)
@@ -171,10 +171,10 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
     def test_multiple_dupename_warning(self):
         # copy 2 spider modules so as to have duplicate spider name
         # This should issue 2 warning, 1 for each duplicate spider name
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider1.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider1dupe.py'))
-        shutil.copyfile(os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider2.py'),
-                        os.path.join(self.tmpdir, 'test_spiders_xxx', 'spider2dupe.py'))
+        shutil.copyfile(self.tmpdir / 'test_spiders_xxx' / 'spider1.py',
+                        self.tmpdir / 'test_spiders_xxx' / 'spider1dupe.py')
+        shutil.copyfile(self.tmpdir / 'test_spiders_xxx' / 'spider2.py',
+                        self.tmpdir / 'test_spiders_xxx' / 'spider2dupe.py')
 
         with warnings.catch_warnings(record=True) as w:
             spider_loader = SpiderLoader.from_settings(self.settings)

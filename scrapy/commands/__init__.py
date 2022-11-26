@@ -3,9 +3,11 @@ Base class for Scrapy commands
 """
 import os
 import argparse
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from twisted.python import failure
+from scrapy.crawler import CrawlerProcess
 
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 from scrapy.exceptions import UsageError
@@ -14,7 +16,7 @@ from scrapy.exceptions import UsageError
 class ScrapyCommand:
 
     requires_project = False
-    crawler_process = None
+    crawler_process: Optional[CrawlerProcess] = None
 
     # default settings to be used for this command instead of global defaults
     default_settings: Dict[str, Any] = {}
@@ -22,7 +24,7 @@ class ScrapyCommand:
     exitcode = 0
 
     def __init__(self):
-        self.settings = None  # set in scrapy.cmdline
+        self.settings: Any = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler):
         if hasattr(self, '_crawler'):
@@ -93,8 +95,7 @@ class ScrapyCommand:
             self.settings.set('LOG_ENABLED', False, priority='cmdline')
 
         if opts.pidfile:
-            with open(opts.pidfile, "w") as f:
-                f.write(str(os.getpid()) + os.linesep)
+            Path(opts.pidfile).write_text(str(os.getpid()) + os.linesep)
 
         if opts.pdb:
             failure.startDebugMode()

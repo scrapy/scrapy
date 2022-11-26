@@ -2,8 +2,8 @@ import hashlib
 import tempfile
 import unittest
 import shutil
-import os
 import sys
+from pathlib import Path
 from testfixtures import LogCapture
 
 from scrapy.dupefilters import RFPDupeFilter
@@ -157,7 +157,7 @@ class RFPDupeFilterTest(unittest.TestCase):
             df.request_seen(r1)
             df.close('finished')
 
-            with open(os.path.join(path, 'requests.seen'), 'rb') as seen_file:
+            with Path(path, 'requests.seen').open('rb') as seen_file:
                 line = next(seen_file).decode()
                 assert not line.endswith('\r\r\n')
                 if sys.platform == 'win32':

@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import mock
@@ -89,7 +90,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
         path = 'some/image/key.jpg'
-        fullpath = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
+        fullpath = Path(self.tempdir, 'some', 'image', 'key.jpg')
         self.assertEqual(self.pipeline.store._get_filesystem_path(path), fullpath)
 
     @defer.inlineCallbacks

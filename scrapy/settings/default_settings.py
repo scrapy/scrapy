@@ -15,7 +15,7 @@ Scrapy developers, if you add a setting here remember to:
 
 import sys
 from importlib import import_module
-from os.path import join, abspath, dirname
+from pathlib import Path
 
 AJAXCRAWL_ENABLED = False
 
@@ -288,7 +288,7 @@ STATS_DUMP = True
 
 STATSMAILER_RCPTS = []
 
-TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
+TEMPLATES_DIR = str((Path(__file__).parent / '..' / 'templates').resolve())
 
 URLLENGTH_LIMIT = 2083
 

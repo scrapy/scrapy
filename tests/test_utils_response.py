@@ -1,6 +1,6 @@
-import os
 import unittest
 import warnings
+from pathlib import Path
 from urllib.parse import urlparse
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -39,10 +39,9 @@ class ResponseUtilsTest(unittest.TestCase):
 
         def browser_open(burl):
             path = urlparse(burl).path
-            if not os.path.exists(path):
+            if not path or not Path(path).exists():
                 path = burl.replace('file://', '')
-            with open(path, "rb") as f:
-                bbody = f.read()
+            bbody = Path(path).read_bytes()
             self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
             return True
         response = HtmlResponse(url, body=body)
@@ -98,10 +97,9 @@ class ResponseUtilsTest(unittest.TestCase):
 
         def check_base_url(burl):
             path = urlparse(burl).path
-            if not os.path.exists(path):
+            if not path or not Path(path).exists():
                 path = burl.replace('file://', '')
-            with open(path, "rb") as f:
-                bbody = f.read()
+            bbody = Path(path).read_bytes()
             self.assertEqual(bbody.count(b'<base href="' + to_bytes(url) + b'">'), 1)
             return True
 

@@ -1,5 +1,3 @@
-import os
-
 from pytest import mark
 from twisted.trial import unittest
 
@@ -303,11 +301,6 @@ class LxmlXmliterTestCase(XmliterTestCase):
 
 
 class UtilsCsvTestCase(unittest.TestCase):
-    sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
-    sample_feed_path = os.path.join(sample_feeds_dir, 'feed-sample3.csv')
-    sample_feed2_path = os.path.join(sample_feeds_dir, 'feed-sample4.csv')
-    sample_feed3_path = os.path.join(sample_feeds_dir, 'feed-sample5.csv')
-
     def test_csviter_defaults(self):
         body = get_testdata('feeds', 'feed-sample3.csv')
         response = TextResponse(url="http://example.com/", body=body)

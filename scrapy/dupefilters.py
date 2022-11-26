@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 from typing import Optional, Set, Type, TypeVar
 from warnings import warn
 
@@ -55,7 +55,7 @@ class RFPDupeFilter(BaseDupeFilter):
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = open(os.path.join(path, 'requests.seen'), 'a+')
+            self.file = Path(path, 'requests.seen').open('a+')
             self.file.seek(0)
             self.fingerprints.update(x.rstrip() for x in self.file)
 
