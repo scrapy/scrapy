@@ -1,8 +1,8 @@
 from urllib.parse import urlparse
 from unittest import TestCase
 import warnings
-
 from scrapy.http import Response, Request
+
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware

@@ -8,7 +8,6 @@ from twisted.python.runtime import platform
 from scrapy import Spider, Request
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
-
 from tests.mockserver import MockServer, MockDNSServer
 
 
