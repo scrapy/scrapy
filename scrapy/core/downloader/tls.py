@@ -7,7 +7,6 @@ from twisted.internet.ssl import AcceptableCiphers
 
 from scrapy.utils.ssl import x509name_to_string, get_temp_key_info
 
-
 logger = logging.getLogger(__name__)
 
 

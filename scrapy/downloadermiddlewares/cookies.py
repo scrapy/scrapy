@@ -9,7 +9,6 @@ from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 

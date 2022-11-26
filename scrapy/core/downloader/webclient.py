@@ -1,8 +1,8 @@
 import re
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
-
 from twisted.web.http import HTTPClient
+
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 

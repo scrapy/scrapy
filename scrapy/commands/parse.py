@@ -6,13 +6,11 @@ from itemadapter import is_item, ItemAdapter
 from w3lib.url import is_url
 
 from twisted.internet.defer import maybeDeferred
-
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.http import Request
 from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
-
 
 logger = logging.getLogger(__name__)
 

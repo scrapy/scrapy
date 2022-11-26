@@ -26,7 +26,6 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 

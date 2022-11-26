@@ -8,7 +8,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
-
 logger = logging.getLogger(__name__)
 
 
