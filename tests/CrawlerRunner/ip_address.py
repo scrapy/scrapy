@@ -29,8 +29,8 @@ class LocalhostSpider(Spider):
 
     def parse(self, response):
         netloc = urlparse(response.url).netloc
-        a = netloc.split(":")[0]
-        self.logger.info(f"Host: {a}")
+        host = netloc.split(":")[0]
+        self.logger.info(f"Host: {host}")
         self.logger.info(f"Type: {type(response.ip_address)}")
         self.logger.info(f"IP address: {response.ip_address}")
 

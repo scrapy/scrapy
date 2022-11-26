@@ -278,7 +278,7 @@ class Scraper:
                     spider=spider, exception=output.value)
             logkws = self.logformatter.item_error(item, ex, response, spider)
             logger.log(*logformatter_adapter(logkws), extra={'spider': spider},
-                        exc_info=failure_to_exc_info(output))
+                       exc_info=failure_to_exc_info(output))
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_error, item=item, response=response,
                 spider=spider, failure=output)

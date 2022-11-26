@@ -91,7 +91,7 @@ class KeywordArgumentsSpider(MockServerSpider):
             self.checks.append(kwargs['callback'] == 'some_callback')
             self.crawler.stats.inc_value('boolean_checks', 3)
         elif response.url.endswith('/general_without'):
-            self.checks.append(kwargs == {})
+            self.checks.append(kwargs == {})  # pylint: disable=use-implicit-booleaness-not-comparison
             self.crawler.stats.inc_value('boolean_checks')
 
     def parse_no_kwargs(self, response):

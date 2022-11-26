@@ -4,6 +4,7 @@ from docutils import nodes
 from docutils.parsers.rst import Directive
 from sphinx.util.nodes import make_refnode
 
+
 class settingslist_node(nodes.General, nodes.Element):
     pass
 

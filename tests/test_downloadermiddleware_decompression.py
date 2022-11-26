@@ -6,7 +6,6 @@ from scrapy.utils.test import assert_samelines
 from tests import get_testdata
 
 
-
 def _test_data(formats):
     uncompressed_body = get_testdata('compressed', 'feed-sample1.xml')
     test_responses = {}
