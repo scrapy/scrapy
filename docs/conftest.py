@@ -12,6 +12,7 @@ except ImportError:
 
 from scrapy.http.response.html import HtmlResponse
 
+
 def load_response(url, filename):
     input_path = os.path.join(os.path.dirname(__file__), '_tests', filename)
     with open(input_path, 'rb') as input_file:
