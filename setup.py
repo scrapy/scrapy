@@ -1,10 +1,9 @@
-from os.path import dirname, join
+from pathlib import Path
 from pkg_resources import parse_version
 from setuptools import setup, find_packages, __version__ as setuptools_version
 
 
-with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
-    version = f.read().decode('ascii').strip()
+version = (Path(__file__).parent / 'scrapy/VERSION').read_text('ascii').strip()
 
 
 def has_environment_marker_platform_impl_support():

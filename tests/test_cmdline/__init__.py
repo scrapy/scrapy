@@ -1,11 +1,11 @@
 import json
-import os
 import pstats
 import shutil
 import sys
 import tempfile
 import unittest
 from io import StringIO
+from pathlib import Path
 from subprocess import Popen, PIPE
 
 from scrapy.utils.test import get_testenv
@@ -32,17 +32,17 @@ class CmdlineTest(unittest.TestCase):
                                        'TEST1=override'), 'override')
 
     def test_profiling(self):
-        path = tempfile.mkdtemp()
-        filename = os.path.join(path, 'res.prof')
+        path = Path(tempfile.mkdtemp())
+        filename = path / 'res.prof'
         try:
-            self._execute('version', '--profile', filename)
-            self.assertTrue(os.path.exists(filename))
+            self._execute('version', '--profile', str(filename))
+            self.assertTrue(filename.exists())
             out = StringIO()
-            stats = pstats.Stats(filename, stream=out)
+            stats = pstats.Stats(str(filename), stream=out)
             stats.print_stats()
             out.seek(0)
             stats = out.read()
-            self.assertIn(os.path.join('scrapy', 'commands', 'version.py'),
+            self.assertIn(str(Path('scrapy', 'commands', 'version.py')),
                           stats)
             self.assertIn('tottime', stats)
         finally:

@@ -4,6 +4,7 @@ This module contains some assorted functions used in tests
 
 import asyncio
 import os
+from pathlib import Path
 from posixpath import split
 from unittest import mock
 
@@ -71,11 +72,11 @@ def get_crawler(spidercls=None, settings_dict=None, prevent_warnings=True):
     return runner.create_crawler(spidercls or Spider)
 
 
-def get_pythonpath():
+def get_pythonpath() -> str:
     """Return a PYTHONPATH suitable to use in processes so that they find this
     installation of Scrapy"""
     scrapy_path = import_module('scrapy').__path__[0]
-    return os.path.dirname(scrapy_path) + os.pathsep + os.environ.get('PYTHONPATH', '')
+    return str(Path(scrapy_path).parent) + os.pathsep + os.environ.get('PYTHONPATH', '')
 
 
 def get_testenv():

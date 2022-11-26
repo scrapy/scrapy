@@ -32,7 +32,7 @@ class Response(object_ref):
 
     def __init__(
         self,
-        url,
+        url: str,
         status=200,
         headers=None,
         body=b"",
@@ -75,7 +75,7 @@ class Response(object_ref):
     def _get_url(self):
         return self._url
 
-    def _set_url(self, url):
+    def _set_url(self, url: str):
         if isinstance(url, str):
             self._url = url
         else:

@@ -11,13 +11,12 @@
 
 import sys
 from datetime import datetime
-from os import path
+from pathlib import Path
 
 # If your extensions are in another directory, add it here. If the directory
-# is relative to the documentation root, use os.path.abspath to make it
-# absolute, like shown here.
-sys.path.append(path.join(path.dirname(__file__), "_ext"))
-sys.path.insert(0, path.dirname(path.dirname(__file__)))
+# is relative to the documentation root, use Path.absolute to make it absolute.
+sys.path.append(str(Path(__file__).parent / "_ext"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 # General configuration

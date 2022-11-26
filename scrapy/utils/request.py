@@ -264,7 +264,7 @@ class RequestFingerprinter:
                 f'and \'2.7\'.'
             )
 
-    def fingerprint(self, request):
+    def fingerprint(self, request: Request):
         return self._fingerprint(request)
 
 

@@ -1,4 +1,4 @@
-from os.path import join
+from pathlib import Path
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -96,8 +96,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_local_file(self):
-        filepath = join(tests_datadir, 'test_site', 'index.html')
-        _, out, _ = yield self.execute([filepath, '-c', 'item'])
+        filepath = Path(tests_datadir, 'test_site', 'index.html')
+        _, out, _ = yield self.execute([str(filepath), '-c', 'item'])
         assert b'{}' in out
 
     @defer.inlineCallbacks

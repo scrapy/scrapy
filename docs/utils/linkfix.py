@@ -13,7 +13,7 @@ Author: dufferzafar
 """
 
 import re
-import sys
+from pathlib import Path
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
 
     # Read lines from the linkcheck output file
     try:
-        with open("build/linkcheck/output.txt", encoding="utf-8") as out:
+        with Path("build/linkcheck/output.txt").open(encoding="utf-8") as out:
             output_lines = out.readlines()
     except IOError:
         print("linkcheck output not found; please run linkcheck first.")
@@ -52,14 +52,12 @@ def main():
 
                     # Update the previous file
                     if _filename:
-                        with open(_filename, "w", encoding="utf-8") as _file:
-                            _file.write(_contents)
+                        Path(_filename).write_text(_contents, encoding="utf-8")
 
                     _filename = newfilename
 
                     # Read the new file to memory
-                    with open(_filename, encoding="utf-8") as _file:
-                        _contents = _file.read()
+                    _contents = Path(_filename).read_text(encoding="utf-8")
 
                 _contents = _contents.replace(match.group(3), match.group(4))
         else:
