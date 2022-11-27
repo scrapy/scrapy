@@ -121,11 +121,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if dfd.called:
                     # the result is available immediately if _process_spider_output didn't do downgrading
                     return dfd.result
-                else:
-                    # we forbid waiting here because otherwise we would need to return a deferred from
-                    # _process_spider_exception too, which complicates the architecture
-                    msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
-                    raise _InvalidOutput(msg)
+                # we forbid waiting here because otherwise we would need to return a deferred from
+                # _process_spider_exception too, which complicates the architecture
+                msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
+                raise _InvalidOutput(msg)
             elif result is None:
                 continue
             else:
@@ -213,8 +212,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         if last_result_is_async:
             return MutableAsyncChain(result, recovered)
-        else:
-            return MutableChain(result, recovered)  # type: ignore[arg-type]
+        return MutableChain(result, recovered)  # type: ignore[arg-type]
 
     async def _process_callback_output(self, response: Response, spider: Spider, result: Union[Iterable, AsyncIterable]
                                        ) -> Union[MutableChain, MutableAsyncChain]:
@@ -227,11 +225,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         result = await maybe_deferred_to_future(self._process_spider_output(response, spider, result))
         if isinstance(result, AsyncIterable):
             return MutableAsyncChain(result, recovered)
-        else:
-            if isinstance(recovered, AsyncIterable):
-                recovered_collected = await collect_asyncgen(recovered)
-                recovered = MutableChain(recovered_collected)
-            return MutableChain(result, recovered)  # type: ignore[arg-type]
+        if isinstance(recovered, AsyncIterable):
+            recovered_collected = await collect_asyncgen(recovered)
+            recovered = MutableChain(recovered_collected)
+        return MutableChain(result, recovered)  # type: ignore[arg-type]
 
     def scrape_response(self, scrape_func: ScrapeFunc, response: Response, request: Request,
                         spider: Spider) -> Deferred:

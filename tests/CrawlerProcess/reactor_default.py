@@ -1,6 +1,7 @@
+from twisted.internet import reactor  # noqa: F401
+
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from twisted.internet import reactor  # noqa: F401
 
 
 class NoRequestsSpider(scrapy.Spider):

@@ -1,15 +1,17 @@
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 from pathlib import Path
 
-from scrapy.http.response.html import HtmlResponse
 from sybil import Sybil
+from sybil.parsers.doctest import DocTestParser
+from sybil.parsers.skip import skip
+
 try:
     # >2.0.1
     from sybil.parsers.codeblock import PythonCodeBlockParser
 except ImportError:
     from sybil.parsers.codeblock import CodeBlockParser as PythonCodeBlockParser
-from sybil.parsers.doctest import DocTestParser
-from sybil.parsers.skip import skip
+
+from scrapy.http.response.html import HtmlResponse
 
 
 def load_response(url: str, filename: str) -> HtmlResponse:

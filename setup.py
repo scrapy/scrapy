@@ -58,7 +58,7 @@ setup(
         'Tracker': 'https://github.com/scrapy/scrapy/issues',
     },
     description='A high-level Web Crawling and Web Scraping framework',
-    long_description=open('README.rst').read(),
+    long_description=open('README.rst', encoding="utf-8").read(),
     author='Scrapy developers',
     maintainer='Pablo Hoffman',
     maintainer_email='pablo@pablohoffman.com',

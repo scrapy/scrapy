@@ -187,10 +187,9 @@ def get_func_args(func, stripself=False):
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []
-        elif getattr(func, '__name__', None) == '__call__':
+        if getattr(func, '__name__', None) == '__call__':
             return []
-        else:
-            return get_func_args(func.__call__, True)
+        return get_func_args(func.__call__, True)
     else:
         raise TypeError(f'{type(func)} is not callable')
     if stripself:

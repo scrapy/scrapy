@@ -63,7 +63,7 @@ class Command(ScrapyCommand):
         if opts.dump:
             template_file = self._find_template(opts.dump)
             if template_file:
-                print(template_file.read_text())
+                print(template_file.read_text(encoding="utf-8"))
             return
         if len(args) != 2:
             raise UsageError()

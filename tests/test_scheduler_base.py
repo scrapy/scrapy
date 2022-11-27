@@ -11,9 +11,7 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.request import fingerprint
 from scrapy.utils.test import get_crawler
-
 from tests.mockserver import MockServer
-
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]

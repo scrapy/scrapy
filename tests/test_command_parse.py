@@ -92,7 +92,7 @@ class MyBadCrawlSpider(CrawlSpider):
 
     def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
-""")
+""", encoding="utf-8")
 
         (self.proj_mod_path / 'pipelines.py').write_text("""
 import logging
@@ -103,9 +103,9 @@ class MyPipeline:
     def process_item(self, item, spider):
         logging.info('It Works!')
         return item
-""")
+""", encoding="utf-8")
 
-        with (self.proj_mod_path / 'settings.py').open("a") as f:
+        with (self.proj_mod_path / 'settings.py').open("a", encoding="utf-8") as f:
             f.write(f"""
 ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
 """)
@@ -256,7 +256,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertTrue(file_path.is_file())
 
         content = '[\n{},\n{"foo": "bar"}\n]'
-        self.assertEqual(file_path.read_text(), content)
+        self.assertEqual(file_path.read_text(encoding="utf-8"), content)
 
     def test_parse_add_options(self):
         command = parse.Command()

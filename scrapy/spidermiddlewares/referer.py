@@ -189,8 +189,7 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
         origin = self.origin(response_url)
         if origin == self.origin(request_url):
             return self.stripped_referrer(response_url)
-        else:
-            return origin
+        return origin
 
 
 class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
@@ -216,7 +215,7 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
         origin = self.origin(response_url)
         if origin == self.origin(request_url):
             return self.stripped_referrer(response_url)
-        elif (
+        if (
             self.tls_protected(response_url) and self.potentially_trustworthy(request_url)
             or not self.tls_protected(response_url)
         ):

@@ -95,7 +95,7 @@ class ScrapyCommand:
             self.settings.set('LOG_ENABLED', False, priority='cmdline')
 
         if opts.pidfile:
-            Path(opts.pidfile).write_text(str(os.getpid()) + os.linesep)
+            Path(opts.pidfile).write_text(str(os.getpid()) + os.linesep, encoding="utf-8")
 
         if opts.pdb:
             failure.startDebugMode()

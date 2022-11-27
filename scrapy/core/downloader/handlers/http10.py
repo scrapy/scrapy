@@ -33,5 +33,4 @@ class HTTP10DownloadHandler:
                 crawler=self._crawler,
             )
             return reactor.connectSSL(host, port, factory, client_context_factory)
-        else:
-            return reactor.connectTCP(host, port, factory)
+        return reactor.connectTCP(host, port, factory)

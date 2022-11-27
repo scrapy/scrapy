@@ -58,10 +58,9 @@ def defer_succeed(result) -> Deferred:
 def defer_result(result) -> Deferred:
     if isinstance(result, Deferred):
         return result
-    elif isinstance(result, failure.Failure):
+    if isinstance(result, failure.Failure):
         return defer_fail(result)
-    else:
-        return defer_succeed(result)
+    return defer_succeed(result)
 
 
 def mustbe_deferred(f: Callable, *args, **kw) -> Deferred:
@@ -267,10 +266,9 @@ def deferred_from_coro(o) -> Any:
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
             return ensureDeferred(o)
-        else:
-            # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-            event_loop = get_asyncio_event_loop_policy().get_event_loop()
-            return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
+        # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
+        event_loop = get_asyncio_event_loop_policy().get_event_loop()
+        return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
     return o
 
 
@@ -295,12 +293,11 @@ def maybeDeferred_coro(f: Callable, *args, **kw) -> Deferred:
 
     if isinstance(result, Deferred):
         return result
-    elif asyncio.isfuture(result) or inspect.isawaitable(result):
+    if asyncio.isfuture(result) or inspect.isawaitable(result):
         return deferred_from_coro(result)
-    elif isinstance(result, failure.Failure):
+    if isinstance(result, failure.Failure):
         return defer.fail(result)
-    else:
-        return defer.succeed(result)
+    return defer.succeed(result)
 
 
 def deferred_to_future(d: Deferred) -> Future:
@@ -352,5 +349,4 @@ def maybe_deferred_to_future(d: Deferred) -> Union[Deferred, Future]:
     """
     if not is_asyncio_reactor_installed():
         return d
-    else:
-        return deferred_to_future(d)
+    return deferred_to_future(d)

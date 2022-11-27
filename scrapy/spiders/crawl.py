@@ -26,7 +26,7 @@ def _identity_process_request(request, response):
 def _get_method(method, spider):
     if callable(method):
         return method
-    elif isinstance(method, str):
+    if isinstance(method, str):
         return getattr(spider, method, None)
 
 

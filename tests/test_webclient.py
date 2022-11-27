@@ -47,7 +47,7 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
 
     from twisted.web.client import _makeGetterFactory
     return _makeGetterFactory(
-        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
+        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs,
     ).deferred
 
 

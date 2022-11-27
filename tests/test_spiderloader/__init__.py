@@ -3,6 +3,7 @@ import shutil
 import warnings
 from pathlib import Path
 
+import tempfile
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 
@@ -10,7 +11,6 @@ from twisted.trial import unittest
 # ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
 import scrapy
-import tempfile
 from scrapy.interfaces import ISpiderLoader
 from scrapy.spiderloader import SpiderLoader
 from scrapy.settings import Settings

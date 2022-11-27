@@ -1,6 +1,8 @@
+from twisted.internet import selectreactor
+
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from twisted.internet import selectreactor
+
 selectreactor.install()
 
 

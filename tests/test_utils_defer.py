@@ -193,9 +193,8 @@ class AsyncCooperatorTest(unittest.TestCase):
             delay = random.random() / 8
             reactor.callLater(delay, dfd.callback, None)
             return dfd
-        else:
-            # simulate trivial sync processing
-            results.append(o)
+        # simulate trivial sync processing
+        results.append(o)
 
     @staticmethod
     def get_async_iterable(length):

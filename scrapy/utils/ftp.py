@@ -1,5 +1,4 @@
 import posixpath
-
 from ftplib import error_perm, FTP
 from posixpath import dirname
 

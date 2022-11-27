@@ -17,7 +17,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -81,25 +80,24 @@ class RFC2616Policy:
         if b'no-store' in cc:
             return False
         # Never cache 304 (Not Modified) responses
-        elif response.status == 304:
+        if response.status == 304:
             return False
         # Cache unconditionally if configured to do so
-        elif self.always_store:
+        if self.always_store:
             return True
         # Any hint on response expiration is good
-        elif b'max-age' in cc or b'Expires' in response.headers:
+        if b'max-age' in cc or b'Expires' in response.headers:
             return True
         # Firefox fallbacks this statuses to one year expiration if none is set
-        elif response.status in (300, 301, 308):
+        if response.status in (300, 301, 308):
             return True
         # Other statuses without expiration requires at least one validator
-        elif response.status in (200, 203, 401):
+        if response.status in (200, 203, 401):
             return b'Last-Modified' in response.headers or b'ETag' in response.headers
         # Any other is probably not eligible for caching
         # Makes no sense to cache responses that does not contain expiration
         # info and can not be revalidated
-        else:
-            return False
+        return False
 
     def is_cached_response_fresh(self, cachedresponse, request):
         cc = self._parse_cachecontrol(cachedresponse)

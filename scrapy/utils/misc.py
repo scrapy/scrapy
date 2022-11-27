@@ -30,10 +30,9 @@ def arg_to_iter(arg):
     """
     if arg is None:
         return []
-    elif not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, '__iter__'):
+    if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, '__iter__'):
         return arg
-    else:
-        return [arg]
+    return [arg]
 
 
 def load_object(path):
@@ -49,9 +48,8 @@ def load_object(path):
     if not isinstance(path, str):
         if callable(path):
             return path
-        else:
-            raise TypeError("Unexpected argument type, expected string "
-                            f"or object, got: {type(path)}")
+        raise TypeError("Unexpected argument type, expected string "
+                        f"or object, got: {type(path)}")
 
     try:
         dot = path.rindex('.')
@@ -115,9 +113,8 @@ def extract_regex(regex, text, encoding='utf-8'):
 
     if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
-    else:
-        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
-                for s in strings]
+    return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
+            for s in strings]
 
 
 def md5sum(file):

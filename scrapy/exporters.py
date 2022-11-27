@@ -334,9 +334,9 @@ class PythonItemExporter(BaseItemExporter):
     def _serialize_value(self, value):
         if isinstance(value, Item):
             return self.export_item(value)
-        elif is_item(value):
+        if is_item(value):
             return dict(self._serialize_item(value))
-        elif is_listlike(value):
+        if is_listlike(value):
             return [self._serialize_value(v) for v in value]
         encode_func = to_bytes if self.binary else to_unicode
         if isinstance(value, (str, bytes)):

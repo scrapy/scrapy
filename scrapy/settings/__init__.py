@@ -24,8 +24,7 @@ def get_settings_priority(priority):
     """
     if isinstance(priority, str):
         return SETTINGS_PRIORITIES[priority]
-    else:
-        return priority
+    return priority
 
 
 class SettingsAttribute:
@@ -260,8 +259,7 @@ class BaseSettings(MutableMapping):
         """
         if len(self) > 0:
             return max(self.getpriority(name) for name in self)
-        else:
-            return get_settings_priority('default')
+        return get_settings_priority('default')
 
     def __setitem__(self, name, value):
         self.set(name, value)

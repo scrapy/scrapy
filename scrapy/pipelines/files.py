@@ -221,16 +221,14 @@ class GCSFilesStore:
                 checksum = blob.md5_hash
                 last_modified = time.mktime(blob.updated.timetuple())
                 return {'checksum': checksum, 'last_modified': last_modified}
-            else:
-                return {}
+            return {}
         blob_path = self._get_blob_path(path)
         return threads.deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess)
 
     def _get_content_type(self, headers):
         if headers and 'Content-Type' in headers:
             return headers['Content-Type']
-        else:
-            return 'application/octet-stream'
+        return 'application/octet-stream'
 
     def _get_blob_path(self, path):
         return self.prefix + path

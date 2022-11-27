@@ -400,8 +400,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
             children = list(elem.iterchildren())
             if children:
                 return [(child.tag, sorted(xmltuple(child))) for child in children]
-            else:
-                return [(elem.tag, [(elem.text, ())])]
+            return [(elem.tag, [(elem.text, ())])]
 
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
@@ -621,8 +620,7 @@ class CustomExporterItemTest(unittest.TestCase):
             def serialize_field(self, field, name, value):
                 if name == 'age':
                     return str(int(value) + 1)
-                else:
-                    return super().serialize_field(field, name, value)
+                return super().serialize_field(field, name, value)
 
         i = self.item_class(name='John', age='22')
         a = ItemAdapter(i)

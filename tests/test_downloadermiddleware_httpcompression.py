@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest import TestCase, SkipTest
 from warnings import catch_warnings
 
+from w3lib.encoding import resolve_encoding
 from scrapy.spiders import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.downloadermiddlewares.httpcompression import HttpCompressionMiddleware, ACCEPTED_ENCODINGS
@@ -12,8 +13,6 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.gz import gunzip
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
-from w3lib.encoding import resolve_encoding
-
 
 SAMPLEDIR = Path(tests_datadir, 'compressed')
 

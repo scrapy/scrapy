@@ -35,9 +35,8 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
                 else:
                     compbs.set(convert(k), v, priority=prio)
             return compbs
-        else:
-            _check_components(compdict)
-            return {convert(k): v for k, v in compdict.items()}
+        _check_components(compdict)
+        return {convert(k): v for k, v in compdict.items()}
 
     def _validate_values(compdict):
         """Fail if a value in the components dict is not a real number or None."""
@@ -181,11 +180,10 @@ def feed_process_params_from_cli(settings, output: List[str], output_format=None
             )
             warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {'format': output_format}}
-        else:
-            raise UsageError(
-                'The -t command-line option cannot be used if multiple output '
-                'URIs are specified'
-            )
+        raise UsageError(
+            'The -t command-line option cannot be used if multiple output '
+            'URIs are specified'
+        )
 
     result: Dict[str, Dict[str, Any]] = {}
     for element in output:

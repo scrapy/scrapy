@@ -69,7 +69,7 @@ class SitemapSpider(Spider):
         """
         if isinstance(response, XmlResponse):
             return response.body
-        elif gzip_magic_number(response):
+        if gzip_magic_number(response):
             return gunzip(response.body)
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
@@ -80,7 +80,7 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
+        if response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
             return response.body
 
 

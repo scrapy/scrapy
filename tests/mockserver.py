@@ -29,8 +29,7 @@ def getarg(request, name, default=None, type=None):
         if type is not None:
             value = type(value)
         return value
-    else:
-        return default
+    return default
 
 
 # most of the following resources are copied from twisted.web.test.test_webclient

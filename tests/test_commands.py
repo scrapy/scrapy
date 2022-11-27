@@ -107,7 +107,7 @@ class ProjectTest(unittest.TestCase):
     def find_in_file(self, filename: Union[str, os.PathLike], regex) -> Optional[re.Match]:
         """Find first pattern occurrence in file"""
         pattern = re.compile(regex)
-        with Path(filename).open("r") as f:
+        with Path(filename).open("r", encoding="utf-8") as f:
             for line in f:
                 match = pattern.search(line)
                 if match is not None:
@@ -475,7 +475,7 @@ class GenspiderCommandTest(CommandTest):
         assert file_path.exists()
 
         # change name of spider but not its file name
-        with file_path.open('r+') as spider_file:
+        with file_path.open('r+', encoding="utf-8") as spider_file:
             file_data = spider_file.read()
             file_data = file_data.replace("name = \'example\'", "name = \'renamed\'")
             spider_file.seek(0)
@@ -489,14 +489,14 @@ class GenspiderCommandTest(CommandTest):
             self.assertIn(f"Created spider {file_name!r} using template \'basic\' in module", out)
             modify_time_after = file_path.stat().st_mtime
             self.assertNotEqual(modify_time_after, modify_time_before)
-            file_contents_after = file_path.read_text()
+            file_contents_after = file_path.read_text(encoding="utf-8")
             self.assertNotEqual(file_contents_after, file_contents_before)
         else:
             p, out, err = self.proc('genspider', file_name, 'example.com')
             self.assertIn(f"{file_path.resolve()} already exists", out)
             modify_time_after = file_path.stat().st_mtime
             self.assertEqual(modify_time_after, modify_time_before)
-            file_contents_after = file_path.read_text()
+            file_contents_after = file_path.read_text(encoding="utf-8")
             self.assertEqual(file_contents_after, file_contents_before)
 
     def test_same_filename_as_existing_spider_force(self):
@@ -536,7 +536,7 @@ class GenspiderStandaloneCommandTest(ProjectTest):
         self.assertIn(f"Created spider {file_name!r} using template \'basic\' ", out)
         assert file_path.exists()
         modify_time_before = file_path.stat().st_mtime
-        file_contents_before = file_path.read_text()
+        file_contents_before = file_path.read_text(encoding="utf-8")
 
         if force:
             # use different template to ensure contents were changed
@@ -544,14 +544,14 @@ class GenspiderStandaloneCommandTest(ProjectTest):
             self.assertIn(f"Created spider {file_name!r} using template \'crawl\' ", out)
             modify_time_after = file_path.stat().st_mtime
             self.assertNotEqual(modify_time_after, modify_time_before)
-            file_contents_after = file_path.read_text()
+            file_contents_after = file_path.read_text(encoding="utf-8")
             self.assertNotEqual(file_contents_after, file_contents_before)
         else:
             p, out, err = self.proc('genspider', file_name, 'example.com')
             self.assertIn(f"{Path(self.temp_path, file_name + '.py').resolve()} already exists", out)
             modify_time_after = file_path.stat().st_mtime
             self.assertEqual(modify_time_after, modify_time_before)
-            file_contents_after = file_path.read_text()
+            file_contents_after = file_path.read_text(encoding="utf-8")
             self.assertEqual(file_contents_after, file_contents_before)
 
     def test_same_name_as_existing_file_force(self):
@@ -596,7 +596,7 @@ class BadSpider(scrapy.Spider):
             fname = (tmpdir / name).resolve()
         else:
             fname = (tmpdir / self.spider_filename).resolve()
-        fname.write_text(content)
+        fname.write_text(content, encoding="utf-8")
         try:
             yield str(fname)
         finally:
@@ -754,11 +754,11 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
-        Path(self.cwd, "example.json").write_text("not empty")
+        Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
-        with Path(self.cwd, "example.json").open() as f2:
+        with Path(self.cwd, "example.json").open(encoding="utf-8") as f2:
             first_line = f2.readline()
         self.assertNotEqual(first_line, "not empty")
 
@@ -798,7 +798,7 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = 'myspider.pyw'
 
     def setUp(self):
-        super(WindowsRunSpiderCommandTest, self).setUp()
+        super().setUp()
 
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name='badspider.pyw')
@@ -860,7 +860,7 @@ class ViewCommandTest(CommandTest):
 class CrawlCommandTest(CommandTest):
 
     def crawl(self, code, args=()):
-        Path(self.proj_mod_path, 'spiders', 'myspider.py').write_text(code)
+        Path(self.proj_mod_path, 'spiders', 'myspider.py').write_text(code, encoding="utf-8")
         return self.proc('crawl', 'myspider', *args)
 
     def get_log(self, code, args=()):
@@ -912,11 +912,11 @@ class MySpider(scrapy.Spider):
         )
         return []
 """
-        Path(self.cwd, "example.json").write_text("not empty")
+        Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ['-O', 'example.json']
         log = self.get_log(spider_code, args=args)
         self.assertIn('[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}', log)
-        with Path(self.cwd, "example.json").open() as f2:
+        with Path(self.cwd, "example.json").open(encoding="utf-8") as f2:
             first_line = f2.readline()
         self.assertNotEqual(first_line, "not empty")
 

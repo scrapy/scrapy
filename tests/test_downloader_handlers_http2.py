@@ -171,7 +171,7 @@ class Https2InvalidDNSId(Https2TestCase):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     def setUp(self):
-        super(Https2InvalidDNSId, self).setUp()
+        super().setUp()
         self.host = '127.0.0.1'
 
 
@@ -190,7 +190,7 @@ class Https2InvalidDNSPattern(Https2TestCase):
             'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
             'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
         )
-        super(Https2InvalidDNSPattern, self).setUp()
+        super().setUp()
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
@@ -245,4 +245,4 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
         with self.assertRaises(NotImplementedError):
-            yield super(Https2ProxyTestCase, self).test_download_with_proxy_https_timeout()
+            yield super().test_download_with_proxy_https_timeout()

@@ -16,7 +16,6 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
-
 """
 Queues that handle requests
 """

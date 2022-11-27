@@ -26,7 +26,6 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -289,16 +288,15 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            else:
-                proxyScheme = proxyScheme or b'http'
-                proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
-                return self._ProxyAgent(
-                    reactor=reactor,
-                    proxyURI=to_bytes(proxyURI, encoding='ascii'),
-                    connectTimeout=timeout,
-                    bindAddress=bindaddress,
-                    pool=self._pool,
-                )
+            proxyScheme = proxyScheme or b'http'
+            proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
+            return self._ProxyAgent(
+                reactor=reactor,
+                proxyURI=to_bytes(proxyURI, encoding='ascii'),
+                connectTimeout=timeout,
+                bindAddress=bindaddress,
+                pool=self._pool,
+            )
 
         return self._Agent(
             reactor=reactor,
@@ -567,7 +565,7 @@ class _ResponseReader(protocol.Protocol):
                 self._finish_response(flags=["dataloss"])
                 return
 
-            elif not self._fail_on_dataloss_warned:
+            if not self._fail_on_dataloss_warned:
                 logger.warning("Got data loss in %s. If you want to process broken "
                                "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
                                " -- This message won't be shown in further requests",
