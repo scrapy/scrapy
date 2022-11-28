@@ -140,8 +140,7 @@ class Response(object_ref):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
-        # type: (...) -> Request
+               dont_filter=False, errback=None, cb_kwargs=None, flags=None) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
         It accepts the same arguments as ``Request.__init__`` method,
@@ -179,8 +178,8 @@ class Response(object_ref):
 
     def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding='utf-8', priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None, flags=None):
-        # type: (...) -> Generator[Request, None, None]
+                   dont_filter=False, errback=None, cb_kwargs=None,
+                   flags=None) -> Generator[Request, None, None]:
         """
         .. versionadded:: 2.0
 
