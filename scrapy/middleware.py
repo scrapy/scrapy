@@ -1,7 +1,7 @@
 import logging
 import pprint
 from collections import defaultdict, deque
-from typing import Callable, Deque, Dict, Iterable, Tuple, Union, cast
+from typing import Any, Callable, Deque, Dict, Iterable, Tuple, Union, cast
 
 from twisted.internet.defer import Deferred
 
@@ -19,7 +19,7 @@ class MiddlewareManager:
 
     component_name = 'foo middleware'
 
-    def __init__(self, *middlewares):
+    def __init__(self, *middlewares: Any) -> None:
         self.middlewares = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.

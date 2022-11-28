@@ -4,7 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
@@ -109,7 +109,7 @@ class Crawler:
         self.settings.freeze()
         self.crawling = False
         self.spider = None
-        self.engine = None
+        self.engine: Optional[ExecutionEngine] = None
 
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):

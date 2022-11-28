@@ -1,8 +1,22 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
+from __future__ import annotations
+
 import logging
 from collections import deque
-from typing import Any, AsyncGenerator, AsyncIterable, Deque, Generator, Iterable, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    Deque,
+    Generator,
+    Iterable,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+)
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -24,6 +38,10 @@ from scrapy.utils.defer import (
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
+
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
 
 
 QueueTuple = Tuple[Union[Response, Failure], Request, Deferred]
@@ -75,7 +93,7 @@ class Slot:
 
 class Scraper:
 
-    def __init__(self, crawler):
+    def __init__(self, crawler: Crawler) -> None:
         self.slot: Optional[Slot] = None
         self.spidermw = SpiderMiddlewareManager.from_crawler(crawler)
         itemproc_cls = load_object(crawler.settings['ITEM_PROCESSOR'])
@@ -174,6 +192,7 @@ class Scraper:
     def handle_spider_error(self, _failure: Failure, request: Request, response: Response, spider: Spider) -> None:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
+            assert self.crawler.engine is not None  # typing
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
         logkws = self.logformatter.spider_error(_failure, request, response, spider)
@@ -214,6 +233,7 @@ class Scraper:
         """
         assert self.slot is not None  # typing
         if isinstance(output, Request):
+            assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
         elif is_item(output):
             self.slot.itemproc_size += 1

@@ -23,7 +23,7 @@ class ScrapyCommand:
 
     exitcode = 0
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.settings: Any = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler):
