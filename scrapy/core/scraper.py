@@ -10,6 +10,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals, Spider
 from scrapy.core.spidermw import SpiderMiddlewareManager
+from scrapy.crawler import Crawler
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.defer import (
@@ -75,7 +76,7 @@ class Slot:
 
 class Scraper:
 
-    def __init__(self, crawler):
+    def __init__(self, crawler: Crawler) -> None:
         self.slot: Optional[Slot] = None
         self.spidermw = SpiderMiddlewareManager.from_crawler(crawler)
         itemproc_cls = load_object(crawler.settings['ITEM_PROCESSOR'])
@@ -174,6 +175,7 @@ class Scraper:
     def handle_spider_error(self, _failure: Failure, request: Request, response: Response, spider: Spider) -> None:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
+            assert self.crawler.engine is not None  # typing
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
         logkws = self.logformatter.spider_error(_failure, request, response, spider)
@@ -214,6 +216,7 @@ class Scraper:
         """
         assert self.slot is not None  # typing
         if isinstance(output, Request):
+            assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
         elif is_item(output):
             self.slot.itemproc_size += 1
