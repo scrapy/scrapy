@@ -30,7 +30,7 @@ class Shell:
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
         self.update_vars = update_vars or (lambda x: None)
-        self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
+        self.item_class = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
         self.spider = None
         self.inthread = not threadable.isInIOThread()
         self.code = code
@@ -61,19 +61,20 @@ class Shell:
             shell = python
             """
             cfg = get_config()
-            section, option = 'settings', 'shell'
-            env = os.environ.get('SCRAPY_PYTHON_SHELL')
+            section, option = "settings", "shell"
+            env = os.environ.get("SCRAPY_PYTHON_SHELL")
             shells = []
             if env:
-                shells += env.strip().lower().split(',')
+                shells += env.strip().lower().split(",")
             elif cfg.has_option(section, option):
                 shells += [cfg.get(section, option).strip().lower()]
             else:  # try all by default
                 shells += DEFAULT_PYTHON_SHELLS.keys()
             # always add standard shell as fallback
-            shells += ['python']
-            start_python_console(self.vars, shells=shells,
-                                 banner=self.vars.pop('banner', ''))
+            shells += ["python"]
+            start_python_console(
+                self.vars, shells=shells, banner=self.vars.pop("banner", "")
+            )
 
     def _schedule(self, request, spider):
         spider = self._open_spider(request, spider)
@@ -96,19 +97,23 @@ class Shell:
 
     def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
         from twisted.internet import reactor
+
         if isinstance(request_or_url, Request):
             request = request_or_url
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True, **kwargs)
             if redirect:
-                request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
+                request.meta["handle_httpstatus_list"] = SequenceExclude(
+                    range(300, 400)
+                )
             else:
-                request.meta['handle_httpstatus_all'] = True
+                request.meta["handle_httpstatus_all"] = True
         response = None
         try:
             response, spider = threads.blockingCallFromThread(
-                reactor, self._schedule, request, spider)
+                reactor, self._schedule, request, spider
+            )
         except IgnoreRequest:
             pass
         self.populate_vars(response, request, spider)
@@ -116,20 +121,20 @@ class Shell:
     def populate_vars(self, response=None, request=None, spider=None):
         import scrapy
 
-        self.vars['scrapy'] = scrapy
-        self.vars['crawler'] = self.crawler
-        self.vars['item'] = self.item_class()
-        self.vars['settings'] = self.crawler.settings
-        self.vars['spider'] = spider
-        self.vars['request'] = request
-        self.vars['response'] = response
+        self.vars["scrapy"] = scrapy
+        self.vars["crawler"] = self.crawler
+        self.vars["item"] = self.item_class()
+        self.vars["settings"] = self.crawler.settings
+        self.vars["spider"] = spider
+        self.vars["request"] = request
+        self.vars["response"] = response
         if self.inthread:
-            self.vars['fetch'] = self.fetch
-        self.vars['view'] = open_in_browser
-        self.vars['shelp'] = self.print_help
+            self.vars["fetch"] = self.fetch
+        self.vars["view"] = open_in_browser
+        self.vars["shelp"] = self.print_help
         self.update_vars(self.vars)
         if not self.code:
-            self.vars['banner'] = self.get_help()
+            self.vars["banner"] = self.get_help()
 
     def print_help(self):
         print(self.get_help())
@@ -137,16 +142,22 @@ class Shell:
     def get_help(self):
         b = []
         b.append("Available Scrapy objects:")
-        b.append("  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)")
+        b.append(
+            "  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)"
+        )
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
                 b.append(f"  {k:<10} {v}")
         b.append("Useful shortcuts:")
         if self.inthread:
-            b.append("  fetch(url[, redirect=True]) "
-                     "Fetch URL and update local objects (by default, redirects are followed)")
-            b.append("  fetch(req)                  "
-                     "Fetch a scrapy.Request and update local objects ")
+            b.append(
+                "  fetch(url[, redirect=True]) "
+                "Fetch URL and update local objects (by default, redirects are followed)"
+            )
+            b.append(
+                "  fetch(req)                  "
+                "Fetch a scrapy.Request and update local objects "
+            )
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 

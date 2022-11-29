@@ -17,7 +17,7 @@ from scrapy.utils.python import garbage_collect
 class ScrapyArgumentParser(argparse.ArgumentParser):
     def _parse_optional(self, arg_string):
         # if starts with -: it means that is a parameter not a argument
-        if arg_string[:2] == '-:':
+        if arg_string[:2] == "-:":
             return None
 
         return super()._parse_optional(arg_string)
@@ -41,12 +41,12 @@ def _get_commands_from_module(module, inproject):
     d = {}
     for cmd in _iter_command_classes(module):
         if inproject or not cmd.requires_project:
-            cmdname = cmd.__module__.split('.')[-1]
+            cmdname = cmd.__module__.split(".")[-1]
             d[cmdname] = cmd()
     return d
 
 
-def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
+def _get_commands_from_entry_points(inproject, group="scrapy.commands"):
     cmds = {}
     for entry_point in pkg_resources.iter_entry_points(group):
         obj = entry_point.load()
@@ -58,9 +58,9 @@ def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
 
 
 def _get_commands_dict(settings, inproject):
-    cmds = _get_commands_from_module('scrapy.commands', inproject)
+    cmds = _get_commands_from_module("scrapy.commands", inproject)
     cmds.update(_get_commands_from_entry_points(inproject))
-    cmds_module = settings['COMMANDS_MODULE']
+    cmds_module = settings["COMMANDS_MODULE"]
     if cmds_module:
         cmds.update(_get_commands_from_module(cmds_module, inproject))
     return cmds
@@ -69,7 +69,7 @@ def _get_commands_dict(settings, inproject):
 def _pop_command_name(argv):
     i = 0
     for arg in argv[1:]:
-        if not arg.startswith('-'):
+        if not arg.startswith("-"):
             del argv[i]
             return arg
         i += 1
@@ -124,11 +124,11 @@ def execute(argv=None, settings=None):
         settings = get_project_settings()
         # set EDITOR from environment if available
         try:
-            editor = os.environ['EDITOR']
+            editor = os.environ["EDITOR"]
         except KeyError:
             pass
         else:
-            settings['EDITOR'] = editor
+            settings["EDITOR"] = editor
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
@@ -141,11 +141,13 @@ def execute(argv=None, settings=None):
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser = ScrapyArgumentParser(formatter_class=ScrapyHelpFormatter,
-                                  usage=f"scrapy {cmdname} {cmd.syntax()}",
-                                  conflict_handler='resolve',
-                                  description=cmd.long_desc())
-    settings.setdict(cmd.default_settings, priority='command')
+    parser = ScrapyArgumentParser(
+        formatter_class=ScrapyHelpFormatter,
+        usage=f"scrapy {cmdname} {cmd.syntax()}",
+        conflict_handler="resolve",
+        description=cmd.long_desc(),
+    )
+    settings.setdict(cmd.default_settings, priority="command")
     cmd.settings = settings
     cmd.add_options(parser)
     opts, args = parser.parse_known_args(args=argv[1:])
@@ -168,12 +170,12 @@ def _run_command_profiled(cmd, args, opts):
         sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
     loc = locals()
     p = cProfile.Profile()
-    p.runctx('cmd.run(args, opts)', globals(), loc)
+    p.runctx("cmd.run(args, opts)", globals(), loc)
     if opts.profile:
         p.dump_stats(opts.profile)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         execute()
     finally:

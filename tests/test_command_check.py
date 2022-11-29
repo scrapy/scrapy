@@ -3,15 +3,16 @@ from tests.test_commands import CommandTest
 
 class CheckCommandTest(CommandTest):
 
-    command = 'check'
+    command = "check"
 
     def setUp(self):
         super().setUp()
-        self.spider_name = 'check_spider'
-        self.spider = (self.proj_mod_path / 'spiders' / 'checkspider.py').resolve()
+        self.spider_name = "check_spider"
+        self.spider = (self.proj_mod_path / "spiders" / "checkspider.py").resolve()
 
     def _write_contract(self, contracts, parse_def):
-        self.spider.write_text(f"""
+        self.spider.write_text(
+            f"""
 import scrapy
 
 class CheckSpider(scrapy.Spider):
@@ -24,13 +25,15 @@ class CheckSpider(scrapy.Spider):
         {contracts}
         \"\"\"
         {parse_def}
-        """, encoding="utf-8")
+        """,
+            encoding="utf-8",
+        )
 
-    def _test_contract(self, contracts='', parse_def='pass'):
+    def _test_contract(self, contracts="", parse_def="pass"):
         self._write_contract(contracts, parse_def)
-        p, out, err = self.proc('check')
-        self.assertNotIn('F', out)
-        self.assertIn('OK', err)
+        p, out, err = self.proc("check")
+        self.assertNotIn("F", out)
+        self.assertIn("OK", err)
         self.assertEqual(p.returncode, 0)
 
     def test_check_returns_requests_contract(self):

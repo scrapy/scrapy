@@ -18,28 +18,31 @@ from scrapy.utils.conf import build_component_list
 
 class DownloaderMiddlewareManager(MiddlewareManager):
 
-    component_name = 'downloader middleware'
+    component_name = "downloader middleware"
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return build_component_list(
-            settings.getwithbase('DOWNLOADER_MIDDLEWARES'))
+        return build_component_list(settings.getwithbase("DOWNLOADER_MIDDLEWARES"))
 
     def _add_middleware(self, mw):
-        if hasattr(mw, 'process_request'):
-            self.methods['process_request'].append(mw.process_request)
-        if hasattr(mw, 'process_response'):
-            self.methods['process_response'].appendleft(mw.process_response)
-        if hasattr(mw, 'process_exception'):
-            self.methods['process_exception'].appendleft(mw.process_exception)
+        if hasattr(mw, "process_request"):
+            self.methods["process_request"].append(mw.process_request)
+        if hasattr(mw, "process_response"):
+            self.methods["process_response"].appendleft(mw.process_response)
+        if hasattr(mw, "process_exception"):
+            self.methods["process_exception"].appendleft(mw.process_exception)
 
     def download(self, download_func: Callable, request: Request, spider: Spider):
         @defer.inlineCallbacks
         def process_request(request: Request):
-            for method in self.methods['process_request']:
+            for method in self.methods["process_request"]:
                 method = cast(Callable, method)
-                response = yield deferred_from_coro(method(request=request, spider=spider))
-                if response is not None and not isinstance(response, (Response, Request)):
+                response = yield deferred_from_coro(
+                    method(request=request, spider=spider)
+                )
+                if response is not None and not isinstance(
+                    response, (Response, Request)
+                ):
                     raise _InvalidOutput(
                         f"Middleware {method.__qualname__} must return None, Response or "
                         f"Request, got {response.__class__.__name__}"
@@ -55,9 +58,11 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             elif isinstance(response, Request):
                 return response
 
-            for method in self.methods['process_response']:
+            for method in self.methods["process_response"]:
                 method = cast(Callable, method)
-                response = yield deferred_from_coro(method(request=request, response=response, spider=spider))
+                response = yield deferred_from_coro(
+                    method(request=request, response=response, spider=spider)
+                )
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
                         f"Middleware {method.__qualname__} must return Response or Request, "
@@ -70,10 +75,14 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         @defer.inlineCallbacks
         def process_exception(failure: Failure):
             exception = failure.value
-            for method in self.methods['process_exception']:
+            for method in self.methods["process_exception"]:
                 method = cast(Callable, method)
-                response = yield deferred_from_coro(method(request=request, exception=exception, spider=spider))
-                if response is not None and not isinstance(response, (Response, Request)):
+                response = yield deferred_from_coro(
+                    method(request=request, exception=exception, spider=spider)
+                )
+                if response is not None and not isinstance(
+                    response, (Response, Request)
+                ):
                     raise _InvalidOutput(
                         f"Middleware {method.__qualname__} must return None, Response or "
                         f"Request, got {type(response)}"

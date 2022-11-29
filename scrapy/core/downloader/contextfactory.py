@@ -2,13 +2,22 @@ import warnings
 
 from OpenSSL import SSL
 from twisted.internet._sslverify import _setAcceptableProtocols
-from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust, AcceptableCiphers
+from twisted.internet.ssl import (
+    optionsForClientTLS,
+    CertificateOptions,
+    platformTrust,
+    AcceptableCiphers,
+)
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
 from zope.interface.verify import verifyObject
 
-from scrapy.core.downloader.tls import DEFAULT_CIPHERS, openssl_methods, ScrapyClientTLSOptions
+from scrapy.core.downloader.tls import (
+    DEFAULT_CIPHERS,
+    openssl_methods,
+    ScrapyClientTLSOptions,
+)
 from scrapy.utils.misc import create_instance, load_object
 
 
@@ -24,7 +33,14 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
      understand the TLSv1, TLSv1.1 and TLSv1.2 protocols.'
     """
 
-    def __init__(self, method=SSL.SSLv23_METHOD, tls_verbose_logging=False, tls_ciphers=None, *args, **kwargs):
+    def __init__(
+        self,
+        method=SSL.SSLv23_METHOD,
+        tls_verbose_logging=False,
+        tls_ciphers=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self._ssl_method = method
         self.tls_verbose_logging = tls_verbose_logging
@@ -35,9 +51,15 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     @classmethod
     def from_settings(cls, settings, method=SSL.SSLv23_METHOD, *args, **kwargs):
-        tls_verbose_logging = settings.getbool('DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING')
-        tls_ciphers = settings['DOWNLOADER_CLIENT_TLS_CIPHERS']
-        return cls(method=method, tls_verbose_logging=tls_verbose_logging, tls_ciphers=tls_ciphers, *args, **kwargs)
+        tls_verbose_logging = settings.getbool("DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING")
+        tls_ciphers = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        return cls(
+            method=method,
+            tls_verbose_logging=tls_verbose_logging,
+            tls_ciphers=tls_ciphers,
+            *args,
+            **kwargs,
+        )
 
     def getCertificateOptions(self):
         # setting verify=True will require you to provide CAs
@@ -53,7 +75,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         #   not calling super().__init__
         return CertificateOptions(
             verify=False,
-            method=getattr(self, 'method', getattr(self, '_ssl_method', None)),
+            method=getattr(self, "method", getattr(self, "_ssl_method", None)),
             fixBrokenPeers=True,
             acceptableCiphers=self.tls_ciphers,
         )
@@ -64,8 +86,11 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         return self.getCertificateOptions().getContext()
 
     def creatorForNetloc(self, hostname, port):
-        return ScrapyClientTLSOptions(hostname.decode("ascii"), self.getContext(),
-                                      verbose_logging=self.tls_verbose_logging)
+        return ScrapyClientTLSOptions(
+            hostname.decode("ascii"),
+            self.getContext(),
+            verbose_logging=self.tls_verbose_logging,
+        )
 
 
 @implementer(IPolicyForHTTPS)
@@ -95,7 +120,7 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
             trustRoot=platformTrust(),
-            extraCertificateOptions={'method': self._ssl_method},
+            extraCertificateOptions={"method": self._ssl_method},
         )
 
 
@@ -118,8 +143,8 @@ class AcceptableProtocolsContextFactory:
 
 
 def load_context_factory_from_settings(settings, crawler):
-    ssl_method = openssl_methods[settings.get('DOWNLOADER_CLIENT_TLS_METHOD')]
-    context_factory_cls = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+    ssl_method = openssl_methods[settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
+    context_factory_cls = load_object(settings["DOWNLOADER_CLIENTCONTEXTFACTORY"])
     # try method-aware context factory
     try:
         context_factory = create_instance(

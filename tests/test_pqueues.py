@@ -19,7 +19,9 @@ class PriorityQueueTest(unittest.TestCase):
 
     def test_queue_push_pop_one(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir)
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler, FifoMemoryQueue, temp_dir
+        )
         self.assertIsNone(queue.pop())
         self.assertEqual(len(queue), 0)
         req1 = Request("https://example.org/1", priority=1)
@@ -35,9 +37,14 @@ class PriorityQueueTest(unittest.TestCase):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is defined")
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir)
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler, FifoMemoryQueue, temp_dir
+        )
         queue.push(Request("https://example.org"))
-        with self.assertRaises(NotImplementedError, msg="The underlying queue class does not implement 'peek'"):
+        with self.assertRaises(
+            NotImplementedError,
+            msg="The underlying queue class does not implement 'peek'",
+        ):
             queue.peek()
         queue.close()
 
@@ -45,7 +52,9 @@ class PriorityQueueTest(unittest.TestCase):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir)
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler, FifoMemoryQueue, temp_dir
+        )
         self.assertEqual(len(queue), 0)
         self.assertIsNone(queue.peek())
         req1 = Request("https://example.org/1")
@@ -67,7 +76,9 @@ class PriorityQueueTest(unittest.TestCase):
 
     def test_queue_push_pop_priorities(self):
         temp_dir = tempfile.mkdtemp()
-        queue = ScrapyPriorityQueue.from_crawler(self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3])
+        queue = ScrapyPriorityQueue.from_crawler(
+            self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
+        )
         self.assertIsNone(queue.pop())
         self.assertEqual(len(queue), 0)
         req1 = Request("https://example.org/1", priority=1)
@@ -119,7 +130,10 @@ class DownloaderAwarePriorityQueueTest(unittest.TestCase):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is defined")
         self.queue.push(Request("https://example.org"))
-        with self.assertRaises(NotImplementedError, msg="The underlying queue class does not implement 'peek'"):
+        with self.assertRaises(
+            NotImplementedError,
+            msg="The underlying queue class does not implement 'peek'",
+        ):
             self.queue.peek()
 
     def test_peek(self):

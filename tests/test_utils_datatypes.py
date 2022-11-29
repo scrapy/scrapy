@@ -3,26 +3,30 @@ import unittest
 from collections.abc import Mapping, MutableMapping
 
 from scrapy.http import Request
-from scrapy.utils.datatypes import CaselessDict, LocalCache, LocalWeakReferencedCache, SequenceExclude
+from scrapy.utils.datatypes import (
+    CaselessDict,
+    LocalCache,
+    LocalWeakReferencedCache,
+    SequenceExclude,
+)
 from scrapy.utils.python import garbage_collect
 
 
-__doctests__ = ['scrapy.utils.datatypes']
+__doctests__ = ["scrapy.utils.datatypes"]
 
 
 class CaselessDictTest(unittest.TestCase):
-
     def test_init_dict(self):
-        seq = {'red': 1, 'black': 3}
+        seq = {"red": 1, "black": 3}
         d = CaselessDict(seq)
-        self.assertEqual(d['red'], 1)
-        self.assertEqual(d['black'], 3)
+        self.assertEqual(d["red"], 1)
+        self.assertEqual(d["black"], 3)
 
     def test_init_pair_sequence(self):
-        seq = (('red', 1), ('black', 3))
+        seq = (("red", 1), ("black", 3))
         d = CaselessDict(seq)
-        self.assertEqual(d['red'], 1)
-        self.assertEqual(d['black'], 3)
+        self.assertEqual(d["red"], 1)
+        self.assertEqual(d["black"], 3)
 
     def test_init_mapping(self):
         class MyMapping(Mapping):
@@ -40,8 +44,8 @@ class CaselessDictTest(unittest.TestCase):
 
         seq = MyMapping(red=1, black=3)
         d = CaselessDict(seq)
-        self.assertEqual(d['red'], 1)
-        self.assertEqual(d['black'], 3)
+        self.assertEqual(d["red"], 1)
+        self.assertEqual(d["black"], 3)
 
     def test_init_mutable_mapping(self):
         class MyMutableMapping(MutableMapping):
@@ -65,72 +69,72 @@ class CaselessDictTest(unittest.TestCase):
 
         seq = MyMutableMapping(red=1, black=3)
         d = CaselessDict(seq)
-        self.assertEqual(d['red'], 1)
-        self.assertEqual(d['black'], 3)
+        self.assertEqual(d["red"], 1)
+        self.assertEqual(d["black"], 3)
 
     def test_caseless(self):
         d = CaselessDict()
-        d['key_Lower'] = 1
-        self.assertEqual(d['KEy_loWer'], 1)
-        self.assertEqual(d.get('KEy_loWer'), 1)
+        d["key_Lower"] = 1
+        self.assertEqual(d["KEy_loWer"], 1)
+        self.assertEqual(d.get("KEy_loWer"), 1)
 
-        d['KEY_LOWER'] = 3
-        self.assertEqual(d['key_Lower'], 3)
-        self.assertEqual(d.get('key_Lower'), 3)
+        d["KEY_LOWER"] = 3
+        self.assertEqual(d["key_Lower"], 3)
+        self.assertEqual(d.get("key_Lower"), 3)
 
     def test_delete(self):
-        d = CaselessDict({'key_lower': 1})
-        del d['key_LOWER']
-        self.assertRaises(KeyError, d.__getitem__, 'key_LOWER')
-        self.assertRaises(KeyError, d.__getitem__, 'key_lower')
+        d = CaselessDict({"key_lower": 1})
+        del d["key_LOWER"]
+        self.assertRaises(KeyError, d.__getitem__, "key_LOWER")
+        self.assertRaises(KeyError, d.__getitem__, "key_lower")
 
     def test_getdefault(self):
         d = CaselessDict()
-        self.assertEqual(d.get('c', 5), 5)
-        d['c'] = 10
-        self.assertEqual(d.get('c', 5), 10)
+        self.assertEqual(d.get("c", 5), 5)
+        d["c"] = 10
+        self.assertEqual(d.get("c", 5), 10)
 
     def test_setdefault(self):
-        d = CaselessDict({'a': 1, 'b': 2})
+        d = CaselessDict({"a": 1, "b": 2})
 
-        r = d.setdefault('A', 5)
+        r = d.setdefault("A", 5)
         self.assertEqual(r, 1)
-        self.assertEqual(d['A'], 1)
+        self.assertEqual(d["A"], 1)
 
-        r = d.setdefault('c', 5)
+        r = d.setdefault("c", 5)
         self.assertEqual(r, 5)
-        self.assertEqual(d['C'], 5)
+        self.assertEqual(d["C"], 5)
 
     def test_fromkeys(self):
-        keys = ('a', 'b')
+        keys = ("a", "b")
 
         d = CaselessDict.fromkeys(keys)
-        self.assertEqual(d['A'], None)
-        self.assertEqual(d['B'], None)
+        self.assertEqual(d["A"], None)
+        self.assertEqual(d["B"], None)
 
         d = CaselessDict.fromkeys(keys, 1)
-        self.assertEqual(d['A'], 1)
-        self.assertEqual(d['B'], 1)
+        self.assertEqual(d["A"], 1)
+        self.assertEqual(d["B"], 1)
 
         instance = CaselessDict()
         d = instance.fromkeys(keys)
-        self.assertEqual(d['A'], None)
-        self.assertEqual(d['B'], None)
+        self.assertEqual(d["A"], None)
+        self.assertEqual(d["B"], None)
 
         d = instance.fromkeys(keys, 1)
-        self.assertEqual(d['A'], 1)
-        self.assertEqual(d['B'], 1)
+        self.assertEqual(d["A"], 1)
+        self.assertEqual(d["B"], 1)
 
     def test_contains(self):
         d = CaselessDict()
-        d['a'] = 1
-        assert 'a' in d
+        d["a"] = 1
+        assert "a" in d
 
     def test_pop(self):
         d = CaselessDict()
-        d['a'] = 1
-        self.assertEqual(d.pop('A'), 1)
-        self.assertRaises(KeyError, d.pop, 'A')
+        d["a"] = 1
+        self.assertEqual(d.pop("A"), 1)
+        self.assertRaises(KeyError, d.pop, "A")
 
     def test_normkey(self):
         class MyDict(CaselessDict):
@@ -138,8 +142,8 @@ class CaselessDictTest(unittest.TestCase):
                 return key.title()
 
         d = MyDict()
-        d['key-one'] = 2
-        self.assertEqual(list(d.keys()), ['Key-One'])
+        d["key-one"] = 2
+        self.assertEqual(list(d.keys()), ["Key-One"])
 
     def test_normvalue(self):
         class MyDict(CaselessDict):
@@ -147,39 +151,38 @@ class CaselessDictTest(unittest.TestCase):
                 if value is not None:
                     return value + 1
 
-        d = MyDict({'key': 1})
-        self.assertEqual(d['key'], 2)
-        self.assertEqual(d.get('key'), 2)
+        d = MyDict({"key": 1})
+        self.assertEqual(d["key"], 2)
+        self.assertEqual(d.get("key"), 2)
 
         d = MyDict()
-        d['key'] = 1
-        self.assertEqual(d['key'], 2)
-        self.assertEqual(d.get('key'), 2)
+        d["key"] = 1
+        self.assertEqual(d["key"], 2)
+        self.assertEqual(d.get("key"), 2)
 
         d = MyDict()
-        d.setdefault('key', 1)
-        self.assertEqual(d['key'], 2)
-        self.assertEqual(d.get('key'), 2)
+        d.setdefault("key", 1)
+        self.assertEqual(d["key"], 2)
+        self.assertEqual(d.get("key"), 2)
 
         d = MyDict()
-        d.update({'key': 1})
-        self.assertEqual(d['key'], 2)
-        self.assertEqual(d.get('key'), 2)
+        d.update({"key": 1})
+        self.assertEqual(d["key"], 2)
+        self.assertEqual(d.get("key"), 2)
 
-        d = MyDict.fromkeys(('key',), 1)
-        self.assertEqual(d['key'], 2)
-        self.assertEqual(d.get('key'), 2)
+        d = MyDict.fromkeys(("key",), 1)
+        self.assertEqual(d["key"], 2)
+        self.assertEqual(d.get("key"), 2)
 
     def test_copy(self):
-        h1 = CaselessDict({'header1': 'value'})
+        h1 = CaselessDict({"header1": "value"})
         h2 = copy.copy(h1)
         self.assertEqual(h1, h2)
-        self.assertEqual(h1.get('header1'), h2.get('header1'))
+        self.assertEqual(h1.get("header1"), h2.get("header1"))
         assert isinstance(h2, CaselessDict)
 
 
 class SequenceExcludeTest(unittest.TestCase):
-
     def test_list(self):
         seq = [1, 2, 3]
         d = SequenceExclude(seq)
@@ -226,25 +229,24 @@ class SequenceExcludeTest(unittest.TestCase):
 
         # supplied sequence is a set, so checking for list (non)inclusion fails
         self.assertRaises(TypeError, (0, 1, 2) in d)
-        self.assertRaises(TypeError, d.__contains__, ['a', 'b', 'c'])
+        self.assertRaises(TypeError, d.__contains__, ["a", "b", "c"])
 
         for v in [-3, "test", 1.1]:
             self.assertNotIn(v, d)
 
 
 class LocalCacheTest(unittest.TestCase):
-
     def test_cache_with_limit(self):
         cache = LocalCache(limit=2)
-        cache['a'] = 1
-        cache['b'] = 2
-        cache['c'] = 3
+        cache["a"] = 1
+        cache["b"] = 2
+        cache["c"] = 3
         self.assertEqual(len(cache), 2)
-        self.assertNotIn('a', cache)
-        self.assertIn('b', cache)
-        self.assertIn('c', cache)
-        self.assertEqual(cache['b'], 2)
-        self.assertEqual(cache['c'], 3)
+        self.assertNotIn("a", cache)
+        self.assertIn("b", cache)
+        self.assertIn("c", cache)
+        self.assertEqual(cache["b"], 2)
+        self.assertEqual(cache["c"], 3)
 
     def test_cache_without_limit(self):
         maximum = 10**4
@@ -258,12 +260,11 @@ class LocalCacheTest(unittest.TestCase):
 
 
 class LocalWeakReferencedCacheTest(unittest.TestCase):
-
     def test_cache_with_limit(self):
         cache = LocalWeakReferencedCache(limit=2)
-        r1 = Request('https://example.org')
-        r2 = Request('https://example.com')
-        r3 = Request('https://example.net')
+        r1 = Request("https://example.org")
+        r2 = Request("https://example.com")
+        r3 = Request("https://example.net")
         cache[r1] = 1
         cache[r2] = 2
         cache[r3] = 3
@@ -299,7 +300,7 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         cache = LocalWeakReferencedCache()
         refs = []
         for x in range(max):
-            refs.append(Request(f'https://example.org/{x}'))
+            refs.append(Request(f"https://example.org/{x}"))
             cache[refs[-1]] = x
         self.assertEqual(len(cache), max)
         for i, r in enumerate(refs):

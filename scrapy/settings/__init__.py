@@ -8,11 +8,11 @@ from scrapy.settings import default_settings
 
 
 SETTINGS_PRIORITIES = {
-    'default': 0,
-    'command': 10,
-    'project': 20,
-    'spider': 30,
-    'cmdline': 40,
+    "default": 0,
+    "command": 10,
+    "project": 20,
+    "spider": 30,
+    "cmdline": 40,
 }
 
 
@@ -76,7 +76,7 @@ class BaseSettings(MutableMapping):
     highest priority will be retrieved.
     """
 
-    def __init__(self, values=None, priority='project'):
+    def __init__(self, values=None, priority="project"):
         self.frozen = False
         self.attributes = {}
         if values:
@@ -126,9 +126,11 @@ class BaseSettings(MutableMapping):
                 return True
             if got in ("False", "false"):
                 return False
-            raise ValueError("Supported values for boolean settings "
-                             "are 0/1, True/False, '0'/'1', "
-                             "'True'/'False' and 'true'/'false'")
+            raise ValueError(
+                "Supported values for boolean settings "
+                "are 0/1, True/False, '0'/'1', "
+                "'True'/'False' and 'true'/'false'"
+            )
 
     def getint(self, name, default=0):
         """
@@ -170,7 +172,7 @@ class BaseSettings(MutableMapping):
         """
         value = self.get(name, default or [])
         if isinstance(value, str):
-            value = value.split(',')
+            value = value.split(",")
         return list(value)
 
     def getdict(self, name, default=None):
@@ -223,7 +225,7 @@ class BaseSettings(MutableMapping):
             try:
                 return json.loads(value)
             except ValueError:
-                return value.split(',')
+                return value.split(",")
         return copy.deepcopy(value)
 
     def getwithbase(self, name):
@@ -234,7 +236,7 @@ class BaseSettings(MutableMapping):
         :type name: str
         """
         compbs = BaseSettings()
-        compbs.update(self[name + '_BASE'])
+        compbs.update(self[name + "_BASE"])
         compbs.update(self[name])
         return compbs
 
@@ -259,12 +261,12 @@ class BaseSettings(MutableMapping):
         """
         if len(self) > 0:
             return max(self.getpriority(name) for name in self)
-        return get_settings_priority('default')
+        return get_settings_priority("default")
 
     def __setitem__(self, name, value):
         self.set(name, value)
 
-    def set(self, name, value, priority='project'):
+    def set(self, name, value, priority="project"):
         """
         Store a key/value attribute with a given priority.
 
@@ -292,10 +294,10 @@ class BaseSettings(MutableMapping):
         else:
             self.attributes[name].set(value, priority)
 
-    def setdict(self, values, priority='project'):
+    def setdict(self, values, priority="project"):
         self.update(values, priority)
 
-    def setmodule(self, module, priority='project'):
+    def setmodule(self, module, priority="project"):
         """
         Store settings from a module with a given priority.
 
@@ -317,7 +319,7 @@ class BaseSettings(MutableMapping):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
 
-    def update(self, values, priority='project'):
+    def update(self, values, priority="project"):
         """
         Store key/value pairs with a given priority.
 
@@ -350,7 +352,7 @@ class BaseSettings(MutableMapping):
                 for name, value in values.items():
                     self.set(name, value, priority)
 
-    def delete(self, name, priority='project'):
+    def delete(self, name, priority="project"):
         self._assert_mutability()
         priority = get_settings_priority(priority)
         if priority >= self.getpriority(name):
@@ -403,12 +405,17 @@ class BaseSettings(MutableMapping):
         return len(self.attributes)
 
     def _to_dict(self):
-        return {self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
-                for k, v in self.items()}
+        return {
+            self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
+            for k, v in self.items()
+        }
 
     def _get_key(self, key_value):
-        return (key_value if isinstance(key_value, (bool, float, int, str, type(None)))
-                else str(key_value))
+        return (
+            key_value
+            if isinstance(key_value, (bool, float, int, str, type(None)))
+            else str(key_value)
+        )
 
     def copy_to_dict(self):
         """
@@ -444,17 +451,17 @@ class Settings(BaseSettings):
     described on :ref:`topics-settings-ref` already populated.
     """
 
-    def __init__(self, values=None, priority='project'):
+    def __init__(self, values=None, priority="project"):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
         super().__init__()
-        self.setmodule(default_settings, 'default')
+        self.setmodule(default_settings, "default")
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
         for name, val in self.items():
             if isinstance(val, dict):
-                self.set(name, BaseSettings(val, 'default'), 'default')
+                self.set(name, BaseSettings(val, "default"), "default")
         self.update(values, priority)
 
 

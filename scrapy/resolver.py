@@ -1,6 +1,11 @@
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
-from twisted.internet.interfaces import IHostResolution, IHostnameResolver, IResolutionReceiver, IResolverSimple
+from twisted.internet.interfaces import (
+    IHostResolution,
+    IHostnameResolver,
+    IResolutionReceiver,
+    IResolverSimple,
+)
 from zope.interface.declarations import implementer, provider
 
 from scrapy.utils.datatypes import LocalCache
@@ -23,11 +28,11 @@ class CachingThreadedResolver(ThreadedResolver):
 
     @classmethod
     def from_crawler(cls, crawler, reactor):
-        if crawler.settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = crawler.settings.getint('DNSCACHE_SIZE')
+        if crawler.settings.getbool("DNSCACHE_ENABLED"):
+            cache_size = crawler.settings.getint("DNSCACHE_SIZE")
         else:
             cache_size = 0
-        return cls(reactor, cache_size, crawler.settings.getfloat('DNS_TIMEOUT'))
+        return cls(reactor, cache_size, crawler.settings.getfloat("DNS_TIMEOUT"))
 
     def install_on_reactor(self):
         self.reactor.installResolver(self)
@@ -94,8 +99,8 @@ class CachingHostnameResolver:
 
     @classmethod
     def from_crawler(cls, crawler, reactor):
-        if crawler.settings.getbool('DNSCACHE_ENABLED'):
-            cache_size = crawler.settings.getint('DNSCACHE_SIZE')
+        if crawler.settings.getbool("DNSCACHE_ENABLED"):
+            cache_size = crawler.settings.getint("DNSCACHE_SIZE")
         else:
             cache_size = 0
         return cls(reactor, cache_size)
@@ -104,7 +109,12 @@ class CachingHostnameResolver:
         self.reactor.installNameResolver(self)
 
     def resolveHostName(
-        self, resolutionReceiver, hostName, portNumber=0, addressTypes=None, transportSemantics="TCP"
+        self,
+        resolutionReceiver,
+        hostName,
+        portNumber=0,
+        addressTypes=None,
+        transportSemantics="TCP",
     ):
         try:
             addresses = dnscache[hostName]
