@@ -12,7 +12,7 @@ New features
 ~~~~~~~~~~~~
 
 -   Relaxed the restriction introduced in 2.6.2 so that the
-    ``Proxy-Authentication`` header can again be set explicitly, as long as the
+    ``Proxy-Authorization`` header can again be set explicitly, as long as the
     proxy URL in the :reqmeta:`proxy` metadata has no other credentials, and
     for as long as that proxy URL remains the same; this restores compatibility
     with scrapy-zyte-smartproxy 2.1.0 and older (:issue:`5626`).
@@ -281,7 +281,7 @@ Scrapy 2.6.2 (2022-07-25)
     processes a request with :reqmeta:`proxy` metadata, and that
     :reqmeta:`proxy` metadata includes proxy credentials,
     :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` sets
-    the ``Proxy-Authentication`` header, but only if that header is not already
+    the ``Proxy-Authorization`` header, but only if that header is not already
     set.
 
     There are third-party proxy-rotation downloader middlewares that set
@@ -294,7 +294,7 @@ Scrapy 2.6.2 (2022-07-25)
 
     These third-party proxy-rotation downloader middlewares could change the
     :reqmeta:`proxy` metadata of a request to a new value, but fail to remove
-    the ``Proxy-Authentication`` header from the previous value of the
+    the ``Proxy-Authorization`` header from the previous value of the
     :reqmeta:`proxy` metadata, causing the credentials of one proxy to be sent
     to a different proxy.
 
@@ -2250,7 +2250,7 @@ Scrapy 1.8.3 (2022-07-25)
     processes a request with :reqmeta:`proxy` metadata, and that
     :reqmeta:`proxy` metadata includes proxy credentials,
     :class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware` sets
-    the ``Proxy-Authentication`` header, but only if that header is not already
+    the ``Proxy-Authorization`` header, but only if that header is not already
     set.
 
     There are third-party proxy-rotation downloader middlewares that set
@@ -2263,7 +2263,7 @@ Scrapy 1.8.3 (2022-07-25)
 
     These third-party proxy-rotation downloader middlewares could change the
     :reqmeta:`proxy` metadata of a request to a new value, but fail to remove
-    the ``Proxy-Authentication`` header from the previous value of the
+    the ``Proxy-Authorization`` header from the previous value of the
     :reqmeta:`proxy` metadata, causing the credentials of one proxy to be sent
     to a different proxy.
 
