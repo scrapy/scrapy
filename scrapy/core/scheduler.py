@@ -12,7 +12,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import create_instance, load_object
 
-
 logger = logging.getLogger(__name__)
 
 

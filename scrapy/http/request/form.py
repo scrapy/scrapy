@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union
-from urllib.parse import urljoin, urlencode, urlsplit, urlunsplit
+from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from lxml.html import FormElement, HtmlElement, HTMLParser, SelectElement
 from parsel.selector import create_root_node
@@ -14,9 +14,8 @@ from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
 from scrapy.http.response.text import TextResponse
-from scrapy.utils.python import to_bytes, is_listlike
+from scrapy.utils.python import is_listlike, to_bytes
 from scrapy.utils.response import get_base_url
-
 
 FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
 

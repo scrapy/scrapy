@@ -1,7 +1,7 @@
+import dataclasses
 import datetime
 import json
 import unittest
-import dataclasses
 from decimal import Decimal
 
 import attr

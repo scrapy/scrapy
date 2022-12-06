@@ -2,14 +2,13 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 
 from scrapy.exceptions import StopDownload
-
 from tests.test_engine import (
     AttrsItemsSpider,
+    CrawlerRun,
     DataClassItemsSpider,
     DictItemsSpider,
-    TestSpider,
-    CrawlerRun,
     EngineTest,
+    TestSpider,
 )
 
 

@@ -11,7 +11,6 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.versions import scrapy_components_versions
 
-
 logger = logging.getLogger(__name__)
 
 

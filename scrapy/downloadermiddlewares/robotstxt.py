@@ -7,7 +7,8 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 import logging
 
 from twisted.internet.defer import Deferred, maybeDeferred
-from scrapy.exceptions import NotConfigured, IgnoreRequest
+
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info

@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError

@@ -5,7 +5,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -8,7 +8,7 @@ from threading import Thread
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.shell import Shell
-from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
 

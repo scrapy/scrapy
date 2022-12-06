@@ -1,7 +1,7 @@
 import inspect
 import unittest
-from unittest import mock
 import warnings
+from unittest import mock
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import create_deprecated_class, update_classpath

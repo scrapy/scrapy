@@ -15,7 +15,6 @@ from time import time
 from typing import DefaultDict
 from weakref import WeakKeyDictionary
 
-
 NoneType = type(None)
 live_refs: DefaultDict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
 

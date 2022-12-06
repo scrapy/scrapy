@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
-
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values

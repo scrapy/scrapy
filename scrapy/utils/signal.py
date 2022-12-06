@@ -2,16 +2,20 @@
 import collections.abc
 import logging
 
-from twisted.internet.defer import DeferredList, Deferred
-from twisted.python.failure import Failure
-
-from pydispatch.dispatcher import Anonymous, Any, disconnect, getAllReceivers, liveReceivers
+from pydispatch.dispatcher import (
+    Anonymous,
+    Any,
+    disconnect,
+    getAllReceivers,
+    liveReceivers,
+)
 from pydispatch.robustapply import robustApply
+from twisted.internet.defer import Deferred, DeferredList
+from twisted.python.failure import Failure
 
 from scrapy.exceptions import StopDownload
 from scrapy.utils.defer import maybeDeferred_coro
 from scrapy.utils.log import failure_to_exc_info
-
 
 logger = logging.getLogger(__name__)
 

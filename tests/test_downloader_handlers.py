@@ -5,7 +5,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Optional, Type
-from unittest import mock, SkipTest
+from unittest import SkipTest, mock
 
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
@@ -985,7 +985,8 @@ class BaseFTPTestCase(unittest.TestCase):
     )
 
     def setUp(self):
-        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from twisted.protocols.ftp import FTPFactory, FTPRealm
+
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dirs and test file
@@ -1129,7 +1130,8 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
     req_meta = {}
 
     def setUp(self):
-        from twisted.protocols.ftp import FTPRealm, FTPFactory
+        from twisted.protocols.ftp import FTPFactory, FTPRealm
+
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dir and test file

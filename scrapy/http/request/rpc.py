@@ -10,7 +10,6 @@ from typing import Optional
 from scrapy.http.request import Request
 from scrapy.utils.python import get_func_args
 
-
 DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 
 

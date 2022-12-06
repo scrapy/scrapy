@@ -3,8 +3,8 @@ from unittest import TestCase
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.test import get_crawler
 from scrapy.utils.python import to_bytes
+from scrapy.utils.test import get_crawler
 
 
 class TestDefaultHeadersMiddleware(TestCase):

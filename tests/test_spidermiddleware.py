@@ -4,16 +4,16 @@ from unittest import mock
 
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase
 
-from scrapy.spiders import Spider
-from scrapy.http import Request, Response
+from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import _InvalidOutput
+from scrapy.http import Request, Response
+from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-from scrapy.core.spidermw import SpiderMiddlewareManager
 
 
 class SpiderMiddlewareTestCase(TestCase):

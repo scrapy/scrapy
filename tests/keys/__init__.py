@@ -14,8 +14,8 @@ from cryptography.x509 import (
     DNSName,
     Name,
     NameAttribute,
-    random_serial_number,
     SubjectAlternativeName,
+    random_serial_number,
 )
 from cryptography.x509.oid import NameOID
 

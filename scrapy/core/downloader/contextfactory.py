@@ -2,13 +2,22 @@ import warnings
 
 from OpenSSL import SSL
 from twisted.internet._sslverify import _setAcceptableProtocols
-from twisted.internet.ssl import optionsForClientTLS, CertificateOptions, platformTrust, AcceptableCiphers
+from twisted.internet.ssl import (
+    AcceptableCiphers,
+    CertificateOptions,
+    optionsForClientTLS,
+    platformTrust,
+)
 from twisted.web.client import BrowserLikePolicyForHTTPS
 from twisted.web.iweb import IPolicyForHTTPS
 from zope.interface.declarations import implementer
 from zope.interface.verify import verifyObject
 
-from scrapy.core.downloader.tls import DEFAULT_CIPHERS, openssl_methods, ScrapyClientTLSOptions
+from scrapy.core.downloader.tls import (
+    DEFAULT_CIPHERS,
+    ScrapyClientTLSOptions,
+    openssl_methods,
+)
 from scrapy.utils.misc import create_instance, load_object
 
 

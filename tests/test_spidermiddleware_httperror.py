@@ -2,14 +2,14 @@ import logging
 from unittest import TestCase
 
 from testfixtures import LogCapture
-from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
 
-from scrapy.utils.test import get_crawler
-from scrapy.http import Response, Request
-from scrapy.spiders import Spider
-from scrapy.spidermiddlewares.httperror import HttpErrorMiddleware, HttpError
+from scrapy.http import Request, Response
 from scrapy.settings import Settings
+from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
+from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import MockServerSpider
 

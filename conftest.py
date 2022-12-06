@@ -4,7 +4,6 @@ import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import install_reactor
-
 from tests.keys import generate_keys
 
 

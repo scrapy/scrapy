@@ -1,12 +1,18 @@
-import sys
 import os
+import sys
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from scrapy.item import Item, Field
-from scrapy.utils.misc import arg_to_iter, create_instance, load_object, rel_has_nofollow, set_environ, walk_modules
-
+from scrapy.item import Field, Item
+from scrapy.utils.misc import (
+    arg_to_iter,
+    create_instance,
+    load_object,
+    rel_has_nofollow,
+    set_environ,
+    walk_modules,
+)
 
 __doctests__ = ['scrapy.utils.misc']
 

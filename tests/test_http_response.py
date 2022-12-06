@@ -4,12 +4,18 @@ from unittest import mock
 
 from w3lib.encoding import resolve_encoding
 
-from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
-                         XmlResponse, Headers)
+from scrapy.exceptions import NotSupported
+from scrapy.http import (
+    Headers,
+    HtmlResponse,
+    Request,
+    Response,
+    TextResponse,
+    XmlResponse,
+)
+from scrapy.link import Link
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
-from scrapy.exceptions import NotSupported
-from scrapy.link import Link
 from tests import get_testdata
 
 

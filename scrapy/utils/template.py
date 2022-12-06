@@ -1,8 +1,8 @@
 """Helper functions for working with templates"""
 
-from os import PathLike
 import re
 import string
+from os import PathLike
 from pathlib import Path
 from typing import Union
 

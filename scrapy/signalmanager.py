@@ -1,4 +1,5 @@
 from pydispatch import dispatcher
+
 from scrapy.utils import signal as _signal
 
 

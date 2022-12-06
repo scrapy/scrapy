@@ -15,18 +15,13 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import (
-    CloseSpider,
-    DontCloseSpider,
-    ScrapyDeprecationWarning,
-)
-from scrapy.http import Response, Request
+from scrapy.exceptions import CloseSpider, DontCloseSpider, ScrapyDeprecationWarning
+from scrapy.http import Request, Response
 from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
-from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
+from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.reactor import CallLaterOnce
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 import unittest
-from scrapy.responsetypes import responsetypes
 
-from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
+from scrapy.http import Headers, HtmlResponse, Response, TextResponse, XmlResponse
+from scrapy.responsetypes import responsetypes
 
 
 class ResponseTypesTest(unittest.TestCase):

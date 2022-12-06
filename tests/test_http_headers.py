@@ -1,5 +1,5 @@
-import unittest
 import copy
+import unittest
 
 from scrapy.http import Headers
 

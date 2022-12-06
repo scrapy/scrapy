@@ -8,8 +8,8 @@ from twisted.internet.defer import Deferred
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
+from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import create_instance, load_object
-from scrapy.utils.defer import process_parallel, process_chain
 
 logger = logging.getLogger(__name__)
 

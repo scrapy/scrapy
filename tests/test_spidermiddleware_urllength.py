@@ -2,11 +2,11 @@ from unittest import TestCase
 
 from testfixtures import LogCapture
 
+from scrapy.http import Request, Response
+from scrapy.settings import Settings
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
-from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from scrapy.settings import Settings
 
 
 class TestUrlLengthMiddleware(TestCase):

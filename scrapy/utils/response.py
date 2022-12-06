@@ -11,12 +11,11 @@ from weakref import WeakKeyDictionary
 
 from twisted.web import http
 from w3lib import html
+
 import scrapy
 from scrapy.http.response import Response
-
-
-from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.decorators import deprecated
+from scrapy.utils.python import to_bytes, to_unicode
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
 
@@ -79,6 +78,7 @@ def open_in_browser(
     tag for external links to work
     """
     from scrapy.http import HtmlResponse, TextResponse
+
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):

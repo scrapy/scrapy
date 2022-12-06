@@ -3,10 +3,9 @@ import logging
 import re
 from io import StringIO
 
-from scrapy.http import TextResponse, Response
+from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,14 @@
-import os
 import argparse
+import os
 from pathlib import Path
 
 from twisted.internet import defer
+
 from scrapy.commands import parse
 from scrapy.settings import Settings
-from scrapy.utils.testsite import SiteTest
-from scrapy.utils.testproc import ProcessTest
 from scrapy.utils.python import to_unicode
+from scrapy.utils.testproc import ProcessTest
+from scrapy.utils.testsite import SiteTest
 from tests.test_commands import CommandTest
 
 

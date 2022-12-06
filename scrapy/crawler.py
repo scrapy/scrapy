@@ -17,20 +17,20 @@ except ImportError:
 
 from zope.interface.verify import verifyClass
 
-from scrapy import signals, Spider
+from scrapy import Spider, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
-from scrapy.settings import overridden_settings, Settings
+from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.log import (
+    LogCounterHandler,
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
     log_reactor_info,
     log_scrapy_info,
-    LogCounterHandler,
 )
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names

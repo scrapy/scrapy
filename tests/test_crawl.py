@@ -1,9 +1,9 @@
 import json
 import logging
+import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
-import unittest
 
 from pytest import mark
 from testfixtures import LogCapture

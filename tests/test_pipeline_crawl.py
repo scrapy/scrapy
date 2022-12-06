@@ -6,8 +6,8 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from w3lib.url import add_or_replace_parameter
 
-from scrapy.crawler import CrawlerRunner
 from scrapy import signals
+from scrapy.crawler import CrawlerRunner
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
 

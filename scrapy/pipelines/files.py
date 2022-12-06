@@ -32,7 +32,6 @@ from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
-
 logger = logging.getLogger(__name__)
 
 

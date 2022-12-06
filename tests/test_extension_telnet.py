@@ -1,7 +1,7 @@
-from twisted.trial import unittest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
 from twisted.internet import defer
+from twisted.trial import unittest
 
 from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler

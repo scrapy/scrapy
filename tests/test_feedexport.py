@@ -19,7 +19,7 @@ from pathlib import Path
 from string import ascii_letters, digits
 from typing import Union
 from unittest import mock
-from urllib.parse import urljoin, quote
+from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
 
 import lxml.etree
@@ -46,12 +46,7 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import (
-    get_crawler,
-    mock_google_cloud_storage,
-    skip_if_no_boto,
-)
-
+from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no_boto
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
 

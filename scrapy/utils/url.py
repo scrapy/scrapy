@@ -12,6 +12,7 @@ from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 # move doesn't break old code
 from w3lib.url import *
 from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
+
 from scrapy.utils.python import to_unicode
 
 

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
+from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.depth import DepthMiddleware
-from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.test import get_crawler

@@ -16,9 +16,9 @@ from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
-from zope.interface import implementer, Interface
+from zope.interface import Interface, implementer
 
-from scrapy import signals, Spider
+from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
@@ -27,7 +27,6 @@ from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import get_func_args, without_none_values
-
 
 logger = logging.getLogger(__name__)
 

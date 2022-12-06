@@ -1,8 +1,9 @@
 """Some helpers for deprecation messages"""
 
-import warnings
 import inspect
+import warnings
 from typing import List, Tuple
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 

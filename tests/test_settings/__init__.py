@@ -1,8 +1,14 @@
 import unittest
 from unittest import mock
 
-from scrapy.settings import (BaseSettings, Settings, SettingsAttribute,
-                             SETTINGS_PRIORITIES, get_settings_priority)
+from scrapy.settings import (
+    SETTINGS_PRIORITIES,
+    BaseSettings,
+    Settings,
+    SettingsAttribute,
+    get_settings_priority,
+)
+
 from . import default_settings
 
 

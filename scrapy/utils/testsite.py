@@ -1,6 +1,6 @@
 from urllib.parse import urljoin
 
-from twisted.web import server, resource, static, util
+from twisted.web import resource, server, static, util
 
 
 class SiteTest:

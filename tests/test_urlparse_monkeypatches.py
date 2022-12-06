@@ -1,5 +1,5 @@
-from urllib.parse import urlparse
 import unittest
+from urllib.parse import urlparse
 
 
 class UrlparseTestCase(unittest.TestCase):

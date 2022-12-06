@@ -1,14 +1,16 @@
 from urllib.parse import urlparse
 
 from twisted.internet import reactor
-from twisted.names import cache, hosts as hostsModule, resolve
+from twisted.names import cache
+from twisted.names import hosts as hostsModule
+from twisted.names import resolve
 from twisted.names.client import Resolver
 from twisted.python.runtime import platform
 
-from scrapy import Spider, Request
+from scrapy import Request, Spider
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
-from tests.mockserver import MockServer, MockDNSServer
+from tests.mockserver import MockDNSServer, MockServer
 
 
 # https://stackoverflow.com/a/32784190

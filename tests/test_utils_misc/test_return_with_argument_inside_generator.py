@@ -3,7 +3,10 @@ import warnings
 from functools import partial
 from unittest import mock
 
-from scrapy.utils.misc import is_generator_with_return_value, warn_on_generator_with_return_value
+from scrapy.utils.misc import (
+    is_generator_with_return_value,
+    warn_on_generator_with_return_value,
+)
 
 
 def _indentation_error(*args, **kwargs):

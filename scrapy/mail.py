@@ -17,7 +17,6 @@ from twisted.internet import defer, ssl
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
-
 logger = logging.getLogger(__name__)
 
 

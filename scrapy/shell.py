@@ -7,7 +7,7 @@ import os
 import signal
 
 from itemadapter import is_item
-from twisted.internet import threads, defer
+from twisted.internet import defer, threads
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 

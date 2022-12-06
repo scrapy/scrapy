@@ -2,9 +2,9 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
+from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from io import StringIO
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object

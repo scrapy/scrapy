@@ -5,11 +5,11 @@ repos:
       - id: isort
         name: isort (python)
         args: ["--profile", "black", "--filter-files"]
-  - repo: https://github.com/psf/black
-    rev: 21.12b0
-    hooks:
-      - id: black
-  - repo: https://github.com/pycqa/flake8
-    rev: 3.8.4
-    hooks:
-      - id: flake8
+  # - repo: https://github.com/psf/black
+  #   rev: 21.12b0
+  #   hooks:
+  #     - id: black
+  # - repo: https://github.com/pycqa/flake8
+  #   rev: 3.8.4
+  #   hooks:
+  #     - id: flake8

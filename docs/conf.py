@@ -119,6 +119,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add path to the RTD explicitly to robustify builds (otherwise might
 # fail in a clean Debian build env)
 import sphinx_rtd_theme
+
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name

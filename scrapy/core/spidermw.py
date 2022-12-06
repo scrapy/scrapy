@@ -6,7 +6,17 @@ See documentation in docs/topics/spider-middleware.rst
 import logging
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
-from typing import Any, AsyncGenerator, AsyncIterable, Callable, Generator, Iterable, Tuple, Union, cast
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    Callable,
+    Generator,
+    Iterable,
+    Tuple,
+    Union,
+    cast,
+)
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -17,9 +27,13 @@ from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import mustbe_deferred, deferred_from_coro, deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+    mustbe_deferred,
+)
 from scrapy.utils.python import MutableAsyncChain, MutableChain
-
 
 logger = logging.getLogger(__name__)
 

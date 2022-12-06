@@ -3,15 +3,15 @@ import os
 import re
 import sys
 from pathlib import Path
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from urllib.parse import urlsplit, urlunsplit
+
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
 

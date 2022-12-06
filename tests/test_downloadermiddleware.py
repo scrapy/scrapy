@@ -4,15 +4,15 @@ from unittest import mock
 from pytest import mark
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
-from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase
 
+from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
-from scrapy.exceptions import _InvalidOutput
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from scrapy.utils.python import to_bytes
+from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 
 
 class ManagerTestCase(TestCase):

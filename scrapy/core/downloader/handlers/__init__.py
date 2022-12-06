@@ -10,7 +10,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import without_none_values
 
-
 logger = logging.getLogger(__name__)
 
 
