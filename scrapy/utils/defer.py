@@ -267,7 +267,14 @@ def deferred_from_coro(o) -> Any:
             # that use asyncio, e.g. "await asyncio.sleep(1)"
             return ensureDeferred(o)
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-        event_loop = get_asyncio_event_loop_policy().get_event_loop()
+        policy = get_asyncio_event_loop_policy()
+        try:
+            # getting event loop fails when run from separate thread like when using scrapy shell
+            event_loop = policy.get_event_loop()
+        except RuntimeError:
+            # create and set new event loop for this thread
+            event_loop = policy.new_event_loop()
+            asyncio.set_event_loop(event_loop)
         return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
     return o
 

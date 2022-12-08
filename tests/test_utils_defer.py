@@ -1,13 +1,19 @@
 import random
+import threading
+import asyncio
 
 from pytest import mark
 from twisted.trial import unittest
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, asyncioreactor
+from twisted.internet.error import ReactorAlreadyInstalledError
+from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
 from scrapy.utils.asyncgen import collect_asyncgen, as_async_generator
+from scrapy.utils.reactor import is_asyncio_reactor_installed, get_asyncio_event_loop_policy
 from scrapy.utils.defer import (
     aiter_errback,
+    deferred_from_coro,
     deferred_f_from_coro_f,
     iter_errback,
     maybe_deferred_to_future,
@@ -229,3 +235,27 @@ class AsyncCooperatorTest(unittest.TestCase):
             dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
             yield dl
             self.assertEqual(list(range(length)), sorted(results))
+
+
+class DeferredFromCoroTest(unittest.TestCase):
+
+    async def test_coro(self):
+        pass
+
+    def test_deferred_from_coro(self):
+        coro = self.test_coro()
+        deferred = deferred_from_coro(coro)
+        self.assertIsInstance(deferred, Deferred)
+
+    def test_threaded_deferred_from_coro(self):
+        if not is_asyncio_reactor_installed():
+            policy = get_asyncio_event_loop_policy()
+            asyncio.set_event_loop_policy(policy)
+            asyncio.set_event_loop(policy.new_event_loop())
+            try:
+                asyncioreactor.install()
+            except ReactorAlreadyInstalledError:
+                pass
+        worker = threading.Thread(target=self.test_coro)
+        worker.start()
+        worker.join()
