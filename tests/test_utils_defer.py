@@ -1,16 +1,16 @@
 import random
-import threading
-import asyncio
 
 from pytest import mark
 from twisted.trial import unittest
-from twisted.internet import reactor, defer, asyncioreactor
-from twisted.internet.error import ReactorAlreadyInstalledError
+from twisted.internet import defer, reactor
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
 from scrapy.utils.asyncgen import collect_asyncgen, as_async_generator
-from scrapy.utils.reactor import is_asyncio_reactor_installed, get_asyncio_event_loop_policy
+from scrapy.utils.reactor import (
+    is_asyncio_reactor_installed,
+    get_asyncio_event_loop_policy
+)
 from scrapy.utils.defer import (
     aiter_errback,
     deferred_from_coro,
@@ -238,6 +238,20 @@ class AsyncCooperatorTest(unittest.TestCase):
 
 
 class DeferredFromCoroTest(unittest.TestCase):
+    """This tests the deferred_from_coro function in scrapy.utils.defer module.
+
+    To simulate calling the function from a seperate thread with the
+    AsyncioSelectorReactor installed as is the case when using the fetch function
+    from scrapy shell, a mock event loop policy object is provided.
+    """
+
+    class MockEventLoopPolicy:
+
+        def get_event_loop(self):
+            raise RuntimeError("Testing No Event Loop")
+
+        def new_event_loop(self):
+            return get_asyncio_event_loop_policy().new_event_loop()
 
     async def test_coro(self):
         pass
@@ -247,15 +261,23 @@ class DeferredFromCoroTest(unittest.TestCase):
         deferred = deferred_from_coro(coro)
         self.assertIsInstance(deferred, Deferred)
 
-    def test_threaded_deferred_from_coro(self):
-        if not is_asyncio_reactor_installed():
-            policy = get_asyncio_event_loop_policy()
-            asyncio.set_event_loop_policy(policy)
-            asyncio.set_event_loop(policy.new_event_loop())
-            try:
-                asyncioreactor.install()
-            except ReactorAlreadyInstalledError:
-                pass
-        worker = threading.Thread(target=self.test_coro)
-        worker.start()
-        worker.join()
+    def test_deferred_from_coro_with_deferred(self):
+        deferred = deferred_from_coro(self.test_coro())
+        self.assertIsInstance(deferred_from_coro(deferred), Deferred)
+
+    def test_deferred_from_coro_with_None(self):
+        self.assertIsNone(deferred_from_coro(None))
+
+    def test_deferred_from_coro_without_event_loop(self):
+        import scrapy
+        scrapy.utils.defer.get_asyncio_event_loop_policy = (
+            lambda: self.MockEventLoopPolicy()
+        )
+        scrapy.utils.defer.is_asyncio_reactor_installed = lambda: True
+        self.assertIsNone(self.test_deferred_from_coro())
+        scrapy.utils.defer.get_asyncio_event_loop_policy = (
+            get_asyncio_event_loop_policy
+        )
+        scrapy.utils.defer.is_asyncio_reactor_installed = (
+            is_asyncio_reactor_installed
+        )
