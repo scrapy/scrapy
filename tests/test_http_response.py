@@ -2,14 +2,16 @@ import codecs
 import unittest
 from unittest import mock
 
+from pkg_resources import parse_version
+from w3lib import __version__ as w3lib_version
 from w3lib.encoding import resolve_encoding
 
-from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
-                         XmlResponse, Headers)
+from scrapy.exceptions import NotSupported
+from scrapy.http import (Headers, HtmlResponse, Request, Response,
+                         TextResponse, XmlResponse)
+from scrapy.link import Link
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
-from scrapy.exceptions import NotSupported
-from scrapy.link import Link
 from tests import get_testdata
 
 
@@ -180,12 +182,18 @@ class BaseResponseTest(unittest.TestCase):
         self.assertRaises(ValueError, r.follow, None)
 
     def test_follow_whitespace_url(self):
+        target_url = 'http://example.com/foo'
+        if parse_version(w3lib_version) < parse_version("2.1.1"):
+            target_url += '%20'
         self._assert_followed_url('foo ',
-                                  'http://example.com/foo%20')
+                                  target_url)
 
     def test_follow_whitespace_link(self):
+        target_url = 'http://example.com/foo'
+        if parse_version(w3lib_version) < parse_version("2.1.1"):
+            target_url += '%20'
         self._assert_followed_url(Link('http://example.com/foo '),
-                                  'http://example.com/foo%20')
+                                  target_url)
 
     def test_follow_flags(self):
         res = self.response_class('http://example.com/')
