@@ -2,7 +2,8 @@ import codecs
 import unittest
 from unittest import mock
 
-from pkg_resources import parse_version
+from packaging.version import Version as parse_version
+from pytest import mark
 from w3lib import __version__ as w3lib_version
 from w3lib.encoding import resolve_encoding
 
@@ -181,19 +182,23 @@ class BaseResponseTest(unittest.TestCase):
         r = self.response_class("http://example.com")
         self.assertRaises(ValueError, r.follow, None)
 
+    @mark.xfail(
+        parse_version(w3lib_version) >= parse_version("2.1.1"),
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
     def test_follow_whitespace_url(self):
-        target_url = 'http://example.com/foo'
-        if parse_version(w3lib_version) < parse_version("2.1.1"):
-            target_url += '%20'
         self._assert_followed_url('foo ',
-                                  target_url)
+                                  'http://example.com/foo%20')
 
+    @mark.xfail(
+        parse_version(w3lib_version) >= parse_version("2.1.1"),
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
     def test_follow_whitespace_link(self):
-        target_url = 'http://example.com/foo'
-        if parse_version(w3lib_version) < parse_version("2.1.1"):
-            target_url += '%20'
         self._assert_followed_url(Link('http://example.com/foo '),
-                                  target_url)
+                                  'http://example.com/foo%20')
 
     def test_follow_flags(self):
         res = self.response_class('http://example.com/')
