@@ -183,22 +183,22 @@ class BaseResponseTest(unittest.TestCase):
         self.assertRaises(ValueError, r.follow, None)
 
     @mark.xfail(
-        parse_version(w3lib_version) >= parse_version("2.1.1"),
+        parse_version(w3lib_version) < parse_version("2.1.1"),
         reason="https://github.com/scrapy/w3lib/pull/207",
         strict=True,
     )
     def test_follow_whitespace_url(self):
         self._assert_followed_url('foo ',
-                                  'http://example.com/foo%20')
+                                  'http://example.com/foo')
 
     @mark.xfail(
-        parse_version(w3lib_version) >= parse_version("2.1.1"),
+        parse_version(w3lib_version) < parse_version("2.1.1"),
         reason="https://github.com/scrapy/w3lib/pull/207",
         strict=True,
     )
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
-                                  'http://example.com/foo%20')
+                                  'http://example.com/foo')
 
     def test_follow_flags(self):
         res = self.response_class('http://example.com/')
