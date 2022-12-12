@@ -33,8 +33,9 @@ from zope.interface.verify import verifyObject
 
 import scrapy
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.exporters import CsvItemExporter
+from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
+    _FeedSlot,
     BlockingFeedStorage,
     FeedExporter,
     FileFeedStorage,
@@ -889,6 +890,60 @@ class FeedExportTest(FeedExportTestBase):
             }
             data = yield self.exported_no_data(settings)
             self.assertEqual(b'', data[fmt])
+
+    @defer.inlineCallbacks
+    def test_finish_exporting_is_called(self):
+        # for each format, keep track of when start_exporting
+        # has been called but finish_exporting hasn't been called
+        startRecordingTracker = {}
+        # we expect finish_recording to be called, setting this to false
+        expected = {'json': False}
+
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+        ]
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+            },
+            'FEED_EXPORT_INDENT': None,
+        }
+
+        # override export_item to raise exception
+        class FakeJsonItemExporter(JsonItemExporter):
+            def export_item(self, item):
+                raise Exception('foo')
+
+        # override start/stop_exporting to modify startRecordingTracker
+        class FakeFeedSlot(_FeedSlot):
+            def start_exporting(self):
+                startRecordingTracker[self.format] = True
+                if not self._exporting:
+                    self.exporter.start_exporting()
+                    self._exporting = True
+            
+            def finish_exporting(self):
+                print('finish export called')
+                startRecordingTracker[self.format] = False
+                if self._exporting:
+                    self.exporter.finish_exporting()
+                    self._exporting = False
+            
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                mock.patch(
+                    'scrapy.exporters.JsonItemExporter', FakeJsonItemExporter
+                )
+            )
+            stack.enter_context(
+                mock.patch(
+                    'scrapy.extensions.feedexport._FeedSlot', FakeFeedSlot
+                )
+            )
+            _ = yield self.exported_data(items, settings)
+            self.assertDictEqual(startRecordingTracker, expected)
+
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
