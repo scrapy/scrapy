@@ -931,7 +931,47 @@ class FeedExportTest(FeedExportTestBase):
             self.assertEqual(b'', data[fmt])
 
     @defer.inlineCallbacks
-    def test_finish_exporting_is_called(self):
+    def test_start_finish_exporting_items(self):
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+        ]
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+            },
+            'FEED_EXPORT_INDENT': None,
+        }
+
+        listener = IsExportingListener()
+        InstrumentedFeedSlot.subscribe__listener(listener)
+
+        with mock.patch('scrapy.extensions.feedexport._FeedSlot',
+                        InstrumentedFeedSlot):
+            _ = yield self.exported_data(items, settings)
+            self.assertFalse(listener.start_without_finish)
+            self.assertFalse(listener.finish_without_start)
+
+    @defer.inlineCallbacks
+    def test_start_finish_exporting_no_items(self):
+        items = []
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+            },
+            'FEED_EXPORT_INDENT': None,
+        }
+
+        listener = IsExportingListener()
+        InstrumentedFeedSlot.subscribe__listener(listener)
+
+        with mock.patch('scrapy.extensions.feedexport._FeedSlot',
+                        InstrumentedFeedSlot):
+            _ = yield self.exported_data(items, settings)
+            self.assertFalse(listener.start_without_finish)
+            self.assertFalse(listener.finish_without_start)
+
+    @defer.inlineCallbacks
+    def test_start_finish_exporting_items_exception(self):
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
         ]
@@ -952,6 +992,25 @@ class FeedExportTest(FeedExportTestBase):
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
 
+    @defer.inlineCallbacks
+    def test_start_finish_exporting_no_items_exception(self):
+        items = []
+        settings = {
+            'FEEDS': {
+                self._random_temp_filename(): {'format': 'json'},
+            },
+            'FEED_EXPORTERS': {'json': ExceptionJsonItemExporter},
+            'FEED_EXPORT_INDENT': None,
+        }
+
+        listener = IsExportingListener()
+        InstrumentedFeedSlot.subscribe__listener(listener)
+
+        with mock.patch('scrapy.extensions.feedexport._FeedSlot',
+                        InstrumentedFeedSlot):
+            _ = yield self.exported_data(items, settings)
+            self.assertFalse(listener.start_without_finish)
+            self.assertFalse(listener.finish_without_start)
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
