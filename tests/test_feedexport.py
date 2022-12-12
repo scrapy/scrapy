@@ -680,20 +680,22 @@ class FeedExportTestBase(ABC, unittest.TestCase):
                     break
         return result
 
+
 class InstrumentedFeedSlot(_FeedSlot):
     """Instrumented _FeedSlot subclass for keeping track of calls to
     start_exporting and finish_exporting."""
     def start_exporting(self):
         self.update_listener('start')
         super().start_exporting()
-    
+
     def finish_exporting(self):
         self.update_listener('finish')
         super().start_exporting()
-    
+
     @classmethod
     def subscribe__listener(cls, listener):
         cls.update_listener = listener.update
+
 
 class IsExportingListener:
     """When subscribed to InstrumentedFeedSlot, keeps track of when
