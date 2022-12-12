@@ -261,6 +261,17 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 
 .. _spiderargs:
 
+
+Spider.update_settings
+=======
+
+The Scrapy settings allows you to customize the behaviour of all Scrapy components, including the core, extensions, pipelines and spiders themselves. Settings is immutable but has number of set methods for example `settings.set`. The latest version of Scrapy (beginning from 1.0) spiders has a class method `update_settings` which is intended to override settings with the ones presented in the `custom_settings` property of the spider.
+
+    @classmethod
+    def update_settings(cls, settings):
+        settings.setdict(cls.custom_settings or {}, priority='spider')
+
+
 Spider arguments
 ================
 
