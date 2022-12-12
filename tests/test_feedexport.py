@@ -680,6 +680,45 @@ class FeedExportTestBase(ABC, unittest.TestCase):
                     break
         return result
 
+class InstrumentedFeedSlot(_FeedSlot):
+    """Instrumented _FeedSlot subclass for keeping track of calls to
+    start_exporting and finish_exporting."""
+    def start_exporting(self):
+        self.update_listener('start')
+        super().start_exporting()
+    
+    def finish_exporting(self):
+        self.update_listener('finish')
+        super().start_exporting()
+    
+    @classmethod
+    def subscribe__listener(cls, listener):
+        cls.update_listener = listener.update
+
+class IsExportingListener:
+    """When subscribed to InstrumentedFeedSlot, keeps track of when
+    a call to start_exporting has been made without a closing call to
+    finish_exporting and when a call to finis_exporting has been made
+    before a call to start_exporting."""
+    def __init__(self):
+        self.start_without_finish = False
+        self.finish_without_start = False
+
+    def update(self, method):
+        if method == 'start':
+            self.start_without_finish = True
+        elif method == 'finish':
+            if self.start_without_finish:
+                self.start_without_finish = False
+            else:
+                self.finish_before_start = True
+
+
+class ExceptionJsonItemExporter(JsonItemExporter):
+    """JsonItemExporter that throws an exception every time export_item is called."""
+    def export_item(self, _):
+        raise Exception('foo')
+
 
 class FeedExportTest(FeedExportTestBase):
     __test__ = True
@@ -893,12 +932,6 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_finish_exporting_is_called(self):
-        # for each format, keep track of when start_exporting
-        # has been called but finish_exporting hasn't been called
-        startRecordingTracker = {}
-        # we expect finish_recording to be called, setting this to false
-        expected = {'json': False}
-
         items = [
             self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
         ]
@@ -906,43 +939,18 @@ class FeedExportTest(FeedExportTestBase):
             'FEEDS': {
                 self._random_temp_filename(): {'format': 'json'},
             },
+            'FEED_EXPORTERS': {'json': ExceptionJsonItemExporter},
             'FEED_EXPORT_INDENT': None,
         }
 
-        # override export_item to raise exception
-        class FakeJsonItemExporter(JsonItemExporter):
-            def export_item(self, item):
-                raise Exception('foo')
+        listener = IsExportingListener()
+        InstrumentedFeedSlot.subscribe__listener(listener)
 
-        # override start/stop_exporting to modify startRecordingTracker
-        class FakeFeedSlot(_FeedSlot):
-            def start_exporting(self):
-                startRecordingTracker[self.format] = True
-                if not self._exporting:
-                    self.exporter.start_exporting()
-                    self._exporting = True
-            
-            def finish_exporting(self):
-                print('finish export called')
-                startRecordingTracker[self.format] = False
-                if self._exporting:
-                    self.exporter.finish_exporting()
-                    self._exporting = False
-            
-
-        with ExitStack() as stack:
-            stack.enter_context(
-                mock.patch(
-                    'scrapy.exporters.JsonItemExporter', FakeJsonItemExporter
-                )
-            )
-            stack.enter_context(
-                mock.patch(
-                    'scrapy.extensions.feedexport._FeedSlot', FakeFeedSlot
-                )
-            )
+        with mock.patch('scrapy.extensions.feedexport._FeedSlot',
+                        InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
-            self.assertDictEqual(startRecordingTracker, expected)
+            self.assertFalse(listener.start_without_finish)
+            self.assertFalse(listener.finish_without_start)
 
 
     @defer.inlineCallbacks
