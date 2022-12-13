@@ -171,7 +171,7 @@ scrapy.Spider
                    # here you would extract links to follow and return Requests for
                    # each of them, with another callback
                    pass
-
+                   
    .. method:: parse(response)
 
        This is the default callback used by Scrapy to process downloaded
@@ -261,21 +261,21 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 
 .. _spiderargs:
 
-::
-    Override Spider.update_settings Method
 
-    In the Python Scrapy framework, you can override the ``update_settings`` method in your spider classes. To do this, you can define your own ``update_settings`` method in your spider class and include any code you want to use to modify the settings.
+Override Spider.update_settings Method
 
-    Here is an example of how to override the ``update_settings`` method in a spider class called ``MySpider``::
+In the Python Scrapy framework, you can override the ``update_settings`` method in your spider classes. To do this, you can define your own ``update_settings`` method in your spider class and include any code you want to use to modify the settings.
 
-        class MySpider(scrapy.Spider):
-            name = 'myspider'
+Here is an example of how to override the ``update_settings`` method in a spider class called ``MySpider``::
 
-            def update_settings(self, settings):
-                # Modify the settings for this spider here
-                settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
 
-    In this example, we have defined a ``MySpider`` class that is a subclass of ``scrapy.Spider``. We have overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` to the value ``my_custom_value``. You can add any code you want to this method to modify the settings for your spider as needed.
+        def update_settings(self, settings):
+            # Modify the settings for this spider here
+            settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+
+In this example, we have defined a ``MySpider`` class that is a subclass of ``scrapy.Spider``. We have overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` to the value ``my_custom_value``. You can add any code you want to this method to modify the settings for your spider as needed.
 
 
 
