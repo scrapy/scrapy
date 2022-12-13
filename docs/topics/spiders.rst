@@ -261,7 +261,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 
 .. _spiderargs:
 
-
+::
     Override Spider.update_settings Method
 
     In the Python Scrapy framework, you can override the ``update_settings`` method in your spider classes. To do this, you can define your own ``update_settings`` method in your spider class and include any code you want to use to modify the settings.
