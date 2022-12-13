@@ -262,14 +262,21 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 .. _spiderargs:
 
 
-Spider.update_settings
-=======
+method: Spider.update_settings
 
-The Scrapy settings allows you to customize the behaviour of all Scrapy components, including the core, extensions, pipelines and spiders themselves. Settings is immutable but has number of set methods for example ``settings.set``. The latest version of Scrapy (beginning from 1.0) spiders has a class method ``update_settings`` which is intended to override settings with the ones presented in the ``custom_settings`` property of the spider::
+In the Python Scrapy framework, you can override the update_settings method in your spider classes to modify the settings for those classes. To do this, you can define your own update_settings method in your spider class and include any code you want to use to modify the settings.
 
-    @classmethod
-    def update_settings(cls, settings):
-        settings.setdict(cls.custom_settings or {}, priority='spider')
+Here is an example of how you might override the update_settings method in a spider class called MySpider::
+
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+
+        def update_settings(self, settings):
+            # Modify the settings for this spider here
+            settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+
+In this example, we have defined a MySpider class that is a subclass of scrapy.Spider. We have overridden the update_settings method to set a custom setting called MY_CUSTOM_SETTING to the value 'my_custom_value'. You can add any code you want to this method to modify the settings for your spider as needed.
+
 
 
 Spider arguments
