@@ -275,7 +275,7 @@ Here is an example of how you might override the ``update_settings`` method in a
             # Modify the settings for this spider here
             settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
 
-In this example, we have defined a ``MySpider`` class that is a subclass of ``scrapy.Spider``. We have overridden the ``update_settings`` method to set a custom setting called ``MY_CUSTOM_SETTING`` to the value 'my_custom_value'. You can add any code you want to this method to modify the settings for your spider as needed.
+In this example, we have defined a ``MySpider`` class that is a subclass of ``scrapy.Spider``. We have overridden the ``update_settings`` method to set a custom setting called ``MY_CUSTOM_SETTING`` to the value ``my_custom_value``. You can add any code you want to this method to modify the settings for your spider as needed.
 
 
 
