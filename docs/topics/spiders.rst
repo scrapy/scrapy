@@ -268,7 +268,7 @@ Override Spider.update_settings Method::
     To do this, you can define your own ``update_settings`` method in your spider class and include any code
     you want to use to modify the settings.
 
-    Here is an example of how to override the ``update_settings`` method in a spider class called ``MySpider``::
+    Here is an example of how to override the ``update_settings`` method in a spider class called ``MySpider``:
 
         class MySpider(scrapy.Spider):
             name = 'myspider'
