@@ -80,6 +80,7 @@ def install_reactor(reactor_path, event_loop_path=None):
         with suppress(error.ReactorAlreadyInstalledError):
             installer()
 
+
 def set_asyncio_event_loop(event_loop_path):
     """Sets and returns the event loop with specified import path."""
     policy = get_asyncio_event_loop_policy()
