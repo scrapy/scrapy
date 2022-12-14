@@ -71,14 +71,7 @@ def install_reactor(reactor_path, event_loop_path=None):
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
-            policy = get_asyncio_event_loop_policy()
-            if event_loop_path is not None:
-                event_loop_class = load_object(event_loop_path)
-                event_loop = event_loop_class()
-                asyncio.set_event_loop(event_loop)
-            else:
-                event_loop = policy.get_event_loop()
-
+            event_loop = set_asyncio_event_loop(event_loop_path)
             asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")
@@ -86,6 +79,24 @@ def install_reactor(reactor_path, event_loop_path=None):
         installer = load_object(".".join(installer_path))
         with suppress(error.ReactorAlreadyInstalledError):
             installer()
+
+def set_asyncio_event_loop(event_loop_path):
+    """Sets and returns the event loop with specified import path."""
+    policy = get_asyncio_event_loop_policy()
+    if event_loop_path is not None:
+        event_loop_class = load_object(event_loop_path)
+        event_loop = event_loop_class()
+        asyncio.set_event_loop(event_loop)
+    else:
+        try:
+            event_loop = policy.get_event_loop()
+        except RuntimeError:
+            # `get_event_loop` is expected to fail when called from a new thread
+            # with no asyncio event loop yet installed. Such is the case when
+            # called from `scrapy shell`
+            event_loop = policy.new_event_loop()
+            asyncio.set_event_loop(event_loop)
+    return event_loop
 
 
 def verify_installed_reactor(reactor_path):
