@@ -652,8 +652,10 @@ per ip address instead of per domain.
 
 .. _spider-download_delay-attribute:
 
-You can also change this setting per spider by setting ``download_delay``
-spider attribute.
+Note
+
+This delay can be set per spider using :attr:`download_delay` spider attribute.
+
 
 .. setting:: DOWNLOAD_HANDLERS
 
