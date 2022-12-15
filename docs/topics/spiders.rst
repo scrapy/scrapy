@@ -262,25 +262,26 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 .. _spiderargs:
 
 
-Override Spider.update_settings Method::
+    Override Spider.update_settings Method
+        Overriding the Spider.update_settings method allows you to modify the settings of a spider.
+        Using this method is preferable to using custom_settings when making spiders class hierarchies 
+        as parent custom_settings is shadowed but parent update_settings() can be called.
 
-    In the Python Scrapy framework, you can override the ``update_settings`` method in your spider classes. 
-    To do this, you can define your own ``update_settings`` method in your spider class and include any code
-    you want to use to modify the settings.
+here is an example overriding update_settings::
 
-    Here is an example of how to override the ``update_settings`` method in a spider class called ``MySpider``:
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
 
-        class MySpider(scrapy.Spider):
-            name = 'myspider'
+        def update_settings(self, settings):
+            # Modify the settings for this spider here
+            settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+            
+            # Calls the parent method
+            super(MySpider, self).update_settings(settings)
 
-            def update_settings(self, settings):
-                # Modify the settings for this spider here
-                settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
 
-    In this example, we have defined a ``MySpider`` class that is a subclass of ``scrapy.Spider``. We 
-    have overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` 
-    to the value ``my_custom_value``. You can add any code you want to this method to modify the settings 
-    for your spider as needed.
+        Here we have overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` 
+        to the value ``my_custom_value``.
 
 
 
