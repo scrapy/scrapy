@@ -146,7 +146,7 @@ scrapy.Spider
        :type kwargs: dict
 
    .. method:: start_requests()
-
+        
        This method must return an iterable with the first Requests to crawl for
        this spider. It is called by Scrapy when the spider is opened for
        scraping. Scrapy calls it only once, so it is safe to implement
@@ -270,6 +270,10 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
        Using this method is preferable to using custom_settings when making spiders class hierarchies 
        as parent custom_settings is shadowed but parent update_settings() can be called.
 
+   .. method:: closed(reason)
+
+       Called when the spider closes. This method provides a shortcut to
+       signals.connect() for the :signal:`spider_closed` signal.
 
 here is an example overriding Spider.update_settings::
 
