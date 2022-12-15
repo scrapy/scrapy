@@ -262,7 +262,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 .. _spiderargs:
 
 
-.. codeblock::
+.. ::
 
     Override Spider.update_settings Method
 
