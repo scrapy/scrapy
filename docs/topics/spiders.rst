@@ -284,7 +284,7 @@ here is an example overriding Spider.update_settings::
             super(MySpider, self).update_settings(settings)
 
 
-        Here we have overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` 
+        Overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` 
         to the value ``my_custom_value``.
 
 
