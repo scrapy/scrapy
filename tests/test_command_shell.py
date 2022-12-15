@@ -115,3 +115,14 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         errcode, out, err = yield self.execute([url, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'DNS lookup failed', err)
+
+    @defer.inlineCallbacks
+    def test_shell_fetch_async(self):
+        reactor_path = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+        url = self.url('/html')
+        code = f"fetch('{url}')"
+        args = ["-c", code, "--set", f"TWISTED_REACTOR={reactor_path}"]
+        _, _, err = yield self.execute(args, check_code=True)
+        self.assertNotIn(
+            b"RuntimeError: There is no current event loop in thread", err
+        )
