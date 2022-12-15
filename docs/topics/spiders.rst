@@ -265,15 +265,11 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 
 
    Override Spider.update_settings Method
+   
+        Overriding the Spider.update_settings method allows you to modify the settings of a spider.
+        Using this method is preferable to using custom_settings when making spiders class hierarchies 
+        as parent custom_settings is shadowed but parent update_settings() can be called.
 
-       Overriding the Spider.update_settings method allows you to modify the settings of a spider.
-       Using this method is preferable to using custom_settings when making spiders class hierarchies 
-       as parent custom_settings is shadowed but parent update_settings() can be called.
-
-   .. method:: closed(reason)
-
-       Called when the spider closes. This method provides a shortcut to
-       signals.connect() for the :signal:`spider_closed` signal.
 
 here is an example overriding Spider.update_settings::
 
