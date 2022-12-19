@@ -4725,7 +4725,7 @@ Enhancements
 - [**Backward incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
   To restore old backend set ``HTTPCACHE_STORAGE`` to ``scrapy.contrib.httpcache.DbmCacheStorage``
 - Proxy \https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
-- Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
+- Add a middleware to crawl ajax crawlable pages as defined by google (:issue:`343`)
 - Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
 - Selectors register EXSLT namespaces by default (:issue:`472`)
 - Unify item loaders similar to selectors renaming (:issue:`461`)
@@ -4905,7 +4905,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 -----------------------------------
 
 - Lot of improvements to testsuite run using Tox, including a way to test on pypi
-- Handle GET parameters for AJAX crawleable urls (:commit:`3fe2a32`)
+- Handle GET parameters for AJAX crawlable urls (:commit:`3fe2a32`)
 - Use lxml recover option to parse sitemaps (:issue:`347`)
 - Bugfix cookie merging by hostname and not by netloc (:issue:`352`)
 - Support disabling ``HttpCompressionMiddleware`` using a flag setting (:issue:`359`)
@@ -5148,7 +5148,7 @@ Scrapy 0.14
 New features and settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Support for `AJAX crawleable urls`_
+- Support for `AJAX crawlable urls`_
 - New persistent scheduler that stores requests on disk, allowing to suspend and resume crawls (:rev:`2737`)
 - added ``-o`` option to ``scrapy crawl``, a shortcut for dumping scraped items into a file (or standard output using ``-``)
 - Added support for passing custom settings to Scrapyd ``schedule.json`` api (:rev:`2779`, :rev:`2783`)
@@ -5419,7 +5419,7 @@ Scrapy 0.7
 First release of Scrapy.
 
 
-.. _AJAX crawleable urls: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started?csw=1
+.. _AJAX crawlable urls: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started?csw=1
 .. _botocore: https://github.com/boto/botocore
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
