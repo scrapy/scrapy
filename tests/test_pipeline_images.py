@@ -182,7 +182,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             SIZE = (100, 100)
-            # straigh forward case: RGB and JPEG
+            # straight forward case: RGB and JPEG
             COLOUR = (0, 127, 255)
             im, _ = _create_image('JPEG', 'RGB', SIZE, COLOUR)
             converted, _ = self.pipeline.convert_image(im)
@@ -216,7 +216,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
     def test_convert_image_new(self):
         # tests for new API
         SIZE = (100, 100)
-        # straigh forward case: RGB and JPEG
+        # straight forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
         im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)
