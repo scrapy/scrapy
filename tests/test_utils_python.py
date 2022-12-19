@@ -160,7 +160,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         b = Obj()
         # no attributes given return False
         self.assertFalse(equal_attributes(a, b, []))
-        # not existent attributes
+        # nonexistent attributes
         self.assertFalse(equal_attributes(a, b, ['x', 'y']))
 
         a.x = 1

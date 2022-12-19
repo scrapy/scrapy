@@ -150,7 +150,7 @@ class CrawlTestCase(TestCase):
             raise unittest.SkipTest("Non-existing hosts are resolvable")
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
-            # try to fetch the homepage of a non-existent domain
+            # try to fetch the homepage of a nonexistent domain
             yield crawler.crawl("http://dns.resolution.invalid./", mockserver=self.mockserver)
         self._assert_retried(log)
 

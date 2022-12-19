@@ -1050,8 +1050,8 @@ class BaseFTPTestCase(unittest.TestCase):
 
         return self._add_test_callbacks(d, _test)
 
-    def test_ftp_download_notexist(self):
-        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/notexist.txt",
+    def test_ftp_download_nonexistent(self):
+        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/nonexistent.txt",
                           meta=self.req_meta)
         d = self.download_handler.download_request(request, None)
 
