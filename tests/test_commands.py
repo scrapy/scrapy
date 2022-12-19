@@ -316,7 +316,7 @@ class StartprojectTemplatesTest(ProjectTest):
         self.assertEqual(actual_permissions, expected_permissions)
 
     def test_startproject_permissions_unchanged_in_destination(self):
-        """Check that pre-existing folders and files in the destination folder
+        """Check that preexisting folders and files in the destination folder
         do not see their permissions modified."""
         scrapy_path = scrapy.__path__[0]
         project_template = Path(scrapy_path, 'templates', 'project')
