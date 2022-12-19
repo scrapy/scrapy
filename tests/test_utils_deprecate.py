@@ -69,7 +69,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertIn('foo.NewClass', str(w[1].message))
         self.assertIn('bar.OldClass', str(w[1].message))
 
-    def test_subclassing_warns_only_on_direct_childs(self):
+    def test_subclassing_warns_only_on_direct_children(self):
         Deprecated = create_deprecated_class('Deprecated', NewName,
                                              warn_once=False,
                                              warn_category=MyWarning)
