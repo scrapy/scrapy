@@ -690,7 +690,7 @@ class InstrumentedFeedSlot(_FeedSlot):
 
     def finish_exporting(self):
         self.update_listener('finish')
-        super().start_exporting()
+        super().finish_exporting()
 
     @classmethod
     def subscribe__listener(cls, listener):
