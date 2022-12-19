@@ -5082,7 +5082,7 @@ Scrapy changes:
 - promoted :ref:`topics-djangoitem` to main contrib
 - LogFormatter method now return dicts(instead of strings) to support lazy formatting (:issue:`164`, :commit:`dcef7b0`)
 - downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the ``__init__`` method
-- replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
+- replaced memory usage accounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
 - removed signal: ``scrapy.mail.mail_sent``
 - removed ``TRACK_REFS`` setting, now :ref:`trackrefs <topics-leaks-trackrefs>` is always enabled
 - DBM is now the default storage backend for HTTP cache middleware
