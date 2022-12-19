@@ -177,7 +177,7 @@ class CrawlTestCase(TestCase):
         self.assertIs(record.exc_info[0], ZeroDivisionError)
 
     @defer.inlineCallbacks
-    def test_start_requests_lazyness(self):
+    def test_start_requests_laziness(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = get_crawler(BrokenStartRequestsSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
