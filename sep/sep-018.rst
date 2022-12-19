@@ -594,18 +594,18 @@ A middleware to Scrape data using Parsley as described in UsingParsley
 
    class ParsleyExtractor(object):
 
-       def __init__(self, parslet_json_code):
-           parslet = json.loads(parselet_json_code)
+       def __init__(self, parsley_json_code):
+           parsley = json.loads(parselet_json_code)
            class ParsleyItem(Item):
                def __init__(self, *a, **kw):
-                   for name in parslet.keys():
+                   for name in parsley.keys():
                        self.fields[name] = Field()
                super(ParsleyItem, self).__init__(*a, **kw)
            self.item_class = ParsleyItem    
-           self.parsley = PyParsley(parslet, output='python') 
+           self.parsley = PyParsley(parsley, output='python') 
 
        def process_response(self, response, request, spider):
-           return self.item_class(self.parsly.parse(string=response.body))
+           return self.item_class(self.parsley.parse(string=response.body))
 
 
 
