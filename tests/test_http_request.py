@@ -355,7 +355,7 @@ class RequestTest(unittest.TestCase):
             )
             self.assertEqual(r.method, "DELETE")
 
-        # If `ignore_unknon_options` is set to `False` it raises an error with
+        # If `ignore_unknown_options` is set to `False` it raises an error with
         # the unknown options: --foo and -z
         self.assertRaises(
             ValueError,
