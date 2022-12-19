@@ -147,8 +147,8 @@ class ImagesPipeline(FilesPipeline):
         if self._deprecated_convert_image is None:
             self._deprecated_convert_image = 'response_body' not in get_func_args(self.convert_image)
             if self._deprecated_convert_image:
-                warnings.warn(f'{self.__class__.__name__}.convert_image() method overriden in a deprecated way, '
-                              'overriden method does not accept response_body argument.',
+                warnings.warn(f'{self.__class__.__name__}.convert_image() method overridden in a deprecated way, '
+                              'overridden method does not accept response_body argument.',
                               category=ScrapyDeprecationWarning)
 
         if self._deprecated_convert_image:

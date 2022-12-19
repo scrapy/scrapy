@@ -173,8 +173,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
                 self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
                 self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
 
-                expected_warning_msg = ('.convert_image() method overriden in a deprecated way, '
-                                        'overriden method does not accept response_body argument.')
+                expected_warning_msg = ('.convert_image() method overridden in a deprecated way, '
+                                        'overridden method does not accept response_body argument.')
                 self.assertEqual(len([warning for warning in w if expected_warning_msg in str(warning.message)]), 1)
 
     def test_convert_image_old(self):
