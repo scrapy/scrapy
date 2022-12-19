@@ -147,7 +147,7 @@ class MixinSameOrigin:
         ('http://example.com:81/page.html', 'http://example.com/not-page.html', None),
         ('http://example.com/page.html', 'http://example.com:81/not-page.html', None),
 
-        # Different protocols: do NOT send refferer
+        # Different protocols: do NOT send referrer
         ('https://example.com/page.html', 'http://example.com/not-page.html', None),
         ('https://example.com/page.html', 'http://not.example.com/', None),
         ('ftps://example.com/urls.zip', 'https://example.com/not-page.html', None),
