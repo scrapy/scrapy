@@ -148,7 +148,7 @@ Another example could be for building URL canonicalizers:
 ::
 
    #!python
-   class CanonializeUrl(LegSpider):
+   class CanonicalizeUrl(LegSpider):
 
        def process_request(self, request):
            curl = canonicalize_url(request.url, rules=self.spider.canonicalization_rules)

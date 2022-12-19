@@ -321,7 +321,7 @@ Another example could be for building URL canonicalizers:
 ::
 
    #!python
-   class CanonializeUrl(object):
+   class CanonicalizeUrl(object):
 
        def process_request(self, request, response, spider):
            curl = canonicalize_url(request.url, 
