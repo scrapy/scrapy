@@ -209,7 +209,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(converted.mode, 'RGB')
             self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
-            # ensure that we recieved deprecation warnings
+            # ensure that we received deprecation warnings
             expected_warning_msg = '.convert_image() method called in a deprecated way'
             self.assertTrue(len([warning for warning in w if expected_warning_msg in str(warning.message)]) == 4)
 
