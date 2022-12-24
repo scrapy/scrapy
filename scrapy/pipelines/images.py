@@ -171,7 +171,7 @@ class ImagesPipeline(FilesPipeline):
                           'method called without response_body argument.',
                           category=ScrapyDeprecationWarning, stacklevel=2)
 
-        if image.format == 'PNG' and image.mode == 'RGBA':
+        if image.format in ('PNG', 'WEBP') and image.mode == 'RGBA':
             background = self._Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert('RGB')
