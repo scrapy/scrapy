@@ -264,7 +264,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 
 ::
 
-    Spider.update_settings Method
+    Spider.update_settings
 
         Overriding the Spider.update_settings method allows you to modify the settings of a spider.
         Using this method is preferable to using ``custom_settings`` when making spiders class hierarchies 
