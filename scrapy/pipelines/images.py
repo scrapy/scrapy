@@ -181,8 +181,8 @@ class ImagesPipeline(FilesPipeline):
                 stacklevel=2,
             )
 
-        if image.format == "PNG" and image.mode == "RGBA":
-            background = self._Image.new("RGBA", image.size, (255, 255, 255))
+        if image.format in ('PNG', 'WEBP') and image.mode == 'RGBA':
+            background = self._Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert("RGB")
         elif image.mode == "P":
