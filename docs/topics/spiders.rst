@@ -262,32 +262,23 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 .. _spiderargs:
 
 
-::
-
-    Spider.update_settings
-
-        Overriding the Spider.update_settings method allows you to modify the settings of a spider.
+   .. method:: update_settings()
+        
+        Overriding the update_settings method allows you to modify the settings of a spider.
         Using this method is preferable to using ``custom_settings`` when making spiders class hierarchies 
         as parent ``custom_settings`` is shadowed but parent ``update_settings()`` can be called.
 
+        If you want to override the ``update_settings`` method and set a custom setting here is an example::
 
-here is an example overriding Spider.update_settings::
+            class MySpider(scrapy.Spider):
+                name = 'myspider'
 
-    class MySpider(scrapy.Spider):
-        name = 'myspider'
-
-        def update_settings(self, settings):
-            # Modify the settings for this spider here
-            settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
-            
-            # Calls the parent method
-            super(MySpider, self).update_settings(settings)
-
-
-        Overridden the ``update_settings`` method and set a custom setting called ``MY_CUSTOM_SETTING`` 
-        to the value ``my_custom_value``.
-
-
+                def update_settings(self, settings):
+                    # Modify the settings for this spider here
+                    settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+                    
+                    # Calls the parent method
+                    super(MySpider, self).update_settings(settings)
 
 Spider arguments
 ================
