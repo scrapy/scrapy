@@ -114,10 +114,14 @@ class Response(object_ref):
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
 
-    def urljoin(self, url):
+    def urljoin(self, url, base_url=None):
         """Join this Response's url with a possible relative url to form an
-        absolute interpretation of the latter."""
-        return urljoin(self.url, url)
+        absolute interpretation of the latter.
+        If base url is given, join this with a relative url.
+        """
+        if not base_url:
+            return urljoin(self.url, url)
+        return urljoin(base_url, url)
 
     @property
     def text(self):
