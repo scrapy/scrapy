@@ -10,7 +10,7 @@ import scrapy
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.versions import scrapy_components_versions
-
+from scrapy.utils.conf import closest_scrapy_cfg
 
 logger = logging.getLogger(__name__)
 
@@ -155,6 +155,11 @@ def log_scrapy_info(settings: Settings) -> None:
         if name != "Scrapy"
     ]
     logger.info("Versions: %(versions)s", {'versions': ", ".join(versions)})
+
+    # Let's check for the scrapy config file and write the path to the log
+    closest = closest_scrapy_cfg()
+    logger.debug('Scrapy config file used: "{}"'.format(closest))
+
 
 
 def log_reactor_info() -> None:
