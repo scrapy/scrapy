@@ -40,9 +40,7 @@ class Shell:
         self.code = code
         self.vars = {}
 
-    def start(
-        self, url=None, request=None, response=None, spider=None, redirect=True
-    ):
+    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
