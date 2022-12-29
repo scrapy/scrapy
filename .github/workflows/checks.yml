@@ -28,6 +28,9 @@ jobs:
         - python-version: "3.11"
           env:
             TOXENV: twinecheck
+        - python-version: "3.11"
+          env:
+            TOXENV: black
 
     steps:
     - uses: actions/checkout@v3
