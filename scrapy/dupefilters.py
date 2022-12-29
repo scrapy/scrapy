@@ -5,6 +5,7 @@ from warnings import warn
 
 from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
@@ -17,6 +18,9 @@ BaseDupeFilterTV = TypeVar("BaseDupeFilterTV", bound="BaseDupeFilter")
 
 
 class BaseDupeFilter:
+    """Dummy duplicate request filtering class (:setting:`DUPEFILTER_CLASS`)
+    that does not filter out any request."""
+
     @classmethod
     def from_settings(cls: Type[BaseDupeFilterTV], settings: BaseSettings) -> BaseDupeFilterTV:
         return cls()
@@ -32,14 +36,22 @@ class BaseDupeFilter:
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
-        pass
+        warn(
+            "Calling BaseDupeFilter.log() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
 
 RFPDupeFilterTV = TypeVar("RFPDupeFilterTV", bound="RFPDupeFilter")
 
 
 class RFPDupeFilter(BaseDupeFilter):
-    """Request Fingerprint duplicates filter"""
+    """Duplicate request filtering class (:setting:`DUPEFILTER_CLASS`) that
+    filters out requests with the canonical
+    (:func:`w3lib.url.canonicalize_url`) :attr:`~scrapy.http.Request.url`,
+    :attr:`~scrapy.http.Request.method` and :attr:`~scrapy.http.Request.body`.
+    """
 
     def __init__(
         self,
@@ -104,7 +116,8 @@ class RFPDupeFilter(BaseDupeFilter):
         return False
 
     def request_fingerprint(self, request: Request) -> str:
-        return self.fingerprinter.fingerprint(request).hex()
+        """Returns a string that uniquely identifies the specified request."""
+        return request_fingerprint(request)
 
     def close(self, reason: str) -> None:
         if self.file:
