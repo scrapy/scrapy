@@ -420,6 +420,30 @@ class FormRequestTest(RequestTest):
         self.assertQueryEqual(r2.body, b'%C2%B5one=two&price%C2%A3=%C2%A3+100')
         self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
 
+    def test_custom_nonutf8_bytes_data(self):
+        data = {b'\xbc one': b'two', b'price': b'\xbf 100'}
+        r2 = self.request_class("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertQueryEqual(r2.body, b'price=%BF+100&%BC+one=two')
+        self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
+
+    def test_custom_nonascii_utf8_bytes_data(self):
+        data = {b'\x7f one': b'`A two', b'price': b'\x4b 100'}
+        r2 = self.request_class("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertQueryEqual(r2.body, b'price=K+100&%7F+one=%60A+two')
+        self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
+
+    def test_variable_type_data(self):
+        data = {b'one': 2, 'price': 100.0}
+        r2 = self.request_class("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertQueryEqual(r2.body, b'price=100.0&one=2')
+        self.assertEqual(r2.headers[b'Content-Type'], b'application/x-www-form-urlencoded')
+
     def test_custom_encoding_bytes(self):
         data = {b'\xb5 one': b'two', b'price': b'\xa3 100'}
         r2 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
