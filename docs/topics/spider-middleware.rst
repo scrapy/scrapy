@@ -460,3 +460,87 @@ UrlLengthMiddleware
    settings (see the settings documentation for more info):
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
+
+
+StickyMetaParamsMiddleware
+--------------------------
+
+.. module:: scrapy.spidermiddlewares.stickymeta
+   :synopsis: Spider Middleware that forwards meta parameters through requests
+
+.. class:: StickyMetaParamsMiddleware
+
+   When enabled and configured, this middleware forwards the desired :ref:`Request.meta <topics-request-meta>`
+   parameters between ``Requests`` and ``Responses``.
+
+   The :class:`StickyMetaParamsMiddleware` can be configured through the following
+   settings (see the settings documentation for more info):
+
+      * :setting:`STICKY_META_KEYS` - The :ref:`Request.meta <topics-request-meta>` keys that you want
+        to automatically forward to next requests.
+
+   See the difference between :ref:`topics-spiders` with and without the middleware:
+
+   Without the middleware::
+
+    class DontStickySpider(Spider):
+        name = 'dont_sticky'
+        start_urls = ['https://www.example.com']
+
+        def parse(self, response):
+            for param in range(5):
+                yield Request(
+                    'https://www.example.com/next',
+                    meta={'param': param},
+                    callback=self.parse_2
+                )
+
+        def parse_2(self, response):
+            # Get important information from response
+            info = response.xpath('//info/text()').get('info')
+            # We need to get the param from meta and forward it
+            param = response.meta['param']
+            yield Request(
+                'https://www.example.com/next',
+                meta={'info': info, 'param': param},
+                callback=self.parse_3
+            )
+
+        def parse_3(self, response):
+            # Yield item
+            yield {
+                'param': response.meta['param'],
+                'info': response.meta['info']
+            }
+
+   With the middleware::
+
+    class StickySpider(Spider):
+        name = 'sticky'
+        start_urls = ['https://www.example.com']
+        custom_settings = {'STICKY_META_KEYS': ['param']}  # Will always forward the meta param "param"
+
+        def parse(self, response):
+            for param in range(5):
+                yield Request(
+                    'https://www.example.com/next',
+                    meta={'param': param},
+                    callback=self.parse_2
+                )
+
+        def parse_2(self, response):
+            # Get important information from response
+            info = response.xpath('//info/text()').get('info')
+            # We don't need to get the "param" value from meta and resend it.
+            yield Request(
+                'https://www.example.com/next',
+                meta={'info': info},
+                callback=self.parse_3
+            )
+
+        def parse_3(self, response):
+            # Yield item
+            yield {
+                'param': response.meta['param'],
+                'info': response.meta['info']
+            }
