@@ -26,6 +26,7 @@ class Slot:
         self.transferring = set()
         self.lastseen = 0
         self.latercall = None
+        self.closing = None
 
     def free_transfer_slots(self):
         return self.concurrency - len(self.transferring)
@@ -36,8 +37,13 @@ class Slot:
         return self.delay
 
     def close(self):
-        if self.latercall and self.latercall.active():
-            self.latercall.cancel()
+        self.closing = defer.Deferred()
+        self._maybe_fire_closing()
+        return self.closing
+
+    def _maybe_fire_closing(self) -> None:
+        if self.closing is not None and not self.active:
+            self.closing.callback(None)
 
     def __repr__(self):
         cls_name = self.__class__.__name__
@@ -121,6 +127,7 @@ class Downloader:
 
         def _deactivate(response):
             slot.active.remove(request)
+            slot._maybe_fire_closing()
             return response
 
         slot.active.add(request)
@@ -191,8 +198,7 @@ class Downloader:
 
     def close(self):
         self._slot_gc_loop.stop()
-        for slot in self.slots.values():
-            slot.close()
+        return defer.DeferredList([slot.close() for slot in self.slots.values()])
 
     def _slot_gc(self, age=60):
         mintime = time() - age

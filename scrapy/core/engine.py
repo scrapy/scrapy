@@ -127,7 +127,7 @@ class ExecutionEngine:
             return self.stop()  # will also close spider and downloader
         if self.spider is not None:
             return self.close_spider(self.spider, reason="shutdown")  # will also close downloader
-        return succeed(self.downloader.close())
+        return self.downloader.close()
 
     def pause(self) -> None:
         self.paused = True
