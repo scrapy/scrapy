@@ -30,21 +30,25 @@ class LogStats:
     def spider_opened(self, spider):
         self.pagesprev = 0
         self.itemsprev = 0
-
+        self.responsebytesprev = 0
         self.task = task.LoopingCall(self.log, spider)
         self.task.start(self.interval)
 
     def log(self, spider):
         items = self.stats.get_value('item_scraped_count', 0)
         pages = self.stats.get_value('response_received_count', 0)
+        response_bytes = self.stats.get_value('downloader/response_bytes', 0)
         irate = (items - self.itemsprev) * self.multiplier
         prate = (pages - self.pagesprev) * self.multiplier
-        self.pagesprev, self.itemsprev = pages, items
-
+        brate = (response_bytes - self.responsebytesprev) * self.multiplier
+        self.pagesprev, self.itemsprev, self.responsebytesprev = pages, items, response_bytes
         msg = ("Crawled %(pages)d pages (at %(pagerate)d pages/min), "
                "scraped %(items)d items (at %(itemrate)d items/min)")
+        if self.stats.get_value('downloader/response_bytes') is not None:
+            msg = msg + ", received %(response_bytes)d bytes (at %(brate)d bytes/min)"
         log_args = {'pages': pages, 'pagerate': prate,
-                    'items': items, 'itemrate': irate}
+                    'items': items, 'itemrate': irate,
+                    'response_bytes': response_bytes, 'brate': brate}
         logger.info(msg, log_args, extra={'spider': spider})
 
     def spider_closed(self, spider, reason):
