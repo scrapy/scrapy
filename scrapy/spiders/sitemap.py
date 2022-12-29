@@ -9,6 +9,19 @@ from scrapy.utils.gz import gunzip, gzip_magic_number
 
 logger = logging.getLogger(__name__)
 
+# differentiating requests for use in child classes
+class SitemapIndexRequest(Request):
+    """ Sitemap spider request originating from a sitemap index """
+    pass
+
+class UrlSetRequest(Request):
+    """ Sitemap spider request originating from a sitemap urlset """
+    pass
+
+class RobotsRequest(Request):
+    """ Sitemap spider request originating from a robots.txt """
+    pass
+
 
 class SitemapSpider(Spider):
 
@@ -41,7 +54,7 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
             for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
+                yield RobotsRequest(url, callback=self._parse_sitemap)
         else:
             body = self._get_sitemap_body(response)
             if body is None:
@@ -55,12 +68,12 @@ class SitemapSpider(Spider):
             if s.type == 'sitemapindex':
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
+                        yield SitemapIndexRequest(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
-                            yield Request(loc, callback=c)
+                            yield UrlSetRequest(loc, callback=c)
                             break
 
     def _get_sitemap_body(self, response):
