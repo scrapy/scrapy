@@ -20,17 +20,23 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_response_body(self):
-        _, out, _ = yield self.execute([self.url("/text"), "-c", "response.body"])
+        _, out, _ = yield self.execute(
+            [self.url("/text"), "-c", "response.body"]
+        )
         assert b"Works" in out
 
     @defer.inlineCallbacks
     def test_response_type_text(self):
-        _, out, _ = yield self.execute([self.url("/text"), "-c", "type(response)"])
+        _, out, _ = yield self.execute(
+            [self.url("/text"), "-c", "type(response)"]
+        )
         assert b"TextResponse" in out
 
     @defer.inlineCallbacks
     def test_response_type_html(self):
-        _, out, _ = yield self.execute([self.url("/html"), "-c", "type(response)"])
+        _, out, _ = yield self.execute(
+            [self.url("/html"), "-c", "type(response)"]
+        )
         assert b"HtmlResponse" in out
 
     @defer.inlineCallbacks
@@ -48,7 +54,9 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_redirect(self):
-        _, out, _ = yield self.execute([self.url("/redirect"), "-c", "response.url"])
+        _, out, _ = yield self.execute(
+            [self.url("/redirect"), "-c", "response.url"]
+        )
         assert out.strip().endswith(b"/redirected")
 
     @defer.inlineCallbacks
@@ -92,7 +100,9 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     @defer.inlineCallbacks
     def test_request_replace(self):
         url = self.url("/text")
-        code = f"fetch('{url}') or fetch(response.request.replace(method='POST'))"
+        code = (
+            f"fetch('{url}') or fetch(response.request.replace(method='POST'))"
+        )
         errcode, out, _ = yield self.execute(["-c", code])
         self.assertEqual(errcode, 0, out)
 
@@ -123,14 +133,16 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         if NON_EXISTING_RESOLVABLE:
             raise unittest.SkipTest("Non-existing hosts are resolvable")
         url = "www.somedomainthatdoesntexi.st"
-        errcode, out, err = yield self.execute([url, "-c", "item"], check_code=False)
+        errcode, out, err = yield self.execute(
+            [url, "-c", "item"], check_code=False
+        )
         self.assertEqual(errcode, 1, out or err)
-        self.assertIn(b'DNS lookup failed', err)
+        self.assertIn(b"DNS lookup failed", err)
 
     @defer.inlineCallbacks
     def test_shell_fetch_async(self):
         reactor_path = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-        url = self.url('/html')
+        url = self.url("/html")
         code = f"fetch('{url}')"
         args = ["-c", code, "--set", f"TWISTED_REACTOR={reactor_path}"]
         _, _, err = yield self.execute(args, check_code=True)

@@ -61,13 +61,17 @@ class ImagesPipeline(FilesPipeline):
                 "ImagesPipeline requires installing Pillow 4.0.0 or later"
             )
 
-        super().__init__(store_uri, settings=settings, download_func=download_func)
+        super().__init__(
+            store_uri, settings=settings, download_func=download_func
+        )
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         resolve = functools.partial(
-            self._key_for_pipe, base_class_name="ImagesPipeline", settings=settings
+            self._key_for_pipe,
+            base_class_name="ImagesPipeline",
+            settings=settings,
         )
         self.expires = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
 
@@ -82,8 +86,12 @@ class ImagesPipeline(FilesPipeline):
         self.images_result_field = settings.get(
             resolve("IMAGES_RESULT_FIELD"), self.IMAGES_RESULT_FIELD
         )
-        self.min_width = settings.getint(resolve("IMAGES_MIN_WIDTH"), self.MIN_WIDTH)
-        self.min_height = settings.getint(resolve("IMAGES_MIN_HEIGHT"), self.MIN_HEIGHT)
+        self.min_width = settings.getint(
+            resolve("IMAGES_MIN_WIDTH"), self.MIN_WIDTH
+        )
+        self.min_height = settings.getint(
+            resolve("IMAGES_MIN_HEIGHT"), self.MIN_HEIGHT
+        )
         self.thumbs = settings.get(resolve("IMAGES_THUMBS"), self.THUMBS)
 
         self._deprecated_convert_image = None
@@ -117,7 +125,9 @@ class ImagesPipeline(FilesPipeline):
 
     def image_downloaded(self, response, request, info, *, item=None):
         checksum = None
-        for path, image, buf in self.get_images(response, request, info, item=item):
+        for path, image, buf in self.get_images(
+            response, request, info, item=item
+        ):
             if checksum is None:
                 buf.seek(0)
                 checksum = md5sum(buf)
@@ -144,8 +154,8 @@ class ImagesPipeline(FilesPipeline):
             )
 
         if self._deprecated_convert_image is None:
-            self._deprecated_convert_image = "response_body" not in get_func_args(
-                self.convert_image
+            self._deprecated_convert_image = (
+                "response_body" not in get_func_args(self.convert_image)
             )
             if self._deprecated_convert_image:
                 warnings.warn(
@@ -181,8 +191,8 @@ class ImagesPipeline(FilesPipeline):
                 stacklevel=2,
             )
 
-        if image.format in ('PNG', 'WEBP') and image.mode == 'RGBA':
-            background = self._Image.new('RGBA', image.size, (255, 255, 255))
+        if image.format in ("PNG", "WEBP") and image.mode == "RGBA":
+            background = self._Image.new("RGBA", image.size, (255, 255, 255))
             background.paste(image, image)
             image = background.convert("RGB")
         elif image.mode == "P":
@@ -216,13 +226,17 @@ class ImagesPipeline(FilesPipeline):
 
     def item_completed(self, results, item, info):
         with suppress(KeyError):
-            ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
+            ItemAdapter(item)[self.images_result_field] = [
+                x for ok, x in results if ok
+            ]
         return item
 
     def file_path(self, request, response=None, info=None, *, item=None):
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f"full/{image_guid}.jpg"
 
-    def thumb_path(self, request, thumb_id, response=None, info=None, *, item=None):
+    def thumb_path(
+        self, request, thumb_id, response=None, info=None, *, item=None
+    ):
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
         return f"thumbs/{thumb_id}/{thumb_guid}.jpg"

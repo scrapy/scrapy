@@ -21,7 +21,10 @@ from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
+from scrapy.utils.reactor import (
+    is_asyncio_reactor_installed,
+    set_asyncio_event_loop,
+)
 
 
 class Shell:
@@ -37,7 +40,9 @@ class Shell:
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
+    def start(
+        self, url=None, request=None, response=None, spider=None, redirect=True
+    ):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
@@ -80,7 +85,7 @@ class Shell:
     def _schedule(self, request, spider):
         if is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
-            event_loop_path = self.crawler.settings['ASYNCIO_EVENT_LOOP']
+            event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
         spider = self._open_spider(request, spider)
         d = _request_deferred(request)
