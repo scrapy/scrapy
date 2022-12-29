@@ -3,23 +3,17 @@ from twisted.internet.base import ThreadedResolver
 from twisted.internet.interfaces import IHostResolution, IHostnameResolver, IResolutionReceiver, IResolverSimple
 from zope.interface.declarations import implementer, provider
 
-from scrapy.utils.datatypes import LocalCache
+from scrapy.utils.datatypes import ExpiringCache
 
 
-# TODO: cache misses
-dnscache = LocalCache(10000)
+dnscache = ExpiringCache(10000)
 
 
 @implementer(IResolverSimple)
 class CachingThreadedResolver(ThreadedResolver):
-    """
-    Default caching resolver. IPv4 only, supports setting a timeout value for DNS requests.
-    """
-
-    def __init__(self, reactor, cache_size, timeout):
-        super().__init__(reactor)
-        dnscache.limit = cache_size
-        self.timeout = timeout
+    """Default caching resolver, which supports IPv4 only, configurable
+    timeout for DNS requests (:setting:`DNS_TIMEOUT`), and configurable
+    expiration  time for DNS records (:setting:`DNSCACHE_EXPIRATION_SECS`)."""
 
     @classmethod
     def from_crawler(cls, crawler, reactor):
@@ -27,7 +21,18 @@ class CachingThreadedResolver(ThreadedResolver):
             cache_size = crawler.settings.getint('DNSCACHE_SIZE')
         else:
             cache_size = 0
-        return cls(reactor, cache_size, crawler.settings.getfloat('DNS_TIMEOUT'))
+        return cls(
+            reactor,
+            cache_size,
+            crawler.settings.getfloat('DNS_TIMEOUT'),
+            crawler.settings.getint('DNSCACHE_EXPIRATION_SECS'),
+        )
+
+    def __init__(self, reactor, cache_size, timeout, expiration):
+        super().__init__(reactor)
+        dnscache.limit = cache_size
+        self.timeout = timeout
+        dnscache.expiration = expiration
 
     def install_on_reactor(self):
         self.reactor.installResolver(self)

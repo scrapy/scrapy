@@ -339,7 +339,8 @@ class CrawlerProcess(CrawlerRunner):
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
         size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
-        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+        based on :setting:`DNSCACHE_ENABLED`,
+        :setting:`DNSCACHE_EXPIRATION_SECS`, and :setting:`DNSCACHE_SIZE`.
 
         If ``stop_after_crawl`` is True, the reactor will be stopped after all
         crawlers have finished, using :meth:`join`.

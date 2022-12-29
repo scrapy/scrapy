@@ -6,6 +6,7 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import collections
+import time
 import weakref
 from collections.abc import Mapping
 
@@ -117,3 +118,38 @@ class SequenceExclude:
 
     def __contains__(self, item):
         return item not in self.seq
+
+
+class ExpiringCache(LocalCache):
+    """Dictionary with a finite number of keys and time-based expiration.
+
+    Membership tests (key in dict, dict.has_key) are not guaranteed to trigger
+    expiration.
+    """
+    def __init__(self, limit=None, expiration=None):
+        super().__init__(limit)
+        self.expiration = expiration
+
+    def __getitem__(self, key):
+        setting_time, value = super().__getitem__(key)
+        if self.expiration and setting_time + self.expiration < time.time():
+            del self[key]
+            raise KeyError("key expired")
+        return value
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, (time.time(), value))
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def items(self):
+        for k in self.keys():
+            yield k, self[k]
+
+    def values(self):
+        for k in self.keys():
+            yield self[k]

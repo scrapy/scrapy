@@ -439,6 +439,15 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. setting:: DNSCACHE_EXPIRATION_SECS
+
+DNSCACHE_EXPIRATION_SECS
+------------------------
+
+Default: ``86400`` (24 hours)
+
+DNS cache expiration time in seconds.
+
 .. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
