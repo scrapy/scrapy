@@ -24,8 +24,8 @@ jobs:
     - name: Publish to PyPI
       if: steps.check-release-tag.outputs.release_tag == 'true'
       run: |
-        pip install --upgrade setuptools wheel twine
-        python setup.py sdist bdist_wheel
+        pip install --upgrade build twine
+        python -m build
         export TWINE_USERNAME=__token__
         export TWINE_PASSWORD=${{ secrets.PYPI_TOKEN }}
         twine upload dist/*
