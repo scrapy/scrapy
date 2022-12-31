@@ -265,7 +265,7 @@ element, including its tags:
 >>> response.css('title').getall()
 ['<title>Quotes to Scrape</title>']
 
-The other thing is that the result of calling ``.getall()`` is a list: it is
+The second is that the result of calling ``.getall()`` is a list: it is
 possible that a selector returns more than one result, so we extract them all.
 When you know you just want the first result, as in this case, you can do:
 
@@ -307,7 +307,7 @@ the :meth:`~scrapy.selector.SelectorList.re` method to extract using
 >>> response.css('title::text').re(r'(\w+) to (\w+)')
 ['Quotes', 'Scrape']
 
-In order to find the proper CSS selectors to use, you might find useful opening
+In order to find the proper CSS selectors to use, you might find it useful opening
 the response page from the shell in your web browser using ``view(response)``.
 You can use your browser's developer tools to inspect the HTML and come up
 with a selector (see :ref:`topics-developer-tools`).
