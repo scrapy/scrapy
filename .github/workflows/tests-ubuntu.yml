@@ -38,11 +38,12 @@ jobs:
           env:
             TOXENV: pypy3-pinned
 
-        # extras
-        # extra-deps includes reppy, which does not support Python 3.9
-        # https://github.com/seomoz/reppy/issues/122
+        # extra-deps includes reppy, which:
+        # - Does not support Python 3.9: https://github.com/seomoz/reppy/issues/122
+        # - Requires CLang to build https://github.com/seomoz/reppy/issues/132
         - python-version: 3.8
           env:
+            CC: clang
             TOXENV: extra-deps
 
     steps:
@@ -58,6 +59,12 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
+
+    - name: Set up Clang
+      uses: egor-tensin/setup-clang@v1
+      with:
+        version: latest
+        platform: x64
 
     - name: Run tests
       env: ${{ matrix.env }}
