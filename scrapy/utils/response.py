@@ -49,7 +49,6 @@ from scrapy.http import (
 from scrapy.utils.decorators import deprecated
 from scrapy.utils.python import to_bytes, to_unicode
 
-
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
 _ENCODING_MIME_TYPE_MAP = {
     b'br': b'application/brotli',

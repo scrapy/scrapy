@@ -45,31 +45,40 @@ class HttpProxyMiddleware:
         return creds, proxy_url
 
     def process_request(self, request, spider):
-        # ignore if proxy is already set
+        creds, proxy_url = None, None
         if 'proxy' in request.meta:
-            if request.meta['proxy'] is None:
-                return
-            # extract credentials if present
-            creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
+            if request.meta['proxy'] is not None:
+                creds, proxy_url = self._get_proxy(request.meta['proxy'], '')
+        elif self.proxies:
+            parsed = urlparse_cached(request)
+            scheme = parsed.scheme
+            if (
+                (
+                    # 'no_proxy' is only supported by http schemes
+                    scheme not in ('http', 'https')
+                    or not proxy_bypass(parsed.hostname)
+                )
+                and scheme in self.proxies
+            ):
+                creds, proxy_url = self.proxies[scheme]
+
+        self._set_proxy_and_creds(request, proxy_url, creds)
+
+    def _set_proxy_and_creds(self, request, proxy_url, creds):
+        if proxy_url:
             request.meta['proxy'] = proxy_url
-            if creds and not request.headers.get('Proxy-Authorization'):
-                request.headers['Proxy-Authorization'] = b'Basic ' + creds
-            return
-        elif not self.proxies:
-            return
-
-        parsed = urlparse_cached(request)
-        scheme = parsed.scheme
-
-        # 'no_proxy' is only supported by http schemes
-        if scheme in ('http', 'https') and proxy_bypass(parsed.hostname):
-            return
-
-        if scheme in self.proxies:
-            self._set_proxy(request, scheme)
-
-    def _set_proxy(self, request, scheme):
-        creds, proxy = self.proxies[scheme]
-        request.meta['proxy'] = proxy
+        elif request.meta.get('proxy') is not None:
+            request.meta['proxy'] = None
         if creds:
-            request.headers['Proxy-Authorization'] = b'Basic ' + creds
+            request.headers[b'Proxy-Authorization'] = b'Basic ' + creds
+            request.meta['_auth_proxy'] = proxy_url
+        elif '_auth_proxy' in request.meta:
+            if proxy_url != request.meta['_auth_proxy']:
+                if b'Proxy-Authorization' in request.headers:
+                    del request.headers[b'Proxy-Authorization']
+                del request.meta['_auth_proxy']
+        elif b'Proxy-Authorization' in request.headers:
+            if proxy_url:
+                request.meta['_auth_proxy'] = proxy_url
+            else:
+                del request.headers[b'Proxy-Authorization']

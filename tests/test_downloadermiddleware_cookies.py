@@ -1,6 +1,6 @@
 import logging
-from testfixtures import LogCapture
 from unittest import TestCase
+from testfixtures import LogCapture
 
 import pytest
 

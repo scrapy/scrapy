@@ -140,7 +140,7 @@ class ScrapyProxyH2Agent(H2Agent):
         connect_timeout: Optional[float] = None,
         bind_address: Optional[bytes] = None,
     ) -> None:
-        super(ScrapyProxyH2Agent, self).__init__(
+        super().__init__(
             reactor=reactor,
             pool=pool,
             context_factory=context_factory,

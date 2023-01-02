@@ -1,6 +1,8 @@
 import unittest
 
+from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
+from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     add_http_if_no_scheme,
     guess_scheme,
@@ -8,8 +10,8 @@ from scrapy.utils.url import (
     strip_url,
     url_is_from_any_domain,
     url_is_from_spider,
+    url_has_any_extension,
 )
-
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -80,6 +82,15 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', MySpider))
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySpider))
+
+    def test_url_has_any_extension(self):
+        deny_extensions = {'.' + e for e in arg_to_iter(IGNORED_EXTENSIONS)}
+        self.assertTrue(url_has_any_extension("http://www.example.com/archive.tar.gz", deny_extensions))
+        self.assertTrue(url_has_any_extension("http://www.example.com/page.doc", deny_extensions))
+        self.assertTrue(url_has_any_extension("http://www.example.com/page.pdf", deny_extensions))
+        self.assertFalse(url_has_any_extension("http://www.example.com/page.htm", deny_extensions))
+        self.assertFalse(url_has_any_extension("http://www.example.com/", deny_extensions))
+        self.assertFalse(url_has_any_extension("http://www.example.com/page.doc.html", deny_extensions))
 
 
 class AddHttpIfNoScheme(unittest.TestCase):

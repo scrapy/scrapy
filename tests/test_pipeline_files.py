@@ -3,10 +3,12 @@ import random
 import time
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import mock, skipIf
+from unittest import mock
 from urllib.parse import urlparse
+import dataclasses
 
 import attr
 from itemadapter import ItemAdapter
@@ -30,13 +32,6 @@ from scrapy.utils.test import (
     get_gcs_content_and_delete,
     skip_if_no_boto,
 )
-
-
-try:
-    from dataclasses import make_dataclass, field as dataclass_field
-except ImportError:
-    make_dataclass = None
-    dataclass_field = None
 
 
 def _mocked_download_func(request, info):
@@ -95,7 +90,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
         path = 'some/image/key.jpg'
-        fullpath = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
+        fullpath = Path(self.tempdir, 'some', 'image', 'key.jpg')
         self.assertEqual(self.pipeline.store._get_filesystem_path(path), fullpath)
 
     @defer.inlineCallbacks
@@ -226,24 +221,19 @@ class FilesPipelineTestCaseFieldsItem(FilesPipelineTestCaseFieldsMixin, unittest
     item_class = FilesPipelineTestItem
 
 
-@skipIf(not make_dataclass, "dataclasses module is not available")
-class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+@dataclasses.dataclass
+class FilesPipelineTestDataClass:
+    name: str
+    # default fields
+    file_urls: list = dataclasses.field(default_factory=list)
+    files: list = dataclasses.field(default_factory=list)
+    # overridden fields
+    custom_file_urls: list = dataclasses.field(default_factory=list)
+    custom_files: list = dataclasses.field(default_factory=list)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if make_dataclass:
-            self.item_class = make_dataclass(
-                "FilesPipelineTestDataClass",
-                [
-                    ("name", str),
-                    # default fields
-                    ("file_urls", list, dataclass_field(default_factory=list)),
-                    ("files", list, dataclass_field(default_factory=list)),
-                    # overridden fields
-                    ("custom_file_urls", list, dataclass_field(default_factory=list)),
-                    ("custom_files", list, dataclass_field(default_factory=list)),
-                ],
-            )
+
+class FilesPipelineTestCaseFieldsDataClass(FilesPipelineTestCaseFieldsMixin, unittest.TestCase):
+    item_class = FilesPipelineTestDataClass
 
 
 @attr.s

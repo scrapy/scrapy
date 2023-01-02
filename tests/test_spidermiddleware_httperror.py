@@ -6,11 +6,11 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.internet import defer
 
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
 from scrapy.http import Response, Request
 from scrapy.spiders import Spider
 from scrapy.spidermiddlewares.httperror import HttpErrorMiddleware, HttpError
 from scrapy.settings import Settings
+from tests.mockserver import MockServer
 from tests.spiders import MockServerSpider
 
 

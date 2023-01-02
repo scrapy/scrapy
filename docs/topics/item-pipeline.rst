@@ -186,6 +186,7 @@ item.
 ::
 
     import hashlib
+    from pathlib import Path
     from urllib.parse import quote
 
     import scrapy
@@ -214,8 +215,7 @@ item.
             url = adapter["url"]
             url_hash = hashlib.md5(url.encode("utf8")).hexdigest()
             filename = f"{url_hash}.png"
-            with open(filename, "wb") as f:
-                f.write(response.body)
+            Path(filename).write_bytes(response.body)
 
             # Store filename in item.
             adapter["screenshot_filename"] = filename

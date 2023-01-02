@@ -272,10 +272,9 @@ class RFC2616PolicyTest(DefaultStorageTest):
             if result:
                 assert isinstance(result, (Request, Response))
                 return result
-            else:
-                result = mw.process_response(request, response, self.spider)
-                assert isinstance(result, Response)
-                return result
+            result = mw.process_response(request, response, self.spider)
+            assert isinstance(result, Response)
+            return result
         except Exception:
             print('Request', request)
             print('Response', response)

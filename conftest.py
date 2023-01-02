@@ -21,7 +21,7 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-with open('tests/ignores.txt') as reader:
+with Path('tests/ignores.txt').open(encoding="utf-8") as reader:
     for line in reader:
         file_path = line.strip()
         if file_path and file_path[0] != '#':
@@ -40,16 +40,6 @@ if not H2_ENABLED:
 def chdir(tmpdir):
     """Change to pytest-provided temporary directory"""
     tmpdir.chdir()
-
-
-def pytest_collection_modifyitems(session, config, items):
-    # Avoid executing tests when executing `--flake8` flag (pytest-flake8)
-    try:
-        from pytest_flake8 import Flake8Item
-        if config.getoption('--flake8'):
-            items[:] = [item for item in items if isinstance(item, Flake8Item)]
-    except ImportError:
-        pass
 
 
 def pytest_addoption(parser):

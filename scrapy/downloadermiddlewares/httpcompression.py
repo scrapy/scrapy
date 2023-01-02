@@ -8,7 +8,6 @@ from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
 from scrapy.utils.response import get_response_class
 
-
 ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
 
 try:

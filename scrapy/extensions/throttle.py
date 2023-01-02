@@ -56,7 +56,7 @@ class AutoThrottle:
                 {
                     'slot': key, 'concurrency': conc,
                     'delay': slot.delay * 1000, 'delaydiff': diff * 1000,
-                    'latency': latency * 1000, 'size': size
+                    'latency': latency * 1000, 'size': size,
                 },
                 extra={'spider': spider}
             )

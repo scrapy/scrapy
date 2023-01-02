@@ -9,7 +9,6 @@ from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -104,8 +103,8 @@ class CookiesMiddleware:
         for key in ("name", "value", "path", "domain"):
             if cookie.get(key) is None:
                 if key in ("name", "value"):
-                    msg = "Invalid cookie found in request {}: {} ('{}' is missing)"
-                    logger.warning(msg.format(request, cookie, key))
+                    msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
+                    logger.warning(msg)
                     return
                 continue
             if isinstance(cookie[key], (bool, float, int, str)):
@@ -129,7 +128,7 @@ class CookiesMiddleware:
         """
         if not request.cookies:
             return []
-        elif isinstance(request.cookies, dict):
+        if isinstance(request.cookies, dict):
             cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
         else:
             cookies = request.cookies

@@ -9,8 +9,17 @@ import tarfile
 import zipfile
 from io import BytesIO
 from tempfile import mktemp
+from warnings import warn
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.response import get_response_class
+
+
+warn(
+    'scrapy.downloadermiddlewares.decompression is deprecated',
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 
 logger = logging.getLogger(__name__)

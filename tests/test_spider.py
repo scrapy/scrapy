@@ -7,6 +7,7 @@ from unittest import mock
 from testfixtures import LogCapture
 from twisted.trial import unittest
 
+from w3lib.url import safe_url_string
 from scrapy import signals
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
@@ -361,9 +362,9 @@ class CrawlSpiderTest(SpiderTest):
         self.assertEqual(len(output), 3)
         self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual([r.url for r in output],
-                         ['http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML',
-                          'http://EXAMPLE.ORG/ABOUT.HTML',
-                          'http://EXAMPLE.ORG/NOFOLLOW.HTML'])
+                         [safe_url_string('http://EXAMPLE.ORG/SOMEPAGE/ITEM/12.HTML'),
+                          safe_url_string('http://EXAMPLE.ORG/ABOUT.HTML'),
+                          safe_url_string('http://EXAMPLE.ORG/NOFOLLOW.HTML')])
 
     def test_process_request_instance_method_with_response(self):
 

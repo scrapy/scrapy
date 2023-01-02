@@ -2,6 +2,7 @@
 
 import warnings
 import inspect
+from typing import List, Tuple
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
@@ -126,9 +127,7 @@ def _clspath(cls, forced=None):
     return f'{cls.__module__}.{cls.__name__}'
 
 
-DEPRECATION_RULES = [
-    ('scrapy.telnet.', 'scrapy.extensions.telnet.'),
-]
+DEPRECATION_RULES: List[Tuple[str, str]] = []
 
 
 def update_classpath(path):

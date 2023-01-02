@@ -13,6 +13,8 @@ Author: dufferzafar
 """
 
 import re
+import sys
+from pathlib import Path
 
 
 def main():
@@ -27,11 +29,11 @@ def main():
 
     # Read lines from the linkcheck output file
     try:
-        with open("build/linkcheck/output.txt") as out:
+        with Path("build/linkcheck/output.txt").open(encoding="utf-8") as out:
             output_lines = out.readlines()
     except IOError:
         print("linkcheck output not found; please run linkcheck first.")
-        exit(1)
+        sys.exit(1)
 
     # For every line, fix the respective file
     for line in output_lines:
@@ -51,14 +53,12 @@ def main():
 
                     # Update the previous file
                     if _filename:
-                        with open(_filename, "w") as _file:
-                            _file.write(_contents)
+                        Path(_filename).write_text(_contents, encoding="utf-8")
 
                     _filename = newfilename
 
                     # Read the new file to memory
-                    with open(_filename) as _file:
-                        _contents = _file.read()
+                    _contents = Path(_filename).read_text(encoding="utf-8")
 
                 _contents = _contents.replace(match.group(3), match.group(4))
         else:

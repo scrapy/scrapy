@@ -171,7 +171,7 @@ class Https2InvalidDNSId(Https2TestCase):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     def setUp(self):
-        super(Https2InvalidDNSId, self).setUp()
+        super().setUp()
         self.host = '127.0.0.1'
 
 
@@ -190,7 +190,7 @@ class Https2InvalidDNSPattern(Https2TestCase):
             'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
             'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
         )
-        super(Https2InvalidDNSPattern, self).setUp()
+        super().setUp()
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
@@ -242,22 +242,7 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
     def getURL(self, path):
         return f"{self.scheme}://{self.host}:{self.portno}/{path}"
 
-    def test_download_with_proxy_https_noconnect(self):
-        def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'/')
-
-        http_proxy = f"{self.getURL('')}?noconnect"
-        request = Request('https://example.com', meta={'proxy': http_proxy})
-        with self.assertWarnsRegex(
-            Warning,
-            r'Using HTTPS proxies in the noconnect mode is not supported by the '
-            r'downloader handler.'
-        ):
-            return self.download_request(request, Spider('foo')).addCallback(_test)
-
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
         with self.assertRaises(NotImplementedError):
-            yield super(Https2ProxyTestCase, self).test_download_with_proxy_https_timeout()
+            yield super().test_download_with_proxy_https_timeout()

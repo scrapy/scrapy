@@ -24,8 +24,7 @@ def get_settings_priority(priority):
     """
     if isinstance(priority, str):
         return SETTINGS_PRIORITIES[priority]
-    else:
-        return priority
+    return priority
 
 
 class SettingsAttribute:
@@ -51,10 +50,8 @@ class SettingsAttribute:
             self.value = value
             self.priority = priority
 
-    def __str__(self):
+    def __repr__(self):
         return f"<SettingsAttribute value={self.value!r} priority={self.priority}>"
-
-    __repr__ = __str__
 
 
 class BaseSettings(MutableMapping):
@@ -197,6 +194,38 @@ class BaseSettings(MutableMapping):
             value = json.loads(value)
         return dict(value)
 
+    def getdictorlist(self, name, default=None):
+        """Get a setting value as either a :class:`dict` or a :class:`list`.
+
+        If the setting is already a dict or a list, a copy of it will be
+        returned.
+
+        If it is a string it will be evaluated as JSON, or as a comma-separated
+        list of strings as a fallback.
+
+        For example, settings populated from the command line will return:
+
+        -   ``{'key1': 'value1', 'key2': 'value2'}`` if set to
+            ``'{"key1": "value1", "key2": "value2"}'``
+
+        -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
+
+        :param name: the setting name
+        :type name: string
+
+        :param default: the value to return if no setting is found
+        :type default: any
+        """
+        value = self.get(name, default)
+        if value is None:
+            return {}
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value.split(',')
+        return copy.deepcopy(value)
+
     def getwithbase(self, name):
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
@@ -230,8 +259,7 @@ class BaseSettings(MutableMapping):
         """
         if len(self) > 0:
             return max(self.getpriority(name) for name in self)
-        else:
-            return get_settings_priority('default')
+        return get_settings_priority('default')
 
     def __setitem__(self, name, value):
         self.set(name, value)
@@ -403,30 +431,6 @@ class BaseSettings(MutableMapping):
             p.text(repr(self))
         else:
             p.text(pformat(self.copy_to_dict()))
-
-
-class _DictProxy(MutableMapping):
-
-    def __init__(self, settings, priority):
-        self.o = {}
-        self.settings = settings
-        self.priority = priority
-
-    def __len__(self):
-        return len(self.o)
-
-    def __getitem__(self, k):
-        return self.o[k]
-
-    def __setitem__(self, k, v):
-        self.settings.set(k, v, priority=self.priority)
-        self.o[k] = v
-
-    def __delitem__(self, k):
-        del self.o[k]
-
-    def __iter__(self, k, v):
-        return iter(self.o)
 
 
 class Settings(BaseSettings):

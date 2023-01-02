@@ -52,6 +52,7 @@ class MockCrawler(Crawler):
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
             DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
+            REQUEST_FINGERPRINTER_IMPLEMENTATION='2.7',
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -334,7 +335,7 @@ class TestIncompatibility(unittest.TestCase):
             SCHEDULER_PRIORITY_QUEUE='scrapy.pqueues.DownloaderAwarePriorityQueue',
             CONCURRENT_REQUESTS_PER_IP=1,
         )
-        crawler = Crawler(Spider, settings)
+        crawler = get_crawler(Spider, settings)
         scheduler = Scheduler.from_crawler(crawler)
         spider = Spider(name='spider')
         scheduler.open(spider)

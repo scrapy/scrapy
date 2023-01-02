@@ -117,7 +117,7 @@ after your custom code.
 
 Example::
 
-      from scrapy.exporter import XmlItemExporter
+      from scrapy.exporters import XmlItemExporter
 
       class ProductXmlExporter(XmlItemExporter):
 
@@ -195,17 +195,25 @@ BaseItemExporter
 
    .. attribute:: fields_to_export
 
-      A list with the name of the fields that will be exported, or ``None`` if
-      you want to export all fields. Defaults to ``None``.
+      Fields to export, their order [1]_ and their output names.
 
-      Some exporters (like :class:`CsvItemExporter`) respect the order of the
-      fields defined in this attribute.
+      Possible values are:
 
-      When using :ref:`item objects <item-types>` that do not expose all their
-      possible fields, exporters that do not support exporting a different
-      subset of fields per item will only export the fields found in the first
-      item exported. Use ``fields_to_export`` to define all the fields to be
-      exported.
+      -   ``None`` (all fields [2]_, default)
+
+      -   A list of fields::
+
+              ['field1', 'field2']
+
+      -   A dict where keys are fields and values are output names::
+
+              {'field1': 'Field 1', 'field2': 'Field 2'}
+
+      .. [1] Not all exporters respect the specified field order.
+      .. [2] When using :ref:`item objects <item-types>` that do not expose
+             all their possible fields, exporters that do not support exporting
+             a different subset of fields per item will only export the fields 
+             found in the first item exported.
 
    .. attribute:: export_empty_fields
 
@@ -297,8 +305,8 @@ CsvItemExporter
 
    Exports items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
-   CSV columns and their order. The :attr:`export_empty_fields` attribute has
-   no effect on this exporter.
+   CSV columns, their order and their column names. The
+   :attr:`export_empty_fields` attribute has no effect on this exporter.
 
    :param file: the file-like object to use for exporting the data. Its ``write`` method should
                 accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)

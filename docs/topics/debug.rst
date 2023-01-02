@@ -150,3 +150,31 @@ available in all future runs should they be necessary again::
 For more information, check the :ref:`topics-logging` section.
 
 .. _base tag: https://www.w3schools.com/tags/tag_base.asp
+
+Visual Studio Code
+==================
+
+.. highlight:: json
+
+To debug spiders with Visual Studio Code you can use the following ``launch.json``::
+
+    {
+        "version": "0.1.0",
+        "configurations": [
+            {
+                "name": "Python: Launch Scrapy Spider",
+                "type": "python",
+                "request": "launch",
+                "module": "scrapy",
+                "args": [
+                    "runspider",
+                    "${file}"
+                ],
+                "console": "integratedTerminal"
+            }
+        ]
+    }
+
+
+Also, make sure you enable "User Uncaught Exceptions", to catch exceptions in
+your Scrapy spider.

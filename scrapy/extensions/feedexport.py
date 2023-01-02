@@ -5,13 +5,13 @@ See documentation in docs/topics/feed-exports.rst
 """
 
 import logging
-import os
 import re
 import sys
 import warnings
 from datetime import datetime
+from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import IO, Any, Callable, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -101,7 +101,7 @@ class BlockingFeedStorage:
 
     def open(self, spider):
         path = spider.crawler.settings['FEED_TEMPDIR']
-        if path and not os.path.isdir(path):
+        if path and not Path(path).is_dir():
             raise OSError('Not a Directory: ' + str(path))
 
         return NamedTemporaryFile(prefix='feed-', dir=path)
@@ -141,11 +141,11 @@ class FileFeedStorage:
         feed_options = feed_options or {}
         self.write_mode = 'wb' if feed_options.get('overwrite', False) else 'ab'
 
-    def open(self, spider):
-        dirname = os.path.dirname(self.path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
-        return open(self.path, self.write_mode)
+    def open(self, spider) -> IO[Any]:
+        dirname = Path(self.path).parent
+        if dirname and not dirname.exists():
+            dirname.mkdir(parents=True)
+        return Path(self.path).open(self.write_mode)
 
     def store(self, file):
         file.close()
