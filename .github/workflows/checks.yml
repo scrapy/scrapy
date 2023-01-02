@@ -14,12 +14,8 @@ jobs:
         - python-version: "3.11"
           env:
             TOXENV: flake8
-        # Pylint requires installing reppy, which:
-        # - Does not support Python 3.9: https://github.com/seomoz/reppy/issues/122
-        # - Requires CLang to build https://github.com/seomoz/reppy/issues/132
-        - python-version: 3.8
+        - python-version: "3.11"
           env:
-            CC: clang
             TOXENV: pylint
         - python-version: 3.7
           env:
@@ -38,12 +34,6 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-
-    - name: Set up Clang
-      uses: egor-tensin/setup-clang@v1
-      with:
-        version: latest
-        platform: x64
 
     - name: Run check
       env: ${{ matrix.env }}
