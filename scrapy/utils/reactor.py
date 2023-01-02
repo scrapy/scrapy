@@ -90,11 +90,11 @@ def set_asyncio_event_loop(event_loop_path):
         asyncio.set_event_loop(event_loop)
     else:
         try:
-            event_loop = policy.get_event_loop()
+            event_loop = asyncio.get_running_loop()
         except RuntimeError:
-            # `get_event_loop` is expected to fail when called from a new thread
-            # with no asyncio event loop yet installed. Such is the case when
-            # called from `scrapy shell`
+            # Raised by asyncio.get_running_loop() when called from a new
+            # thread with no asyncio event loop yet installed. Such is the case
+            # when called from `scrapy shell`
             event_loop = policy.new_event_loop()
             asyncio.set_event_loop(event_loop)
     return event_loop
