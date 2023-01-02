@@ -93,7 +93,7 @@ def set_asyncio_event_loop(event_loop_path):
             asyncio.get_running_loop()
             event_loop = policy.get_event_loop()
         except RuntimeError:
-            # Raised by policy.get_running_loop() when called from a new thread
+            # `get_event_loop` is expected to fail when called from a new thread
             # with no asyncio event loop yet installed. Such is the case when
             # called from `scrapy shell`.
             # In Python 3.10, but not in 3.11, policy.get_event_loop() seems to
