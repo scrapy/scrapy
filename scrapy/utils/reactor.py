@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from contextlib import suppress
+from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
 
@@ -93,10 +94,18 @@ def set_asyncio_event_loop(event_loop_path):
         event_loop = event_loop_class()
         asyncio.set_event_loop(event_loop)
         return event_loop
+    policy = asyncio.get_event_loop_policy()
     try:
-        return asyncio.get_running_loop()
+        with catch_warnings():
+            # Prevent logging a DeprecationWarning due to a known issue
+            # https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.get_event_loop
+            filterwarnings(
+                "ignore",
+                message="There is no current event loop",
+                category=DeprecationWarning,
+            )
+            return policy.get_event_loop()
     except RuntimeError:
-        policy = asyncio.get_event_loop_policy()
         event_loop = policy.new_event_loop()
         asyncio.set_event_loop(event_loop)
         return event_loop
