@@ -38,10 +38,7 @@ jobs:
           env:
             TOXENV: pypy3-pinned
 
-        # extras
-        # extra-deps includes reppy, which does not support Python 3.9
-        # https://github.com/seomoz/reppy/issues/122
-        - python-version: 3.8
+        - python-version: "3.11"
           env:
             TOXENV: extra-deps
 
