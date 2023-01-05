@@ -93,22 +93,24 @@ def set_asyncio_event_loop(event_loop_path):
         event_loop_class = load_object(event_loop_path)
         event_loop = event_loop_class()
         asyncio.set_event_loop(event_loop)
-        return event_loop
-    policy = asyncio.get_event_loop_policy()
-    try:
-        with catch_warnings():
-            # Prevent logging a DeprecationWarning due to a known issue
-            # https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.get_event_loop
-            filterwarnings(
-                "ignore",
-                message="There is no current event loop",
-                category=DeprecationWarning,
-            )
-            return policy.get_event_loop()
-    except RuntimeError:
-        event_loop = policy.new_event_loop()
-        asyncio.set_event_loop(event_loop)
-        return event_loop
+    else:
+        try:
+            with catch_warnings():
+                # Prevent logging a DeprecationWarning due to a known issue
+                # https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.get_event_loop
+                filterwarnings(
+                    "ignore",
+                    message="There is no current event loop",
+                    category=DeprecationWarning,
+                )
+                event_loop = policy.get_event_loop()
+        except RuntimeError:
+            # `get_event_loop` is expected to fail when called from a new thread
+            # with no asyncio event loop yet installed. Such is the case when
+            # called from `scrapy shell`
+            event_loop = policy.new_event_loop()
+            asyncio.set_event_loop(event_loop)
+    return event_loop
 
 
 def verify_installed_reactor(reactor_path):
