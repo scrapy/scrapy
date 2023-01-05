@@ -318,8 +318,7 @@ def deferred_to_future(d: Deferred) -> Future:
                 d = treq.get('https://example.com/additional')
                 additional_response = await deferred_to_future(d)
     """
-    policy = get_asyncio_event_loop_policy()
-    return d.asFuture(policy.get_event_loop())
+    return d.asFuture(_get_asyncio_event_loop())
 
 
 def maybe_deferred_to_future(d: Deferred) -> Union[Deferred, Future]:
