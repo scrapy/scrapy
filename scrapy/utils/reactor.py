@@ -81,6 +81,10 @@ def install_reactor(reactor_path, event_loop_path=None):
             installer()
 
 
+def _get_asyncio_event_loop():
+    return set_asyncio_event_loop(None)
+
+
 def set_asyncio_event_loop(event_loop_path):
     """Sets and returns the event loop with specified import path."""
     policy = get_asyncio_event_loop_policy()
@@ -88,24 +92,14 @@ def set_asyncio_event_loop(event_loop_path):
         event_loop_class = load_object(event_loop_path)
         event_loop = event_loop_class()
         asyncio.set_event_loop(event_loop)
-    else:
-        try:
-            asyncio.get_running_loop()
-            event_loop = policy.get_event_loop()
-        except RuntimeError:
-            # policy.get_event_loop() raises RuntimeError when called from a
-            # new thread with no asyncio event loop yet installed. Such is the
-            # case when called from `scrapy shell`.
-            #
-            # In some minor versions of Python 3.10 and Python 3.11, as well as
-            # in Python 3.12, policy.get_event_loop() issues a warning instead
-            # of raising a RuntimeError when called from the main thread. To
-            # prevent any warning, we first call asyncio.get_running_loop(),
-            # which triggers a RuntimeError in that scenario.
-            # https://github.com/python/cpython/issues/100160#issuecomment-1345525581
-            event_loop = policy.new_event_loop()
-            asyncio.set_event_loop(event_loop)
-    return event_loop
+        return event_loop
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        policy = asyncio.get_event_loop_policy()
+        event_loop = policy.new_event_loop()
+        asyncio.set_event_loop(event_loop)
+        return event_loop
 
 
 def verify_installed_reactor(reactor_path):
