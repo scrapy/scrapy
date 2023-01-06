@@ -261,6 +261,32 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
 
 .. _spiderargs:
 
+    .. method:: update_settings(settings)
+
+        This is a classmethod which is called to override the configuration of your spider.
+        It receives the settings and passes :attr:`custom_settings` or `{}` to ``setdict`` 
+        method to register the setting with priority ``spider``. 
+        It is preferrable to use the :attr:`custom_settings` when making spiders class 
+        hierarchies as parent since :attr:`custom_settings` is shadowed but parent
+        :meth:`update_settings` method can be called.
+
+        :param settings: scrapy settings for the configuration of internal components
+        :type args: dict
+Let's see an example::
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = 'example.com'
+        allowed_domains = ['example.com']
+        start_urls = ['http://www.example.com/feed.csv']
+        spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
+        project_settings = {'TEST1': 'project', 'TEST3': 'project'}
+        self.spider_class.custom_settings = spider_settings
+        settings = Settings(project_settings, priority='project')
+
+        self.spider_class.update_settings(settings)    
+
 Spider arguments
 ================
 
