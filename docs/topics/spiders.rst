@@ -259,8 +259,6 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
             for href in response.xpath('//a/@href').getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
-.. _spiderargs:
-
     .. method:: update_settings(settings)
 
         This is a classmethod which is called to override the configuration of your spider.
@@ -285,7 +283,10 @@ Let's see an example::
         self.spider_class.custom_settings = spider_settings
         settings = Settings(project_settings, priority='project')
 
-        self.spider_class.update_settings(settings)    
+        self.spider_class.update_settings(settings)
+
+
+.. _spiderargs:
 
 Spider arguments
 ================
