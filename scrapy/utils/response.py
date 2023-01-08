@@ -28,7 +28,6 @@ from w3lib import html
 from xtractmime import (
     RESOURCE_HEADER_BUFFER_LENGTH as BODY_LIMIT,
     extract_mime,
-    is_binary_data,
 )
 from xtractmime.mimegroups import (
     is_html_mime_type,
