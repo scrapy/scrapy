@@ -1,5 +1,7 @@
 [run]
 branch = true
+; https://github.com/pytest-dev/pytest-cov/issues/369#issuecomment-1053702088
+disable_warnings=include-ignored
 include = scrapy/*
 omit =
   tests/*
