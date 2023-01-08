@@ -42,6 +42,7 @@ PRE_XTRACTMIME_SCENARIOS = (
             ("application/octet-stream", Response),
             ("text/plain", TextResponse),
             ("text/html", HtmlResponse),
+            ("text/html; charset=utf-8", HtmlResponse),
             ("text/xml", XmlResponse),
         )
     ),
@@ -156,13 +157,58 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    (
-        {
-            'url': 'http://www.example.com/item/',
-            'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}),
-        },
-        HtmlResponse,
+    # Unlike in a web browser, where an attachment Content-Disposition header
+    # causes the response to be downloaded, and hence MIME sniffing becomes
+    # irrelevant, in Scrapy those responses are handled the same as any, and
+    # hence we take the file extension from Content-Disposition into account
+    # to choose a response class, as a fallback when there is no Content-Type.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                'headers': Headers(
+                    {
+                        'Content-Disposition': [
+                            f'attachment; filename="a.{file_extension}"',
+                        ]
+                    }
+                ),
+            },
+            response_class,
+        )
+        for protocol in ("http", "https")
+        for file_extension, response_class in (
+            ("tar.gz", Response),
+            ("txt", TextResponse),
+            ("html", HtmlResponse),
+            ("xml", XmlResponse),
+        )
     ),
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                'headers': Headers(
+                    {
+                        'Content-Disposition': [
+                            f'attachment; filename="a.{file_extension}"',
+                        ],
+                        "Content-Type": {content_type},
+                    }
+                ),
+            },
+            response_class,
+        )
+        for protocol in ("http", "https")
+        for file_extension, content_type, response_class in (
+            ("xml", "text/plain", TextResponse),
+            ("xml", "text/html", HtmlResponse),
+            ("html", "text/xml", XmlResponse),
+        )
+    ),
+
+    # TODO: Make sure that we have a test that checks that Content-Type
+    # triumphs body.
     (
         {
             'url': 'http://www.example.com/page/',
@@ -315,57 +361,6 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # Compressed content should be of type Response until uncompressed.
-    #
-    # When it comes to compression, we trust the encoding from the following
-    # sources, in the following order:
-    #
-    # 1,  Content-Encoding HTTP header
-    #
-    # 2.  File extension of the file name of the Content-Disposition HTTP
-    #     header.
-    #
-    # 3.  File extension of the file name if the resource comes through a
-    #     file-based protocol (FTP, local file system).
-    (
-        {
-            'url': 'file.html',
-            'body': b'<!DOCTYPE html>\n<title>.</title>',
-            'headers': Headers(
-                {
-                    'Content-Disposition': [
-                        'attachment; filename="file.html"'
-                    ],
-                    'Content-Encoding': ['zip'],
-                    'Content-Type': ['text/html'],
-                }
-            ),
-        },
-        Response,
-    ),
-    (
-        {
-            'url': 'file.html',
-            'body': b'<!DOCTYPE html>\n<title>.</title>',
-            'headers': Headers(
-                {
-                    'Content-Disposition': [
-                        'attachment; filename="file.html.zip"'
-                    ],
-                    'Content-Type': ['text/html'],
-                }
-            ),
-        },
-        Response,
-    ),
-    (
-        {
-            'url': 'file.html.zip',
-            'body': b'<!DOCTYPE html>\n<title>.</title>',
-        },
-        Response,
-    ),
-
     # We take the file extension of URL paths into account, except for HTTP
     # responses, because “they are unreliable and easily spoofed”.
     #
@@ -377,6 +372,32 @@ POST_XTRACTMIME_SCENARIOS = (
         )
         for protocol, response_class in (
             *((protocol, TextResponse) for protocol in ("http", "https")),
+        )
+    ),
+
+    # Unlike in a web browser, where an attachment Content-Disposition header
+    # causes the response to be downloaded, and hence MIME sniffing becomes
+    # irrelevant, in Scrapy those responses are handled the same as any, and
+    # hence we take the file extension from Content-Disposition into account
+    # to choose a response class, as a fallback when there is no Content-Type.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                'headers': Headers(
+                    {
+                        'Content-Disposition': [
+                            f'attachment; filename="a.{file_extension}"',
+                        ],
+                        "Content-Type": {content_type},
+                    }
+                ),
+            },
+            response_class,
+        )
+        for protocol in ("http", "https")
+        for file_extension, content_type, response_class in (
+            ("xml", "application/octet-stream", Response),
         )
     ),
 

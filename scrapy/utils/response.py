@@ -89,35 +89,15 @@ def _is_other_text_mime_type(mime_type):
     )
 
 
-_PRIORITIZED_MIME_TYPE_CHECKERS = (
-    _is_compressed_mime_type,
-    _is_html_mime_type,
-    is_xml_mime_type,
-    _is_other_text_mime_type,
-)
-
-
-def _get_best_mime_type(mime_types):
-    candidate_mime_types = tuple(
-        mime_type
-        for mime_type in mime_types
-        if mime_type is not None
-    )
-    for mime_type_checker in _PRIORITIZED_MIME_TYPE_CHECKERS:
-        for candidate_mime_type in candidate_mime_types:
-            if mime_type_checker(candidate_mime_type):
-                return candidate_mime_type
-    return mime_types[0]
-
-
-def _get_encoding_or_mime_types_from_headers(
+def _get_encoding_or_mime_type_from_headers(
     headers: Headers,
-) -> Tuple[Optional[bytes], Optional[Sequence[bytes]]]:
-    mime_types = []
+) -> Tuple[Optional[bytes], Optional[bytes]]:
     if b'Content-Encoding' in headers:
         encodings = headers.getlist(b'Content-Encoding')
         if encodings:
             return encodings[-1], None
+    if b'Content-Type' in headers:
+        return None, headers[b'Content-Type']
     if b'Content-Disposition' in headers:
         path = (
             headers.get(b"Content-Disposition")
@@ -129,10 +109,8 @@ def _get_encoding_or_mime_types_from_headers(
         encoding, mime_type = _get_encoding_or_mime_type_from_path(path)
         if encoding:
             return encoding, None
-        mime_types.append(mime_type)
-    if b'Content-Type' in headers:
-        mime_types.append(headers[b'Content-Type'])
-    return None, mime_types
+        return None, mime_type
+    return None, []
 
 
 def _get_mime_type_from_encoding(encoding):
@@ -216,15 +194,15 @@ def get_response_class(
 ) -> Type[Response]:
     """Guess the most appropriate Response class based on the given
     arguments."""
-    mime_types = list(declared_mime_types or [])
+    mime_type = next(iter(declared_mime_types or []), None)
     encoding = None  # as in compression (e.g. gzip), not charset
     if http_headers:
-        encoding, header_mime_types = (
-            _get_encoding_or_mime_types_from_headers(http_headers)
+        encoding, header_mime_type = (
+            _get_encoding_or_mime_type_from_headers(http_headers)
         )
-        if not encoding:
-            assert header_mime_types is not None
-            mime_types.extend(header_mime_types)
+        if encoding is None and mime_type is None:
+            assert header_mime_type is not None
+            mime_type = header_mime_type
     if url is not None:
         url_parts = urlparse(url)
         http_origin = url_parts.scheme in ("http", "https")
@@ -232,17 +210,15 @@ def get_response_class(
             encoding, path_mime_type = (
                 _get_encoding_or_mime_type_from_path(url_parts.path)
             )
-            if not encoding:
-                mime_types.append(path_mime_type)
+            if encoding is None and mime_type is None:
+                mime_type = path_mime_type
     else:
         http_origin = True
     body = _remove_nul_byte_from_text((body or b'')[:BODY_LIMIT])
     if encoding:
-        best_mime_type = _get_mime_type_from_encoding(encoding)
-        content_types = (best_mime_type,)
-    elif mime_types:
-        best_mime_type = _get_best_mime_type(mime_types)
-        content_types = (best_mime_type,) if best_mime_type else best_mime_type
+        content_types = (_get_mime_type_from_encoding(encoding),)
+    elif mime_type:
+        content_types = (mime_type,)
     else:
         content_types = None
     mime_type = extract_mime(
