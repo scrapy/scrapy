@@ -110,7 +110,7 @@ def _get_encoding_or_mime_type_from_headers(
         if encoding:
             return encoding, None
         return None, mime_type
-    return None, []
+    return None, None
 
 
 def _get_mime_type_from_encoding(encoding):
@@ -185,7 +185,6 @@ def get_response_class(
             _get_encoding_or_mime_type_from_headers(http_headers)
         )
         if encoding is None and mime_type is None:
-            assert header_mime_type is not None
             mime_type = header_mime_type
     if url is not None:
         url_parts = urlparse(url)
