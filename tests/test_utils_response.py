@@ -110,6 +110,19 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
     ),
 
+    # HTTP headers take priority over local file extensions.
+    (
+        {
+            'url': 'file.txt',
+            'headers': Headers(
+                {
+                    'Content-Type': ['text/html'],
+                }
+            ),
+        },
+        HtmlResponse,
+    ),
+
     *(
         (
             {
@@ -309,7 +322,6 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-
     # Compressed content should be of type Response until uncompressed.
     #
     # When it comes to compression, we trust the encoding from the following
@@ -322,58 +334,44 @@ POST_XTRACTMIME_SCENARIOS = (
     #
     # 3.  File extension of the file name if the resource comes through a
     #     file-based protocol (FTP, local file system).
-    #(
-        #{
-            #'url': 'file.html',
-            #'body': b'<!DOCTYPE html>\n<title>.</title>',
-            #'headers': Headers(
-                #{
-                    #'Content-Disposition': [
-                        #'attachment; filename="file.html"'
-                    #],
-                    #'Content-Encoding': ['zip'],
-                    #'Content-Type': ['text/html'],
-                #}
-            #),
-        #},
-        #Response,
-    #),
-    #(
-        #{
-            #'url': 'file.html',
-            #'body': b'<!DOCTYPE html>\n<title>.</title>',
-            #'headers': Headers(
-                #{
-                    #'Content-Disposition': [
-                        #'attachment; filename="file.html.zip"'
-                    #],
-                    #'Content-Type': ['text/html'],
-                #}
-            #),
-        #},
-        #Response,
-    #),
-    #(
-        #{
-            #'url': 'file.html.zip',
-            #'body': b'<!DOCTYPE html>\n<title>.</title>',
-        #},
-        #Response,
-    #),
-
-    # HTTP headers take priority over local file extensions.
-    #(
-        #{
-            #'url': 'file.html.zip',
-            #'body': b'<!DOCTYPE html>\n<title>.</title>',
-            #'headers': Headers(
-                #{
-                    #'Content-Type': ['text/html'],
-                #}
-            #),
-        #},
-        #HtmlResponse,
-    #),
+    (
+        {
+            'url': 'file.html',
+            'body': b'<!DOCTYPE html>\n<title>.</title>',
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="file.html"'
+                    ],
+                    'Content-Encoding': ['zip'],
+                    'Content-Type': ['text/html'],
+                }
+            ),
+        },
+        Response,
+    ),
+    (
+        {
+            'url': 'file.html',
+            'body': b'<!DOCTYPE html>\n<title>.</title>',
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="file.html.zip"'
+                    ],
+                    'Content-Type': ['text/html'],
+                }
+            ),
+        },
+        Response,
+    ),
+    (
+        {
+            'url': 'file.html.zip',
+            'body': b'<!DOCTYPE html>\n<title>.</title>',
+        },
+        Response,
+    ),
 
     (
         {
