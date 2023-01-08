@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
+from xtractmime import BINARY_BYTES, RESOURCE_HEADER_BUFFER_LENGTH
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response, TextResponse, XmlResponse
@@ -44,28 +45,33 @@ PRE_XTRACTMIME_SCENARIOS = (
             ("text/html", HtmlResponse),
             ("text/html; charset=utf-8", HtmlResponse),
             ("text/xml", XmlResponse),
+            *(
+                (mime_type, load_object(class_path))
+                for mime_type, class_path in ResponseTypes.CLASSES.items()
+            ),
         )
     ),
 
-    # Even if the body is binary, if the Content-Type says it is text, we
-    # interpret it as text, as long as the Content-Type is not one of the 4
-    # affected by the Apache bug.
-    #
-    # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+    # Content-Type triumphs body, except for the Apache bug special case.
     *(
         (
             {
-                'body': b'\x00\x01\xff',
+                'body': body,
                 'headers': Headers({'Content-Type': [content_type]}),
             },
-            TextResponse,
+            response_class,
         )
-        for content_type in (
-            'text/json',
-            # text/plain variants *not* affected by the Apache bug
-            'text/plain; charset=Iso-8859-1',
-            'text/plain; charset=utf-8',
-            'text/plain; charset=windows-1252',
+        for body, content_type, response_class in (
+            *(
+                (b'\x00\x01\xff', content_type, TextResponse)
+                for content_type in (
+                    'text/json',
+                    # text/plain variants *not* affected by the Apache bug
+                    'text/plain; charset=Iso-8859-1',
+                    'text/plain; charset=utf-8',
+                    'text/plain; charset=windows-1252',
+                )
+            ),
         )
     ),
 
@@ -127,20 +133,6 @@ PRE_XTRACTMIME_SCENARIOS = (
             'text/xml',
             'text/plain',
         )
-    ),
-
-    # We continue to support the hard-coded MIME-to-Response-class mappings
-    # from scrapy.responsetypes.
-    *(
-        (
-            {
-                'headers': Headers(
-                    {'Content-Type': [mime_type]}
-                ),
-            },
-            load_object(class_path),
-        )
-        for mime_type, class_path in ResponseTypes.CLASSES.items()
     ),
 
     # We take the file extension of URL paths into account, except for HTTP
@@ -207,26 +199,22 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # TODO: Make sure that we have a test that checks that Content-Type
-    # triumphs body.
-    (
-        {
-            'url': 'http://www.example.com/page/',
-            'headers': Headers(
-                {
-                    'Content-Disposition': [
-                        'attachment; filename="data.xml.gz"',
-                    ]
-                }
+    # A body is considered binary if its header (first 1445 bytes) contains any
+    # binary data byte.
+    *(
+        ({"body": body}, response_class)
+        for body, response_class in (
+            *((byte, Response) for byte in BINARY_BYTES[1:]),
+            # Binary characters at the end of the header still count.
+            *(
+                (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + byte, Response)
+                for byte in BINARY_BYTES[1:]
             ),
-            'body': b'\x01\x02',
-        },
-        Response,
+            # Binary characters right after the header do not count.
+            (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + BINARY_BYTES[0], TextResponse),
+        )
     ),
-    (
-        {'body': b'Some plain\0 text data with\0 tabs and null bytes\0'},
-        TextResponse,
-    ),
+
     (
         {
             'body': b'\x03\x02\xdf\xdd\x23',
@@ -398,6 +386,22 @@ POST_XTRACTMIME_SCENARIOS = (
         for protocol in ("http", "https")
         for file_extension, content_type, response_class in (
             ("xml", "application/octet-stream", Response),
+        )
+    ),
+
+    # A body is considered binary if its header (first 1445 bytes) contains any
+    # binary data byte.
+    *(
+        ({"body": body}, response_class)
+        for body, response_class in (
+            (BINARY_BYTES[0], Response),
+            # Binary characters at the end of the header still count.
+            (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + BINARY_BYTES[0], Response),
+            # Binary characters right after the header do not count.
+            *(
+                (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + byte, TextResponse)
+                for byte in BINARY_BYTES[1:]
+            ),
         )
     ),
 

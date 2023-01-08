@@ -141,22 +141,6 @@ def _get_response_class_from_mime_type(mime_type):
     return Response
 
 
-def _remove_nul_byte_from_text(text):
-    """Return the text with removed null byte (b'\x00') if there are no other
-    binary bytes in the text, otherwise return the text as-is.
-
-    Based on https://github.com/scrapy/scrapy/issues/2481
-    """
-    for index in range(len(text)):
-        if (
-            text[index:index + 1] != b'\x00'
-            and is_binary_data(text[index:index + 1])
-        ):
-            return text
-
-    return text.replace(b'\x00', b'')
-
-
 def get_base_url(response: TextResponse) -> str:
     """Return the base url of the given response, joined with the response url"""
     warn(
@@ -214,7 +198,7 @@ def get_response_class(
                 mime_type = path_mime_type
     else:
         http_origin = True
-    body = _remove_nul_byte_from_text((body or b'')[:BODY_LIMIT])
+    body = (body or b'')[:BODY_LIMIT]
     if encoding:
         content_types = (_get_mime_type_from_encoding(encoding),)
     elif mime_type:
