@@ -228,7 +228,7 @@ def get_response_class(
     if url is not None:
         url_parts = urlparse(url)
         http_origin = url_parts.scheme in ("http", "https")
-        if not encoding:
+        if not http_origin and not encoding:
             encoding, path_mime_type = (
                 _get_encoding_or_mime_type_from_path(url_parts.path)
             )

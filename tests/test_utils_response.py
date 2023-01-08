@@ -28,6 +28,24 @@ __doctests__ = ['scrapy.utils.response']
 # Scenarios that work the same with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 PRE_XTRACTMIME_SCENARIOS = (
+    # Content-Type determines the type for the HTTP protocol.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/foo",
+                "headers": Headers({"Content-Type": content_type}),
+            },
+            response_class,
+        )
+        for protocol in ("http", "https")
+        for content_type, response_class in (
+            ("application/octet-stream", Response),
+            ("text/plain", TextResponse),
+            ("text/html", HtmlResponse),
+            ("text/xml", XmlResponse),
+        )
+    ),
+
     # Even if the body is binary, if the Content-Type says it is text, we
     # interpret it as text, as long as the Content-Type is not one of the 4
     # affected by the Apache bug.
@@ -110,19 +128,8 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # HTTP headers take priority over local file extensions.
-    (
-        {
-            'url': 'file.txt',
-            'headers': Headers(
-                {
-                    'Content-Type': ['text/html'],
-                }
-            ),
-        },
-        HtmlResponse,
-    ),
-
+    # We continue to support the hard-coded MIME-to-Response-class mappings
+    # from scrapy.responsetypes.
     *(
         (
             {
@@ -134,12 +141,21 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
         for mime_type, class_path in ResponseTypes.CLASSES.items()
     ),
-    (
-        {
-            'url': 'http://www.example.com/data.csv',
-        },
-        TextResponse,
+
+    # We take the file extension of URL paths into account, except for HTTP
+    # responses, because “they are unreliable and easily spoofed”.
+    #
+    # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+    *(
+        (
+            {'url': f'{protocol}://example.com/a.html'},
+            response_class,
+        )
+        for protocol, response_class in (
+            *((protocol, HtmlResponse) for protocol in ("file", "ftp")),
+        )
     ),
+
     (
         {
             'url': 'http://www.example.com/item/',
@@ -180,7 +196,6 @@ PRE_XTRACTMIME_SCENARIOS = (
         },
         TextResponse,
     ),
-    ({'url': 'http://www.example.com/item/file.html'}, HtmlResponse),
     ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
     ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
     (
@@ -222,28 +237,6 @@ PRE_XTRACTMIME_SCENARIOS = (
         Response,
     ),
     ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
-    (
-        {
-            'url': 'http://www.example.com/page/file.html',
-            'headers': Headers({'Content-Type': 'application/octet-stream'}),
-        },
-        HtmlResponse,
-    ),
-    (
-        {
-            'url': 'http://www.example.com/item/file.xml',
-            'headers': Headers({'Content-Type': 'application/octet-stream'}),
-        },
-        XmlResponse,
-    ),
-    (
-        {
-            'url': 'http://www.example.com/item/file.html',
-            'headers': Headers({'Content-Type': 'application/octet-stream'}),
-        },
-        HtmlResponse,
-    ),
-    ({'url': 'http://www.example.com/item/file.pdf'}, Response),
     ({'filename': 'file.pdf'}, Response),
     (
         {
@@ -371,6 +364,20 @@ POST_XTRACTMIME_SCENARIOS = (
             'body': b'<!DOCTYPE html>\n<title>.</title>',
         },
         Response,
+    ),
+
+    # We take the file extension of URL paths into account, except for HTTP
+    # responses, because “they are unreliable and easily spoofed”.
+    #
+    # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+    *(
+        (
+            {'url': f'{protocol}://example.com/a.html'},
+            response_class,
+        )
+        for protocol, response_class in (
+            *((protocol, TextResponse) for protocol in ("http", "https")),
+        )
     ),
 
     (
