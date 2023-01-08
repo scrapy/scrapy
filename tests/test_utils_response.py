@@ -26,6 +26,15 @@ from scrapy.utils.response import (
 __doctests__ = ['scrapy.utils.response']
 
 
+NON_BINARY_ASCII_BYTES = (
+    byte
+    for byte in (
+        bytes([byte]) for byte in range(128)
+    )
+    if byte not in BINARY_BYTES
+)
+
+
 # Scenarios that work the same with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 PRE_XTRACTMIME_SCENARIOS = (
@@ -244,6 +253,11 @@ PRE_XTRACTMIME_SCENARIOS = (
             # contains any binary data byte.
             *((byte, Response) for byte in BINARY_BYTES[1:]),
             *(
+                (byte, TextResponse)
+                for byte in NON_BINARY_ASCII_BYTES
+                if byte not in (b"\x0c", b"\x1b")
+            ),
+            *(
                 (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + byte, Response)
                 for byte in BINARY_BYTES[1:]
             ),
@@ -255,6 +269,15 @@ PRE_XTRACTMIME_SCENARIOS = (
 # Scenarios that work differently with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 POST_XTRACTMIME_SCENARIOS = (
+    # Content-Type triumphs body, except for the Apache bug special case.
+    (
+        {
+            'body': b'a',
+            'headers': Headers({'Content-Type': ['application/octet-stream']}),
+        },
+        Response,
+    ),
+
     # A known Apache bug may cause a server to send files with Content-Type set
     # to "text/plain", "text/plain; charset=ISO-8859-1",
     # "text/plain; charset=iso-8859-1", or "text/plain; charset=UTF-8",
@@ -285,7 +308,6 @@ POST_XTRACTMIME_SCENARIOS = (
     #
     # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
     ({}, TextResponse),
-    ({'url': '/tmp/temp^'}, TextResponse),
 
     # Body-based PDF detection
     #
@@ -360,45 +382,24 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # A body is considered binary if its header (first 1445 bytes) contains any
-    # binary data byte.
+    # Without anything else, the body determines the response class.
     *(
         ({"body": body}, response_class)
         for body, response_class in (
+            # A body is considered binary if its header (first 1445 bytes)
+            # contains any binary data byte.
             (BINARY_BYTES[0], Response),
-            # Binary characters at the end of the header still count.
+            *((byte, TextResponse) for byte in (b"\x0c", b"\x1b")),
             (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + BINARY_BYTES[0], Response),
-            # Binary characters right after the header do not count.
             *(
                 (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + byte, TextResponse)
                 for byte in BINARY_BYTES[1:]
             ),
+            # HTML and XML detection does not allow for unexpected content
+            # before document start.
+            (b'a<html>', TextResponse),
+            (b'a<?xml', TextResponse),
         )
-    ),
-
-    (
-        {
-            'body': b'Some plain text',
-            'headers': Headers({'Content-Type': 'application/octet-stream'}),
-        },
-        Response,
-    ),
-    ({'body': b'\x0c\x1b'}, TextResponse),
-    ({'body': b'this is not <html>'}, TextResponse),
-    ({'body': b'this is not <?xml'}, TextResponse),
-    (
-        {
-            'url': 'http://www.example.com/item/file.xml',
-            'headers': Headers(
-                {
-                    'Content-Disposition': [
-                        'attachment; filename="data.xml.gz"'
-                    ],
-                    'Content-Type': 'application/octet-stream',
-                }
-            ),
-        },
-        Response,
     ),
 )
 
