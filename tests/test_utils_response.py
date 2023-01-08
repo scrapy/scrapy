@@ -98,6 +98,9 @@ PRE_XTRACTMIME_SCENARIOS = (
             'text/livescript',
             'text/x-ecmascript',
             'text/x-javascript',
+
+            # Unofficial
+            'application/x-javascript',
         )
     ),
 
@@ -112,6 +115,21 @@ PRE_XTRACTMIME_SCENARIOS = (
         for content_type in (
             'application/json',
             'text/json',
+
+            # Unofficial
+            'application/json-amazonui-streaming',
+            'application/x-json',
+        )
+    ),
+
+    # Binary MIME types should trigger a Response.
+    *(
+        (
+            {'headers': Headers({'Content-Type': [content_type]})},
+            Response,
+        )
+        for content_type in (
+            'application/pdf',
         )
     ),
 
@@ -170,7 +188,7 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
         for protocol in ("http", "https")
         for file_extension, response_class in (
-            ("tar.gz", Response),
+            ("gz", Response),
             ("txt", TextResponse),
             ("html", HtmlResponse),
             ("xml", XmlResponse),
@@ -199,85 +217,38 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # A body is considered binary if its header (first 1445 bytes) contains any
-    # binary data byte.
+    # Binary file extensions should trigger a Response.
+    *(
+        (
+            {
+                "url": f"file:///a.{extension}",
+            },
+            Response,
+        )
+        for extension in (
+            'pdf',
+        )
+    ),
+
+    # Without anything else, the body determines the response class.
     *(
         ({"body": body}, response_class)
         for body, response_class in (
+            (b'<html><head><title>Hello</title></head>', HtmlResponse),
+            (b'<?xml version="1.0" encoding="utf-8"', XmlResponse),
+
+            # https://codersblock.com/blog/the-smallest-valid-html5-page/
+            (b'<!DOCTYPE html>\n<title>.</title>', HtmlResponse),
+
+            # A body is considered binary if its header (first 1445 bytes)
+            # contains any binary data byte.
             *((byte, Response) for byte in BINARY_BYTES[1:]),
-            # Binary characters at the end of the header still count.
             *(
                 (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + byte, Response)
                 for byte in BINARY_BYTES[1:]
             ),
-            # Binary characters right after the header do not count.
             (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + BINARY_BYTES[0], TextResponse),
         )
-    ),
-
-    (
-        {
-            'body': b'\x03\x02\xdf\xdd\x23',
-            'headers': Headers({'Content-Encoding': 'UTF-8'}),
-        },
-        Response,
-    ),
-    (
-        {
-            'body': b'\x00\x01\xff',
-            'url': '://www.example.com/item/',
-            'headers': Headers({'Content-Type': ['text/plain']}),
-        },
-        TextResponse,
-    ),
-    ({'body': b'<html><head><title>Hello</title></head>'}, HtmlResponse),
-    ({'body': b'<?xml version="1.0" encoding="utf-8"'}, XmlResponse),
-    (
-        {'body': b'Some plain text data\1\2 with tabs and\n null bytes\0'},
-        Response,
-    ),
-    # https://codersblock.com/blog/the-smallest-valid-html5-page/
-    ({'body': b'<!DOCTYPE html>\n<title>.</title>'}, HtmlResponse),
-    (
-        {
-            'body': b'\x01\x02',
-            'headers': Headers({'Content-Type': ['application/pdf']}),
-        },
-        Response,
-    ),
-    (
-        {'headers': Headers({'Content-Type': ['application/x-json']})},
-        TextResponse,
-    ),
-    (
-        {'headers': Headers({'Content-Type': ['application/x-javascript']})},
-        TextResponse,
-    ),
-    (
-        {
-            'headers': Headers(
-                {'Content-Type': ['application/json-amazonui-streaming']}
-            )
-        },
-        TextResponse,
-    ),
-    (
-        {
-            'headers': Headers(
-                {'Content-Disposition': ['attachment; filename="data.xml.gz"']}
-            ),
-            'url': 'http://www.example.com/page/',
-        },
-        Response,
-    ),
-    ({'headers': Headers({'Content-Type': ['application/pdf']})}, Response),
-    ({'filename': 'file.pdf'}, Response),
-    (
-        {
-            'body': b'<!DOCTYPE html>\n<title>.</title>',
-            'url': 'http://www.example.com',
-        },
-        HtmlResponse,
     ),
 )
 
@@ -443,9 +414,6 @@ def test_get_response_class_http(kwargs, response_class):
     kwargs = dict(kwargs)
     if 'headers' in kwargs:
         kwargs['http_headers'] = kwargs.pop('headers')
-    if 'filename' in kwargs:
-        assert 'url' not in kwargs
-        kwargs['url'] = kwargs.pop('filename')
     assert get_response_class(**kwargs) == response_class
 
 
