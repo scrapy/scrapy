@@ -34,7 +34,9 @@ install_requires = [
     'packaging',
     'tldextract',
     'lxml>=4.3.0',
-    'xtractmime>=0.1.0',
+    # TODO: Release a new version of xtractmime and use it as the minimum
+    # version here.
+    'xtractmime @ git+https://github.com/scrapy/xtractmime@c65d09c94836547dd7c6a659fe9740c112253526',
 ]
 extras_require = {}
 cpython_dependencies = [

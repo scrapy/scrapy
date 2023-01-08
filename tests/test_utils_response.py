@@ -33,26 +33,17 @@ PRE_XTRACTMIME_SCENARIOS = (
     # affected by the Apache bug.
     #
     # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
-    (
-        {
-            'body': b'\x00\x01\xff',
-            'headers': Headers({'Content-Type': ['text/json']}),
-        },
-        TextResponse,
-    ),
     *(
-        pytest.param(
+        (
             {
                 'body': b'\x00\x01\xff',
                 'headers': Headers({'Content-Type': [content_type]}),
             },
             TextResponse,
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="https://github.com/scrapy/xtractmime/issues/13",
-            ),
         )
         for content_type in (
+            'text/json',
+            # text/plain variants *not* affected by the Apache bug
             'text/plain; charset=Iso-8859-1',
             'text/plain; charset=utf-8',
             'text/plain; charset=windows-1252',

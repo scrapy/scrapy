@@ -131,7 +131,7 @@ def _get_encoding_or_mime_types_from_headers(
             return encoding, None
         mime_types.append(mime_type)
     if b'Content-Type' in headers:
-        mime_types.append(headers[b'Content-Type'].split(b';')[0])
+        mime_types.append(headers[b'Content-Type'])
     return None, mime_types
 
 
