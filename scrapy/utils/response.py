@@ -112,7 +112,7 @@ def _get_best_mime_type(mime_types):
 
 def _get_encoding_or_mime_types_from_headers(
     headers: Headers,
-) -> Sequence[bytes]:
+) -> Tuple[Optional[bytes], Optional[Sequence[bytes]]]:
     mime_types = []
     if b'Content-Encoding' in headers:
         encodings = headers.getlist(b'Content-Encoding')
@@ -209,10 +209,10 @@ def get_meta_refresh(
 
 def get_response_class(
     *,
-    url: str = None,
-    body: bytes = None,
-    declared_mime_types: Sequence[bytes] = None,
-    http_headers: Headers = None,
+    url: Optional[str] = None,
+    body: Optional[bytes] = None,
+    declared_mime_types: Optional[Sequence[bytes]] = None,
+    http_headers: Optional[Headers] = None,
 ) -> Type[Response]:
     """Guess the most appropriate Response class based on the given
     arguments."""
@@ -223,6 +223,7 @@ def get_response_class(
             _get_encoding_or_mime_types_from_headers(http_headers)
         )
         if not encoding:
+            assert header_mime_types is not None
             mime_types.extend(header_mime_types)
     if url is not None:
         url_parts = urlparse(url)
