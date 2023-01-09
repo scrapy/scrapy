@@ -146,7 +146,7 @@ scrapy.Spider
        :type kwargs: dict
 
    .. method:: start_requests()
-        
+
        This method must return an iterable with the first Requests to crawl for
        this spider. It is called by Scrapy when the spider is opened for
        scraping. Scrapy calls it only once, so it is safe to implement
@@ -158,7 +158,7 @@ scrapy.Spider
        If you want to change the Requests used to start scraping a domain, this is
        the method to override. For example, if you need to start by logging in using
        a POST request, you could do::
-
+            
            class MySpider(scrapy.Spider):
                name = 'myspider'
 
@@ -268,7 +268,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
         Using this method is preferable to using ``custom_settings`` when making spiders class hierarchies 
         as parent ``custom_settings`` is shadowed but parent ``update_settings()`` can be called.
 
-        If you want to override the ``update_settings`` method and set a custom setting here is an example::
+here is an example::
 
             class MySpider(scrapy.Spider):
                 name = 'myspider'
