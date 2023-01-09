@@ -1,5 +1,5 @@
 import argparse
-import json
+import orjson as json
 import random
 import sys
 from pathlib import Path

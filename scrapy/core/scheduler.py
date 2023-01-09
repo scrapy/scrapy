@@ -1,4 +1,4 @@
-import json
+import orjson as json
 import logging
 from abc import abstractmethod
 from pathlib import Path

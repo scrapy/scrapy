@@ -1,5 +1,5 @@
 import re
-import json
+import orjson as json
 import marshal
 import pickle
 import tempfile

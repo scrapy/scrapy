@@ -4,7 +4,7 @@ scrapy.http.Request objects
 """
 
 import hashlib
-import json
+import orjson as json
 import warnings
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 from urllib.parse import urlunparse

@@ -366,7 +366,7 @@ class HttpTestCase(unittest.TestCase):
 
     def test_content_length_zero_bodyless_post_only_one(self):
         def _test(response):
-            import json
+            import orjson as json
             headers = Headers(json.loads(response.text)['headers'])
             contentlengths = headers.getlist('Content-Length')
             self.assertEqual(len(contentlengths), 1)

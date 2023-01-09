@@ -1,5 +1,5 @@
 import inspect
-import json
+import orjson as json
 import argparse
 import os
 import platform
@@ -740,7 +740,7 @@ class MySpider(scrapy.Spider):
 
     def test_overwrite_output(self):
         spider_code = """
-import json
+import orjson as json
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -898,7 +898,7 @@ class MySpider(scrapy.Spider):
 
     def test_overwrite_output(self):
         spider_code = """
-import json
+import orjson as json
 import scrapy
 
 class MySpider(scrapy.Spider):

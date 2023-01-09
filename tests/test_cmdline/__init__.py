@@ -1,4 +1,4 @@
-import json
+import orjson as json
 import pstats
 import shutil
 import sys

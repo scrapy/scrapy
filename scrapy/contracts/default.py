@@ -1,4 +1,4 @@
-import json
+import orjson as json
 
 from itemadapter import is_item, ItemAdapter
 

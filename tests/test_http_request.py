@@ -1,6 +1,6 @@
 import unittest
 import re
-import json
+import orjson as json
 import xmlrpc.client
 import warnings
 from unittest import mock

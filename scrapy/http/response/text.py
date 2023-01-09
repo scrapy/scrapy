@@ -5,7 +5,7 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import json
+import orjson as json
 from contextlib import suppress
 from typing import Generator, Tuple
 from urllib.parse import urljoin

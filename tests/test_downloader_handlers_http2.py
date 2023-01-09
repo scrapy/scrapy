@@ -1,4 +1,4 @@
-import json
+import orjson as json
 from unittest import mock, skipIf
 
 from pytest import mark

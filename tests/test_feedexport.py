@@ -1,7 +1,7 @@
 import bz2
 import csv
 import gzip
-import json
+import orjson as json
 import lzma
 import random
 import shutil

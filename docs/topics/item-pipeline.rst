@@ -106,7 +106,7 @@ The following pipeline stores all scraped items (from all spiders) into a
 single ``items.jsonl`` file, containing one item per line serialized in JSON
 format::
 
-   import json
+   import orjson as json
 
    from itemadapter import ItemAdapter
 

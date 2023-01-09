@@ -1,4 +1,4 @@
-import json
+import orjson as json
 import logging
 from ipaddress import IPv4Address
 from socket import gethostbyname

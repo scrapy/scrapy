@@ -1,4 +1,4 @@
-import json
+import orjson as json
 import copy
 from collections.abc import MutableMapping
 from importlib import import_module

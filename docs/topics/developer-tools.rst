@@ -240,7 +240,7 @@ With this response we can now easily parse the JSON-object and
 also request each page to get every quote on the site::
 
     import scrapy
-    import json
+    import orjson as json
 
 
     class QuoteSpider(scrapy.Spider):

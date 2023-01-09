@@ -1,0 +1,12 @@
+ 'elapsed_time_seconds': 10.829097,
+ 'elapsed_time_seconds': 10.62479,
+ 'elapsed_time_seconds': 10.767546,
+ 'elapsed_time_seconds': 10.632892,
+ 'elapsed_time_seconds': 10.761194,
+ 'elapsed_time_seconds': 10.811502,
+ 'elapsed_time_seconds': 10.537821,
+ 'elapsed_time_seconds': 10.613606,
+ 'elapsed_time_seconds': 10.562097,
+ 'elapsed_time_seconds': 10.687862,
+
+Avg = 10.6828407

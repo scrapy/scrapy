@@ -1,4 +1,4 @@
-import json
+import orjson as json
 
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings

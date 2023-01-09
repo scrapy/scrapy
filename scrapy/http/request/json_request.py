@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import copy
-import json
+import orjson as json
 import warnings
 from typing import Optional, Tuple
 
