@@ -265,6 +265,23 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
         for protocol in ("http", "https")
     ),
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                "body": b"<?xml",
+                'headers': Headers(
+                    {
+                        'Content-Disposition': [
+                            'attachment; filename="a.html"',
+                        ],
+                    }
+                ),
+            },
+            HtmlResponse,
+        )
+        for protocol in ("http", "https")
+    ),
 
     # Without anything else, the body determines the response class.
     *(
