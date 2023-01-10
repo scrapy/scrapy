@@ -1,5 +1,3 @@
-# flake8: noqa  TODO: remove this line
-
 import unittest
 import warnings
 from itertools import chain
@@ -339,10 +337,10 @@ PRE_XTRACTMIME_SCENARIOS = (
                 if byte not in (b"\x0c", b"\x1b")
             ),
             *(
-                (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + byte, Response)
+                (b"a" * (RESOURCE_HEADER_BUFFER_LENGTH - 1) + byte, Response)
                 for byte in BINARY_BYTES[1:]
             ),
-            (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + BINARY_BYTES[0], TextResponse),
+            (b"a" * RESOURCE_HEADER_BUFFER_LENGTH + BINARY_BYTES[0], TextResponse),
         )
     ),
 
@@ -599,9 +597,9 @@ POST_XTRACTMIME_SCENARIOS = (
             # contains any binary data byte.
             (BINARY_BYTES[0], Response),
             *((byte, TextResponse) for byte in (b"\x0c", b"\x1b")),
-            (b"a"*(RESOURCE_HEADER_BUFFER_LENGTH-1) + BINARY_BYTES[0], Response),
+            (b"a" * (RESOURCE_HEADER_BUFFER_LENGTH - 1) + BINARY_BYTES[0], Response),
             *(
-                (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + byte, TextResponse)
+                (b"a" * RESOURCE_HEADER_BUFFER_LENGTH + byte, TextResponse)
                 for byte in BINARY_BYTES[1:]
             ),
 
