@@ -66,15 +66,6 @@ def _is_compressed_mime_type(mime_type):
     return mime_type in _ENCODING_MIME_TYPES
 
 
-def _is_html_mime_type(mime_type):
-    if mime_type in {
-        b'application/xhtml+xml',
-        b'application/vnd.wap.xhtml+xml',
-    }:
-        return True
-    return is_html_mime_type(mime_type)
-
-
 def _is_other_text_mime_type(mime_type):
     return (
         mime_type.startswith(b'text/')
@@ -131,7 +122,7 @@ def _get_encoding_or_mime_type_from_path(path):
 def _get_response_class_from_mime_type(mime_type):
     if not mime_type:
         return Response
-    if _is_html_mime_type(mime_type):
+    if is_html_mime_type(mime_type):
         return HtmlResponse
     if is_xml_mime_type(mime_type):
         return XmlResponse

@@ -57,6 +57,12 @@ PRE_XTRACTMIME_SCENARIOS = (
             *(
                 (mime_type, load_object(class_path))
                 for mime_type, class_path in ResponseTypes.CLASSES.items()
+                if mime_type not in (
+                    # “Note that XHTML is best parsed as XML”
+                    # https://lxml.de/parsing.html
+                    "application/xhtml+xml",
+                    "application/vnd.wap.xhtml+xml",
+                )
             ),
         )
     ),
@@ -143,23 +149,16 @@ PRE_XTRACTMIME_SCENARIOS = (
     ),
 
     # Compressed content should be of type Response until uncompressed.
-    *(
-        (
-            {
-                'headers': Headers(
-                    {
-                        'Content-Encoding': ['zip'],
-                        'Content-Type': [content_type],
-                    }
-                )
-            },
-            Response,
-        )
-        for content_type in (
-            'text/html',
-            'text/xml',
-            'text/plain',
-        )
+    (
+        {
+            'headers': Headers(
+                {
+                    'Content-Encoding': ['zip'],
+                    'Content-Type': ['text/html'],
+                }
+            )
+        },
+        Response,
     ),
 
     # We take the file extension of URL paths into account, except for HTTP
@@ -168,11 +167,17 @@ PRE_XTRACTMIME_SCENARIOS = (
     # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
     *(
         (
-            {'url': f'{protocol}://example.com/a.html'},
+            {'url': f'{protocol}://example.com/a.{extension}'},
             response_class,
         )
-        for protocol, response_class in (
-            *((protocol, HtmlResponse) for protocol in ("file", "ftp")),
+        for protocol in ("file", "ftp")
+        for extension, response_class in (
+            ("gz", Response),
+            ("html", HtmlResponse),
+            ("json", TextResponse),
+            ("pdf", Response),
+            ("txt", TextResponse),
+            ("xml", XmlResponse),
         )
     ),
 
@@ -188,20 +193,14 @@ PRE_XTRACTMIME_SCENARIOS = (
                 'headers': Headers(
                     {
                         'Content-Disposition': [
-                            f'attachment; filename="a.{file_extension}"',
+                            f'attachment; filename="a.xml"',
                         ]
                     }
                 ),
             },
-            response_class,
+            XmlResponse,
         )
         for protocol in ("http", "https")
-        for file_extension, response_class in (
-            ("gz", Response),
-            ("txt", TextResponse),
-            ("html", HtmlResponse),
-            ("xml", XmlResponse),
-        )
     ),
     *(
         (
@@ -210,33 +209,15 @@ PRE_XTRACTMIME_SCENARIOS = (
                 'headers': Headers(
                     {
                         'Content-Disposition': [
-                            f'attachment; filename="a.{file_extension}"',
+                            f'attachment; filename="a.html"',
                         ],
-                        "Content-Type": {content_type},
+                        "Content-Type": "text/xml",
                     }
                 ),
             },
-            response_class,
+            XmlResponse,
         )
         for protocol in ("http", "https")
-        for file_extension, content_type, response_class in (
-            ("xml", "text/plain", TextResponse),
-            ("xml", "text/html", HtmlResponse),
-            ("html", "text/xml", XmlResponse),
-        )
-    ),
-
-    # Binary file extensions should trigger a Response.
-    *(
-        (
-            {
-                "url": f"file:///a.{extension}",
-            },
-            Response,
-        )
-        for extension in (
-            'pdf',
-        )
     ),
 
     # Without anything else, the body determines the response class.
@@ -269,6 +250,24 @@ PRE_XTRACTMIME_SCENARIOS = (
 # Scenarios that work differently with the previously-used, deprecated
 # scrapy.responsetypes.responsetypes.from_args
 POST_XTRACTMIME_SCENARIOS = (
+    # Content-Type determines the type for the HTTP protocol.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/foo",
+                "headers": Headers({"Content-Type": content_type}),
+            },
+            response_class,
+        )
+        for protocol in ("http", "https")
+        for content_type, response_class in (
+            # “Note that XHTML is best parsed as XML”
+            # https://lxml.de/parsing.html
+            ("application/xhtml+xml", XmlResponse),
+            ("application/vnd.wap.xhtml+xml", XmlResponse),
+        )
+    ),
+
     # Content-Type triumphs body, except for the Apache bug special case.
     (
         {
@@ -346,6 +345,18 @@ POST_XTRACTMIME_SCENARIOS = (
     # responses, because “they are unreliable and easily spoofed”.
     #
     # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+    *(
+        (
+            {'url': f'{protocol}://example.com/a.{extension}'},
+            response_class,
+        )
+        for protocol in ("file", "ftp")
+        for extension, response_class in (
+            # “Note that XHTML is best parsed as XML”
+            # https://lxml.de/parsing.html
+            ("xhtml", XmlResponse),
+        )
+    ),
     *(
         (
             {'url': f'{protocol}://example.com/a.html'},
