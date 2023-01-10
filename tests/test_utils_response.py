@@ -88,16 +88,19 @@ PRE_XTRACTMIME_SCENARIOS = (
         (
             {
                 "url": f"{protocol}://example.com/foo",
-                "headers": Headers({"Content-Type": content_type}),
+                "headers": Headers(
+                    {"Content-Type": content_type + content_type_parameters}
+                ),
             },
             response_class,
         )
         for protocol in ("http", "https")
+        # Make sure that MIME parameters do not break response class choice.
+        for content_type_parameters in ("", "; foo=bar")
         for content_type, response_class in (
             ("application/octet-stream", Response),
             ("text/plain", TextResponse),
             ("text/html", HtmlResponse),
-            ("text/html; charset=utf-8", HtmlResponse),
             ("text/xml", XmlResponse),
             *(
                 (mime_type, load_object(class_path))
@@ -107,6 +110,57 @@ PRE_XTRACTMIME_SCENARIOS = (
                     # https://lxml.de/parsing.html
                     "application/xhtml+xml",
                     "application/vnd.wap.xhtml+xml",
+                )
+            ),
+
+            # JavaScript MIME types should trigger a TextResponse.
+            #
+            # https://mimesniff.spec.whatwg.org/#javascript-mime-type
+            *(
+                (mime_type, TextResponse)
+                for mime_type in (
+                    'application/javascript',
+                    'application/x-javascript',
+                    'text/ecmascript',
+                    'text/javascript',
+                    'text/javascript1.0',
+                    'text/javascript1.1',
+                    'text/javascript1.2',
+                    'text/javascript1.3',
+                    'text/javascript1.4',
+                    'text/javascript1.5',
+                    'text/jscript',
+                    'text/livescript',
+                    'text/x-ecmascript',
+                    'text/x-javascript',
+
+                    # Unofficial
+                    'application/x-javascript',
+                )
+            ),
+
+            # JSON MIME types should trigger a TextResponse.
+            #
+            # https://mimesniff.spec.whatwg.org/#json-mime-type
+            *(
+                (mime_type, TextResponse)
+                for mime_type in (
+                    'application/json',
+                    'text/json',
+
+                    # Unofficial
+                    'application/json-amazonui-streaming',
+                    'application/x-json',
+                )
+            ),
+
+            # Binary MIME types should trigger a Response.
+            #
+            # https://mimesniff.spec.whatwg.org/#json-mime-type
+            *(
+                (mime_type, Response)
+                for mime_type in (
+                    'application/pdf',
                 )
             ),
         )
@@ -132,64 +186,6 @@ PRE_XTRACTMIME_SCENARIOS = (
                     'text/plain; charset=windows-1252',
                 )
             ),
-        )
-    ),
-
-    # JavaScript MIME types should trigger a TextResponse.
-    #
-    # https://mimesniff.spec.whatwg.org/#javascript-mime-type
-    *(
-        (
-            {'headers': Headers({'Content-Type': [content_type]})},
-            TextResponse,
-        )
-        for content_type in (
-            'application/javascript',
-            'application/x-javascript',
-            'text/ecmascript',
-            'text/javascript',
-            'text/javascript1.0',
-            'text/javascript1.1',
-            'text/javascript1.2',
-            'text/javascript1.3',
-            'text/javascript1.4',
-            'text/javascript1.5',
-            'text/jscript',
-            'text/livescript',
-            'text/x-ecmascript',
-            'text/x-javascript',
-
-            # Unofficial
-            'application/x-javascript',
-        )
-    ),
-
-    # JSON MIME types should trigger a TextResponse.
-    #
-    # https://mimesniff.spec.whatwg.org/#json-mime-type
-    *(
-        (
-            {'headers': Headers({'Content-Type': [content_type]})},
-            TextResponse,
-        )
-        for content_type in (
-            'application/json',
-            'text/json',
-
-            # Unofficial
-            'application/json-amazonui-streaming',
-            'application/x-json',
-        )
-    ),
-
-    # Binary MIME types should trigger a Response.
-    *(
-        (
-            {'headers': Headers({'Content-Type': [content_type]})},
-            Response,
-        )
-        for content_type in (
-            'application/pdf',
         )
     ),
 
@@ -357,11 +353,35 @@ POST_XTRACTMIME_SCENARIOS = (
             response_class,
         )
         for protocol in ("http", "https")
+        # Make sure that MIME parameters do not break response class choice.
+        for content_type_parameters in ("", "; foo=bar")
         for content_type, response_class in (
             # “Note that XHTML is best parsed as XML”
             # https://lxml.de/parsing.html
             ("application/xhtml+xml", XmlResponse),
             ("application/vnd.wap.xhtml+xml", XmlResponse),
+
+            # JavaScript MIME types should trigger a TextResponse.
+            #
+            # https://mimesniff.spec.whatwg.org/#javascript-mime-type
+            *(
+                (mime_type, TextResponse)
+                for mime_type in (
+                    'application/ecmascript',
+                    'application/x-ecmascript',
+                )
+            ),
+
+            # JSON MIME types should trigger a TextResponse.
+            #
+            # https://mimesniff.spec.whatwg.org/#json-mime-type
+            *(
+                (mime_type, TextResponse)
+                for mime_type in (
+                    'application/foo+json',
+                    'application/ld+json',
+                )
+            ),
         )
     ),
 
@@ -404,34 +424,6 @@ POST_XTRACTMIME_SCENARIOS = (
     #
     # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
     ({}, TextResponse),
-
-    # JavaScript MIME types should trigger a TextResponse.
-    #
-    # https://mimesniff.spec.whatwg.org/#javascript-mime-type
-    *(
-        (
-            {'headers': Headers({'Content-Type': [content_type]})},
-            TextResponse,
-        )
-        for content_type in (
-            'application/ecmascript',
-            'application/x-ecmascript',
-        )
-    ),
-
-    # JSON MIME types should trigger a TextResponse.
-    #
-    # https://mimesniff.spec.whatwg.org/#json-mime-type
-    *(
-        (
-            {'headers': Headers({'Content-Type': [content_type]})},
-            TextResponse,
-        )
-        for content_type in (
-            'application/foo+json',
-            'application/ld+json',
-        )
-    ),
 
     # We take the file extension of URL paths into account, except for HTTP
     # responses, because “they are unreliable and easily spoofed”.
