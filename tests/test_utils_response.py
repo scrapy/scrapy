@@ -450,6 +450,16 @@ POST_XTRACTMIME_SCENARIOS = (
                     'application/ld+json',
                 )
             ),
+
+            # XML MIME types should trigger an XmlResponse.
+            #
+            # https://mimesniff.spec.whatwg.org/#xml-mime-type
+            *(
+                (mime_type, XmlResponse)
+                for mime_type in (
+                    'application/foo+xml',
+                )
+            ),
         )
     ),
 
@@ -500,6 +510,21 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
+    # Content-Type also triumphs Content-Disposition.
+    (
+        {
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="a.html"',
+                    ],
+                    'Content-Type': ['application/octet-stream'],
+                }
+            )
+        },
+        Response,
+    ),
+
     # Compressed content should be of type Response until uncompressed.
     (
         {
@@ -508,17 +533,6 @@ POST_XTRACTMIME_SCENARIOS = (
                     'Content-Disposition': [
                         'attachment; filename="a.html"',
                     ],
-                    'Content-Encoding': ['zip'],
-                }
-            )
-        },
-        Response,
-    ),
-    (
-        {
-            "url": "file:///a.html",
-            'headers': Headers(
-                {
                     'Content-Encoding': ['zip'],
                 }
             )
@@ -593,6 +607,28 @@ POST_XTRACTMIME_SCENARIOS = (
         for file_extension, content_type, response_class in (
             ("xml", "application/octet-stream", Response),
         )
+    ),
+
+    # File extension triumphs body.
+    (
+        {
+            "body": b"<html>",
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="a.gz"',
+                    ],
+                }
+            )
+        },
+        Response,
+    ),
+    (
+        {
+            "body": b"<html>",
+            'url': 'file:///a.gz',
+        },
+        Response,
     ),
 
     # Without anything else, the body determines the response class.
