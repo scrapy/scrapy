@@ -166,7 +166,14 @@ PRE_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # Content-Type triumphs body, except for the Apache bug special case.
+    # Content-Type triumphs body, except for:
+    #
+    # -   Binary content mislabeled as plain text due to an Apache bug
+    #     https://mimesniff.spec.whatwg.org/#check-for-apache-bug-flag
+    #     https://mimesniff.spec.whatwg.org/#rules-for-text-or-binary
+    #
+    # -   Feeds mislabeled as HTML
+    #     https://mimesniff.spec.whatwg.org/#rules-for-distinguishing-if-a-resource-is-a-feed-or-html
     *(
         (
             {
@@ -430,7 +437,14 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # Content-Type triumphs body, except for the Apache bug special case.
+    # Content-Type triumphs body, except for:
+    #
+    # -   Binary content mislabeled as plain text due to an Apache bug
+    #     https://mimesniff.spec.whatwg.org/#check-for-apache-bug-flag
+    #     https://mimesniff.spec.whatwg.org/#rules-for-text-or-binary
+    #
+    # -   Feeds mislabeled as HTML
+    #     https://mimesniff.spec.whatwg.org/#rules-for-distinguishing-if-a-resource-is-a-feed-or-html
     (
         {
             'body': b'a',
@@ -438,29 +452,42 @@ POST_XTRACTMIME_SCENARIOS = (
         },
         Response,
     ),
-
-    # A known Apache bug may cause a server to send files with Content-Type set
-    # to "text/plain", "text/plain; charset=ISO-8859-1",
-    # "text/plain; charset=iso-8859-1", or "text/plain; charset=UTF-8",
-    # regardless of the actual file content.
-    #
-    # They should be treated as binary if their content is binary, and as
-    # text/plain otherwise.
-    #
-    # https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
     *(
         (
             {
-                'body': b'\x00\x01\xff',
+                'body': body,
                 'headers': Headers({'Content-Type': [content_type]}),
             },
-            Response,
+            response_class,
         )
-        for content_type in (
-            'text/plain',
-            'text/plain; charset=ISO-8859-1',
-            'text/plain; charset=iso-8859-1',
-            'text/plain; charset=UTF-8',
+        for body, content_type, response_class in (
+            (b'a', 'application/octet-stream', Response),
+            *(
+                (b'\x00\x01\xff', content_type, Response)
+                for content_type in (
+                    'text/plain',
+                    'text/plain; charset=ISO-8859-1',
+                    'text/plain; charset=iso-8859-1',
+                    'text/plain; charset=UTF-8',
+                )
+            ),
+            *(
+                (body, "text/html", XmlResponse)
+                for body in (
+                    b"<rss",
+                    b"<feed",
+                    (
+                        b"<rdf:RDF "
+                        b"... http://purl.org/rss/1.0/ "
+                        b"... http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                    ),
+                    (
+                        b"<rdf:RDF "
+                        b"... http://www.w3.org/1999/02/22-rdf-syntax-ns# "
+                        b"... http://purl.org/rss/1.0/"
+                    ),
+                )
+            ),
         )
     ),
 
