@@ -66,10 +66,10 @@ WHITESPACE_BYTES = (
 )
 
 
-def crazy_case(value: bytes) -> bytes:
+def odd_capitalize(value: bytes) -> bytes:
     """Make odd bytes lowecase and even bytes uppercase.
 
-    >>> crazy_case(b'foobar')
+    >>> odd_capitalize(b'foobar')
     b'fOoBaR'
     """
     return b"".join(
@@ -285,7 +285,7 @@ PRE_XTRACTMIME_SCENARIOS = (
                 )
                 for start in (
                     set_case(start)
-                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for set_case in (bytes.lower, bytes.upper, odd_capitalize)
                     for start in PRE_XTRACTMIME_HTML_STARTS
                 )
             ),
@@ -556,7 +556,7 @@ POST_XTRACTMIME_SCENARIOS = (
                 (start + b">", HtmlResponse)
                 for start in (
                     set_case(start)
-                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for set_case in (bytes.lower, bytes.upper, odd_capitalize)
                     for start in POST_XTRACTMIME_HTML_STARTS
                 )
             ),
@@ -564,7 +564,7 @@ POST_XTRACTMIME_SCENARIOS = (
                 (start + b" ", HtmlResponse)
                 for start in (
                     set_case(start)
-                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for set_case in (bytes.lower, bytes.upper, odd_capitalize)
                     for start in chain(
                         PRE_XTRACTMIME_HTML_STARTS,
                         POST_XTRACTMIME_HTML_STARTS,
@@ -575,7 +575,7 @@ POST_XTRACTMIME_SCENARIOS = (
                 (b"\x0c" + start + b">", HtmlResponse)
                 for start in (
                     set_case(start)
-                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for set_case in (bytes.lower, bytes.upper, odd_capitalize)
                     for start in PRE_XTRACTMIME_HTML_STARTS
                 )
             ),
