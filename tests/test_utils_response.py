@@ -500,6 +500,43 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
+    # Compressed content should be of type Response until uncompressed.
+    (
+        {
+            'headers': Headers(
+                {
+                    'Content-Disposition': [
+                        'attachment; filename="a.html"',
+                    ],
+                    'Content-Encoding': ['zip'],
+                }
+            )
+        },
+        Response,
+    ),
+    (
+        {
+            "url": "file:///a.html",
+            'headers': Headers(
+                {
+                    'Content-Encoding': ['zip'],
+                }
+            )
+        },
+        Response,
+    ),
+    (
+        {
+            "body": b"<html>",
+            'headers': Headers(
+                {
+                    'Content-Encoding': ['zip'],
+                }
+            )
+        },
+        Response,
+    ),
+
     # If the body is empty, it contains no binary data bytes, hence body-based
     # MIME type detection must interpret the result as text.
     #
