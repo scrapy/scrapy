@@ -86,7 +86,15 @@ def _get_encoding_or_mime_type_from_headers(
         encodings = headers.getlist(b'Content-Encoding')
         if encodings:
             return encodings[-1], None
-    if b'Content-Type' in headers:
+    if (
+        b'Content-Type' in headers
+        and headers[b'Content-Type'].split(b";")[0].strip().lower() not in (
+            b"",
+            b"unknown/unknown",
+            b"application/unknown",
+            b"*/*",
+        )
+    ):
         return None, headers[b'Content-Type']
     if b'Content-Disposition' in headers:
         path = (

@@ -338,6 +338,51 @@ PRE_XTRACTMIME_SCENARIOS = (
             (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + BINARY_BYTES[0], TextResponse),
         )
     ),
+
+    # A Content-Type whose essence is "unknown/unknown", "application/unknown",
+    # or "*/*" has the same effect as no Content-Type being defined.
+    #
+    # https://mimesniff.spec.whatwg.org/#mime-type-sniffing-algorithm
+    *(
+        (
+            {
+                'body': b'<?xml',
+                'headers': Headers(
+                    {'Content-Type': [content_type + content_type_suffix]}
+                ),
+            },
+            XmlResponse,
+        )
+        for content_type_suffix in ("", "; foo=bar")
+        for content_type in (
+            "unknown/unknown",
+            "application/unknown",
+            "*/*",
+        )
+    ),
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                'headers': Headers(
+                    {
+                        'Content-Disposition': [
+                            'attachment; filename="a.xml"',
+                        ],
+                        "Content-Type": [content_type + content_type_suffix],
+                    }
+                ),
+            },
+            XmlResponse,
+        )
+        for protocol in ("http", "https")
+        for content_type_suffix in ("", "; foo=bar")
+        for content_type in (
+            "unknown/unknown",
+            "application/unknown",
+            "*/*",
+        )
+    ),
 )
 
 # Scenarios that work differently with the previously-used, deprecated
