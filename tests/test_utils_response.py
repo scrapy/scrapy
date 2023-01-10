@@ -238,7 +238,7 @@ PRE_XTRACTMIME_SCENARIOS = (
                 'headers': Headers(
                     {
                         'Content-Disposition': [
-                            f'attachment; filename="a.xml"',
+                            'attachment; filename="a.xml"',
                         ]
                     }
                 ),
@@ -254,7 +254,7 @@ PRE_XTRACTMIME_SCENARIOS = (
                 'headers': Headers(
                     {
                         'Content-Disposition': [
-                            f'attachment; filename="a.html"',
+                            'attachment; filename="a.html"',
                         ],
                         "Content-Type": "text/xml",
                     }
