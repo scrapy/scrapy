@@ -583,11 +583,7 @@ POST_XTRACTMIME_SCENARIOS = (
         )
     ),
 
-    # Unlike in a web browser, where an attachment Content-Disposition header
-    # causes the response to be downloaded, and hence MIME sniffing becomes
-    # irrelevant, in Scrapy those responses are handled the same as any, and
-    # hence we take the file extension from Content-Disposition into account
-    # to choose a response class, as a fallback when there is no Content-Type.
+    # Content-Type triumphes Content-Disposition.
     *(
         (
             {
@@ -597,7 +593,7 @@ POST_XTRACTMIME_SCENARIOS = (
                         'Content-Disposition': [
                             f'attachment; filename="a.{file_extension}"',
                         ],
-                        "Content-Type": {content_type},
+                        "Content-Type": [content_type],
                     }
                 ),
             },
