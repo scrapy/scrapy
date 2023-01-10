@@ -19,6 +19,7 @@ from scrapy.utils.response import (
     open_in_browser,
     response_httprepr,
     response_status_message,
+    _get_encoding_or_mime_type_from_headers,
 )
 
 
@@ -641,6 +642,26 @@ def test_get_response_class_http(kwargs, response_class):
     if 'headers' in kwargs:
         kwargs['http_headers'] = kwargs.pop('headers')
     assert get_response_class(**kwargs) == response_class
+
+
+@pytest.mark.parametrize(
+    'headers,expected',
+    (
+        *(
+            (
+                Headers({'Content-Encoding': content_encoding_header}),
+                (encoding, None),
+            )
+            for content_encoding_header, encoding in (
+                (['gzip'], b'gzip'),
+                (['gzip', 'compress'], b'compress'),
+                (['deflate, br'], b'br'),
+            )
+        ),
+    ),
+)
+def test_get_encoding_or_mime_type_from_headers(headers, expected):
+    assert _get_encoding_or_mime_type_from_headers(headers) == expected
 
 
 class ResponseUtilsTest(unittest.TestCase):

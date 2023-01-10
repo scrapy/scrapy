@@ -83,7 +83,10 @@ def _get_encoding_or_mime_type_from_headers(
     headers: Headers,
 ) -> Tuple[Optional[bytes], Optional[bytes]]:
     if b'Content-Encoding' in headers:
-        encodings = headers.getlist(b'Content-Encoding')
+        encodings = [
+            item.strip() for item in
+            b",".join(headers.getlist(b'Content-Encoding')).split(b",")
+        ]
         if encodings:
             return encodings[-1], None
     if (
