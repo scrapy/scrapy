@@ -461,13 +461,6 @@ POST_XTRACTMIME_SCENARIOS = (
     #
     # -   Feeds mislabeled as HTML
     #     https://mimesniff.spec.whatwg.org/#rules-for-distinguishing-if-a-resource-is-a-feed-or-html
-    (
-        {
-            'body': b'a',
-            'headers': Headers({'Content-Type': ['application/octet-stream']}),
-        },
-        Response,
-    ),
     *(
         (
             {
