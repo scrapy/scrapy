@@ -2,6 +2,7 @@
 
 import unittest
 import warnings
+from itertools import chain
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,6 +27,29 @@ from scrapy.utils.response import (
 __doctests__ = ['scrapy.utils.response']
 
 
+# https://mimesniff.spec.whatwg.org/#interpreting-the-resource-metadata
+PRE_XTRACTMIME_HTML_STARTS = (
+    b'<!DOCTYPE HTML',
+    b'<HTML',
+)
+POST_XTRACTMIME_HTML_STARTS = (
+    b'<HEAD',
+    b'<SCRIPT',
+    b'<IFRAME',
+    b'<H1',
+    b'<DIV',
+    b'<FONT',
+    b'<TABLE',
+    b'<A',
+    b'<STYLE',
+    b'<TITLE',
+    b'<B',
+    b'<BODY',
+    b'<BR',
+    b'<P',
+    b'<!--',
+)
+
 NON_BINARY_ASCII_BYTES = (
     byte
     for byte in (
@@ -33,6 +57,27 @@ NON_BINARY_ASCII_BYTES = (
     )
     if byte not in BINARY_BYTES
 )
+
+# https://mimesniff.spec.whatwg.org/#whitespace-byte
+WHITESPACE_BYTES = (
+    b"\t",
+    b"\n",
+    b"\x0C",
+    b"\r",
+    b" ",
+)
+
+
+def crazy_case(value: bytes) -> bytes:
+    """Make odd bytes lowecase and even bytes uppercase.
+
+    >>> crazy_case(b'foobar')
+    b'fOoBaR'
+    """
+    return b"".join(
+        bytes([byte]).lower() if index % 2 == 0 else bytes([byte]).upper()
+        for index, byte in enumerate(value)
+    )
 
 
 # Scenarios that work the same with the previously-used, deprecated
@@ -230,6 +275,58 @@ PRE_XTRACTMIME_SCENARIOS = (
             # https://codersblock.com/blog/the-smallest-valid-html5-page/
             (b'<!DOCTYPE html>\n<title>.</title>', HtmlResponse),
 
+            # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
+            *(
+                (prefix + start + b">", HtmlResponse)
+                for prefix in (
+                    b"",
+                    *(byte for byte in WHITESPACE_BYTES if byte != b"\x0c"),
+                )
+                for start in (
+                    set_case(start)
+                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for start in PRE_XTRACTMIME_HTML_STARTS
+                )
+            ),
+            *(
+                (prefix + b"<?xml", XmlResponse)
+                for prefix in (
+                    b"",
+                    *(byte for byte in WHITESPACE_BYTES if byte != b"\x0c"),
+                )
+            ),
+            (b"\xfe\xffab", TextResponse),
+            (b"\xff\xfeab", TextResponse),
+            (b"\xef\xbb\xbfa", TextResponse),
+            (b"\x00\x00\x01\x00", Response),
+            (b"\x00\x00\x02\x00", Response),
+            (b"\x89PNG\r\n\x1a\n", Response),
+            (b"MThd\x00\x00\x00\x06", Response),
+            (b"\x00\x00\x00\x0cftypmp4a", Response),
+            (b"\x00\x00\x00\x14ftypabcdefghmp4a", Response),
+            (
+                # https://github.com/mathiasbynens/small/blob/267b39f682598eebb0dafe7590b1504be79b5cad/webm.webm
+                (
+                    b"\x1aE\xdf\xa3@ B\x86\x81\x01B\xf7\x81\x01B\xf2\x81\x04B"
+                    b"\xf3\x81\x08B\x82@\x04webm"
+                ),
+                Response,
+            ),
+            (
+                # https://github.com/mathiasbynens/small/blob/267b39f682598eebb0dafe7590b1504be79b5cad/mp3.mp3
+                (
+                    b"\xff\xe3\x18\xc4\x00\x00\x00\x03H\x00\x00\x00\x00LAME3.9"
+                    b"8.2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x00\x00"
+                ),
+                Response,
+            ),
+            (b"\x1f\x8b\x08", Response),
+            (b"PK\x03\x04", Response),
+            (b"Rar \x1a\x07\x00", Response),
+
             # A body is considered binary if its header (first 1445 bytes)
             # contains any binary data byte.
             *((byte, Response) for byte in BINARY_BYTES[1:]),
@@ -307,11 +404,6 @@ POST_XTRACTMIME_SCENARIOS = (
     #
     # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
     ({}, TextResponse),
-
-    # Body-based PDF detection
-    #
-    # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
-    ({'body': b'%PDF-1.4'}, Response),
 
     # JavaScript MIME types should trigger a TextResponse.
     #
@@ -397,6 +489,48 @@ POST_XTRACTMIME_SCENARIOS = (
     *(
         ({"body": body}, response_class)
         for body, response_class in (
+            # https://mimesniff.spec.whatwg.org/#identifying-a-resource-with-an-unknown-mime-type
+            *(
+                (start + b">", HtmlResponse)
+                for start in (
+                    set_case(start)
+                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for start in POST_XTRACTMIME_HTML_STARTS
+                )
+            ),
+            *(
+                (start + b" ", HtmlResponse)
+                for start in (
+                    set_case(start)
+                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for start in chain(
+                        PRE_XTRACTMIME_HTML_STARTS,
+                        POST_XTRACTMIME_HTML_STARTS,
+                    )
+                )
+            ),
+            *(
+                (b"\x0c" + start + b">", HtmlResponse)
+                for start in (
+                    set_case(start)
+                    for set_case in (bytes.lower, bytes.upper, crazy_case)
+                    for start in PRE_XTRACTMIME_HTML_STARTS
+                )
+            ),
+            (b"\x0c<?xml", XmlResponse),
+            (b'%PDF-', Response),
+            (b"%!PS-Adobe-", Response),
+            (b"BM", Response),
+            (b"GIF87a", Response),
+            (b"GIF89a", Response),
+            (b"RIFFabcdWEBPVP", Response),
+            (b"\xff\xd8\xff", Response),
+            (b"FORMabcdAIFF", Response),
+            (b"ID3", Response),
+            (b"OggS\x00", Response),
+            (b"RIFFabcdAVI ", Response),
+            (b"RIFFabcdWAVE", Response),
+
             # A body is considered binary if its header (first 1445 bytes)
             # contains any binary data byte.
             (BINARY_BYTES[0], Response),
@@ -406,6 +540,7 @@ POST_XTRACTMIME_SCENARIOS = (
                 (b"a"*RESOURCE_HEADER_BUFFER_LENGTH + byte, TextResponse)
                 for byte in BINARY_BYTES[1:]
             ),
+
             # HTML and XML detection does not allow for unexpected content
             # before document start.
             (b'a<html>', TextResponse),
