@@ -26,7 +26,7 @@ from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Headers, HtmlResponse, Request
+from scrapy.http import Headers, HtmlResponse, Request, XmlResponse
 from scrapy.http.response.text import TextResponse
 from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
@@ -439,12 +439,12 @@ class Http11TestCase(HttpTestCase):
         """Tests choosing of correct response type
          in case of Content-Type is empty but body contains text.
         """
-        body = b'Some plain text\ndata with tabs\t and null bytes\0'
+        xml_body = b'<?xml version="1.0" encoding="utf-8"'
 
         def _test_type(response):
-            self.assertEqual(type(response), TextResponse)
+            self.assertEqual(type(response), XmlResponse)
 
-        request = Request(self.getURL('nocontenttype'), body=body)
+        request = Request(self.getURL('nocontenttype'), body=xml_body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(_test_type)
         return d
