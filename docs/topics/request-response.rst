@@ -1203,6 +1203,8 @@ TextResponse objects
 
     .. autoattribute:: TextResponse.attributes
 
+    .. autoattribute:: TextResponse.base_url
+
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
 

@@ -95,7 +95,13 @@ class TextResponse(Response):
 
     @property
     def base_url(self) -> str:
-        """Base URL"""
+        """Base URL for any relative URL in the response.
+
+        It defaults to the response :attr:`~scrapy.http.Response.url`, but HTML
+        responses may include a `base element
+        <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base>`_ with
+        a different base URL.
+        """
         if self._cached_base_url is None:
             self._cached_base_url = get_base_url(
                 self.text[:4096],
