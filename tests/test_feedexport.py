@@ -700,7 +700,7 @@ class InstrumentedFeedSlot(_FeedSlot):
 class IsExportingListener:
     """When subscribed to InstrumentedFeedSlot, keeps track of when
     a call to start_exporting has been made without a closing call to
-    finish_exporting and when a call to finis_exporting has been made
+    finish_exporting and when a call to finish_exporting has been made
     before a call to start_exporting."""
     def __init__(self):
         self.start_without_finish = False
