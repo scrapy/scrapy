@@ -151,10 +151,8 @@ class Stream:
 
         self._deferred_response = Deferred(_cancel)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f'Stream(id={self.stream_id!r})'
-
-    __repr__ = __str__
 
     @property
     def _log_warnsize(self) -> bool:
@@ -334,7 +332,7 @@ class Stream:
 
     def receive_headers(self, headers: List[HeaderTuple]) -> None:
         for name, value in headers:
-            self._response['headers'][name] = value
+            self._response['headers'].appendlist(name, value)
 
         # Check if we exceed the allowed max data size which can be received
         expected_size = int(self._response['headers'].get(b'Content-Length', -1))

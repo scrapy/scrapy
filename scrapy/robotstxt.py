@@ -4,7 +4,6 @@ from abc import ABCMeta, abstractmethod
 
 from scrapy.utils.python import to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 

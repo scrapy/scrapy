@@ -1,6 +1,6 @@
 import os
 import argparse
-from os.path import join, abspath, isfile, exists
+from pathlib import Path
 
 from twisted.internet import defer
 from scrapy.commands import parse
@@ -23,13 +23,19 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
     def setUp(self):
         super().setUp()
         self.spider_name = 'parse_spider'
-        fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
-        with open(fname, 'w') as f:
-            f.write(f"""
+        (self.proj_mod_path / 'spiders' / 'myspider.py').write_text(f"""
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
+from scrapy.utils.test import get_from_asyncio_queue
 
+class AsyncDefAsyncioSpider(scrapy.Spider):
+
+    name = 'asyncdef{self.spider_name}'
+
+    async def parse(self, response):
+        status = await get_from_asyncio_queue(response.status)
+        return [scrapy.Item(), dict(foo='bar')]
 
 class MySpider(scrapy.Spider):
     name = '{self.spider_name}'
@@ -86,11 +92,9 @@ class MyBadCrawlSpider(CrawlSpider):
 
     def parse(self, response):
         return [scrapy.Item(), dict(foo='bar')]
-""")
+""", encoding="utf-8")
 
-        fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
-        with open(fname, 'w') as f:
-            f.write("""
+        (self.proj_mod_path / 'pipelines.py').write_text("""
 import logging
 
 class MyPipeline:
@@ -99,10 +103,9 @@ class MyPipeline:
     def process_item(self, item, spider):
         logging.info('It Works!')
         return item
-""")
+""", encoding="utf-8")
 
-        fname = abspath(join(self.proj_mod_path, 'settings.py'))
-        with open(fname, 'a') as f:
+        with (self.proj_mod_path / 'settings.py').open("a", encoding="utf-8") as f:
             f.write(f"""
 ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
 """)
@@ -159,6 +162,13 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                                            '--verbose',
                                            self.url('/html')])
         self.assertIn("INFO: It Works!", _textmode(stderr))
+
+    @defer.inlineCallbacks
+    def test_asyncio_parse_items(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', 'asyncdef' + self.spider_name, '-c', 'parse', self.url('/html')]
+        )
+        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
 
     @defer.inlineCallbacks
     def test_parse_items(self):
@@ -234,7 +244,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         correct format containing correct data in it.
         """
         file_name = 'data.json'
-        file_path = join(self.proj_path, file_name)
+        file_path = Path(self.proj_path, file_name)
         yield self.execute([
             '--spider', self.spider_name,
             '-c', 'parse',
@@ -242,12 +252,11 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             self.url('/html')
         ])
 
-        self.assertTrue(exists(file_path))
-        self.assertTrue(isfile(file_path))
+        self.assertTrue(file_path.exists())
+        self.assertTrue(file_path.is_file())
 
         content = '[\n{},\n{"foo": "bar"}\n]'
-        with open(file_path, 'r') as f:
-            self.assertEqual(f.read(), content)
+        self.assertEqual(file_path.read_text(encoding="utf-8"), content)
 
     def test_parse_add_options(self):
         command = parse.Command()

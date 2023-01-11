@@ -9,14 +9,14 @@ import webbrowser
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
+from twisted.web import http
+from w3lib import html
 import scrapy
 from scrapy.http.response import Response
 
-from twisted.web import http
+
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.decorators import deprecated
-from w3lib import html
-
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
 

@@ -388,11 +388,11 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
         self._mockcalled.append('thumb_path')
-        return super(MockedMediaPipelineDeprecatedMethods, self).thumb_path(request, thumb_id, response, info)
+        return super().thumb_path(request, thumb_id, response, info)
 
     def get_images(self, response, request, info):
         self._mockcalled.append('get_images')
-        return super(MockedMediaPipelineDeprecatedMethods, self).get_images(response, request, info)
+        return super().get_images(response, request, info)
 
     def image_downloaded(self, response, request, info):
         self._mockcalled.append('image_downloaded')

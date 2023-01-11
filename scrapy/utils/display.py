@@ -5,8 +5,8 @@ pprint and pformat wrappers with colorization support
 import ctypes
 import platform
 import sys
-from distutils.version import LooseVersion as parse_version
 from pprint import pformat as pformat_
+from packaging.version import Version as parse_version
 
 
 def _enable_windows_terminal_processing():

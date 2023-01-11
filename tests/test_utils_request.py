@@ -52,7 +52,7 @@ class UtilsRequestTest(unittest.TestCase):
 class FingerprintTest(unittest.TestCase):
     maxDiff = None
 
-    function = staticmethod(fingerprint)
+    function: staticmethod = staticmethod(fingerprint)
     cache: Union[
         "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]",
         "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]",
@@ -308,13 +308,22 @@ class RequestFingerprintTest(FingerprintTest):
         ),
     )
 
+    def setUp(self) -> None:
+        warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+
+    def tearDown(self) -> None:
+        warnings.simplefilter("default", ScrapyDeprecationWarning)
+
     @pytest.mark.xfail(reason='known bug kept for backward compatibility', strict=True)
     def test_part_separation(self):
         super().test_part_separation()
 
+
+class RequestFingerprintDeprecationTest(unittest.TestCase):
+
     def test_deprecation_default_parameters(self):
         with pytest.warns(ScrapyDeprecationWarning) as warnings:
-            self.function(Request("http://www.example.com"))
+            request_fingerprint(Request("http://www.example.com"))
         messages = [str(warning.message) for warning in warnings]
         self.assertTrue(
             any(
@@ -326,7 +335,7 @@ class RequestFingerprintTest(FingerprintTest):
 
     def test_deprecation_non_default_parameters(self):
         with pytest.warns(ScrapyDeprecationWarning) as warnings:
-            self.function(Request("http://www.example.com"), keep_fragments=True)
+            request_fingerprint(Request("http://www.example.com"), keep_fragments=True)
         messages = [str(warning.message) for warning in warnings]
         self.assertTrue(
             any(
@@ -496,7 +505,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
 
     def test_deprecated_implementation(self):
         settings = {
-            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'PREVIOUS_VERSION',
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.6',
         }
         with warnings.catch_warnings(record=True) as logged_warnings:
             crawler = get_crawler(settings_dict=settings)
@@ -509,7 +518,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
 
     def test_recommended_implementation(self):
         settings = {
-            'REQUEST_FINGERPRINTER_IMPLEMENTATION': 'VERSION',
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
         }
         with warnings.catch_warnings(record=True) as logged_warnings:
             crawler = get_crawler(settings_dict=settings)

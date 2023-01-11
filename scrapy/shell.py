@@ -21,6 +21,7 @@ from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
+from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 
 
 class Shell:
@@ -76,6 +77,10 @@ class Shell:
                                  banner=self.vars.pop('banner', ''))
 
     def _schedule(self, request, spider):
+        if is_asyncio_reactor_installed():
+            # set the asyncio event loop for the current thread
+            event_loop_path = self.crawler.settings['ASYNCIO_EVENT_LOOP']
+            set_asyncio_event_loop(event_loop_path)
         spider = self._open_spider(request, spider)
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
@@ -158,7 +163,11 @@ class Shell:
 
 def inspect_response(response, spider):
     """Open a shell to inspect the given response"""
+    # Shell.start removes the SIGINT handler, so save it and re-add it after
+    # the shell has closed
+    sigint_handler = signal.getsignal(signal.SIGINT)
     Shell(spider.crawler).start(response=response, spider=spider)
+    signal.signal(signal.SIGINT, sigint_handler)
 
 
 def _request_deferred(request):

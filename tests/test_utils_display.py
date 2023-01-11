@@ -7,17 +7,27 @@ from scrapy.utils.display import pformat, pprint
 
 class TestDisplay(TestCase):
     object = {'a': 1}
-    colorized_string = (
-        "{\x1b[33m'\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m'"
-        "\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}\n"
-    )
+    colorized_strings = {
+        (
+            (
+                "{\x1b[33m'\x1b[39;49;00m\x1b[33ma\x1b[39;49;00m\x1b[33m'"
+                "\x1b[39;49;00m: \x1b[34m1\x1b[39;49;00m}"
+            )
+            + suffix
+        )
+        for suffix in (
+            # https://github.com/pygments/pygments/issues/2313
+            "\n",  # pygments ≤ 2.13
+            "\x1b[37m\x1b[39;49;00m\n",  # pygments ≥ 2.14
+        )
+    }
     plain_string = "{'a': 1}"
 
     @mock.patch('sys.platform', 'linux')
     @mock.patch("sys.stdout.isatty")
     def test_pformat(self, isatty):
         isatty.return_value = True
-        self.assertEqual(pformat(self.object), self.colorized_string)
+        self.assertIn(pformat(self.object), self.colorized_strings)
 
     @mock.patch("sys.stdout.isatty")
     def test_pformat_dont_colorize(self, isatty):
@@ -33,7 +43,7 @@ class TestDisplay(TestCase):
     def test_pformat_old_windows(self, isatty, version):
         isatty.return_value = True
         version.return_value = '10.0.14392'
-        self.assertEqual(pformat(self.object), self.colorized_string)
+        self.assertIn(pformat(self.object), self.colorized_strings)
 
     @mock.patch('sys.platform', 'win32')
     @mock.patch('scrapy.utils.display._enable_windows_terminal_processing')
@@ -53,7 +63,7 @@ class TestDisplay(TestCase):
         isatty.return_value = True
         version.return_value = '10.0.14393'
         terminal_processing.return_value = True
-        self.assertEqual(pformat(self.object), self.colorized_string)
+        self.assertIn(pformat(self.object), self.colorized_strings)
 
     @mock.patch('sys.platform', 'linux')
     @mock.patch("sys.stdout.isatty")

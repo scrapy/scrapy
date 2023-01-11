@@ -121,10 +121,8 @@ class Request(object_ref):
     def encoding(self) -> str:
         return self._encoding
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
-
-    __repr__ = __str__
 
     def copy(self) -> "Request":
         return self.replace()
@@ -187,7 +185,7 @@ class Request(object_ref):
         }
         for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
-        if type(self) is not Request:
+        if type(self) is not Request:  # pylint: disable=unidiomatic-typecheck
             d["_class"] = self.__module__ + '.' + self.__class__.__name__
         return d
 

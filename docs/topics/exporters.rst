@@ -117,7 +117,7 @@ after your custom code.
 
 Example::
 
-      from scrapy.exporter import XmlItemExporter
+      from scrapy.exporters import XmlItemExporter
 
       class ProductXmlExporter(XmlItemExporter):
 

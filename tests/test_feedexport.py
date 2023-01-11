@@ -3,7 +3,6 @@ import csv
 import gzip
 import json
 import lzma
-import os
 import random
 import shutil
 import string
@@ -15,13 +14,16 @@ from collections import defaultdict
 from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
+from os import PathLike
 from pathlib import Path
 from string import ascii_letters, digits
+from typing import Union
 from unittest import mock
 from urllib.parse import urljoin, quote
 from urllib.request import pathname2url
 
 import lxml.etree
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -30,7 +32,6 @@ from zope.interface import implementer
 from zope.interface.verify import verifyObject
 
 import scrapy
-from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter
 from scrapy.extensions.feedexport import (
@@ -63,41 +64,41 @@ def printf_escape(string):
     return string.replace('%', '%%')
 
 
-def build_url(path):
-    if path[0] != '/':
-        path = '/' + path
-    return urljoin('file:', path)
+def build_url(path: Union[str, PathLike]) -> str:
+    path_str = str(path)
+    if path_str[0] != '/':
+        path_str = '/' + path_str
+    return urljoin('file:', path_str)
 
 
 class FileFeedStorageTest(unittest.TestCase):
 
     def test_store_file_uri(self):
-        path = os.path.abspath(self.mktemp())
-        uri = path_to_file_uri(path)
+        path = Path(self.mktemp()).resolve()
+        uri = path_to_file_uri(str(path))
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_file_uri_makedirs(self):
-        path = os.path.abspath(self.mktemp())
-        path = os.path.join(path, 'more', 'paths', 'file.txt')
-        uri = path_to_file_uri(path)
+        path = Path(self.mktemp()).resolve() / 'more' / 'paths' / 'file.txt'
+        uri = path_to_file_uri(str(path))
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_direct_path(self):
-        path = os.path.abspath(self.mktemp())
-        return self._assert_stores(FileFeedStorage(path), path)
+        path = Path(self.mktemp()).resolve()
+        return self._assert_stores(FileFeedStorage(str(path)), path)
 
     def test_store_direct_path_relative(self):
-        path = self.mktemp()
-        return self._assert_stores(FileFeedStorage(path), path)
+        path = Path(self.mktemp())
+        return self._assert_stores(FileFeedStorage(str(path)), path)
 
     def test_interface(self):
         path = self.mktemp()
         st = FileFeedStorage(path)
         verifyObject(IFeedStorage, st)
 
-    def _store(self, feed_options=None):
-        path = os.path.abspath(self.mktemp())
-        storage = FileFeedStorage(path, feed_options=feed_options)
+    def _store(self, feed_options=None) -> Path:
+        path = Path(self.mktemp()).resolve()
+        storage = FileFeedStorage(str(path), feed_options=feed_options)
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
@@ -106,27 +107,26 @@ class FileFeedStorageTest(unittest.TestCase):
 
     def test_append(self):
         path = self._store()
-        return self._assert_stores(FileFeedStorage(path), path, b"contentcontent")
+        return self._assert_stores(FileFeedStorage(str(path)), path, b"contentcontent")
 
     def test_overwrite(self):
         path = self._store({"overwrite": True})
         return self._assert_stores(
-            FileFeedStorage(path, feed_options={"overwrite": True}),
+            FileFeedStorage(str(path), feed_options={"overwrite": True}),
             path
         )
 
     @defer.inlineCallbacks
-    def _assert_stores(self, storage, path, expected_content=b"content"):
+    def _assert_stores(self, storage, path: Path, expected_content=b"content"):
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
         yield storage.store(file)
-        self.assertTrue(os.path.exists(path))
+        self.assertTrue(path.exists())
         try:
-            with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), expected_content)
+            self.assertEqual(path.read_bytes(), expected_content)
         finally:
-            os.unlink(path)
+            path.unlink()
 
 
 class FTPFeedStorageTest(unittest.TestCase):
@@ -152,13 +152,12 @@ class FTPFeedStorageTest(unittest.TestCase):
         file.write(content)
         return storage.store(file)
 
-    def _assert_stored(self, path, content):
+    def _assert_stored(self, path: Path, content):
         self.assertTrue(path.exists())
         try:
-            with path.open('rb') as fp:
-                self.assertEqual(fp.read(), content)
+            self.assertEqual(path.read_bytes(), content)
         finally:
-            os.unlink(str(path))
+            path.unlink()
 
     @defer.inlineCallbacks
     def test_append(self):
@@ -221,24 +220,24 @@ class BlockingFeedStorageTest(unittest.TestCase):
         b = BlockingFeedStorage()
 
         tmp = b.open(self.get_test_spider())
-        tmp_path = os.path.dirname(tmp.name)
-        self.assertEqual(tmp_path, tempfile.gettempdir())
+        tmp_path = Path(tmp.name).parent
+        self.assertEqual(str(tmp_path), tempfile.gettempdir())
 
     def test_temp_file(self):
         b = BlockingFeedStorage()
 
-        tests_path = os.path.dirname(os.path.abspath(__file__))
-        spider = self.get_test_spider({'FEED_TEMPDIR': tests_path})
+        tests_path = Path(__file__).resolve().parent
+        spider = self.get_test_spider({'FEED_TEMPDIR': str(tests_path)})
         tmp = b.open(spider)
-        tmp_path = os.path.dirname(tmp.name)
+        tmp_path = Path(tmp.name).parent
         self.assertEqual(tmp_path, tests_path)
 
     def test_invalid_folder(self):
         b = BlockingFeedStorage()
 
-        tests_path = os.path.dirname(os.path.abspath(__file__))
-        invalid_path = os.path.join(tests_path, 'invalid_path')
-        spider = self.get_test_spider({'FEED_TEMPDIR': invalid_path})
+        tests_path = Path(__file__).resolve().parent
+        invalid_path = tests_path / 'invalid_path'
+        spider = self.get_test_spider({'FEED_TEMPDIR': str(invalid_path)})
 
         self.assertRaises(OSError, b.open, spider=spider)
 
@@ -564,13 +563,13 @@ class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
 class DummyBlockingFeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri, *args, feed_options=None):
-        self.path = file_uri_to_path(uri)
+        self.path = Path(file_uri_to_path(uri))
 
     def _store_in_thread(self, file):
-        dirname = os.path.dirname(self.path)
-        if dirname and not os.path.exists(dirname):
-            os.makedirs(dirname)
-        with open(self.path, 'ab') as output_file:
+        dirname = self.path.parent
+        if dirname and not dirname.exists():
+            dirname.mkdir(parents=True)
+        with self.path.open('ab') as output_file:
             output_file.write(file.read())
 
         file.close()
@@ -613,10 +612,10 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         foo = scrapy.Field()
         hello = scrapy.Field()
 
-    def _random_temp_filename(self, inter_dir=''):
+    def _random_temp_filename(self, inter_dir='') -> Path:
         chars = [random.choice(ascii_letters + digits) for _ in range(15)]
         filename = ''.join(chars)
-        return os.path.join(self.temp_dir, inter_dir, filename)
+        return Path(self.temp_dir, inter_dir, filename)
 
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
@@ -697,23 +696,22 @@ class FeedExportTest(FeedExportTestBase):
         content = {}
         try:
             with MockServer() as s:
-                runner = CrawlerRunner(Settings(settings))
                 spider_cls.start_urls = [s.url('/')]
-                yield runner.crawl(spider_cls)
+                crawler = get_crawler(spider_cls, settings)
+                yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
-                if not os.path.exists(str(file_path)):
+                if not Path(file_path).exists():
                     continue
 
-                with open(str(file_path), 'rb') as f:
-                    content[feed_options['format']] = f.read()
+                content[feed_options['format']] = Path(file_path).read_bytes()
 
         finally:
             for file_path in FEEDS.keys():
-                if not os.path.exists(str(file_path)):
+                if not Path(file_path).exists():
                     continue
 
-                os.remove(str(file_path))
+                Path(file_path).unlink()
 
         return content
 
@@ -808,7 +806,7 @@ class FeedExportTest(FeedExportTestBase):
     def test_stats_file_success(self):
         settings = {
             "FEEDS": {
-                printf_escape(path_to_url(self._random_temp_filename())): {
+                printf_escape(path_to_url(str(self._random_temp_filename()))): {
                     "format": "json",
                 }
             },
@@ -823,7 +821,7 @@ class FeedExportTest(FeedExportTestBase):
     def test_stats_file_failed(self):
         settings = {
             "FEEDS": {
-                printf_escape(path_to_url(self._random_temp_filename())): {
+                printf_escape(path_to_url(str(self._random_temp_filename()))): {
                     "format": "json",
                 }
             },
@@ -846,7 +844,7 @@ class FeedExportTest(FeedExportTestBase):
             'AWS_ACCESS_KEY_ID': 'access_key',
             'AWS_SECRET_ACCESS_KEY': 'secret_key',
             "FEEDS": {
-                printf_escape(path_to_url(self._random_temp_filename())): {
+                printf_escape(path_to_url(str(self._random_temp_filename()))): {
                     "format": "json",
                 },
                 "s3://bucket/key/foo.csv": {
@@ -1427,12 +1425,11 @@ class FeedExportTest(FeedExportTestBase):
         self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
 
     @defer.inlineCallbacks
-    def test_pathlib_uri(self):
-        feed_path = Path(self._random_temp_filename())
+    def test_str_uri(self):
         settings = {
             'FEED_STORE_EMPTY': True,
             'FEEDS': {
-                feed_path: {'format': 'csv'}
+                str(self._random_temp_filename()): {'format': 'csv'}
             },
         }
         data = yield self.exported_no_data(settings)
@@ -1538,8 +1535,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         def close(self):
             self.file.close()
 
-    def _named_tempfile(self, name):
-        return os.path.join(self.temp_dir, name)
+    def _named_tempfile(self, name) -> str:
+        return str(Path(self.temp_dir, name))
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -1554,23 +1551,22 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         content = {}
         try:
             with MockServer() as s:
-                runner = CrawlerRunner(Settings(settings))
                 spider_cls.start_urls = [s.url('/')]
-                yield runner.crawl(spider_cls)
+                crawler = get_crawler(spider_cls, settings)
+                yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
-                if not os.path.exists(str(file_path)):
+                if not Path(file_path).exists():
                     continue
 
-                with open(str(file_path), 'rb') as f:
-                    content[str(file_path)] = f.read()
+                content[str(file_path)] = Path(file_path).read_bytes()
 
         finally:
             for file_path in FEEDS.keys():
-                if not os.path.exists(str(file_path)):
+                if not Path(file_path).exists():
                     continue
 
-                os.remove(str(file_path))
+                Path(file_path).unlink()
 
         return content
 
@@ -2026,16 +2022,14 @@ class BatchDeliveriesTest(FeedExportTestBase):
         content = defaultdict(list)
         try:
             with MockServer() as s:
-                runner = CrawlerRunner(Settings(settings))
                 spider_cls.start_urls = [s.url('/')]
-                yield runner.crawl(spider_cls)
+                crawler = get_crawler(spider_cls, settings)
+                yield crawler.crawl()
 
             for path, feed in FEEDS.items():
-                dir_name = os.path.dirname(path)
-                for file in sorted(os.listdir(dir_name)):
-                    with open(os.path.join(dir_name, file), 'rb') as f:
-                        data = f.read()
-                        content[feed['format']].append(data)
+                dir_name = Path(path).parent
+                for file in sorted(dir_name.iterdir()):
+                    content[feed['format']].append(file.read_bytes())
         finally:
             self.tearDown()
         defer.returnValue(content)
@@ -2045,10 +2039,10 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'jl', self._file_mark): {'format': 'jl'},
+                self._random_temp_filename() / 'jl' / self._file_mark: {'format': 'jl'},
             },
         })
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
+        batch_size = Settings(settings).getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         for batch in data['jl']:
@@ -2061,10 +2055,10 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {'format': 'csv'},
+                self._random_temp_filename() / 'csv' / self._file_mark: {'format': 'csv'},
             },
         })
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
+        batch_size = Settings(settings).getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         data = yield self.exported_data(items, settings)
         for batch in data['csv']:
             got_batch = csv.DictReader(to_unicode(batch).splitlines())
@@ -2077,10 +2071,10 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
+                self._random_temp_filename() / 'xml' / self._file_mark: {'format': 'xml'},
             },
         })
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
+        batch_size = Settings(settings).getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         for batch in data['xml']:
@@ -2094,11 +2088,11 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {'format': 'xml'},
-                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {'format': 'json'},
+                self._random_temp_filename() / 'xml' / self._file_mark: {'format': 'xml'},
+                self._random_temp_filename() / 'json' / self._file_mark: {'format': 'json'},
             },
         })
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
+        batch_size = Settings(settings).getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         # XML
@@ -2120,10 +2114,10 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'pickle', self._file_mark): {'format': 'pickle'},
+                self._random_temp_filename() / 'pickle' / self._file_mark: {'format': 'pickle'},
             },
         })
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
+        batch_size = Settings(settings).getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         import pickle
@@ -2137,10 +2131,10 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = settings or {}
         settings.update({
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'marshal', self._file_mark): {'format': 'marshal'},
+                self._random_temp_filename() / 'marshal' / self._file_mark: {'format': 'marshal'},
             },
         })
-        batch_size = settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT')
+        batch_size = Settings(settings).getint('FEED_EXPORT_BATCH_ITEM_COUNT')
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = yield self.exported_data(items, settings)
         import marshal
@@ -2166,7 +2160,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             'FEED_EXPORT_BATCH_ITEM_COUNT': 2
         }
         header = self.MyItem.fields.keys()
-        yield self.assertExported(items, header, rows, settings=Settings(settings))
+        yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
         """ If path is without %(batch_time)s and %(batch_id) an exception must be raised """
@@ -2184,7 +2178,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for fmt in ('json', 'jsonlines', 'xml', 'csv'):
             settings = {
                 'FEEDS': {
-                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                    self._random_temp_filename() / fmt / self._file_mark: {'format': fmt},
                 },
                 'FEED_EXPORT_BATCH_ITEM_COUNT': 1
             }
@@ -2204,7 +2198,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for fmt, expctd in formats:
             settings = {
                 'FEEDS': {
-                    os.path.join(self._random_temp_filename(), fmt, self._file_mark): {'format': fmt},
+                    self._random_temp_filename() / fmt / self._file_mark: {'format': fmt},
                 },
                 'FEED_STORE_EMPTY': True,
                 'FEED_EXPORT_INDENT': None,
@@ -2237,19 +2231,19 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {
+                self._random_temp_filename() / 'json' / self._file_mark: {
                     'format': 'json',
                     'indent': 0,
                     'fields': ['bar'],
                     'encoding': 'utf-8',
                 },
-                os.path.join(self._random_temp_filename(), 'xml', self._file_mark): {
+                self._random_temp_filename() / 'xml' / self._file_mark: {
                     'format': 'xml',
                     'indent': 2,
                     'fields': ['foo'],
                     'encoding': 'latin-1',
                 },
-                os.path.join(self._random_temp_filename(), 'csv', self._file_mark): {
+                self._random_temp_filename() / 'csv' / self._file_mark: {
                     'format': 'csv',
                     'indent': None,
                     'fields': ['foo', 'bar'],
@@ -2272,7 +2266,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         }
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), 'json', self._file_mark): {
+                self._random_temp_filename() / 'json' / self._file_mark: {
                     'format': 'json',
                     'indent': None,
                     'encoding': 'utf-8',
@@ -2285,6 +2279,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             for expected_batch, got_batch in zip(expected, data[fmt]):
                 self.assertEqual(expected_batch, got_batch)
 
+    @pytest.mark.skipif(sys.platform == 'win32', reason='Odd behaviour on file creation/output')
     @defer.inlineCallbacks
     def test_batch_path_differ(self):
         """
@@ -2298,20 +2293,20 @@ class BatchDeliveriesTest(FeedExportTestBase):
         ]
         settings = {
             'FEEDS': {
-                os.path.join(self._random_temp_filename(), '%(batch_time)s'): {
+                self._random_temp_filename() / '%(batch_time)s': {
                     'format': 'json',
                 },
             },
             'FEED_EXPORT_BATCH_ITEM_COUNT': 1,
         }
         data = yield self.exported_data(items, settings)
-        self.assertEqual(len(items) + 1, len(data['json']))
+        self.assertEqual(len(items), len([_ for _ in data['json'] if _]))
 
     @defer.inlineCallbacks
     def test_stats_batch_file_success(self):
         settings = {
             "FEEDS": {
-                build_url(os.path.join(self._random_temp_filename(), "json", self._file_mark)): {
+                build_url(str(self._random_temp_filename() / "json" / self._file_mark)): {
                     "format": "json",
                 }
             },
@@ -2382,9 +2377,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     yield item
 
         with MockServer() as server:
-            runner = CrawlerRunner(Settings(settings))
             TestSpider.start_urls = [server.url('/')]
-            yield runner.crawl(TestSpider)
+            crawler = get_crawler(TestSpider, settings)
+            yield crawler.crawl()
 
         self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
         for stub in CustomS3FeedStorage.stubs[:-1]:
@@ -2434,25 +2429,16 @@ class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 'file': StdoutFeedStorageWithoutFeedOptions
             },
         }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
+
         spider = scrapy.Spider("default")
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="StdoutFeedStorageWithoutFeedOptions does not support "
+                                "the 'feed_options' keyword argument."):
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w
-                             if item.category is ScrapyDeprecationWarning)
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        "StdoutFeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument. Add a "
-                        "'feed_options' parameter to its signature to remove "
-                        "this warning. This parameter will become mandatory "
-                        "in a future version of Scrapy."
-                    ),
-                )
-            )
 
 
 class FileFeedStorageWithoutFeedOptions(FileFeedStorage):
@@ -2476,25 +2462,16 @@ class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
                     'file': FileFeedStorageWithoutFeedOptions
                 },
             }
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
+            with pytest.warns(ScrapyDeprecationWarning,
+                              match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+                crawler = get_crawler(settings_dict=settings_dict)
+                feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
-        with warnings.catch_warnings(record=True) as w:
+
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="FileFeedStorageWithoutFeedOptions does not support "
+                                "the 'feed_options' keyword argument."):
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w
-                             if item.category is ScrapyDeprecationWarning)
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        "FileFeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument. Add a "
-                        "'feed_options' parameter to its signature to remove "
-                        "this warning. This parameter will become mandatory "
-                        "in a future version of Scrapy."
-                    ),
-                )
-            )
 
 
 class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
@@ -2524,26 +2501,18 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
                 'file': S3FeedStorageWithoutFeedOptions
             },
         }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
+
         spider = scrapy.Spider("default")
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="S3FeedStorageWithoutFeedOptions does not support "
+                                "the 'feed_options' keyword argument."):
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w
-                             if item.category is ScrapyDeprecationWarning)
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        "S3FeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument. Add a "
-                        "'feed_options' parameter to its signature to remove "
-                        "this warning. This parameter will become mandatory "
-                        "in a future version of Scrapy."
-                    ),
-                )
-            )
 
     def test_from_crawler(self):
         settings_dict = {
@@ -2552,26 +2521,18 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
                 'file': S3FeedStorageWithoutFeedOptionsWithFromCrawler
             },
         }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
+
         spider = scrapy.Spider("default")
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler does not support "
+                                "the 'feed_options' keyword argument."):
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w
-                             if item.category is ScrapyDeprecationWarning)
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        "S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
-                        "does not support the 'feed_options' keyword argument. Add a "
-                        "'feed_options' parameter to its signature to remove "
-                        "this warning. This parameter will become mandatory "
-                        "in a future version of Scrapy."
-                    ),
-                )
-            )
 
 
 class FTPFeedStorageWithoutFeedOptions(FTPFeedStorage):
@@ -2601,26 +2562,18 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 'file': FTPFeedStorageWithoutFeedOptions
             },
         }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
+
         spider = scrapy.Spider("default")
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="FTPFeedStorageWithoutFeedOptions does not support "
+                                "the 'feed_options' keyword argument."):
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w
-                             if item.category is ScrapyDeprecationWarning)
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        "FTPFeedStorageWithoutFeedOptions does not support "
-                        "the 'feed_options' keyword argument. Add a "
-                        "'feed_options' parameter to its signature to remove "
-                        "this warning. This parameter will become mandatory "
-                        "in a future version of Scrapy."
-                    ),
-                )
-            )
 
     def test_from_crawler(self):
         settings_dict = {
@@ -2629,50 +2582,50 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
                 'file': FTPFeedStorageWithoutFeedOptionsWithFromCrawler
             },
         }
-        crawler = get_crawler(settings_dict=settings_dict)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+            crawler = get_crawler(settings_dict=settings_dict)
+            feed_exporter = FeedExporter.from_crawler(crawler)
+
         spider = scrapy.Spider("default")
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler does not support "
+                                "the 'feed_options' keyword argument."):
             feed_exporter.open_spider(spider)
-            messages = tuple(str(item.message) for item in w
-                             if item.category is ScrapyDeprecationWarning)
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        "FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler "
-                        "does not support the 'feed_options' keyword argument. Add a "
-                        "'feed_options' parameter to its signature to remove "
-                        "this warning. This parameter will become mandatory "
-                        "in a future version of Scrapy."
-                    ),
-                )
-            )
 
 
 class URIParamsTest:
 
     spider_name = "uri_params_spider"
+    deprecated_options = False
 
     def build_settings(self, uri='file:///tmp/foobar', uri_params=None):
         raise NotImplementedError
+
+    def _crawler_feed_exporter(self, settings):
+        if self.deprecated_options:
+            with pytest.warns(ScrapyDeprecationWarning,
+                              match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated"):
+                crawler = get_crawler(settings_dict=settings)
+                feed_exporter = FeedExporter.from_crawler(crawler)
+        else:
+            crawler = get_crawler(settings_dict=settings)
+            feed_exporter = FeedExporter.from_crawler(crawler)
+        return crawler, feed_exporter
 
     def test_default(self):
         settings = self.build_settings(
             uri='file:///tmp/%(name)s',
         )
-        crawler = get_crawler(settings_dict=settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
-            messages = tuple(
-                str(item.message) for item in w
-                if item.category is ScrapyDeprecationWarning
-            )
-            self.assertEqual(messages, tuple())
 
         self.assertEqual(
             feed_exporter.slots[0].uri,
@@ -2687,28 +2640,13 @@ class URIParamsTest:
             uri='file:///tmp/%(name)s',
             uri_params=uri_params,
         )
-        crawler = get_crawler(settings_dict=settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with pytest.warns(ScrapyDeprecationWarning,
+                          match="Modifying the params dictionary in-place"):
             feed_exporter.open_spider(spider)
-            messages = tuple(
-                str(item.message) for item in w
-                if item.category is ScrapyDeprecationWarning
-            )
-            self.assertEqual(
-                messages,
-                (
-                    (
-                        'Modifying the params dictionary in-place in the '
-                        'function defined in the FEED_URI_PARAMS setting or '
-                        'in the uri_params key of the FEEDS setting is '
-                        'deprecated. The function must return a new '
-                        'dictionary instead.'
-                    ),
-                )
-            )
 
         self.assertEqual(
             feed_exporter.slots[0].uri,
@@ -2723,18 +2661,14 @@ class URIParamsTest:
             uri='file:///tmp/%(name)s',
             uri_params=uri_params,
         )
-        crawler = get_crawler(settings_dict=settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             with self.assertRaises(KeyError):
                 feed_exporter.open_spider(spider)
-            messages = tuple(
-                str(item.message) for item in w
-                if item.category is ScrapyDeprecationWarning
-            )
-            self.assertEqual(messages, tuple())
 
     def test_params_as_is(self):
         def uri_params(params, spider):
@@ -2744,17 +2678,12 @@ class URIParamsTest:
             uri='file:///tmp/%(name)s',
             uri_params=uri_params,
         )
-        crawler = get_crawler(settings_dict=settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
-            messages = tuple(
-                str(item.message) for item in w
-                if item.category is ScrapyDeprecationWarning
-            )
-            self.assertEqual(messages, tuple())
 
         self.assertEqual(
             feed_exporter.slots[0].uri,
@@ -2769,17 +2698,12 @@ class URIParamsTest:
             uri='file:///tmp/%(foo)s',
             uri_params=uri_params,
         )
-        crawler = get_crawler(settings_dict=settings)
-        feed_exporter = FeedExporter.from_crawler(crawler)
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
-            messages = tuple(
-                str(item.message) for item in w
-                if item.category is ScrapyDeprecationWarning
-            )
-            self.assertEqual(messages, tuple())
 
         self.assertEqual(
             feed_exporter.slots[0].uri,
@@ -2788,6 +2712,7 @@ class URIParamsTest:
 
 
 class URIParamsSettingTest(URIParamsTest, unittest.TestCase):
+    deprecated_options = True
 
     def build_settings(self, uri='file:///tmp/foobar', uri_params=None):
         extra_settings = {}
@@ -2800,6 +2725,7 @@ class URIParamsSettingTest(URIParamsTest, unittest.TestCase):
 
 
 class URIParamsFeedOptionTest(URIParamsTest, unittest.TestCase):
+    deprecated_options = False
 
     def build_settings(self, uri='file:///tmp/foobar', uri_params=None):
         options = {

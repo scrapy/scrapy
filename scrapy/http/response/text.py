@@ -11,8 +11,13 @@ from typing import Generator, Tuple
 from urllib.parse import urljoin
 
 import parsel
-from w3lib.encoding import (html_body_declared_encoding, html_to_unicode,
-                            http_content_type_encoding, resolve_encoding)
+from w3lib.encoding import (
+    html_body_declared_encoding,
+    html_to_unicode,
+    http_content_type_encoding,
+    resolve_encoding,
+    read_bom,
+)
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http import Request
@@ -60,6 +65,7 @@ class TextResponse(Response):
     def _declared_encoding(self):
         return (
             self._encoding
+            or self._bom_encoding()
             or self._headers_encoding()
             or self._body_declared_encoding()
         )
@@ -117,6 +123,10 @@ class TextResponse(Response):
     def _body_declared_encoding(self):
         return html_body_declared_encoding(self.body)
 
+    @memoizemethod_noargs
+    def _bom_encoding(self):
+        return read_bom(self.body)[0]
+
     @property
     def selector(self):
         from scrapy.selector import Selector
@@ -132,8 +142,7 @@ class TextResponse(Response):
 
     def follow(self, url, callback=None, method='GET', headers=None, body=None,
                cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
-        # type: (...) -> Request
+               dont_filter=False, errback=None, cb_kwargs=None, flags=None) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
         It accepts the same arguments as ``Request.__init__`` method,
@@ -174,8 +183,7 @@ class TextResponse(Response):
     def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,
                    cookies=None, meta=None, encoding=None, priority=0,
                    dont_filter=False, errback=None, cb_kwargs=None, flags=None,
-                   css=None, xpath=None):
-        # type: (...) -> Generator[Request, None, None]
+                   css=None, xpath=None) -> Generator[Request, None, None]:
         """
         A generator that produces :class:`~.Request` instances to follow all
         links in ``urls``. It accepts the same arguments as the :class:`~.Request`'s

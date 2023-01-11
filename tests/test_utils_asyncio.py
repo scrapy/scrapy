@@ -1,3 +1,4 @@
+import warnings
 from unittest import TestCase
 
 from pytest import mark
@@ -13,5 +14,9 @@ class AsyncioTest(TestCase):
         self.assertEqual(is_asyncio_reactor_installed(), self.reactor_pytest == 'asyncio')
 
     def test_install_asyncio_reactor(self):
-        # this should do nothing
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        from twisted.internet import reactor as original_reactor
+        with warnings.catch_warnings(record=True) as w:
+            install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+            self.assertEqual(len(w), 0)
+        from twisted.internet import reactor
+        assert original_reactor == reactor

@@ -81,8 +81,7 @@ class RobotsTxtMiddleware:
                 return result
             self._parsers[netloc].addCallback(cb)
             return d
-        else:
-            return self._parsers[netloc]
+        return self._parsers[netloc]
 
     def _logerror(self, failure, request, spider):
         if failure.type is not IgnoreRequest:

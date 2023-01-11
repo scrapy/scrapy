@@ -1,8 +1,8 @@
 import re
 from time import time
 from urllib.parse import urlparse, urlunparse, urldefrag
-
 from twisted.web.http import HTTPClient
+
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 
@@ -185,7 +185,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         @param version: The HTTP version.
         @type version: L{bytes}
         @param status: The HTTP status code, an integer represented as a
-            bytestring.
+        bytestring.
         @type status: L{bytes}
         @param message: The HTTP status message.
         @type message: L{bytes}

@@ -11,6 +11,7 @@ import binascii
 import os
 
 from twisted.internet import protocol
+
 try:
     from twisted.conch import manhole, telnet
     from twisted.conch.insults import insults
@@ -25,7 +26,6 @@ from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.decorators import defers
-
 
 logger = logging.getLogger(__name__)
 

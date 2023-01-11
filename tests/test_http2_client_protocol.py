@@ -1,10 +1,10 @@
 import json
-import os
 import random
 import re
 import shutil
 import string
 from ipaddress import IPv4Address
+from pathlib import Path
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
@@ -163,9 +163,8 @@ class RequestHeaders(LeafResource):
         return bytes(json.dumps(headers), 'utf-8')
 
 
-def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
-    with open(key_file, 'r') as key, open(certificate_file, 'r') as certificate:
-        pem = ''.join(key.readlines()) + ''.join(certificate.readlines())
+def get_client_certificate(key_file: Path, certificate_file: Path) -> PrivateCertificate:
+    pem = key_file.read_text(encoding="utf-8") + certificate_file.read_text(encoding="utf-8")
 
     return PrivateCertificate.loadPEM(pem)
 
@@ -173,12 +172,12 @@ def get_client_certificate(key_file, certificate_file) -> PrivateCertificate:
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2ClientProtocolTestCase(TestCase):
     scheme = 'https'
-    key_file = os.path.join(os.path.dirname(__file__), 'keys', 'localhost.key')
-    certificate_file = os.path.join(os.path.dirname(__file__), 'keys', 'localhost.crt')
+    key_file = Path(__file__).parent / 'keys' / 'localhost.key'
+    certificate_file = Path(__file__).parent / 'keys' / 'localhost.crt'
 
     def _init_resource(self):
         self.temp_directory = self.mktemp()
-        os.mkdir(self.temp_directory)
+        Path(self.temp_directory).mkdir()
         r = File(self.temp_directory)
         r.putChild(b'get-data-html-small', GetDataHtmlSmall())
         r.putChild(b'get-data-html-large', GetDataHtmlLarge())
@@ -202,7 +201,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
         # Start server for testing
         self.hostname = 'localhost'
-        context_factory = ssl_context_factory(self.key_file, self.certificate_file)
+        context_factory = ssl_context_factory(str(self.key_file), str(self.certificate_file))
 
         server_endpoint = SSL4ServerEndpoint(reactor, 0, context_factory, interface=self.hostname)
         self.server = yield server_endpoint.listen(self.site)

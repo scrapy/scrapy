@@ -1,7 +1,9 @@
+import warnings
 from itertools import product
 from unittest import TestCase
 
 from scrapy.downloadermiddlewares.stats import DownloaderStats
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.response import response_httprepr
@@ -54,7 +56,10 @@ class TestDownloaderStats(TestCase):
         for test_response in test_responses:
             self.crawler.stats.set_value('downloader/response_bytes', 0)
             self.mw.process_response(self.req, test_response, self.spider)
-            self.assertStatsEqual('downloader/response_bytes', len(response_httprepr(test_response)))
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+                resp_size = len(response_httprepr(test_response))
+            self.assertStatsEqual('downloader/response_bytes', resp_size)
 
     def test_process_exception(self):
         self.mw.process_exception(self.req, MyException(), self.spider)

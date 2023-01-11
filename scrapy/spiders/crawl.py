@@ -6,11 +6,12 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
-from typing import Sequence
+from typing import AsyncIterable, Awaitable, Sequence
 
-from scrapy.http import Request, HtmlResponse
+from scrapy.http import Request, Response, HtmlResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -25,7 +26,7 @@ def _identity_process_request(request, response):
 def _get_method(method, spider):
     if callable(method):
         return method
-    elif isinstance(method, str):
+    if isinstance(method, str):
         return getattr(spider, method, None)
 
 
@@ -78,7 +79,7 @@ class CrawlSpider(Spider):
     def parse_start_url(self, response, **kwargs):
         return []
 
-    def process_results(self, response, results):
+    def process_results(self, response: Response, results: list):
         return results
 
     def _build_request(self, rule_index, link):
@@ -101,17 +102,21 @@ class CrawlSpider(Spider):
                 request = self._build_request(rule_index, link)
                 yield rule.process_request(request, response)
 
-    def _callback(self, response):
+    def _callback(self, response, **cb_kwargs):
         rule = self._rules[response.meta['rule']]
-        return self._parse_response(response, rule.callback, rule.cb_kwargs, rule.follow)
+        return self._parse_response(response, rule.callback, {**rule.cb_kwargs, **cb_kwargs}, rule.follow)
 
     def _errback(self, failure):
         rule = self._rules[failure.request.meta['rule']]
         return self._handle_failure(failure, rule.errback)
 
-    def _parse_response(self, response, callback, cb_kwargs, follow=True):
+    async def _parse_response(self, response, callback, cb_kwargs, follow=True):
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
+            if isinstance(cb_res, AsyncIterable):
+                cb_res = await collect_asyncgen(cb_res)
+            elif isinstance(cb_res, Awaitable):
+                cb_res = await cb_res
             cb_res = self.process_results(response, cb_res)
             for request_or_item in iterate_spider_output(cb_res):
                 yield request_or_item

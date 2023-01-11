@@ -3,14 +3,14 @@ import os
 import shutil
 import sys
 import tempfile
+from pathlib import Path
 from typing import Optional, Type
-from unittest import mock
+from unittest import mock, SkipTest
 
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
 from twisted.internet import defer, error, reactor
 from twisted.protocols.policies import WrappingFactory
-from twisted.python.filepath import FilePath
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
 from twisted.web._newclient import ResponseFailed
@@ -24,7 +24,7 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Headers, HtmlResponse, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
@@ -32,6 +32,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
+from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import (
     Echo,
     ForeverTakingResource,
@@ -107,14 +108,14 @@ class LoadTestCase(unittest.TestCase):
 class FileTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        with open(self.tmpname + '^', 'w') as f:
-            f.write('0123456789')
+        # add a special char to check that they are handled correctly
+        self.tmpname = Path(self.mktemp() + '^')
+        Path(self.tmpname).write_text("0123456789", encoding="utf-8")
         handler = create_instance(FileDownloadHandler, None, get_crawler())
         self.download_request = handler.download_request
 
     def tearDown(self):
-        os.unlink(self.tmpname + '^')
+        self.tmpname.unlink()
 
     def test_download(self):
         def _test(response):
@@ -123,7 +124,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.body, b'0123456789')
             self.assertEqual(response.protocol, None)
 
-        request = Request(path_to_file_uri(self.tmpname + '^'))
+        request = Request(path_to_file_uri(str(self.tmpname)))
         assert request.url.upper().endswith('%5E')
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
@@ -213,6 +214,12 @@ class LargeChunkedFileResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
+class DuplicateHeaderResource(resource.Resource):
+    def render(self, request):
+        request.responseHeaders.setRawHeaders(b"Set-Cookie", [b"a=b", b"c=d"])
+        return b""
+
+
 class HttpTestCase(unittest.TestCase):
     scheme = 'http'
     download_handler_cls: Type = HTTPDownloadHandler
@@ -222,10 +229,10 @@ class HttpTestCase(unittest.TestCase):
     certfile = 'keys/localhost.crt'
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
-        FilePath(self.tmpname).child("file").setContent(b"0123456789")
-        r = static.File(self.tmpname)
+        self.tmpname = Path(self.mktemp())
+        self.tmpname.mkdir()
+        (self.tmpname / "file").write_bytes(b"0123456789")
+        r = static.File(str(self.tmpname))
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
@@ -238,6 +245,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         r.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        r.putChild(b"duplicate-header", DuplicateHeaderResource())
         r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
@@ -405,6 +413,16 @@ class HttpTestCase(unittest.TestCase):
             b"<!DOCTYPE html>\n<title>.</title>",
             HtmlResponse,
         )
+
+    def test_get_duplicate_header(self):
+        def _test(response):
+            self.assertEqual(
+                response.headers.getlist(b'Set-Cookie'),
+                [b'a=b', b'c=d'],
+            )
+
+        request = Request(self.getURL('duplicate-header'))
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
 
 class Http10TestCase(HttpTestCase):
@@ -625,10 +643,10 @@ class Https11CustomCiphers(unittest.TestCase):
     certfile = 'keys/localhost.crt'
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
-        FilePath(self.tmpname).child("file").setContent(b"0123456789")
-        r = static.File(self.tmpname)
+        self.tmpname = Path(self.mktemp())
+        self.tmpname.mkdir()
+        (self.tmpname / "file").write_bytes(b"0123456789")
+        r = static.File(str(self.tmpname))
         self.site = server.Site(r, timeout=None)
         self.host = 'localhost'
         self.port = reactor.listenSSL(
@@ -721,8 +739,7 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b'CONNECT':
             return request.uri
-        else:
-            return b''
+        return b''
 
 
 class HttpProxyTestCase(unittest.TestCase):
@@ -756,18 +773,6 @@ class HttpProxyTestCase(unittest.TestCase):
         request = Request('http://example.com', meta={'proxy': http_proxy})
         return self.download_request(request, Spider('foo')).addCallback(_test)
 
-    def test_download_with_proxy_https_noconnect(self):
-        def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b'https://example.com')
-
-        http_proxy = f'{self.getURL("")}?noconnect'
-        request = Request('https://example.com', meta={'proxy': http_proxy})
-        with self.assertWarnsRegex(ScrapyDeprecationWarning,
-                                   r'Using HTTPS proxies in the noconnect mode is deprecated'):
-            return self.download_request(request, Spider('foo')).addCallback(_test)
-
     def test_download_without_proxy(self):
         def _test(response):
             self.assertEqual(response.status, 200)
@@ -791,6 +796,8 @@ class Http11ProxyTestCase(HttpProxyTestCase):
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
         """ Test TunnelingTCP4ClientEndpoint """
+        if NON_EXISTING_RESOLVABLE:
+            raise SkipTest("Non-existing hosts are resolvable")
         http_proxy = self.getURL('')
         domain = 'https://no-such-domain.nosuch'
         request = Request(
@@ -999,16 +1006,15 @@ class BaseFTPTestCase(unittest.TestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dirs and test file
-        self.directory = self.mktemp()
-        os.mkdir(self.directory)
-        userdir = os.path.join(self.directory, self.username)
-        os.mkdir(userdir)
-        fp = FilePath(userdir)
+        self.directory = Path(self.mktemp())
+        self.directory.mkdir()
+        userdir = self.directory / self.username
+        userdir.mkdir()
         for filename, content in self.test_files:
-            fp.child(filename).setContent(content)
+            (userdir / filename).write_bytes(content)
 
         # setup server
-        realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
+        realm = FTPRealm(anonymousRoot=str(self.directory), userHome=str(self.directory))
         p = portal.Portal(realm)
         users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
         users_checker.addUser(self.username, self.password)
@@ -1073,28 +1079,28 @@ class BaseFTPTestCase(unittest.TestCase):
 
     def test_ftp_local_filename(self):
         f, local_fname = tempfile.mkstemp()
-        local_fname = to_bytes(local_fname)
+        fname_bytes = to_bytes(local_fname)
+        local_fname = Path(local_fname)
         os.close(f)
-        meta = {"ftp_local_filename": local_fname}
+        meta = {"ftp_local_filename": fname_bytes}
         meta.update(self.req_meta)
         request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt",
                           meta=meta)
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {b'Local Filename': [local_fname],
+            self.assertEqual(r.body, fname_bytes)
+            self.assertEqual(r.headers, {b'Local Filename': [fname_bytes],
                                          b'Size': [b'17']})
-            self.assertTrue(os.path.exists(local_fname))
-            with open(local_fname, "rb") as f:
-                self.assertEqual(f.read(), b"I have the power!")
-            os.remove(local_fname)
+            self.assertTrue(local_fname.exists())
+            self.assertEqual(local_fname.read_bytes(), b"I have the power!")
+            local_fname.unlink()
 
         return self._add_test_callbacks(d, _test)
 
     def _test_response_class(self, filename, response_class):
         f, local_fname = tempfile.mkstemp()
-        local_fname = to_bytes(local_fname)
+        local_fname = Path(local_fname)
         os.close(f)
         meta = {}
         meta.update(self.req_meta)
@@ -1104,7 +1110,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(type(r), response_class)
-            os.remove(local_fname)
+            local_fname.unlink()
         return self._add_test_callbacks(d, _test)
 
     def test_response_class_from_url(self):
@@ -1144,15 +1150,14 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dir and test file
-        self.directory = self.mktemp()
-        os.mkdir(self.directory)
+        self.directory = Path(self.mktemp())
+        self.directory.mkdir()
 
-        fp = FilePath(self.directory)
         for filename, content in self.test_files:
-            fp.child(filename).setContent(content)
+            (self.directory / filename).write_bytes(content)
 
         # setup server for anonymous access
-        realm = FTPRealm(anonymousRoot=self.directory)
+        realm = FTPRealm(anonymousRoot=str(self.directory))
         p = portal.Portal(realm)
         p.registerChecker(checkers.AllowAnonymousAccess(),
                           credentials.IAnonymous)

@@ -391,10 +391,9 @@ class BasicItemLoaderTest(unittest.TestCase):
         def join(values, sep=None, loader_context=None, ignored=None):
             if sep is not None:
                 return sep.join(values)
-            elif loader_context and 'sep' in loader_context:
+            if loader_context and 'sep' in loader_context:
                 return loader_context['sep'].join(values)
-            else:
-                return ''.join(values)
+            return ''.join(values)
 
         class TestItemLoader(NameItemLoader):
             name_out = Compose(partial(join, sep='+'))

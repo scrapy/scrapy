@@ -68,7 +68,7 @@ IP (:setting:`CONCURRENT_REQUESTS_PER_IP`).
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different domains in parallel, so you will want to increase it. How much
-to increase it will depend on how much CPU and memory you crawler will have
+to increase it will depend on how much CPU and memory your crawler will have
 available.
 
 A good starting point is ``100``::

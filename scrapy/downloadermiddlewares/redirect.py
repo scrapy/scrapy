@@ -8,7 +8,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -56,10 +55,9 @@ class BaseRedirectMiddleware:
                          {'reason': reason, 'redirected': redirected, 'request': request},
                          extra={'spider': spider})
             return redirected
-        else:
-            logger.debug("Discarding %(request)s: max redirections reached",
-                         {'request': request}, extra={'spider': spider})
-            raise IgnoreRequest("max redirections reached")
+        logger.debug("Discarding %(request)s: max redirections reached",
+                     {'request': request}, extra={'spider': spider})
+        raise IgnoreRequest("max redirections reached")
 
     def _redirect_request_using_get(self, request, redirect_url):
         redirect_request = _build_redirect_request(

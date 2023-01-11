@@ -9,6 +9,7 @@ from collections import deque
 from contextlib import contextmanager
 from importlib import import_module
 from pkgutil import iter_modules
+from functools import partial
 
 from w3lib.html import replace_entities
 
@@ -29,10 +30,9 @@ def arg_to_iter(arg):
     """
     if arg is None:
         return []
-    elif not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, '__iter__'):
+    if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, '__iter__'):
         return arg
-    else:
-        return [arg]
+    return [arg]
 
 
 def load_object(path):
@@ -48,9 +48,8 @@ def load_object(path):
     if not isinstance(path, str):
         if callable(path):
             return path
-        else:
-            raise TypeError("Unexpected argument type, expected string "
-                            f"or object, got: {type(path)}")
+        raise TypeError("Unexpected argument type, expected string "
+                        f"or object, got: {type(path)}")
 
     try:
         dot = path.rindex('.')
@@ -114,9 +113,8 @@ def extract_regex(regex, text, encoding='utf-8'):
 
     if isinstance(text, str):
         return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
-    else:
-        return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
-                for s in strings]
+    return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
+            for s in strings]
 
 
 def md5sum(file):
@@ -226,7 +224,18 @@ def is_generator_with_return_value(callable):
         return value is None or isinstance(value, ast.NameConstant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
-        code = re.sub(r"^[\t ]+", "", inspect.getsource(callable))
+        func = callable
+        while isinstance(func, partial):
+            func = func.func
+
+        src = inspect.getsource(func)
+        pattern = re.compile(r"(^[\t ]+)")
+        code = pattern.sub("", src)
+
+        match = pattern.match(src)  # finds indentation
+        if match:
+            code = re.sub(f"\n{match.group(0)}", "\n", code)  # remove indentation
+
         tree = ast.parse(code)
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):

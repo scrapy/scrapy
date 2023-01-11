@@ -9,7 +9,6 @@ from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -129,7 +128,7 @@ class CookiesMiddleware:
         """
         if not request.cookies:
             return []
-        elif isinstance(request.cookies, dict):
+        if isinstance(request.cookies, dict):
             cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
         else:
             cookies = request.cookies
