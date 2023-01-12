@@ -282,7 +282,6 @@ here is an example::
             # Calls the parent method
             super(MySpider, self).update_settings(settings)
 
-.. _spiderargs:
 
 Spider arguments
 ================
