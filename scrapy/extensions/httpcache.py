@@ -190,7 +190,7 @@ class RFC2616Policy:
         if response.status in (300, 301, 308):
             return self.MAXAGE
 
-        # Insufficient information to compute fresshness lifetime
+        # Insufficient information to compute freshness lifetime
         return 0
 
     def _compute_current_age(self, response, request, now):

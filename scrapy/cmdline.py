@@ -24,7 +24,7 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
 
 
 def _iter_command_classes(module_name):
-    # TODO: add `name` attribute to commands and and merge this function with
+    # TODO: add `name` attribute to commands and merge this function with
     # scrapy.utils.spider.iter_spider_classes
     for module in walk_modules(module_name):
         for obj in vars(module).values():

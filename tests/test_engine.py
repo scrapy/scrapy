@@ -109,7 +109,7 @@ class DataClassItemsSpider(TestSpider):
 class ItemZeroDivisionErrorSpider(TestSpider):
     custom_settings = {
         "ITEM_PIPELINES": {
-            "tests.pipelines.ProcessWithZeroDivisionErrorPipiline": 300,
+            "tests.pipelines.ProcessWithZeroDivisionErrorPipeline": 300,
         }
     }
 

@@ -173,8 +173,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
                 self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
                 self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
 
-                expected_warning_msg = ('.convert_image() method overriden in a deprecated way, '
-                                        'overriden method does not accept response_body argument.')
+                expected_warning_msg = ('.convert_image() method overridden in a deprecated way, '
+                                        'overridden method does not accept response_body argument.')
                 self.assertEqual(len([warning for warning in w if expected_warning_msg in str(warning.message)]), 1)
 
     def test_convert_image_old(self):
@@ -182,7 +182,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
             SIZE = (100, 100)
-            # straigh forward case: RGB and JPEG
+            # straight forward case: RGB and JPEG
             COLOUR = (0, 127, 255)
             im, _ = _create_image('JPEG', 'RGB', SIZE, COLOUR)
             converted, _ = self.pipeline.convert_image(im)
@@ -209,14 +209,14 @@ class ImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(converted.mode, 'RGB')
             self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
-            # ensure that we recieved deprecation warnings
+            # ensure that we received deprecation warnings
             expected_warning_msg = '.convert_image() method called in a deprecated way'
             self.assertTrue(len([warning for warning in w if expected_warning_msg in str(warning.message)]) == 4)
 
     def test_convert_image_new(self):
         # tests for new API
         SIZE = (100, 100)
-        # straigh forward case: RGB and JPEG
+        # straight forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
         im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)

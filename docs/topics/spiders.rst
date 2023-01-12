@@ -99,7 +99,7 @@ scrapy.Spider
    .. attribute:: crawler
 
       This attribute is set by the :meth:`from_crawler` class method after
-      initializating the class, and links to the
+      initializing the class, and links to the
       :class:`~scrapy.crawler.Crawler` object to which this spider instance is
       bound.
 

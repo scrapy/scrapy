@@ -150,7 +150,7 @@ class CrawlTestCase(TestCase):
             raise unittest.SkipTest("Non-existing hosts are resolvable")
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
-            # try to fetch the homepage of a non-existent domain
+            # try to fetch the homepage of a nonexistent domain
             yield crawler.crawl("http://dns.resolution.invalid./", mockserver=self.mockserver)
         self._assert_retried(log)
 
@@ -177,7 +177,7 @@ class CrawlTestCase(TestCase):
         self.assertIs(record.exc_info[0], ZeroDivisionError)
 
     @defer.inlineCallbacks
-    def test_start_requests_lazyness(self):
+    def test_start_requests_laziness(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = get_crawler(BrokenStartRequestsSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)

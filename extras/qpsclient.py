@@ -1,5 +1,5 @@
 """
-A spider that generate light requests to meassure QPS throughput
+A spider that generate light requests to measure QPS throughput
 
 usage:
 
