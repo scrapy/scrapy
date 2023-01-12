@@ -145,25 +145,25 @@ scrapy.Spider
        :param kwargs: keyword arguments passed to the :meth:`__init__` method
        :type kwargs: dict
 
-    .. method:: update_settings()
-        
-        The ``update_settings`` method allows you to modify the settings of a spider. It is a classmethod that is called to 
-        override the configuration of your spider. When called, it receives the spider's settings and passes ``custom_settings``
-        or an empty dictionary to the ``setdict`` method to register the setting with a priority of spider. It is recommended to
-        use ``update_settings`` rather than ``custom_settings`` when creating class hierarchies for spiders. This is because the parent's
-        ``custom_settings`` may be shadowed, but the parent's ``update_settings`` method can still be called.
+   .. method:: update_settings()
+    
+       The ``update_settings`` method allows you to modify the settings of a spider. It is a classmethod that is called to 
+       override the configuration of your spider. When called, it receives the spider's settings and passes ``custom_settings``
+       or an empty dictionary to the ``setdict`` method to register the setting with a priority of spider. It is recommended to
+       use ``update_settings`` rather than ``custom_settings`` when creating class hierarchies for spiders. This is because the 
+       parent's ``custom_settings`` may be shadowed, but the parent's ``update_settings`` method can still be called.
 
-        here is an example::
-            
-            class MySpider(scrapy.Spider):
-                name = 'myspider'
+       here is an example::
 
-                def update_settings(self, settings):
-                    # Modify the settings for this spider here
-                    settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+           class MySpider(scrapy.Spider):
+               name = 'myspider'
+
+               def update_settings(self, settings):
+                   # Modify the settings for this spider here
+                   settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
                             
-                    # Calls the parent method
-                    super(MySpider, self).update_settings(settings)
+                   # Calls the parent method
+                   super(MySpider, self).update_settings(settings)
 
    .. method:: start_requests()
 
