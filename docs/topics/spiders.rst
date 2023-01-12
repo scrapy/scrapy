@@ -259,7 +259,6 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
             for href in response.xpath('//a/@href').getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
-.. _spiderargs:
 
 
     .. method:: update_settings()
@@ -282,6 +281,7 @@ here is an example::
             # Calls the parent method
             super(MySpider, self).update_settings(settings)
 
+.. _spiderargs:
 
 Spider arguments
 ================
