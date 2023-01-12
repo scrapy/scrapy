@@ -145,8 +145,8 @@ scrapy.Spider
        :param kwargs: keyword arguments passed to the :meth:`__init__` method
        :type kwargs: dict
 
-   .. method:: update_settings()
-    
+   .. automethod::`update_settings()`
+
        The ``update_settings`` method allows you to modify the settings of a spider. It is a classmethod that is called to 
        override the configuration of your spider. When called, it receives the spider's settings and passes ``custom_settings``
        or an empty dictionary to the ``setdict`` method to register the setting with a priority of spider. It is recommended to
