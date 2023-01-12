@@ -350,11 +350,11 @@ class FeedExporter:
         return defer.DeferredList(deferred_list) if deferred_list else None
 
     def _close_slot(self, slot, spider):
+        slot.finish_exporting()
         if not slot.itemcount and not slot.store_empty:
             # We need to call slot.storage.store nonetheless to get the file
             # properly closed.
             return defer.maybeDeferred(slot.storage.store, slot.file)
-        slot.finish_exporting()
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
