@@ -178,7 +178,7 @@ scrapy.Spider
        If you want to change the Requests used to start scraping a domain, this is
        the method to override. For example, if you need to start by logging in using
        a POST request, you could do::
-            
+
            class MySpider(scrapy.Spider):
                name = 'myspider'
 
@@ -191,7 +191,7 @@ scrapy.Spider
                    # here you would extract links to follow and return Requests for
                    # each of them, with another callback
                    pass
-                   
+
    .. method:: parse(response)
 
        This is the default callback used by Scrapy to process downloaded
