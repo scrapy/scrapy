@@ -154,17 +154,16 @@ scrapy.Spider
         ``custom_settings`` may be shadowed, but the parent's ``update_settings`` method can still be called.
 
         here is an example::
+            
+            class MySpider(scrapy.Spider):
+                name = 'myspider'
 
-    class MySpider(scrapy.Spider):
-        name = 'myspider'
-
-        def update_settings(self, settings):
-            # Modify the settings for this spider here
-            settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
-                    
-            # Calls the parent method
-            super(MySpider, self).update_settings(settings)
-
+                def update_settings(self, settings):
+                    # Modify the settings for this spider here
+                    settings['MY_CUSTOM_SETTING'] = 'my_custom_value'
+                            
+                    # Calls the parent method
+                    super(MySpider, self).update_settings(settings)
 
    .. method:: start_requests()
 
