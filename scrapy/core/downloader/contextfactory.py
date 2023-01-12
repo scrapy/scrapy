@@ -10,6 +10,7 @@ from zope.interface.verify import verifyObject
 
 from scrapy.core.downloader.tls import DEFAULT_CIPHERS, openssl_methods, ScrapyClientTLSOptions
 from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.python import to_bytes
 
 
 @implementer(IPolicyForHTTPS)
@@ -109,7 +110,9 @@ class AcceptableProtocolsContextFactory:
     def __init__(self, context_factory, acceptable_protocols):
         verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory = context_factory
-        self._acceptable_protocols = acceptable_protocols
+        self._acceptable_protocols = [
+            to_bytes(protocol) for protocol in acceptable_protocols
+        ]
 
     def creatorForNetloc(self, hostname, port):
         options = self._wrapped_context_factory.creatorForNetloc(hostname, port)

@@ -714,6 +714,14 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
     production environments. Future Scrapy versions may introduce related
     changes without a deprecation period or warning.
 
+To use both HTTP/1.1 and HTTP/2 based on the protocol negotiated update
+:setting:`DOWNLOAD_HANDLERS` as follows::
+
+    DOWNLOAD_HANDLERS = {
+        'https': 'scrapy.core.downloader.handlers.negotiation.HTTPNegotiateDownloadHandler',
+    }
+
+
 .. note::
 
     Known limitations of the current HTTP/2 implementation of Scrapy include:
