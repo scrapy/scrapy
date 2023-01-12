@@ -11,13 +11,12 @@
 
 import sys
 from datetime import datetime
-from os import path
+from pathlib import Path
 
 # If your extensions are in another directory, add it here. If the directory
-# is relative to the documentation root, use os.path.abspath to make it
-# absolute, like shown here.
-sys.path.append(path.join(path.dirname(__file__), "_ext"))
-sys.path.insert(0, path.dirname(path.dirname(__file__)))
+# is relative to the documentation root, use Path.absolute to make it absolute.
+sys.path.append(str(Path(__file__).parent / "_ext"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 # General configuration
@@ -291,9 +290,9 @@ intersphinx_mapping = {
     'pytest': ('https://docs.pytest.org/en/latest', None),
     'python': ('https://docs.python.org/3', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master', None),
-    'tox': ('https://tox.readthedocs.io/en/latest', None),
-    'twisted': ('https://twistedmatrix.com/documents/current', None),
-    'twistedapi': ('https://twistedmatrix.com/documents/current/api', None),
+    'tox': ('https://tox.wiki/en/latest/', None),
+    'twisted': ('https://docs.twisted.org/en/stable/', None),
+    'twistedapi': ('https://docs.twisted.org/en/stable/api/', None),
     'w3lib': ('https://w3lib.readthedocs.io/en/latest', None),
 }
 intersphinx_disabled_reftypes = []

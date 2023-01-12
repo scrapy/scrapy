@@ -1,4 +1,4 @@
-from os.path import join
+from pathlib import Path
 
 from twisted.trial import unittest
 from twisted.internet import defer
@@ -6,7 +6,7 @@ from twisted.internet import defer
 from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
 
-from tests import tests_datadir
+from tests import tests_datadir, NON_EXISTING_RESOLVABLE
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
@@ -96,8 +96,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_local_file(self):
-        filepath = join(tests_datadir, 'test_site', 'index.html')
-        _, out, _ = yield self.execute([filepath, '-c', 'item'])
+        filepath = Path(tests_datadir, 'test_site', 'index.html')
+        _, out, _ = yield self.execute([str(filepath), '-c', 'item'])
         assert b'{}' in out
 
     @defer.inlineCallbacks
@@ -109,7 +109,20 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_dns_failures(self):
+        if NON_EXISTING_RESOLVABLE:
+            raise unittest.SkipTest("Non-existing hosts are resolvable")
         url = 'www.somedomainthatdoesntexi.st'
         errcode, out, err = yield self.execute([url, '-c', 'item'], check_code=False)
         self.assertEqual(errcode, 1, out or err)
         self.assertIn(b'DNS lookup failed', err)
+
+    @defer.inlineCallbacks
+    def test_shell_fetch_async(self):
+        reactor_path = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+        url = self.url('/html')
+        code = f"fetch('{url}')"
+        args = ["-c", code, "--set", f"TWISTED_REACTOR={reactor_path}"]
+        _, _, err = yield self.execute(args, check_code=True)
+        self.assertNotIn(
+            b"RuntimeError: There is no current event loop in thread", err
+        )

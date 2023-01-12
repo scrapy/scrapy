@@ -98,6 +98,10 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+Compatibility with pickle
+=========================
+
+Setting values must be :ref:`picklable <pickle-picklable>`.
 
 Import paths and classes
 ========================
@@ -560,7 +564,6 @@ This setting must be one of these string values:
   set this if you want the behavior of Scrapy<1.1
 - ``'TLSv1.1'``: forces TLS version 1.1
 - ``'TLSv1.2'``: forces TLS version 1.2
-- ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
@@ -660,8 +663,9 @@ desired.
 
 .. _spider-download_delay-attribute:
 
-You can change this setting per spider by setting the ``download_delay``
-spider attribute.
+.. note::
+
+    This delay can be set per spider using :attr:`download_delay` spider attribute.
 
 It is also possible to change this setting per domain, although it requires
 non-trivial code. See the implementation of the :ref:`AutoThrottle
@@ -1650,9 +1654,15 @@ which raises :exc:`Exception`, becomes::
 
 
 The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will install the default reactor defined by Twisted for the
-current platform. This is to maintain backward compatibility and avoid possible
-problems caused by using a non-default reactor.
+means that Scrapy will use the existing reactor if one is already installed, or
+install the default reactor defined by Twisted for the current platform. This
+is to maintain backward compatibility and avoid possible problems caused by
+using a non-default reactor.
+
+.. versionchanged:: 2.7
+   The :command:`startproject` command now sets this setting to
+   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
+   ``settings.py`` file.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
@@ -1668,14 +1678,14 @@ Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs.
 
-This setting can act as a stopping condition in case of URLs of ever-increasing 
-length, which may be caused for example by a programming error either in the 
-target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and 
+This setting can act as a stopping condition in case of URLs of ever-increasing
+length, which may be caused for example by a programming error either in the
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and
 :setting:`DEPTH_LIMIT`.
 
 Use ``0`` to allow URLs of any length.
 
-The default value is copied from the `Microsoft Internet Explorer maximum URL 
+The default value is copied from the `Microsoft Internet Explorer maximum URL
 length`_, even though this setting exists for different reasons.
 
 .. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246

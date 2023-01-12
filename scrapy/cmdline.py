@@ -7,15 +7,24 @@ import pkg_resources
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.utils.python import garbage_collect
 
 
+class ScrapyArgumentParser(argparse.ArgumentParser):
+    def _parse_optional(self, arg_string):
+        # if starts with -: it means that is a parameter not a argument
+        if arg_string[:2] == '-:':
+            return None
+
+        return super()._parse_optional(arg_string)
+
+
 def _iter_command_classes(module_name):
-    # TODO: add `name` attribute to commands and and merge this function with
+    # TODO: add `name` attribute to commands and merge this function with
     # scrapy.utils.spider.iter_spider_classes
     for module in walk_modules(module_name):
         for obj in vars(module).values():
@@ -23,7 +32,7 @@ def _iter_command_classes(module_name):
                 inspect.isclass(obj)
                 and issubclass(obj, ScrapyCommand)
                 and obj.__module__ == module.__name__
-                and not obj == ScrapyCommand
+                and obj not in (ScrapyCommand, BaseRunSpiderCommand)
             ):
                 yield obj
 
@@ -69,7 +78,8 @@ def _pop_command_name(argv):
 def _print_header(settings, inproject):
     version = scrapy.__version__
     if inproject:
-        print(f"Scrapy {version} - project: {settings['BOT_NAME']}\n")
+        print(f"Scrapy {version} - active project: {settings['BOT_NAME']}\n")
+
     else:
         print(f"Scrapy {version} - no active project\n")
 
@@ -131,10 +141,10 @@ def execute(argv=None, settings=None):
         sys.exit(2)
 
     cmd = cmds[cmdname]
-    parser = argparse.ArgumentParser(formatter_class=ScrapyHelpFormatter,
-                                     usage=f"scrapy {cmdname} {cmd.syntax()}",
-                                     conflict_handler='resolve',
-                                     description=cmd.long_desc())
+    parser = ScrapyArgumentParser(formatter_class=ScrapyHelpFormatter,
+                                  usage=f"scrapy {cmdname} {cmd.syntax()}",
+                                  conflict_handler='resolve',
+                                  description=cmd.long_desc())
     settings.setdict(cmd.default_settings, priority='command')
     cmd.settings = settings
     cmd.add_options(parser)

@@ -1,10 +1,9 @@
-from os.path import dirname, join
+from pathlib import Path
 from pkg_resources import parse_version
 from setuptools import setup, find_packages, __version__ as setuptools_version
 
 
-with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
-    version = f.read().decode('ascii').strip()
+version = (Path(__file__).parent / 'scrapy/VERSION').read_text('ascii').strip()
 
 
 def has_environment_marker_platform_impl_support():
@@ -20,18 +19,19 @@ def has_environment_marker_platform_impl_support():
 
 install_requires = [
     'Twisted>=18.9.0',
-    'cryptography>=2.8',
+    'cryptography>=3.4.6',
     'cssselect>=0.9.1',
     'itemloaders>=1.0.1',
     'parsel>=1.5.0',
-    'pyOpenSSL>=19.1.0',
+    'pyOpenSSL>=21.0.0',
     'queuelib>=1.4.2',
-    'service_identity>=16.0.0',
+    'service_identity>=18.1.0',
     'w3lib>=1.17.0',
     'zope.interface>=5.1.0',
     'protego>=0.1.15',
     'itemadapter>=0.1.0',
     'setuptools',
+    'packaging',
     'tldextract',
     'lxml>=4.3.0',
 ]
@@ -58,8 +58,9 @@ setup(
         'Tracker': 'https://github.com/scrapy/scrapy/issues',
     },
     description='A high-level Web Crawling and Web Scraping framework',
-    long_description=open('README.rst').read(),
+    long_description=open('README.rst', encoding="utf-8").read(),
     author='Scrapy developers',
+    author_email='pablo@pablohoffman.com',
     maintainer='Pablo Hoffman',
     maintainer_email='pablo@pablohoffman.com',
     license='BSD',
@@ -82,6 +83,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Internet :: WWW/HTTP',

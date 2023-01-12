@@ -3,7 +3,6 @@
 import ipaddress
 import logging
 import re
-import warnings
 from contextlib import suppress
 from io import BytesIO
 from time import time
@@ -22,11 +21,10 @@ from zope.interface import implementer
 from scrapy import signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
-from scrapy.exceptions import ScrapyDeprecationWarning, StopDownload
+from scrapy.exceptions import StopDownload
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
-
 
 logger = logging.getLogger(__name__)
 
@@ -279,17 +277,7 @@ class ScrapyAgent:
             proxyScheme, proxyNetloc, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
             proxyHost = to_unicode(proxyHost)
-            omitConnectTunnel = b'noconnect' in proxyParams
-            if omitConnectTunnel:
-                warnings.warn(
-                    "Using HTTPS proxies in the noconnect mode is deprecated. "
-                    "If you use Zyte Smart Proxy Manager, it doesn't require "
-                    "this mode anymore, so you should update scrapy-crawlera "
-                    "to scrapy-zyte-smartproxy and remove '?noconnect' "
-                    "from the Zyte Smart Proxy Manager URL.",
-                    ScrapyDeprecationWarning,
-                )
-            if scheme == b'https' and not omitConnectTunnel:
+            if scheme == b'https':
                 proxyAuth = request.headers.get(b'Proxy-Authorization', None)
                 proxyConf = (proxyHost, proxyPort, proxyAuth)
                 return self._TunnelingAgent(
@@ -300,18 +288,15 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            else:
-                proxyScheme = proxyScheme or b'http'
-                proxyHost = to_bytes(proxyHost, encoding='ascii')
-                proxyPort = to_bytes(str(proxyPort), encoding='ascii')
-                proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
-                return self._ProxyAgent(
-                    reactor=reactor,
-                    proxyURI=to_bytes(proxyURI, encoding='ascii'),
-                    connectTimeout=timeout,
-                    bindAddress=bindaddress,
-                    pool=self._pool,
-                )
+            proxyScheme = proxyScheme or b'http'
+            proxyURI = urlunparse((proxyScheme, proxyNetloc, proxyParams, '', '', ''))
+            return self._ProxyAgent(
+                reactor=reactor,
+                proxyURI=to_bytes(proxyURI, encoding='ascii'),
+                connectTimeout=timeout,
+                bindAddress=bindaddress,
+                pool=self._pool,
+            )
 
         return self._Agent(
             reactor=reactor,
@@ -384,8 +369,7 @@ class ScrapyAgent:
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": request, "handler": handler.__qualname__})
                 txresponse._transport.stopProducing()
-                with suppress(AttributeError):
-                    txresponse._transport._producer.loseConnection()
+                txresponse._transport.loseConnection()
                 return {
                     "txresponse": txresponse,
                     "body": b"",
@@ -417,7 +401,7 @@ class ScrapyAgent:
 
             logger.warning(warning_msg, warning_args)
 
-            txresponse._transport._producer.loseConnection()
+            txresponse._transport.loseConnection()
             raise defer.CancelledError(warning_msg % warning_args)
 
         if warnsize and expected_size > warnsize:
@@ -543,7 +527,7 @@ class _ResponseReader(protocol.Protocol):
                 logger.debug("Download stopped for %(request)s from signal handler %(handler)s",
                              {"request": self._request, "handler": handler.__qualname__})
                 self.transport.stopProducing()
-                self.transport._producer.loseConnection()
+                self.transport.loseConnection()
                 failure = result if result.value.fail else None
                 self._finish_response(flags=["download_stopped"], failure=failure)
 
@@ -581,7 +565,7 @@ class _ResponseReader(protocol.Protocol):
                 self._finish_response(flags=["dataloss"])
                 return
 
-            elif not self._fail_on_dataloss_warned:
+            if not self._fail_on_dataloss_warned:
                 logger.warning("Got data loss in %s. If you want to process broken "
                                "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
                                " -- This message won't be shown in further requests",

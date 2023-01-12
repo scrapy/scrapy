@@ -9,14 +9,14 @@ import webbrowser
 from typing import Any, Callable, Iterable, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
+from twisted.web import http
+from w3lib import html
 import scrapy
 from scrapy.http.response import Response
 
-from twisted.web import http
+
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.decorators import deprecated
-from w3lib import html
-
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
 
@@ -36,7 +36,7 @@ def get_meta_refresh(
     response: "scrapy.http.response.text.TextResponse",
     ignore_tags: Optional[Iterable[str]] = ('script', 'noscript'),
 ) -> Union[Tuple[None, None], Tuple[float, str]]:
-    """Parse the http-equiv refrsh parameter from the given response"""
+    """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(

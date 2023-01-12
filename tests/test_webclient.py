@@ -2,8 +2,8 @@
 from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
-import os
 import shutil
+from pathlib import Path
 
 import OpenSSL.SSL
 from twisted.trial import unittest
@@ -15,7 +15,6 @@ except ImportError:
     # deprecated in Twisted 19.7.0
     # (remove once we bump our requirement past that version)
     from twisted.test.proto_helpers import StringTransport
-from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 from twisted.internet.defer import inlineCallbacks
 
@@ -48,7 +47,7 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
 
     from twisted.web.client import _makeGetterFactory
     return _makeGetterFactory(
-        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs
+        to_bytes(url), _clientfactory, contextFactory=contextFactory, *args, **kwargs,
     ).deferred
 
 
@@ -230,10 +229,10 @@ class WebClientTestCase(unittest.TestCase):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
-        FilePath(self.tmpname).child("file").setContent(b"0123456789")
-        r = static.File(self.tmpname)
+        self.tmpname = Path(self.mktemp())
+        self.tmpname.mkdir()
+        (self.tmpname / "file").write_bytes(b"0123456789")
+        r = static.File(str(self.tmpname))
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"error", ErrorResource())
@@ -379,10 +378,10 @@ class WebClientSSLTestCase(unittest.TestCase):
         return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
-        self.tmpname = self.mktemp()
-        os.mkdir(self.tmpname)
-        FilePath(self.tmpname).child("file").setContent(b"0123456789")
-        r = static.File(self.tmpname)
+        self.tmpname = Path(self.mktemp())
+        self.tmpname.mkdir()
+        (self.tmpname / "file").write_bytes(b"0123456789")
+        r = static.File(str(self.tmpname))
         r.putChild(b"payload", PayloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)

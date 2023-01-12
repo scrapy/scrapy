@@ -1,14 +1,18 @@
+import codecs
 import unittest
 from unittest import mock
 
+from packaging.version import Version as parse_version
+from pytest import mark
+from w3lib import __version__ as w3lib_version
 from w3lib.encoding import resolve_encoding
 
-from scrapy.http import (Request, Response, TextResponse, HtmlResponse,
-                         XmlResponse, Headers)
+from scrapy.exceptions import NotSupported
+from scrapy.http import (Headers, HtmlResponse, Request, Response,
+                         TextResponse, XmlResponse)
+from scrapy.link import Link
 from scrapy.selector import Selector
 from scrapy.utils.python import to_unicode
-from scrapy.exceptions import NotSupported
-from scrapy.link import Link
 from tests import get_testdata
 
 
@@ -101,7 +105,7 @@ class BaseResponseTest(unittest.TestCase):
         r1 = CustomResponse('http://www.example.com')
         r2 = r1.copy()
 
-        assert type(r2) is CustomResponse
+        assert isinstance(r2, CustomResponse)
 
     def test_replace(self):
         """Test Response.replace() method"""
@@ -178,13 +182,23 @@ class BaseResponseTest(unittest.TestCase):
         r = self.response_class("http://example.com")
         self.assertRaises(ValueError, r.follow, None)
 
+    @mark.xfail(
+        parse_version(w3lib_version) < parse_version("2.1.1"),
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
     def test_follow_whitespace_url(self):
         self._assert_followed_url('foo ',
-                                  'http://example.com/foo%20')
+                                  'http://example.com/foo')
 
+    @mark.xfail(
+        parse_version(w3lib_version) < parse_version("2.1.1"),
+        reason="https://github.com/scrapy/w3lib/pull/207",
+        strict=True,
+    )
     def test_follow_whitespace_link(self):
         self._assert_followed_url(Link('http://example.com/foo '),
-                                  'http://example.com/foo%20')
+                                  'http://example.com/foo')
 
     def test_follow_flags(self):
         res = self.response_class('http://example.com/')
@@ -358,6 +372,8 @@ class TextResponseTest(BaseResponseTest):
                                  headers={"Content-type": ["text/html; charset=gb2312"]})
         r7 = self.response_class("http://www.example.com", body=b"\xa8D",
                                  headers={"Content-type": ["text/html; charset=gbk"]})
+        r8 = self.response_class("http://www.example.com", body=codecs.BOM_UTF8 + b"\xc2\xa3",
+                                 headers={"Content-type": ["text/html; charset=cp1251"]})
 
         self.assertEqual(r1._headers_encoding(), "utf-8")
         self.assertEqual(r2._headers_encoding(), None)
@@ -367,7 +383,10 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r3._declared_encoding(), "cp1252")
         self.assertEqual(r4._headers_encoding(), None)
         self.assertEqual(r5._headers_encoding(), None)
+        self.assertEqual(r8._headers_encoding(), "cp1251")
+        self.assertEqual(r8._declared_encoding(), "utf-8")
         self._assert_response_encoding(r5, "utf-8")
+        self._assert_response_encoding(r8, "utf-8")
         assert r4._body_inferred_encoding() is not None and r4._body_inferred_encoding() != 'ascii'
         self._assert_response_values(r1, 'utf-8', "\xa3")
         self._assert_response_values(r2, 'utf-8', "\xa3")
@@ -406,7 +425,7 @@ class TextResponseTest(BaseResponseTest):
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
         # this test tries to ensure that calling response.encoding and
-        # response.text in indistint order doesn't affect final
+        # response.text in indistinct order doesn't affect final
         # values for encoding and decoded body.
         url = 'http://example.com'
         body = b"\xef\xbb\xbfWORD"
@@ -699,7 +718,8 @@ class HtmlResponseTest(TextResponseTest):
 
     def test_html_encoding(self):
 
-        body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+        body = b"""<html><head><title>Some page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
         """
         r1 = self.response_class("http://www.example.com", body=body)
@@ -713,7 +733,8 @@ class HtmlResponseTest(TextResponseTest):
         self._assert_response_values(r2, 'iso-8859-1', body)
 
         # for conflicting declarations headers must take precedence
-        body = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        body = b"""<html><head><title>Some page</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         </head><body>Price: \xa3100</body></html>'
         """
         r3 = self.response_class("http://www.example.com", body=body,

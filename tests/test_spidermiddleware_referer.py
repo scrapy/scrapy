@@ -1,8 +1,8 @@
 from urllib.parse import urlparse
 from unittest import TestCase
 import warnings
-
 from scrapy.http import Response, Request
+
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
@@ -147,7 +147,7 @@ class MixinSameOrigin:
         ('http://example.com:81/page.html', 'http://example.com/not-page.html', None),
         ('http://example.com/page.html', 'http://example.com:81/not-page.html', None),
 
-        # Different protocols: do NOT send refferer
+        # Different protocols: do NOT send referrer
         ('https://example.com/page.html', 'http://example.com/not-page.html', None),
         ('https://example.com/page.html', 'http://not.example.com/', None),
         ('ftps://example.com/urls.zip', 'https://example.com/not-page.html', None),
@@ -380,7 +380,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
         scheme = urlparse(request).scheme
         if scheme == 'https':
             return b'https://python.org/'
-        elif scheme == 'http':
+        if scheme == 'http':
             return b'http://python.org/'
 
 
@@ -434,17 +434,17 @@ class TestRequestMetaUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
 
 
-class TestRequestMetaPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
+class TestRequestMetaPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
 
 
-class TestRequestMetaPredecence002(MixinNoReferrer, TestRefererMiddleware):
+class TestRequestMetaPrecedence002(MixinNoReferrer, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
     req_meta = {'referrer_policy': POLICY_NO_REFERRER}
 
 
-class TestRequestMetaPredecence003(MixinUnsafeUrl, TestRefererMiddleware):
+class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     req_meta = {'referrer_policy': POLICY_UNSAFE_URL}
 
@@ -561,22 +561,22 @@ class TestSettingsPolicyByName(TestCase):
             RefererMiddleware(settings)
 
 
-class TestPolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
+class TestPolicyHeaderPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.SameOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_UNSAFE_URL.upper()}
 
 
-class TestPolicyHeaderPredecence002(MixinNoReferrer, TestRefererMiddleware):
+class TestPolicyHeaderPrecedence002(MixinNoReferrer, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER.swapcase()}
 
 
-class TestPolicyHeaderPredecence003(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
+class TestPolicyHeaderPrecedence003(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
     settings = {'REFERRER_POLICY': 'scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy'}
     resp_headers = {'Referrer-Policy': POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
 
 
-class TestPolicyHeaderPredecence004(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
+class TestPolicyHeaderPrecedence004(MixinNoReferrerWhenDowngrade, TestRefererMiddleware):
     """
     The empty string means "no-referrer-when-downgrade"
     """

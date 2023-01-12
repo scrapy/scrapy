@@ -15,7 +15,7 @@ Scrapy developers, if you add a setting here remember to:
 
 import sys
 from importlib import import_module
-from os.path import join, abspath, dirname
+from pathlib import Path
 
 AJAXCRAWL_ENABLED = False
 
@@ -248,7 +248,7 @@ REFERER_ENABLED = True
 REFERRER_POLICY = 'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'
 
 REQUEST_FINGERPRINTER_CLASS = 'scrapy.utils.request.RequestFingerprinter'
-REQUEST_FINGERPRINTER_IMPLEMENTATION = 'PREVIOUS_VERSION'
+REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.6'
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
@@ -288,7 +288,7 @@ STATS_DUMP = True
 
 STATSMAILER_RCPTS = []
 
-TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
+TEMPLATES_DIR = str((Path(__file__).parent / '..' / 'templates').resolve())
 
 URLLENGTH_LIMIT = 2083
 

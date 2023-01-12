@@ -1,4 +1,3 @@
-import warnings
 from time import time
 from typing import Optional, Type, TypeVar
 from urllib.parse import urldefrag
@@ -69,19 +68,8 @@ class ScrapyH2Agent:
         if proxy:
             _, _, proxy_host, proxy_port, proxy_params = _parse(proxy)
             scheme = _parse(request.url)[0]
-            proxy_host = proxy_host.decode()
-            omit_connect_tunnel = b'noconnect' in proxy_params
-            if omit_connect_tunnel:
-                warnings.warn(
-                    "Using HTTPS proxies in the noconnect mode is not "
-                    "supported by the downloader handler. If you use Zyte "
-                    "Smart Proxy Manager, it doesn't require this mode "
-                    "anymore, so you should update scrapy-crawlera to "
-                    "scrapy-zyte-smartproxy and remove '?noconnect' from the "
-                    "Zyte Smart Proxy Manager URL."
-                )
 
-            if scheme == b'https' and not omit_connect_tunnel:
+            if scheme == b'https':
                 # ToDo
                 raise NotImplementedError('Tunneling via CONNECT method using HTTP/2.0 is not yet supported')
             return self._ProxyAgent(

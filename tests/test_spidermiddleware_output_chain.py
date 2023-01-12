@@ -4,7 +4,6 @@ from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider
 from scrapy.utils.test import get_crawler
-
 from tests.mockserver import MockServer
 
 
@@ -28,6 +27,7 @@ class RecoveryMiddleware:
 class RecoverySpider(Spider):
     name = 'RecoverySpider'
     custom_settings = {
+        'SPIDER_MIDDLEWARES_BASE': {},
         'SPIDER_MIDDLEWARES': {
             RecoveryMiddleware: 10,
         },
@@ -41,6 +41,14 @@ class RecoverySpider(Spider):
         self.logger.info('DONT_FAIL: %s', response.meta.get('dont_fail'))
         if not response.meta.get('dont_fail'):
             raise TabError()
+
+
+class RecoveryAsyncGenSpider(RecoverySpider):
+    name = 'RecoveryAsyncGenSpider'
+
+    async def parse(self, response):
+        for r in super().parse(response):
+            yield r
 
 
 # ================================================================================
@@ -94,6 +102,13 @@ class GeneratorCallbackSpider(Spider):
         yield Request(self.mockserver.url('/status?n=200'))
 
     def parse(self, response):
+        yield {'test': 1}
+        yield {'test': 2}
+        raise ImportError()
+
+
+class AsyncGeneratorCallbackSpider(GeneratorCallbackSpider):
+    async def parse(self, response):
         yield {'test': 1}
         yield {'test': 2}
         raise ImportError()
@@ -308,6 +323,16 @@ class TestSpiderMiddleware(TestCase):
         self.assertIn("'item_scraped_count': 3", str(log))
 
     @defer.inlineCallbacks
+    def test_recovery_asyncgen(self):
+        """
+        Same as test_recovery but with an async callback.
+        """
+        log = yield self.crawl_log(RecoveryAsyncGenSpider)
+        self.assertIn("Middleware: TabError exception caught", str(log))
+        self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
+        self.assertIn("'item_scraped_count': 3", str(log))
+
+    @defer.inlineCallbacks
     def test_process_spider_input_without_errback(self):
         """
         (1.1) An exception from the process_spider_input chain should be caught by the
@@ -339,6 +364,15 @@ class TestSpiderMiddleware(TestCase):
         exception is raised should be processed normally.
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
+        self.assertIn("Middleware: ImportError exception caught", str(log2))
+        self.assertIn("'item_scraped_count': 2", str(log2))
+
+    @defer.inlineCallbacks
+    def test_async_generator_callback(self):
+        """
+        Same as test_generator_callback but with an async callback.
+        """
+        log2 = yield self.crawl_log(AsyncGeneratorCallbackSpider)
         self.assertIn("Middleware: ImportError exception caught", str(log2))
         self.assertIn("'item_scraped_count': 2", str(log2))
 

@@ -1,5 +1,5 @@
-import os
 from datetime import datetime
+from pathlib import Path
 import shutil
 from twisted.trial import unittest
 
@@ -13,7 +13,7 @@ class SpiderStateTest(unittest.TestCase):
 
     def test_store_load(self):
         jobdir = self.mktemp()
-        os.mkdir(jobdir)
+        Path(jobdir).mkdir()
         try:
             spider = Spider(name='default')
             dt = datetime.now()

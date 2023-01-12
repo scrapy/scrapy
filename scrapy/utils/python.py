@@ -1,19 +1,16 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import errno
 import gc
 import inspect
 import re
 import sys
-import warnings
 import weakref
-from collections.abc import Iterable
 from functools import partial, wraps
 from itertools import chain
+from typing import AsyncGenerator, AsyncIterable, Iterable, Union
 
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.decorators import deprecated
+from scrapy.utils.asyncgen import as_async_generator
 
 
 def flatten(x):
@@ -111,12 +108,6 @@ def to_bytes(text, encoding=None, errors='strict'):
     return text.encode(encoding, errors)
 
 
-@deprecated('to_unicode')
-def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of ``text``. """
-    return to_unicode(text, encoding, errors)
-
-
 def re_rsearch(pattern, text, chunk_size=1024):
     """
     This function does a reverse search in a text using a regular expression
@@ -179,23 +170,6 @@ def binary_is_text(data):
     return all(c not in _BINARYCHARS for c in data)
 
 
-def _getargspec_py23(func):
-    """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
-                                                        defaults)
-
-    Was identical to inspect.getargspec() in python2, but uses
-    inspect.getfullargspec() for python3 behind the scenes to avoid
-    DeprecationWarning.
-
-    >>> def f(a, b=2, *ar, **kw):
-    ...     pass
-
-    >>> _getargspec_py23(f)
-    ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
-    """
-    return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
-
-
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
@@ -213,10 +187,9 @@ def get_func_args(func, stripself=False):
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []
-        elif getattr(func, '__name__', None) == '__call__':
+        if getattr(func, '__name__', None) == '__call__':
             return []
-        else:
-            return get_func_args(func.__call__, True)
+        return get_func_args(func.__call__, True)
     else:
         raise TypeError(f'{type(func)} is not callable')
     if stripself:
@@ -247,9 +220,9 @@ def get_spec(func):
     """
 
     if inspect.isfunction(func) or inspect.ismethod(func):
-        spec = _getargspec_py23(func)
+        spec = inspect.getfullargspec(func)
     elif hasattr(func, '__call__'):
-        spec = _getargspec_py23(func.__call__)
+        spec = inspect.getfullargspec(func.__call__)
     else:
         raise TypeError(f'{type(func)} is not callable')
 
@@ -277,30 +250,6 @@ def equal_attributes(obj1, obj2, attributes):
             return False
     # all attributes equal
     return True
-
-
-class WeakKeyCache:
-
-    def __init__(self, default_factory):
-        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
-        self.default_factory = default_factory
-        self._weakdict = weakref.WeakKeyDictionary()
-
-    def __getitem__(self, key):
-        if key not in self._weakdict:
-            self._weakdict[key] = self.default_factory(key)
-        return self._weakdict[key]
-
-
-@deprecated
-def retry_on_eintr(function, *args, **kw):
-    """Run a function and retry it while getting EINTR errors"""
-    while True:
-        try:
-            return function(*args, **kw)
-        except IOError as e:
-            if e.errno != errno.EINTR:
-                raise
 
 
 def without_none_values(iterable):
@@ -344,7 +293,7 @@ class MutableChain(Iterable):
     def __init__(self, *args: Iterable):
         self.data = chain.from_iterable(args)
 
-    def extend(self, *iterables: Iterable):
+    def extend(self, *iterables: Iterable) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
     def __iter__(self):
@@ -353,6 +302,26 @@ class MutableChain(Iterable):
     def __next__(self):
         return next(self.data)
 
-    @deprecated("scrapy.utils.python.MutableChain.__next__")
-    def next(self):
-        return self.__next__()
+
+async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
+    for it in iterables:
+        async for o in as_async_generator(it):
+            yield o
+
+
+class MutableAsyncChain(AsyncIterable):
+    """
+    Similar to MutableChain but for async iterables
+    """
+
+    def __init__(self, *args: Union[Iterable, AsyncIterable]):
+        self.data = _async_chain(*args)
+
+    def extend(self, *iterables: Union[Iterable, AsyncIterable]) -> None:
+        self.data = _async_chain(self.data, _async_chain(*iterables))
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return await self.data.__anext__()

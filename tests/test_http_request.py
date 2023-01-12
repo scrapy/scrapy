@@ -223,7 +223,7 @@ class RequestTest(unittest.TestCase):
         r1 = CustomRequest('http://www.example.com')
         r2 = r1.copy()
 
-        assert type(r2) is CustomRequest
+        assert isinstance(r2, CustomRequest)
 
     def test_replace(self):
         """Test Request.replace() method"""
@@ -355,7 +355,7 @@ class RequestTest(unittest.TestCase):
             )
             self.assertEqual(r.method, "DELETE")
 
-        # If `ignore_unknon_options` is set to `False` it raises an error with
+        # If `ignore_unknown_options` is set to `False` it raises an error with
         # the unknown options: --foo and -z
         self.assertRaises(
             ValueError,
@@ -873,7 +873,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(r1)
         self.assertEqual(fs, {b'four': [b'4'], b'three': [b'3']})
 
-    def test_from_response_formname_notexist(self):
+    def test_from_response_formname_nonexistent(self):
         response = _buildresponse(
             """<form name="form1" action="post.php" method="POST">
             <input type="hidden" name="one" value="1">
@@ -912,7 +912,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(r1)
         self.assertEqual(fs, {b'four': [b'4'], b'three': [b'3']})
 
-    def test_from_response_formname_notexists_fallback_formid(self):
+    def test_from_response_formname_nonexistent_fallback_formid(self):
         response = _buildresponse(
             """<form action="post.php" method="POST">
             <input type="hidden" name="one" value="1">
@@ -927,7 +927,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(r1)
         self.assertEqual(fs, {b'four': [b'4'], b'three': [b'3']})
 
-    def test_from_response_formid_notexist(self):
+    def test_from_response_formid_nonexistent(self):
         response = _buildresponse(
             """<form id="form1" action="post.php" method="POST">
             <input type="hidden" name="one" value="1">

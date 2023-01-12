@@ -3,18 +3,20 @@ Link extractor based on lxml.html
 """
 import operator
 from functools import partial
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
-import lxml.etree as etree
+from lxml import etree
+from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
-from scrapy.linkextractors import FilteringLinkExtractor
+from scrapy.linkextractors import (IGNORED_EXTENSIONS, _is_valid_url, _matches,
+                                   _re_type, re)
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
-
+from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 # from lxml/src/lxml/html/__init__.py
 XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
@@ -98,7 +100,8 @@ class LxmlParserLinkExtractor:
         return links
 
 
-class LxmlLinkExtractor(FilteringLinkExtractor):
+class LxmlLinkExtractor:
+    _csstranslator = HTMLTranslator()
 
     def __init__(
         self,
@@ -118,7 +121,7 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         restrict_text=None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
-        lx = LxmlParserLinkExtractor(
+        self.link_extractor = LxmlParserLinkExtractor(
             tag=partial(operator.contains, tags),
             attr=partial(operator.contains, attrs),
             unique=unique,
@@ -126,18 +129,64 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
             strip=strip,
             canonicalized=canonicalize
         )
-        super().__init__(
-            link_extractor=lx,
-            allow=allow,
-            deny=deny,
-            allow_domains=allow_domains,
-            deny_domains=deny_domains,
-            restrict_xpaths=restrict_xpaths,
-            restrict_css=restrict_css,
-            canonicalize=canonicalize,
-            deny_extensions=deny_extensions,
-            restrict_text=restrict_text,
-        )
+        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x)
+                          for x in arg_to_iter(allow)]
+        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x)
+                         for x in arg_to_iter(deny)]
+
+        self.allow_domains = set(arg_to_iter(allow_domains))
+        self.deny_domains = set(arg_to_iter(deny_domains))
+
+        self.restrict_xpaths = tuple(arg_to_iter(restrict_xpaths))
+        self.restrict_xpaths += tuple(map(self._csstranslator.css_to_xpath,
+                                          arg_to_iter(restrict_css)))
+
+        if deny_extensions is None:
+            deny_extensions = IGNORED_EXTENSIONS
+        self.canonicalize = canonicalize
+        self.deny_extensions = {'.' + e for e in arg_to_iter(deny_extensions)}
+        self.restrict_text = [x if isinstance(x, _re_type) else re.compile(x)
+                              for x in arg_to_iter(restrict_text)]
+
+    def _link_allowed(self, link):
+        if not _is_valid_url(link.url):
+            return False
+        if self.allow_res and not _matches(link.url, self.allow_res):
+            return False
+        if self.deny_res and _matches(link.url, self.deny_res):
+            return False
+        parsed_url = urlparse(link.url)
+        if self.allow_domains and not url_is_from_any_domain(parsed_url, self.allow_domains):
+            return False
+        if self.deny_domains and url_is_from_any_domain(parsed_url, self.deny_domains):
+            return False
+        if self.deny_extensions and url_has_any_extension(parsed_url, self.deny_extensions):
+            return False
+        if self.restrict_text and not _matches(link.text, self.restrict_text):
+            return False
+        return True
+
+    def matches(self, url):
+
+        if self.allow_domains and not url_is_from_any_domain(url, self.allow_domains):
+            return False
+        if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
+            return False
+
+        allowed = (regex.search(url) for regex in self.allow_res) if self.allow_res else [True]
+        denied = (regex.search(url) for regex in self.deny_res) if self.deny_res else []
+        return any(allowed) and not any(denied)
+
+    def _process_links(self, links):
+        links = [x for x in links if self._link_allowed(x)]
+        if self.canonicalize:
+            for link in links:
+                link.url = canonicalize_url(link.url)
+        links = self.link_extractor._process_links(links)
+        return links
+
+    def _extract_links(self, *args, **kwargs):
+        return self.link_extractor._extract_links(*args, **kwargs)
 
     def extract_links(self, response):
         """Returns a list of :class:`~scrapy.link.Link` objects from the

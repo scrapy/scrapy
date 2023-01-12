@@ -2,6 +2,7 @@ import inspect
 import unittest
 from unittest import mock
 import warnings
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import create_deprecated_class, update_classpath
 
@@ -68,7 +69,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertIn('foo.NewClass', str(w[1].message))
         self.assertIn('bar.OldClass', str(w[1].message))
 
-    def test_subclassing_warns_only_on_direct_childs(self):
+    def test_subclassing_warns_only_on_direct_children(self):
         Deprecated = create_deprecated_class('Deprecated', NewName,
                                              warn_once=False,
                                              warn_category=MyWarning)

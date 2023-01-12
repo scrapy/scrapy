@@ -113,15 +113,14 @@ def get_retry_request(
         stats.inc_value(f'{stats_base_key}/count')
         stats.inc_value(f'{stats_base_key}/reason_count/{reason}')
         return new_request
-    else:
-        stats.inc_value(f'{stats_base_key}/max_reached')
-        logger.error(
-            "Gave up retrying %(request)s (failed %(retry_times)d times): "
-            "%(reason)s",
-            {'request': request, 'retry_times': retry_times, 'reason': reason},
-            extra={'spider': spider},
-        )
-        return None
+    stats.inc_value(f'{stats_base_key}/max_reached')
+    logger.error(
+        "Gave up retrying %(request)s (failed %(retry_times)d times): "
+        "%(reason)s",
+        {'request': request, 'retry_times': retry_times, 'reason': reason},
+        extra={'spider': spider},
+    )
+    return None
 
 
 class RetryMiddleware:
