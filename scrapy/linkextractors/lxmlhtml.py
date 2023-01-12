@@ -195,7 +195,7 @@ class LxmlLinkExtractor:
         Only links that match the settings passed to the ``__init__`` method of
         the link extractor are returned.
 
-        Duplicate links are omitted if the ``unique`` attribute is set to ``True``, 
+        Duplicate links are omitted if the ``unique`` attribute is set to ``True``,
         otherwise they are returned.
         """
         base_url = get_base_url(response)
