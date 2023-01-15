@@ -38,6 +38,7 @@ class BaseRedirectMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler):
+        cls.fp = crawler.request_fingerprinter.fingerprint
         return cls(crawler.settings)
 
     def _redirect(self, redirected, request, spider, reason):
