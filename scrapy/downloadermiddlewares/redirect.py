@@ -50,7 +50,7 @@ class BaseRedirectMiddleware:
             redirected.meta['redirect_ttl'] = ttl - 1
             redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + [request.url]
             redirected.meta['redirect_reasons'] = request.meta.get('redirect_reasons', []) + [reason]
-            redirected.dont_filter = request.dont_filter
+            redirected.dont_filter = request.dont_filter or self.fp(request) == self.fp(redirected)
             redirected.priority = request.priority + self.priority_adjust
             logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
                          {'reason': reason, 'redirected': redirected, 'request': request},
