@@ -3,6 +3,7 @@ import hashlib
 import io
 import random
 import warnings
+from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from unittest.mock import patch
@@ -104,6 +105,18 @@ class ImagesPipelineTestCase(unittest.TestCase):
         item = dict(path='path-to-store-file')
         request = Request("http://example.com")
         self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
+
+    def test_image_pipeline_using_pathlike_objects(self):
+
+        class CustomImagesPipelineWithPathLikeDir(ImagesPipeline):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return Path('subdir') / Path(request.url).name
+
+        pipeline = CustomImagesPipelineWithPathLikeDir.from_settings(
+            Settings({'IMAGES_STORE': Path(self.tempdir)})
+        )
+        request = Request("http://example.com/image01.jpg")
+        self.assertEqual(pipeline.file_path(request), Path('subdir/image01.jpg'))
 
     def test_get_images_exception(self):
         self.pipeline.min_width = 100
