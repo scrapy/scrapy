@@ -1,5 +1,4 @@
 from functools import wraps
-from collections import OrderedDict
 
 
 def _embed_ipython_shell(namespace={}, banner=''):
@@ -63,12 +62,12 @@ def _embed_standard_shell(namespace={}, banner=''):
     return wrapper
 
 
-DEFAULT_PYTHON_SHELLS = OrderedDict([
-    ('ptpython', _embed_ptpython_shell),
-    ('ipython', _embed_ipython_shell),
-    ('bpython', _embed_bpython_shell),
-    ('python', _embed_standard_shell),
-])
+DEFAULT_PYTHON_SHELLS = {
+    'ptpython': _embed_ptpython_shell,
+    'ipython': _embed_ipython_shell,
+    'bpython': _embed_bpython_shell,
+    'python': _embed_standard_shell,
+}
 
 
 def get_shell_embed_func(shells=None, known_shells=None):
