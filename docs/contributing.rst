@@ -179,6 +179,25 @@ Scrapy:
   See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
 
+.. _pre-commit:
+
+Pre-commit
+==========
+
+Pre-commit is a tool that allows developers to specify a set of checks to be run 
+automatically every time they make a commit. This can include code style checks, 
+linting, and automated tests. 
+The checks are defined in a configuration file called .pre-commit-config.yaml.
+
+By using pre-commit, developers can ensure that their code adheres to a consistent 
+style and passes certain tests before they make a commit. 
+This can help catch errors early in the development process and prevent them 
+from being pushed to the main branch.
+
+To use pre-commit, developers first need to install it on their local machine. 
+Once it is installed, they can specify the checks they want to run in the .pre-commit-config.yaml file. 
+After that, pre-commit will run automatically every time they make a commit.
+
 .. _documentation-policies:
 
 Documentation policies
