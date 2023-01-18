@@ -169,10 +169,10 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* Unless otherwise specified, follow :pep:`8`.
-
-* It's OK to use lines longer than 79 chars if it improves the code
-  readability.
+* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting. 
+  There is a hook in the pre-commit config
+  that will automatically format your code before every commit. You can also
+  run black manually with ``tox -e black``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
@@ -184,19 +184,21 @@ Scrapy:
 Pre-commit
 ==========
 
-Pre-commit is a tool that allows developers to specify a set of checks to be run 
-automatically every time they make a commit. This can include code style checks, 
-linting, and automated tests. 
-The checks are defined in a configuration file called .pre-commit-config.yaml.
+We use `pre-commit`_ to automatically address simple code issues before every 
+commit.
 
-By using pre-commit, developers can ensure that their code adheres to a consistent 
-style and passes certain tests before they make a commit. 
-This can help catch errors early in the development process and prevent them 
-from being pushed to the main branch.
+Before you start writing a patch:
+#.  `Install pre-commit <https://pre-commit.com/#installation>`_.
+#.  On the root of your local clone of the Scrapy repository, run the following command:
+    .. code-block:: bash
+      
+      pre-commit install
 
-To use pre-commit, developers first need to install it on their local machine. 
-Once it is installed, they can specify the checks they want to run in the .pre-commit-config.yaml file. 
-After that, pre-commit will run automatically every time they make a commit.
+Now our pre-commit hooks will run every time you create a Git commit. Upon 
+finding issues, pre-commit hooks aborts your commit, and they either fix 
+the corresponding issues automatically or only report them to you. If they fix 
+the issues automatically, creating your commit again should succeed. Otherwise, 
+you may need to address the corresponding issues manually first.
 
 .. _documentation-policies:
 
