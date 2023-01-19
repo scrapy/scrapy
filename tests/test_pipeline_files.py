@@ -33,10 +33,7 @@ from scrapy.utils.test import (
     skip_if_no_boto,
 )
 
-
-def _mocked_download_func(request, info):
-    response = request.meta.get('response')
-    return response() if callable(response) else response
+from .test_pipeline_media import _mocked_download_func
 
 
 class FilesPipelineTestCase(unittest.TestCase):

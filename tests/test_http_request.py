@@ -7,6 +7,7 @@ from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, JsonRequest, Headers, HtmlResponse
+from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -277,6 +278,12 @@ class RequestTest(unittest.TestCase):
         self.assertIs(r4.callback, a_function)
         self.assertIs(r4.errback, a_function)
 
+        r5 = self.request_class(
+            url='http://example.com',
+            callback=NO_CALLBACK,
+        )
+        self.assertIs(r5.callback, NO_CALLBACK)
+
     def test_callback_and_errback_type(self):
         with self.assertRaises(TypeError):
             self.request_class('http://example.com', callback='a_function')
@@ -288,6 +295,8 @@ class RequestTest(unittest.TestCase):
                 callback='a_function',
                 errback='a_function',
             )
+        with self.assertRaises(TypeError):
+            self.request_class('http://example.com', errback=NO_CALLBACK)
 
     def test_from_curl(self):
         # Note: more curated tests regarding curl conversion are in

@@ -20,6 +20,17 @@ from scrapy.utils.url import escape_ajax
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
+#: When assigned to the ``callback`` parameter of
+#: :class:`~scrapy.http.Request`, it indicates that the request it not meant to
+#: have a spider callback at all.
+#:
+#: This value should be used by :ref:`components <topics-components>`
+#: that create and handle their own requests, e.g. through
+#: :meth:`scrapy.core.engine.ExecutionEngine.download`, so that download
+#: middlewares handling such requests can treat them differently from requests
+#: intended for the :meth:`~scrapy.Spider.parse` callback.
+NO_CALLBACK = object()
+
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
@@ -63,12 +74,8 @@ class Request(object_ref):
             raise TypeError(f"Request priority not an integer: {priority!r}")
         self.priority = priority
 
-        if callback is not None and not callable(callback):
-            raise TypeError(f'callback must be a callable, got {type(callback).__name__}')
-        if errback is not None and not callable(errback):
-            raise TypeError(f'errback must be a callable, got {type(errback).__name__}')
-        self.callback = callback
-        self.errback = errback
+        self._set_xback("callback", callback)
+        self._set_xback("errback", errback)
 
         self.cookies = cookies or {}
         self.headers = Headers(headers or {}, encoding=encoding)
@@ -77,6 +84,15 @@ class Request(object_ref):
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
         self.flags = [] if flags is None else list(flags)
+
+    def _set_xback(self, name: str, value: Optional[Callable]) -> None:
+        if (
+            value is not None
+            and (name != "callback" or value is not NO_CALLBACK)
+            and not callable(value)
+        ):
+            raise TypeError(f'{name} must be a callable, got {type(value).__name__}')
+        setattr(self, name, value)
 
     @property
     def cb_kwargs(self) -> dict:

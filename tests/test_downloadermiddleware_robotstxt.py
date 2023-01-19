@@ -8,6 +8,7 @@ from scrapy.downloadermiddlewares.robotstxt import (RobotsTxtMiddleware,
                                                     logger as mw_module_logger)
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from tests.test_robotstxt_interface import rerp_available, reppy_available
 
@@ -53,6 +54,7 @@ Disallow: /some/randome/page.html
         middleware = RobotsTxtMiddleware(self._get_successful_crawler())
         return DeferredList([
             self.assertNotIgnored(Request('http://site.local/allowed'), middleware),
+            maybeDeferred(self.assertRobotsTxtRequested, "http://site.local"),
             self.assertIgnored(Request('http://site.local/admin/main'), middleware),
             self.assertIgnored(Request('http://site.local/static/'), middleware),
             self.assertIgnored(Request('http://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:'), middleware),
@@ -182,6 +184,12 @@ Disallow: /some/randome/page.html
         spider = None  # not actually used
         return self.assertFailure(maybeDeferred(middleware.process_request, request, spider),
                                   IgnoreRequest)
+
+    def assertRobotsTxtRequested(self, base_url):
+        calls = self.crawler.engine.download.call_args_list
+        request = calls[0][0][0]
+        self.assertEqual(request.url, f"{base_url}/robots.txt")
+        self.assertEqual(request.callback, NO_CALLBACK)
 
 
 class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):

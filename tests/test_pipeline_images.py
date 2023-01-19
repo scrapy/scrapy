@@ -31,18 +31,13 @@ else:
         skip_pillow = None
 
 
-def _mocked_download_func(request, info):
-    response = request.meta.get('response')
-    return response() if callable(response) else response
-
-
 class ImagesPipelineTestCase(unittest.TestCase):
 
     skip = skip_pillow
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = ImagesPipeline(self.tempdir, download_func=_mocked_download_func)
+        self.pipeline = ImagesPipeline(self.tempdir)
 
     def tearDown(self):
         rmtree(self.tempdir)

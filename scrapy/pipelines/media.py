@@ -7,6 +7,7 @@ from warnings import warn
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import mustbe_deferred, defer_result
@@ -93,7 +94,7 @@ class MediaPipeline:
         fp = self._fingerprinter.fingerprint(request)
         cb = request.callback or (lambda _: _)
         eb = request.errback
-        request.callback = None
+        request.callback = NO_CALLBACK
         request.errback = None
 
         # Return cached result if request was already seen
