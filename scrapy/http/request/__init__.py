@@ -6,8 +6,9 @@ See documentation in docs/topics/request-response.rst
 """
 import inspect
 from enum import Enum
-from typing import Any, Callable, Final, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
 
+from typing_extensions import Final
 from w3lib.url import safe_url_string
 
 import scrapy
@@ -25,6 +26,7 @@ RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 # https://github.com/python/typing/issues/689#issuecomment-561425237
 class _NoCallback(Enum):
     NO_CALLBACK = 0
+
 
 #: When assigned to the ``callback`` parameter of
 #: :class:`~scrapy.http.Request`, it indicates that the request it not meant to
