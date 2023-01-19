@@ -5,7 +5,8 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import inspect
-from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
+from enum import Enum
+from typing import Any, Callable, Final, List, Optional, Tuple, Type, TypeVar, Union
 
 from w3lib.url import safe_url_string
 
@@ -20,6 +21,11 @@ from scrapy.utils.url import escape_ajax
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
+
+# https://github.com/python/typing/issues/689#issuecomment-561425237
+class _NoCallback(Enum):
+    NO_CALLBACK = 0
+
 #: When assigned to the ``callback`` parameter of
 #: :class:`~scrapy.http.Request`, it indicates that the request it not meant to
 #: have a spider callback at all.
@@ -29,7 +35,7 @@ RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 #: :meth:`scrapy.core.engine.ExecutionEngine.download`, so that download
 #: middlewares handling such requests can treat them differently from requests
 #: intended for the :meth:`~scrapy.Spider.parse` callback.
-NO_CALLBACK = object()
+NO_CALLBACK: Final = _NoCallback.NO_CALLBACK
 
 
 class Request(object_ref):
@@ -49,6 +55,8 @@ class Request(object_ref):
     Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
+    callback: Union[None, _NoCallback, Callable]
+    errback: Optional[Callable]
 
     def __init__(
         self,
