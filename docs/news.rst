@@ -3,6 +3,177 @@
 Release notes
 =============
 
+.. _release-2.8.0:
+
+Scrapy 2.8.0 (to be released)
+-----------------------------
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   The ``scrapy.utils.gz.read1`` function, deprecated in Scrapy 2.0, has now
+    been removed. Use the :meth:`~io.BufferedIOBase.read1` method of
+    :class:`~gzip.GzipFile` instead.
+    (:issue:`5719`)
+
+-   The ``scrapy.utils.python.to_native_str`` function, deprecated in Scrapy
+    2.0, has now been removed. Use :func:`scrapy.utils.python.to_unicode`
+    instead.
+    (:issue:`5719`)
+
+-   The ``scrapy.utils.python.MutableChain.next`` method, deprecated in Scrapy
+    2.0, has now been removed. Use
+    :meth:`~scrapy.utils.python.MutableChain.__next__` instead.
+    (:issue:`5719`)
+
+-   The ``scrapy.linkextractors.FilteringLinkExtractor`` class, deprecated
+    in Scrapy 2.0, has now been removed. Use
+    :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    instead.
+    (:issue:`5720`)
+
+-   Support for using environment variables prefixed with ``SCRAPY_`` to
+    override settings, deprecated in Scrapy 2.0, has now been removed.
+    (:issue:`5724`)
+
+-   Support for the ``noconnect`` query string argument in proxy URLs,
+    deprecated in Scrapy 2.0, has now been removed. We expect proxies that used
+    to need it to work fine without it.
+    (:issue:`5731`)
+
+-   The ``scrapy.utils.python.retry_on_eintr`` function, deprecated in Scrapy
+    2.3, has now been removed.
+    (:issue:`5719`)
+
+-   The ``scrapy.utils.python.WeakKeyCache`` class, deprecated in Scrapy 2.4,
+    has now been removed.
+    (:issue:`5719`)
+
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :exc:`scrapy.pipelines.images.NoimagesDrop` is now deprecated.
+    (:issue:`5368`, :issue:`5489`)
+
+-   :meth:`ImagesPipeline.convert_image
+    <scrapy.pipelines.images.ImagesPipeline.convert_image>` must now accept a
+    ``response_body`` parameter.
+    (:issue:`3055`, :issue:`3689`, :issue:`4753`)
+
+
+New features
+~~~~~~~~~~~~
+
+-   The :class:`~scrapy.extensions.memusage.MemoryUsage` extension now logs the
+    peak memory usage during checks, and the binary unit MiB is now used to
+    avoid confusion.
+    (:issue:`5717`, :issue:`5722`, :issue:`5727`)
+
+
+Bug fixes
+~~~~~~~~~
+
+-   Enabled unsafe legacy SSL renegotiation to fix access to outdated websites.
+    (:issue:`5491`, :issue:`5790`)
+
+-   Fixed the :meth:`finish_exporting` method of :ref:`item exporters
+    <topics-exporters>` not being called for empty files.
+    (:issue:`5537`, :issue:`5758`)
+
+-   Fixed HTTP/2 responses getting only the last value for a header when
+    multiple headers with the same name are received.
+    (:issue:`5777`)
+
+-   Fixed an exception raised by the :command:`shell` command on Windows when
+    :ref:`using asyncio <using-asyncio>`.
+    (:issue:`5740`, :issue:`5742`, :issue:`5748`, :issue:`5759`, :issue:`5760`,
+    :issue:`5771`)
+
+-   When using :class:`~scrapy.spiders.CrawlSpider`, callback keyword arguments
+    (``cb_kwargs``) added to a request in the ``process_request`` callback of a
+    :class:`~scrapy.spiders.Rule` will no longer be ignored.
+    (:issue:`5699`)
+
+-   The :ref:`images pipeline <images-pipeline>` no longer re-encodes JPEG
+    files.
+    (:issue:`3055`, :issue:`3689`, :issue:`4753`)
+
+-   Fixed the handling of transparent WebP images by the :ref:`images pipeline
+    <images-pipeline>`.
+    (:issue:`3072`, :issue:`5766`, :issue:`5767`)
+
+-   :func:`scrapy.shell.inspect_response` no longer inhibits ``SIGINT``
+    (Ctrl+C).
+    (:issue:`2918`)
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    with ``unique=False`` no longer filters out links that have identical URL
+    *and* text.
+    (:issue:`3798`, :issue:`3799`, :issue:`4695`, :issue:`5458`)
+
+-   Silenced the ``filelock`` debug log messages introduced in Scrapy 2.6.
+    (:issue:`5753`, :issue:`5754`)
+
+-   Fixed the output of ``scrapy -h`` showing an unintended ``**commands**``
+    line.
+    (:issue:`5709`, :issue:`5711`, :issue:`5712`)
+
+-   Made the active project indication in the output of :ref:`commands
+    <topics-commands>` more clear.
+    (:issue:`5715`)
+
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Documented how to :ref:`debug spiders from Visual Studio Code
+    <debug-vscode>`.
+    (:issue:`5721`)
+
+-   Documented how :setting:`DOWNLOAD_DELAY` affects per-domain concurrency.
+    (:issue:`5083`, :issue:`5540`)
+
+-   Improved consistency.
+    (:issue:`5761`)
+
+-   Fixed typos.
+    (:issue:`5714`, :issue:`5744`, :issue:`5764`)
+
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Switched from :mod:`os.path` to :mod:`pathlib`.
+    (:issue:`4916`, :issue:`4497`, :issue:`5682`)
+
+-   Addressed many issues reported by Pylint.
+    (:issue:`5677`)
+
+-   Improved code readability.
+    (:issue:`5736`)
+
+-   Improved package metadata.
+    (:issue:`5768`)
+
+-   Removed direct invocations of ``setup.py``.
+    (:issue:`5774`, :issue:`5776`)
+
+-   Removed unnecessary :class:`~collections.OrderedDict` usages.
+    (:issue:`5795`)
+
+-   Removed unnecessary ``__str__`` definitions.
+    (:issue:`5150`)
+
+-   Removed obsolete code and comments.
+    (:issue:`5725`, :issue:`5729`, :issue:`5730`, :issue:`5732`)
+
+-   Fixed test and CI issues.
+    (:issue:`5749`, :issue:`5750`, :issue:`5756`, :issue:`5762`, :issue:`5765`,
+    :issue:`5780`, :issue:`5781`, :issue:`5782`, :issue:`5783`, :issue:`5785`,
+    :issue:`5786`)
+
+
 .. _release-2.7.1:
 
 Scrapy 2.7.1 (2022-11-02)
