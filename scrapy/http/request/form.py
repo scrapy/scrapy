@@ -200,7 +200,7 @@ def _select_value(ele: SelectElement, n: str, v: str):
         o = ele.value_options
         return (n, o[0]) if o else (None, None)
     if v is not None and multiple:
-        # This is a workround to bug in lxml fixed 2.3.1
+        # This is a workaround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath(".//option[@selected]")
         values = [(o.get("value") or o.text or "").strip() for o in selected_options]

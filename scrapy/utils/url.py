@@ -48,7 +48,7 @@ def parse_url(url, encoding=None):
 
 def escape_ajax(url):
     """
-    Return the crawleable url according to:
+    Return the crawlable url according to:
     https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
 
     >>> escape_ajax("www.example.com/ajax.html#!key=value")

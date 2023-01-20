@@ -19,7 +19,6 @@ from twisted.web.static import File
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
 from scrapy.utils.test import get_testenv
 
 
@@ -358,7 +357,7 @@ def ssl_context_factory(
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.3 because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 

@@ -15,6 +15,11 @@ class AsyncioTest(TestCase):
         )
 
     def test_install_asyncio_reactor(self):
+        from twisted.internet import reactor as original_reactor
+
         with warnings.catch_warnings(record=True) as w:
             install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
             self.assertEqual(len(w), 0)
+        from twisted.internet import reactor
+
+        assert original_reactor == reactor

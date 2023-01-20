@@ -19,7 +19,7 @@ class UserAgentMiddlewareTest(TestCase):
         self.assertEqual(req.headers["User-Agent"], b"default_useragent")
 
     def test_remove_agent(self):
-        # settings UESR_AGENT to None should remove the user agent
+        # settings USER_AGENT to None should remove the user agent
         spider, mw = self.get_spider_and_mw("default_useragent")
         spider.user_agent = None
         mw.spider_opened(spider)

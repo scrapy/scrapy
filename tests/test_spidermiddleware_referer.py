@@ -227,7 +227,7 @@ class MixinSameOrigin:
         ),
         ("http://example.com:81/page.html", "http://example.com/not-page.html", None),
         ("http://example.com/page.html", "http://example.com:81/not-page.html", None),
-        # Different protocols: do NOT send refferer
+        # Different protocols: do NOT send referrer
         ("https://example.com/page.html", "http://example.com/not-page.html", None),
         ("https://example.com/page.html", "http://not.example.com/", None),
         ("ftps://example.com/urls.zip", "https://example.com/not-page.html", None),
@@ -750,19 +750,19 @@ class TestRequestMetaUnsafeUrl(MixinUnsafeUrl, TestRefererMiddleware):
     req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
 
 
-class TestRequestMetaPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
+class TestRequestMetaPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
     req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
 
 
-class TestRequestMetaPredecence002(MixinNoReferrer, TestRefererMiddleware):
+class TestRequestMetaPrecedence002(MixinNoReferrer, TestRefererMiddleware):
     settings = {
         "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
     }
     req_meta = {"referrer_policy": POLICY_NO_REFERRER}
 
 
-class TestRequestMetaPredecence003(MixinUnsafeUrl, TestRefererMiddleware):
+class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {
         "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.OriginWhenCrossOriginPolicy"
     }
@@ -888,19 +888,19 @@ class TestSettingsPolicyByName(TestCase):
             RefererMiddleware(settings)
 
 
-class TestPolicyHeaderPredecence001(MixinUnsafeUrl, TestRefererMiddleware):
+class TestPolicyHeaderPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
     resp_headers = {"Referrer-Policy": POLICY_UNSAFE_URL.upper()}
 
 
-class TestPolicyHeaderPredecence002(MixinNoReferrer, TestRefererMiddleware):
+class TestPolicyHeaderPrecedence002(MixinNoReferrer, TestRefererMiddleware):
     settings = {
         "REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerWhenDowngradePolicy"
     }
     resp_headers = {"Referrer-Policy": POLICY_NO_REFERRER.swapcase()}
 
 
-class TestPolicyHeaderPredecence003(
+class TestPolicyHeaderPrecedence003(
     MixinNoReferrerWhenDowngrade, TestRefererMiddleware
 ):
     settings = {
@@ -909,7 +909,7 @@ class TestPolicyHeaderPredecence003(
     resp_headers = {"Referrer-Policy": POLICY_NO_REFERRER_WHEN_DOWNGRADE.title()}
 
 
-class TestPolicyHeaderPredecence004(
+class TestPolicyHeaderPrecedence004(
     MixinNoReferrerWhenDowngrade, TestRefererMiddleware
 ):
     """

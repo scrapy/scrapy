@@ -209,6 +209,12 @@ class LargeChunkedFileResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
+class DuplicateHeaderResource(resource.Resource):
+    def render(self, request):
+        request.responseHeaders.setRawHeaders(b"Set-Cookie", [b"a=b", b"c=d"])
+        return b""
+
+
 class HttpTestCase(unittest.TestCase):
     scheme = "http"
     download_handler_cls: Type = HTTPDownloadHandler
@@ -234,6 +240,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"contentlength", ContentLengthHeaderResource())
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         r.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        r.putChild(b"duplicate-header", DuplicateHeaderResource())
         r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
@@ -406,6 +413,16 @@ class HttpTestCase(unittest.TestCase):
             b"<!DOCTYPE html>\n<title>.</title>",
             HtmlResponse,
         )
+
+    def test_get_duplicate_header(self):
+        def _test(response):
+            self.assertEqual(
+                response.headers.getlist(b"Set-Cookie"),
+                [b"a=b", b"c=d"],
+            )
+
+        request = Request(self.getURL("duplicate-header"))
+        return self.download_request(request, Spider("foo")).addCallback(_test)
 
 
 class Http10TestCase(HttpTestCase):
@@ -1095,9 +1112,9 @@ class BaseFTPTestCase(unittest.TestCase):
 
         return self._add_test_callbacks(d, _test)
 
-    def test_ftp_download_notexist(self):
+    def test_ftp_download_nonexistent(self):
         request = Request(
-            url=f"ftp://127.0.0.1:{self.portNum}/notexist.txt", meta=self.req_meta
+            url=f"ftp://127.0.0.1:{self.portNum}/nonexistent.txt", meta=self.req_meta
         )
         d = self.download_handler.download_request(request, None)
 

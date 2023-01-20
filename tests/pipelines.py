@@ -11,6 +11,6 @@ class ZeroDivisionErrorPipeline:
         return item
 
 
-class ProcessWithZeroDivisionErrorPipiline:
+class ProcessWithZeroDivisionErrorPipeline:
     def process_item(self, item, spider):
         1 / 0

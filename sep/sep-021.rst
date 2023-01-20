@@ -79,7 +79,7 @@ If it raises an exception, Scrapy will print it and exit.
 Examples::
 
     def addon_configure(settings):
-        settings.overrides['DOWNLADER_MIDDLEWARES'].update({
+        settings.overrides['DOWNLOADER_MIDDLEWARES'].update({
             'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
         })
 
