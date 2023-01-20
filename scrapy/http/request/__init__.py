@@ -29,7 +29,7 @@ class _NoCallback(Enum):
 
 
 #: When assigned to the ``callback`` parameter of
-#: :class:`~scrapy.http.Request`, it indicates that the request it not meant to
+#: :class:`~scrapy.http.Request`, it indicates that the request is not meant to
 #: have a spider callback at all.
 #:
 #: This value should be used by :ref:`components <topics-components>`
