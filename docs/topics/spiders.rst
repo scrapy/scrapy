@@ -272,18 +272,19 @@ to give data more structure you can use :class:`~scrapy.Item` objects::
         :type args: dict
 Let's see an example::
     import scrapy
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
 
 
     class MySpider(scrapy.Spider):
+        spider_class = Spider
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.csv']
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
-        self.spider_class.custom_settings = spider_settings
+        spider_class.custom_settings = spider_settings
         settings = Settings(project_settings, priority='project')
-
-        self.spider_class.update_settings(settings)
 
 
 .. _spiderargs:
