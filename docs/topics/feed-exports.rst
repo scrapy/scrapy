@@ -517,8 +517,7 @@ Use ``utf-8`` if you want UTF-8 for JSON too.
 
 .. versionchanged:: 2.8
    The :command:`startproject` command now sets this setting to
-   ``utf-8`` in the generated
-   ``settings.py`` file.
+   ``utf-8`` in the generated ``settings.py`` file.
 
 .. setting:: FEED_EXPORT_FIELDS
 
