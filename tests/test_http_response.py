@@ -519,6 +519,7 @@ class TextResponseTest(BaseResponseTest):
         # Inferring encoding from body also cache decoded body as sideeffect,
         # this test tries to ensure that calling response.encoding and
         # response.text in indistinct order doesn't affect final
+        # response.text in indistinct order doesn't affect final
         # values for encoding and decoded body.
         url = "http://example.com"
         body = b"\xef\xbb\xbfWORD"

@@ -188,8 +188,9 @@ We use `pre-commit`_ to automatically address simple code issues before every
 commit.
 
 Before you start writing a patch:
-#.  `Install pre-commit <https://pre-commit.com/#installation>`_.
-#.  On the root of your local clone of the Scrapy repository, run the following command:
+  #.  `Install pre-commit <https://pre-commit.com/#installation>`_.
+  #.  On the root of your local clone of the Scrapy repository, run the following command:
+
     .. code-block:: bash
       
       pre-commit install
