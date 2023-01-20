@@ -14,7 +14,7 @@ from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import DefaultDict, Optional, Set
+from typing import DefaultDict, Optional, Set, Union
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -41,7 +41,8 @@ class FileException(Exception):
 
 
 class FSFilesStore:
-    def __init__(self, basedir: str):
+    def __init__(self, basedir: Union[str, os.PathLike]):
+        basedir = str(basedir)  # support Path object
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
         self.basedir = basedir
@@ -65,8 +66,8 @@ class FSFilesStore:
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
-    def _get_filesystem_path(self, path: str) -> Path:
-        path_comps = path.split('/')
+    def _get_filesystem_path(self, path: Union[str, os.PathLike]) -> Path:
+        path_comps = str(path).split('/')
         return Path(self.basedir, *path_comps)
 
     def _mkdir(self, dirname: Path, domain: Optional[str] = None):
