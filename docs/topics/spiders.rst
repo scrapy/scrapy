@@ -285,6 +285,7 @@ Let's see an example::
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
         spider_class.custom_settings = spider_settings
         settings = Settings(project_settings, priority='project')
+        spider_class.update_settings(settings)
 
 
 .. _spiderargs:
