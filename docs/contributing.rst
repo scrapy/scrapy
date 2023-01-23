@@ -179,27 +179,30 @@ Scrapy:
   See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
 
-.. _pre-commit:
-
 Pre-commit
 ==========
 
 We use `pre-commit`_ to automatically address simple code issues before every 
 commit.
 
+.. _pre-commit: https://pre-commit.com/
+
 Before you start writing a patch:
-  #.  `Install pre-commit <https://pre-commit.com/#installation>`_.
-  #.  On the root of your local clone of the Scrapy repository, run the following command:
+
+#.  `Install pre-commit <https://pre-commit.com/#installation>`_.
+
+#.  On the root of your local clone of the Scrapy repository, run the following 
+    command:
 
     .. code-block:: bash
-      
-      pre-commit install
 
-Now our pre-commit hooks will run every time you create a Git commit. Upon 
-finding issues, pre-commit hooks aborts your commit, and they either fix 
-the corresponding issues automatically or only report them to you. If they fix 
-the issues automatically, creating your commit again should succeed. Otherwise, 
-you may need to address the corresponding issues manually first.
+       pre-commit install
+
+Now pre-commit will check your changes every time you create a Git commit. Upon 
+finding issues, pre-commit aborts your commit, and either fixes those issues 
+automatically, or only reports them to you. If it fixes those issues 
+automatically, creating your commit again should succeed. Otherwise, you may 
+need to address the corresponding issues manually first.
 
 .. _documentation-policies:
 
