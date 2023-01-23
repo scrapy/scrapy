@@ -515,6 +515,10 @@ which uses safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
 Use ``utf-8`` if you want UTF-8 for JSON too.
 
+.. versionchanged:: VERSION
+   The :command:`startproject` command now sets this setting to
+   ``utf-8`` in the generated ``settings.py`` file.
+
 .. setting:: FEED_EXPORT_FIELDS
 
 FEED_EXPORT_FIELDS
