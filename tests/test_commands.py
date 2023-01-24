@@ -502,25 +502,53 @@ class GenspiderCommandTest(CommandTest):
     def test_same_filename_as_existing_spider_force(self):
         self.test_same_filename_as_existing_spider(force=True)
 
-    def test_url(self, url='test.com', domain="test.com"):
+    def test_url_domain(self, url='test.com', domain="test.com"):
         self.assertEqual(0, self.call('genspider', '--force', 'test_name', url))
         self.assertEqual(domain,
                          self.find_in_file(Path(self.proj_mod_path,
                                                 'spiders', 'test_name.py'),
                                            r'allowed_domains\s*=\s*\[\'(.+)\'\]').group(1))
-        self.assertEqual(f'http://{domain}/',
-                         self.find_in_file(Path(self.proj_mod_path,
-                                                'spiders', 'test_name.py'),
-                                           r'start_urls\s*=\s*\[\'(.+)\'\]').group(1))
 
     def test_url_schema(self):
-        self.test_url('http://test.com', 'test.com')
+        self.test_url_domain('http://test.com', 'test.com')
 
     def test_url_path(self):
-        self.test_url('test.com/some/other/page', 'test.com')
+        self.test_url_domain('test.com/some/other/page', 'test.com')
 
     def test_url_schema_path(self):
-        self.test_url('https://test.com/some/other/page', 'test.com')
+        self.test_url_domain('https://test.com/some/other/page', 'test.com')
+
+    def test_start_urls_schema(self, template="basic", url="test.com",
+                               schema="http"):
+        self.assertEqual(0, self.call('genspider', '--force', '-t',
+                                      template, 'test_name', url))
+        self.assertEqual(
+            schema,
+            self.find_in_file(
+                Path(self.proj_mod_path, 'spiders', 'test_name.py'),
+                r'start_urls\s*?[=]\s*?\[[\'"](\w+)://'
+            ).group(1)
+        )
+
+    def test_https_url_schema_templates(self):
+        self.test_start_urls_schema(template="basic", url="https://test.com",
+                                    schema="https")
+        self.test_start_urls_schema(template="crawl", url="https://test.com",
+                                    schema="https")
+        self.test_start_urls_schema(template="xmlfeed", url="https://test.com",
+                                    schema="https")
+        self.test_start_urls_schema(template="csvfeed", url="https://test.com",
+                                    schema="https")
+
+    def test_http_url_schema_templates(self):
+        self.test_start_urls_schema(template="basic", url="http://test.com",
+                                    schema="http")
+        self.test_start_urls_schema(template="crawl", url="http://test.com",
+                                    schema="http")
+        self.test_start_urls_schema(template="xmlfeed", url="http://test.com",
+                                    schema="http")
+        self.test_start_urls_schema(template="csvfeed", url="http://test.com",
+                                    schema="http")
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):

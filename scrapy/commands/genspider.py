@@ -69,7 +69,6 @@ class Command(ScrapyCommand):
             raise UsageError()
 
         name, url = args[0:2]
-        domain = extract_domain(url)
         module = sanitize_module_name(name)
 
         if self.settings.get('BOT_NAME') == module:
@@ -81,11 +80,11 @@ class Command(ScrapyCommand):
 
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, domain, opts.template, template_file)
+            self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
                 self.exitcode = os.system(f'scrapy edit "{name}"')
 
-    def _genspider(self, module, name, domain, template_name, template_file):
+    def _genspider(self, module, name, url, template_name, template_file):
         """Generate the spider module, based on the given template"""
         capitalized_module = ''.join(s.capitalize() for s in module.split('_'))
         tvars = {
@@ -93,7 +92,7 @@ class Command(ScrapyCommand):
             'ProjectName': string_camelcase(self.settings.get('BOT_NAME')),
             'module': module,
             'name': name,
-            'domain': domain,
+            'domain': extract_domain(url),
             'classname': f'{capitalized_module}Spider'
         }
         if self.settings.get('NEWSPIDER_MODULE'):
@@ -104,7 +103,7 @@ class Command(ScrapyCommand):
             spiders_dir = Path(".")
         spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
-        render_templatefile(spider_file, **tvars)
+        render_templatefile(spider_file, url, **tvars)
         print(f"Created spider {name!r} using template {template_name!r} ",
               end=('' if spiders_module else '\n'))
         if spiders_module:

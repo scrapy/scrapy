@@ -7,9 +7,13 @@ from pathlib import Path
 from typing import Union
 
 
-def render_templatefile(path: Union[str, PathLike], **kwargs):
+def render_templatefile(path: Union[str, PathLike], url=None, **kwargs):
     path_obj = Path(path)
     raw = path_obj.read_text('utf8')
+
+    if url and url.lower().startswith('https'):
+        #  when url scheme is https, make template match scheme
+        raw = re.sub(r"start_urls = \['http:", "start_urls = ['https:", raw)
 
     content = string.Template(raw).substitute(**kwargs)
 
