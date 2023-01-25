@@ -65,6 +65,12 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
+-   :setting:`FEED_EXPORT_ENCODING` is now set to ``"utf-8"`` in the
+    ``settings.py`` file that the :command:`startproject` command generates.
+    With this value, JSON exports won’t force the use of escape sequences for
+    non-ASCII characters.
+    (:issue:`5797`, :issue:`5800`)
+
 -   The :class:`~scrapy.extensions.memusage.MemoryUsage` extension now logs the
     peak memory usage during checks, and the binary unit MiB is now used to
     avoid confusion.
@@ -77,6 +83,10 @@ Bug fixes
 -   Enabled unsafe legacy SSL renegotiation to fix access to some outdated
     websites.
     (:issue:`5491`, :issue:`5790`)
+
+-   Fixed STARTTLS-based email delivery not working with Twisted 21.2.0 and
+    better.
+    (:issue:`5386`, :issue:`5406`)
 
 -   Fixed the :meth:`finish_exporting` method of :ref:`item exporters
     <topics-exporters>` not being called for empty files.
@@ -144,6 +154,10 @@ Documentation
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
+
+-   Applied :ref:`black coding style <coding-style>` and introduced
+    :ref:`pre-commit <scrapy-pre-commit>`.
+    (:issue:`4654`, :issue:`5734`, :issue:`5734`)
 
 -   Switched from :mod:`os.path` to :mod:`pathlib`.
     (:issue:`4916`, :issue:`4497`, :issue:`5682`)
