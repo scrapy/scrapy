@@ -36,13 +36,17 @@ from scrapy.utils.request import referer_str
 logger = logging.getLogger(__name__)
 
 
+def _to_string(path: Union[str, os.PathLike]):
+    return str(path)  # convert a Path object to string
+
+
 class FileException(Exception):
     """General media error exception"""
 
 
 class FSFilesStore:
     def __init__(self, basedir: Union[str, os.PathLike]):
-        basedir = str(basedir)  # support Path object
+        basedir = _to_string(basedir)
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
         self.basedir = basedir
@@ -67,7 +71,7 @@ class FSFilesStore:
         return {'last_modified': last_modified, 'checksum': checksum}
 
     def _get_filesystem_path(self, path: Union[str, os.PathLike]) -> Path:
-        path_comps = str(path).split('/')
+        path_comps = _to_string(path).split('/')
         return Path(self.basedir, *path_comps)
 
     def _mkdir(self, dirname: Path, domain: Optional[str] = None):
@@ -323,12 +327,12 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_RESULT_FIELD = 'files'
 
     def __init__(self, store_uri, download_func=None, settings=None):
+        store_uri = _to_string(store_uri)
         if not store_uri:
             raise NotConfigured
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
         resolve = functools.partial(self._key_for_pipe,
