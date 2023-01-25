@@ -106,10 +106,10 @@ class Request(object_ref):
         self.flags = [] if flags is None else list(flags)
 
     def _set_xback(self, name: str, value: Optional[Callable]) -> None:
-        if (
-            value is not None
-            and (name != "callback" or value is not NO_CALLBACK)
-            and not callable(value)
+        if not (
+            callable(value)
+            or value is None
+            or (name == "callback" and value is NO_CALLBACK)
         ):
             raise TypeError(f"{name} must be a callable, got {type(value).__name__}")
         setattr(self, name, value)
