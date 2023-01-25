@@ -7,7 +7,7 @@ For more information see docs/topics/architecture.rst
 import logging
 import warnings
 from time import time
-from typing import Callable, Iterable, Iterator, Optional, Set, Union
+from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Set, Union
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
@@ -96,7 +96,7 @@ class ExecutionEngine:
         return scheduler_cls
 
     @inlineCallbacks
-    def start(self) -> Deferred:
+    def start(self) -> Generator[Deferred, Any, None]:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -109,7 +109,7 @@ class ExecutionEngine:
         """Gracefully stop the execution engine"""
 
         @inlineCallbacks
-        def _finish_stopping_engine(_) -> Deferred:
+        def _finish_stopping_engine(_) -> Generator[Deferred, Any, None]:
             yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
             self._closewait.callback(None)
 

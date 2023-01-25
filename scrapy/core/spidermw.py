@@ -182,7 +182,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
         result: Union[Iterable, AsyncIterable],
         start_index: int = 0,
-    ) -> Deferred:
+    ) -> Generator[Deferred, Any, Union[MutableChain, MutableAsyncChain]]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
         recovered: Union[MutableChain, MutableAsyncChain]
