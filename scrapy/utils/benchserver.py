@@ -37,11 +37,11 @@ if __name__ == "__main__":
 
     root = Root()
     factory = Site(root)
-    httpPort = reactor.listenTCP(8998, Site(root))
+    httpPort = reactor.listenTCP(8998, Site(root))  # type: ignore[attr-defined]
 
     def _print_listening():
         httpHost = httpPort.getHost()
         print(f"Bench server at http://{httpHost.host}:{httpHost.port}")
 
-    reactor.callWhenRunning(_print_listening)
-    reactor.run()
+    reactor.callWhenRunning(_print_listening)  # type: ignore[attr-defined]
+    reactor.run()  # type: ignore[attr-defined]

@@ -41,10 +41,10 @@ if __name__ == "__main__":
         url = f"http://not.a.real.domain:{port}/echo"
 
         servers = [(mock_dns_server.host, mock_dns_server.port)]
-        reactor.installResolver(createResolver(servers=servers))
+        reactor.installResolver(createResolver(servers=servers))  # type: ignore[attr-defined]
 
         configure_logging()
         runner = CrawlerRunner()
         d = runner.crawl(LocalhostSpider, url=url)
-        d.addBoth(lambda _: reactor.stop())
-        reactor.run()
+        d.addBoth(lambda _: reactor.stop())  # type: ignore[attr-defined]
+        reactor.run()  # type: ignore[attr-defined]
