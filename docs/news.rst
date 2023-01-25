@@ -86,8 +86,8 @@ Bug fixes
     multiple headers with the same name are received.
     (:issue:`5777`)
 
--   Fixed an exception raised by the :command:`shell` command on Windows when
-    :ref:`using asyncio <using-asyncio>`.
+-   Fixed an exception raised by the :command:`shell` command on some cases
+    when :ref:`using asyncio <using-asyncio>`.
     (:issue:`5740`, :issue:`5742`, :issue:`5748`, :issue:`5759`, :issue:`5760`,
     :issue:`5771`)
 
