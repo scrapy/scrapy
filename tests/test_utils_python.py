@@ -258,7 +258,3 @@ class UtilsPythonTestCase(unittest.TestCase):
             without_none_values({"one": 1, "none": None, "three": 3, "four": 4}),
             {"one": 1, "three": 3, "four": 4},
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
