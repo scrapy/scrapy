@@ -18,7 +18,9 @@ BaseDupeFilterTV = TypeVar("BaseDupeFilterTV", bound="BaseDupeFilter")
 
 class BaseDupeFilter:
     @classmethod
-    def from_settings(cls: Type[BaseDupeFilterTV], settings: BaseSettings) -> BaseDupeFilterTV:
+    def from_settings(
+        cls: Type[BaseDupeFilterTV], settings: BaseSettings
+    ) -> BaseDupeFilterTV:
         return cls()
 
     def request_seen(self, request: Request) -> bool:
@@ -55,13 +57,15 @@ class RFPDupeFilter(BaseDupeFilter):
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = Path(path, 'requests.seen').open('a+', encoding="utf-8")
+            self.file = Path(path, "requests.seen").open("a+", encoding="utf-8")
             self.file.seek(0)
             self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
-    def from_settings(cls: Type[RFPDupeFilterTV], settings: BaseSettings, *, fingerprinter=None) -> RFPDupeFilterTV:
-        debug = settings.getbool('DUPEFILTER_DEBUG')
+    def from_settings(
+        cls: Type[RFPDupeFilterTV], settings: BaseSettings, *, fingerprinter=None
+    ) -> RFPDupeFilterTV:
+        debug = settings.getbool("DUPEFILTER_DEBUG")
         try:
             return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
         except TypeError:
@@ -100,7 +104,7 @@ class RFPDupeFilter(BaseDupeFilter):
             return True
         self.fingerprints.add(fp)
         if self.file:
-            self.file.write(fp + '\n')
+            self.file.write(fp + "\n")
         return False
 
     def request_fingerprint(self, request: Request) -> str:
@@ -113,13 +117,15 @@ class RFPDupeFilter(BaseDupeFilter):
     def log(self, request: Request, spider: Spider) -> None:
         if self.debug:
             msg = "Filtered duplicate request: %(request)s (referer: %(referer)s)"
-            args = {'request': request, 'referer': referer_str(request)}
-            self.logger.debug(msg, args, extra={'spider': spider})
+            args = {"request": request, "referer": referer_str(request)}
+            self.logger.debug(msg, args, extra={"spider": spider})
         elif self.logdupes:
-            msg = ("Filtered duplicate request: %(request)s"
-                   " - no more duplicates will be shown"
-                   " (see DUPEFILTER_DEBUG to show all duplicates)")
-            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
+            msg = (
+                "Filtered duplicate request: %(request)s"
+                " - no more duplicates will be shown"
+                " (see DUPEFILTER_DEBUG to show all duplicates)"
+            )
+            self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False
 
-        spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)
+        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)

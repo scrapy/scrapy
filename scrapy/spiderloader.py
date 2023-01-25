@@ -17,8 +17,8 @@ class SpiderLoader:
     """
 
     def __init__(self, settings):
-        self.spider_modules = settings.getlist('SPIDER_MODULES')
-        self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
+        self.spider_modules = settings.getlist("SPIDER_MODULES")
+        self.warn_only = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders = {}
         self._found = defaultdict(list)
         self._load_all_spiders()
@@ -26,11 +26,13 @@ class SpiderLoader:
     def _check_name_duplicates(self):
         dupes = []
         for name, locations in self._found.items():
-            dupes.extend([
-                f"  {cls} named {name!r} (in {mod})"
-                for mod, cls in locations
-                if len(locations) > 1
-            ])
+            dupes.extend(
+                [
+                    f"  {cls} named {name!r} (in {mod})"
+                    for mod, cls in locations
+                    if len(locations) > 1
+                ]
+            )
 
         if dupes:
             dupes_string = "\n\n".join(dupes)
@@ -81,8 +83,7 @@ class SpiderLoader:
         Return the list of spider names that can handle the given request.
         """
         return [
-            name for name, cls in self._spiders.items()
-            if cls.handles_request(request)
+            name for name, cls in self._spiders.items() if cls.handles_request(request)
         ]
 
     def list(self):

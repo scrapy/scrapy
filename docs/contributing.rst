@@ -169,15 +169,40 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* Unless otherwise specified, follow :pep:`8`.
-
-* It's OK to use lines longer than 79 chars if it improves the code
-  readability.
+* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting. 
+  There is a hook in the pre-commit config
+  that will automatically format your code before every commit. You can also
+  run black manually with ``tox -e black``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
   See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
+
+Pre-commit
+==========
+
+We use `pre-commit`_ to automatically address simple code issues before every 
+commit.
+
+.. _pre-commit: https://pre-commit.com/
+
+Before you start writing a patch:
+
+#.  `Install pre-commit <https://pre-commit.com/#installation>`_.
+
+#.  On the root of your local clone of the Scrapy repository, run the following 
+    command:
+
+    .. code-block:: bash
+
+       pre-commit install
+
+Now pre-commit will check your changes every time you create a Git commit. Upon 
+finding issues, pre-commit aborts your commit, and either fixes those issues 
+automatically, or only reports them to you. If it fixes those issues 
+automatically, creating your commit again should succeed. Otherwise, you may 
+need to address the corresponding issues manually first.
 
 .. _documentation-policies:
 

@@ -3,7 +3,6 @@ from scrapy.utils import signal as _signal
 
 
 class SignalManager:
-
     def __init__(self, sender=dispatcher.Anonymous):
         self.sender = sender
 
@@ -21,7 +20,7 @@ class SignalManager:
         :param signal: the signal to connect to
         :type signal: object
         """
-        kwargs.setdefault('sender', self.sender)
+        kwargs.setdefault("sender", self.sender)
         return dispatcher.connect(receiver, signal, **kwargs)
 
     def disconnect(self, receiver, signal, **kwargs):
@@ -30,7 +29,7 @@ class SignalManager:
         opposite effect of the :meth:`connect` method, and the arguments
         are the same.
         """
-        kwargs.setdefault('sender', self.sender)
+        kwargs.setdefault("sender", self.sender)
         return dispatcher.disconnect(receiver, signal, **kwargs)
 
     def send_catch_log(self, signal, **kwargs):
@@ -40,7 +39,7 @@ class SignalManager:
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
         """
-        kwargs.setdefault('sender', self.sender)
+        kwargs.setdefault("sender", self.sender)
         return _signal.send_catch_log(signal, **kwargs)
 
     def send_catch_log_deferred(self, signal, **kwargs):
@@ -54,7 +53,7 @@ class SignalManager:
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
         """
-        kwargs.setdefault('sender', self.sender)
+        kwargs.setdefault("sender", self.sender)
         return _signal.send_catch_log_deferred(signal, **kwargs)
 
     def disconnect_all(self, signal, **kwargs):
@@ -64,5 +63,5 @@ class SignalManager:
         :param signal: the signal to disconnect from
         :type signal: object
         """
-        kwargs.setdefault('sender', self.sender)
+        kwargs.setdefault("sender", self.sender)
         return _signal.disconnect_all(signal, **kwargs)

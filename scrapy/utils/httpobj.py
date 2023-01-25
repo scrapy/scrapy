@@ -7,7 +7,9 @@ from weakref import WeakKeyDictionary
 from scrapy.http import Request, Response
 
 
-_urlparse_cache: "WeakKeyDictionary[Union[Request, Response], ParseResult]" = WeakKeyDictionary()
+_urlparse_cache: "WeakKeyDictionary[Union[Request, Response], ParseResult]" = (
+    WeakKeyDictionary()
+)
 
 
 def urlparse_cached(request_or_response: Union[Request, Response]) -> ParseResult:

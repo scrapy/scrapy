@@ -30,7 +30,7 @@ def arg_to_iter(arg):
     """
     if arg is None:
         return []
-    if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, '__iter__'):
+    if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
         return arg
     return [arg]
 
@@ -48,15 +48,16 @@ def load_object(path):
     if not isinstance(path, str):
         if callable(path):
             return path
-        raise TypeError("Unexpected argument type, expected string "
-                        f"or object, got: {type(path)}")
+        raise TypeError(
+            "Unexpected argument type, expected string " f"or object, got: {type(path)}"
+        )
 
     try:
-        dot = path.rindex('.')
+        dot = path.rindex(".")
     except ValueError:
         raise ValueError(f"Error loading object '{path}': not a full path")
 
-    module, name = path[:dot], path[dot + 1:]
+    module, name = path[:dot], path[dot + 1 :]
     mod = import_module(module)
 
     try:
@@ -78,9 +79,9 @@ def walk_modules(path):
     mods = []
     mod = import_module(path)
     mods.append(mod)
-    if hasattr(mod, '__path__'):
+    if hasattr(mod, "__path__"):
         for _, subpath, ispkg in iter_modules(mod.__path__):
-            fullpath = path + '.' + subpath
+            fullpath = path + "." + subpath
             if ispkg:
                 mods += walk_modules(fullpath)
             else:
@@ -89,7 +90,7 @@ def walk_modules(path):
     return mods
 
 
-def extract_regex(regex, text, encoding='utf-8'):
+def extract_regex(regex, text, encoding="utf-8"):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
 
     * if the regex contains a named group called "extract" that will be returned
@@ -99,22 +100,23 @@ def extract_regex(regex, text, encoding='utf-8'):
     warnings.warn(
         "scrapy.utils.misc.extract_regex has moved to parsel.utils.extract_regex.",
         ScrapyDeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
     if isinstance(regex, str):
         regex = re.compile(regex, re.UNICODE)
 
     try:
-        strings = [regex.search(text).group('extract')]   # named group
+        strings = [regex.search(text).group("extract")]  # named group
     except Exception:
-        strings = regex.findall(text)    # full regex or numbered groups
+        strings = regex.findall(text)  # full regex or numbered groups
     strings = flatten(strings)
 
     if isinstance(text, str):
-        return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
-    return [replace_entities(to_unicode(s, encoding), keep=['lt', 'amp'])
-            for s in strings]
+        return [replace_entities(s, keep=["lt", "amp"]) for s in strings]
+    return [
+        replace_entities(to_unicode(s, encoding), keep=["lt", "amp"]) for s in strings
+    ]
 
 
 def md5sum(file):
@@ -136,7 +138,7 @@ def md5sum(file):
 
 def rel_has_nofollow(rel):
     """Return True if link rel attribute has nofollow type"""
-    return rel is not None and 'nofollow' in rel.replace(',', ' ').split()
+    return rel is not None and "nofollow" in rel.replace(",", " ").split()
 
 
 def create_instance(objcls, settings, crawler, *args, **kwargs):
@@ -160,15 +162,15 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         if crawler is None:
             raise ValueError("Specify at least one of settings and crawler.")
         settings = crawler.settings
-    if crawler and hasattr(objcls, 'from_crawler'):
+    if crawler and hasattr(objcls, "from_crawler"):
         instance = objcls.from_crawler(crawler, *args, **kwargs)
-        method_name = 'from_crawler'
-    elif hasattr(objcls, 'from_settings'):
+        method_name = "from_crawler"
+    elif hasattr(objcls, "from_settings"):
         instance = objcls.from_settings(settings, *args, **kwargs)
-        method_name = 'from_settings'
+        method_name = "from_settings"
     else:
         instance = objcls(*args, **kwargs)
-        method_name = '__new__'
+        method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
@@ -221,7 +223,9 @@ def is_generator_with_return_value(callable):
 
     def returns_none(return_node):
         value = return_node.value
-        return value is None or isinstance(value, ast.NameConstant) and value.value is None
+        return (
+            value is None or isinstance(value, ast.NameConstant) and value.value is None
+        )
 
     if inspect.isgeneratorfunction(callable):
         func = callable
@@ -256,8 +260,8 @@ def warn_on_generator_with_return_value(spider, callable):
             warnings.warn(
                 f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
                 'a generator and includes a "return" statement with a value '
-                'different than None. This could lead to unexpected behaviour. Please see '
-                'https://docs.python.org/3/reference/simple_stmts.html#the-return-statement '
+                "different than None. This could lead to unexpected behaviour. Please see "
+                "https://docs.python.org/3/reference/simple_stmts.html#the-return-statement "
                 'for details about the semantics of the "return" statement within generators',
                 stacklevel=2,
             )
@@ -265,9 +269,9 @@ def warn_on_generator_with_return_value(spider, callable):
         callable_name = spider.__class__.__name__ + "." + callable.__name__
         warnings.warn(
             f'Unable to determine whether or not "{callable_name}" is a generator with a return value. '
-            'This will not prevent your code from working, but it prevents Scrapy from detecting '
+            "This will not prevent your code from working, but it prevents Scrapy from detecting "
             f'potential issues in your implementation of "{callable_name}". Please, report this in the '
-            'Scrapy issue tracker (https://github.com/scrapy/scrapy/issues), '
+            "Scrapy issue tracker (https://github.com/scrapy/scrapy/issues), "
             f'including the code of "{callable_name}"',
             stacklevel=2,
         )

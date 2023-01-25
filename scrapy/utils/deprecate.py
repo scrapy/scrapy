@@ -6,13 +6,14 @@ from typing import List, Tuple
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
-def attribute(obj, oldattr, newattr, version='0.12'):
+def attribute(obj, oldattr, newattr, version="0.12"):
     cname = obj.__class__.__name__
     warnings.warn(
         f"{cname}.{oldattr} attribute is deprecated and will be no longer supported "
         f"in Scrapy {version}, use {cname}.{newattr} attribute instead",
         ScrapyDeprecationWarning,
-        stacklevel=3)
+        stacklevel=3,
+    )
 
 
 def create_deprecated_class(
@@ -24,7 +25,7 @@ def create_deprecated_class(
     old_class_path=None,
     new_class_path=None,
     subclass_warn_message="{cls} inherits from deprecated class {old}, please inherit from {new}.",
-    instance_warn_message="{cls} is deprecated, instantiate {new} instead."
+    instance_warn_message="{cls} is deprecated, instantiate {new} instead.",
 ):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
@@ -67,11 +68,13 @@ def create_deprecated_class(
             old = meta.deprecated_class
             if old in bases and not (warn_once and meta.warned_on_subclass):
                 meta.warned_on_subclass = True
-                msg = subclass_warn_message.format(cls=_clspath(cls),
-                                                   old=_clspath(old, old_class_path),
-                                                   new=_clspath(new_class, new_class_path))
+                msg = subclass_warn_message.format(
+                    cls=_clspath(cls),
+                    old=_clspath(old, old_class_path),
+                    new=_clspath(new_class, new_class_path),
+                )
                 if warn_once:
-                    msg += ' (warning only on first subclass, there may be others)'
+                    msg += " (warning only on first subclass, there may be others)"
                 warnings.warn(msg, warn_category, stacklevel=2)
             super().__init__(name, bases, clsdict_)
 
@@ -79,8 +82,7 @@ def create_deprecated_class(
         # and https://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
         # for implementation details
         def __instancecheck__(cls, inst):
-            return any(cls.__subclasscheck__(c)
-                       for c in (type(inst), inst.__class__))
+            return any(cls.__subclasscheck__(c) for c in (type(inst), inst.__class__))
 
         def __subclasscheck__(cls, sub):
             if cls is not DeprecatedClass.deprecated_class:
@@ -93,14 +95,16 @@ def create_deprecated_class(
             if not inspect.isclass(sub):
                 raise TypeError("issubclass() arg 1 must be a class")
 
-            mro = getattr(sub, '__mro__', ())
+            mro = getattr(sub, "__mro__", ())
             return any(c in {cls, new_class} for c in mro)
 
         def __call__(cls, *args, **kwargs):
             old = DeprecatedClass.deprecated_class
             if cls is old:
-                msg = instance_warn_message.format(cls=_clspath(cls, old_class_path),
-                                                   new=_clspath(new_class, new_class_path))
+                msg = instance_warn_message.format(
+                    cls=_clspath(cls, old_class_path),
+                    new=_clspath(new_class, new_class_path),
+                )
                 warnings.warn(msg, warn_category, stacklevel=2)
             return super().__call__(*args, **kwargs)
 
@@ -124,7 +128,7 @@ def create_deprecated_class(
 def _clspath(cls, forced=None):
     if forced is not None:
         return forced
-    return f'{cls.__module__}.{cls.__name__}'
+    return f"{cls.__module__}.{cls.__name__}"
 
 
 DEPRECATION_RULES: List[Tuple[str, str]] = []
@@ -135,8 +139,10 @@ def update_classpath(path):
     for prefix, replacement in DEPRECATION_RULES:
         if isinstance(path, str) and path.startswith(prefix):
             new_path = path.replace(prefix, replacement, 1)
-            warnings.warn(f"`{path}` class is deprecated, use `{new_path}` instead",
-                          ScrapyDeprecationWarning)
+            warnings.warn(
+                f"`{path}` class is deprecated, use `{new_path}` instead",
+                ScrapyDeprecationWarning,
+            )
             return new_path
     return path
 
