@@ -28,16 +28,16 @@ class Spider(object_ref):
     def __init__(self, name=None, **kwargs):
         if name is not None:
             self.name = name
-        elif not getattr(self, 'name', None):
+        elif not getattr(self, "name", None):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
-        if not hasattr(self, 'start_urls'):
+        if not hasattr(self, "start_urls"):
             self.start_urls = []
 
     @property
     def logger(self):
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {'spider': self})
+        return logging.LoggerAdapter(logger, {"spider": self})
 
     def log(self, message, level=logging.DEBUG, **kw):
         """Log the given message at the given log level
@@ -60,11 +60,12 @@ class Spider(object_ref):
         crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self):
-        if not self.start_urls and hasattr(self, 'start_url'):
+        if not self.start_urls and hasattr(self, "start_url"):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "
                 "or empty (but found 'start_url' attribute instead, "
-                "did you miss an 's'?)")
+                "did you miss an 's'?)"
+            )
         for url in self.start_urls:
             yield Request(url, dont_filter=True)
 
@@ -72,11 +73,13 @@ class Spider(object_ref):
         return self.parse(response, **kwargs)
 
     def parse(self, response, **kwargs):
-        raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.parse callback is not defined"
+        )
 
     @classmethod
     def update_settings(cls, settings):
-        settings.setdict(cls.custom_settings or {}, priority='spider')
+        settings.setdict(cls.custom_settings or {}, priority="spider")
 
     @classmethod
     def handles_request(cls, request):
@@ -84,7 +87,7 @@ class Spider(object_ref):
 
     @staticmethod
     def close(spider, reason):
-        closed = getattr(spider, 'closed', None)
+        closed = getattr(spider, "closed", None)
         if callable(closed):
             return closed(reason)
 

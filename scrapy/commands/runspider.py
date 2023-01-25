@@ -12,7 +12,7 @@ from scrapy.commands import BaseRunSpiderCommand
 
 def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
     abspath = Path(filepath).resolve()
-    if abspath.suffix not in ('.py', '.pyw'):
+    if abspath.suffix not in (".py", ".pyw"):
         raise ValueError(f"Not a Python source file: {abspath}")
     dirname = str(abspath.parent)
     sys.path = [dirname] + sys.path
@@ -26,7 +26,7 @@ def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
 class Command(BaseRunSpiderCommand):
 
     requires_project = False
-    default_settings = {'SPIDER_LOADER_WARN_ONLY': True}
+    default_settings = {"SPIDER_LOADER_WARN_ONLY": True}
 
     def syntax(self):
         return "[options] <spider_file>"

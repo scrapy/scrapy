@@ -29,7 +29,7 @@ def generate_keys():
         key_size=2048,
         backend=default_backend(),
     )
-    (folder / 'localhost.key').write_bytes(
+    (folder / "localhost.key").write_bytes(
         key.private_bytes(
             encoding=Encoding.PEM,
             format=PrivateFormat.TraditionalOpenSSL,
@@ -58,4 +58,4 @@ def generate_keys():
         )
         .sign(key, SHA256(), default_backend())
     )
-    (folder / 'localhost.crt').write_bytes(cert.public_bytes(Encoding.PEM))
+    (folder / "localhost.crt").write_bytes(cert.public_bytes(Encoding.PEM))

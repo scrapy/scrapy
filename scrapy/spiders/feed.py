@@ -21,8 +21,8 @@ class XMLFeedSpider(Spider):
     use iternodes, since it's a faster and cleaner.
     """
 
-    iterator = 'iternodes'
-    itertag = 'item'
+    iterator = "iternodes"
+    itertag = "item"
     namespaces = ()
 
     def process_results(self, response, results):
@@ -44,7 +44,7 @@ class XMLFeedSpider(Spider):
 
     def parse_node(self, response, selector):
         """This method must be overridden with your custom spider functionality"""
-        if hasattr(self, 'parse_item'):  # backward compatibility
+        if hasattr(self, "parse_item"):  # backward compatibility
             return self.parse_item(response, selector)
         raise NotImplementedError
 
@@ -62,22 +62,24 @@ class XMLFeedSpider(Spider):
                 yield result_item
 
     def _parse(self, response, **kwargs):
-        if not hasattr(self, 'parse_node'):
-            raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
+        if not hasattr(self, "parse_node"):
+            raise NotConfigured(
+                "You must define parse_node method in order to scrape this XML feed"
+            )
 
         response = self.adapt_response(response)
-        if self.iterator == 'iternodes':
+        if self.iterator == "iternodes":
             nodes = self._iternodes(response)
-        elif self.iterator == 'xml':
-            selector = Selector(response, type='xml')
+        elif self.iterator == "xml":
+            selector = Selector(response, type="xml")
             self._register_namespaces(selector)
-            nodes = selector.xpath(f'//{self.itertag}')
-        elif self.iterator == 'html':
-            selector = Selector(response, type='html')
+            nodes = selector.xpath(f"//{self.itertag}")
+        elif self.iterator == "html":
+            selector = Selector(response, type="html")
             self._register_namespaces(selector)
-            nodes = selector.xpath(f'//{self.itertag}')
+            nodes = selector.xpath(f"//{self.itertag}")
         else:
-            raise NotSupported('Unsupported node iterator')
+            raise NotSupported("Unsupported node iterator")
 
         return self.parse_nodes(response, nodes)
 
@@ -100,8 +102,12 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter = None  # When this is None, python's csv module's default delimiter is used
-    quotechar = None  # When this is None, python's csv module's default quotechar is used
+    delimiter = (
+        None  # When this is None, python's csv module's default delimiter is used
+    )
+    quotechar = (
+        None  # When this is None, python's csv module's default quotechar is used
+    )
     headers = None
 
     def process_results(self, response, results):
@@ -123,13 +129,17 @@ class CSVFeedSpider(Spider):
         process_results methods for pre and post-processing purposes.
         """
 
-        for row in csviter(response, self.delimiter, self.headers, quotechar=self.quotechar):
+        for row in csviter(
+            response, self.delimiter, self.headers, quotechar=self.quotechar
+        ):
             ret = iterate_spider_output(self.parse_row(response, row))
             for result_item in self.process_results(response, ret):
                 yield result_item
 
     def _parse(self, response, **kwargs):
-        if not hasattr(self, 'parse_row'):
-            raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
+        if not hasattr(self, "parse_row"):
+            raise NotConfigured(
+                "You must define parse_row method in order to scrape this CSV feed"
+            )
         response = self.adapt_response(response)
         return self.parse_rows(response)

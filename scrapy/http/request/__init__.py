@@ -46,9 +46,19 @@ class Request(object_ref):
     """
 
     attributes: Tuple[str, ...] = (
-        "url", "callback", "method", "headers", "body",
-        "cookies", "meta", "encoding", "priority",
-        "dont_filter", "errback", "flags", "cb_kwargs",
+        "url",
+        "callback",
+        "method",
+        "headers",
+        "body",
+        "cookies",
+        "meta",
+        "encoding",
+        "priority",
+        "dont_filter",
+        "errback",
+        "flags",
+        "cb_kwargs",
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
@@ -101,7 +111,7 @@ class Request(object_ref):
             and (name != "callback" or value is not NO_CALLBACK)
             and not callable(value)
         ):
-            raise TypeError(f'{name} must be a callable, got {type(value).__name__}')
+            raise TypeError(f"{name} must be a callable, got {type(value).__name__}")
         setattr(self, name, value)
 
     @property
@@ -127,13 +137,13 @@ class Request(object_ref):
         self._url = escape_ajax(s)
 
         if (
-            '://' not in self._url
-            and not self._url.startswith('about:')
-            and not self._url.startswith('data:')
+            "://" not in self._url
+            and not self._url.startswith("about:")
+            and not self._url.startswith("data:")
         ):
-            raise ValueError(f'Missing scheme in request url: {self._url}')
+            raise ValueError(f"Missing scheme in request url: {self._url}")
 
-    url = property(_get_url, obsolete_setter(_set_url, 'url'))
+    url = property(_get_url, obsolete_setter(_set_url, "url"))
 
     def _get_body(self) -> bytes:
         return self._body
@@ -141,7 +151,7 @@ class Request(object_ref):
     def _set_body(self, body: Optional[Union[str, bytes]]) -> None:
         self._body = b"" if body is None else to_bytes(body, self.encoding)
 
-    body = property(_get_body, obsolete_setter(_set_body, 'body'))
+    body = property(_get_body, obsolete_setter(_set_body, "body"))
 
     @property
     def encoding(self) -> str:
@@ -157,12 +167,15 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop('cls', self.__class__)
+        cls = kwargs.pop("cls", self.__class__)
         return cls(*args, **kwargs)
 
     @classmethod
     def from_curl(
-        cls: Type[RequestTypeVar], curl_command: str, ignore_unknown_options: bool = True, **kwargs
+        cls: Type[RequestTypeVar],
+        curl_command: str,
+        ignore_unknown_options: bool = True,
+        **kwargs,
     ) -> RequestTypeVar:
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
@@ -205,21 +218,25 @@ class Request(object_ref):
         """
         d = {
             "url": self.url,  # urls are safe (safe_string_url)
-            "callback": _find_method(spider, self.callback) if callable(self.callback) else self.callback,
-            "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
+            "callback": _find_method(spider, self.callback)
+            if callable(self.callback)
+            else self.callback,
+            "errback": _find_method(spider, self.errback)
+            if callable(self.errback)
+            else self.errback,
             "headers": dict(self.headers),
         }
         for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
         if type(self) is not Request:  # pylint: disable=unidiomatic-typecheck
-            d["_class"] = self.__module__ + '.' + self.__class__.__name__
+            d["_class"] = self.__module__ + "." + self.__class__.__name__
         return d
 
 
 def _find_method(obj, func):
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
-    if obj and hasattr(func, '__func__'):
+    if obj and hasattr(func, "__func__"):
         members = inspect.getmembers(obj, predicate=inspect.ismethod)
         for name, obj_func in members:
             # We need to use __func__ to access the original function object because instance

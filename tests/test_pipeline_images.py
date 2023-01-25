@@ -22,11 +22,13 @@ from scrapy.utils.python import to_bytes
 try:
     from PIL import Image
 except ImportError:
-    skip_pillow = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
+    skip_pillow = (
+        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
+    )
 else:
-    encoders = {'jpeg_encoder', 'jpeg_decoder'}
+    encoders = {"jpeg_encoder", "jpeg_decoder"}
     if not encoders.issubset(set(Image.core.__dict__)):
-        skip_pillow = 'Missing JPEG encoders'
+        skip_pillow = "Missing JPEG encoders"
     else:
         skip_pillow = None
 
@@ -46,43 +48,75 @@ class ImagesPipelineTestCase(unittest.TestCase):
         file_path = self.pipeline.file_path
         self.assertEqual(
             file_path(Request("https://dev.mydeco.com/mydeco.gif")),
-            'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+            "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg",
+        )
         self.assertEqual(
-            file_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg")),
-            'full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg')
+            file_path(
+                Request(
+                    "http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg"
+                )
+            ),
+            "full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg",
+        )
         self.assertEqual(
-            file_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")),
-            'full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg')
+            file_path(
+                Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")
+            ),
+            "full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg",
+        )
         self.assertEqual(
-            file_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
-            'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
+            file_path(
+                Request(
+                    "http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg"
+                )
+            ),
+            "full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg",
+        )
         self.assertEqual(
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
-            'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg')
+            "full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg",
+        )
         self.assertEqual(
             file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
-            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+            "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg",
+        )
         self.assertEqual(
-            file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                      response=Response("http://www.dorma.co.uk/images/product_details/2532"),
-                      info=object()),
-            'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+            file_path(
+                Request("http://www.dorma.co.uk/images/product_details/2532"),
+                response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                info=object(),
+            ),
+            "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg",
+        )
 
     def test_thumbnail_name(self):
         thumb_path = self.pipeline.thumb_path
-        name = '50'
-        self.assertEqual(thumb_path(Request("file:///tmp/foo.jpg"), name),
-                         'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
-        self.assertEqual(thumb_path(Request("file://foo.png"), name),
-                         'thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg')
-        self.assertEqual(thumb_path(Request("file:///tmp/foo"), name),
-                         'thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg')
-        self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name),
-                         'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
-        self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name,
-                                    response=Response("file:///tmp/some.name/foo"),
-                                    info=object()),
-                         'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+        name = "50"
+        self.assertEqual(
+            thumb_path(Request("file:///tmp/foo.jpg"), name),
+            "thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg",
+        )
+        self.assertEqual(
+            thumb_path(Request("file://foo.png"), name),
+            "thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg",
+        )
+        self.assertEqual(
+            thumb_path(Request("file:///tmp/foo"), name),
+            "thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg",
+        )
+        self.assertEqual(
+            thumb_path(Request("file:///tmp/some.name/foo"), name),
+            "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg",
+        )
+        self.assertEqual(
+            thumb_path(
+                Request("file:///tmp/some.name/foo"),
+                name,
+                response=Response("file:///tmp/some.name/foo"),
+                info=object(),
+            ),
+            "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg",
+        )
 
     def test_thumbnail_name_from_item(self):
         """
@@ -90,23 +124,27 @@ class ImagesPipelineTestCase(unittest.TestCase):
         """
 
         class CustomImagesPipeline(ImagesPipeline):
-            def thumb_path(self, request, thumb_id, response=None, info=None, item=None):
+            def thumb_path(
+                self, request, thumb_id, response=None, info=None, item=None
+            ):
                 return f"thumb/{thumb_id}/{item.get('path')}"
 
-        thumb_path = CustomImagesPipeline.from_settings(Settings(
-            {'IMAGES_STORE': self.tempdir}
-        )).thumb_path
-        item = dict(path='path-to-store-file')
+        thumb_path = CustomImagesPipeline.from_settings(
+            Settings({"IMAGES_STORE": self.tempdir})
+        ).thumb_path
+        item = dict(path="path-to-store-file")
         request = Request("http://example.com")
-        self.assertEqual(thumb_path(request, 'small', item=item), 'thumb/small/path-to-store-file')
+        self.assertEqual(
+            thumb_path(request, "small", item=item), "thumb/small/path-to-store-file"
+        )
 
     def test_get_images_exception(self):
         self.pipeline.min_width = 100
         self.pipeline.min_height = 100
 
-        _, buf1 = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
-        _, buf2 = _create_image('JPEG', 'RGB', (150, 50), (0, 0, 0))
-        _, buf3 = _create_image('JPEG', 'RGB', (50, 150), (0, 0, 0))
+        _, buf1 = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        _, buf2 = _create_image("JPEG", "RGB", (150, 50), (0, 0, 0))
+        _, buf3 = _create_image("JPEG", "RGB", (50, 150), (0, 0, 0))
 
         resp1 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf1.getvalue())
         resp2 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf2.getvalue())
@@ -123,121 +161,154 @@ class ImagesPipelineTestCase(unittest.TestCase):
     def test_get_images_new(self):
         self.pipeline.min_width = 0
         self.pipeline.min_height = 0
-        self.pipeline.thumbs = {'small': (20, 20)}
+        self.pipeline.thumbs = {"small": (20, 20)}
 
-        orig_im, buf = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
-        orig_thumb, orig_thumb_buf = _create_image('JPEG', 'RGB', (20, 20), (0, 0, 0))
+        orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
+        orig_thumb, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
         resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
-        get_images_gen = self.pipeline.get_images(response=resp, request=req, info=object())
+        get_images_gen = self.pipeline.get_images(
+            response=resp, request=req, info=object()
+        )
 
         path, new_im, new_buf = next(get_images_gen)
-        self.assertEqual(path, 'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+        self.assertEqual(path, "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg")
         self.assertEqual(orig_im, new_im)
         self.assertEqual(buf.getvalue(), new_buf.getvalue())
 
         thumb_path, thumb_img, thumb_buf = next(get_images_gen)
-        self.assertEqual(thumb_path, 'thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+        self.assertEqual(
+            thumb_path, "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        )
         self.assertEqual(thumb_img, thumb_img)
         self.assertEqual(orig_thumb_buf.getvalue(), thumb_buf.getvalue())
 
     def test_get_images_old(self):
-        self.pipeline.thumbs = {'small': (20, 20)}
-        orig_im, buf = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
+        self.pipeline.thumbs = {"small": (20, 20)}
+        orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
         resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
         def overridden_convert_image(image, size=None):
-            im, buf = _create_image('JPEG', 'RGB', (50, 50), (0, 0, 0))
+            im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
             return im, buf
 
-        with patch.object(self.pipeline, 'convert_image', overridden_convert_image):
+        with patch.object(self.pipeline, "convert_image", overridden_convert_image):
             with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter('always')
-                get_images_gen = self.pipeline.get_images(response=resp, request=req, info=object())
+                warnings.simplefilter("always")
+                get_images_gen = self.pipeline.get_images(
+                    response=resp, request=req, info=object()
+                )
                 path, new_im, new_buf = next(get_images_gen)
-                self.assertEqual(path, 'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+                self.assertEqual(
+                    path, "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+                )
                 self.assertEqual(orig_im.mode, new_im.mode)
                 self.assertEqual(orig_im.getcolors(), new_im.getcolors())
                 self.assertEqual(buf.getvalue(), new_buf.getvalue())
 
                 thumb_path, thumb_img, thumb_buf = next(get_images_gen)
-                self.assertEqual(thumb_path, 'thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
+                self.assertEqual(
+                    thumb_path,
+                    "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg",
+                )
                 self.assertEqual(orig_im.mode, thumb_img.mode)
                 self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
                 self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
 
-                expected_warning_msg = ('.convert_image() method overridden in a deprecated way, '
-                                        'overridden method does not accept response_body argument.')
-                self.assertEqual(len([warning for warning in w if expected_warning_msg in str(warning.message)]), 1)
+                expected_warning_msg = (
+                    ".convert_image() method overridden in a deprecated way, "
+                    "overridden method does not accept response_body argument."
+                )
+                self.assertEqual(
+                    len(
+                        [
+                            warning
+                            for warning in w
+                            if expected_warning_msg in str(warning.message)
+                        ]
+                    ),
+                    1,
+                )
 
     def test_convert_image_old(self):
         # tests for old API
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+            warnings.simplefilter("always")
             SIZE = (100, 100)
             # straight forward case: RGB and JPEG
             COLOUR = (0, 127, 255)
-            im, _ = _create_image('JPEG', 'RGB', SIZE, COLOUR)
+            im, _ = _create_image("JPEG", "RGB", SIZE, COLOUR)
             converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.mode, "RGB")
             self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
 
             # check that thumbnail keep image ratio
             thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
-            self.assertEqual(thumbnail.mode, 'RGB')
+            self.assertEqual(thumbnail.mode, "RGB")
             self.assertEqual(thumbnail.size, (10, 10))
 
             # transparency case: RGBA and PNG
             COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+            im, _ = _create_image("PNG", "RGBA", SIZE, COLOUR)
             converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.mode, "RGB")
             self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
             # transparency case with palette: P and PNG
             COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-            im = im.convert('P')
+            im, _ = _create_image("PNG", "RGBA", SIZE, COLOUR)
+            im = im.convert("P")
             converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, 'RGB')
+            self.assertEqual(converted.mode, "RGB")
             self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
             # ensure that we received deprecation warnings
-            expected_warning_msg = '.convert_image() method called in a deprecated way'
-            self.assertTrue(len([warning for warning in w if expected_warning_msg in str(warning.message)]) == 4)
+            expected_warning_msg = ".convert_image() method called in a deprecated way"
+            self.assertTrue(
+                len(
+                    [
+                        warning
+                        for warning in w
+                        if expected_warning_msg in str(warning.message)
+                    ]
+                )
+                == 4
+            )
 
     def test_convert_image_new(self):
         # tests for new API
         SIZE = (100, 100)
         # straight forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
-        im, buf = _create_image('JPEG', 'RGB', SIZE, COLOUR)
+        im, buf = _create_image("JPEG", "RGB", SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, 'RGB')
+        self.assertEqual(converted.mode, "RGB")
         self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
         # check that we don't convert JPEGs again
         self.assertEqual(converted_buf, buf)
 
         # check that thumbnail keep image ratio
-        thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25), response_body=converted_buf)
-        self.assertEqual(thumbnail.mode, 'RGB')
+        thumbnail, _ = self.pipeline.convert_image(
+            converted, size=(10, 25), response_body=converted_buf
+        )
+        self.assertEqual(thumbnail.mode, "RGB")
         self.assertEqual(thumbnail.size, (10, 10))
 
         # transparency case: RGBA and PNG
         COLOUR = (0, 127, 255, 50)
-        im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+        im, buf = _create_image("PNG", "RGBA", SIZE, COLOUR)
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, 'RGB')
+        self.assertEqual(converted.mode, "RGB")
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
         # transparency case with palette: P and PNG
         COLOUR = (0, 127, 255, 50)
-        im, buf = _create_image('PNG', 'RGBA', SIZE, COLOUR)
-        im = im.convert('P')
+        im, buf = _create_image("PNG", "RGBA", SIZE, COLOUR)
+        im = im.convert("P")
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, 'RGB')
+        self.assertEqual(converted.mode, "RGB")
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
 
@@ -247,11 +318,11 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
     def image_key(self, url):
         image_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return f'empty/{image_guid}.jpg'
+        return f"empty/{image_guid}.jpg"
 
     def thumb_key(self, url, thumb_id):
         thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return f'thumbsup/{thumb_id}/{thumb_guid}.jpg'
+        return f"thumbsup/{thumb_id}/{thumb_guid}.jpg"
 
 
 class ImagesPipelineTestCaseFieldsMixin:
@@ -259,35 +330,43 @@ class ImagesPipelineTestCaseFieldsMixin:
     skip = skip_pillow
 
     def test_item_fields_default(self):
-        url = 'http://www.example.com/images/1.jpg'
-        item = self.item_class(name='item1', image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
+        url = "http://www.example.com/images/1.jpg"
+        item = self.item_class(name="item1", image_urls=[url])
+        pipeline = ImagesPipeline.from_settings(
+            Settings({"IMAGES_STORE": "s3://example/images/"})
+        )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
-        results = [(True, {'url': url})]
+        results = [(True, {"url": url})]
         item = pipeline.item_completed(results, item, None)
         images = ItemAdapter(item).get("images")
         self.assertEqual(images, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
-        url = 'http://www.example.com/images/1.jpg'
-        item = self.item_class(name='item1', custom_image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(Settings({
-            'IMAGES_STORE': 's3://example/images/',
-            'IMAGES_URLS_FIELD': 'custom_image_urls',
-            'IMAGES_RESULT_FIELD': 'custom_images'
-        }))
+        url = "http://www.example.com/images/1.jpg"
+        item = self.item_class(name="item1", custom_image_urls=[url])
+        pipeline = ImagesPipeline.from_settings(
+            Settings(
+                {
+                    "IMAGES_STORE": "s3://example/images/",
+                    "IMAGES_URLS_FIELD": "custom_image_urls",
+                    "IMAGES_RESULT_FIELD": "custom_images",
+                }
+            )
+        )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
-        results = [(True, {'url': url})]
+        results = [(True, {"url": url})]
         item = pipeline.item_completed(results, item, None)
         custom_images = ItemAdapter(item).get("custom_images")
         self.assertEqual(custom_images, [results[0][1]])
         self.assertIsInstance(item, self.item_class)
 
 
-class ImagesPipelineTestCaseFieldsDict(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsDict(
+    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
+):
     item_class = dict
 
 
@@ -301,7 +380,9 @@ class ImagesPipelineTestItem(Item):
     custom_images = Field()
 
 
-class ImagesPipelineTestCaseFieldsItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsItem(
+    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
+):
     item_class = ImagesPipelineTestItem
 
 
@@ -316,7 +397,9 @@ class ImagesPipelineTestDataClass:
     custom_images: list = dataclasses.field(default_factory=list)
 
 
-class ImagesPipelineTestCaseFieldsDataClass(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsDataClass(
+    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
+):
     item_class = ImagesPipelineTestDataClass
 
 
@@ -331,7 +414,9 @@ class ImagesPipelineTestAttrsItem:
     custom_images = attr.ib(default=lambda: [])
 
 
-class ImagesPipelineTestCaseFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin, unittest.TestCase):
+class ImagesPipelineTestCaseFieldsAttrsItem(
+    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
+):
     item_class = ImagesPipelineTestAttrsItem
 
 
@@ -346,7 +431,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         ("MIN_HEIGHT", "IMAGES_MIN_HEIGHT"),
         ("IMAGES_URLS_FIELD", "IMAGES_URLS_FIELD"),
         ("IMAGES_RESULT_FIELD", "IMAGES_RESULT_FIELD"),
-        ("THUMBS", "IMAGES_THUMBS")
+        ("THUMBS", "IMAGES_THUMBS"),
     ]
 
     # This should match what is defined in ImagesPipeline.
@@ -355,8 +440,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         MIN_HEIGHT=0,
         EXPIRES=90,
         THUMBS={},
-        IMAGES_URLS_FIELD='image_urls',
-        IMAGES_RESULT_FIELD='images'
+        IMAGES_URLS_FIELD="image_urls",
+        IMAGES_RESULT_FIELD="images",
     )
 
     def setUp(self):
@@ -382,26 +467,30 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             "IMAGES_MIN_WIDTH": random.randint(1, 1000),
             "IMAGES_MIN_HEIGHT": random.randint(1, 1000),
             "IMAGES_THUMBS": {
-                'small': (random.randint(1, 1000), random.randint(1, 1000)),
-                'big': (random.randint(1, 1000), random.randint(1, 1000))
-            }
+                "small": (random.randint(1, 1000), random.randint(1, 1000)),
+                "big": (random.randint(1, 1000), random.randint(1, 1000)),
+            },
         }
         if not prefix:
             return settings
 
-        return {prefix.upper() + "_" + k if k != "IMAGES_STORE" else k: v for k, v in settings.items()}
+        return {
+            prefix.upper() + "_" + k if k != "IMAGES_STORE" else k: v
+            for k, v in settings.items()
+        }
 
     def _generate_fake_pipeline_subclass(self):
         """
         :return: ImagePipeline class will all uppercase attributes set.
         """
+
         class UserDefinedImagePipeline(ImagesPipeline):
             # Values should be in different range than fake_settings.
             MIN_WIDTH = random.randint(1000, 2000)
             MIN_HEIGHT = random.randint(1000, 2000)
             THUMBS = {
-                'small': (random.randint(1000, 2000), random.randint(1000, 2000)),
-                'big': (random.randint(1000, 2000), random.randint(1000, 2000))
+                "small": (random.randint(1000, 2000), random.randint(1000, 2000)),
+                "big": (random.randint(1000, 2000), random.randint(1000, 2000)),
             }
             EXPIRES = random.randint(1000, 2000)
             IMAGES_URLS_FIELD = "field_one"
@@ -422,7 +511,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
             custom_value = custom_settings.get(settings_attr)
             self.assertNotEqual(expected_default_value, custom_value)
-            self.assertEqual(getattr(default_sts_pipe, pipe_attr.lower()), expected_default_value)
+            self.assertEqual(
+                getattr(default_sts_pipe, pipe_attr.lower()), expected_default_value
+            )
             self.assertEqual(getattr(user_sts_pipe, pipe_attr.lower()), custom_value)
 
     def test_subclass_attrs_preserved_default_settings(self):
@@ -459,10 +550,13 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         If there are no settings for subclass and no subclass attributes, pipeline should use
         attributes of base class.
         """
+
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
-        user_pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        user_pipeline = UserDefinedImagePipeline.from_settings(
+            Settings({"IMAGES_STORE": self.tempdir})
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
@@ -473,6 +567,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
         settings.
         """
+
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
@@ -503,7 +598,10 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserDefinedImagePipeline(ImagesPipeline):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
-        pipeline = UserDefinedImagePipeline.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+
+        pipeline = UserDefinedImagePipeline.from_settings(
+            Settings({"IMAGES_STORE": self.tempdir})
+        )
         self.assertEqual(pipeline.images_result_field, "something_else")
         self.assertEqual(pipeline.images_urls_field, "something")
 
@@ -521,12 +619,10 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
-            self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()),
-                             expected_value)
+            self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()), expected_value)
 
 
 class NoimagesDropTestCase(unittest.TestCase):
-
     def test_deprecation_warning(self):
         arg = str()
         with warnings.catch_warnings(record=True) as w:
@@ -534,8 +630,10 @@ class NoimagesDropTestCase(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertEqual(w[0].category, ScrapyDeprecationWarning)
         with warnings.catch_warnings(record=True) as w:
+
             class SubclassedNoimagesDrop(NoimagesDrop):
                 pass
+
             SubclassedNoimagesDrop(arg)
             self.assertEqual(len(w), 1)
             self.assertEqual(w[0].category, ScrapyDeprecationWarning)

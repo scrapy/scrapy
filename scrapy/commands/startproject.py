@@ -13,14 +13,14 @@ from scrapy.exceptions import UsageError
 
 
 TEMPLATES_TO_RENDER = (
-    ('scrapy.cfg',),
-    ('${project_name}', 'settings.py.tmpl'),
-    ('${project_name}', 'items.py.tmpl'),
-    ('${project_name}', 'pipelines.py.tmpl'),
-    ('${project_name}', 'middlewares.py.tmpl'),
+    ("scrapy.cfg",),
+    ("${project_name}", "settings.py.tmpl"),
+    ("${project_name}", "items.py.tmpl"),
+    ("${project_name}", "pipelines.py.tmpl"),
+    ("${project_name}", "middlewares.py.tmpl"),
 )
 
-IGNORE = ignore_patterns('*.pyc', '__pycache__', '.svn')
+IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
 
 
 def _make_writable(path):
@@ -31,8 +31,7 @@ def _make_writable(path):
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'LOG_ENABLED': False,
-                        'SPIDER_LOADER_WARN_ONLY': True}
+    default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
 
     def syntax(self):
         return "<project_name> [project_dir]"
@@ -45,11 +44,13 @@ class Command(ScrapyCommand):
             spec = find_spec(module_name)
             return spec is not None and spec.loader is not None
 
-        if not re.search(r'^[_a-zA-Z]\w*$', project_name):
-            print('Error: Project names must begin with a letter and contain'
-                  ' only\nletters, numbers and underscores')
+        if not re.search(r"^[_a-zA-Z]\w*$", project_name):
+            print(
+                "Error: Project names must begin with a letter and contain"
+                " only\nletters, numbers and underscores"
+            )
         elif _module_exists(project_name):
-            print(f'Error: Module {project_name!r} already exists')
+            print(f"Error: Module {project_name!r} already exists")
         else:
             return True
         return False
@@ -96,9 +97,9 @@ class Command(ScrapyCommand):
         else:
             project_dir = Path(args[0])
 
-        if (project_dir / 'scrapy.cfg').exists():
+        if (project_dir / "scrapy.cfg").exists():
             self.exitcode = 1
-            print(f'Error: scrapy.cfg already exists in {project_dir.resolve()}')
+            print(f"Error: scrapy.cfg already exists in {project_dir.resolve()}")
             return
 
         if not self._is_valid_name(project_name):
@@ -106,12 +107,24 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(Path(self.templates_dir), project_dir.resolve())
-        move(project_dir / 'module', project_dir / project_name)
+        move(project_dir / "module", project_dir / project_name)
         for paths in TEMPLATES_TO_RENDER:
-            tplfile = Path(project_dir, *(string.Template(s).substitute(project_name=project_name) for s in paths))
-            render_templatefile(tplfile, project_name=project_name, ProjectName=string_camelcase(project_name))
-        print(f"New Scrapy project '{project_name}', using template directory "
-              f"'{self.templates_dir}', created in:")
+            tplfile = Path(
+                project_dir,
+                *(
+                    string.Template(s).substitute(project_name=project_name)
+                    for s in paths
+                ),
+            )
+            render_templatefile(
+                tplfile,
+                project_name=project_name,
+                ProjectName=string_camelcase(project_name),
+            )
+        print(
+            f"New Scrapy project '{project_name}', using template directory "
+            f"'{self.templates_dir}', created in:"
+        )
         print(f"    {project_dir.resolve()}\n")
         print("You can start your first spider with:")
         print(f"    cd {project_dir}")
@@ -119,7 +132,9 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self) -> str:
-        return str(Path(
-            self.settings['TEMPLATES_DIR'] or Path(scrapy.__path__[0], 'templates'),
-            'project'
-        ))
+        return str(
+            Path(
+                self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
+                "project",
+            )
+        )

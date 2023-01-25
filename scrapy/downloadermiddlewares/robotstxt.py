@@ -21,23 +21,23 @@ class RobotsTxtMiddleware:
     DOWNLOAD_PRIORITY = 1000
 
     def __init__(self, crawler):
-        if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
+        if not crawler.settings.getbool("ROBOTSTXT_OBEY"):
             raise NotConfigured
-        self._default_useragent = crawler.settings.get('USER_AGENT', 'Scrapy')
-        self._robotstxt_useragent = crawler.settings.get('ROBOTSTXT_USER_AGENT', None)
+        self._default_useragent = crawler.settings.get("USER_AGENT", "Scrapy")
+        self._robotstxt_useragent = crawler.settings.get("ROBOTSTXT_USER_AGENT", None)
         self.crawler = crawler
         self._parsers = {}
-        self._parserimpl = load_object(crawler.settings.get('ROBOTSTXT_PARSER'))
+        self._parserimpl = load_object(crawler.settings.get("ROBOTSTXT_PARSER"))
 
         # check if parser dependencies are met, this should throw an error otherwise.
-        self._parserimpl.from_crawler(self.crawler, b'')
+        self._parserimpl.from_crawler(self.crawler, b"")
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler)
 
     def process_request(self, request, spider):
-        if request.meta.get('dont_obey_robotstxt'):
+        if request.meta.get("dont_obey_robotstxt"):
             return
         d = maybeDeferred(self.robot_parser, request, spider)
         d.addCallback(self.process_request_2, request, spider)
@@ -49,11 +49,14 @@ class RobotsTxtMiddleware:
 
         useragent = self._robotstxt_useragent
         if not useragent:
-            useragent = request.headers.get(b'User-Agent', self._default_useragent)
+            useragent = request.headers.get(b"User-Agent", self._default_useragent)
         if not rp.allowed(request.url, useragent):
-            logger.debug("Forbidden by robots.txt: %(request)s",
-                         {'request': request}, extra={'spider': spider})
-            self.crawler.stats.inc_value('robotstxt/forbidden')
+            logger.debug(
+                "Forbidden by robots.txt: %(request)s",
+                {"request": request},
+                extra={"spider": spider},
+            )
+            self.crawler.stats.inc_value("robotstxt/forbidden")
             raise IgnoreRequest("Forbidden by robots.txt")
 
     def robot_parser(self, request, spider):
@@ -66,14 +69,14 @@ class RobotsTxtMiddleware:
             robotsreq = Request(
                 robotsurl,
                 priority=self.DOWNLOAD_PRIORITY,
-                meta={'dont_obey_robotstxt': True},
+                meta={"dont_obey_robotstxt": True},
                 callback=NO_CALLBACK,
             )
             dfd = self.crawler.engine.download(robotsreq)
             dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
-            self.crawler.stats.inc_value('robotstxt/request_count')
+            self.crawler.stats.inc_value("robotstxt/request_count")
 
         if isinstance(self._parsers[netloc], Deferred):
             d = Deferred()
@@ -81,21 +84,26 @@ class RobotsTxtMiddleware:
             def cb(result):
                 d.callback(result)
                 return result
+
             self._parsers[netloc].addCallback(cb)
             return d
         return self._parsers[netloc]
 
     def _logerror(self, failure, request, spider):
         if failure.type is not IgnoreRequest:
-            logger.error("Error downloading %(request)s: %(f_exception)s",
-                         {'request': request, 'f_exception': failure.value},
-                         exc_info=failure_to_exc_info(failure),
-                         extra={'spider': spider})
+            logger.error(
+                "Error downloading %(request)s: %(f_exception)s",
+                {"request": request, "f_exception": failure.value},
+                exc_info=failure_to_exc_info(failure),
+                extra={"spider": spider},
+            )
         return failure
 
     def _parse_robots(self, response, netloc, spider):
-        self.crawler.stats.inc_value('robotstxt/response_count')
-        self.crawler.stats.inc_value(f'robotstxt/response_status_count/{response.status}')
+        self.crawler.stats.inc_value("robotstxt/response_count")
+        self.crawler.stats.inc_value(
+            f"robotstxt/response_status_count/{response.status}"
+        )
         rp = self._parserimpl.from_crawler(self.crawler, response.body)
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = rp
@@ -103,7 +111,7 @@ class RobotsTxtMiddleware:
 
     def _robots_error(self, failure, netloc):
         if failure.type is not IgnoreRequest:
-            key = f'robotstxt/exception_count/{failure.type}'
+            key = f"robotstxt/exception_count/{failure.type}"
             self.crawler.stats.inc_value(key)
         rp_dfd = self._parsers[netloc]
         self._parsers[netloc] = None

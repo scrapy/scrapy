@@ -19,8 +19,10 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
 
     def _check_components(complist):
         if len({convert(c) for c in complist}) != len(complist):
-            raise ValueError(f'Some paths in {complist!r} convert to the same object, '
-                             'please update your settings')
+            raise ValueError(
+                f"Some paths in {complist!r} convert to the same object, "
+                "please update your settings"
+            )
 
     def _map_keys(compdict):
         if isinstance(compdict, BaseSettings):
@@ -28,10 +30,11 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 if compbs.getpriority(convert(k)) == prio:
-                    raise ValueError(f'Some paths in {list(compdict.keys())!r} '
-                                     'convert to the same '
-                                     'object, please update your settings'
-                                     )
+                    raise ValueError(
+                        f"Some paths in {list(compdict.keys())!r} "
+                        "convert to the same "
+                        "object, please update your settings"
+                    )
                 else:
                     compbs.set(convert(k), v, priority=prio)
             return compbs
@@ -42,8 +45,10 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         """Fail if a value in the components dict is not a real number or None."""
         for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
-                raise ValueError(f'Invalid value {value} for component {name}, '
-                                 'please provide a real number or None instead')
+                raise ValueError(
+                    f"Invalid value {value} for component {name}, "
+                    "please provide a real number or None instead"
+                )
 
     if isinstance(custom, (list, tuple)):
         _check_components(custom)
@@ -61,30 +66,33 @@ def arglist_to_dict(arglist):
     """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
     dict
     """
-    return dict(x.split('=', 1) for x in arglist)
+    return dict(x.split("=", 1) for x in arglist)
 
 
-def closest_scrapy_cfg(path: Union[str, os.PathLike] = '.', prevpath: Optional[Union[str, os.PathLike]] = None) -> str:
+def closest_scrapy_cfg(
+    path: Union[str, os.PathLike] = ".",
+    prevpath: Optional[Union[str, os.PathLike]] = None,
+) -> str:
     """Return the path to the closest scrapy.cfg file by traversing the current
     directory and its parents
     """
     if prevpath is not None and str(path) == str(prevpath):
-        return ''
+        return ""
     path = Path(path).resolve()
-    cfgfile = path / 'scrapy.cfg'
+    cfgfile = path / "scrapy.cfg"
     if cfgfile.exists():
         return str(cfgfile)
     return closest_scrapy_cfg(path.parent, path)
 
 
-def init_env(project='default', set_syspath=True):
+def init_env(project="default", set_syspath=True):
     """Initialize environment to use command-line tool from inside a project
     dir. This sets the Scrapy settings module and modifies the Python path to
     be able to locate the project module.
     """
     cfg = get_config()
-    if cfg.has_option('settings', project):
-        os.environ['SCRAPY_SETTINGS_MODULE'] = cfg.get('settings', project)
+    if cfg.has_option("settings", project):
+        os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
     closest = closest_scrapy_cfg()
     if closest:
         projdir = str(Path(closest).parent)
@@ -101,12 +109,14 @@ def get_config(use_closest=True):
 
 
 def get_sources(use_closest=True) -> List[str]:
-    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or Path('~/.config').expanduser()
+    xdg_config_home = (
+        os.environ.get("XDG_CONFIG_HOME") or Path("~/.config").expanduser()
+    )
     sources = [
-        '/etc/scrapy.cfg',
-        r'c:\scrapy\scrapy.cfg',
-        str(Path(xdg_config_home) / 'scrapy.cfg'),
-        str(Path('~/.scrapy.cfg').expanduser()),
+        "/etc/scrapy.cfg",
+        r"c:\scrapy\scrapy.cfg",
+        str(Path(xdg_config_home) / "scrapy.cfg"),
+        str(Path("~/.scrapy.cfg").expanduser()),
     ]
     if use_closest:
         sources.append(closest_scrapy_cfg())
@@ -115,7 +125,7 @@ def get_sources(use_closest=True) -> List[str]:
 
 def feed_complete_default_values_from_settings(feed, settings):
     out = feed.copy()
-    out.setdefault("batch_item_count", settings.getint('FEED_EXPORT_BATCH_ITEM_COUNT'))
+    out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
     out.setdefault("fields", settings.getdictorlist("FEED_EXPORT_FIELDS") or None)
     out.setdefault("store_empty", settings.getbool("FEED_STORE_EMPTY"))
@@ -128,15 +138,19 @@ def feed_complete_default_values_from_settings(feed, settings):
     return out
 
 
-def feed_process_params_from_cli(settings, output: List[str], output_format=None,
-                                 overwrite_output: Optional[List[str]] = None):
+def feed_process_params_from_cli(
+    settings,
+    output: List[str],
+    output_format=None,
+    overwrite_output: Optional[List[str]] = None,
+):
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats = without_none_values(
-        settings.getwithbase('FEED_EXPORTERS')
+        settings.getwithbase("FEED_EXPORTERS")
     ).keys()
 
     def check_valid_format(output_format):
@@ -179,28 +193,28 @@ def feed_process_params_from_cli(settings, output: List[str], output_format=None
                 "scrapy crawl quotes -O quotes.json:json"
             )
             warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
-            return {output[0]: {'format': output_format}}
+            return {output[0]: {"format": output_format}}
         raise UsageError(
-            'The -t command-line option cannot be used if multiple output '
-            'URIs are specified'
+            "The -t command-line option cannot be used if multiple output "
+            "URIs are specified"
         )
 
     result: Dict[str, Dict[str, Any]] = {}
     for element in output:
         try:
-            feed_uri, feed_format = element.rsplit(':', 1)
+            feed_uri, feed_format = element.rsplit(":", 1)
         except ValueError:
             feed_uri = element
-            feed_format = Path(element).suffix.replace('.', '')
+            feed_format = Path(element).suffix.replace(".", "")
         else:
-            if feed_uri == '-':
-                feed_uri = 'stdout:'
+            if feed_uri == "-":
+                feed_uri = "stdout:"
         check_valid_format(feed_format)
-        result[feed_uri] = {'format': feed_format}
+        result[feed_uri] = {"format": feed_format}
         if overwrite:
-            result[feed_uri]['overwrite'] = True
+            result[feed_uri]["overwrite"] = True
 
     # FEEDS setting should take precedence over the matching CLI options
-    result.update(settings.getdict('FEEDS'))
+    result.update(settings.getdict("FEEDS"))
 
     return result

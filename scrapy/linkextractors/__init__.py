@@ -10,25 +10,81 @@ import re
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
     # archives
-    '7z', '7zip', 'bz2', 'rar', 'tar', 'tar.gz', 'xz', 'zip',
-
+    "7z",
+    "7zip",
+    "bz2",
+    "rar",
+    "tar",
+    "tar.gz",
+    "xz",
+    "zip",
     # images
-    'mng', 'pct', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'pst', 'psp', 'tif',
-    'tiff', 'ai', 'drw', 'dxf', 'eps', 'ps', 'svg', 'cdr', 'ico',
-
+    "mng",
+    "pct",
+    "bmp",
+    "gif",
+    "jpg",
+    "jpeg",
+    "png",
+    "pst",
+    "psp",
+    "tif",
+    "tiff",
+    "ai",
+    "drw",
+    "dxf",
+    "eps",
+    "ps",
+    "svg",
+    "cdr",
+    "ico",
     # audio
-    'mp3', 'wma', 'ogg', 'wav', 'ra', 'aac', 'mid', 'au', 'aiff',
-
+    "mp3",
+    "wma",
+    "ogg",
+    "wav",
+    "ra",
+    "aac",
+    "mid",
+    "au",
+    "aiff",
     # video
-    '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
-    'm4a', 'm4v', 'flv', 'webm',
-
+    "3gp",
+    "asf",
+    "asx",
+    "avi",
+    "mov",
+    "mp4",
+    "mpg",
+    "qt",
+    "rm",
+    "swf",
+    "wmv",
+    "m4a",
+    "m4v",
+    "flv",
+    "webm",
     # office suites
-    'xls', 'xlsx', 'ppt', 'pptx', 'pps', 'doc', 'docx', 'odt', 'ods', 'odg',
-    'odp',
-
+    "xls",
+    "xlsx",
+    "ppt",
+    "pptx",
+    "pps",
+    "doc",
+    "docx",
+    "odt",
+    "ods",
+    "odg",
+    "odp",
     # other
-    'css', 'pdf', 'exe', 'bin', 'rss', 'dmg', 'iso', 'apk'
+    "css",
+    "pdf",
+    "exe",
+    "bin",
+    "rss",
+    "dmg",
+    "iso",
+    "apk",
 ]
 
 
@@ -40,7 +96,7 @@ def _matches(url, regexs):
 
 
 def _is_valid_url(url):
-    return url.split('://', 1)[0] in {'http', 'https', 'file', 'ftp'}
+    return url.split("://", 1)[0] in {"http", "https", "file", "ftp"}
 
 
 # Top-level imports

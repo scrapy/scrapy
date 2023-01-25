@@ -14,9 +14,8 @@ class DataURIDownloadHandler:
         respcls = responsetypes.from_mimetype(uri.media_type)
 
         resp_kwargs = {}
-        if (issubclass(respcls, TextResponse)
-                and uri.media_type.split('/')[0] == 'text'):
-            charset = uri.media_type_parameters.get('charset')
-            resp_kwargs['encoding'] = charset
+        if issubclass(respcls, TextResponse) and uri.media_type.split("/")[0] == "text":
+            charset = uri.media_type_parameters.get("charset")
+            resp_kwargs["encoding"] = charset
 
         return respcls(url=request.url, body=uri.data, **resp_kwargs)
