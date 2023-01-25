@@ -74,7 +74,8 @@ New features
 Bug fixes
 ~~~~~~~~~
 
--   Enabled unsafe legacy SSL renegotiation to fix access to outdated websites.
+-   Enabled unsafe legacy SSL renegotiation to fix access to some outdated
+    websites.
     (:issue:`5491`, :issue:`5790`)
 
 -   Fixed the :meth:`finish_exporting` method of :ref:`item exporters
