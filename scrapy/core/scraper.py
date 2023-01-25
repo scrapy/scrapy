@@ -66,7 +66,7 @@ class Slot:
     def add_response_request(
         self, result: Union[Response, Failure], request: Request
     ) -> Deferred:
-        deferred = Deferred()
+        deferred: Deferred = Deferred()
         self.queue.append((result, request, deferred))
         if isinstance(result, Response):
             self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
@@ -205,10 +205,12 @@ class Scraper:
                 callback=callback, callbackKeywords=result.request.cb_kwargs
             )
         else:  # result is a Failure
-            result.request = request
+            # TODO: properly type adding this attribute to a Failure
+            result.request = request  # type: ignore[attr-defined]
             warn_on_generator_with_return_value(spider, request.errback)
             dfd = defer_fail(result)
-            dfd.addErrback(request.errback)
+            if request.errback:
+                dfd.addErrback(request.errback)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(

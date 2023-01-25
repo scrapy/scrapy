@@ -35,7 +35,7 @@ class H2ConnectionPool:
             # Received a request while connecting to remote
             # Create a deferred which will fire with the H2ClientProtocol
             # instance
-            d = Deferred()
+            d: Deferred = Deferred()
             self._pending_requests[key].append(d)
             return d
 
@@ -53,14 +53,14 @@ class H2ConnectionPool:
     ) -> Deferred:
         self._pending_requests[key] = deque()
 
-        conn_lost_deferred = Deferred()
+        conn_lost_deferred: Deferred = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
         factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
         conn_d = endpoint.connect(factory)
         conn_d.addCallback(self.put_connection, key)
 
-        d = Deferred()
+        d: Deferred = Deferred()
         self._pending_requests[key].append(d)
         return d
 
@@ -83,7 +83,8 @@ class H2ConnectionPool:
         pending_requests = self._pending_requests.pop(key, None)
         while pending_requests:
             d = pending_requests.popleft()
-            d.errback(errors)
+            # TODO: this is incorrect, errback takes a single exception
+            d.errback(errors)  # type: ignore[arg-type]
 
     def close_connections(self) -> None:
         """Close all the HTTP/2 connections and remove them from pool
@@ -92,6 +93,7 @@ class H2ConnectionPool:
             Deferred that fires when all connections have been closed
         """
         for conn in self._connections.values():
+            assert conn.transport is not None  # typing
             conn.transport.abortConnection()
 
 
