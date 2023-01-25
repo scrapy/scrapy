@@ -10,6 +10,7 @@ from typing import (
     AsyncGenerator,
     AsyncIterable,
     Callable,
+    cast,
     Coroutine,
     Generator,
     Iterable,
@@ -38,8 +39,8 @@ def defer_fail(_failure: Failure) -> Deferred:
     """
     from twisted.internet import reactor
 
-    d = Deferred()
-    reactor.callLater(0.1, d.errback, _failure)
+    d: Deferred = Deferred()
+    reactor.callLater(0.1, d.errback, _failure)  # type: ignore[attr-defined]
     return d
 
 
@@ -52,8 +53,8 @@ def defer_succeed(result) -> Deferred:
     """
     from twisted.internet import reactor
 
-    d = Deferred()
-    reactor.callLater(0.1, d.callback, result)
+    d: Deferred = Deferred()
+    reactor.callLater(0.1, d.callback, result)  # type: ignore[attr-defined]
     return d
 
 
@@ -182,7 +183,9 @@ class _AsyncCooperatorAdapter(Iterator):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(self.aiterator.__anext__())
+        self.anext_deferred = cast(
+            Deferred, deferred_from_coro(self.aiterator.__anext__())
+        )
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred:
@@ -190,7 +193,7 @@ class _AsyncCooperatorAdapter(Iterator):
         # It also calls __anext__() if needed.
         if self.finished:
             raise StopIteration
-        d = Deferred()
+        d: Deferred = Deferred()
         self.waiting_deferreds.append(d)
         if not self.anext_deferred:
             self._call_anext()
@@ -209,7 +212,7 @@ def parallel_async(
 
 def process_chain(callbacks: Iterable[Callable], input, *a, **kw) -> Deferred:
     """Return a Deferred built by chaining the given callbacks"""
-    d = Deferred()
+    d: Deferred = Deferred()
     for x in callbacks:
         d.addCallback(x, *a, **kw)
     d.callback(input)
@@ -220,7 +223,7 @@ def process_chain_both(
     callbacks: Iterable[Callable], errbacks: Iterable[Callable], input, *a, **kw
 ) -> Deferred:
     """Return a Deferred built by chaining the given callbacks and errbacks"""
-    d = Deferred()
+    d: Deferred = Deferred()
     for cb, eb in zip(callbacks, errbacks):
         d.addCallbacks(
             callback=cb,

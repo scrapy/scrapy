@@ -50,6 +50,6 @@ def test_site():
 if __name__ == "__main__":
     from twisted.internet import reactor
 
-    port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
+    port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")  # type: ignore[attr-defined]
     print(f"http://localhost:{port.getHost().port}/")
-    reactor.run()
+    reactor.run()  # type: ignore[attr-defined]
