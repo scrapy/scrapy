@@ -1,8 +1,8 @@
 import random
 from urllib.parse import urlencode
 
-from twisted.web.server import Site
 from twisted.web.resource import Resource
+from twisted.web.server import Site
 
 
 class Root(Resource):

@@ -1,14 +1,15 @@
 # coding=utf-8
 
 import unittest
-from io import BytesIO
 from email.charset import Charset
+from io import BytesIO
 
+from twisted import version as twisted_version
+from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
 from twisted.internet.ssl import ClientContextFactory
 from twisted.python.versions import Version
-from twisted.internet import defer
-from twisted import version as twisted_version
+
 from scrapy.mail import MailSender
 
 

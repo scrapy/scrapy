@@ -1,6 +1,6 @@
+import argparse
 import inspect
 import json
-import argparse
 import os
 import platform
 import re
@@ -10,7 +10,7 @@ import tempfile
 from contextlib import contextmanager
 from itertools import chain
 from pathlib import Path
-from shutil import rmtree, copytree
+from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import mkdtemp
 from threading import Timer
@@ -23,12 +23,11 @@ from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import view, ScrapyCommand, ScrapyHelpFormatter
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
-
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
 
 

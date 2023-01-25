@@ -10,7 +10,7 @@ from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpoint
 from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
-from scrapy.core.http2.protocol import H2ClientProtocol, H2ClientFactory
+from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 from scrapy.http.request import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider

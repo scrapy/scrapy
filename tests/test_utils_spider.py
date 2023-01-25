@@ -3,7 +3,7 @@ import unittest
 from scrapy import Spider
 from scrapy.http import Request
 from scrapy.item import Item
-from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
+from scrapy.utils.spider import iter_spider_classes, iterate_spider_output
 
 
 class MySpider1(Spider):

@@ -1,11 +1,12 @@
+import shutil
 from datetime import datetime
 from pathlib import Path
-import shutil
+
 from twisted.trial import unittest
 
+from scrapy.exceptions import NotConfigured
 from scrapy.extensions.spiderstate import SpiderState
 from scrapy.spiders import Spider
-from scrapy.exceptions import NotConfigured
 from scrapy.utils.test import get_crawler
 
 

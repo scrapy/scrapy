@@ -1,10 +1,10 @@
-from datetime import datetime
 import unittest
+from datetime import datetime
 from unittest import mock
 
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
-from scrapy.statscollectors import StatsCollector, DummyStatsCollector
+from scrapy.statscollectors import DummyStatsCollector, StatsCollector
 from scrapy.utils.test import get_crawler
 
 

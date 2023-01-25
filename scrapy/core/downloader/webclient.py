@@ -1,15 +1,15 @@
 import re
 from time import time
-from urllib.parse import urlparse, urlunparse, urldefrag
-from twisted.web.http import HTTPClient
+from urllib.parse import urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
+from twisted.web.http import HTTPClient
 
 from scrapy.http import Headers
+from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):

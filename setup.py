@@ -1,7 +1,8 @@
 from pathlib import Path
-from pkg_resources import parse_version
-from setuptools import setup, find_packages, __version__ as setuptools_version
 
+from pkg_resources import parse_version
+from setuptools import __version__ as setuptools_version
+from setuptools import find_packages, setup
 
 version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
 
