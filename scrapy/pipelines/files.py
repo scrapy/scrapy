@@ -9,6 +9,7 @@ import logging
 import mimetypes
 import os
 import time
+from os import PathLike
 from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
@@ -36,7 +37,7 @@ from scrapy.utils.request import referer_str
 logger = logging.getLogger(__name__)
 
 
-def _to_string(path: Union[str, os.PathLike]):
+def _to_string(path: Union[str, PathLike]):
     return str(path)  # convert a Path object to string
 
 
@@ -45,7 +46,7 @@ class FileException(Exception):
 
 
 class FSFilesStore:
-    def __init__(self, basedir: Union[str, os.PathLike]):
+    def __init__(self, basedir: Union[str, PathLike]):
         basedir = _to_string(basedir)
         if '://' in basedir:
             basedir = basedir.split('://', 1)[1]
@@ -70,7 +71,7 @@ class FSFilesStore:
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
-    def _get_filesystem_path(self, path: Union[str, os.PathLike]) -> Path:
+    def _get_filesystem_path(self, path: Union[str, PathLike]) -> Path:
         path_comps = _to_string(path).split('/')
         return Path(self.basedir, *path_comps)
 
