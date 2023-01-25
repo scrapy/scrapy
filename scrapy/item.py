@@ -24,11 +24,11 @@ class ItemMeta(ABCMeta):
     """
 
     def __new__(mcs, class_name, bases, attrs):
-        classcell = attrs.pop('__classcell__', None)
-        new_bases = tuple(base._class for base in bases if hasattr(base, '_class'))
-        _class = super().__new__(mcs, 'x_' + class_name, new_bases, attrs)
+        classcell = attrs.pop("__classcell__", None)
+        new_bases = tuple(base._class for base in bases if hasattr(base, "_class"))
+        _class = super().__new__(mcs, "x_" + class_name, new_bases, attrs)
 
-        fields = getattr(_class, 'fields', {})
+        fields = getattr(_class, "fields", {})
         new_attrs = {}
         for n in dir(_class):
             v = getattr(_class, n)
@@ -37,10 +37,10 @@ class ItemMeta(ABCMeta):
             elif n in attrs:
                 new_attrs[n] = attrs[n]
 
-        new_attrs['fields'] = fields
-        new_attrs['_class'] = _class
+        new_attrs["fields"] = fields
+        new_attrs["_class"] = _class
         if classcell is not None:
-            new_attrs['__classcell__'] = classcell
+            new_attrs["__classcell__"] = classcell
         return super().__new__(mcs, class_name, bases, new_attrs)
 
 
@@ -93,7 +93,7 @@ class Item(MutableMapping, object_ref, metaclass=ItemMeta):
         raise AttributeError(name)
 
     def __setattr__(self, name, value):
-        if not name.startswith('_'):
+        if not name.startswith("_"):
             raise AttributeError(f"Use item[{name!r}] = {value!r} to set field value")
         super().__setattr__(name, value)
 
@@ -115,6 +115,5 @@ class Item(MutableMapping, object_ref, metaclass=ItemMeta):
         return self.__class__(self)
 
     def deepcopy(self):
-        """Return a :func:`~copy.deepcopy` of this item.
-        """
+        """Return a :func:`~copy.deepcopy` of this item."""
         return deepcopy(self)

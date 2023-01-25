@@ -39,7 +39,7 @@ class TextTestResult(_TextTestResult):
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {'LOG_ENABLED': False}
+    default_settings = {"LOG_ENABLED": False}
 
     def syntax(self):
         return "[options] <spider>"
@@ -49,14 +49,25 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_argument("-l", "--list", dest="list", action="store_true",
-                            help="only list contracts, without checking them")
-        parser.add_argument("-v", "--verbose", dest="verbose", default=False, action='store_true',
-                            help="print contract tests for all spiders")
+        parser.add_argument(
+            "-l",
+            "--list",
+            dest="list",
+            action="store_true",
+            help="only list contracts, without checking them",
+        )
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            dest="verbose",
+            default=False,
+            action="store_true",
+            help="print contract tests for all spiders",
+        )
 
     def run(self, args, opts):
         # load contracts
-        contracts = build_component_list(self.settings.getwithbase('SPIDER_CONTRACTS'))
+        contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
@@ -66,7 +77,7 @@ class Command(ScrapyCommand):
 
         spider_loader = self.crawler_process.spider_loader
 
-        with set_environ(SCRAPY_CHECK='true'):
+        with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
                 spidercls.start_requests = lambda s: conman.from_spider(s, result)
@@ -85,7 +96,7 @@ class Command(ScrapyCommand):
                         continue
                     print(spider)
                     for method in sorted(methods):
-                        print(f'  * {method}')
+                        print(f"  * {method}")
             else:
                 start = time.time()
                 self.crawler_process.start()

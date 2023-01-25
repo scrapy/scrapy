@@ -11,7 +11,9 @@ def ffi_buf_to_string(buf):
 def x509name_to_string(x509name):
     # from OpenSSL.crypto.X509Name.__repr__
     result_buffer = pyOpenSSLutil.ffi.new("char[]", 512)
-    pyOpenSSLutil.lib.X509_NAME_oneline(x509name._name, result_buffer, len(result_buffer))
+    pyOpenSSLutil.lib.X509_NAME_oneline(
+        x509name._name, result_buffer, len(result_buffer)
+    )
 
     return ffi_buf_to_string(result_buffer)
 
@@ -28,26 +30,28 @@ def get_temp_key_info(ssl_object):
     key_info = []
     key_type = pyOpenSSLutil.lib.EVP_PKEY_id(temp_key)
     if key_type == pyOpenSSLutil.lib.EVP_PKEY_RSA:
-        key_info.append('RSA')
+        key_info.append("RSA")
     elif key_type == pyOpenSSLutil.lib.EVP_PKEY_DH:
-        key_info.append('DH')
+        key_info.append("DH")
     elif key_type == pyOpenSSLutil.lib.EVP_PKEY_EC:
-        key_info.append('ECDH')
+        key_info.append("ECDH")
         ec_key = pyOpenSSLutil.lib.EVP_PKEY_get1_EC_KEY(temp_key)
         ec_key = pyOpenSSLutil.ffi.gc(ec_key, pyOpenSSLutil.lib.EC_KEY_free)
-        nid = pyOpenSSLutil.lib.EC_GROUP_get_curve_name(pyOpenSSLutil.lib.EC_KEY_get0_group(ec_key))
+        nid = pyOpenSSLutil.lib.EC_GROUP_get_curve_name(
+            pyOpenSSLutil.lib.EC_KEY_get0_group(ec_key)
+        )
         cname = pyOpenSSLutil.lib.EC_curve_nid2nist(nid)
         if cname == pyOpenSSLutil.ffi.NULL:
             cname = pyOpenSSLutil.lib.OBJ_nid2sn(nid)
         key_info.append(ffi_buf_to_string(cname))
     else:
         key_info.append(ffi_buf_to_string(pyOpenSSLutil.lib.OBJ_nid2sn(key_type)))
-    key_info.append(f'{pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key)} bits')
-    return ', '.join(key_info)
+    key_info.append(f"{pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key)} bits")
+    return ", ".join(key_info)
 
 
 def get_openssl_version():
-    system_openssl = OpenSSL.SSL.SSLeay_version(
-        OpenSSL.SSL.SSLEAY_VERSION
-    ).decode('ascii', errors='replace')
-    return f'{OpenSSL.version.__version__} ({system_openssl})'
+    system_openssl = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION).decode(
+        "ascii", errors="replace"
+    )
+    return f"{OpenSSL.version.__version__} ({system_openssl})"
