@@ -24,7 +24,7 @@ RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 
 # https://github.com/python/typing/issues/689#issuecomment-561425237
-class _NoCallback(Enum):
+class NoCallbackType(Enum):
     NO_CALLBACK = 0
 
 
@@ -37,7 +37,7 @@ class _NoCallback(Enum):
 #: :meth:`scrapy.core.engine.ExecutionEngine.download`, so that download
 #: middlewares handling such requests can treat them differently from requests
 #: intended for the :meth:`~scrapy.Spider.parse` callback.
-NO_CALLBACK: Final = _NoCallback.NO_CALLBACK
+NO_CALLBACK: Final = NoCallbackType.NO_CALLBACK
 
 
 class Request(object_ref):
@@ -67,7 +67,7 @@ class Request(object_ref):
     Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
-    callback: Union[None, _NoCallback, Callable]
+    callback: Union[None, NoCallbackType, Callable]
     errback: Optional[Callable]
 
     def __init__(
