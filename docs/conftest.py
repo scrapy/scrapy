@@ -15,20 +15,20 @@ from scrapy.http.response.html import HtmlResponse
 
 
 def load_response(url: str, filename: str) -> HtmlResponse:
-    input_path = Path(__file__).parent / '_tests' / filename
+    input_path = Path(__file__).parent / "_tests" / filename
     return HtmlResponse(url, body=input_path.read_bytes())
 
 
 def setup(namespace):
-    namespace['load_response'] = load_response
+    namespace["load_response"] = load_response
 
 
 pytest_collect_file = Sybil(
     parsers=[
         DocTestParser(optionflags=ELLIPSIS | NORMALIZE_WHITESPACE),
-        PythonCodeBlockParser(future_imports=['print_function']),
+        PythonCodeBlockParser(future_imports=["print_function"]),
         skip,
     ],
-    pattern='*.rst',
+    pattern="*.rst",
     setup=setup,
 ).pytest()

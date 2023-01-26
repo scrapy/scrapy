@@ -8,8 +8,10 @@ class HTTP10DownloadHandler:
     lazy = False
 
     def __init__(self, settings, crawler=None):
-        self.HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
-        self.ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+        self.HTTPClientFactory = load_object(settings["DOWNLOADER_HTTPCLIENTFACTORY"])
+        self.ClientContextFactory = load_object(
+            settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
+        )
         self._settings = settings
         self._crawler = crawler
 
@@ -25,8 +27,9 @@ class HTTP10DownloadHandler:
 
     def _connect(self, factory):
         from twisted.internet import reactor
+
         host, port = to_unicode(factory.host), factory.port
-        if factory.scheme == b'https':
+        if factory.scheme == b"https":
             client_context_factory = create_instance(
                 objcls=self.ClientContextFactory,
                 settings=self._settings,

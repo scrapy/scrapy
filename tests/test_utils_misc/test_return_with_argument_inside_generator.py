@@ -3,7 +3,10 @@ import warnings
 from functools import partial
 from unittest import mock
 
-from scrapy.utils.misc import is_generator_with_return_value, warn_on_generator_with_return_value
+from scrapy.utils.misc import (
+    is_generator_with_return_value,
+    warn_on_generator_with_return_value,
+)
 
 
 def _indentation_error(*args, **kwargs):
@@ -12,7 +15,7 @@ def _indentation_error(*args, **kwargs):
 
 def top_level_return_something():
     """
-docstring
+    docstring
     """
     url = """
 https://example.org
@@ -23,7 +26,7 @@ https://example.org
 
 def top_level_return_none():
     """
-docstring
+    docstring
     """
     url = """
 https://example.org
@@ -39,7 +42,6 @@ def generator_that_returns_stuff():
 
 
 class UtilsMiscPy3TestCase(unittest.TestCase):
-
     def test_generators_return_something(self):
         def f1():
             yield 1
@@ -60,7 +62,7 @@ class UtilsMiscPy3TestCase(unittest.TestCase):
 
         def i1():
             """
-docstring
+            docstring
             """
             url = """
 https://example.org
@@ -77,7 +79,10 @@ https://example.org
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, top_level_return_something)
             self.assertEqual(len(w), 1)
-            self.assertIn('The "NoneType.top_level_return_something" method is a generator', str(w[0].message))
+            self.assertIn(
+                'The "NoneType.top_level_return_something" method is a generator',
+                str(w[0].message),
+            )
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, f1)
             self.assertEqual(len(w), 1)
@@ -121,7 +126,7 @@ https://example.org
 
         def k2():
             """
-docstring
+            docstring
             """
             url = """
 https://example.org
@@ -170,6 +175,7 @@ https://example.org
         def decorator(func):
             def inner_func():
                 func()
+
             return inner_func
 
         @decorator
@@ -203,7 +209,7 @@ https://example.org
         @decorator
         def k3():
             """
-docstring
+            docstring
             """
             url = """
 https://example.org
@@ -249,12 +255,14 @@ https://example.org
             warn_on_generator_with_return_value(None, l3)
             self.assertEqual(len(w), 0)
 
-    @mock.patch("scrapy.utils.misc.is_generator_with_return_value", new=_indentation_error)
+    @mock.patch(
+        "scrapy.utils.misc.is_generator_with_return_value", new=_indentation_error
+    )
     def test_indentation_error(self):
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, top_level_return_none)
             self.assertEqual(len(w), 1)
-            self.assertIn('Unable to determine', str(w[0].message))
+            self.assertIn("Unable to determine", str(w[0].message))
 
     def test_partial(self):
         def cb(arg1, arg2):

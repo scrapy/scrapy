@@ -1,5 +1,4 @@
 class TestSpiderPipeline:
-
     def open_spider(self, spider):
         pass
 
@@ -8,9 +7,8 @@ class TestSpiderPipeline:
 
 
 class TestSpiderExceptionPipeline:
-
     def open_spider(self, spider):
-        raise Exception('exception')
+        raise Exception("exception")
 
     def process_item(self, item, spider):
         return item

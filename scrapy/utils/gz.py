@@ -10,7 +10,7 @@ def gunzip(data):
     """
     f = GzipFile(fileobj=BytesIO(data))
     output_list = []
-    chunk = b'.'
+    chunk = b"."
     while chunk:
         try:
             chunk = f.read1(8196)
@@ -20,15 +20,15 @@ def gunzip(data):
             # see issue 87 about catching struct.error
             # some pages are quite small so output_list is empty and f.extrabuf
             # contains the whole page content
-            if output_list or getattr(f, 'extrabuf', None):
+            if output_list or getattr(f, "extrabuf", None):
                 try:
-                    output_list.append(f.extrabuf[-f.extrasize:])
+                    output_list.append(f.extrabuf[-f.extrasize :])
                 finally:
                     break
             else:
                 raise
-    return b''.join(output_list)
+    return b"".join(output_list)
 
 
 def gzip_magic_number(response):
-    return response.body[:3] == b'\x1f\x8b\x08'
+    return response.body[:3] == b"\x1f\x8b\x08"
