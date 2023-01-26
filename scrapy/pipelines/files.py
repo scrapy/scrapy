@@ -37,7 +37,7 @@ from scrapy.utils.request import referer_str
 logger = logging.getLogger(__name__)
 
 
-def _to_string(path: Union[str, PathLike]):
+def _to_string(path: Union[str, PathLike]) -> str:
     return str(path)  # convert a Path object to string
 
 
