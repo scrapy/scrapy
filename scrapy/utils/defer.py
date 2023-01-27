@@ -40,7 +40,7 @@ def defer_fail(_failure: Failure) -> Deferred:
     from twisted.internet import reactor
 
     d: Deferred = Deferred()
-    reactor.callLater(0.1, d.errback, _failure)  # type: ignore[attr-defined]
+    reactor.callLater(0.1, d.errback, _failure)
     return d
 
 
@@ -54,7 +54,7 @@ def defer_succeed(result) -> Deferred:
     from twisted.internet import reactor
 
     d: Deferred = Deferred()
-    reactor.callLater(0.1, d.callback, result)  # type: ignore[attr-defined]
+    reactor.callLater(0.1, d.callback, result)
     return d
 
 

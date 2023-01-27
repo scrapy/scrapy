@@ -28,7 +28,7 @@ class H2DownloadHandler:
 
         from twisted.internet import reactor
 
-        self._pool = H2ConnectionPool(reactor, settings)  # type: ignore[arg-type]
+        self._pool = H2ConnectionPool(reactor, settings)
         self._context_factory = load_context_factory_from_settings(settings, crawler)
 
     @classmethod
@@ -82,7 +82,7 @@ class ScrapyH2Agent:
                     "Tunneling via CONNECT method using HTTP/2.0 is not yet supported"
                 )
             return self._ProxyAgent(
-                reactor=reactor,  # type: ignore[arg-type]
+                reactor=reactor,
                 context_factory=self._context_factory,
                 proxy_uri=URI.fromBytes(to_bytes(proxy, encoding="ascii")),
                 connect_timeout=timeout,
@@ -91,7 +91,7 @@ class ScrapyH2Agent:
             )
 
         return self._Agent(
-            reactor=reactor,  # type: ignore[arg-type]
+            reactor=reactor,
             context_factory=self._context_factory,
             connect_timeout=timeout,
             bind_address=bind_address,
@@ -108,7 +108,7 @@ class ScrapyH2Agent:
         d = agent.request(request, spider)
         d.addCallback(self._cb_latency, request, start_time)
 
-        timeout_cl = reactor.callLater(timeout, d.cancel)  # type: ignore[attr-defined]
+        timeout_cl = reactor.callLater(timeout, d.cancel)
         d.addBoth(self._cb_timeout, request, timeout, timeout_cl)
         return d
 

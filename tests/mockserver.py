@@ -375,9 +375,9 @@ if __name__ == "__main__":
     if args.type == "http":
         root = Root()
         factory = Site(root)
-        httpPort = reactor.listenTCP(0, factory)  # type: ignore[attr-defined]
+        httpPort = reactor.listenTCP(0, factory)
         contextFactory = ssl_context_factory()
-        httpsPort = reactor.listenSSL(0, factory, contextFactory)  # type: ignore[attr-defined]
+        httpsPort = reactor.listenSSL(0, factory, contextFactory)
 
         def print_listening():
             httpHost = httpPort.getHost()
@@ -391,11 +391,11 @@ if __name__ == "__main__":
         clients = [MockDNSResolver()]
         factory = DNSServerFactory(clients=clients)
         protocol = dns.DNSDatagramProtocol(controller=factory)
-        listener = reactor.listenUDP(0, protocol)  # type: ignore[attr-defined]
+        listener = reactor.listenUDP(0, protocol)
 
         def print_listening():
             host = listener.getHost()
             print(f"{host.host}:{host.port}")
 
-    reactor.callWhenRunning(print_listening)  # type: ignore[attr-defined]
-    reactor.run()  # type: ignore[attr-defined]
+    reactor.callWhenRunning(print_listening)
+    reactor.run()
