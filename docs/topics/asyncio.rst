@@ -96,3 +96,27 @@ Futures. Scrapy provides two helpers for this:
          down to Scrapy 2.0 (earlier versions do not support
          :mod:`asyncio`), you can copy the implementation of these functions
          into your own code.
+
+
+.. _enforce-asyncio-requirement:
+
+Enforcing asyncio as a requirement
+==================================
+
+If you are writing a :ref:`component <topics-components>` that requires asyncio
+to work, use :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` to
+:ref:`enforce it as a requirement <enforce-component-requirements>`. For
+example::
+
+    from scrapy.utils.reactor import is_asyncio_reactor_installed
+
+    class MyComponent:
+
+        def __init__(self):
+            if not is_asyncio_reactor_installed():
+                raise ValueError(
+                    f"{MyComponent.__qualname__} requires the asyncio Twisted "
+                    f"reactor. Make sure you have it configured in the "
+                    f"TWISTED_REACTOR setting. See the asyncio documentation "
+                    f"of Scrapy for more information."
+                )

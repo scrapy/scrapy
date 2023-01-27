@@ -27,38 +27,51 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_argument("--spider", dest="spider", help="use this spider")
-        parser.add_argument("--headers", dest="headers", action="store_true",
-                            help="print response HTTP headers instead of body")
-        parser.add_argument("--no-redirect", dest="no_redirect", action="store_true", default=False,
-                            help="do not handle HTTP 3xx status codes and print response as-is")
+        parser.add_argument(
+            "--headers",
+            dest="headers",
+            action="store_true",
+            help="print response HTTP headers instead of body",
+        )
+        parser.add_argument(
+            "--no-redirect",
+            dest="no_redirect",
+            action="store_true",
+            default=False,
+            help="do not handle HTTP 3xx status codes and print response as-is",
+        )
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
             for value in values:
-                self._print_bytes(prefix + b' ' + key + b': ' + value)
+                self._print_bytes(prefix + b" " + key + b": " + value)
 
     def _print_response(self, response, opts):
         if opts.headers:
-            self._print_headers(response.request.headers, b'>')
-            print('>')
-            self._print_headers(response.headers, b'<')
+            self._print_headers(response.request.headers, b">")
+            print(">")
+            self._print_headers(response.headers, b"<")
         else:
             self._print_bytes(response.body)
 
     def _print_bytes(self, bytes_):
-        sys.stdout.buffer.write(bytes_ + b'\n')
+        sys.stdout.buffer.write(bytes_ + b"\n")
 
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
-        request = Request(args[0], callback=self._print_response,
-                          cb_kwargs={"opts": opts}, dont_filter=True)
+        request = Request(
+            args[0],
+            callback=self._print_response,
+            cb_kwargs={"opts": opts},
+            dont_filter=True,
+        )
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx
         if not opts.no_redirect:
-            request.meta['handle_httpstatus_list'] = SequenceExclude(range(300, 400))
+            request.meta["handle_httpstatus_list"] = SequenceExclude(range(300, 400))
         else:
-            request.meta['handle_httpstatus_all'] = True
+            request.meta["handle_httpstatus_all"] = True
 
         spidercls = DefaultSpider
         spider_loader = self.crawler_process.spider_loader

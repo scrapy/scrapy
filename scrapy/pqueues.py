@@ -19,11 +19,11 @@ def _path_safe(text):
     >>> _path_safe('some@symbol?').startswith('some_symbol_')
     True
     """
-    pathable_slot = "".join([c if c.isalnum() or c in '-._' else '_' for c in text])
+    pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
     # as we replace some letters we can get collision for different slots
     # add we add unique part
-    unique_slot = hashlib.md5(text.encode('utf8')).hexdigest()
-    return '-'.join([pathable_slot, unique_slot])
+    unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()
+    return "-".join([pathable_slot, unique_slot])
 
 
 class ScrapyPriorityQueue:
@@ -78,7 +78,7 @@ class ScrapyPriorityQueue:
             self.downstream_queue_cls,
             None,
             self.crawler,
-            self.key + '/' + str(key),
+            self.key + "/" + str(key),
         )
 
     def priority(self, request):
@@ -151,7 +151,6 @@ class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
 
 
 class DownloaderInterface:
-
     def __init__(self, crawler):
         self.downloader = crawler.engine.downloader
 
@@ -162,16 +161,16 @@ class DownloaderInterface:
         return self.downloader._get_slot_key(request, None)
 
     def _active_downloads(self, slot):
-        """ Return a number of requests in a Downloader for a given slot """
+        """Return a number of requests in a Downloader for a given slot"""
         if slot not in self.downloader.slots:
             return 0
         return len(self.downloader.slots[slot].active)
 
 
 class DownloaderAwarePriorityQueue:
-    """ PriorityQueue which takes Downloader activity into account:
-    requests for domains (slots) with the least amount of active downloads are
-    dequeued first.
+    """PriorityQueue which takes Downloader activity into account:
+    domains (slots) with the least amount of active downloads are dequeued
+    first.
 
     It works better than :class:`~scrapy.pqueues.ScrapyPriorityQueue` when you
     crawl many different domains in parallel.
@@ -185,17 +184,21 @@ class DownloaderAwarePriorityQueue:
         return cls(crawler, downstream_queue_cls, key, startprios)
 
     def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
-        if crawler.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
-            raise ValueError(f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP')
+        if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
+            raise ValueError(
+                f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP'
+            )
 
         if slot_startprios and not isinstance(slot_startprios, dict):
-            raise ValueError("DownloaderAwarePriorityQueue accepts "
-                             "``slot_startprios`` as a dict; "
-                             f"{slot_startprios.__class__!r} instance "
-                             "is passed. Most likely, it means the state is"
-                             "created by an incompatible priority queue. "
-                             "Only a crawl started with the same priority "
-                             "queue class can be resumed.")
+            raise ValueError(
+                "DownloaderAwarePriorityQueue accepts "
+                "``slot_startprios`` as a dict; "
+                f"{slot_startprios.__class__!r} instance "
+                "is passed. Most likely, it means the state is"
+                "created by an incompatible priority queue. "
+                "Only a crawl started with the same priority "
+                "queue class can be resumed."
+            )
 
         self._downloader_interface = DownloaderInterface(crawler)
         self.downstream_queue_cls = downstream_queue_cls
@@ -210,7 +213,7 @@ class DownloaderAwarePriorityQueue:
         return ScrapyPriorityQueue(
             self.crawler,
             self.downstream_queue_cls,
-            self.key + '/' + _path_safe(slot),
+            self.key + "/" + _path_safe(slot),
             startprios,
         )
 

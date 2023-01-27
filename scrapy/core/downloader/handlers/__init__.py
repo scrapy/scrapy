@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadHandlers:
-
     def __init__(self, crawler):
         self._crawler = crawler
         self._schemes = {}  # stores acceptable schemes on instancing
         self._handlers = {}  # stores instanced handlers for schemes
         self._notconfigured = {}  # remembers failed handlers
         handlers = without_none_values(
-            crawler.settings.getwithbase('DOWNLOAD_HANDLERS'))
+            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")
+        )
         for scheme, clspath in handlers.items():
             self._schemes[scheme] = clspath
             self._load_handler(scheme, skip_lazy=True)
@@ -38,7 +38,7 @@ class DownloadHandlers:
         if scheme in self._notconfigured:
             return None
         if scheme not in self._schemes:
-            self._notconfigured[scheme] = 'no handler available for that scheme'
+            self._notconfigured[scheme] = "no handler available for that scheme"
             return None
 
         return self._load_handler(scheme)
@@ -47,7 +47,7 @@ class DownloadHandlers:
         path = self._schemes[scheme]
         try:
             dhcls = load_object(path)
-            if skip_lazy and getattr(dhcls, 'lazy', True):
+            if skip_lazy and getattr(dhcls, "lazy", True):
                 return None
             dh = create_instance(
                 objcls=dhcls,
@@ -58,9 +58,12 @@ class DownloadHandlers:
             self._notconfigured[scheme] = str(ex)
             return None
         except Exception as ex:
-            logger.error('Loading "%(clspath)s" for scheme "%(scheme)s"',
-                         {"clspath": path, "scheme": scheme},
-                         exc_info=True, extra={'crawler': self._crawler})
+            logger.error(
+                'Loading "%(clspath)s" for scheme "%(scheme)s"',
+                {"clspath": path, "scheme": scheme},
+                exc_info=True,
+                extra={"crawler": self._crawler},
+            )
             self._notconfigured[scheme] = str(ex)
             return None
         else:
@@ -71,11 +74,13 @@ class DownloadHandlers:
         scheme = urlparse_cached(request).scheme
         handler = self._get_handler(scheme)
         if not handler:
-            raise NotSupported(f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}")
+            raise NotSupported(
+                f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
+            )
         return handler.download_request(request, spider)
 
     @defer.inlineCallbacks
     def _close(self, *_a, **_kw):
         for dh in self._handlers.values():
-            if hasattr(dh, 'close'):
+            if hasattr(dh, "close"):
                 yield dh.close()

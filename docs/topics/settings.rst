@@ -98,6 +98,10 @@ class.
 The global defaults are located in the ``scrapy.settings.default_settings``
 module and documented in the :ref:`topics-settings-ref` section.
 
+Compatibility with pickle
+=========================
+
+Setting values must be :ref:`picklable <pickle-picklable>`.
 
 Import paths and classes
 ========================
@@ -578,7 +582,6 @@ This setting must be one of these string values:
   set this if you want the behavior of Scrapy<1.1
 - ``'TLSv1.1'``: forces TLS version 1.1
 - ``'TLSv1.2'``: forces TLS version 1.2
-- ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
@@ -651,24 +654,41 @@ DOWNLOAD_DELAY
 
 Default: ``0``
 
-The amount of time (in secs) that the downloader should wait before downloading
-consecutive pages from the same website. This can be used to throttle the
-crawling speed to avoid hitting servers too hard. Decimal numbers are
-supported.  Example::
+Minimum seconds to wait between 2 consecutive requests to the same domain.
 
-    DOWNLOAD_DELAY = 0.25    # 250 ms of delay
+Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
+servers too hard.
+
+Decimal numbers are supported. For example, to send a maximum of 4 requests
+every 10 seconds::
+
+    DOWNLOAD_DELAY = 2.5
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
-amount of time between requests, but uses a random interval between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`.
+setting, which is enabled by default.
 
 When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
-per ip address instead of per domain.
+per IP address instead of per domain.
+
+Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
+concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
+time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
+concurrency for that domain is 1. When testing throttling configurations, it
+usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
+and only increase :setting:`DOWNLOAD_DELAY` once
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
+desired.
 
 .. _spider-download_delay-attribute:
 
-You can also change this setting per spider by setting ``download_delay``
-spider attribute.
+.. note::
+
+    This delay can be set per spider using :attr:`download_delay` spider attribute.
+
+It is also possible to change this setting per domain, although it requires
+non-trivial code. See the implementation of the :ref:`AutoThrottle
+<topics-autothrottle>` extension for an example.
+
 
 .. setting:: DOWNLOAD_HANDLERS
 
@@ -1677,6 +1697,11 @@ install the default reactor defined by Twisted for the current platform. This
 is to maintain backward compatibility and avoid possible problems caused by
 using a non-default reactor.
 
+.. versionchanged:: 2.7
+   The :command:`startproject` command now sets this setting to
+   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
+   ``settings.py`` file.
+
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
 
@@ -1691,14 +1716,14 @@ Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs.
 
-This setting can act as a stopping condition in case of URLs of ever-increasing 
-length, which may be caused for example by a programming error either in the 
-target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and 
+This setting can act as a stopping condition in case of URLs of ever-increasing
+length, which may be caused for example by a programming error either in the
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and
 :setting:`DEPTH_LIMIT`.
 
 Use ``0`` to allow URLs of any length.
 
-The default value is copied from the `Microsoft Internet Explorer maximum URL 
+The default value is copied from the `Microsoft Internet Explorer maximum URL
 length`_, even though this setting exists for different reasons.
 
 .. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
