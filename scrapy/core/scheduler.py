@@ -290,10 +290,10 @@ class Scheduler(BaseScheduler):
     def _enqueue_request(self, request: Request) -> None:
         dqok = self._dqpush(request)
         if dqok:
-            self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
+            self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
         else:
             self._mqpush(request)
-            self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
+            self.stats.inc_value("scheduler/enqueued/memory", spider=self.spider)
 
     def enqueue_request(self, request: Request) -> bool:
         """Store *request*.
@@ -329,11 +329,13 @@ class Scheduler(BaseScheduler):
             return False
         if request.meta.get("request_delay"):
             self._dpqpush(request)
-            self.stats.inc_value("scheduler/enqueued/delayed/memory", spider=self.spider)
+            self.stats.inc_value(
+                "scheduler/enqueued/delayed/memory", spider=self.spider
+            )
             self.stats.inc_value("scheduler/enqueued", spider=self.spider)
             return True
         self._enqueue_request(request)
-        self.stats.inc_value('scheduler/enqueued', spider=self.spider)
+        self.stats.inc_value("scheduler/enqueued", spider=self.spider)
         dqok = self._dqpush(request)
         if dqok:
             self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
@@ -354,7 +356,9 @@ class Scheduler(BaseScheduler):
         """
         delayed_request = self.dpqs.pop()
         if delayed_request:
-            self.stats.inc_value('scheduler/dequeued/delayed/memory', spider=self.spider)
+            self.stats.inc_value(
+                "scheduler/dequeued/delayed/memory", spider=self.spider
+            )
             delayed_request.priority += self.delay_priority_adjust
             self._enqueue_request(delayed_request)
         request = self.mqs.pop()
@@ -443,12 +447,14 @@ class Scheduler(BaseScheduler):
         return q
 
     def _dpq(self):
-        """ Create a new delayed requests priority queue instance, with in-memory storage """
-        return create_instance(self.dpqclass,
-                               settings=None,
-                               crawler=self.crawler,
-                               downstream_queue_cls=self.mqclass,
-                               key='')
+        """Create a new delayed requests priority queue instance, with in-memory storage"""
+        return create_instance(
+            self.dpqclass,
+            settings=None,
+            crawler=self.crawler,
+            downstream_queue_cls=self.mqclass,
+            key="",
+        )
 
     def _dqdir(self, jobdir: Optional[str]) -> Optional[str]:
         """Return a folder name to keep disk queue state at"""

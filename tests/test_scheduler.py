@@ -56,7 +56,7 @@ class MockCrawler(Crawler):
             SCHEDULER_MEMORY_QUEUE="scrapy.squeues.LifoMemoryQueue",
             SCHEDULER_PRIORITY_QUEUE=priority_queue_cls,
             JOBDIR=jobdir,
-            DUPEFILTER_CLASS='scrapy.dupefilters.BaseDupeFilter',
+            DUPEFILTER_CLASS="scrapy.dupefilters.BaseDupeFilter",
             REQUEST_FINGERPRINTER_IMPLEMENTATION="2.7",
             **(settings or {}),
         )
@@ -97,7 +97,7 @@ class SchedulerHandler:
         try:
             yield scheduler
         finally:
-            scheduler.close('finished')
+            scheduler.close("finished")
             crawler.stop()
             crawler.engine.downloader.close()
 
@@ -110,14 +110,15 @@ _PRIORITIES = [
     ("http://foo.com/e", 2),
 ]
 
-_REQUESTS_WITH_DELAY = [("http://foo.com/f", 10),
-                        ("http://foo.com/g", 20)]
+_REQUESTS_WITH_DELAY = [("http://foo.com/f", 10), ("http://foo.com/g", 20)]
 
-_REQUESTS_WITH_DELAY_TO_SORT = [("http://foo.com/a", 120),
-                                ("http://foo.com/d", 30),
-                                ("http://foo.com/b", 60),
-                                ("http://foo.com/c", 10),
-                                ("http://foo.com/e", 100)]
+_REQUESTS_WITH_DELAY_TO_SORT = [
+    ("http://foo.com/a", 120),
+    ("http://foo.com/d", 30),
+    ("http://foo.com/b", 60),
+    ("http://foo.com/c", 10),
+    ("http://foo.com/e", 100),
+]
 
 
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
@@ -142,7 +143,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
         for url in _DELAYED_URLS:
-            self.scheduler.enqueue_request(Request(url, meta={'request_delay': 10}))
+            self.scheduler.enqueue_request(Request(url, meta={"request_delay": 10}))
 
         self.assertTrue(self.scheduler.has_pending_requests())
         self.assertEqual(len(self.scheduler), len(_URLS) + len(_DELAYED_URLS))
@@ -175,92 +176,109 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
 
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 19, 47)) as frozen_datetime:
             for url, per_request_delay in _REQUESTS_WITH_DELAY:
-                self.scheduler.enqueue_request(Request(url, meta={'request_delay': per_request_delay}))
-            priorities = list()
+                self.scheduler.enqueue_request(
+                    Request(url, meta={"request_delay": per_request_delay})
+                )
+            priorities = []
             while self.scheduler.has_pending_requests():
                 request = self.scheduler.next_request()
                 if request:
                     priorities.append(request.url)
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=5))
 
-        self.assertEqual(priorities,
-                         ['http://foo.com/e',
-                          'http://foo.com/d',
-                          'http://foo.com/f',
-                          'http://foo.com/c',
-                          'http://foo.com/g',
-                          'http://foo.com/b',
-                          'http://foo.com/a'])
+        self.assertEqual(
+            priorities,
+            [
+                "http://foo.com/e",
+                "http://foo.com/d",
+                "http://foo.com/f",
+                "http://foo.com/c",
+                "http://foo.com/g",
+                "http://foo.com/b",
+                "http://foo.com/a",
+            ],
+        )
 
     def test_dequeue_with_delayed_requests_only(self):
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 19, 47)) as frozen_datetime:
             for url, per_request_delay in _REQUESTS_WITH_DELAY_TO_SORT:
-                self.scheduler.enqueue_request(Request(url, meta={'request_delay': per_request_delay}))
-            priorities = list()
+                self.scheduler.enqueue_request(
+                    Request(url, meta={"request_delay": per_request_delay})
+                )
+            priorities = []
             while self.scheduler.has_pending_requests():
                 request = self.scheduler.next_request()
                 if request:
                     priorities.append(request.url)
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=20))
 
-        self.assertEqual(priorities,
-                         ['http://foo.com/c',
-                          'http://foo.com/d',
-                          'http://foo.com/b',
-                          'http://foo.com/e',
-                          'http://foo.com/a'])
+        self.assertEqual(
+            priorities,
+            [
+                "http://foo.com/c",
+                "http://foo.com/d",
+                "http://foo.com/b",
+                "http://foo.com/e",
+                "http://foo.com/a",
+            ],
+        )
 
     def test_dequeue_delayed_with_same_priority(self):
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 0}))
-            self.scheduler.enqueue_request(Request('http://foo.com/b'))
-            self.scheduler.enqueue_request(Request('http://foo.com/c'))
-            priorities = list()
+            self.scheduler.enqueue_request(
+                Request("http://foo.com/a", meta={"request_delay": 0})
+            )
+            self.scheduler.enqueue_request(Request("http://foo.com/b"))
+            self.scheduler.enqueue_request(Request("http://foo.com/c"))
+            priorities = []
             while self.scheduler.has_pending_requests():
                 request = self.scheduler.next_request()
                 if request:
                     priorities.append(request.url)
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=1))
-        self.assertEqual(priorities,
-                         ['http://foo.com/c',
-                          'http://foo.com/b',
-                          'http://foo.com/a'])
+        self.assertEqual(
+            priorities, ["http://foo.com/c", "http://foo.com/b", "http://foo.com/a"]
+        )
 
     def test_dequeue_delayed_with_higher_priority(self):
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 0}, priority=10))
-            self.scheduler.enqueue_request(Request('http://foo.com/b'))
-            self.scheduler.enqueue_request(Request('http://foo.com/c'))
-            priorities = list()
+            self.scheduler.enqueue_request(
+                Request("http://foo.com/a", meta={"request_delay": 0}, priority=10)
+            )
+            self.scheduler.enqueue_request(Request("http://foo.com/b"))
+            self.scheduler.enqueue_request(Request("http://foo.com/c"))
+            priorities = []
             while self.scheduler.has_pending_requests():
                 request = self.scheduler.next_request()
                 if request:
                     priorities.append(request.url)
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=1))
-        self.assertEqual(priorities,
-                         ['http://foo.com/a',
-                          'http://foo.com/c',
-                          'http://foo.com/b'])
+        self.assertEqual(
+            priorities, ["http://foo.com/a", "http://foo.com/c", "http://foo.com/b"]
+        )
 
     def test_dequeue_delayed_with_lower_priority(self):
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 0}, priority=10))
-            self.scheduler.enqueue_request(Request('http://foo.com/b', priority=20))
-            self.scheduler.enqueue_request(Request('http://foo.com/c'))
-            priorities = list()
+            self.scheduler.enqueue_request(
+                Request("http://foo.com/a", meta={"request_delay": 0}, priority=10)
+            )
+            self.scheduler.enqueue_request(Request("http://foo.com/b", priority=20))
+            self.scheduler.enqueue_request(Request("http://foo.com/c"))
+            priorities = []
             while self.scheduler.has_pending_requests():
                 request = self.scheduler.next_request()
                 if request:
                     priorities.append(request.url)
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=1))
-        self.assertEqual(priorities,
-                         ['http://foo.com/b',
-                          'http://foo.com/a',
-                          'http://foo.com/c'])
+        self.assertEqual(
+            priorities, ["http://foo.com/b", "http://foo.com/a", "http://foo.com/c"]
+        )
 
     def test_delay_priority_adjust_default(self):
         with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-            self.scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}))
+            self.scheduler.enqueue_request(
+                Request("http://foo.com/a", meta={"request_delay": 1})
+            )
             frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
             request = self.scheduler.next_request()
         self.assertEqual(request.priority, 0)
@@ -269,28 +287,40 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         """Example covering a scenario where DELAY_PRIORITY_ADJUST and the
         final request priority do not match, to make sure DELAY_PRIORITY_ADJUST
         is added to the priority, and not only replaces it."""
-        settings = {'DELAY_PRIORITY_ADJUST': 1}
+        settings = {"DELAY_PRIORITY_ADJUST": 1}
         with self.custom_scheduler(settings=settings) as scheduler:
-            with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-                scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}, priority=1))
+            with freeze_time(
+                datetime.datetime(2021, 2, 27, 17, 0, 0)
+            ) as frozen_datetime:
+                scheduler.enqueue_request(
+                    Request("http://foo.com/a", meta={"request_delay": 1}, priority=1)
+                )
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
                 request = scheduler.next_request()
         self.assertEqual(request.priority, 2)
 
     def test_delay_priority_adjust_negative(self):
-        settings = {'DELAY_PRIORITY_ADJUST': -1}
+        settings = {"DELAY_PRIORITY_ADJUST": -1}
         with self.custom_scheduler(settings=settings) as scheduler:
-            with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-                scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}))
+            with freeze_time(
+                datetime.datetime(2021, 2, 27, 17, 0, 0)
+            ) as frozen_datetime:
+                scheduler.enqueue_request(
+                    Request("http://foo.com/a", meta={"request_delay": 1})
+                )
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
                 request = scheduler.next_request()
         self.assertEqual(request.priority, -1)
 
     def test_delay_priority_adjust_positive(self):
-        settings = {'DELAY_PRIORITY_ADJUST': 1}
+        settings = {"DELAY_PRIORITY_ADJUST": 1}
         with self.custom_scheduler(settings=settings) as scheduler:
-            with freeze_time(datetime.datetime(2021, 2, 27, 17, 0, 0)) as frozen_datetime:
-                scheduler.enqueue_request(Request('http://foo.com/a', meta={'request_delay': 1}))
+            with freeze_time(
+                datetime.datetime(2021, 2, 27, 17, 0, 0)
+            ) as frozen_datetime:
+                scheduler.enqueue_request(
+                    Request("http://foo.com/a", meta={"request_delay": 1})
+                )
                 frozen_datetime.tick(delta=datetime.timedelta(seconds=2))
                 request = scheduler.next_request()
         self.assertEqual(request.priority, 1)
@@ -523,7 +553,6 @@ class TestIncompatibility(unittest.TestCase):
 
 
 def test_scheduler_subclassing_no_dpqclass():
-
     class SchedulerSubclass(Scheduler):
         def __init__(
             self,
@@ -546,8 +575,8 @@ def test_scheduler_subclassing_no_dpqclass():
             self.crawler = crawler
 
     class_path = (
-        'tests.test_scheduler.test_scheduler_subclassing_no_dpqclass'
-        '.<locals>.SchedulerSubclass'
+        "tests.test_scheduler.test_scheduler_subclassing_no_dpqclass"
+        ".<locals>.SchedulerSubclass"
     )
     message = (
         f"The scheduler class {class_path} does not support the "
@@ -556,7 +585,7 @@ def test_scheduler_subclassing_no_dpqclass():
     with warns(ScrapyDeprecationWarning, match=message):
         scheduler = SchedulerSubclass.from_crawler(get_crawler())
 
-    assert hasattr(scheduler, 'dpqclass')
+    assert hasattr(scheduler, "dpqclass")
 
 
 def test_scheduler_subclassing_use_dpqclass():

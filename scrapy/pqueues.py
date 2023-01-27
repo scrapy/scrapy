@@ -139,7 +139,7 @@ class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
 
     def priority(self, request):
         now = int(time.time())
-        per_request_delay = request.meta.get('request_delay', 0)
+        per_request_delay = request.meta.get("request_delay", 0)
         return now + per_request_delay
 
     def pop(self):
