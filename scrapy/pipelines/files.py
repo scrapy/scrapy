@@ -36,7 +36,7 @@ from scrapy.utils.request import referer_str
 logger = logging.getLogger(__name__)
 
 
-def _to_string(path: Union[str, os.PathLike[str]]):
+def _to_string(path: Union[str, os.PathLike]) -> str:
     return str(path)  # convert a Path object to string
 
 
@@ -45,10 +45,10 @@ class FileException(Exception):
 
 
 class FSFilesStore:
-    def __init__(self, basedir: Union[str, os.PathLike[str]]):
+    def __init__(self, basedir: Union[str, os.PathLike]):
         basedir = _to_string(basedir)
-        if '://' in basedir:
-            basedir = basedir.split('://', 1)[1]
+        if "://" in basedir:
+            basedir = basedir.split("://", 1)[1]
         self.basedir = basedir
         self._mkdir(Path(self.basedir))
         self.created_directories: DefaultDict[str, Set[str]] = defaultdict(set)
@@ -70,7 +70,7 @@ class FSFilesStore:
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
-    def _get_filesystem_path(self, path: Union[str, os.PathLike[str]]) -> Path:
+    def _get_filesystem_path(self, path: Union[str, os.PathLike]) -> Path:
         path_comps = _to_string(path).split('/')
         return Path(self.basedir, *path_comps)
 
