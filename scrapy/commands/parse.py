@@ -32,28 +32,72 @@ class Command(BaseRunSpiderCommand):
 
     def add_options(self, parser):
         BaseRunSpiderCommand.add_options(self, parser)
-        parser.add_argument("--spider", dest="spider", default=None,
-                            help="use this spider without looking for one")
-        parser.add_argument("--pipelines", action="store_true",
-                            help="process items through pipelines")
-        parser.add_argument("--nolinks", dest="nolinks", action="store_true",
-                            help="don't show links to follow (extracted requests)")
-        parser.add_argument("--noitems", dest="noitems", action="store_true",
-                            help="don't show scraped items")
-        parser.add_argument("--nocolour", dest="nocolour", action="store_true",
-                            help="avoid using pygments to colorize the output")
-        parser.add_argument("-r", "--rules", dest="rules", action="store_true",
-                            help="use CrawlSpider rules to discover the callback")
-        parser.add_argument("-c", "--callback", dest="callback",
-                            help="use this callback for parsing, instead looking for a callback")
-        parser.add_argument("-m", "--meta", dest="meta",
-                            help="inject extra meta into the Request, it must be a valid raw json string")
-        parser.add_argument("--cbkwargs", dest="cbkwargs",
-                            help="inject extra callback kwargs into the Request, it must be a valid raw json string")
-        parser.add_argument("-d", "--depth", dest="depth", type=int, default=1,
-                            help="maximum depth for parsing requests [default: %(default)s]")
-        parser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
-                            help="print each depth level one by one")
+        parser.add_argument(
+            "--spider",
+            dest="spider",
+            default=None,
+            help="use this spider without looking for one",
+        )
+        parser.add_argument(
+            "--pipelines", action="store_true", help="process items through pipelines"
+        )
+        parser.add_argument(
+            "--nolinks",
+            dest="nolinks",
+            action="store_true",
+            help="don't show links to follow (extracted requests)",
+        )
+        parser.add_argument(
+            "--noitems",
+            dest="noitems",
+            action="store_true",
+            help="don't show scraped items",
+        )
+        parser.add_argument(
+            "--nocolour",
+            dest="nocolour",
+            action="store_true",
+            help="avoid using pygments to colorize the output",
+        )
+        parser.add_argument(
+            "-r",
+            "--rules",
+            dest="rules",
+            action="store_true",
+            help="use CrawlSpider rules to discover the callback",
+        )
+        parser.add_argument(
+            "-c",
+            "--callback",
+            dest="callback",
+            help="use this callback for parsing, instead looking for a callback",
+        )
+        parser.add_argument(
+            "-m",
+            "--meta",
+            dest="meta",
+            help="inject extra meta into the Request, it must be a valid raw json string",
+        )
+        parser.add_argument(
+            "--cbkwargs",
+            dest="cbkwargs",
+            help="inject extra callback kwargs into the Request, it must be a valid raw json string",
+        )
+        parser.add_argument(
+            "-d",
+            "--depth",
+            dest="depth",
+            type=int,
+            default=1,
+            help="maximum depth for parsing requests [default: %(default)s]",
+        )
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            dest="verbose",
+            action="store_true",
+            help="print each depth level one by one",
+        )
 
     @property
     def max_level(self):
@@ -98,13 +142,13 @@ class Command(BaseRunSpiderCommand):
 
         if opts.verbose:
             for level in range(1, self.max_level + 1):
-                print(f'\n>>> DEPTH LEVEL: {level} <<<')
+                print(f"\n>>> DEPTH LEVEL: {level} <<<")
                 if not opts.noitems:
                     self.print_items(level, colour)
                 if not opts.nolinks:
                     self.print_requests(level, colour)
         else:
-            print(f'\n>>> STATUS DEPTH LEVEL {self.max_level} <<<')
+            print(f"\n>>> STATUS DEPTH LEVEL {self.max_level} <<<")
             if not opts.noitems:
                 self.print_items(colour=colour)
             if not opts.nolinks:
@@ -125,14 +169,16 @@ class Command(BaseRunSpiderCommand):
         return d
 
     def get_callback_from_rules(self, spider, response):
-        if getattr(spider, 'rules', None):
+        if getattr(spider, "rules", None):
             for rule in spider.rules:
                 if rule.link_extractor.matches(response.url):
                     return rule.callback or "parse"
         else:
-            logger.error('No CrawlSpider rules found in spider %(spider)r, '
-                         'please specify a callback to use for parsing',
-                         {'spider': spider.name})
+            logger.error(
+                "No CrawlSpider rules found in spider %(spider)r, "
+                "please specify a callback to use for parsing",
+                {"spider": spider.name},
+            )
 
     def set_spidercls(self, url, opts):
         spider_loader = self.crawler_process.spider_loader
@@ -140,15 +186,17 @@ class Command(BaseRunSpiderCommand):
             try:
                 self.spidercls = spider_loader.load(opts.spider)
             except KeyError:
-                logger.error('Unable to find spider: %(spider)s',
-                             {'spider': opts.spider})
+                logger.error(
+                    "Unable to find spider: %(spider)s", {"spider": opts.spider}
+                )
         else:
             self.spidercls = spidercls_for_request(spider_loader, Request(url))
             if not self.spidercls:
-                logger.error('Unable to find spider for: %(url)s', {'url': url})
+                logger.error("Unable to find spider for: %(url)s", {"url": url})
 
         def _start_requests(spider):
             yield self.prepare_request(spider, Request(url), opts)
+
         if self.spidercls:
             self.spidercls.start_requests = _start_requests
 
@@ -158,8 +206,7 @@ class Command(BaseRunSpiderCommand):
         self.crawler_process.start()
 
         if not self.first_response:
-            logger.error('No response downloaded for: %(url)s',
-                         {'url': url})
+            logger.error("No response downloaded for: %(url)s", {"url": url})
 
     def scraped_data(self, args):
         items, requests, opts, depth, spider, callback = args
@@ -173,8 +220,8 @@ class Command(BaseRunSpiderCommand):
         scraped_data = items if opts.output else []
         if depth < opts.depth:
             for req in requests:
-                req.meta['_depth'] = depth + 1
-                req.meta['_callback'] = req.callback
+                req.meta["_depth"] = depth + 1
+                req.meta["_callback"] = req.callback
                 req.callback = callback
             scraped_data += requests
 
@@ -187,7 +234,7 @@ class Command(BaseRunSpiderCommand):
                 self.first_response = response
 
             # determine real callback
-            cb = response.meta['_callback']
+            cb = response.meta["_callback"]
             if not cb:
                 if opts.callback:
                     cb = opts.callback
@@ -195,23 +242,27 @@ class Command(BaseRunSpiderCommand):
                     cb = self.get_callback_from_rules(spider, response)
 
                     if not cb:
-                        logger.error('Cannot find a rule that matches %(url)r in spider: %(spider)s',
-                                     {'url': response.url, 'spider': spider.name})
+                        logger.error(
+                            "Cannot find a rule that matches %(url)r in spider: %(spider)s",
+                            {"url": response.url, "spider": spider.name},
+                        )
                         return
                 else:
-                    cb = 'parse'
+                    cb = "parse"
 
             if not callable(cb):
                 cb_method = getattr(spider, cb, None)
                 if callable(cb_method):
                     cb = cb_method
                 else:
-                    logger.error('Cannot find callback %(callback)r in spider: %(spider)s',
-                                 {'callback': cb, 'spider': spider.name})
+                    logger.error(
+                        "Cannot find callback %(callback)r in spider: %(spider)s",
+                        {"callback": cb, "spider": spider.name},
+                    )
                     return
 
             # parse items and requests
-            depth = response.meta['_depth']
+            depth = response.meta["_depth"]
 
             d = self.run_callback(response, cb, cb_kwargs)
             d.addCallback(self._get_items_and_requests, opts, depth, spider, callback)
@@ -226,8 +277,8 @@ class Command(BaseRunSpiderCommand):
         if opts.cbkwargs:
             request.cb_kwargs.update(opts.cbkwargs)
 
-        request.meta['_depth'] = 1
-        request.meta['_callback'] = request.callback
+        request.meta["_depth"] = 1
+        request.meta["_callback"] = request.callback
         request.callback = callback
         return request
 
@@ -242,16 +293,22 @@ class Command(BaseRunSpiderCommand):
             try:
                 opts.meta = json.loads(opts.meta)
             except ValueError:
-                raise UsageError("Invalid -m/--meta value, pass a valid json string to -m or --meta. "
-                                 "Example: --meta='{\"foo\" : \"bar\"}'", print_help=False)
+                raise UsageError(
+                    "Invalid -m/--meta value, pass a valid json string to -m or --meta. "
+                    'Example: --meta=\'{"foo" : "bar"}\'',
+                    print_help=False,
+                )
 
     def process_request_cb_kwargs(self, opts):
         if opts.cbkwargs:
             try:
                 opts.cbkwargs = json.loads(opts.cbkwargs)
             except ValueError:
-                raise UsageError("Invalid --cbkwargs value, pass a valid json string to --cbkwargs. "
-                                 "Example: --cbkwargs='{\"foo\" : \"bar\"}'", print_help=False)
+                raise UsageError(
+                    "Invalid --cbkwargs value, pass a valid json string to --cbkwargs. "
+                    'Example: --cbkwargs=\'{"foo" : "bar"}\'',
+                    print_help=False,
+                )
 
     def run(self, args, opts):
         # parse arguments

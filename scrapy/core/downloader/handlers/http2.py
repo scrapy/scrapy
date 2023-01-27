@@ -17,7 +17,9 @@ from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
 
-H2DownloadHandlerOrSubclass = TypeVar("H2DownloadHandlerOrSubclass", bound="H2DownloadHandler")
+H2DownloadHandlerOrSubclass = TypeVar(
+    "H2DownloadHandlerOrSubclass", bound="H2DownloadHandler"
+)
 
 
 class H2DownloadHandler:
@@ -25,11 +27,14 @@ class H2DownloadHandler:
         self._crawler = crawler
 
         from twisted.internet import reactor
+
         self._pool = H2ConnectionPool(reactor, settings)
         self._context_factory = load_context_factory_from_settings(settings, crawler)
 
     @classmethod
-    def from_crawler(cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler) -> H2DownloadHandlerOrSubclass:
+    def from_crawler(
+        cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler
+    ) -> H2DownloadHandlerOrSubclass:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
@@ -49,7 +54,8 @@ class ScrapyH2Agent:
     _ProxyAgent = ScrapyProxyH2Agent
 
     def __init__(
-        self, context_factory,
+        self,
+        context_factory,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
         bind_address: Optional[bytes] = None,
@@ -63,19 +69,22 @@ class ScrapyH2Agent:
 
     def _get_agent(self, request: Request, timeout: Optional[float]) -> H2Agent:
         from twisted.internet import reactor
-        bind_address = request.meta.get('bindaddress') or self._bind_address
-        proxy = request.meta.get('proxy')
+
+        bind_address = request.meta.get("bindaddress") or self._bind_address
+        proxy = request.meta.get("proxy")
         if proxy:
             _, _, proxy_host, proxy_port, proxy_params = _parse(proxy)
             scheme = _parse(request.url)[0]
 
-            if scheme == b'https':
+            if scheme == b"https":
                 # ToDo
-                raise NotImplementedError('Tunneling via CONNECT method using HTTP/2.0 is not yet supported')
+                raise NotImplementedError(
+                    "Tunneling via CONNECT method using HTTP/2.0 is not yet supported"
+                )
             return self._ProxyAgent(
                 reactor=reactor,
                 context_factory=self._context_factory,
-                proxy_uri=URI.fromBytes(to_bytes(proxy, encoding='ascii')),
+                proxy_uri=URI.fromBytes(to_bytes(proxy, encoding="ascii")),
                 connect_timeout=timeout,
                 bind_address=bind_address,
                 pool=self._pool,
@@ -91,7 +100,8 @@ class ScrapyH2Agent:
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
         from twisted.internet import reactor
-        timeout = request.meta.get('download_timeout') or self._connect_timeout
+
+        timeout = request.meta.get("download_timeout") or self._connect_timeout
         agent = self._get_agent(request, timeout)
 
         start_time = time()
@@ -103,12 +113,16 @@ class ScrapyH2Agent:
         return d
 
     @staticmethod
-    def _cb_latency(response: Response, request: Request, start_time: float) -> Response:
-        request.meta['download_latency'] = time() - start_time
+    def _cb_latency(
+        response: Response, request: Request, start_time: float
+    ) -> Response:
+        request.meta["download_latency"] = time() - start_time
         return response
 
     @staticmethod
-    def _cb_timeout(response: Response, request: Request, timeout: float, timeout_cl: DelayedCall) -> Response:
+    def _cb_timeout(
+        response: Response, request: Request, timeout: float, timeout_cl: DelayedCall
+    ) -> Response:
         if timeout_cl.active():
             timeout_cl.cancel()
             return response

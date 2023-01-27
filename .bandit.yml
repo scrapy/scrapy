@@ -17,3 +17,4 @@ skips:
 - B503
 - B603
 - B605
+exclude_dirs: ['tests']

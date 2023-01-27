@@ -74,7 +74,11 @@ class BaseSchedulerTest(TestCase, InterfaceCheckMixin):
         self.assertIsNone(self.scheduler.open(Spider("foo")))
         self.assertIsNone(self.scheduler.close("finished"))
         self.assertRaises(NotImplementedError, self.scheduler.has_pending_requests)
-        self.assertRaises(NotImplementedError, self.scheduler.enqueue_request, Request("https://example.org"))
+        self.assertRaises(
+            NotImplementedError,
+            self.scheduler.enqueue_request,
+            Request("https://example.org"),
+        )
         self.assertRaises(NotImplementedError, self.scheduler.next_request)
 
 

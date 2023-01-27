@@ -9,7 +9,9 @@ from tests.mockserver import MockServer
 
 class LogExceptionMiddleware:
     def process_spider_exception(self, response, exception, spider):
-        spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
+        spider.logger.info(
+            "Middleware: %s exception caught", exception.__class__.__name__
+        )
         return None
 
 
@@ -17,34 +19,36 @@ class LogExceptionMiddleware:
 # (0) recover from an exception on a spider callback
 class RecoveryMiddleware:
     def process_spider_exception(self, response, exception, spider):
-        spider.logger.info('Middleware: %s exception caught', exception.__class__.__name__)
+        spider.logger.info(
+            "Middleware: %s exception caught", exception.__class__.__name__
+        )
         return [
-            {'from': 'process_spider_exception'},
-            Request(response.url, meta={'dont_fail': True}, dont_filter=True),
+            {"from": "process_spider_exception"},
+            Request(response.url, meta={"dont_fail": True}, dont_filter=True),
         ]
 
 
 class RecoverySpider(Spider):
-    name = 'RecoverySpider'
+    name = "RecoverySpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES_BASE': {},
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES_BASE": {},
+        "SPIDER_MIDDLEWARES": {
             RecoveryMiddleware: 10,
         },
     }
 
     def start_requests(self):
-        yield Request(self.mockserver.url('/status?n=200'))
+        yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
-        yield {'test': 1}
-        self.logger.info('DONT_FAIL: %s', response.meta.get('dont_fail'))
-        if not response.meta.get('dont_fail'):
+        yield {"test": 1}
+        self.logger.info("DONT_FAIL: %s", response.meta.get("dont_fail"))
+        if not response.meta.get("dont_fail"):
             raise TabError()
 
 
 class RecoveryAsyncGenSpider(RecoverySpider):
-    name = 'RecoveryAsyncGenSpider'
+    name = "RecoveryAsyncGenSpider"
 
     async def parse(self, response):
         for r in super().parse(response):
@@ -55,14 +59,14 @@ class RecoveryAsyncGenSpider(RecoverySpider):
 # (1) exceptions from a spider middleware's process_spider_input method
 class FailProcessSpiderInputMiddleware:
     def process_spider_input(self, response, spider):
-        spider.logger.info('Middleware: will raise IndexError')
+        spider.logger.info("Middleware: will raise IndexError")
         raise IndexError()
 
 
 class ProcessSpiderInputSpiderWithoutErrback(Spider):
-    name = 'ProcessSpiderInputSpiderWithoutErrback'
+    name = "ProcessSpiderInputSpiderWithoutErrback"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             # spider
             FailProcessSpiderInputMiddleware: 8,
             LogExceptionMiddleware: 6,
@@ -71,55 +75,57 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
     }
 
     def start_requests(self):
-        yield Request(url=self.mockserver.url('/status?n=200'), callback=self.parse)
+        yield Request(url=self.mockserver.url("/status?n=200"), callback=self.parse)
 
     def parse(self, response):
-        return {'from': 'callback'}
+        return {"from": "callback"}
 
 
 class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback):
-    name = 'ProcessSpiderInputSpiderWithErrback'
+    name = "ProcessSpiderInputSpiderWithErrback"
 
     def start_requests(self):
-        yield Request(self.mockserver.url('/status?n=200'), self.parse, errback=self.errback)
+        yield Request(
+            self.mockserver.url("/status?n=200"), self.parse, errback=self.errback
+        )
 
     def errback(self, failure):
-        self.logger.info('Got a Failure on the Request errback')
-        return {'from': 'errback'}
+        self.logger.info("Got a Failure on the Request errback")
+        return {"from": "errback"}
 
 
 # ================================================================================
 # (2) exceptions from a spider callback (generator)
 class GeneratorCallbackSpider(Spider):
-    name = 'GeneratorCallbackSpider'
+    name = "GeneratorCallbackSpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             LogExceptionMiddleware: 10,
         },
     }
 
     def start_requests(self):
-        yield Request(self.mockserver.url('/status?n=200'))
+        yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
-        yield {'test': 1}
-        yield {'test': 2}
+        yield {"test": 1}
+        yield {"test": 2}
         raise ImportError()
 
 
 class AsyncGeneratorCallbackSpider(GeneratorCallbackSpider):
     async def parse(self, response):
-        yield {'test': 1}
-        yield {'test': 2}
+        yield {"test": 1}
+        yield {"test": 2}
         raise ImportError()
 
 
 # ================================================================================
 # (2.1) exceptions from a spider callback (generator, middleware right after callback)
 class GeneratorCallbackSpiderMiddlewareRightAfterSpider(GeneratorCallbackSpider):
-    name = 'GeneratorCallbackSpiderMiddlewareRightAfterSpider'
+    name = "GeneratorCallbackSpiderMiddlewareRightAfterSpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             LogExceptionMiddleware: 100000,
         },
     }
@@ -128,26 +134,26 @@ class GeneratorCallbackSpiderMiddlewareRightAfterSpider(GeneratorCallbackSpider)
 # ================================================================================
 # (3) exceptions from a spider callback (not a generator)
 class NotGeneratorCallbackSpider(Spider):
-    name = 'NotGeneratorCallbackSpider'
+    name = "NotGeneratorCallbackSpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             LogExceptionMiddleware: 10,
         },
     }
 
     def start_requests(self):
-        yield Request(self.mockserver.url('/status?n=200'))
+        yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
-        return [{'test': 1}, {'test': 1 / 0}]
+        return [{"test": 1}, {"test": 1 / 0}]
 
 
 # ================================================================================
 # (3.1) exceptions from a spider callback (not a generator, middleware right after callback)
 class NotGeneratorCallbackSpiderMiddlewareRightAfterSpider(NotGeneratorCallbackSpider):
-    name = 'NotGeneratorCallbackSpiderMiddlewareRightAfterSpider'
+    name = "NotGeneratorCallbackSpiderMiddlewareRightAfterSpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             LogExceptionMiddleware: 100000,
         },
     }
@@ -158,26 +164,26 @@ class NotGeneratorCallbackSpiderMiddlewareRightAfterSpider(NotGeneratorCallbackS
 class _GeneratorDoNothingMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
-            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
 
     def process_spider_exception(self, response, exception, spider):
-        method = f'{self.__class__.__name__}.process_spider_exception'
-        spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
+        method = f"{self.__class__.__name__}.process_spider_exception"
+        spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
         return None
 
 
 class GeneratorFailMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
-            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
             raise LookupError()
 
     def process_spider_exception(self, response, exception, spider):
-        method = f'{self.__class__.__name__}.process_spider_exception'
-        spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
-        yield {'processed': [method]}
+        method = f"{self.__class__.__name__}.process_spider_exception"
+        spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
+        yield {"processed": [method]}
 
 
 class GeneratorDoNothingAfterFailureMiddleware(_GeneratorDoNothingMiddleware):
@@ -187,13 +193,13 @@ class GeneratorDoNothingAfterFailureMiddleware(_GeneratorDoNothingMiddleware):
 class GeneratorRecoverMiddleware:
     def process_spider_output(self, response, result, spider):
         for r in result:
-            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
 
     def process_spider_exception(self, response, exception, spider):
-        method = f'{self.__class__.__name__}.process_spider_exception'
-        spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
-        yield {'processed': [method]}
+        method = f"{self.__class__.__name__}.process_spider_exception"
+        spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
+        yield {"processed": [method]}
 
 
 class GeneratorDoNothingAfterRecoveryMiddleware(_GeneratorDoNothingMiddleware):
@@ -201,9 +207,9 @@ class GeneratorDoNothingAfterRecoveryMiddleware(_GeneratorDoNothingMiddleware):
 
 
 class GeneratorOutputChainSpider(Spider):
-    name = 'GeneratorOutputChainSpider'
+    name = "GeneratorOutputChainSpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             GeneratorFailMiddleware: 10,
             GeneratorDoNothingAfterFailureMiddleware: 8,
             GeneratorRecoverMiddleware: 5,
@@ -212,27 +218,28 @@ class GeneratorOutputChainSpider(Spider):
     }
 
     def start_requests(self):
-        yield Request(self.mockserver.url('/status?n=200'))
+        yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
-        yield {'processed': ['parse-first-item']}
-        yield {'processed': ['parse-second-item']}
+        yield {"processed": ["parse-first-item"]}
+        yield {"processed": ["parse-second-item"]}
 
 
 # ================================================================================
 # (5) exceptions from a middleware process_spider_output method (not generator)
 
+
 class _NotGeneratorDoNothingMiddleware:
     def process_spider_output(self, response, result, spider):
         out = []
         for r in result:
-            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             out.append(r)
         return out
 
     def process_spider_exception(self, response, exception, spider):
-        method = f'{self.__class__.__name__}.process_spider_exception'
-        spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
+        method = f"{self.__class__.__name__}.process_spider_exception"
+        spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
         return None
 
 
@@ -240,15 +247,15 @@ class NotGeneratorFailMiddleware:
     def process_spider_output(self, response, result, spider):
         out = []
         for r in result:
-            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             out.append(r)
         raise ReferenceError()
         return out
 
     def process_spider_exception(self, response, exception, spider):
-        method = f'{self.__class__.__name__}.process_spider_exception'
-        spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
-        return [{'processed': [method]}]
+        method = f"{self.__class__.__name__}.process_spider_exception"
+        spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
+        return [{"processed": [method]}]
 
 
 class NotGeneratorDoNothingAfterFailureMiddleware(_NotGeneratorDoNothingMiddleware):
@@ -259,14 +266,14 @@ class NotGeneratorRecoverMiddleware:
     def process_spider_output(self, response, result, spider):
         out = []
         for r in result:
-            r['processed'].append(f'{self.__class__.__name__}.process_spider_output')
+            r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             out.append(r)
         return out
 
     def process_spider_exception(self, response, exception, spider):
-        method = f'{self.__class__.__name__}.process_spider_exception'
-        spider.logger.info('%s: %s caught', method, exception.__class__.__name__)
-        return [{'processed': [method]}]
+        method = f"{self.__class__.__name__}.process_spider_exception"
+        spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
+        return [{"processed": [method]}]
 
 
 class NotGeneratorDoNothingAfterRecoveryMiddleware(_NotGeneratorDoNothingMiddleware):
@@ -274,9 +281,9 @@ class NotGeneratorDoNothingAfterRecoveryMiddleware(_NotGeneratorDoNothingMiddlew
 
 
 class NotGeneratorOutputChainSpider(Spider):
-    name = 'NotGeneratorOutputChainSpider'
+    name = "NotGeneratorOutputChainSpider"
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
+        "SPIDER_MIDDLEWARES": {
             NotGeneratorFailMiddleware: 10,
             NotGeneratorDoNothingAfterFailureMiddleware: 8,
             NotGeneratorRecoverMiddleware: 5,
@@ -285,10 +292,13 @@ class NotGeneratorOutputChainSpider(Spider):
     }
 
     def start_requests(self):
-        return [Request(self.mockserver.url('/status?n=200'))]
+        return [Request(self.mockserver.url("/status?n=200"))]
 
     def parse(self, response):
-        return [{'processed': ['parse-first-item']}, {'processed': ['parse-second-item']}]
+        return [
+            {"processed": ["parse-first-item"]},
+            {"processed": ["parse-second-item"]},
+        ]
 
 
 # ================================================================================
@@ -402,7 +412,9 @@ class TestSpiderMiddleware(TestCase):
         (3.1) Special case of (3): Exceptions should be caught
         even if the middleware is placed right after the spider
         """
-        log31 = yield self.crawl_log(NotGeneratorCallbackSpiderMiddlewareRightAfterSpider)
+        log31 = yield self.crawl_log(
+            NotGeneratorCallbackSpiderMiddlewareRightAfterSpider
+        )
         self.assertIn("Middleware: ZeroDivisionError exception caught", str(log31))
         self.assertNotIn("item_scraped_count", str(log31))
 
@@ -418,28 +430,40 @@ class TestSpiderMiddleware(TestCase):
         """
         log4 = yield self.crawl_log(GeneratorOutputChainSpider)
         self.assertIn("'item_scraped_count': 2", str(log4))
-        self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: LookupError caught", str(log4))
+        self.assertIn(
+            "GeneratorRecoverMiddleware.process_spider_exception: LookupError caught",
+            str(log4),
+        )
         self.assertIn(
             "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught",
-            str(log4))
+            str(log4),
+        )
         self.assertNotIn(
             "GeneratorFailMiddleware.process_spider_exception: LookupError caught",
-            str(log4))
+            str(log4),
+        )
         self.assertNotIn(
             "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught",
-            str(log4))
-        item_from_callback = {'processed': [
-            'parse-first-item',
-            'GeneratorFailMiddleware.process_spider_output',
-            'GeneratorDoNothingAfterFailureMiddleware.process_spider_output',
-            'GeneratorRecoverMiddleware.process_spider_output',
-            'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
-        item_recovered = {'processed': [
-            'GeneratorRecoverMiddleware.process_spider_exception',
-            'GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
+            str(log4),
+        )
+        item_from_callback = {
+            "processed": [
+                "parse-first-item",
+                "GeneratorFailMiddleware.process_spider_output",
+                "GeneratorDoNothingAfterFailureMiddleware.process_spider_output",
+                "GeneratorRecoverMiddleware.process_spider_output",
+                "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
+            ]
+        }
+        item_recovered = {
+            "processed": [
+                "GeneratorRecoverMiddleware.process_spider_exception",
+                "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
+            ]
+        }
         self.assertIn(str(item_from_callback), str(log4))
         self.assertIn(str(item_recovered), str(log4))
-        self.assertNotIn('parse-second-item', str(log4))
+        self.assertNotIn("parse-second-item", str(log4))
 
     @defer.inlineCallbacks
     def test_not_a_generator_output_chain(self):
@@ -453,17 +477,28 @@ class TestSpiderMiddleware(TestCase):
         """
         log5 = yield self.crawl_log(NotGeneratorOutputChainSpider)
         self.assertIn("'item_scraped_count': 1", str(log5))
-        self.assertIn("GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught", str(log5))
+        self.assertIn(
+            "GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught",
+            str(log5),
+        )
         self.assertIn(
             "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5))
-        self.assertNotIn("GeneratorFailMiddleware.process_spider_exception: ReferenceError caught", str(log5))
+            str(log5),
+        )
+        self.assertNotIn(
+            "GeneratorFailMiddleware.process_spider_exception: ReferenceError caught",
+            str(log5),
+        )
         self.assertNotIn(
             "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5))
-        item_recovered = {'processed': [
-            'NotGeneratorRecoverMiddleware.process_spider_exception',
-            'NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output']}
+            str(log5),
+        )
+        item_recovered = {
+            "processed": [
+                "NotGeneratorRecoverMiddleware.process_spider_exception",
+                "NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
+            ]
+        }
         self.assertIn(str(item_recovered), str(log5))
-        self.assertNotIn('parse-first-item', str(log5))
-        self.assertNotIn('parse-second-item', str(log5))
+        self.assertNotIn("parse-first-item", str(log5))
+        self.assertNotIn("parse-second-item", str(log5))
