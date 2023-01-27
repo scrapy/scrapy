@@ -11,7 +11,7 @@ def render_templatefile(path: Union[str, PathLike], url=None, **kwargs):
     path_obj = Path(path)
     raw = path_obj.read_text("utf8")
 
-    if url and url.lower().startswith('https'):
+    if url and url.lower().startswith("https"):
         # make template match the correct url schema
         raw = re.sub(r"start_urls = \['http:", "start_urls = ['https:", raw)
 
