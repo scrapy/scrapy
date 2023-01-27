@@ -8,7 +8,7 @@ from scrapy.utils.python import to_unicode
 class Headers(CaselessDict):
     """Case insensitive http headers dictionary"""
 
-    def __init__(self, seq=None, encoding='utf-8'):
+    def __init__(self, seq=None, encoding="utf-8"):
         self.encoding = encoding
         super().__init__(seq)
 
@@ -29,7 +29,7 @@ class Headers(CaselessDict):
             value = []
         elif isinstance(value, (str, bytes)):
             value = [value]
-        elif not hasattr(value, '__iter__'):
+        elif not hasattr(value, "__iter__"):
             value = [value]
 
         return [self._tobytes(x) for x in value]
@@ -41,7 +41,7 @@ class Headers(CaselessDict):
             return x.encode(self.encoding)
         if isinstance(x, int):
             return str(x).encode(self.encoding)
-        raise TypeError(f'Unsupported value type: {type(x)}')
+        raise TypeError(f"Unsupported value type: {type(x)}")
 
     def __getitem__(self, key):
         try:
@@ -84,13 +84,16 @@ class Headers(CaselessDict):
         return headers_dict_to_raw(self)
 
     def to_unicode_dict(self):
-        """ Return headers as a CaselessDict with unicode keys
+        """Return headers as a CaselessDict with unicode keys
         and unicode values. Multiple values are joined with ','.
         """
         return CaselessDict(
-            (to_unicode(key, encoding=self.encoding),
-             to_unicode(b','.join(value), encoding=self.encoding))
-            for key, value in self.items())
+            (
+                to_unicode(key, encoding=self.encoding),
+                to_unicode(b",".join(value), encoding=self.encoding),
+            )
+            for key, value in self.items()
+        )
 
     def __copy__(self):
         return self.__class__(self)

@@ -25,16 +25,16 @@ class SpiderState:
 
     def spider_closed(self, spider):
         if self.jobdir:
-            with Path(self.statefn).open('wb') as f:
+            with Path(self.statefn).open("wb") as f:
                 pickle.dump(spider.state, f, protocol=4)
 
     def spider_opened(self, spider):
         if self.jobdir and Path(self.statefn).exists():
-            with Path(self.statefn).open('rb') as f:
+            with Path(self.statefn).open("rb") as f:
                 spider.state = pickle.load(f)
         else:
             spider.state = {}
 
     @property
     def statefn(self) -> str:
-        return str(Path(self.jobdir, 'spider.state'))
+        return str(Path(self.jobdir, "spider.state"))

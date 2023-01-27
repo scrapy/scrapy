@@ -68,41 +68,43 @@ def eb1(failure, arg1, arg2):
 
 
 class DeferUtilsTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def test_process_chain(self):
-        x = yield process_chain([cb1, cb2, cb3], 'res', 'v1', 'v2')
+        x = yield process_chain([cb1, cb2, cb3], "res", "v1", "v2")
         self.assertEqual(x, "(cb3 (cb2 (cb1 res v1 v2) v1 v2) v1 v2)")
 
         gotexc = False
         try:
-            yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
+            yield process_chain([cb1, cb_fail, cb3], "res", "v1", "v2")
         except TypeError:
             gotexc = True
         self.assertTrue(gotexc)
 
     @defer.inlineCallbacks
     def test_process_chain_both(self):
-        x = yield process_chain_both([cb_fail, cb2, cb3], [None, eb1, None], 'res', 'v1', 'v2')
+        x = yield process_chain_both(
+            [cb_fail, cb2, cb3], [None, eb1, None], "res", "v1", "v2"
+        )
         self.assertEqual(x, "(cb3 (eb1 TypeError v1 v2) v1 v2)")
 
         fail = Failure(ZeroDivisionError())
-        x = yield process_chain_both([eb1, cb2, cb3], [eb1, None, None], fail, 'v1', 'v2')
+        x = yield process_chain_both(
+            [eb1, cb2, cb3], [eb1, None, None], fail, "v1", "v2"
+        )
         self.assertEqual(x, "(cb3 (cb2 (eb1 ZeroDivisionError v1 v2) v1 v2) v1 v2)")
 
     @defer.inlineCallbacks
     def test_process_parallel(self):
-        x = yield process_parallel([cb1, cb2, cb3], 'res', 'v1', 'v2')
-        self.assertEqual(x, ['(cb1 res v1 v2)', '(cb2 res v1 v2)', '(cb3 res v1 v2)'])
+        x = yield process_parallel([cb1, cb2, cb3], "res", "v1", "v2")
+        self.assertEqual(x, ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"])
 
     def test_process_parallel_failure(self):
-        d = process_parallel([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
+        d = process_parallel([cb1, cb_fail, cb3], "res", "v1", "v2")
         self.failUnlessFailure(d, TypeError)
         return d
 
 
 class IterErrbackTest(unittest.TestCase):
-
     def test_iter_errback_good(self):
         def itergood():
             for x in range(10):
@@ -128,7 +130,6 @@ class IterErrbackTest(unittest.TestCase):
 
 
 class AiterErrbackTest(unittest.TestCase):
-
     @deferred_f_from_coro_f
     async def test_aiter_errback_good(self):
         async def itergood():
@@ -171,7 +172,7 @@ class AsyncDefTestsuiteTest(unittest.TestCase):
 
 
 class AsyncCooperatorTest(unittest.TestCase):
-    """ This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
+    """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 
     parallel_async is called with the results of a callback (so an iterable of items, requests and None,
     with arbitrary delays between values), and it uses Scraper._process_spidermw_output as the callable
@@ -182,6 +183,7 @@ class AsyncCooperatorTest(unittest.TestCase):
     We also want to simulate the real usage, with arbitrary delays between getting the values
     from the iterable. We also want to simulate sync and async results from the callable.
     """
+
     CONCURRENT_ITEMS = 50
 
     @staticmethod
