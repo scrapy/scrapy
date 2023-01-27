@@ -542,13 +542,6 @@ class GenspiderCommandTest(CommandTest):
                 r"allowed_domains\s*=\s*\[\'(.+)\'\]",
             ).group(1),
         )
-        self.assertEqual(
-            f"://{domain}/",
-            self.find_in_file(
-                Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"start_urls\s*=\s*\[\'https?(.+)\'\]",
-            ).group(1),
-        )
 
     def test_url_schema(self):
         self.test_url("http://test.com", "test.com")
@@ -567,7 +560,7 @@ class GenspiderCommandTest(CommandTest):
             schema,
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r'start_urls\s*?[=]\s*?\[[\'"](\w+)://',
+                r'start_urls\s*?[=]\s*?\[[\'"](.+)://',
             ).group(1),
         )
 
@@ -597,6 +590,32 @@ class GenspiderCommandTest(CommandTest):
         )
         self.test_start_urls_schema(
             template="csvfeed", url="http://test.com", schema="http"
+        )
+
+    def test_start_urls_matches_input(self, template="basic", url="https://test.com"):
+        self.assertEqual(
+            0, self.call("genspider", "--force", "-t", template, "test_name", url)
+        )
+        self.assertEqual(
+            url,
+            self.find_in_file(
+                Path(self.proj_mod_path, "spiders", "test_name.py"),
+                r'start_urls\s*?[=]\s*?\[[\'"](.+)[\'"]\]',
+            ).group(1),
+        )
+
+    def test_start_urls_substitution_with_schema(self):
+        self.test_start_urls_matches_input(
+            template="basic", url="https://test.com/full/path"
+        )
+        self.test_start_urls_matches_input(
+            template="xmlfeed", url="https://test.com/full/path"
+        )
+        self.test_start_urls_matches_input(
+            template="crawl", url="https://test.com/full/path"
+        )
+        self.test_start_urls_matches_input(
+            template="csvfeed", url="https://test.com/full/path"
         )
 
 

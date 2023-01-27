@@ -4,6 +4,7 @@ from os import PathLike
 import re
 import string
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Union
 
 
@@ -11,9 +12,11 @@ def render_templatefile(path: Union[str, PathLike], url=None, **kwargs):
     path_obj = Path(path)
     raw = path_obj.read_text("utf8")
 
-    if url and url.lower().startswith("https"):
-        # make template match the correct url schema
-        raw = re.sub(r"start_urls = \['http:", "start_urls = ['https:", raw)
+    if url is not None:
+        if urlparse(url).scheme in ["https", "http"]:
+            # make template match the correct url
+            raw = re.sub(r"start_urls = \[.*?\]", "start_urls = ['$url']", raw)
+            kwargs["url"] = url
 
     content = string.Template(raw).substitute(**kwargs)
 
