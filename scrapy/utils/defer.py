@@ -85,7 +85,7 @@ def mustbe_deferred(f: Callable, *args, **kw) -> Deferred:
 
 def parallel(
     iterable: Iterable, count: int, callable: Callable, *args, **named
-) -> DeferredList:
+) -> Deferred:
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
 
@@ -202,11 +202,11 @@ class _AsyncCooperatorAdapter(Iterator):
 
 def parallel_async(
     async_iterable: AsyncIterable, count: int, callable: Callable, *args, **named
-) -> DeferredList:
+) -> Deferred:
     """Like parallel but for async iterators"""
     coop = Cooperator()
     work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
-    dl = DeferredList([coop.coiterate(work) for _ in range(count)])
+    dl: Deferred = DeferredList([coop.coiterate(work) for _ in range(count)])
     return dl
 
 
@@ -245,7 +245,7 @@ def process_parallel(callbacks: Iterable[Callable], input, *a, **kw) -> Deferred
     callbacks
     """
     dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
-    d = DeferredList(dfds, fireOnOneErrback=True, consumeErrors=True)
+    d: Deferred = DeferredList(dfds, fireOnOneErrback=True, consumeErrors=True)
     d.addCallbacks(lambda r: [x[1] for x in r], lambda f: f.value.subFailure)
     return d
 
