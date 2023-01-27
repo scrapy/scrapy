@@ -214,6 +214,19 @@ Disallow: /some/randome/page.html
         middleware.process_request_2(rp, Request("http://site.local/allowed"), None)
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
 
+    def test_robotstxt_local_file(self):
+        middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
+        assert not middleware.process_request(
+            Request("data:text/plain,Hello World data"), None
+        )
+        assert not middleware.process_request(
+            Request("file:///tests/sample_data/test_site/nothinghere.html"), None
+        )
+        assert isinstance(
+            middleware.process_request(Request("http://site.local/allowed"), None),
+            Deferred,
+        )
+
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used
         dfd = maybeDeferred(middleware.process_request, request, spider)
