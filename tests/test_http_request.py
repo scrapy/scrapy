@@ -314,8 +314,10 @@ class RequestTest(unittest.TestCase):
         r5 = self.request_class(
             url="http://example.com",
             callback=NO_CALLBACK,
+            errback=NO_CALLBACK,
         )
         self.assertIs(r5.callback, NO_CALLBACK)
+        self.assertIs(r5.errback, NO_CALLBACK)
 
     def test_callback_and_errback_type(self):
         with self.assertRaises(TypeError):
@@ -328,8 +330,10 @@ class RequestTest(unittest.TestCase):
                 callback="a_function",
                 errback="a_function",
             )
-        with self.assertRaises(TypeError):
-            self.request_class("http://example.com", errback=NO_CALLBACK)
+
+    def test_no_callback(self):
+        with self.assertRaises(RuntimeError):
+            NO_CALLBACK()
 
     def test_from_curl(self):
         # Note: more curated tests regarding curl conversion are in

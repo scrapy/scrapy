@@ -5,10 +5,8 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import inspect
-from enum import Enum
 from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
 
-from typing_extensions import Final
 from w3lib.url import safe_url_string
 
 import scrapy
@@ -23,21 +21,22 @@ from scrapy.utils.url import escape_ajax
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 
-# https://github.com/python/typing/issues/689#issuecomment-561425237
-class NoCallbackType(Enum):
-    NO_CALLBACK = 0
+def NO_CALLBACK(*args, **kwargs):
+    """When assigned to the ``callback`` parameter of
+    :class:`~scrapy.http.Request`, it indicates that the request is not meant
+    to have a spider callback at all.
 
-
-#: When assigned to the ``callback`` parameter of
-#: :class:`~scrapy.http.Request`, it indicates that the request is not meant to
-#: have a spider callback at all.
-#:
-#: This value should be used by :ref:`components <topics-components>`
-#: that create and handle their own requests, e.g. through
-#: :meth:`scrapy.core.engine.ExecutionEngine.download`, so that download
-#: middlewares handling such requests can treat them differently from requests
-#: intended for the :meth:`~scrapy.Spider.parse` callback.
-NO_CALLBACK: Final = NoCallbackType.NO_CALLBACK
+    This value should be used by :ref:`components <topics-components>` that
+    create and handle their own requests, e.g. through
+    :meth:`scrapy.core.engine.ExecutionEngine.download`, so that download
+    middlewares handling such requests can treat them differently from requests
+    intended for the :meth:`~scrapy.Spider.parse` callback.
+    """
+    raise RuntimeError(
+        "The NO_CALLBACK callback has been called. This is a special callback "
+        "value intended for requests whose callback is never meant to be "
+        "called."
+    )
 
 
 class Request(object_ref):
@@ -67,8 +66,6 @@ class Request(object_ref):
     Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
-    callback: Union[None, NoCallbackType, Callable]
-    errback: Optional[Callable]
 
     def __init__(
         self,
@@ -94,8 +91,14 @@ class Request(object_ref):
             raise TypeError(f"Request priority not an integer: {priority!r}")
         self.priority = priority
 
-        self._set_xback("callback", callback)
-        self._set_xback("errback", errback)
+        if not (callable(callback) or callback is None):
+            raise TypeError(
+                f"callback must be a callable, got {type(callback).__name__}"
+            )
+        if not (callable(errback) or errback is None):
+            raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
+        self.callback = callback
+        self.errback = errback
 
         self.cookies = cookies or {}
         self.headers = Headers(headers or {}, encoding=encoding)
@@ -104,15 +107,6 @@ class Request(object_ref):
         self._meta = dict(meta) if meta else None
         self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
         self.flags = [] if flags is None else list(flags)
-
-    def _set_xback(self, name: str, value: Optional[Callable]) -> None:
-        if not (
-            callable(value)
-            or value is None
-            or (name == "callback" and value is NO_CALLBACK)
-        ):
-            raise TypeError(f"{name} must be a callable, got {type(value).__name__}")
-        setattr(self, name, value)
 
     @property
     def cb_kwargs(self) -> dict:

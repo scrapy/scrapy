@@ -34,7 +34,6 @@ install_requires = [
     "packaging",
     "tldextract",
     "lxml>=4.3.0",
-    "typing-extensions>=3.10.0.0",
 ]
 extras_require = {}
 cpython_dependencies = [
