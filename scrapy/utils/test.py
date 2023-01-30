@@ -4,11 +4,11 @@ This module contains some assorted functions used in tests
 
 import asyncio
 import os
+from importlib import import_module
 from pathlib import Path
 from posixpath import split
 from unittest import mock
 
-from importlib import import_module
 from twisted.trial.unittest import SkipTest
 
 from scrapy.utils.boto import is_botocore_available
@@ -109,7 +109,7 @@ def mock_google_cloud_storage():
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """
-    from google.cloud.storage import Client, Bucket, Blob
+    from google.cloud.storage import Blob, Bucket, Client
 
     client_mock = mock.create_autospec(Client)
 

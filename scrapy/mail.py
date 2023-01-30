@@ -12,13 +12,12 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
 
-from twisted.python.versions import Version
-from twisted.internet import defer, ssl
 from twisted import version as twisted_version
+from twisted.internet import defer, ssl
+from twisted.python.versions import Version
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
-
 
 logger = logging.getLogger(__name__)
 

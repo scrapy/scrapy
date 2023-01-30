@@ -1,6 +1,5 @@
 import signal
 
-
 signal_names = {}
 for signame in dir(signal):
     if signame.startswith("SIG") and not signame.startswith("SIG_"):

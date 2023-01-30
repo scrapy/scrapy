@@ -17,7 +17,6 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
-
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 

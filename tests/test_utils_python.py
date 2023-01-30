@@ -5,19 +5,18 @@ import platform
 from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import deferred_f_from_coro_f, aiter_errback
+from scrapy.utils.defer import aiter_errback, deferred_f_from_coro_f
 from scrapy.utils.python import (
-    memoizemethod_noargs,
+    MutableAsyncChain,
+    MutableChain,
     binary_is_text,
     equal_attributes,
     get_func_args,
+    memoizemethod_noargs,
     to_bytes,
     to_unicode,
     without_none_values,
-    MutableChain,
-    MutableAsyncChain,
 )
-
 
 __doctests__ = ["scrapy.utils.python"]
 

@@ -1,5 +1,5 @@
-import OpenSSL.SSL
 import OpenSSL._util as pyOpenSSLutil
+import OpenSSL.SSL
 
 from scrapy.utils.python import to_unicode
 

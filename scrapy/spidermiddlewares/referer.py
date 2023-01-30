@@ -15,7 +15,6 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
 
-
 LOCAL_SCHEMES = (
     "about",
     "blob",

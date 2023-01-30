@@ -26,7 +26,7 @@ from twisted.python import failure
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.utils.reactor import is_asyncio_reactor_installed, _get_asyncio_event_loop
+from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
 
 
 def defer_fail(_failure: Failure) -> Deferred:
