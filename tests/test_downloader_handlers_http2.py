@@ -15,10 +15,10 @@ from scrapy.utils.misc import create_instance
 from scrapy.utils.test import get_crawler
 from tests.mockserver import ssl_context_factory
 from tests.test_downloader_handlers import (
-    Https11TestCase,
-    Https11CustomCiphers,
     Http11MockServerTestCase,
     Http11ProxyTestCase,
+    Https11CustomCiphers,
+    Https11TestCase,
     UriResource,
 )
 

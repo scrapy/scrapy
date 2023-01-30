@@ -17,7 +17,6 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
-
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 
@@ -28,7 +27,7 @@ def NO_CALLBACK(*args, **kwargs):
 
     This value should be used by :ref:`components <topics-components>` that
     create and handle their own requests, e.g. through
-    :meth:`scrapy.core.engine.ExecutionEngine.download`, so that download
+    :meth:`scrapy.core.engine.ExecutionEngine.download`, so that downloader
     middlewares handling such requests can treat them differently from requests
     intended for the :meth:`~scrapy.Spider.parse` callback.
     """

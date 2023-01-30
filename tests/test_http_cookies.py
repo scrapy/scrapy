@@ -1,5 +1,5 @@
-from urllib.parse import urlparse
 from unittest import TestCase
+from urllib.parse import urlparse
 
 from scrapy.http import Request, Response
 from scrapy.http.cookies import WrappedRequest, WrappedResponse

@@ -3,7 +3,7 @@ import unittest
 import warnings
 from contextlib import suppress
 
-from scrapy import Spider, Request
+from scrapy import Request, Spider
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, JsonRequest
 from scrapy.utils.request import request_from_dict
@@ -171,10 +171,8 @@ class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
                     "scrapy.utils.reqser"
                 ]  # delete module to reset the deprecation warning
 
-            from scrapy.utils.reqser import (
-                request_from_dict as _from_dict,
-                request_to_dict as _to_dict,
-            )
+            from scrapy.utils.reqser import request_from_dict as _from_dict
+            from scrapy.utils.reqser import request_to_dict as _to_dict
 
             request_copy = _from_dict(_to_dict(request, spider), spider)
             self._assert_same_request(request, request_copy)

@@ -1,6 +1,5 @@
 from io import StringIO
-
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 from scrapy.utils.display import pformat, pprint
 

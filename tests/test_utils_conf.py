@@ -1,7 +1,7 @@
 import unittest
 import warnings
 
-from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
     arglist_to_dict,

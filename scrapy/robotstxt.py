@@ -1,5 +1,5 @@
-import sys
 import logging
+import sys
 from abc import ABCMeta, abstractmethod
 
 from scrapy.utils.python import to_unicode

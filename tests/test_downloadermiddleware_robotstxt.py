@@ -1,18 +1,17 @@
 from unittest import mock
 
-from twisted.internet import reactor, error
+from twisted.internet import error, reactor
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
-from scrapy.downloadermiddlewares.robotstxt import (
-    RobotsTxtMiddleware,
-    logger as mw_module_logger,
-)
+
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
+from scrapy.downloadermiddlewares.robotstxt import logger as mw_module_logger
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from tests.test_robotstxt_interface import rerp_available, reppy_available
+from tests.test_robotstxt_interface import reppy_available, rerp_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -215,6 +214,19 @@ Disallow: /some/randome/page.html
         rp = mock.MagicMock(return_value=True)
         middleware.process_request_2(rp, Request("http://site.local/allowed"), None)
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
+
+    def test_robotstxt_local_file(self):
+        middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
+        assert not middleware.process_request(
+            Request("data:text/plain,Hello World data"), None
+        )
+        assert not middleware.process_request(
+            Request("file:///tests/sample_data/test_site/nothinghere.html"), None
+        )
+        assert isinstance(
+            middleware.process_request(Request("http://site.local/allowed"), None),
+            Deferred,
+        )
 
     def assertNotIgnored(self, request, middleware):
         spider = None  # not actually used
