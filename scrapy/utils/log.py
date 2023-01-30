@@ -131,8 +131,8 @@ def _get_handler(settings):
     if filename:
         mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
         encoding = settings.get("LOG_ENCODING")
-        max_bytes = settings.get("LOG_MAX_BYTES", 0)
-        log_backup_count = settings.get("LOG_BACKUP_COUNT", 0)
+        max_bytes = settings.getint("LOG_MAX_BYTES", 0)
+        log_backup_count = settings.getint("LOG_BACKUP_COUNT", 0)
         handler = RotatingFileHandler(
             filename,
             mode=mode,
