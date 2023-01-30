@@ -18,6 +18,10 @@ from scrapy.utils.log import failure_to_exc_info
 logger = logging.getLogger(__name__)
 
 
+def _DUMMY_CALLBACK(response):
+    return response
+
+
 class MediaPipeline:
 
     LOG_FAILED_RESULTS = True
@@ -91,7 +95,10 @@ class MediaPipeline:
 
     def _process_request(self, request, info, item):
         fp = self._fingerprinter.fingerprint(request)
-        cb = request.callback or (lambda _: _)
+        if not request.callback or request.callback is NO_CALLBACK:
+            cb = _DUMMY_CALLBACK
+        else:
+            cb = request.callback
         eb = request.errback
         request.callback = NO_CALLBACK
         request.errback = None
