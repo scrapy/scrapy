@@ -10,12 +10,6 @@ jobs:
         include:
         - python-version: "3.11"
           env:
-            TOXENV: security
-        - python-version: "3.11"
-          env:
-            TOXENV: flake8
-        - python-version: "3.11"
-          env:
             TOXENV: pylint
         - python-version: 3.7
           env:
@@ -26,13 +20,9 @@ jobs:
         - python-version: "3.11"
           env:
             TOXENV: twinecheck
-        - python-version: "3.11"
-          env:
-            TOXENV: black
 
     steps:
     - uses: actions/checkout@v3
-    - uses: pre-commit/action@v3.0.0
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -44,3 +34,9 @@ jobs:
       run: |
         pip install -U tox
         tox
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: pre-commit/action@v3.0.0
