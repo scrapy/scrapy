@@ -4,11 +4,11 @@ Scrapy Telnet Console extension
 See documentation in docs/topics/telnetconsole.rst
 """
 
-import pprint
-import logging
-import traceback
 import binascii
+import logging
 import os
+import pprint
+import traceback
 
 from twisted.internet import protocol
 
@@ -21,12 +21,12 @@ except (ImportError, SyntaxError):
     _TWISTED_CONCH_TRACEBACK = traceback.format_exc()
     TWISTED_CONCH_AVAILABLE = False
 
-from scrapy.exceptions import NotConfigured
 from scrapy import signals
-from scrapy.utils.trackref import print_live_refs
+from scrapy.exceptions import NotConfigured
+from scrapy.utils.decorators import defers
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
-from scrapy.utils.decorators import defers
+from scrapy.utils.trackref import print_live_refs
 
 logger = logging.getLogger(__name__)
 

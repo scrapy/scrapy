@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from scrapy.spiders import Spider
-from scrapy.http import Request
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from scrapy.http import Request
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
 

@@ -1,6 +1,6 @@
+import subprocess
 import sys
 import time
-import subprocess
 from urllib.parse import urlencode
 
 import scrapy

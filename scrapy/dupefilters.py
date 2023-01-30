@@ -10,8 +10,7 @@ from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
-from scrapy.utils.request import referer_str, RequestFingerprinter
-
+from scrapy.utils.request import RequestFingerprinter, referer_str
 
 BaseDupeFilterTV = TypeVar("BaseDupeFilterTV", bound="BaseDupeFilter")
 

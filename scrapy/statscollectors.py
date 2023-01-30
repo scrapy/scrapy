@@ -1,8 +1,8 @@
 """
 Scrapy extension for collecting scraping stats
 """
-import pprint
 import logging
+import pprint
 
 logger = logging.getLogger(__name__)
 

@@ -2,9 +2,8 @@ from pytest import mark
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from scrapy import signals, Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-
 from tests.mockserver import MockServer
 
 

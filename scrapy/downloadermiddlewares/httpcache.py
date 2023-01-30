@@ -23,7 +23,6 @@ from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.misc import load_object
 
-
 HttpCacheMiddlewareTV = TypeVar("HttpCacheMiddlewareTV", bound="HttpCacheMiddleware")
 
 

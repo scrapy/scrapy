@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-from time import time
 from collections import deque
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
+from time import time
+
 from twisted.internet import reactor
+from twisted.web.resource import Resource
+from twisted.web.server import NOT_DONE_YET, Site
 
 
 class Root(Resource):
