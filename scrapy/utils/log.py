@@ -2,6 +2,7 @@ import logging
 import sys
 import warnings
 from logging.config import dictConfig
+from logging.handlers import RotatingFileHandler
 
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -130,7 +131,15 @@ def _get_handler(settings):
     if filename:
         mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
         encoding = settings.get("LOG_ENCODING")
-        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
+        max_bytes = settings.get("LOG_MAX_BYTES", 0)
+        log_backup_count = settings.get("LOG_BACKUP_COUNT", 0)
+        handler = RotatingFileHandler(
+            filename,
+            mode=mode,
+            maxBytes=max_bytes,
+            backupCount=log_backup_count,
+            encoding=encoding,
+        )
     elif settings.getbool("LOG_ENABLED"):
         handler = logging.StreamHandler()
     else:

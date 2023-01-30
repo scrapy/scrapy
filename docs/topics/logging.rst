@@ -146,6 +146,8 @@ These settings can be used to configure the logging:
 * :setting:`LOG_FILE_APPEND`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
+* :setting:`LOG_MAX_BYTES`
+* :setting:`LOG_BACKUP_COUNT`
 * :setting:`LOG_LEVEL`
 * :setting:`LOG_FORMAT`
 * :setting:`LOG_DATEFORMAT`
@@ -158,7 +160,10 @@ redirected to a file named :setting:`LOG_FILE` with encoding
 :setting:`LOG_ENCODING`. If unset and :setting:`LOG_ENABLED` is ``True``, log
 messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
 and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
-(discarding the output from previous runs, if any). Lastly, if
+(discarding the output from previous runs, if any). When :setting:`LOG_FILE` is set,
+:setting:`LOG_MAX_BYTES` can be configured to set up log rotation to rotate logs when
+the log file reaches the specified size. :setting:`LOG_BACKUP_COUNT` can also be
+configured to manage the number of rotated log files that is kept on disk. Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
 
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
