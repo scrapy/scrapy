@@ -123,6 +123,11 @@ Bug fixes
     *and* text.
     (:issue:`3798`, :issue:`3799`, :issue:`4695`, :issue:`5458`)
 
+-   :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` now
+    ignores URL protocols that do not support ``robots.txt`` (``data://``,
+    ``file://``).
+    (:issue:`5807`)
+
 -   Silenced the ``filelock`` debug log messages introduced in Scrapy 2.6.
     (:issue:`5753`, :issue:`5754`)
 
@@ -155,9 +160,10 @@ Documentation
 Quality assurance
 ~~~~~~~~~~~~~~~~~
 
--   Applied :ref:`black coding style <coding-style>` and introduced
-    :ref:`pre-commit <scrapy-pre-commit>`.
-    (:issue:`4654`, :issue:`5734`, :issue:`5734`)
+-   Applied :ref:`black coding style <coding-style>`, sorted import statements,
+    and introduced :ref:`pre-commit <scrapy-pre-commit>`.
+    (:issue:`4654`, :issue:`4658`, :issue:`5734`, :issue:`5737`, :issue:`5806`,
+    :issue:`5810`)
 
 -   Switched from :mod:`os.path` to :mod:`pathlib`.
     (:issue:`4916`, :issue:`4497`, :issue:`5682`)
