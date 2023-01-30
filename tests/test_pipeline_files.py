@@ -1,3 +1,4 @@
+import dataclasses
 import os
 import random
 import time
@@ -8,7 +9,6 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from unittest import mock
 from urllib.parse import urlparse
-import dataclasses
 
 import attr
 from itemadapter import ItemAdapter

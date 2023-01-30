@@ -18,7 +18,6 @@ from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
-
 try:
     from PIL import Image
 except ImportError:

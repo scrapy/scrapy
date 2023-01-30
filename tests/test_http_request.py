@@ -1,18 +1,18 @@
-import unittest
-import re
 import json
-import xmlrpc.client
+import re
+import unittest
 import warnings
+import xmlrpc.client
 from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
 from scrapy.http import (
-    Request,
     FormRequest,
-    XmlRpcRequest,
-    JsonRequest,
     Headers,
     HtmlResponse,
+    JsonRequest,
+    Request,
+    XmlRpcRequest,
 )
 from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.python import to_bytes, to_unicode

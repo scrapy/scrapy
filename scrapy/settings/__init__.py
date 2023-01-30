@@ -1,11 +1,10 @@
-import json
 import copy
+import json
 from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
 from scrapy.settings import default_settings
-
 
 SETTINGS_PRIORITIES = {
     "default": 0,
