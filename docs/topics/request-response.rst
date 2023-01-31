@@ -32,11 +32,22 @@ Request objects
     :type url: str
 
     :param callback: the function that will be called with the response of this
-       request (once it's downloaded) as its first parameter. For more information
-       see :ref:`topics-request-response-ref-request-callback-arguments` below.
-       If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.Spider.parse` method will be used.
-       Note that if exceptions are raised during processing, errback is called instead.
+       request (once it's downloaded) as its first parameter.
+
+       In addition to a function, the following values are supported:
+
+       -   ``None`` (default), which indicates that the spider's
+           :meth:`~scrapy.Spider.parse` method must be used.
+
+       -   :py:data:`scrapy.http.request.NO_CALLBACK`
+
+            .. autodata:: scrapy.http.request.NO_CALLBACK
+
+       For more information, see
+       :ref:`topics-request-response-ref-request-callback-arguments`.
+
+       .. note:: If exceptions are raised during processing, ``errback`` is
+                 called instead.
 
     :type callback: collections.abc.Callable
 
@@ -69,16 +80,24 @@ Request objects
 
         1. Using a dict::
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={'currency': 'USD', 'country': 'UY'})
+            request_with_cookies = Request(
+                url="http://www.example.com",
+                cookies={'currency': 'USD', 'country': 'UY'},
+            )
 
         2. Using a list of dicts::
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies=[{'name': 'currency',
-                                                    'value': 'USD',
-                                                    'domain': 'example.com',
-                                                    'path': '/currency'}])
+            request_with_cookies = Request(
+                url="http://www.example.com",
+                cookies=[
+                    {
+                        'name': 'currency',
+                        'value': 'USD',
+                        'domain': 'example.com',
+                        'path': '/currency',
+                    },
+                ],
+            )
 
         The latter form allows for customizing the ``domain`` and ``path``
         attributes of the cookie. This is only useful if the cookies are saved

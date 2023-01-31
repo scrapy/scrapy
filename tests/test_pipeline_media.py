@@ -9,6 +9,7 @@ from twisted.trial import unittest
 
 from scrapy import signals
 from scrapy.http import Request, Response
+from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
@@ -30,6 +31,7 @@ else:
 
 
 def _mocked_download_func(request, info):
+    assert request.callback is NO_CALLBACK
     response = request.meta.get("response")
     return response() if callable(response) else response
 
