@@ -25,6 +25,12 @@ def NO_CALLBACK(*args, **kwargs):
     :class:`~scrapy.http.Request`, it indicates that the request is not meant
     to have a spider callback at all.
 
+    For example:
+
+    .. code-block:: python
+
+       Request("https://example.com", callback=NO_CALLBACK)
+
     This value should be used by :ref:`components <topics-components>` that
     create and handle their own requests, e.g. through
     :meth:`scrapy.core.engine.ExecutionEngine.download`, so that downloader

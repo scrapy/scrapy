@@ -76,6 +76,12 @@ New features
     avoid confusion.
     (:issue:`5717`, :issue:`5722`, :issue:`5727`)
 
+-   The ``callback`` parameter of :class:`~scrapy.http.Request` can now be set
+    to :func:`scrapy.http.request.NO_CALLBACK`, to distinguish it from
+    ``None``, as the latter indicates that the default spider callback
+    (:meth:`~scrapy.Spider.parse`) is to be used.
+    (:issue:`5798`)
+
 
 Bug fixes
 ~~~~~~~~~
