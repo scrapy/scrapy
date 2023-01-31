@@ -542,6 +542,13 @@ class GenspiderCommandTest(CommandTest):
                 r"allowed_domains\s*=\s*\[\'(.+)\'\]",
             ).group(1),
         )
+        self.assertIn(
+            domain,
+            self.find_in_file(
+                Path(self.proj_mod_path, "spiders", "test_name.py"),
+                r"start_urls\s*=\s*\[\'(.+)\'\]",
+            ).group(1),
+        )
 
     def test_url_schema(self):
         self.test_url("http://test.com", "test.com")
