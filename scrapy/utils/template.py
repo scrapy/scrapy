@@ -1,11 +1,11 @@
 """Helper functions for working with templates"""
 
-from os import PathLike
 import re
 import string
+from os import PathLike
 from pathlib import Path
-from urllib.parse import urlparse
 from typing import Union
+from urllib.parse import urlparse
 
 
 def render_templatefile(path: Union[str, PathLike], url=None, **kwargs):
