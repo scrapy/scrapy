@@ -177,7 +177,9 @@ that generates :class:`scrapy.Request <scrapy.Request>` objects from URLs,
 you can just define a :attr:`~scrapy.Spider.start_urls` class attribute
 with a list of URLs. This list will then be used by the default implementation
 of :meth:`~scrapy.Spider.start_requests` to create the initial requests
-for your spider::
+for your spider.
+
+.. code-block:: python
 
     from pathlib import Path
 
@@ -187,13 +189,13 @@ for your spider::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'https://quotes.toscrape.com/page/1/',
-            'https://quotes.toscrape.com/page/2/',
+            "https://quotes.toscrape.com/page/1/",
+            "https://quotes.toscrape.com/page/2/",
         ]
 
         def parse(self, response):
             page = response.url.split("/")[-2]
-            filename = f'quotes-{page}.html'
+            filename = f"quotes-{page}.html"
             Path(filename).write_bytes(response.body)
 
 The :meth:`~scrapy.Spider.parse` method will be called to handle each
@@ -438,7 +440,9 @@ extraction logic above into our spider.
 
 A Scrapy spider typically generates many dictionaries containing the data
 extracted from the page. To do that, we use the ``yield`` Python keyword
-in the callback, as you can see below::
+in the callback, as you can see below:
+
+.. code-block:: python
 
     import scrapy
 
@@ -446,16 +450,16 @@ in the callback, as you can see below::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'https://quotes.toscrape.com/page/1/',
-            'https://quotes.toscrape.com/page/2/',
+            "https://quotes.toscrape.com/page/1/",
+            "https://quotes.toscrape.com/page/2/",
         ]
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'text': quote.css('span.text::text').get(),
-                    'author': quote.css('small.author::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').getall(),
+                    "text": quote.css("span.text::text").get(),
+                    "author": quote.css("small.author::text").get(),
+                    "tags": quote.css("div.tags a.tag::text").getall(),
                 }
 
 If you run this spider, it will output the extracted data with the log::
@@ -543,7 +547,9 @@ There is also an ``attrib`` property available
 '/page/2/'
 
 Let's see now our spider modified to recursively follow the link to the next
-page, extracting data from it::
+page, extracting data from it:
+
+.. code-block:: python
 
     import scrapy
 
@@ -551,18 +557,18 @@ page, extracting data from it::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'https://quotes.toscrape.com/page/1/',
+            "https://quotes.toscrape.com/page/1/",
         ]
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'text': quote.css('span.text::text').get(),
-                    'author': quote.css('small.author::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').getall(),
+                    "text": quote.css("span.text::text").get(),
+                    "author": quote.css("small.author::text").get(),
+                    "tags": quote.css("div.tags a.tag::text").getall(),
                 }
 
-            next_page = response.css('li.next a::attr(href)').get()
+            next_page = response.css("li.next a::attr(href)").get()
             if next_page is not None:
                 next_page = response.urljoin(next_page)
                 yield scrapy.Request(next_page, callback=self.parse)
@@ -594,7 +600,9 @@ A shortcut for creating Requests
 --------------------------------
 
 As a shortcut for creating Request objects you can use
-:meth:`response.follow <scrapy.http.TextResponse.follow>`::
+:meth:`response.follow <scrapy.http.TextResponse.follow>`
+
+.. code-block:: python
 
     import scrapy
 
@@ -602,18 +610,18 @@ As a shortcut for creating Request objects you can use
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'https://quotes.toscrape.com/page/1/',
+            "https://quotes.toscrape.com/page/1/",
         ]
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'text': quote.css('span.text::text').get(),
-                    'author': quote.css('span small::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').getall(),
+                    "text": quote.css("span.text::text").get(),
+                    "author": quote.css("span small::text").get(),
+                    "tags": quote.css("div.tags a.tag::text").getall(),
                 }
 
-            next_page = response.css('li.next a::attr(href)').get()
+            next_page = response.css("li.next a::attr(href)").get()
             if next_page is not None:
                 yield response.follow(next_page, callback=self.parse)
 
@@ -622,57 +630,67 @@ need to call urljoin. Note that ``response.follow`` just returns a Request
 instance; you still have to yield this Request.
 
 You can also pass a selector to ``response.follow`` instead of a string;
-this selector should extract necessary attributes::
+this selector should extract necessary attributes:
 
-    for href in response.css('ul.pager a::attr(href)'):
+.. code-block:: python
+
+    for href in response.css("ul.pager a::attr(href)"):
         yield response.follow(href, callback=self.parse)
 
 For ``<a>`` elements there is a shortcut: ``response.follow`` uses their href
-attribute automatically. So the code can be shortened further::
+attribute automatically. So the code can be shortened further:
 
-    for a in response.css('ul.pager a'):
+.. code-block:: python
+
+    for a in response.css("ul.pager a"):
         yield response.follow(a, callback=self.parse)
 
 To create multiple requests from an iterable, you can use
-:meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` instead::
+:meth:`response.follow_all <scrapy.http.TextResponse.follow_all>` instead:
 
-    anchors = response.css('ul.pager a')
+.. code-block:: python
+
+    anchors = response.css("ul.pager a")
     yield from response.follow_all(anchors, callback=self.parse)
 
-or, shortening it further::
+or, shortening it further:
 
-    yield from response.follow_all(css='ul.pager a', callback=self.parse)
+.. code-block:: python
+
+    yield from response.follow_all(css="ul.pager a", callback=self.parse)
 
 
 More examples and patterns
 --------------------------
 
 Here is another spider that illustrates callbacks and following links,
-this time for scraping author information::
+this time for scraping author information:
+
+.. code-block:: python
 
     import scrapy
 
 
     class AuthorSpider(scrapy.Spider):
-        name = 'author'
+        name = "author"
 
-        start_urls = ['https://quotes.toscrape.com/']
+        start_urls = ["https://quotes.toscrape.com/"]
 
         def parse(self, response):
-            author_page_links = response.css('.author + a')
+            author_page_links = response.css(".author + a")
             yield from response.follow_all(author_page_links, self.parse_author)
 
-            pagination_links = response.css('li.next a')
+            pagination_links = response.css("li.next a")
             yield from response.follow_all(pagination_links, self.parse)
 
         def parse_author(self, response):
             def extract_with_css(query):
-                return response.css(query).get(default='').strip()
+                return response.css(query).get(default="").strip()
 
             yield {
-                'name': extract_with_css('h3.author-title::text'),
-                'birthdate': extract_with_css('.author-born-date::text'),
-                'bio': extract_with_css('.author-description::text'),
+                "name": extract_with_css("h3.author-title::text"),
+                "birthdate": extract_with_css(".author-born-date::text"),
+                "bio": extract_with_css(".author-description::text"),
             }
 
 This spider will start from the main page, it will follow all the links to the
@@ -720,7 +738,9 @@ spider attributes by default.
 
 In this example, the value provided for the ``tag`` argument will be available
 via ``self.tag``. You can use this to make your spider fetch only quotes
-with a specific tag, building the URL based on the argument::
+with a specific tag, building the URL based on the argument:
+
+.. code-block:: python
 
     import scrapy
 
@@ -729,20 +749,20 @@ with a specific tag, building the URL based on the argument::
         name = "quotes"
 
         def start_requests(self):
-            url = 'https://quotes.toscrape.com/'
-            tag = getattr(self, 'tag', None)
+            url = "https://quotes.toscrape.com/"
+            tag = getattr(self, "tag", None)
             if tag is not None:
-                url = url + 'tag/' + tag
+                url = url + "tag/" + tag
             yield scrapy.Request(url, self.parse)
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'text': quote.css('span.text::text').get(),
-                    'author': quote.css('small.author::text').get(),
+                    "text": quote.css("span.text::text").get(),
+                    "author": quote.css("small.author::text").get(),
                 }
 
-            next_page = response.css('li.next a::attr(href)').get()
+            next_page = response.css("li.next a::attr(href)").get()
             if next_page is not None:
                 yield response.follow(next_page, self.parse)
 

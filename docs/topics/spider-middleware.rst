@@ -18,10 +18,12 @@ To activate a spider middleware component, add it to the
 :setting:`SPIDER_MIDDLEWARES` setting, which is a dict whose keys are the
 middleware class path and their values are the middleware orders.
 
-Here's an example::
+Here's an example:
+
+.. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        'myproject.middlewares.CustomSpiderMiddleware': 543,
+        "myproject.middlewares.CustomSpiderMiddleware": 543,
     }
 
 The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
@@ -44,11 +46,13 @@ previous (or subsequent) middleware being applied.
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
 in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the off-site middleware::
+value.  For example, if you want to disable the off-site middleware:
+
+.. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        'myproject.middlewares.CustomSpiderMiddleware': 543,
-        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
+        "myproject.middlewares.CustomSpiderMiddleware": 543,
+        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -261,7 +265,9 @@ specify which response codes the spider is able to handle using the
 :setting:`HTTPERROR_ALLOWED_CODES` setting.
 
 For example, if you want your spider to handle 404 responses you can do
-this::
+this:
+
+.. code-block:: python
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [404]

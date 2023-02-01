@@ -981,25 +981,34 @@ Selector examples on HTML response
 
 Here are some :class:`Selector` examples to illustrate several concepts.
 In all cases, we assume there is already a :class:`Selector` instantiated with
-a :class:`~scrapy.http.HtmlResponse` object like this::
+a :class:`~scrapy.http.HtmlResponse` object like this:
+
+.. code-block:: python
 
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
+   :class:`Selector` objects (i.e. a :class:`SelectorList` object):
+
+   .. code-block:: python
 
       sel.xpath("//h1")
 
 2. Extract the text of all ``<h1>`` elements from an HTML response body,
-   returning a list of strings::
+   returning a list of strings:
 
-      sel.xpath("//h1").getall()         # this includes the h1 tag
+   .. code-block:: python
+
+      sel.xpath("//h1").getall()  # this includes the h1 tag
       sel.xpath("//h1/text()").getall()  # this excludes the h1 tag
 
-3. Iterate over all ``<p>`` tags and print their class attribute::
+3. Iterate over all ``<p>`` tags and print their class attribute:
+
+
+   .. code-block:: python
 
       for node in sel.xpath("//p"):
-          print(node.attrib['class'])
+          print(node.attrib["class"])
 
 
 .. _selector-examples-xml:
@@ -1008,17 +1017,23 @@ Selector examples on XML response
 ---------------------------------
 
 Here are some examples to illustrate concepts for :class:`Selector` objects
-instantiated with an :class:`~scrapy.http.XmlResponse` object::
+instantiated with an :class:`~scrapy.http.XmlResponse` object:
+
+.. code-block:: python
 
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (i.e. a :class:`SelectorList` object)::
+   of :class:`Selector` objects (i.e. a :class:`SelectorList` object):
+
+   .. code-block:: python
 
       sel.xpath("//product")
 
 2. Extract all prices from a `Google Base XML feed`_ which requires registering
-   a namespace::
+   a namespace:
+
+   .. code-block:: python
 
       sel.register_namespace("g", "http://base.google.com/ns/1.0")
       sel.xpath("//g:price").getall()

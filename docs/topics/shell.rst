@@ -242,7 +242,9 @@ getting there.
 
 This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
-Here's an example of how you would call it from your spider::
+Here's an example of how you would call it from your spider:
+
+.. code-block:: python
 
     import scrapy
 
@@ -259,6 +261,7 @@ Here's an example of how you would call it from your spider::
             # We want to inspect one specific response.
             if ".org" in response.url:
                 from scrapy.shell import inspect_response
+
                 inspect_response(response, self)
 
             # Rest of parsing code.

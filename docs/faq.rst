@@ -35,8 +35,9 @@ for parsing HTML responses in Scrapy callbacks.
 You just have to feed the response's body into a ``BeautifulSoup`` object
 and extract whatever data you need from it.
 
-Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::
+Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser:
 
+.. code-block:: python
 
     from bs4 import BeautifulSoup
     import scrapy
@@ -45,17 +46,12 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
     class ExampleSpider(scrapy.Spider):
         name = "example"
         allowed_domains = ["example.com"]
-        start_urls = (
-            'http://www.example.com/',
-        )
+        start_urls = ("http://www.example.com/",)
 
         def parse(self, response):
             # use lxml to get decent HTML parsing speed
-            soup = BeautifulSoup(response.text, 'lxml')
-            yield {
-                "url": response.url,
-                "title": soup.h1.string
-            }
+            soup = BeautifulSoup(response.text, "lxml")
+            yield {"url": response.url, "title": soup.h1.string}
 
 .. note::
 
@@ -109,11 +105,13 @@ basically means that it crawls in `DFO order`_. This order is more convenient
 in most cases.
 
 If you do want to crawl in true `BFO order`_, you can do it by
-setting the following settings::
+setting the following settings:
+
+.. code-block:: python
 
     DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
-    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
+    SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
+    SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 While pending requests are below the configured values of
 :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
@@ -159,11 +157,13 @@ See also other suggestions at `StackOverflow`_.
 
 .. note:: Remember to disable
    :class:`scrapy.spidermiddlewares.offsite.OffsiteMiddleware` when you enable
-   your custom implementation::
+   your custom implementation:
+
+   .. code-block:: python
 
        SPIDER_MIDDLEWARES = {
-           'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
-           'myproject.middlewares.CustomOffsiteMiddleware': 500,
+           "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
+           "myproject.middlewares.CustomOffsiteMiddleware": 500,
        }
 
 .. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
@@ -235,11 +235,13 @@ What does the response status code 999 means?
 
 999 is a custom response status code used by Yahoo sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider::
+higher) in your spider:
+
+.. code-block:: python
 
     class MySpider(CrawlSpider):
 
-        name = 'myspider'
+        name = "myspider"
 
         download_delay = 2
 
@@ -351,19 +353,21 @@ How to split an item into multiple items in an item pipeline?
 input item. :ref:`Create a spider middleware <custom-spider-middleware>`
 instead, and use its
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
-method for this purpose. For example::
+method for this purpose. For example:
+
+.. code-block:: python
 
     from copy import deepcopy
 
     from itemadapter import is_item, ItemAdapter
 
-    class MultiplyItemsMiddleware:
 
+    class MultiplyItemsMiddleware:
         def process_spider_output(self, response, result, spider):
             for item in result:
                 if is_item(item):
                     adapter = ItemAdapter(item)
-                    for _ in range(adapter['multiply_by']):
+                    for _ in range(adapter["multiply_by"]):
                         yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?

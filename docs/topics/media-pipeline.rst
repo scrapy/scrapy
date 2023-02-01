@@ -87,13 +87,17 @@ Enabling your Media Pipeline
 To enable your media pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting.
 
-For Images Pipeline, use::
+For Images Pipeline, use:
 
-    ITEM_PIPELINES = {'scrapy.pipelines.images.ImagesPipeline': 1}
+.. code-block:: python
 
-For Files Pipeline, use::
+    ITEM_PIPELINES = {"scrapy.pipelines.images.ImagesPipeline": 1}
 
-    ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
+For Files Pipeline, use:
+
+.. code-block:: python
+
+    ITEM_PIPELINES = {"scrapy.pipelines.files.FilesPipeline": 1}
 
 .. note::
     You can also use both the Files and Images Pipeline at the same time.
@@ -103,13 +107,17 @@ Then, configure the target storage setting to a valid value that will be used
 for storing the downloaded images. Otherwise the pipeline will remain disabled,
 even if you include it in the :setting:`ITEM_PIPELINES` setting.
 
-For the Files Pipeline, set the :setting:`FILES_STORE` setting::
+For the Files Pipeline, set the :setting:`FILES_STORE` setting:
 
-   FILES_STORE = '/path/to/valid/dir'
+.. code-block:: python
 
-For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
+   FILES_STORE = "/path/to/valid/dir"
 
-   IMAGES_STORE = '/path/to/valid/dir'
+For the Images Pipeline, set the :setting:`IMAGES_STORE` setting:
+
+.. code-block:: python
+
+   IMAGES_STORE = "/path/to/valid/dir"
 
 .. _topics-file-naming:
 
@@ -157,10 +165,11 @@ By overriding ``file_path`` like this:
 
   import hashlib
 
+
   def file_path(self, request, response=None, info=None, *, item=None):
       image_url_hash = hashlib.shake_256(request.url.encode()).hexdigest(5)
-      image_perspective = request.url.split('/')[-2]
-      image_filename = f'{image_url_hash}_{image_perspective}.jpg'
+      image_perspective = request.url.split("/")[-2]
+      image_filename = f"{image_url_hash}_{image_perspective}.jpg"
 
       return image_filename
 
@@ -233,30 +242,38 @@ If botocore_ >= 1.4.87 is installed, :setting:`FILES_STORE` and
 :setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
 automatically upload the files to the bucket.
 
-For example, this is a valid :setting:`IMAGES_STORE` value::
+For example, this is a valid :setting:`IMAGES_STORE` value:
 
-    IMAGES_STORE = 's3://bucket/images'
+.. code-block:: python
+
+    IMAGES_STORE = "s3://bucket/images"
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_S3_ACL` and
 :setting:`IMAGES_STORE_S3_ACL` settings. By default, the ACL is set to
 ``private``. To make the files publicly available use the ``public-read``
-policy::
+policy:
 
-    IMAGES_STORE_S3_ACL = 'public-read'
+.. code-block:: python
+
+    IMAGES_STORE_S3_ACL = "public-read"
 
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
 `s3.scality`_. All you need to do is set endpoint option in you Scrapy
-settings::
+settings:
 
-    AWS_ENDPOINT_URL = 'http://minio.example.com:9000'
+.. code-block:: python
 
-For self-hosting you also might feel the need not to use SSL and not to verify SSL connection::
+    AWS_ENDPOINT_URL = "http://minio.example.com:9000"
 
-    AWS_USE_SSL = False # or True (None by default)
-    AWS_VERIFY = False # or True (None by default)
+For self-hosting you also might feel the need not to use SSL and not to verify SSL connection:
+
+.. code-block:: python
+
+    AWS_USE_SSL = False  # or True (None by default)
+    AWS_VERIFY = False  # or True (None by default)
 
 .. _botocore: https://github.com/boto/botocore
 .. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
@@ -277,10 +294,12 @@ bucket. Scrapy will automatically upload the files to the bucket. (requires `goo
 
 .. _google-cloud-storage: https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python
 
-For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings::
+For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_ID` settings:
 
-    IMAGES_STORE = 'gs://bucket/images/'
-    GCS_PROJECT_ID = 'project_id'
+.. code-block:: python
+
+    IMAGES_STORE = "gs://bucket/images/"
+    GCS_PROJECT_ID = "project_id"
 
 For information about authentication, see this `documentation`_.
 
@@ -291,9 +310,11 @@ which is defined by the :setting:`FILES_STORE_GCS_ACL` and
 :setting:`IMAGES_STORE_GCS_ACL` settings. By default, the ACL is set to
 ``''`` (empty string) which means that Cloud Storage applies the bucket's default object ACL to the object.
 To make the files publicly available use the ``publicRead``
-policy::
+policy:
 
-    IMAGES_STORE_GCS_ACL = 'publicRead'
+.. code-block:: python
+
+    IMAGES_STORE_GCS_ACL = "publicRead"
 
 For more information, see `Predefined ACLs`_ in the Google Cloud Platform Developer Guide.
 
@@ -318,9 +339,12 @@ respectively), the pipeline will put the results under the respective field
 When using :ref:`item types <item-types>` for which fields are defined beforehand,
 you must define both the URLs field and the results field. For example, when
 using the images pipeline, items must define both the ``image_urls`` and the
-``images`` field. For instance, using the :class:`~scrapy.Item` class::
+``images`` field. For instance, using the :class:`~scrapy.Item` class:
+
+.. code-block:: python
 
     import scrapy
+
 
     class MyItem(scrapy.Item):
         # ... other item fields ...
@@ -331,16 +355,20 @@ If you want to use another field name for the URLs key or for the results key,
 it is also possible to override it.
 
 For the Files Pipeline, set :setting:`FILES_URLS_FIELD` and/or
-:setting:`FILES_RESULT_FIELD` settings::
+:setting:`FILES_RESULT_FIELD` settings:
 
-    FILES_URLS_FIELD = 'field_name_for_your_files_urls'
-    FILES_RESULT_FIELD = 'field_name_for_your_processed_files'
+.. code-block:: python
+
+    FILES_URLS_FIELD = "field_name_for_your_files_urls"
+    FILES_RESULT_FIELD = "field_name_for_your_processed_files"
 
 For the Images Pipeline, set :setting:`IMAGES_URLS_FIELD` and/or
-:setting:`IMAGES_RESULT_FIELD` settings::
+:setting:`IMAGES_RESULT_FIELD` settings:
 
-    IMAGES_URLS_FIELD = 'field_name_for_your_images_urls'
-    IMAGES_RESULT_FIELD = 'field_name_for_your_processed_images'
+.. code-block:: python
+
+    IMAGES_URLS_FIELD = "field_name_for_your_images_urls"
+    IMAGES_RESULT_FIELD = "field_name_for_your_processed_images"
 
 If you need something more complex and want to override the custom pipeline
 behaviour, see :ref:`topics-media-pipeline-override`.
@@ -366,7 +394,9 @@ File expiration
 The Image Pipeline avoids downloading files that were downloaded recently. To
 adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or
 :setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which
-specifies the delay in number of days::
+specifies the delay in number of days:
+
+.. code-block:: python
 
     # 120 days of delay for files expiration
     FILES_EXPIRES = 120
@@ -400,11 +430,13 @@ images.
 In order to use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
 where the keys are the thumbnail names and the values are their dimensions.
 
-For example::
+For example:
+
+.. code-block:: python
 
    IMAGES_THUMBS = {
-       'small': (50, 50),
-       'big': (270, 270),
+       "small": (50, 50),
+       "big": (270, 270),
    }
 
 When you use this feature, the Images Pipeline will create thumbnails of the
@@ -495,17 +527,19 @@ See here the methods that you can override in your custom Files Pipeline:
       For example, if file URLs end like regular paths (e.g.
       ``https://example.com/a/b/c/foo.png``), you can use the following
       approach to download all files into the ``files`` folder with their
-      original filenames (e.g. ``files/foo.png``)::
+      original filenames (e.g. ``files/foo.png``):
+
+      .. code-block:: python
 
         from pathlib import PurePosixPath
         from urllib.parse import urlparse
 
         from scrapy.pipelines.files import FilesPipeline
 
-        class MyFilesPipeline(FilesPipeline):
 
+        class MyFilesPipeline(FilesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
-                return 'files/' + PurePosixPath(urlparse(request.url).path).name
+                return "files/" + PurePosixPath(urlparse(request.url).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.
@@ -521,13 +555,16 @@ See here the methods that you can override in your custom Files Pipeline:
       As seen on the workflow, the pipeline will get the URLs of the images to
       download from the item. In order to do this, you can override the
       :meth:`~get_media_requests` method and return a Request for each
-      file URL::
+      file URL:
+
+      .. code-block:: python
 
          from itemadapter import ItemAdapter
 
+
          def get_media_requests(self, item, info):
              adapter = ItemAdapter(item)
-             for file_url in adapter['file_urls']:
+             for file_url in adapter["file_urls"]:
                  yield scrapy.Request(file_url)
 
       Those requests will be processed by the pipeline and, when they have finished
@@ -567,15 +604,22 @@ See here the methods that you can override in your custom Files Pipeline:
       guaranteed to retain the same order of the requests returned from the
       :meth:`~get_media_requests` method.
 
-      Here's a typical value of the ``results`` argument::
+      Here's a typical value of the ``results`` argument:
 
-          [(True,
-            {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
-             'path': 'full/0a79c461a4062ac383dc4fade7bc09f1384a3910.jpg',
-             'url': 'http://www.example.com/files/product1.pdf',
-             'status': 'downloaded'}),
-           (False,
-            Failure(...))]
+      .. code-block:: python
+
+          [
+              (
+                  True,
+                  {
+                      "checksum": "2b00042f7481c7b056c4b410d28f33cf",
+                      "path": "full/0a79c461a4062ac383dc4fade7bc09f1384a3910.jpg",
+                      "url": "http://www.example.com/files/product1.pdf",
+                      "status": "downloaded",
+                  },
+              ),
+              (False, Failure(...)),
+          ]
 
       By default the :meth:`get_media_requests` method returns ``None`` which
       means there are no files to download for the item.
@@ -592,17 +636,20 @@ See here the methods that you can override in your custom Files Pipeline:
 
       Here is an example of the :meth:`~item_completed` method where we
       store the downloaded file paths (passed in results) in the ``file_paths``
-      item field, and we drop the item if it doesn't contain any files::
+      item field, and we drop the item if it doesn't contain any files:
+
+      .. code-block:: python
 
           from itemadapter import ItemAdapter
           from scrapy.exceptions import DropItem
 
+
           def item_completed(self, results, item, info):
-              file_paths = [x['path'] for ok, x in results if ok]
+              file_paths = [x["path"] for ok, x in results if ok]
               if not file_paths:
                   raise DropItem("Item contains no files")
               adapter = ItemAdapter(item)
-              adapter['file_paths'] = file_paths
+              adapter["file_paths"] = file_paths
               return item
 
       By default, the :meth:`item_completed` method returns the item.
@@ -634,17 +681,19 @@ See here the methods that you can override in your custom Images Pipeline:
       For example, if file URLs end like regular paths (e.g.
       ``https://example.com/a/b/c/foo.png``), you can use the following
       approach to download all files into the ``files`` folder with their
-      original filenames (e.g. ``files/foo.png``)::
+      original filenames (e.g. ``files/foo.png``):
+
+      .. code-block:: python
 
         from pathlib import PurePosixPath
         from urllib.parse import urlparse
 
         from scrapy.pipelines.images import ImagesPipeline
 
-        class MyImagesPipeline(ImagesPipeline):
 
+        class MyImagesPipeline(ImagesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
-                return 'files/' + PurePosixPath(urlparse(request.url).path).name
+                return "files/" + PurePosixPath(urlparse(request.url).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.
@@ -700,33 +749,35 @@ Custom Images pipeline example
 ==============================
 
 Here is a full example of the Images Pipeline whose methods are exemplified
-above::
+above:
+
+.. code-block:: python
 
     import scrapy
     from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
     from scrapy.pipelines.images import ImagesPipeline
 
-    class MyImagesPipeline(ImagesPipeline):
 
+    class MyImagesPipeline(ImagesPipeline):
         def get_media_requests(self, item, info):
-            for image_url in item['image_urls']:
+            for image_url in item["image_urls"]:
                 yield scrapy.Request(image_url)
 
         def item_completed(self, results, item, info):
-            image_paths = [x['path'] for ok, x in results if ok]
+            image_paths = [x["path"] for ok, x in results if ok]
             if not image_paths:
                 raise DropItem("Item contains no images")
             adapter = ItemAdapter(item)
-            adapter['image_paths'] = image_paths
+            adapter["image_paths"] = image_paths
             return item
 
 
 To enable your custom media pipeline component you must add its class import path to the
-:setting:`ITEM_PIPELINES` setting, like in the following example::
+:setting:`ITEM_PIPELINES` setting, like in the following example:
 
-   ITEM_PIPELINES = {
-       'myproject.pipelines.MyImagesPipeline': 300
-   }
+.. code-block:: python
+
+   ITEM_PIPELINES = {"myproject.pipelines.MyImagesPipeline": 300}
 
 .. _MD5 hash: https://en.wikipedia.org/wiki/MD5

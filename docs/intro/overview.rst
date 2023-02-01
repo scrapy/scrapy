@@ -20,22 +20,24 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-https://quotes.toscrape.com, following the pagination::
+https://quotes.toscrape.com, following the pagination
+
+.. code-block:: python
 
     import scrapy
 
 
     class QuotesSpider(scrapy.Spider):
-        name = 'quotes'
+        name = "quotes"
         start_urls = [
-            'https://quotes.toscrape.com/tag/humor/',
+            "https://quotes.toscrape.com/tag/humor/",
         ]
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'author': quote.xpath('span/small/text()').get(),
-                    'text': quote.css('span.text::text').get(),
+                    "author": quote.xpath("span/small/text()").get(),
+                    "text": quote.css("span.text::text").get(),
                 }
 
             next_page = response.css('li.next a::attr("href")').get()

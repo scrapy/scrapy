@@ -119,16 +119,20 @@ data from it depends on the type of response:
     <topics-selectors>` as usual.
 
 -   If the response is JSON, use :func:`json.loads` to load the desired data from
-    :attr:`response.text <scrapy.http.TextResponse.text>`::
+    :attr:`response.text <scrapy.http.TextResponse.text>`:
+
+    .. code-block:: python
 
         data = json.loads(response.text)
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
     :class:`~scrapy.Selector` and then
-    :ref:`use it <topics-selectors>` as usual::
+    :ref:`use it <topics-selectors>` as usual:
 
-        selector = Selector(data['html'])
+    .. code-block:: python
+
+        selector = Selector(data["html"])
 
 -   If the response is JavaScript, or HTML with a ``<script/>`` element
     containing the desired data, see :ref:`topics-parsing-javascript`.
@@ -250,10 +254,13 @@ automation. By installing the :ref:`asyncio reactor <install-asyncio>`,
 it is possible to integrate ``asyncio``-based libraries which handle headless browsers.
 
 One such library is `playwright-python`_ (an official Python port of `playwright`_).
-The following is a simple snippet to illustrate its usage within a Scrapy spider::
+The following is a simple snippet to illustrate its usage within a Scrapy spider:
+
+.. code-block:: python
 
     import scrapy
     from playwright.async_api import async_playwright
+
 
     class PlaywrightSpider(scrapy.Spider):
         name = "playwright"

@@ -39,16 +39,22 @@ How to log messages
 ===================
 
 Here's a quick example of how to log a message using the ``logging.WARNING``
-level::
+level:
+
+.. code-block:: python
 
     import logging
+
     logging.warning("This is a warning")
 
 There are shortcuts for issuing log messages on any of the standard 5 levels,
 and there's also a general ``logging.log`` method which takes a given level as
-argument.  If needed, the last example could be rewritten as::
+argument.  If needed, the last example could be rewritten as:
+
+.. code-block:: python
 
     import logging
+
     logging.log(logging.WARNING, "This is a warning")
 
 On top of that, you can create different "loggers" to encapsulate messages. (For
@@ -59,24 +65,33 @@ constructions.
 The previous examples use the root logger behind the scenes, which is a top level
 logger where all messages are propagated to (unless otherwise specified). Using
 ``logging`` helpers is merely a shortcut for getting the root logger
-explicitly, so this is also an equivalent of the last snippets::
+explicitly, so this is also an equivalent of the last snippets:
+
+.. code-block:: python
 
     import logging
+
     logger = logging.getLogger()
     logger.warning("This is a warning")
 
 You can use a different logger just by getting its name with the
-``logging.getLogger`` function::
+``logging.getLogger`` function:
+
+.. code-block:: python
 
     import logging
-    logger = logging.getLogger('mycustomlogger')
+
+    logger = logging.getLogger("mycustomlogger")
     logger.warning("This is a warning")
 
 Finally, you can ensure having a custom logger for any module you're working on
 by using the ``__name__`` variable, which is populated with current module's
-path::
+path:
+
+.. code-block:: python
 
     import logging
+
     logger = logging.getLogger(__name__)
     logger.warning("This is a warning")
 
@@ -94,33 +109,39 @@ Logging from Spiders
 ====================
 
 Scrapy provides a :data:`~scrapy.Spider.logger` within each Spider
-instance, which can be accessed and used like this::
+instance, which can be accessed and used like this:
+
+.. code-block:: python
 
     import scrapy
 
+
     class MySpider(scrapy.Spider):
 
-        name = 'myspider'
-        start_urls = ['https://scrapy.org']
+        name = "myspider"
+        start_urls = ["https://scrapy.org"]
 
         def parse(self, response):
-            self.logger.info('Parse function called on %s', response.url)
+            self.logger.info("Parse function called on %s", response.url)
 
 That logger is created using the Spider's name, but you can use any custom
-Python logger you want. For example::
+Python logger you want. For example:
+
+.. code-block:: python
 
     import logging
     import scrapy
 
-    logger = logging.getLogger('mycustomlogger')
+    logger = logging.getLogger("mycustomlogger")
+
 
     class MySpider(scrapy.Spider):
 
-        name = 'myspider'
-        start_urls = ['https://scrapy.org']
+        name = "myspider"
+        start_urls = ["https://scrapy.org"]
 
         def parse(self, response):
-            logger.info('Parse function called on %s', response.url)
+            logger.info("Parse function called on %s", response.url)
 
 .. _topics-logging-configuration:
 
@@ -229,7 +250,9 @@ the crawl.
 Next, we can see that the message has INFO level. To hide it
 we should set logging level for ``scrapy.spidermiddlewares.httperror``
 higher than INFO; next level after INFO is WARNING. It could be done
-e.g. in the spider's ``__init__`` method::
+e.g. in the spider's ``__init__`` method:
+
+.. code-block:: python
 
     import logging
     import scrapy
@@ -238,7 +261,7 @@ e.g. in the spider's ``__init__`` method::
     class MySpider(scrapy.Spider):
         # ...
         def __init__(self, *args, **kwargs):
-            logger = logging.getLogger('scrapy.spidermiddlewares.httperror')
+            logger = logging.getLogger("scrapy.spidermiddlewares.httperror")
             logger.setLevel(logging.WARNING)
             super().__init__(*args, **kwargs)
 
@@ -249,43 +272,53 @@ You can also filter log records by :class:`~logging.LogRecord` data. For
 example, you can filter log records by message content using a substring or
 a regular expression. Create a :class:`logging.Filter` subclass 
 and equip it with a regular expression pattern to
-filter out unwanted messages::
+filter out unwanted messages:
+
+.. code-block:: python
 
     import logging
     import re
-    
+
+
     class ContentFilter(logging.Filter):
         def filter(self, record):
-            match = re.search(r'\d{3} [Ee]rror, retrying', record.message)
+            match = re.search(r"\d{3} [Ee]rror, retrying", record.message)
             if match:
                 return False
-                
+
 A project-level filter may be attached to the root 
 handler created by Scrapy, this is a wieldy way to 
 filter all loggers in different parts of the project
-(middlewares, spider, etc.)::
+(middlewares, spider, etc.):
 
-    import logging
-    import scrapy
+.. code-block:: python
 
-    class MySpider(scrapy.Spider):
-        # ...
-        def __init__(self, *args, **kwargs):
-            for handler in logging.root.handlers:
-                handler.addFilter(ContentFilter())
- 
+ import logging
+ import scrapy
+
+
+ class MySpider(scrapy.Spider):
+     # ...
+     def __init__(self, *args, **kwargs):
+         for handler in logging.root.handlers:
+             handler.addFilter(ContentFilter())
+
 Alternatively, you may choose a specific logger 
-and hide it without affecting other loggers::
+and hide it without affecting other loggers:
+
+.. code-block:: python
 
     import logging
     import scrapy
-    
+
+
     class MySpider(scrapy.Spider):
         # ...
         def __init__(self, *args, **kwargs):
-            logger = logging.getLogger('my_logger')
+            logger = logging.getLogger("my_logger")
             logger.addFilter(ContentFilter())
-            
+
+
 scrapy.utils.log module
 =======================
 
@@ -306,14 +339,14 @@ scrapy.utils.log module
     so it is recommended to only use :func:`logging.basicConfig` together with
     :class:`~scrapy.crawler.CrawlerRunner`.
 
-    This is an example on how to redirect ``INFO`` or higher messages to a file::
+    This is an example on how to redirect ``INFO`` or higher messages to a file:
+
+    .. code-block:: python
 
         import logging
 
         logging.basicConfig(
-            filename='log.txt',
-            format='%(levelname)s: %(message)s',
-            level=logging.INFO
+            filename="log.txt", format="%(levelname)s: %(message)s", level=logging.INFO
         )
 
     Refer to :ref:`run-from-script` for more details about using Scrapy this

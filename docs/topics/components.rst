@@ -66,16 +66,18 @@ version mismatch, while :exc:`ValueError` may be better if the issue is the
 value of a setting.
 
 If your requirement is a minimum Scrapy version, you may use
-:attr:`scrapy.__version__` to enforce your requirement. For example::
+:attr:`scrapy.__version__` to enforce your requirement. For example:
+
+.. code-block:: python
 
     from pkg_resources import parse_version
 
     import scrapy
 
-    class MyComponent:
 
+    class MyComponent:
         def __init__(self):
-            if parse_version(scrapy.__version__) < parse_version('2.7'):
+            if parse_version(scrapy.__version__) < parse_version("2.7"):
                 raise RuntimeError(
                     f"{MyComponent.__qualname__} requires Scrapy 2.7 or "
                     f"later, which allow defining the process_spider_output "

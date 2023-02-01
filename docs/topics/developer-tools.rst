@@ -237,17 +237,19 @@ on the request and open ``Open in new tab`` to get a better overview.
    :alt: JSON-object returned from the quotes.toscrape API
 
 With this response we can now easily parse the JSON-object and
-also request each page to get every quote on the site::
+also request each page to get every quote on the site:
+
+.. code-block:: python
 
     import scrapy
     import json
 
 
     class QuoteSpider(scrapy.Spider):
-        name = 'quote'
-        allowed_domains = ['quotes.toscrape.com']
+        name = "quote"
+        allowed_domains = ["quotes.toscrape.com"]
         page = 1
-        start_urls = ['https://quotes.toscrape.com/api/quotes?page=1']
+        start_urls = ["https://quotes.toscrape.com/api/quotes?page=1"]
 
         def parse(self, response):
             data = json.loads(response.text)
@@ -275,7 +277,9 @@ requests, as we could need to add ``headers`` or ``cookies`` to make it work.
 In those cases you can export the requests in `cURL <https://curl.haxx.se/>`_
 format, by right-clicking on each of them in the network tool and using the
 :meth:`~scrapy.Request.from_curl()` method to generate an equivalent
-request::
+request:
+
+.. code-block:: python
 
     from scrapy import Request
 
@@ -286,7 +290,8 @@ request::
         "-Requested-With: XMLHttpRequest' -H 'Proxy-Authorization: Basic QFRLLTAzM"
         "zEwZTAxLTk5MWUtNDFiNC1iZWRmLTJjNGI4M2ZiNDBmNDpAVEstMDMzMTBlMDEtOTkxZS00MW"
         "I0LWJlZGYtMmM0YjgzZmI0MGY0' -H 'Connection: keep-alive' -H 'Referer: http"
-        "://quotes.toscrape.com/scroll' -H 'Cache-Control: max-age=0'")
+        "://quotes.toscrape.com/scroll' -H 'Cache-Control: max-age=0'"
+    )
 
 Alternatively, if you want to know the arguments needed to recreate that
 request you can use the :func:`~scrapy.utils.curl.curl_to_request_kwargs`

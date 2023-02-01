@@ -76,9 +76,12 @@ make it the most feature-complete item type:
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-Example::
+Example:
+
+.. code-block:: python
 
     from scrapy.item import Item, Field
+
 
     class CustomItem(Item):
         one_field = Field()
@@ -102,9 +105,12 @@ Additionally, ``dataclass`` items also allow to:
 * define custom field metadata through :func:`dataclasses.field`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-Example::
+Example:
+
+.. code-block:: python
 
     from dataclasses import dataclass
+
 
     @dataclass
     class CustomItem:
@@ -133,9 +139,12 @@ Additionally, ``attr.s`` items also allow to:
 
 In order to use this type, the :doc:`attrs package <attrs:index>` needs to be installed.
 
-Example::
+Example:
+
+.. code-block:: python
 
     import attr
+
 
     @attr.s
     class CustomItem:
@@ -152,9 +161,12 @@ Declaring Item subclasses
 -------------------------
 
 Item subclasses are declared using a simple class definition syntax and
-:class:`Field` objects. Here is an example::
+:class:`Field` objects. Here is an example:
+
+.. code-block:: python
 
     import scrapy
+
 
     class Product(scrapy.Item):
         name = scrapy.Field()
@@ -347,17 +359,21 @@ Extending Item subclasses
 You can extend Items (to add more fields or to change some metadata for some
 fields) by declaring a subclass of your original Item.
 
-For example::
+For example:
+
+.. code-block:: python
 
     class DiscountedProduct(Product):
         discount_percent = scrapy.Field(serializer=str)
         discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
-appending more values, or changing existing values, like this::
+appending more values, or changing existing values, like this:
+
+.. code-block:: python
 
     class SpecificProduct(Product):
-        name = scrapy.Field(Product.fields['name'], serializer=my_serializer)
+        name = scrapy.Field(Product.fields["name"], serializer=my_serializer)
 
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.

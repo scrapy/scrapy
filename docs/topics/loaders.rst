@@ -46,18 +46,21 @@ using a proper processing function.
 
 Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
-chapter <topics-items>`::
+chapter <topics-items>`:
+
+.. code-block:: python
 
     from scrapy.loader import ItemLoader
     from myproject.items import Product
 
+
     def parse(self, response):
         l = ItemLoader(item=Product(), response=response)
-        l.add_xpath('name', '//div[@class="product_name"]')
-        l.add_xpath('name', '//div[@class="product_title"]')
-        l.add_xpath('price', '//p[@id="price"]')
-        l.add_css('stock', 'p#stock')
-        l.add_value('last_updated', 'today') # you can also use literal values
+        l.add_xpath("name", '//div[@class="product_name"]')
+        l.add_xpath("name", '//div[@class="product_title"]')
+        l.add_xpath("price", '//p[@id="price"]')
+        l.add_css("stock", "p#stock")
+        l.add_value("last_updated", "today")  # you can also use literal values
         return l.load_item()
 
 By quickly looking at that code, we can see the ``name`` field is being
@@ -93,10 +96,13 @@ will be populated incrementally using the loader's :meth:`~ItemLoader.add_xpath`
 :meth:`~ItemLoader.add_css` and :meth:`~ItemLoader.add_value` methods.
 
 One approach to overcome this is to define items using the
-:func:`~dataclasses.field` function, with a ``default`` argument::
+:func:`~dataclasses.field` function, with a ``default`` argument:
+
+.. code-block:: python
 
     from dataclasses import dataclass, field
     from typing import Optional
+
 
     @dataclass
     class InventoryItem:
@@ -122,14 +128,16 @@ processor). The result of the output processor is the final value that gets
 assigned to the item.
 
 Let's see an example to illustrate how the input and output processors are
-called for a particular field (the same applies for any other field)::
+called for a particular field (the same applies for any other field):
+
+.. code-block:: python
 
     l = ItemLoader(Product(), some_selector)
-    l.add_xpath('name', xpath1) # (1)
-    l.add_xpath('name', xpath2) # (2)
-    l.add_css('name', css) # (3)
-    l.add_value('name', 'test') # (4)
-    return l.load_item() # (5)
+    l.add_xpath("name", xpath1)  # (1)
+    l.add_xpath("name", xpath2)  # (2)
+    l.add_css("name", css)  # (3)
+    l.add_value("name", "test")  # (4)
+    return l.load_item()  # (5)
 
 So what happens is:
 
@@ -184,10 +192,13 @@ processors <itemloaders:built-in-processors>` built-in for convenience.
 Declaring Item Loaders
 ======================
 
-Item Loaders are declared using a class definition syntax. Here is an example::
+Item Loaders are declared using a class definition syntax. Here is an example:
+
+.. code-block:: python
 
     from itemloaders.processors import TakeFirst, MapCompose, Join
     from scrapy.loader import ItemLoader
+
 
     class ProductLoader(ItemLoader):
 
@@ -215,15 +226,19 @@ As seen in the previous section, input and output processors can be declared in
 the Item Loader definition, and it's very common to declare input processors
 this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
-metadata. Here is an example::
+metadata. Here is an example:
+
+.. code-block:: python
 
     import scrapy
     from itemloaders.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
+
     def filter_price(value):
         if value.isdigit():
             return value
+
 
     class Product(scrapy.Item):
         name = scrapy.Field(
@@ -263,10 +278,12 @@ declaring, instantiating or using Item Loader. They are used to modify the
 behaviour of the input/output processors.
 
 For example, suppose you have a function ``parse_length`` which receives a text
-value and extracts a length from it::
+value and extracts a length from it:
+
+.. code-block:: python
 
     def parse_length(text, loader_context):
-        unit = loader_context.get('unit', 'm')
+        unit = loader_context.get("unit", "m")
         # ... length parsing code goes here ...
         return parsed_length
 
@@ -278,22 +295,28 @@ function (``parse_length`` in this case) can thus use them.
 There are several ways to modify Item Loader context values:
 
 1. By modifying the currently active Item Loader context
-   (:attr:`~ItemLoader.context` attribute)::
+   (:attr:`~ItemLoader.context` attribute):
+
+   .. code-block:: python
 
       loader = ItemLoader(product)
-      loader.context['unit'] = 'cm'
+      loader.context["unit"] = "cm"
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
-   ``__init__`` method are stored in the Item Loader context)::
+   ``__init__`` method are stored in the Item Loader context):
 
-      loader = ItemLoader(product, unit='cm')
+   .. code-block:: python
+
+      loader = ItemLoader(product, unit="cm")
 
 3. On Item Loader declaration, for those input/output processors that support
    instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
-   them::
+   them:
+
+   .. code-block:: python
 
        class ProductLoader(ItemLoader):
-           length_out = MapCompose(parse_length, unit='cm')
+           length_out = MapCompose(parse_length, unit="cm")
 
 
 ItemLoader objects
@@ -323,25 +346,29 @@ Example::
 Without nested loaders, you need to specify the full xpath (or css) for each value
 that you wish to extract.
 
-Example::
+Example:
+
+.. code-block:: python
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
-    loader.add_xpath('social', '//footer/a[@class = "social"]/@href')
-    loader.add_xpath('email', '//footer/a[@class = "email"]/@href')
+    loader.add_xpath("social", '//footer/a[@class = "social"]/@href')
+    loader.add_xpath("email", '//footer/a[@class = "email"]/@href')
     loader.load_item()
 
 Instead, you can create a nested loader with the footer selector and add values
 relative to the footer.  The functionality is the same but you avoid repeating
 the footer selector.
 
-Example::
+Example:
+
+.. code-block:: python
 
     loader = ItemLoader(item=Item())
     # load stuff not in the footer
-    footer_loader = loader.nested_xpath('//footer')
-    footer_loader.add_xpath('social', 'a[@class = "social"]/@href')
-    footer_loader.add_xpath('email', 'a[@class = "email"]/@href')
+    footer_loader = loader.nested_xpath("//footer")
+    footer_loader.add_xpath("social", 'a[@class = "social"]/@href')
+    footer_loader.add_xpath("email", 'a[@class = "email"]/@href')
     # no need to call footer_loader.load_item()
     loader.load_item()
 
@@ -370,24 +397,31 @@ three dashes (e.g. ``---Plasma TV---``) and you don't want to end up scraping
 those dashes in the final product names.
 
 Here's how you can remove those dashes by reusing and extending the default
-Product Item Loader (``ProductLoader``)::
+Product Item Loader (``ProductLoader``):
+
+.. code-block:: python
 
     from itemloaders.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
 
+
     def strip_dashes(x):
-        return x.strip('-')
+        return x.strip("-")
+
 
     class SiteSpecificLoader(ProductLoader):
         name_in = MapCompose(strip_dashes, ProductLoader.name_in)
 
 Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
-want to remove ``CDATA`` occurrences. Here's an example of how to do it::
+want to remove ``CDATA`` occurrences. Here's an example of how to do it:
+
+.. code-block:: python
 
     from itemloaders.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
     from myproject.utils.xml import remove_cdata
+
 
     class XmlProductLoader(ProductLoader):
         name_in = MapCompose(remove_cdata, ProductLoader.name_in)
