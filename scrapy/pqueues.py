@@ -3,7 +3,6 @@ import logging
 
 from scrapy.utils.misc import create_instance
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -9,11 +9,10 @@ import warnings
 from twisted import version as _txv
 
 # Declare top-level shortcuts
-from scrapy.spiders import Spider
-from scrapy.http import Request, FormRequest
+from scrapy.http import FormRequest, Request
+from scrapy.item import Field, Item
 from scrapy.selector import Selector
-from scrapy.item import Item, Field
-
+from scrapy.spiders import Spider
 
 __all__ = [
     "__version__",

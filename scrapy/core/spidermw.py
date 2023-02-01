@@ -28,13 +28,12 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
-    mustbe_deferred,
-    deferred_from_coro,
     deferred_f_from_coro_f,
+    deferred_from_coro,
     maybe_deferred_to_future,
+    mustbe_deferred,
 )
 from scrapy.utils.python import MutableAsyncChain, MutableChain
-
 
 logger = logging.getLogger(__name__)
 

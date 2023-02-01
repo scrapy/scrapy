@@ -97,5 +97,5 @@ class Spider(object_ref):
 
 # Top-level imports
 from scrapy.spiders.crawl import CrawlSpider, Rule
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.spiders.feed import CSVFeedSpider, XMLFeedSpider
 from scrapy.spiders.sitemap import SitemapSpider

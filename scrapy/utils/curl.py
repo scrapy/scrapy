@@ -1,7 +1,7 @@
 import argparse
 import warnings
-from shlex import split
 from http.cookies import SimpleCookie
+from shlex import split
 from urllib.parse import urlparse
 
 from w3lib.http import basic_auth_header

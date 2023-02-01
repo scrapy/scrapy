@@ -1,11 +1,12 @@
 import sys
+
 from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
-from scrapy.http import Request
 from scrapy.exceptions import UsageError
+from scrapy.http import Request
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.spider import spidercls_for_request, DefaultSpider
+from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 
 class Command(ScrapyCommand):

@@ -7,7 +7,7 @@ from pathlib import Path
 from time import time
 from weakref import WeakKeyDictionary
 
-from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
+from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
 from scrapy.http import Headers, Response
 from scrapy.http.request import Request

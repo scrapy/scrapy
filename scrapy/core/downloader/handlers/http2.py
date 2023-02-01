@@ -16,7 +16,6 @@ from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
-
 H2DownloadHandlerOrSubclass = TypeVar(
     "H2DownloadHandlerOrSubclass", bound="H2DownloadHandler"
 )

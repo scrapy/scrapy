@@ -1,14 +1,15 @@
 import hashlib
-import tempfile
-import unittest
 import shutil
 import sys
+import tempfile
+import unittest
 from pathlib import Path
+
 from testfixtures import LogCapture
 
+from scrapy.core.scheduler import Scheduler
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
-from scrapy.core.scheduler import Scheduler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
