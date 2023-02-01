@@ -1,5 +1,5 @@
 from urllib.parse import urlparse
-
+import os
 from twisted.internet import reactor
 from twisted.names import cache
 from twisted.names import hosts as hostsModule
@@ -50,3 +50,4 @@ if __name__ == "__main__":
         d = runner.crawl(LocalhostSpider, url=url)
         d.addBoth(lambda _: reactor.stop())
         reactor.run()
+        d.addCallback(lambda _: os._exit(0))
