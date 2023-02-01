@@ -134,14 +134,14 @@ Settings API
 
     .. highlight:: python
 
-    ::
+    .. code-block:: python
 
         SETTINGS_PRIORITIES = {
-            'default': 0,
-            'command': 10,
-            'project': 20,
-            'spider': 30,
-            'cmdline': 40,
+            "default": 0,
+            "command": 10,
+            "project": 20,
+            "spider": 30,
+            "cmdline": 40,
         }
 
     For a detailed explanation on each settings sources, see:

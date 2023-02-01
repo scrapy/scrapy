@@ -2417,11 +2417,13 @@ Backward-incompatible changes
 *   :class:`~scrapy.loader.ItemLoader` now turns the values of its input item
     into lists:
 
-    >>> item = MyItem()
-    >>> item['field'] = 'value1'
-    >>> loader = ItemLoader(item=item)
-    >>> item['field']
-    ['value1']
+    .. code-block:: pycon
+
+        >>> item = MyItem()
+        >>> item["field"] = "value1"
+        >>> loader = ItemLoader(item=item)
+        >>> item["field"]
+        ['value1']
 
     This is needed to allow adding values to existing fields
     (``loader.add_value('field', 'value2')``).

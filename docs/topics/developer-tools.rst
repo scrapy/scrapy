@@ -94,8 +94,10 @@ Then, back to your web browser, right-click on the ``span`` tag, select
 
     response = load_response('https://quotes.toscrape.com/', 'quotes.html')
 
->>> response.xpath('/html/body/div/div[2]/div[1]/div[1]/span[1]/text()').getall()
-['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”']
+.. code-block:: pycon
+
+  >>> response.xpath("/html/body/div/div[2]/div[1]/div[1]/span[1]/text()").getall()
+  ['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”']
 
 Adding ``text()`` at the end we are able to extract the first quote with this
 basic selector. But this XPath is not really that clever. All it does is
@@ -124,11 +126,13 @@ With this knowledge we can refine our XPath: Instead of a path to follow,
 we'll simply select all ``span`` tags with the ``class="text"`` by using
 the `has-class-extension`_:
 
->>> response.xpath('//span[has-class("text")]/text()').getall()
-['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”',
-'“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
-'“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
-...]
+.. code-block:: pycon
+
+    >>> response.xpath('//span[has-class("text")]/text()').getall()
+    ['“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”',
+    '“It is our choices, Harry, that show what we truly are, far more than our abilities.”',
+    '“There are only two ways to live your life. One is as though nothing is a miracle. The other is as though everything is a miracle.”',
+    ...]
 
 And with one simple, cleverer XPath we are able to extract all quotes from
 the page. We could have constructed a loop over our first XPath to increase

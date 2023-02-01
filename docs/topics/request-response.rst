@@ -1243,8 +1243,10 @@ TextResponse objects
             ``str(response.body)`` is not a correct way to convert the response
             body into a string:
 
-            >>> str(b'body')
-            "b'body'"
+            .. code-block:: pycon
+
+                >>> str(b"body")
+                "b'body'"
 
 
     .. attribute:: TextResponse.encoding

@@ -234,62 +234,68 @@ notice the API is very similar to the :class:`dict` API.
 Creating items
 ''''''''''''''
 
->>> product = Product(name='Desktop PC', price=1000)
->>> print(product)
-Product(name='Desktop PC', price=1000)
+.. code-block:: pycon
+
+    >>> product = Product(name="Desktop PC", price=1000)
+    >>> print(product)
+    Product(name='Desktop PC', price=1000)
 
 
 Getting field values
 ''''''''''''''''''''
 
->>> product['name']
-Desktop PC
->>> product.get('name')
-Desktop PC
+.. code-block:: pycon
 
->>> product['price']
-1000
+    >>> product["name"]
+    Desktop PC
+    >>> product.get("name")
+    Desktop PC
 
->>> product['last_updated']
-Traceback (most recent call last):
-    ...
-KeyError: 'last_updated'
+    >>> product["price"]
+    1000
 
->>> product.get('last_updated', 'not set')
-not set
+    >>> product["last_updated"]
+    Traceback (most recent call last):
+        ...
+    KeyError: 'last_updated'
 
->>> product['lala'] # getting unknown field
-Traceback (most recent call last):
-    ...
-KeyError: 'lala'
+    >>> product.get("last_updated", "not set")
+    not set
 
->>> product.get('lala', 'unknown field')
-'unknown field'
+    >>> product["lala"]  # getting unknown field
+    Traceback (most recent call last):
+        ...
+    KeyError: 'lala'
 
->>> 'name' in product  # is name field populated?
-True
+    >>> product.get("lala", "unknown field")
+    'unknown field'
 
->>> 'last_updated' in product  # is last_updated populated?
-False
+    >>> "name" in product  # is name field populated?
+    True
 
->>> 'last_updated' in product.fields  # is last_updated a declared field?
-True
+    >>> "last_updated" in product  # is last_updated populated?
+    False
 
->>> 'lala' in product.fields  # is lala a declared field?
-False
+    >>> "last_updated" in product.fields  # is last_updated a declared field?
+    True
+
+    >>> "lala" in product.fields  # is lala a declared field?
+    False
 
 
 Setting field values
 ''''''''''''''''''''
 
->>> product['last_updated'] = 'today'
->>> product['last_updated']
-today
+.. code-block:: pycon
 
->>> product['lala'] = 'test' # setting unknown field
-Traceback (most recent call last):
-    ...
-KeyError: 'Product does not support field: lala'
+    >>> product["last_updated"] = "today"
+    >>> product["last_updated"]
+    today
+
+    >>> product["lala"] = "test"  # setting unknown field
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Product does not support field: lala'
 
 
 Accessing all populated values
@@ -297,11 +303,13 @@ Accessing all populated values
 
 To access all populated values, just use the typical :class:`dict` API:
 
->>> product.keys()
-['price', 'name']
+.. code-block:: pycon
 
->>> product.items()
-[('price', 1000), ('name', 'Desktop PC')]
+    >>> product.keys()
+    ['price', 'name']
+
+    >>> product.items()
+    [('price', 1000), ('name', 'Desktop PC')]
 
 
 .. _copying-items:
@@ -339,18 +347,20 @@ Other common tasks
 
 Creating dicts from items:
 
->>> dict(product) # create a dict from all populated values
-{'price': 1000, 'name': 'Desktop PC'}
+.. code-block:: pycon
 
-Creating items from dicts:
+    >>> dict(product)  # create a dict from all populated values
+    {'price': 1000, 'name': 'Desktop PC'}
 
->>> Product({'name': 'Laptop PC', 'price': 1500})
-Product(price=1500, name='Laptop PC')
+    Creating items from dicts:
 
->>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
-Traceback (most recent call last):
-    ...
-KeyError: 'Product does not support field: lala'
+    >>> Product({"name": "Laptop PC", "price": 1500})
+    Product(price=1500, name='Laptop PC')
+
+    >>> Product({"name": "Laptop PC", "lala": 1500})  # warning: unknown field in dict
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Product does not support field: lala'
 
 
 Extending Item subclasses

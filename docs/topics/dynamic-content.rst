@@ -183,10 +183,12 @@ data from it:
     For example, if the JavaScript code contains a separate line like
     ``var data = {"field": "value"};`` you can extract that data as follows:
 
-    >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
-    >>> json_data = response.css('script::text').re_first(pattern)
-    >>> json.loads(json_data)
-    {'field': 'value'}
+    .. code-block:: pycon
+
+        >>> pattern = r"\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n"
+        >>> json_data = response.css("script::text").re_first(pattern)
+        >>> json.loads(json_data)
+        {'field': 'value'}
 
 -   chompjs_ provides an API to parse JavaScript objects into a :class:`dict`.
 
@@ -194,11 +196,13 @@ data from it:
     ``var data = {field: "value", secondField: "second value"};``
     you can extract that data as follows:
 
-    >>> import chompjs
-    >>> javascript = response.css('script::text').get()
-    >>> data = chompjs.parse_js_object(javascript)
-    >>> data
-    {'field': 'value', 'secondField': 'second value'}
+    .. code-block:: pycon
+
+        >>> import chompjs
+        >>> javascript = response.css("script::text").get()
+        >>> data = chompjs.parse_js_object(javascript)
+        >>> data
+        {'field': 'value', 'secondField': 'second value'}
 
 -   Otherwise, use js2xml_ to convert the JavaScript code into an XML document
     that you can parse using :ref:`selectors <topics-selectors>`.
@@ -206,14 +210,16 @@ data from it:
     For example, if the JavaScript code contains
     ``var data = {field: "value"};`` you can extract that data as follows:
 
-    >>> import js2xml
-    >>> import lxml.etree
-    >>> from parsel import Selector
-    >>> javascript = response.css('script::text').get()
-    >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
-    >>> selector = Selector(text=xml)
-    >>> selector.css('var[name="data"]').get()
-    '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
+    .. code-block:: pycon
+
+        >>> import js2xml
+        >>> import lxml.etree
+        >>> from parsel import Selector
+        >>> javascript = response.css("script::text").get()
+        >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding="unicode")
+        >>> selector = Selector(text=xml)
+        >>> selector.css('var[name="data"]').get()
+        '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
 .. _topics-javascript-rendering:
 

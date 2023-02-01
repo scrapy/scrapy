@@ -68,13 +68,17 @@ Set stat value only if lower than previous:
 
 Get stat value:
 
->>> stats.get_value('custom_count')
-1
+.. code-block:: pycon
+
+    >>> stats.get_value("custom_count")
+    1
 
 Get all stats:
 
->>> stats.get_stats()
-{'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+.. code-block:: pycon
+
+    >>> stats.get_stats()
+    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 Available Stats Collectors
 ==========================

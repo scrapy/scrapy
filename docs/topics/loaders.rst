@@ -250,12 +250,15 @@ metadata. Here is an example:
             output_processor=TakeFirst(),
         )
 
->>> from scrapy.loader import ItemLoader
->>> il = ItemLoader(item=Product())
->>> il.add_value('name', ['Welcome to my', '<strong>website</strong>'])
->>> il.add_value('price', ['&euro;', '<span>1000</span>'])
->>> il.load_item()
-{'name': 'Welcome to my website', 'price': '1000'}
+
+.. code-block:: pycon
+
+    >>> from scrapy.loader import ItemLoader
+    >>> il = ItemLoader(item=Product())
+    >>> il.add_value("name", ["Welcome to my", "<strong>website</strong>"])
+    >>> il.add_value("price", ["&euro;", "<span>1000</span>"])
+    >>> il.load_item()
+    {'name': 'Welcome to my website', 'price': '1000'}
 
 The precedence order, for both input and output processors, is as follows:
 
