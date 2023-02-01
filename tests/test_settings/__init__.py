@@ -68,6 +68,7 @@ class BaseSettingsTest(unittest.TestCase):
     def test_setdefault(self):
         settings = BaseSettings()
         value = settings.setdefault("TEST_OPTION", "value")
+        self.assertEqual(settings["TEST_OPTION"], "value")
         self.assertEqual(value, "value")
         self.assertIsNotNone(value)
 
