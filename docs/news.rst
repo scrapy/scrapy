@@ -65,6 +65,12 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
+-   Applied black_ coding style to files generated with the
+    :command:`genspider` and :command:`startproject` commands.
+    (:issue:`5809`, :issue:`5814`)
+
+    .. _black: https://black.readthedocs.io/en/stable/
+
 -   :setting:`FEED_EXPORT_ENCODING` is now set to ``"utf-8"`` in the
     ``settings.py`` file that the :command:`startproject` command generates.
     With this value, JSON exports won’t force the use of escape sequences for
