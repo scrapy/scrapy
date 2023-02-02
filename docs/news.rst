@@ -8,6 +8,8 @@ Release notes
 Scrapy 2.8.0 (to be released)
 -----------------------------
 
+This is a maintenance release, with minor features, bug fixes, and cleanups.
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
