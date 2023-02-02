@@ -4,12 +4,11 @@ import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import install_reactor
-
 from tests.keys import generate_keys
 
 
 def _py_files(folder):
-    return (str(p) for p in Path(folder).rglob('*.py'))
+    return (str(p) for p in Path(folder).rglob("*.py"))
 
 
 collect_ignore = [
@@ -21,16 +20,16 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-with open('tests/ignores.txt') as reader:
+with Path("tests/ignores.txt").open(encoding="utf-8") as reader:
     for line in reader:
         file_path = line.strip()
-        if file_path and file_path[0] != '#':
+        if file_path and file_path[0] != "#":
             collect_ignore.append(file_path)
 
 if not H2_ENABLED:
     collect_ignore.extend(
         (
-            'scrapy/core/downloader/handlers/http2.py',
+            "scrapy/core/downloader/handlers/http2.py",
             *_py_files("scrapy/core/http2"),
         )
     )
@@ -50,7 +49,7 @@ def pytest_addoption(parser):
     )
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def reactor_pytest(request):
     if not request.cls:
         # doctests
@@ -61,14 +60,17 @@ def reactor_pytest(request):
 
 @pytest.fixture(autouse=True)
 def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
-        pytest.skip('This test is only run with --reactor=asyncio')
+    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
+        pytest.skip("This test is only run with --reactor=asyncio")
 
 
 @pytest.fixture(autouse=True)
 def only_not_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker('only_not_asyncio') and reactor_pytest == 'asyncio':
-        pytest.skip('This test is only run without --reactor=asyncio')
+    if (
+        request.node.get_closest_marker("only_not_asyncio")
+        and reactor_pytest == "asyncio"
+    ):
+        pytest.skip("This test is only run without --reactor=asyncio")
 
 
 def pytest_configure(config):

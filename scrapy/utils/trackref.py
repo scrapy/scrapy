@@ -15,7 +15,6 @@ from time import time
 from typing import DefaultDict
 from weakref import WeakKeyDictionary
 
-
 NoneType = type(None)
 live_refs: DefaultDict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
 
@@ -35,8 +34,7 @@ def format_live_refs(ignore=NoneType):
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
     now = time()
-    for cls, wdict in sorted(live_refs.items(),
-                             key=lambda x: x[0].__name__):
+    for cls, wdict in sorted(live_refs.items(), key=lambda x: x[0].__name__):
         if not wdict:
             continue
         if issubclass(cls, ignore):

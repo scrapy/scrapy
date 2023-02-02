@@ -8,7 +8,7 @@ See documentation in docs/topics/spiders.rst
 import copy
 from typing import AsyncIterable, Awaitable, Sequence
 
-from scrapy.http import Request, Response, HtmlResponse
+from scrapy.http import HtmlResponse, Request, Response
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -26,7 +26,7 @@ def _identity_process_request(request, response):
 def _get_method(method, spider):
     if callable(method):
         return method
-    elif isinstance(method, str):
+    if isinstance(method, str):
         return getattr(spider, method, None)
 
 
@@ -34,7 +34,6 @@ _default_link_extractor = LinkExtractor()
 
 
 class Rule:
-
     def __init__(
         self,
         link_extractor=None,
@@ -95,19 +94,24 @@ class CrawlSpider(Spider):
             return
         seen = set()
         for rule_index, rule in enumerate(self._rules):
-            links = [lnk for lnk in rule.link_extractor.extract_links(response)
-                     if lnk not in seen]
+            links = [
+                lnk
+                for lnk in rule.link_extractor.extract_links(response)
+                if lnk not in seen
+            ]
             for link in rule.process_links(links):
                 seen.add(link)
                 request = self._build_request(rule_index, link)
                 yield rule.process_request(request, response)
 
     def _callback(self, response, **cb_kwargs):
-        rule = self._rules[response.meta['rule']]
-        return self._parse_response(response, rule.callback, {**rule.cb_kwargs, **cb_kwargs}, rule.follow)
+        rule = self._rules[response.meta["rule"]]
+        return self._parse_response(
+            response, rule.callback, {**rule.cb_kwargs, **cb_kwargs}, rule.follow
+        )
 
     def _errback(self, failure):
-        rule = self._rules[failure.request.meta['rule']]
+        rule = self._rules[failure.request.meta["rule"]]
         return self._handle_failure(failure, rule.errback)
 
     async def _parse_response(self, response, callback, cb_kwargs, follow=True):
@@ -140,5 +144,7 @@ class CrawlSpider(Spider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         spider = super().from_crawler(crawler, *args, **kwargs)
-        spider._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
+        spider._follow_links = crawler.settings.getbool(
+            "CRAWLSPIDER_FOLLOW_LINKS", True
+        )
         return spider

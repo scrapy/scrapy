@@ -1,20 +1,16 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import errno
 import gc
 import inspect
 import re
 import sys
-import warnings
 import weakref
 from functools import partial, wraps
 from itertools import chain
 from typing import AsyncGenerator, AsyncIterable, Iterable, Union
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
-from scrapy.utils.decorators import deprecated
 
 
 def flatten(x):
@@ -86,36 +82,33 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def to_unicode(text, encoding=None, errors='strict'):
+def to_unicode(text, encoding=None, errors="strict"):
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, str):
         return text
     if not isinstance(text, (bytes, str)):
-        raise TypeError('to_unicode must receive a bytes or str '
-                        f'object, got {type(text).__name__}')
+        raise TypeError(
+            "to_unicode must receive a bytes or str "
+            f"object, got {type(text).__name__}"
+        )
     if encoding is None:
-        encoding = 'utf-8'
+        encoding = "utf-8"
     return text.decode(encoding, errors)
 
 
-def to_bytes(text, encoding=None, errors='strict'):
+def to_bytes(text, encoding=None, errors="strict"):
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
     if not isinstance(text, str):
-        raise TypeError('to_bytes must receive a str or bytes '
-                        f'object, got {type(text).__name__}')
+        raise TypeError(
+            "to_bytes must receive a str or bytes " f"object, got {type(text).__name__}"
+        )
     if encoding is None:
-        encoding = 'utf-8'
+        encoding = "utf-8"
     return text.encode(encoding, errors)
-
-
-@deprecated('to_unicode')
-def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of ``text``. """
-    return to_unicode(text, encoding, errors)
 
 
 def re_rsearch(pattern, text, chunk_size=1024):
@@ -135,7 +128,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     def _chunk_iter():
         offset = len(text)
         while True:
-            offset -= (chunk_size * 1024)
+            offset -= chunk_size * 1024
             if offset <= 0:
                 break
             yield (text[offset:], offset)
@@ -172,7 +165,7 @@ _BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
 
 
 def binary_is_text(data):
-    """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
+    """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
     if not isinstance(data, bytes):
@@ -192,17 +185,19 @@ def get_func_args(func, stripself=False):
     elif inspect.ismethoddescriptor(func):
         return []
     elif isinstance(func, partial):
-        return [x for x in get_func_args(func.func)[len(func.args):]
-                if not (func.keywords and x in func.keywords)]
-    elif hasattr(func, '__call__'):
+        return [
+            x
+            for x in get_func_args(func.func)[len(func.args) :]
+            if not (func.keywords and x in func.keywords)
+        ]
+    elif hasattr(func, "__call__"):
         if inspect.isroutine(func):
             return []
-        elif getattr(func, '__name__', None) == '__call__':
+        if getattr(func, "__name__", None) == "__call__":
             return []
-        else:
-            return get_func_args(func.__call__, True)
+        return get_func_args(func.__call__, True)
     else:
-        raise TypeError(f'{type(func)} is not callable')
+        raise TypeError(f"{type(func)} is not callable")
     if stripself:
         func_args.pop(0)
     return func_args
@@ -232,10 +227,10 @@ def get_spec(func):
 
     if inspect.isfunction(func) or inspect.ismethod(func):
         spec = inspect.getfullargspec(func)
-    elif hasattr(func, '__call__'):
+    elif hasattr(func, "__call__"):
         spec = inspect.getfullargspec(func.__call__)
     else:
-        raise TypeError(f'{type(func)} is not callable')
+        raise TypeError(f"{type(func)} is not callable")
 
     defaults = spec.defaults or []
 
@@ -263,30 +258,6 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache:
-
-    def __init__(self, default_factory):
-        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
-        self.default_factory = default_factory
-        self._weakdict = weakref.WeakKeyDictionary()
-
-    def __getitem__(self, key):
-        if key not in self._weakdict:
-            self._weakdict[key] = self.default_factory(key)
-        return self._weakdict[key]
-
-
-@deprecated
-def retry_on_eintr(function, *args, **kw):
-    """Run a function and retry it while getting EINTR errors"""
-    while True:
-        try:
-            return function(*args, **kw)
-        except IOError as e:
-            if e.errno != errno.EINTR:
-                raise
-
-
 def without_none_values(iterable):
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
@@ -311,11 +282,14 @@ def global_object_name(obj):
 
 
 if hasattr(sys, "pypy_version_info"):
+
     def garbage_collect():
         # Collecting weakreferences can take two collections on PyPy.
         gc.collect()
         gc.collect()
+
 else:
+
     def garbage_collect():
         gc.collect()
 
@@ -336,10 +310,6 @@ class MutableChain(Iterable):
 
     def __next__(self):
         return next(self.data)
-
-    @deprecated("scrapy.utils.python.MutableChain.__next__")
-    def next(self):
-        return self.__next__()
 
 
 async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:

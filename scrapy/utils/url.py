@@ -12,6 +12,7 @@ from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 # move doesn't break old code
 from w3lib.url import *
 from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
+
 from scrapy.utils.python import to_unicode
 
 
@@ -21,12 +22,14 @@ def url_is_from_any_domain(url, domains):
     if not host:
         return False
     domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith(f'.{d}')) for d in domains)
+    return any((host == d) or (host.endswith(f".{d}")) for d in domains)
 
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(url, [spider.name] + list(getattr(spider, 'allowed_domains', [])))
+    return url_is_from_any_domain(
+        url, [spider.name] + list(getattr(spider, "allowed_domains", []))
+    )
 
 
 def url_has_any_extension(url, extensions):
@@ -46,7 +49,7 @@ def parse_url(url, encoding=None):
 
 def escape_ajax(url):
     """
-    Return the crawleable url according to:
+    Return the crawlable url according to:
     https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
 
     >>> escape_ajax("www.example.com/ajax.html#!key=value")
@@ -68,9 +71,9 @@ def escape_ajax(url):
     'www.example.com/ajax.html'
     """
     defrag, frag = urldefrag(url)
-    if not frag.startswith('!'):
+    if not frag.startswith("!"):
         return url
-    return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
+    return add_or_replace_parameter(defrag, "_escaped_fragment_", frag[1:])
 
 
 def add_http_if_no_scheme(url):
@@ -87,7 +90,7 @@ def add_http_if_no_scheme(url):
 def _is_posix_path(string):
     return bool(
         re.match(
-            r'''
+            r"""
             ^                   # start with...
             (
                 \.              # ...a single dot,
@@ -99,7 +102,7 @@ def _is_posix_path(string):
             )?      # optional match of ".", ".." or ".blabla"
             /       # at least one "/" for a file path,
             .       # and something after the "/"
-            ''',
+            """,
             string,
             flags=re.VERBOSE,
         )
@@ -109,13 +112,13 @@ def _is_posix_path(string):
 def _is_windows_path(string):
     return bool(
         re.match(
-            r'''
+            r"""
             ^
             (
                 [a-z]:\\
                 | \\\\
             )
-            ''',
+            """,
             string,
             flags=re.IGNORECASE | re.VERBOSE,
         )
@@ -134,7 +137,13 @@ def guess_scheme(url):
     return add_http_if_no_scheme(url)
 
 
-def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=False, strip_fragment=True):
+def strip_url(
+    url,
+    strip_credentials=True,
+    strip_default_port=True,
+    origin_only=False,
+    strip_fragment=True,
+):
 
     """Strip URL string from some of its components:
 
@@ -148,18 +157,24 @@ def strip_url(url, strip_credentials=True, strip_default_port=True, origin_only=
 
     parsed_url = urlparse(url)
     netloc = parsed_url.netloc
-    if (strip_credentials or origin_only) and (parsed_url.username or parsed_url.password):
-        netloc = netloc.split('@')[-1]
+    if (strip_credentials or origin_only) and (
+        parsed_url.username or parsed_url.password
+    ):
+        netloc = netloc.split("@")[-1]
     if strip_default_port and parsed_url.port:
-        if (parsed_url.scheme, parsed_url.port) in (('http', 80),
-                                                    ('https', 443),
-                                                    ('ftp', 21)):
-            netloc = netloc.replace(f':{parsed_url.port}', '')
-    return urlunparse((
-        parsed_url.scheme,
-        netloc,
-        '/' if origin_only else parsed_url.path,
-        '' if origin_only else parsed_url.params,
-        '' if origin_only else parsed_url.query,
-        '' if strip_fragment else parsed_url.fragment
-    ))
+        if (parsed_url.scheme, parsed_url.port) in (
+            ("http", 80),
+            ("https", 443),
+            ("ftp", 21),
+        ):
+            netloc = netloc.replace(f":{parsed_url.port}", "")
+    return urlunparse(
+        (
+            parsed_url.scheme,
+            netloc,
+            "/" if origin_only else parsed_url.path,
+            "" if origin_only else parsed_url.params,
+            "" if origin_only else parsed_url.query,
+            "" if strip_fragment else parsed_url.fragment,
+        )
+    )

@@ -11,9 +11,7 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.request import fingerprint
 from scrapy.utils.test import get_crawler
-
 from tests.mockserver import MockServer
-
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]
@@ -76,7 +74,11 @@ class BaseSchedulerTest(TestCase, InterfaceCheckMixin):
         self.assertIsNone(self.scheduler.open(Spider("foo")))
         self.assertIsNone(self.scheduler.close("finished"))
         self.assertRaises(NotImplementedError, self.scheduler.has_pending_requests)
-        self.assertRaises(NotImplementedError, self.scheduler.enqueue_request, Request("https://example.org"))
+        self.assertRaises(
+            NotImplementedError,
+            self.scheduler.enqueue_request,
+            Request("https://example.org"),
+        )
         self.assertRaises(NotImplementedError, self.scheduler.next_request)
 
 

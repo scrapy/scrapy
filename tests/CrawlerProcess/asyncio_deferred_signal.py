@@ -37,9 +37,11 @@ if __name__ == "__main__":
     except IndexError:
         ASYNCIO_EVENT_LOOP = None
 
-    process = CrawlerProcess(settings={
-        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-        "ASYNCIO_EVENT_LOOP": ASYNCIO_EVENT_LOOP,
-    })
+    process = CrawlerProcess(
+        settings={
+            "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            "ASYNCIO_EVENT_LOOP": ASYNCIO_EVENT_LOOP,
+        }
+    )
     process.crawl(UrlSpider)
     process.start()

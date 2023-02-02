@@ -10,14 +10,6 @@ jobs:
         include:
         - python-version: "3.11"
           env:
-            TOXENV: security
-        - python-version: "3.11"
-          env:
-            TOXENV: flake8
-        # Pylint requires installing reppy, which does not support Python 3.9
-        # https://github.com/seomoz/reppy/issues/122
-        - python-version: 3.8
-          env:
             TOXENV: pylint
         - python-version: 3.7
           env:
@@ -42,3 +34,9 @@ jobs:
       run: |
         pip install -U tox
         tox
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: pre-commit/action@v3.0.0

@@ -15,8 +15,8 @@ from w3lib.encoding import (
     html_body_declared_encoding,
     html_to_unicode,
     http_content_type_encoding,
-    resolve_encoding,
     read_bom,
+    resolve_encoding,
 )
 from w3lib.html import strip_html5_whitespace
 
@@ -30,13 +30,13 @@ _NONE = object()
 
 class TextResponse(Response):
 
-    _DEFAULT_ENCODING = 'ascii'
+    _DEFAULT_ENCODING = "ascii"
     _cached_decoded_json = _NONE
 
     attributes: Tuple[str, ...] = Response.attributes + ("encoding",)
 
     def __init__(self, *args, **kwargs):
-        self._encoding = kwargs.pop('encoding', None)
+        self._encoding = kwargs.pop("encoding", None)
         self._cached_benc = None
         self._cached_ubody = None
         self._cached_selector = None
@@ -49,11 +49,13 @@ class TextResponse(Response):
             super()._set_url(url)
 
     def _set_body(self, body):
-        self._body = b''  # used by encoding detection
+        self._body = b""  # used by encoding detection
         if isinstance(body, str):
             if self._encoding is None:
-                raise TypeError('Cannot convert unicode body - '
-                                f'{type(self).__name__} has no encoding')
+                raise TypeError(
+                    "Cannot convert unicode body - "
+                    f"{type(self).__name__} has no encoding"
+                )
             self._body = body.encode(self._encoding)
         else:
             super()._set_body(body)
@@ -82,12 +84,12 @@ class TextResponse(Response):
 
     @property
     def text(self):
-        """ Body as unicode """
+        """Body as unicode"""
         # access self.encoding before _cached_ubody to make sure
         # _body_inferred_encoding is called
         benc = self.encoding
         if self._cached_ubody is None:
-            charset = f'charset={benc}'
+            charset = f"charset={benc}"
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
@@ -98,21 +100,24 @@ class TextResponse(Response):
 
     @memoizemethod_noargs
     def _headers_encoding(self):
-        content_type = self.headers.get(b'Content-Type', b'')
+        content_type = self.headers.get(b"Content-Type", b"")
         return http_content_type_encoding(to_unicode(content_type))
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
-            content_type = to_unicode(self.headers.get(b'Content-Type', b''))
-            benc, ubody = html_to_unicode(content_type, self.body,
-                                          auto_detect_fun=self._auto_detect_fun,
-                                          default_encoding=self._DEFAULT_ENCODING)
+            content_type = to_unicode(self.headers.get(b"Content-Type", b""))
+            benc, ubody = html_to_unicode(
+                content_type,
+                self.body,
+                auto_detect_fun=self._auto_detect_fun,
+                default_encoding=self._DEFAULT_ENCODING,
+            )
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc
 
     def _auto_detect_fun(self, text):
-        for enc in (self._DEFAULT_ENCODING, 'utf-8', 'cp1252'):
+        for enc in (self._DEFAULT_ENCODING, "utf-8", "cp1252"):
             try:
                 text.decode(enc)
             except UnicodeError:
@@ -130,6 +135,7 @@ class TextResponse(Response):
     @property
     def selector(self):
         from scrapy.selector import Selector
+
         if self._cached_selector is None:
             self._cached_selector = Selector(self)
         return self._cached_selector
@@ -140,10 +146,22 @@ class TextResponse(Response):
     def css(self, query):
         return self.selector.css(query)
 
-    def follow(self, url, callback=None, method='GET', headers=None, body=None,
-               cookies=None, meta=None, encoding=None, priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
-        # type: (...) -> Request
+    def follow(
+        self,
+        url,
+        callback=None,
+        method="GET",
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding=None,
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+    ) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
         It accepts the same arguments as ``Request.__init__`` method,
@@ -181,11 +199,24 @@ class TextResponse(Response):
             flags=flags,
         )
 
-    def follow_all(self, urls=None, callback=None, method='GET', headers=None, body=None,
-                   cookies=None, meta=None, encoding=None, priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None, flags=None,
-                   css=None, xpath=None):
-        # type: (...) -> Generator[Request, None, None]
+    def follow_all(
+        self,
+        urls=None,
+        callback=None,
+        method="GET",
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding=None,
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+        css=None,
+        xpath=None,
+    ) -> Generator[Request, None, None]:
         """
         A generator that produces :class:`~.Request` instances to follow all
         links in ``urls``. It accepts the same arguments as the :class:`~.Request`'s
@@ -253,12 +284,13 @@ def _url_from_selector(sel):
     if isinstance(sel.root, str):
         # e.g. ::attr(href) result
         return strip_html5_whitespace(sel.root)
-    if not hasattr(sel.root, 'tag'):
+    if not hasattr(sel.root, "tag"):
         raise _InvalidSelector(f"Unsupported selector: {sel}")
-    if sel.root.tag not in ('a', 'link'):
-        raise _InvalidSelector("Only <a> and <link> elements are supported; "
-                               f"got <{sel.root.tag}>")
-    href = sel.root.get('href')
+    if sel.root.tag not in ("a", "link"):
+        raise _InvalidSelector(
+            "Only <a> and <link> elements are supported; " f"got <{sel.root.tag}>"
+        )
+    href = sel.root.get("href")
     if href is None:
         raise _InvalidSelector(f"<{sel.root.tag}> element has no href attribute: {sel}")
     return strip_html5_whitespace(href)

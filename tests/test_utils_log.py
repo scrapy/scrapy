@@ -1,18 +1,21 @@
-import sys
 import logging
+import sys
 import unittest
 
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
-                              LogCounterHandler, StreamLogger)
-from scrapy.utils.test import get_crawler
 from scrapy.extensions import telnet
+from scrapy.utils.log import (
+    LogCounterHandler,
+    StreamLogger,
+    TopLevelFormatter,
+    failure_to_exc_info,
+)
+from scrapy.utils.test import get_crawler
 
 
 class FailureToExcInfoTest(unittest.TestCase):
-
     def test_failure(self):
         try:
             0 / 0
@@ -23,48 +26,46 @@ class FailureToExcInfoTest(unittest.TestCase):
         self.assertTupleEqual(exc_info, failure_to_exc_info(failure))
 
     def test_non_failure(self):
-        self.assertIsNone(failure_to_exc_info('test'))
+        self.assertIsNone(failure_to_exc_info("test"))
 
 
 class TopLevelFormatterTest(unittest.TestCase):
-
     def setUp(self):
         self.handler = LogCapture()
-        self.handler.addFilter(TopLevelFormatter(['test']))
+        self.handler.addFilter(TopLevelFormatter(["test"]))
 
     def test_top_level_logger(self):
-        logger = logging.getLogger('test')
+        logger = logging.getLogger("test")
         with self.handler as log:
-            logger.warning('test log msg')
-        log.check(('test', 'WARNING', 'test log msg'))
+            logger.warning("test log msg")
+        log.check(("test", "WARNING", "test log msg"))
 
     def test_children_logger(self):
-        logger = logging.getLogger('test.test1')
+        logger = logging.getLogger("test.test1")
         with self.handler as log:
-            logger.warning('test log msg')
-        log.check(('test', 'WARNING', 'test log msg'))
+            logger.warning("test log msg")
+        log.check(("test", "WARNING", "test log msg"))
 
     def test_overlapping_name_logger(self):
-        logger = logging.getLogger('test2')
+        logger = logging.getLogger("test2")
         with self.handler as log:
-            logger.warning('test log msg')
-        log.check(('test2', 'WARNING', 'test log msg'))
+            logger.warning("test log msg")
+        log.check(("test2", "WARNING", "test log msg"))
 
     def test_different_name_logger(self):
-        logger = logging.getLogger('different')
+        logger = logging.getLogger("different")
         with self.handler as log:
-            logger.warning('test log msg')
-        log.check(('different', 'WARNING', 'test log msg'))
+            logger.warning("test log msg")
+        log.check(("different", "WARNING", "test log msg"))
 
 
 class LogCounterHandlerTest(unittest.TestCase):
-
     def setUp(self):
-        settings = {'LOG_LEVEL': 'WARNING'}
+        settings = {"LOG_LEVEL": "WARNING"}
         if not telnet.TWISTED_CONCH_AVAILABLE:
             # disable it to avoid the extra warning
-            settings['TELNETCONSOLE_ENABLED'] = False
-        self.logger = logging.getLogger('test')
+            settings["TELNETCONSOLE_ENABLED"] = False
+        self.logger = logging.getLogger("test")
         self.logger.setLevel(logging.NOTSET)
         self.logger.propagate = False
         self.crawler = get_crawler(settings_dict=settings)
@@ -76,26 +77,25 @@ class LogCounterHandlerTest(unittest.TestCase):
         self.logger.removeHandler(self.handler)
 
     def test_init(self):
-        self.assertIsNone(self.crawler.stats.get_value('log_count/DEBUG'))
-        self.assertIsNone(self.crawler.stats.get_value('log_count/INFO'))
-        self.assertIsNone(self.crawler.stats.get_value('log_count/WARNING'))
-        self.assertIsNone(self.crawler.stats.get_value('log_count/ERROR'))
-        self.assertIsNone(self.crawler.stats.get_value('log_count/CRITICAL'))
+        self.assertIsNone(self.crawler.stats.get_value("log_count/DEBUG"))
+        self.assertIsNone(self.crawler.stats.get_value("log_count/INFO"))
+        self.assertIsNone(self.crawler.stats.get_value("log_count/WARNING"))
+        self.assertIsNone(self.crawler.stats.get_value("log_count/ERROR"))
+        self.assertIsNone(self.crawler.stats.get_value("log_count/CRITICAL"))
 
     def test_accepted_level(self):
-        self.logger.error('test log msg')
-        self.assertEqual(self.crawler.stats.get_value('log_count/ERROR'), 1)
+        self.logger.error("test log msg")
+        self.assertEqual(self.crawler.stats.get_value("log_count/ERROR"), 1)
 
     def test_filtered_out_level(self):
-        self.logger.debug('test log msg')
-        self.assertIsNone(self.crawler.stats.get_value('log_count/INFO'))
+        self.logger.debug("test log msg")
+        self.assertIsNone(self.crawler.stats.get_value("log_count/INFO"))
 
 
 class StreamLoggerTest(unittest.TestCase):
-
     def setUp(self):
         self.stdout = sys.stdout
-        logger = logging.getLogger('test')
+        logger = logging.getLogger("test")
         logger.setLevel(logging.WARNING)
         sys.stdout = StreamLogger(logger, logging.ERROR)
 
@@ -104,5 +104,5 @@ class StreamLoggerTest(unittest.TestCase):
 
     def test_redirect(self):
         with LogCapture() as log:
-            print('test log msg')
-        log.check(('test', 'ERROR', 'test log msg'))
+            print("test log msg")
+        log.check(("test", "ERROR", "test log msg"))

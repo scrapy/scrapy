@@ -10,7 +10,7 @@ from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpoint
 from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
-from scrapy.core.http2.protocol import H2ClientProtocol, H2ClientFactory
+from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
 from scrapy.http.request import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -28,7 +28,9 @@ class H2ConnectionPool:
         # Save all requests that arrive before the connection is established
         self._pending_requests: Dict[Tuple, Deque[Deferred]] = {}
 
-    def get_connection(self, key: Tuple, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
+    def get_connection(
+        self, key: Tuple, uri: URI, endpoint: HostnameEndpoint
+    ) -> Deferred:
         if key in self._pending_requests:
             # Received a request while connecting to remote
             # Create a deferred which will fire with the H2ClientProtocol
@@ -46,7 +48,9 @@ class H2ConnectionPool:
         # No connection is established for the given URI
         return self._new_connection(key, uri, endpoint)
 
-    def _new_connection(self, key: Tuple, uri: URI, endpoint: HostnameEndpoint) -> Deferred:
+    def _new_connection(
+        self, key: Tuple, uri: URI, endpoint: HostnameEndpoint
+    ) -> Deferred:
         self._pending_requests[key] = deque()
 
         conn_lost_deferred = Deferred()
@@ -102,7 +106,9 @@ class H2Agent:
     ) -> None:
         self._reactor = reactor
         self._pool = pool
-        self._context_factory = AcceptableProtocolsContextFactory(context_factory, acceptable_protocols=[b'h2'])
+        self._context_factory = AcceptableProtocolsContextFactory(
+            context_factory, acceptable_protocols=[b"h2"]
+        )
         self.endpoint_factory = _StandardEndpointFactory(
             self._reactor, self._context_factory, connect_timeout, bind_address
         )
@@ -118,7 +124,7 @@ class H2Agent:
         return uri.scheme, uri.host, uri.port
 
     def request(self, request: Request, spider: Spider) -> Deferred:
-        uri = URI.fromBytes(bytes(request.url, encoding='utf-8'))
+        uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))
         try:
             endpoint = self.get_endpoint(uri)
         except SchemeNotSupported:
@@ -140,7 +146,7 @@ class ScrapyProxyH2Agent(H2Agent):
         connect_timeout: Optional[float] = None,
         bind_address: Optional[bytes] = None,
     ) -> None:
-        super(ScrapyProxyH2Agent, self).__init__(
+        super().__init__(
             reactor=reactor,
             pool=pool,
             context_factory=context_factory,
