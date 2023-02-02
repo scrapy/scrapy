@@ -548,6 +548,7 @@ For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First, you would get all ``<div>`` elements:
 
 .. code-block:: pycon
+    
     >>> divs = response.xpath("//div")
 
 At first, you may be tempted to use the following approach, which is wrong, as
