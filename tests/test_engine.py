@@ -243,7 +243,6 @@ class CrawlerRun:
 class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawler(self):
-
         for spider in (
             TestSpider,
             DictItemsSpider,

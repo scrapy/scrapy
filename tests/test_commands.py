@@ -223,7 +223,6 @@ def get_permissions_dict(
 
 
 class StartprojectTemplatesTest(ProjectTest):
-
     maxDiff = None
 
     def setUp(self):
@@ -604,7 +603,6 @@ class MiscCommandsTest(CommandTest):
 
 
 class RunSpiderCommandTest(CommandTest):
-
     spider_filename = "myspider.py"
 
     debug_log_spider = """
@@ -873,7 +871,6 @@ class MySpider(scrapy.Spider):
 
 @skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
-
     spider_filename = "myspider.pyw"
 
     def setUp(self):

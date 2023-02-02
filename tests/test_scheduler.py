@@ -43,7 +43,6 @@ class MockDownloader:
 
 class MockCrawler(Crawler):
     def __init__(self, priority_queue_cls, jobdir):
-
         settings = dict(
             SCHEDULER_DEBUG=False,
             SCHEDULER_DISK_QUEUE="scrapy.squeues.PickleLifoDiskQueue",
@@ -325,7 +324,6 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
     @defer.inlineCallbacks
     def test_integration_downloader_aware_priority_queue(self):
         with MockServer() as mockserver:
-
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)

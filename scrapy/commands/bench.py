@@ -9,7 +9,6 @@ from scrapy.linkextractors import LinkExtractor
 
 
 class Command(ScrapyCommand):
-
     default_settings = {
         "LOG_LEVEL": "INFO",
         "LOGSTATS_INTERVAL": 1,

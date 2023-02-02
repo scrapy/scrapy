@@ -24,7 +24,6 @@ def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
 
 
 class Command(BaseRunSpiderCommand):
-
     requires_project = False
     default_settings = {"SPIDER_LOADER_WARN_ONLY": True}
 

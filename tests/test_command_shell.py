@@ -9,7 +9,6 @@ from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
-
     command = "shell"
 
     @defer.inlineCallbacks

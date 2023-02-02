@@ -29,7 +29,6 @@ _NONE = object()
 
 
 class TextResponse(Response):
-
     _DEFAULT_ENCODING = "ascii"
     _cached_decoded_json = _NONE
 

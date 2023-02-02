@@ -12,7 +12,6 @@ from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
 class ResponseTypes:
-
     CLASSES = {
         "text/html": "scrapy.http.HtmlResponse",
         "application/atom+xml": "scrapy.http.XmlResponse",
