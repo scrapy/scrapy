@@ -9,11 +9,11 @@ import logging
 import mimetypes
 import os
 import time
-from os import PathLike
 from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
+from os import PathLike
 from pathlib import Path
 from typing import DefaultDict, Optional, Set, Union
 from urllib.parse import urlparse
@@ -54,12 +54,14 @@ class FSFilesStore:
         self._mkdir(Path(self.basedir))
         self.created_directories: DefaultDict[str, Set[str]] = defaultdict(set)
 
-    def persist_file(self, path: str, buf, info, meta=None, headers=None):
+    def persist_file(
+        self, path: Union[str, PathLike], buf, info, meta=None, headers=None
+    ):
         absolute_path = self._get_filesystem_path(path)
         self._mkdir(absolute_path.parent, info)
         absolute_path.write_bytes(buf.getvalue())
 
-    def stat_file(self, path: str, info):
+    def stat_file(self, path: Union[str, PathLike], info):
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = absolute_path.stat().st_mtime
