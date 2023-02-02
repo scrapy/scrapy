@@ -2,15 +2,15 @@ import json
 import logging
 from typing import Dict
 
-from itemadapter import is_item, ItemAdapter
+from itemadapter import ItemAdapter, is_item
+from twisted.internet.defer import maybeDeferred
 from w3lib.url import is_url
 
-from twisted.internet.defer import maybeDeferred
 from scrapy.commands import BaseRunSpiderCommand
+from scrapy.exceptions import UsageError
 from scrapy.http import Request
 from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
-from scrapy.exceptions import UsageError
 
 logger = logging.getLogger(__name__)
 

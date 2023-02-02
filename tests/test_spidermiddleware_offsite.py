@@ -1,10 +1,10 @@
+import warnings
 from unittest import TestCase
 from urllib.parse import urlparse
-import warnings
 
-from scrapy.http import Response, Request
+from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, PortWarning, URLWarning
 from scrapy.spiders import Spider
-from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, URLWarning, PortWarning
 from scrapy.utils.test import get_crawler
 
 

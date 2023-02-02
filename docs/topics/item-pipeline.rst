@@ -191,6 +191,7 @@ item.
 
     import scrapy
     from itemadapter import ItemAdapter
+    from scrapy.http.request import NO_CALLBACK
     from scrapy.utils.defer import maybe_deferred_to_future
 
 
@@ -204,8 +205,10 @@ item.
             adapter = ItemAdapter(item)
             encoded_item_url = quote(adapter["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
-            request = scrapy.Request(screenshot_url)
-            response = await maybe_deferred_to_future(spider.crawler.engine.download(request, spider))
+            request = scrapy.Request(screenshot_url, callback=NO_CALLBACK)
+            response = await maybe_deferred_to_future(
+                spider.crawler.engine.download(request, spider)
+            )
 
             if response.status != 200:
                 # Error happened, return item.

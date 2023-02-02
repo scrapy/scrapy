@@ -1,11 +1,10 @@
 """Helper functions for scrapy.http objects (Request, Response)"""
 
 from typing import Union
-from urllib.parse import urlparse, ParseResult
+from urllib.parse import ParseResult, urlparse
 from weakref import WeakKeyDictionary
 
 from scrapy.http import Request, Response
-
 
 _urlparse_cache: "WeakKeyDictionary[Union[Request, Response], ParseResult]" = (
     WeakKeyDictionary()

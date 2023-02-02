@@ -6,9 +6,9 @@ import shutil
 from pathlib import Path
 
 import OpenSSL.SSL
+from twisted.internet import defer, reactor
 from twisted.trial import unittest
-from twisted.web import server, static, util, resource
-from twisted.internet import reactor, defer
+from twisted.web import resource, server, static, util
 
 try:
     from twisted.internet.testing import StringTransport
@@ -16,12 +16,13 @@ except ImportError:
     # deprecated in Twisted 19.7.0
     # (remove once we bump our requirement past that version)
     from twisted.test.proto_helpers import StringTransport
-from twisted.protocols.policies import WrappingFactory
+
 from twisted.internet.defer import inlineCallbacks
+from twisted.protocols.policies import WrappingFactory
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
-from scrapy.http import Request, Headers
+from scrapy.http import Headers, Request
 from scrapy.settings import Settings
 from scrapy.utils.misc import create_instance
 from scrapy.utils.python import to_bytes, to_unicode

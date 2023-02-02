@@ -1,21 +1,20 @@
-import sys
 import shutil
+import sys
+import tempfile
 import warnings
 from pathlib import Path
 
-import tempfile
-from zope.interface.verify import verifyObject
 from twisted.trial import unittest
-
+from zope.interface.verify import verifyObject
 
 # ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
 import scrapy
-from scrapy.interfaces import ISpiderLoader
-from scrapy.spiderloader import SpiderLoader
-from scrapy.settings import Settings
-from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
+from scrapy.http import Request
+from scrapy.interfaces import ISpiderLoader
+from scrapy.settings import Settings
+from scrapy.spiderloader import SpiderLoader
 
 module_dir = Path(__file__).resolve().parent
 

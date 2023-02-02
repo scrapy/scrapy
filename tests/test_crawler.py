@@ -5,28 +5,25 @@ import sys
 import warnings
 from pathlib import Path
 
-from pytest import raises, mark
+from pkg_resources import parse_version
+from pytest import mark, raises
 from twisted import version as twisted_version
 from twisted.internet import defer
 from twisted.python.versions import Version
 from twisted.trial import unittest
-
-from pkg_resources import parse_version
 from w3lib import __version__ as w3lib_version
 
 import scrapy
-from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
+from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.extensions import telnet
+from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
-from scrapy.utils.test import get_crawler
-from scrapy.extensions.throttle import AutoThrottle
-from scrapy.extensions import telnet
-from scrapy.utils.test import get_testenv
-
+from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.test import get_crawler, get_testenv
 from tests.mockserver import MockServer
 
 

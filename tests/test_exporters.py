@@ -1,31 +1,31 @@
-import re
+import dataclasses
 import json
 import marshal
 import pickle
+import re
 import tempfile
 import unittest
-import dataclasses
-from io import BytesIO
 from datetime import datetime
+from io import BytesIO
 from warnings import catch_warnings, filterwarnings
 
 import lxml.etree
 from itemadapter import ItemAdapter
 
-from scrapy.item import Item, Field
-from scrapy.utils.python import to_unicode
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter,
-    PprintItemExporter,
-    PickleItemExporter,
     CsvItemExporter,
-    XmlItemExporter,
-    JsonLinesItemExporter,
     JsonItemExporter,
-    PythonItemExporter,
+    JsonLinesItemExporter,
     MarshalItemExporter,
+    PickleItemExporter,
+    PprintItemExporter,
+    PythonItemExporter,
+    XmlItemExporter,
 )
+from scrapy.item import Field, Item
+from scrapy.utils.python import to_unicode
 
 
 def custom_serializer(value):

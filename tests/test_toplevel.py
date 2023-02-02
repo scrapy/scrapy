@@ -11,7 +11,7 @@ class ToplevelTestCase(TestCase):
         self.assertIs(type(scrapy.version_info), tuple)
 
     def test_request_shortcut(self):
-        from scrapy.http import Request, FormRequest
+        from scrapy.http import FormRequest, Request
 
         self.assertIs(scrapy.Request, Request)
         self.assertIs(scrapy.FormRequest, FormRequest)
@@ -27,7 +27,7 @@ class ToplevelTestCase(TestCase):
         self.assertIs(scrapy.Selector, Selector)
 
     def test_item_shortcut(self):
-        from scrapy.item import Item, Field
+        from scrapy.item import Field, Item
 
         self.assertIs(scrapy.Item, Item)
         self.assertIs(scrapy.Field, Field)

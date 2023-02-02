@@ -4,13 +4,13 @@ from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
+    _is_filesystem_path,
     add_http_if_no_scheme,
     guess_scheme,
-    _is_filesystem_path,
     strip_url,
+    url_has_any_extension,
     url_is_from_any_domain,
     url_is_from_spider,
-    url_has_any_extension,
 )
 
 __doctests__ = ["scrapy.utils.url"]

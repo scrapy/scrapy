@@ -3,8 +3,8 @@ Offsite Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-import re
 import logging
+import re
 import warnings
 
 from scrapy import signals

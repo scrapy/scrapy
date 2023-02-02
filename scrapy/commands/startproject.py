@@ -1,16 +1,15 @@
-import re
 import os
+import re
 import string
 from importlib.util import find_spec
 from pathlib import Path
-from shutil import ignore_patterns, move, copy2, copystat
+from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
 
 import scrapy
 from scrapy.commands import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
-
+from scrapy.utils.template import render_templatefile, string_camelcase
 
 TEMPLATES_TO_RENDER = (
     ("scrapy.cfg",),

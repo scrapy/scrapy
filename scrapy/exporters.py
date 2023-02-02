@@ -11,13 +11,12 @@ import warnings
 from collections.abc import Mapping
 from xml.sax.saxutils import XMLGenerator
 
-from itemadapter import is_item, ItemAdapter
+from itemadapter import ItemAdapter, is_item
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
-
 
 __all__ = [
     "BaseItemExporter",

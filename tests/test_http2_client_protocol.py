@@ -17,18 +17,19 @@ from twisted.internet.defer import (
 )
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.error import TimeoutError
-from twisted.internet.ssl import optionsForClientTLS, PrivateCertificate, Certificate
+from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
-from twisted.web.client import ResponseFailed, URI
-from twisted.web.http import H2_ENABLED, Request as TxRequest
-from twisted.web.server import Site, NOT_DONE_YET
+from twisted.web.client import URI, ResponseFailed
+from twisted.web.http import H2_ENABLED
+from twisted.web.http import Request as TxRequest
+from twisted.web.server import NOT_DONE_YET, Site
 from twisted.web.static import File
 
-from scrapy.http import Request, Response, JsonRequest
+from scrapy.http import JsonRequest, Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from tests.mockserver import ssl_context_factory, LeafResource, Status
+from tests.mockserver import LeafResource, Status, ssl_context_factory
 
 
 def generate_random_string(size):
