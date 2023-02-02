@@ -248,10 +248,7 @@ class CsvItemExporter(BaseItemExporter):
         self.csv_writer.writerow(values)
 
     def finish_exporting(self):
-        # Detaching stream in order to avoid file closing.
-        # The file will be closed with slot.storage.store
-        # https://github.com/scrapy/scrapy/issues/5043
-        self.stream.detach()
+        self.stream.detach()  # Avoid closing the wrapped file.
 
     def _build_row(self, values):
         for s in values:
