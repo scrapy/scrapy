@@ -505,7 +505,7 @@ class GenspiderCommandTest(CommandTest):
         # change name of spider but not its file name
         with file_path.open("r+", encoding="utf-8") as spider_file:
             file_data = spider_file.read()
-            file_data = file_data.replace("name = 'example'", "name = 'renamed'")
+            file_data = file_data.replace('name = "example"', 'name = "renamed"')
             spider_file.seek(0)
             spider_file.write(file_data)
             spider_file.truncate()
@@ -538,14 +538,14 @@ class GenspiderCommandTest(CommandTest):
             domain,
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"allowed_domains\s*=\s*\[\'(.+)\'\]",
+                r"allowed_domains\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
         self.assertEqual(
             f"http://{domain}/",
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"start_urls\s*=\s*\[\'(.+)\'\]",
+                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
 
