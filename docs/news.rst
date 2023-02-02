@@ -5,8 +5,8 @@ Release notes
 
 .. _release-2.8.0:
 
-Scrapy 2.8.0 (to be released)
------------------------------
+Scrapy 2.8.0 (2023-02-02)
+-------------------------
 
 This is a maintenance release, with minor features, bug fixes, and cleanups.
 
