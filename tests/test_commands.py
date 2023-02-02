@@ -638,8 +638,8 @@ class GenspiderCommandTest(CommandTest):
     def test_start_urls_substitution_no_schema(self):
         self.test_start_urls_no_schema(template="basic", url="example.com")
         self.test_start_urls_no_schema(template="crawl", url="example.com")
-        self.test_start_urls_no_schema(template="xmlfeed", url="example.com/full/path")
-        self.test_start_urls_no_schema(template="csvfeed", url="example.com/full/path")
+        self.test_start_urls_no_schema(template="xmlfeed", url="example.com")
+        self.test_start_urls_no_schema(template="csvfeed", url="example.com")
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):
