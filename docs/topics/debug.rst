@@ -19,7 +19,7 @@ Consider the following Scrapy spider below::
 
         def parse(self, response):
             # <processing code not shown>
-            # collect `item_urls` 
+            # collect `item_urls`
             for item_url in item_urls:
                 yield scrapy.Request(item_url, self.parse_item)
 
@@ -150,6 +150,8 @@ available in all future runs should they be necessary again::
 For more information, check the :ref:`topics-logging` section.
 
 .. _base tag: https://www.w3schools.com/tags/tag_base.asp
+
+.. _debug-vscode:
 
 Visual Studio Code
 ==================
