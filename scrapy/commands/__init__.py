@@ -14,7 +14,6 @@ from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 
 
 class ScrapyCommand:
-
     requires_project = False
     crawler_process: Optional[CrawlerProcess] = None
 

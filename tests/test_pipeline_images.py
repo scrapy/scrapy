@@ -33,7 +33,6 @@ else:
 
 
 class ImagesPipelineTestCase(unittest.TestCase):
-
     skip = skip_pillow
 
     def setUp(self):
@@ -325,7 +324,6 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
 
 class ImagesPipelineTestCaseFieldsMixin:
-
     skip = skip_pillow
 
     def test_item_fields_default(self):
@@ -420,7 +418,6 @@ class ImagesPipelineTestCaseFieldsAttrsItem(
 
 
 class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
-
     skip = skip_pillow
 
     img_cls_attribute_names = [

@@ -17,7 +17,6 @@ from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
 
 
 class DownloaderMiddlewareManager(MiddlewareManager):
-
     component_name = "downloader middleware"
 
     @classmethod

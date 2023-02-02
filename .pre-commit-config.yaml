@@ -5,14 +5,14 @@ repos:
   - id: bandit
     args: [-r, -c, .bandit.yml]
 - repo: https://github.com/PyCQA/flake8
-  rev: 6.0.0
+  rev: 5.0.4  # 6.0.0 drops Python 3.7 support
   hooks:
   - id: flake8
 - repo: https://github.com/psf/black.git
-  rev: 22.12.0
+  rev: 23.1.0
   hooks:
   - id: black
 - repo: https://github.com/pycqa/isort
-  rev: 5.12.0
+  rev: 5.11.5  # 5.12 drops Python 3.7 support
   hooks:
   - id: isort

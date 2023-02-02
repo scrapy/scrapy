@@ -89,7 +89,7 @@ class XMLFeedSpider(Spider):
             yield node
 
     def _register_namespaces(self, selector):
-        for (prefix, uri) in self.namespaces:
+        for prefix, uri in self.namespaces:
             selector.register_namespace(prefix, uri)
 
 

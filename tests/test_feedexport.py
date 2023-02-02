@@ -1068,7 +1068,6 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
-
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
             self.MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -1711,7 +1710,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_gzip_plugin(self):
-
         filename = self._named_tempfile("gzip_file")
 
         settings = {
@@ -1731,7 +1729,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_gzip_plugin_compresslevel(self):
-
         filename_to_compressed = {
             self._named_tempfile("compresslevel_0"): self.get_gzip_compressed(
                 self.expected, compresslevel=0
@@ -1839,7 +1836,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin(self):
-
         filename = self._named_tempfile("lzma_file")
 
         settings = {
@@ -1859,7 +1855,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_format(self):
-
         filename_to_compressed = {
             self._named_tempfile("format_FORMAT_XZ"): lzma.compress(
                 self.expected, format=lzma.FORMAT_XZ
@@ -1893,7 +1888,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_check(self):
-
         filename_to_compressed = {
             self._named_tempfile("check_CHECK_NONE"): lzma.compress(
                 self.expected, check=lzma.CHECK_NONE
@@ -1927,7 +1921,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_preset(self):
-
         filename_to_compressed = {
             self._named_tempfile("preset_PRESET_0"): lzma.compress(
                 self.expected, preset=0
@@ -1986,7 +1979,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_bz2_plugin(self):
-
         filename = self._named_tempfile("bz2_file")
 
         settings = {
@@ -2006,7 +1998,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_bz2_plugin_compresslevel(self):
-
         filename_to_compressed = {
             self._named_tempfile("compresslevel_1"): bz2.compress(
                 self.expected, compresslevel=1
@@ -2056,7 +2047,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_parameter(self):
-
         expected = b"foo\r\n\nbar\r\n\n"
         filename = self._named_tempfile("newline")
 
@@ -2075,7 +2065,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_compression(self):
-
         expected = b"foo\r\n\nbar\r\n\n"
 
         filename_to_decompressor = {
@@ -2555,7 +2544,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
-
             stubs = []
 
             def open(self, *args, **kwargs):
@@ -2828,7 +2816,6 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
 
 class URIParamsTest:
-
     spider_name = "uri_params_spider"
     deprecated_options = False
 

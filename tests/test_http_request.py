@@ -19,7 +19,6 @@ from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
-
     request_class = Request
     default_method = "GET"
     default_headers = {}
@@ -424,7 +423,6 @@ class RequestTest(unittest.TestCase):
 
 
 class FormRequestTest(RequestTest):
-
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
@@ -1447,7 +1445,6 @@ def _qs(req, encoding="utf-8", to_unicode=False):
 
 
 class XmlRpcRequestTest(RequestTest):
-
     request_class = XmlRpcRequest
     default_method = "POST"
     default_headers = {b"Content-Type": [b"text/xml"]}

@@ -16,7 +16,6 @@ from tests.spiders import ItemSpider
 
 
 class CustomItem(Item):
-
     name = Field()
 
     def __str__(self):

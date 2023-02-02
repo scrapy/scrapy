@@ -93,7 +93,6 @@ class BaseSettingsTest(unittest.TestCase):
         with mock.patch.object(attr, "__setattr__") as mock_setattr, mock.patch.object(
             attr, "set"
         ) as mock_set:
-
             self.settings.attributes = {"TEST_OPTION": attr}
 
             for priority in (0, 10, 20):

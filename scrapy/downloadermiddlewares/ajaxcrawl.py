@@ -30,7 +30,6 @@ class AjaxCrawlMiddleware:
         return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
-
         if not isinstance(response, HtmlResponse) or response.status != 200:
             return response
 

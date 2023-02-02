@@ -73,7 +73,6 @@ class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
 
 
 class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
-
     chunksize = 100000
 
     def queue(self):

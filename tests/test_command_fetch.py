@@ -6,7 +6,6 @@ from scrapy.utils.testsite import SiteTest
 
 
 class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
-
     command = "fetch"
 
     @defer.inlineCallbacks
