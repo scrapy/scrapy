@@ -92,7 +92,7 @@ class BaseItemExporterTest(unittest.TestCase):
                 raise
         self.ie.finish_exporting()
         # Delete the item exporter object, so that if it causes the output
-        # file handle be closed, which should not be the case, follow-up
+        # file handle to be closed, which should not be the case, follow-up
         # interactions with the output file handle will surface the issue.
         del self.ie
         self._check_output()
