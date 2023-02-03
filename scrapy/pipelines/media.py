@@ -23,7 +23,6 @@ def _DUMMY_CALLBACK(response):
 
 
 class MediaPipeline:
-
     LOG_FAILED_RESULTS = True
 
     class SpiderInfo:

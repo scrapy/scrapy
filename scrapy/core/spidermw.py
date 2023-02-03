@@ -46,7 +46,6 @@ def _isiterable(o) -> bool:
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
-
     component_name = "spider middleware"
 
     def __init__(self, *middlewares):

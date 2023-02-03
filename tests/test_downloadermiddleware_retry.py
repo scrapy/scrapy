@@ -127,7 +127,6 @@ class RetryTest(unittest.TestCase):
 
 
 class MaxRetryTimesTest(unittest.TestCase):
-
     invalid_url = "http://www.scrapytest.org/invalid_url"
 
     def get_spider_and_middleware(self, settings=None):

@@ -2,7 +2,6 @@ from tests.test_commands import CommandTest
 
 
 class CheckCommandTest(CommandTest):
-
     command = "check"
 
     def setUp(self):

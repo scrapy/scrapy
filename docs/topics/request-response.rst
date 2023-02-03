@@ -39,9 +39,7 @@ Request objects
        -   ``None`` (default), which indicates that the spider's
            :meth:`~scrapy.Spider.parse` method must be used.
 
-       -   :py:data:`scrapy.http.request.NO_CALLBACK`
-
-            .. autodata:: scrapy.http.request.NO_CALLBACK
+       -   :func:`~scrapy.http.request.NO_CALLBACK`
 
        For more information, see
        :ref:`topics-request-response-ref-request-callback-arguments`.
@@ -252,6 +250,8 @@ Request objects
 
 Other functions related to requests
 -----------------------------------
+
+.. autofunction:: scrapy.http.request.NO_CALLBACK
 
 .. autofunction:: scrapy.utils.request.request_from_dict
 

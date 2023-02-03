@@ -154,7 +154,6 @@ class KeywordArgumentsSpider(MockServerSpider):
 
 
 class CallbackKeywordArgumentsTestCase(TestCase):
-
     maxDiff = None
 
     def setUp(self):

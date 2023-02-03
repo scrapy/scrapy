@@ -3,7 +3,6 @@ from scrapy.exceptions import UsageError
 
 
 class Command(BaseRunSpiderCommand):
-
     requires_project = True
 
     def syntax(self):

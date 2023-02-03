@@ -462,7 +462,6 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
         warning to be logged."""
 
         class RequestFingerprinter:
-
             cache = WeakKeyDictionary()
 
             def fingerprint(self, request):
@@ -641,7 +640,6 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
 
     def test_from_crawler_and_settings(self):
         class RequestFingerprinter:
-
             # This method is ignored due to the presence of from_crawler
             @classmethod
             def from_settings(cls, settings):

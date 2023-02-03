@@ -164,6 +164,8 @@ For more information, check the :ref:`topics-logging` section.
 
 .. _base tag: https://www.w3schools.com/tags/tag_base.asp
 
+.. _debug-vscode:
+
 Visual Studio Code
 ==================
 

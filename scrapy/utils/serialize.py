@@ -9,7 +9,6 @@ from scrapy.http import Request, Response
 
 
 class ScrapyJSONEncoder(json.JSONEncoder):
-
     DATE_FORMAT = "%Y-%m-%d"
     TIME_FORMAT = "%H:%M:%S"
 

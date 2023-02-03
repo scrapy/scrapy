@@ -25,7 +25,6 @@ from tests.test_downloader_handlers import (
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2TestCase(Https11TestCase):
-
     scheme = "https"
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 

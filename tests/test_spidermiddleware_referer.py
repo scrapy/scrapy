@@ -31,7 +31,6 @@ from scrapy.spiders import Spider
 
 
 class TestRefererMiddleware(TestCase):
-
     req_meta = {}
     resp_headers = {}
     settings = {}
@@ -51,7 +50,6 @@ class TestRefererMiddleware(TestCase):
         return Response(origin, headers=self.resp_headers)
 
     def test(self):
-
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
@@ -770,7 +768,6 @@ class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
 
 
 class TestRequestMetaSettingFallback(TestCase):
-
     params = [
         (
             # When an unknown policy is referenced in Request.meta
@@ -824,7 +821,6 @@ class TestRequestMetaSettingFallback(TestCase):
     ]
 
     def test(self):
-
         origin = "http://www.scrapy.org"
         target = "http://www.example.com"
 
@@ -923,7 +919,6 @@ class TestPolicyHeaderPrecedence004(
 
 
 class TestReferrerOnRedirect(TestRefererMiddleware):
-
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
     scenarii = [
         (
@@ -966,7 +961,6 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
         self.redirectmw = RedirectMiddleware(settings)
 
     def test(self):
-
         for (
             parent,
             target,

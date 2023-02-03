@@ -114,13 +114,11 @@ class SpiderLoaderTest(unittest.TestCase):
         self.assertEqual(crawler.spidercls.name, "spider1")
 
     def test_bad_spider_modules_exception(self):
-
         module = "tests.test_spiderloader.test_spiders.doesnotexist"
         settings = Settings({"SPIDER_MODULES": [module]})
         self.assertRaises(ImportError, SpiderLoader.from_settings, settings)
 
     def test_bad_spider_modules_warning(self):
-
         with warnings.catch_warnings(record=True) as w:
             module = "tests.test_spiderloader.test_spiders.doesnotexist"
             settings = Settings(

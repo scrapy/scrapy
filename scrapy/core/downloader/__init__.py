@@ -69,7 +69,6 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
 
 class Downloader:
-
     DOWNLOAD_SLOT = "download_slot"
 
     def __init__(self, crawler):
