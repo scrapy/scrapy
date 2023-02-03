@@ -117,7 +117,6 @@ instance, which can be accessed and used like this:
 
 
     class MySpider(scrapy.Spider):
-
         name = "myspider"
         start_urls = ["https://scrapy.org"]
 
@@ -136,7 +135,6 @@ Python logger you want. For example:
 
 
     class MySpider(scrapy.Spider):
-
         name = "myspider"
         start_urls = ["https://scrapy.org"]
 

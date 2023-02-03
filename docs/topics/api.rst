@@ -132,8 +132,6 @@ Settings API
     precedence over lesser ones when setting and retrieving values in the
     :class:`~scrapy.settings.Settings` class.
 
-    .. highlight:: python
-
     .. code-block:: python
 
         SETTINGS_PRIORITIES = {

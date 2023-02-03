@@ -240,7 +240,6 @@ higher) in your spider:
 .. code-block:: python
 
     class MySpider(CrawlSpider):
-
         name = "myspider"
 
         download_delay = 2

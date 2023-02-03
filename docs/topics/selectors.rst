@@ -320,8 +320,8 @@ Examples:
   >>> response.css("img::text").getall()
   []
 
-  is means ``.css('foo::text').get()`` could return None even if an element
-  ists. Use ``default=''`` if you always want a string:
+  This means ``.css('foo::text').get()`` could return None even if an element
+  exists. Use ``default=''`` if you always want a string:
 
 .. code-block:: pycon
 

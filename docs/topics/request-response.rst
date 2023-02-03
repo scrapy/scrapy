@@ -321,7 +321,7 @@ It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
-errors if needed
+errors if needed:
 
 .. code-block:: python
 
@@ -386,7 +386,7 @@ Accessing additional data in errback functions
 In case of a failure to process the request, you may be interested in
 accessing arguments to the callback functions so you can process further
 based on the arguments in the errback. The following example shows how to
-achieve this by using ``Failure.request.cb_kwargs``
+achieve this by using ``Failure.request.cb_kwargs``:
 
 .. code-block:: python
 
@@ -593,7 +593,6 @@ URL canonicalization or taking the request method or body into account:
 
 
     class RequestFingerprinter:
-
         cache = WeakKeyDictionary()
 
         def fingerprint(self, request):
@@ -635,7 +634,6 @@ request fingerprinter:
 
 
     class RequestFingerprinter:
-
         cache = WeakKeyDictionary()
 
         def fingerprint(self, request):

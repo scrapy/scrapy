@@ -201,7 +201,6 @@ Item Loaders are declared using a class definition syntax. Here is an example:
 
 
     class ProductLoader(ItemLoader):
-
         default_output_processor = TakeFirst()
 
         name_in = MapCompose(str.title)

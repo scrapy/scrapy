@@ -635,7 +635,7 @@ A shortcut for creating Requests
 --------------------------------
 
 As a shortcut for creating Request objects you can use
-:meth:`response.follow <scrapy.http.TextResponse.follow>`
+:meth:`response.follow <scrapy.http.TextResponse.follow>`:
 
 .. code-block:: python
 

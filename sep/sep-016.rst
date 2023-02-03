@@ -79,7 +79,6 @@ A typical application of LegSpider's is to build Link Extractors. For example:
 
 
    class MySpider(LegSpider):
-
        legs = [RegexHtmlLinkExtractor()]
        url_regexes_to_follow = ["/product.php?.*"]
 
@@ -128,7 +127,6 @@ Another example could be to build a callback dispatcher based on rules:
 
 
    class MySpider(LegSpider):
-
        legs = [CallbackRules()]
        callback_rules = {
            "/product.php.*": "parse_product",
@@ -154,7 +152,6 @@ Another example could be for building URL canonicalizers:
 
 
    class MySpider(LegSpider):
-
        legs = [CanonicalizeUrl()]
        canonicalization_rules = ["sort-query-args", "normalize-percent-encoding", ...]
 
@@ -178,7 +175,6 @@ certain fields:
 
 
    class MySpider(LegSpider):
-
        legs = [ItemIdSetter()]
        id_field = "guid"
        id_fields_to_hash = ["supplier_name", "supplier_id"]
@@ -196,7 +192,6 @@ Here's an example that combines functionality from multiple leg spiders:
 
    #!python
    class MySpider(LegSpider):
-
        legs = [RegexLinkExtractor(), ParseRules(), CanonicalizeUrl(), ItemIdSetter()]
 
        url_regexes_to_follow = ["/product.php?.*"]

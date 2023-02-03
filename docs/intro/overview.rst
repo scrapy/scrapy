@@ -20,7 +20,7 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-https://quotes.toscrape.com, following the pagination
+https://quotes.toscrape.com, following the pagination:
 
 .. code-block:: python
 

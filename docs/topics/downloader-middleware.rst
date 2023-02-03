@@ -356,7 +356,6 @@ HttpAuthMiddleware
 
 
         class SomeIntranetSiteSpider(CrawlSpider):
-
             http_user = "someuser"
             http_pass = "somepass"
             http_auth_domain = "intranet.example.com"

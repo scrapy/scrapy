@@ -170,7 +170,6 @@ the same spider:
 
    #!python
    class MySpider(BaseSpider):
-
        middlewares = [
            RegexLinkExtractor(),
            CallbackRules(),
@@ -252,7 +251,6 @@ For example:
 
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [RegexHtmlLinkExtractor()]
        url_regexes_to_follow = ["/product.php?.*"]
 
@@ -306,7 +304,6 @@ Another example could be to build a callback dispatcher based on rules:
 
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [CallbackRules()]
        callback_rules = {
            "/product.php.*": "parse_product",
@@ -333,7 +330,6 @@ Another example could be for building URL canonicalizers:
 
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [CanonicalizeUrl()]
        canonicalization_rules = ["sort-query-args", "normalize-percent-encoding", ...]
 
@@ -358,7 +354,6 @@ certain fields:
 
    # Example spider using this middleware
    class MySpider(BaseSpider):
-
        middlewares = [ItemIdSetter()]
        id_field = "guid"
        id_fields_to_hash = ["supplier_name", "supplier_id"]
@@ -388,7 +383,6 @@ A spider middleware to avoid visiting pages forbidden by robots.txt:
 
 
    class RobotsTxtMiddleware(object):
-
        REQUEST_PRIORITY = 1000
 
        def __init__(self):
