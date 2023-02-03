@@ -2,7 +2,6 @@ import inspect
 import logging
 
 from scrapy.spiders import Spider
-from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
@@ -11,9 +10,7 @@ logger = logging.getLogger(__name__)
 
 def iterate_spider_output(result):
     if inspect.isasyncgen(result):
-        d = deferred_from_coro(collect_asyncgen(result))
-        d.addCallback(iterate_spider_output)
-        return d
+        return result
     if inspect.iscoroutine(result):
         d = deferred_from_coro(result)
         d.addCallback(iterate_spider_output)
