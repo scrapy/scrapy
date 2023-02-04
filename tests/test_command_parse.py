@@ -30,7 +30,7 @@ import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.utils.test import get_from_asyncio_queue
-import asyncio 
+import asyncio
 
 
 class AsyncDefAsyncioReturnSpider(scrapy.Spider):
@@ -41,7 +41,7 @@ class AsyncDefAsyncioReturnSpider(scrapy.Spider):
         status = await get_from_asyncio_queue(response.status)
         self.logger.info(f"Got response {{status}}")
         return [{{'id': 1}}, {{'id': 2}}]
-        
+
 class AsyncDefAsyncioReturnSingleElementSpider(scrapy.Spider):
     name = "asyncdef_asyncio_return_single_element"
 
@@ -50,7 +50,7 @@ class AsyncDefAsyncioReturnSingleElementSpider(scrapy.Spider):
         status = await get_from_asyncio_queue(response.status)
         self.logger.info(f"Got response {{status}}")
         return {{'foo': 42}}
-        
+
 class AsyncDefAsyncioGenLoopSpider(scrapy.Spider):
     name = "asyncdef_asyncio_gen_loop"
 
@@ -59,9 +59,9 @@ class AsyncDefAsyncioGenLoopSpider(scrapy.Spider):
             await asyncio.sleep(0.1)
             yield {{'foo': i}}
         self.logger.info(f"Got response {{response.status}}")
-        
+
 class AsyncDefAsyncioSpider(scrapy.Spider):
-    name = "asyncdef_asyncio"  
+    name = "asyncdef_asyncio"
 
     async def parse(self, response):
         await asyncio.sleep(0.2)
