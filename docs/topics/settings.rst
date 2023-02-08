@@ -771,6 +771,14 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
 
+.. setting:: DOWNLOAD_SLOTS
+
+DOWNLOAD_SLOTS
+----------------
+
+Default: ``{}``
+
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
