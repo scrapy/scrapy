@@ -778,6 +778,24 @@ DOWNLOAD_SLOTS
 
 Default: ``{}``
 
+Allows to define concurrency/delay parameters on per slot(domain) basis:
+
+    .. code-block:: python
+
+        DOWNLOAD_SLOTS = {
+            'quotes.toscrape.com': {
+                'concurrency': 1,
+                'delay': 2,
+                'randomize_delay': False
+            },
+            'books.toscrape.com': {
+                'delay': 3,
+                'randomize_delay': False
+            }
+        }
+wrapper around :func:`~scrapy.core.downloader.Slot`
+
+.. autofunction:: scrapy.core.downloader.Slot
 
 .. setting:: DOWNLOAD_TIMEOUT
 
