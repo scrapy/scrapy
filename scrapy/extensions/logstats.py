@@ -1,5 +1,6 @@
 import logging
 
+from pprint import pformat
 from twisted.internet import task
 
 from scrapy import signals
@@ -30,6 +31,8 @@ class LogStats:
     def spider_opened(self, spider):
         self.pagesprev = 0
         self.itemsprev = 0
+        self.stats_prev = {}
+        self.log_counter = 0
 
         self.task = task.LoopingCall(self.log, spider)
         self.task.start(self.interval)
@@ -52,6 +55,16 @@ class LogStats:
             "itemrate": irate,
         }
         logger.info(msg, log_args, extra={"spider": spider})
+
+        num_stats = {k: v for k, v in self.stats._stats.items() if isinstance(v, (int, float))}
+        delta = {k: v - self.stats_prev.get(k, 0) for k, v in num_stats.items()}
+        self.stats_prev = num_stats
+
+        logger.info(
+            f"Dumping periodic ({60.0 / self.multiplier} seconds) Scrapy stats ({self.log_counter}):\n" + pformat(delta),
+            log_args,
+            extra={"spider": spider})
+        self.log_counter += 1
 
     def spider_closed(self, spider, reason):
         if self.task and self.task.running:
