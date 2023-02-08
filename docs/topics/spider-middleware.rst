@@ -18,10 +18,12 @@ To activate a spider middleware component, add it to the
 :setting:`SPIDER_MIDDLEWARES` setting, which is a dict whose keys are the
 middleware class path and their values are the middleware orders.
 
-Here's an example::
+Here's an example:
+
+.. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        'myproject.middlewares.CustomSpiderMiddleware': 543,
+        "myproject.middlewares.CustomSpiderMiddleware": 543,
     }
 
 The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
@@ -44,11 +46,13 @@ previous (or subsequent) middleware being applied.
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
 in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
-value.  For example, if you want to disable the off-site middleware::
+value.  For example, if you want to disable the off-site middleware:
+
+.. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        'myproject.middlewares.CustomSpiderMiddleware': 543,
-        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
+        "myproject.middlewares.CustomSpiderMiddleware": 543,
+        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -102,8 +106,20 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.Request` objects and :ref:`item object
+        :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
+
+        .. versionchanged:: 2.7
+           This method may be defined as an :term:`asynchronous generator`, in
+           which case ``result`` is an :term:`asynchronous iterable`.
+
+        Consider defining this method as an :term:`asynchronous generator`,
+        which will be a requirement in a future version of Scrapy. However, if
+        you plan on sharing your spider middleware with other people, consider
+        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
+        as a minimum requirement of your spider middleware, or :ref:`making
+        your spider middleware universal <universal-spider-middleware>` so that
+        it works with Scrapy versions earlier than Scrapy 2.7.
 
         :param response: the response which generated this output from the
           spider
@@ -111,10 +127,18 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
         :param result: the result returned by the spider
         :type result: an iterable of :class:`~scrapy.Request` objects and
-          :ref:`item object <topics-items>`
+          :ref:`item objects <topics-items>`
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.Spider` object
+
+    .. method:: process_spider_output_async(response, result, spider)
+
+        .. versionadded:: 2.7
+
+        If defined, this method must be an :term:`asynchronous generator`,
+        which will be called instead of :meth:`process_spider_output` if
+        ``result`` is an :term:`asynchronous iterable`.
 
     .. method:: process_spider_exception(response, exception, spider)
 
@@ -122,7 +146,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>` 
+        iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`
         objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
@@ -241,7 +265,9 @@ specify which response codes the spider is able to handle using the
 :setting:`HTTPERROR_ALLOWED_CODES` setting.
 
 For example, if you want your spider to handle 404 responses you can do
-this::
+this:
+
+.. code-block:: python
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [404]

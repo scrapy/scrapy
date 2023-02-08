@@ -21,7 +21,15 @@ class Response(object_ref):
     """
 
     attributes: Tuple[str, ...] = (
-        "url", "status", "headers", "body", "flags", "request", "certificate", "ip_address", "protocol",
+        "url",
+        "status",
+        "headers",
+        "body",
+        "flags",
+        "request",
+        "certificate",
+        "ip_address",
+        "protocol",
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
@@ -32,7 +40,7 @@ class Response(object_ref):
 
     def __init__(
         self,
-        url,
+        url: str,
         status=200,
         headers=None,
         body=b"",
@@ -75,35 +83,35 @@ class Response(object_ref):
     def _get_url(self):
         return self._url
 
-    def _set_url(self, url):
+    def _set_url(self, url: str):
         if isinstance(url, str):
             self._url = url
         else:
-            raise TypeError(f'{type(self).__name__} url must be str, '
-                            f'got {type(url).__name__}')
+            raise TypeError(
+                f"{type(self).__name__} url must be str, " f"got {type(url).__name__}"
+            )
 
-    url = property(_get_url, obsolete_setter(_set_url, 'url'))
+    url = property(_get_url, obsolete_setter(_set_url, "url"))
 
     def _get_body(self):
         return self._body
 
     def _set_body(self, body):
         if body is None:
-            self._body = b''
+            self._body = b""
         elif not isinstance(body, bytes):
             raise TypeError(
                 "Response body must be bytes. "
                 "If you want to pass unicode body use TextResponse "
-                "or HtmlResponse.")
+                "or HtmlResponse."
+            )
         else:
             self._body = body
 
-    body = property(_get_body, obsolete_setter(_set_body, 'body'))
+    body = property(_get_body, obsolete_setter(_set_body, "body"))
 
-    def __str__(self):
+    def __repr__(self):
         return f"<{self.status} {self.url}>"
-
-    __repr__ = __str__
 
     def copy(self):
         """Return a copy of this Response"""
@@ -113,7 +121,7 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop('cls', self.__class__)
+        cls = kwargs.pop("cls", self.__class__)
         return cls(*args, **kwargs)
 
     def urljoin(self, url):
@@ -140,10 +148,22 @@ class Response(object_ref):
         """
         raise NotSupported("Response content isn't text")
 
-    def follow(self, url, callback=None, method='GET', headers=None, body=None,
-               cookies=None, meta=None, encoding='utf-8', priority=0,
-               dont_filter=False, errback=None, cb_kwargs=None, flags=None):
-        # type: (...) -> Request
+    def follow(
+        self,
+        url,
+        callback=None,
+        method="GET",
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding="utf-8",
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+    ) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
         It accepts the same arguments as ``Request.__init__`` method,
@@ -179,10 +199,22 @@ class Response(object_ref):
             flags=flags,
         )
 
-    def follow_all(self, urls, callback=None, method='GET', headers=None, body=None,
-                   cookies=None, meta=None, encoding='utf-8', priority=0,
-                   dont_filter=False, errback=None, cb_kwargs=None, flags=None):
-        # type: (...) -> Generator[Request, None, None]
+    def follow_all(
+        self,
+        urls,
+        callback=None,
+        method="GET",
+        headers=None,
+        body=None,
+        cookies=None,
+        meta=None,
+        encoding="utf-8",
+        priority=0,
+        dont_filter=False,
+        errback=None,
+        cb_kwargs=None,
+        flags=None,
+    ) -> Generator[Request, None, None]:
         """
         .. versionadded:: 2.0
 
@@ -195,7 +227,7 @@ class Response(object_ref):
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
         """
-        if not hasattr(urls, '__iter__'):
+        if not hasattr(urls, "__iter__"):
             raise TypeError("'urls' argument must be an iterable")
         return (
             self.follow(

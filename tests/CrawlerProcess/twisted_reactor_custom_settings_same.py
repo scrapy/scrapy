@@ -3,13 +3,14 @@ from scrapy.crawler import CrawlerProcess
 
 
 class AsyncioReactorSpider1(scrapy.Spider):
-    name = 'asyncio_reactor1'
+    name = "asyncio_reactor1"
     custom_settings = {
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     }
 
+
 class AsyncioReactorSpider2(scrapy.Spider):
-    name = 'asyncio_reactor2'
+    name = "asyncio_reactor2"
     custom_settings = {
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     }

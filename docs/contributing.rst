@@ -49,7 +49,7 @@ guidelines when you're going to report a new bug.
   (use "scrapy" tag).
 
 * check the `open issues`_ to see if the issue has already been reported. If it
-  has, don't dismiss the report, but check the ticket history and comments. If 
+  has, don't dismiss the report, but check the ticket history and comments. If
   you have additional useful information, please leave a comment, or consider
   :ref:`sending a pull request <writing-patches>` with a fix.
 
@@ -169,15 +169,42 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* Unless otherwise specified, follow :pep:`8`.
-
-* It's OK to use lines longer than 79 chars if it improves the code
-  readability.
+* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
+  There is a hook in the pre-commit config
+  that will automatically format your code before every commit. You can also
+  run black manually with ``tox -e black``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
   See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
+
+.. _scrapy-pre-commit:
+
+Pre-commit
+==========
+
+We use `pre-commit`_ to automatically address simple code issues before every
+commit.
+
+.. _pre-commit: https://pre-commit.com/
+
+After your create a local clone of your fork of the Scrapy repository:
+
+#.  `Install pre-commit <https://pre-commit.com/#installation>`_.
+
+#.  On the root of your local clone of the Scrapy repository, run the following
+    command:
+
+    .. code-block:: bash
+
+       pre-commit install
+
+Now pre-commit will check your changes every time you create a Git commit. Upon
+finding issues, pre-commit aborts your commit, and either fixes those issues
+automatically, or only reports them to you. If it fixes those issues
+automatically, creating your commit again should succeed. Otherwise, you may
+need to address the corresponding issues manually first.
 
 .. _documentation-policies:
 
@@ -214,7 +241,7 @@ Tests
 =====
 
 Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:core/development/policy/test-standard>`. Running tests requires
+<twisted:development/test-standard>`. Running tests requires
 :doc:`tox <tox:index>`.
 
 .. _running-tests:
@@ -232,15 +259,15 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
 To run the tests on a specific :doc:`tox <tox:index>` environment, use
 ``-e <name>`` with an environment name from ``tox.ini``. For example, to run
-the tests with Python 3.6 use::
+the tests with Python 3.7 use::
 
-    tox -e py36
+    tox -e py37
 
 You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py36,py38 -p auto
+    tox -e py37,py38 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
@@ -250,9 +277,9 @@ default positional arguments (``scrapy tests``) after ``--`` as well::
     tox -- scrapy tests -x  # stop after first failure
 
 You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
-the Python 3.6 :doc:`tox <tox:index>` environment using all your CPU cores::
+the Python 3.7 :doc:`tox <tox:index>` environment using all your CPU cores::
 
-    tox -e py36 -- scrapy tests -n auto
+    tox -e py37 -- scrapy tests -n auto
 
 To see coverage report install :doc:`coverage <coverage:index>`
 (``pip install coverage``) and run:

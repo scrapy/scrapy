@@ -9,23 +9,31 @@ import tarfile
 import zipfile
 from io import BytesIO
 from tempfile import mktemp
+from warnings import warn
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.responsetypes import responsetypes
+
+warn(
+    "scrapy.downloadermiddlewares.decompression is deprecated",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 class DecompressionMiddleware:
-    """ This middleware tries to recognise and extract the possibly compressed
-    responses that may arrive. """
+    """This middleware tries to recognise and extract the possibly compressed
+    responses that may arrive."""
 
     def __init__(self):
         self._formats = {
-            'tar': self._is_tar,
-            'zip': self._is_zip,
-            'gz': self._is_gzip,
-            'bz2': self._is_bzip2
+            "tar": self._is_tar,
+            "zip": self._is_zip,
+            "gz": self._is_gzip,
+            "bz2": self._is_bzip2,
         }
 
     def _is_tar(self, response):
@@ -77,7 +85,10 @@ class DecompressionMiddleware:
         for fmt, func in self._formats.items():
             new_response = func(response)
             if new_response:
-                logger.debug('Decompressed response with format: %(responsefmt)s',
-                             {'responsefmt': fmt}, extra={'spider': spider})
+                logger.debug(
+                    "Decompressed response with format: %(responsefmt)s",
+                    {"responsefmt": fmt},
+                    extra={"spider": spider},
+                )
                 return new_response
         return response

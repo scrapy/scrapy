@@ -17,10 +17,12 @@ To activate a downloader middleware component, add it to the
 :setting:`DOWNLOADER_MIDDLEWARES` setting, which is a dict whose keys are the
 middleware class paths and their values are the middleware orders.
 
-Here's an example::
+Here's an example:
+
+.. code-block:: python
 
     DOWNLOADER_MIDDLEWARES = {
-        'myproject.middlewares.CustomDownloaderMiddleware': 543,
+        "myproject.middlewares.CustomDownloaderMiddleware": 543,
     }
 
 The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
@@ -42,11 +44,13 @@ previous (or subsequent) middleware being applied.
 If you want to disable a built-in middleware (the ones defined in
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
 in your project's :setting:`DOWNLOADER_MIDDLEWARES` setting and assign ``None``
-as its value.  For example, if you want to disable the user-agent middleware::
+as its value.  For example, if you want to disable the user-agent middleware:
+
+.. code-block:: python
 
     DOWNLOADER_MIDDLEWARES = {
-        'myproject.middlewares.CustomDownloaderMiddleware': 543,
-        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+        "myproject.middlewares.CustomDownloaderMiddleware": 543,
+        "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -89,7 +93,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       methods of installed middleware is always called on every response.
 
       If it returns a :class:`~scrapy.Request` object, Scrapy will stop calling
-      process_request methods and reschedule the returned request. Once the newly returned
+      :meth:`process_request` methods and reschedule the returned request. Once the newly returned
       request is performed, the appropriate middleware chain will be called on
       the downloaded response.
 
@@ -226,20 +230,25 @@ There is support for keeping multiple cookie sessions per spider by using the
 :reqmeta:`cookiejar` Request meta key. By default it uses a single cookie jar
 (session), but you can pass an identifier to use different ones.
 
-For example::
+For example:
+
+.. code-block:: python
 
     for i, url in enumerate(urls):
-        yield scrapy.Request(url, meta={'cookiejar': i},
-            callback=self.parse_page)
+        yield scrapy.Request(url, meta={"cookiejar": i}, callback=self.parse_page)
 
 Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
-passing it along on subsequent requests. For example::
+passing it along on subsequent requests. For example:
+
+.. code-block:: python
 
     def parse_page(self, response):
         # do some processing
-        return scrapy.Request("http://www.example.com/otherpage",
-            meta={'cookiejar': response.meta['cookiejar']},
-            callback=self.parse_other_page)
+        return scrapy.Request(
+            "http://www.example.com/otherpage",
+            meta={"cookiejar": response.meta["cookiejar"]},
+            callback=self.parse_other_page,
+        )
 
 .. setting:: COOKIES_ENABLED
 
@@ -339,16 +348,18 @@ HttpAuthMiddleware
         domain of the first request, which will work for some spiders but not
         for others. In the future the middleware will produce an error instead.
 
-    Example::
+    Example:
+
+    .. code-block:: python
 
         from scrapy.spiders import CrawlSpider
 
-        class SomeIntranetSiteSpider(CrawlSpider):
 
-            http_user = 'someuser'
-            http_pass = 'somepass'
-            http_auth_domain = 'intranet.example.com'
-            name = 'intranet.example.com'
+        class SomeIntranetSiteSpider(CrawlSpider):
+            http_user = "someuser"
+            http_pass = "somepass"
+            http_auth_domain = "intranet.example.com"
+            name = "intranet.example.com"
 
             # .. rest of the spider code omitted ...
 
@@ -366,7 +377,7 @@ HttpCacheMiddleware
     This middleware provides low-level cache to all HTTP requests and responses.
     It has to be combined with a cache storage backend as well as a cache policy.
 
-    Scrapy ships with three HTTP cache storage backends:
+    Scrapy ships with the following HTTP cache storage backends:
 
         * :ref:`httpcache-storage-fs`
         * :ref:`httpcache-storage-dbm`
@@ -704,13 +715,14 @@ HttpCompressionMiddleware
    sent/received from web sites.
 
    This middleware also supports decoding `brotli-compressed`_ as well as
-   `zstd-compressed`_ responses, provided that `brotlipy`_ or `zstandard`_ is
+   `zstd-compressed`_ responses, provided that `brotli`_ or `zstandard`_ is
    installed, respectively.
 
 .. _brotli-compressed: https://www.ietf.org/rfc/rfc7932.txt
-.. _brotlipy: https://pypi.org/project/brotlipy/
+.. _brotli: https://pypi.org/project/Brotli/
 .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
 .. _zstandard: https://pypi.org/project/zstandard/
+
 
 HttpCompressionMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -791,7 +803,9 @@ If you want to handle some redirect status codes in your spider, you can
 specify these in the ``handle_httpstatus_list`` spider attribute.
 
 For example, if you want the redirect middleware to ignore 301 and 302
-responses (and pass them through to your spider) you can do this::
+responses (and pass them through to your spider) you can do this:
+
+.. code-block:: python
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [301, 302]
@@ -954,7 +968,7 @@ default because HTTP specs say so.
 .. setting:: RETRY_PRIORITY_ADJUST
 
 RETRY_PRIORITY_ADJUST
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Default: ``-1``
 
@@ -1019,7 +1033,7 @@ Parsers vary in several aspects:
   (shorter) rule
 
 Performance comparison of different parsers is available at `the following link
-<https://anubhavp28.github.io/gsoc-weekly-checkin-12/>`_.
+<https://github.com/scrapy/scrapy/issues/3969>`_.
 
 .. _protego-parser:
 
@@ -1118,7 +1132,7 @@ In order to use this parser:
 .. _support-for-new-robots-parser:
 
 Implementing support for a new parser
--------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can implement support for a new robots.txt_ parser by subclassing
 the abstract base class :class:`~scrapy.robotstxt.RobotParser` and

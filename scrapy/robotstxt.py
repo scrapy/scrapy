@@ -1,9 +1,8 @@
-import sys
 import logging
+import sys
 from abc import ABCMeta, abstractmethod
 
 from scrapy.utils.python import to_unicode
-
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +12,7 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
         if to_native_str_type:
             robotstxt_body = to_unicode(robotstxt_body)
         else:
-            robotstxt_body = robotstxt_body.decode('utf-8')
+            robotstxt_body = robotstxt_body.decode("utf-8")
     except UnicodeDecodeError:
         # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
         # Switch to 'allow all' state.
@@ -21,9 +20,9 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
             "Failure while parsing robots.txt. File either contains garbage or "
             "is in an encoding other than UTF-8, treating it as an empty file.",
             exc_info=sys.exc_info(),
-            extra={'spider': spider},
+            extra={"spider": spider},
         )
-        robotstxt_body = ''
+        robotstxt_body = ""
     return robotstxt_body
 
 
@@ -58,8 +57,11 @@ class RobotParser(metaclass=ABCMeta):
 class PythonRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
         from urllib.robotparser import RobotFileParser
+
         self.spider = spider
-        robotstxt_body = decode_robotstxt(robotstxt_body, spider, to_native_str_type=True)
+        robotstxt_body = decode_robotstxt(
+            robotstxt_body, spider, to_native_str_type=True
+        )
         self.rp = RobotFileParser()
         self.rp.parse(robotstxt_body.splitlines())
 
@@ -78,8 +80,9 @@ class PythonRobotParser(RobotParser):
 class ReppyRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
         from reppy.robots import Robots
+
         self.spider = spider
-        self.rp = Robots.parse('', robotstxt_body)
+        self.rp = Robots.parse("", robotstxt_body)
 
     @classmethod
     def from_crawler(cls, crawler, robotstxt_body):
@@ -94,6 +97,7 @@ class ReppyRobotParser(RobotParser):
 class RerpRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
         from robotexclusionrulesparser import RobotExclusionRulesParser
+
         self.spider = spider
         self.rp = RobotExclusionRulesParser()
         robotstxt_body = decode_robotstxt(robotstxt_body, spider)
@@ -114,6 +118,7 @@ class RerpRobotParser(RobotParser):
 class ProtegoRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
         from protego import Protego
+
         self.spider = spider
         robotstxt_body = decode_robotstxt(robotstxt_body, spider)
         self.rp = Protego.parse(robotstxt_body)

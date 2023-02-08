@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from contextlib import suppress
+from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
 
@@ -10,11 +11,12 @@ from scrapy.utils.misc import load_object
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
+
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
-    if not hasattr(portrange, '__iter__'):
+    if not hasattr(portrange, "__iter__"):
         return reactor.listenTCP(portrange, factory, interface=host)
     if len(portrange) == 1:
         return reactor.listenTCP(portrange[0], factory, interface=host)
@@ -39,6 +41,7 @@ class CallLaterOnce:
 
     def schedule(self, delay=0):
         from twisted.internet import reactor
+
         if self._call is None:
             self._call = reactor.callLater(delay, self)
 
@@ -51,6 +54,19 @@ class CallLaterOnce:
         return self._func(*self._a, **self._kw)
 
 
+def get_asyncio_event_loop_policy():
+    policy = asyncio.get_event_loop_policy()
+    if (
+        sys.version_info >= (3, 8)
+        and sys.platform == "win32"
+        and not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy)
+    ):
+        policy = asyncio.WindowsSelectorEventLoopPolicy()
+        asyncio.set_event_loop_policy(policy)
+
+    return policy
+
+
 def install_reactor(reactor_path, event_loop_path=None):
     """Installs the :mod:`~twisted.internet.reactor` with the specified
     import path. Also installs the asyncio event loop with the specified import
@@ -58,16 +74,7 @@ def install_reactor(reactor_path, event_loop_path=None):
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
         with suppress(error.ReactorAlreadyInstalledError):
-            if sys.version_info >= (3, 8) and sys.platform == "win32":
-                policy = asyncio.get_event_loop_policy()
-                if not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy):
-                    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-            if event_loop_path is not None:
-                event_loop_class = load_object(event_loop_path)
-                event_loop = event_loop_class()
-                asyncio.set_event_loop(event_loop)
-            else:
-                event_loop = asyncio.get_event_loop()
+            event_loop = set_asyncio_event_loop(event_loop_path)
             asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")
@@ -77,19 +84,80 @@ def install_reactor(reactor_path, event_loop_path=None):
             installer()
 
 
+def _get_asyncio_event_loop():
+    return set_asyncio_event_loop(None)
+
+
+def set_asyncio_event_loop(event_loop_path):
+    """Sets and returns the event loop with specified import path."""
+    policy = get_asyncio_event_loop_policy()
+    if event_loop_path is not None:
+        event_loop_class = load_object(event_loop_path)
+        event_loop = event_loop_class()
+        asyncio.set_event_loop(event_loop)
+    else:
+        try:
+            with catch_warnings():
+                # In Python 3.10.9, 3.11.1, 3.12 and 3.13, a DeprecationWarning
+                # is emitted about the lack of a current event loop, because in
+                # Python 3.14 and later `get_event_loop` will raise a
+                # RuntimeError in that event. Because our code is already
+                # prepared for that future behavior, we ignore the deprecation
+                # warning.
+                filterwarnings(
+                    "ignore",
+                    message="There is no current event loop",
+                    category=DeprecationWarning,
+                )
+                event_loop = policy.get_event_loop()
+        except RuntimeError:
+            # `get_event_loop` raises RuntimeError when called with no asyncio
+            # event loop yet installed in the following scenarios:
+            # - From a thread other than the main thread. For example, when
+            #   using ``scrapy shell``.
+            # - Previsibly on Python 3.14 and later.
+            #   https://github.com/python/cpython/issues/100160#issuecomment-1345581902
+            event_loop = policy.new_event_loop()
+            asyncio.set_event_loop(event_loop)
+    return event_loop
+
+
 def verify_installed_reactor(reactor_path):
     """Raises :exc:`Exception` if the installed
     :mod:`~twisted.internet.reactor` does not match the specified import
     path."""
     from twisted.internet import reactor
+
     reactor_class = load_object(reactor_path)
-    if not isinstance(reactor, reactor_class):
-        msg = ("The installed reactor "
-               f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
-               f"match the requested one ({reactor_path})")
+    if not reactor.__class__ == reactor_class:
+        msg = (
+            "The installed reactor "
+            f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
+            f"match the requested one ({reactor_path})"
+        )
         raise Exception(msg)
+
+
+def verify_installed_asyncio_event_loop(loop_path):
+    from twisted.internet import reactor
+
+    loop_class = load_object(loop_path)
+    if isinstance(reactor._asyncioEventloop, loop_class):
+        return
+    installed = (
+        f"{reactor._asyncioEventloop.__class__.__module__}"
+        f".{reactor._asyncioEventloop.__class__.__qualname__}"
+    )
+    specified = f"{loop_class.__module__}.{loop_class.__qualname__}"
+    raise Exception(
+        "Scrapy found an asyncio Twisted reactor already "
+        f"installed, and its event loop class ({installed}) does "
+        "not match the one specified in the ASYNCIO_EVENT_LOOP "
+        f"setting ({specified})"
+    )
 
 
 def is_asyncio_reactor_installed():
     from twisted.internet import reactor
+
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)

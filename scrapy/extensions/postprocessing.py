@@ -29,8 +29,13 @@ class GzipPlugin:
         compress_level = self.feed_options.get("gzip_compresslevel", 9)
         mtime = self.feed_options.get("gzip_mtime")
         filename = self.feed_options.get("gzip_filename")
-        self.gzipfile = GzipFile(fileobj=self.file, mode="wb", compresslevel=compress_level,
-                                 mtime=mtime, filename=filename)
+        self.gzipfile = GzipFile(
+            fileobj=self.file,
+            mode="wb",
+            compresslevel=compress_level,
+            mtime=mtime,
+            filename=filename,
+        )
 
     def write(self, data: bytes) -> int:
         return self.gzipfile.write(data)
@@ -55,7 +60,9 @@ class Bz2Plugin:
         self.file = file
         self.feed_options = feed_options
         compress_level = self.feed_options.get("bz2_compresslevel", 9)
-        self.bz2file = BZ2File(filename=self.file, mode="wb", compresslevel=compress_level)
+        self.bz2file = BZ2File(
+            filename=self.file, mode="wb", compresslevel=compress_level
+        )
 
     def write(self, data: bytes) -> int:
         return self.bz2file.write(data)
@@ -90,8 +97,14 @@ class LZMAPlugin:
         check = self.feed_options.get("lzma_check", -1)
         preset = self.feed_options.get("lzma_preset")
         filters = self.feed_options.get("lzma_filters")
-        self.lzmafile = LZMAFile(filename=self.file, mode="wb", format=format,
-                                 check=check, preset=preset, filters=filters)
+        self.lzmafile = LZMAFile(
+            filename=self.file,
+            mode="wb",
+            format=format,
+            check=check,
+            preset=preset,
+            filters=filters,
+        )
 
     def write(self, data: bytes) -> int:
         return self.lzmafile.write(data)
@@ -114,7 +127,9 @@ class PostProcessingManager(IOBase):
     :type file: file like object
     """
 
-    def __init__(self, plugins: List[Any], file: BinaryIO, feed_options: Dict[str, Any]) -> None:
+    def __init__(
+        self, plugins: List[Any], file: BinaryIO, feed_options: Dict[str, Any]
+    ) -> None:
         self.plugins = self._load_plugins(plugins)
         self.file = file
         self.feed_options = feed_options

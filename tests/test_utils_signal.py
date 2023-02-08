@@ -1,13 +1,10 @@
 import asyncio
-from unittest import SkipTest
 
 from pydispatch import dispatcher
 from pytest import mark
 from testfixtures import LogCapture
-from twisted import version as twisted_version
 from twisted.internet import defer, reactor
 from twisted.python.failure import Failure
-from twisted.python.versions import Version
 from twisted.trial import unittest
 
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
@@ -15,7 +12,6 @@ from scrapy.utils.test import get_from_asyncio_queue
 
 
 class SendCatchLogTest(unittest.TestCase):
-
     @defer.inlineCallbacks
     def test_send_catch_log(self):
         test_signal = object()
@@ -25,16 +21,18 @@ class SendCatchLogTest(unittest.TestCase):
         dispatcher.connect(self.ok_handler, signal=test_signal)
         with LogCapture() as log:
             result = yield defer.maybeDeferred(
-                self._get_result, test_signal, arg='test',
-                handlers_called=handlers_called
+                self._get_result,
+                test_signal,
+                arg="test",
+                handlers_called=handlers_called,
             )
 
         assert self.error_handler in handlers_called
         assert self.ok_handler in handlers_called
         self.assertEqual(len(log.records), 1)
         record = log.records[0]
-        self.assertIn('error_handler', record.getMessage())
-        self.assertEqual(record.levelname, 'ERROR')
+        self.assertIn("error_handler", record.getMessage())
+        self.assertEqual(record.levelname, "ERROR")
         self.assertEqual(result[0][0], self.error_handler)
         self.assertIsInstance(result[0][1], Failure)
         self.assertEqual(result[1], (self.ok_handler, "OK"))
@@ -51,71 +49,49 @@ class SendCatchLogTest(unittest.TestCase):
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        assert arg == 'test'
+        assert arg == "test"
         return "OK"
 
 
 class SendCatchLogDeferredTest(SendCatchLogTest):
-
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
 
 
 class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
-
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        assert arg == 'test'
+        assert arg == "test"
         d = defer.Deferred()
         reactor.callLater(0, d.callback, "OK")
         return d
 
 
-@mark.usefixtures('reactor_pytest')
+@mark.usefixtures("reactor_pytest")
 class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
-
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        assert arg == 'test'
+        assert arg == "test"
         await defer.succeed(42)
         return "OK"
 
     def test_send_catch_log(self):
-        if (
-            self.reactor_pytest == 'asyncio'
-            and twisted_version < Version('twisted', 18, 4, 0)
-        ):
-            raise SkipTest(
-                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
-                'fails due to a timeout when using AsyncIO and Twisted '
-                'versions lower than 18.4.0'
-            )
-
         return super().test_send_catch_log()
 
 
 @mark.only_asyncio()
 class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
-
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
-        assert arg == 'test'
+        assert arg == "test"
         await asyncio.sleep(0.2)
         return await get_from_asyncio_queue("OK")
 
     def test_send_catch_log(self):
-        if twisted_version < Version('twisted', 18, 4, 0):
-            raise SkipTest(
-                'Due to https://twistedmatrix.com/trac/ticket/9390, this test '
-                'fails due to a timeout when using Twisted versions lower '
-                'than 18.4.0'
-            )
-
         return super().test_send_catch_log()
 
 
 class SendCatchLogTest2(unittest.TestCase):
-
     def test_error_logged_if_deferred_not_supported(self):
         def test_handler():
             return defer.Deferred()

@@ -1,11 +1,10 @@
 import argparse
 import json
-import os
 import random
 import sys
 from pathlib import Path
 from shutil import rmtree
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from tempfile import mkdtemp
 from urllib.parse import urlencode
 
@@ -15,12 +14,11 @@ from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
 from twisted.web import resource, server
-from twisted.web.server import GzipEncoderFactory, NOT_DONE_YET, Site
+from twisted.web.server import NOT_DONE_YET, GzipEncoderFactory, Site
 from twisted.web.static import File
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
 from scrapy.utils.test import get_testenv
 
 
@@ -30,8 +28,7 @@ def getarg(request, name, default=None, type=None):
         if type is not None:
             value = type(value)
         return value
-    else:
-        return default
+    return default
 
 
 # most of the following resources are copied from twisted.web.test.test_webclient
@@ -98,7 +95,6 @@ class BrokenDownloadResource(resource.Resource):
 
 
 class LeafResource(resource.Resource):
-
     isLeaf = True
 
     def deferRequest(self, request, delay, f, *a, **kw):
@@ -113,7 +109,6 @@ class LeafResource(resource.Resource):
 
 
 class Follow(LeafResource):
-
     def render(self, request):
         total = getarg(request, b"total", 100, type=int)
         show = getarg(request, b"show", 1, type=int)
@@ -142,13 +137,12 @@ class Follow(LeafResource):
 
 
 class Delay(LeafResource):
-
     def render_GET(self, request):
         n = getarg(request, b"n", 1, type=float)
         b = getarg(request, b"b", 1, type=int)
         if b:
             # send headers now and delay body
-            request.write('')
+            request.write("")
         self.deferRequest(request, n, self._delayedRender, request, n)
         return NOT_DONE_YET
 
@@ -158,7 +152,6 @@ class Delay(LeafResource):
 
 
 class Status(LeafResource):
-
     def render_GET(self, request):
         n = getarg(request, b"n", 200, type=int)
         request.setResponseCode(n)
@@ -166,15 +159,15 @@ class Status(LeafResource):
 
 
 class Raw(LeafResource):
-
     def render_GET(self, request):
         request.startedWriting = 1
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
+
     render_POST = render_GET
 
     def _delayedRender(self, request):
-        raw = getarg(request, b'raw', b'HTTP 1.1 200 OK\n')
+        raw = getarg(request, b"raw", b"HTTP 1.1 200 OK\n")
         request.startedWriting = 1
         request.write(raw)
         request.channel.transport.loseConnection()
@@ -182,30 +175,29 @@ class Raw(LeafResource):
 
 
 class Echo(LeafResource):
-
     def render_GET(self, request):
         output = {
-            'headers': dict(
+            "headers": dict(
                 (to_unicode(k), [to_unicode(v) for v in vs])
-                for k, vs in request.requestHeaders.getAllRawHeaders()),
-            'body': to_unicode(request.content.read()),
+                for k, vs in request.requestHeaders.getAllRawHeaders()
+            ),
+            "body": to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))
+
     render_POST = render_GET
 
 
 class RedirectTo(LeafResource):
-
     def render(self, request):
-        goto = getarg(request, b'goto', b'/')
+        goto = getarg(request, b"goto", b"/")
         # we force the body content, otherwise Twisted redirectTo()
         # returns HTML with <meta http-equiv="refresh"
         redirectTo(goto, request)
-        return b'redirecting...'
+        return b"redirecting..."
 
 
 class Partial(LeafResource):
-
     def render_GET(self, request):
         request.setHeader(b"Content-Length", b"1024")
         self.deferRequest(request, 0, self._delayedRender, request)
@@ -217,13 +209,12 @@ class Partial(LeafResource):
 
 
 class Drop(Partial):
-
     def _delayedRender(self, request):
         abort = getarg(request, b"abort", 0, type=int)
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
-            if abort and hasattr(tr, 'abortConnection'):
+            if abort and hasattr(tr, "abortConnection"):
                 tr.abortConnection()
             else:
                 tr.loseConnection()
@@ -232,13 +223,11 @@ class Drop(Partial):
 
 
 class ArbitraryLengthPayloadResource(LeafResource):
-
     def render(self, request):
         return request.content.read()
 
 
 class Root(resource.Resource):
-
     def __init__(self):
         resource.Resource.__init__(self)
         self.putChild(b"status", Status())
@@ -249,11 +238,15 @@ class Root(resource.Resource):
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
-        self.putChild(b"xpayload", resource.EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(
+            b"xpayload",
+            resource.EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]),
+        )
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
-            self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+
+            self.putChild(b"files", File(str(Path(tests_datadir, "test_site/files/"))))
         except Exception:
             pass
         self.putChild(b"redirect-to", RedirectTo())
@@ -262,16 +255,18 @@ class Root(resource.Resource):
         return self
 
     def render(self, request):
-        return b'Scrapy mock HTTP server\n'
+        return b"Scrapy mock HTTP server\n"
 
 
 class MockServer:
-
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'http'],
-                          stdout=PIPE, env=get_testenv())
-        http_address = self.proc.stdout.readline().strip().decode('ascii')
-        https_address = self.proc.stdout.readline().strip().decode('ascii')
+        self.proc = Popen(
+            [sys.executable, "-u", "-m", "tests.mockserver", "-t", "http"],
+            stdout=PIPE,
+            env=get_testenv(),
+        )
+        http_address = self.proc.stdout.readline().strip().decode("ascii")
+        https_address = self.proc.stdout.readline().strip().decode("ascii")
 
         self.http_address = http_address
         self.https_address = https_address
@@ -284,7 +279,7 @@ class MockServer:
 
     def url(self, path, is_secure=False):
         host = self.https_address if is_secure else self.http_address
-        host = host.replace('0.0.0.0', '127.0.0.1')
+        host = host.replace("0.0.0.0", "127.0.0.1")
         return host + path
 
 
@@ -308,12 +303,16 @@ class MockDNSResolver:
 
 
 class MockDNSServer:
-
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
-                          stdout=PIPE, env=get_testenv())
-        self.host = '127.0.0.1'
-        self.port = int(self.proc.stdout.readline().strip().decode('ascii').split(":")[1])
+        self.proc = Popen(
+            [sys.executable, "-u", "-m", "tests.mockserver", "-t", "dns"],
+            stdout=PIPE,
+            env=get_testenv(),
+        )
+        self.host = "127.0.0.1"
+        self.port = int(
+            self.proc.stdout.readline().strip().decode("ascii").split(":")[1]
+        )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -328,10 +327,13 @@ class MockFTPServer:
 
     def __enter__(self):
         self.path = Path(mkdtemp())
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
-                          stderr=PIPE, env=get_testenv())
+        self.proc = Popen(
+            [sys.executable, "-u", "-m", "tests.ftpserver", "-d", str(self.path)],
+            stderr=PIPE,
+            env=get_testenv(),
+        )
         for line in self.proc.stderr:
-            if b'starting FTP server' in line:
+            if b"starting FTP server" in line:
                 break
         return self
 
@@ -341,25 +343,29 @@ class MockFTPServer:
         self.proc.communicate()
 
     def url(self, path):
-        return 'ftp://127.0.0.1:2121/' + path
+        return "ftp://127.0.0.1:2121/" + path
 
 
-def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
+def ssl_context_factory(
+    keyfile="keys/localhost.key", certfile="keys/localhost.crt", cipher_string=None
+):
     factory = ssl.DefaultOpenSSLContextFactory(
-        os.path.join(os.path.dirname(__file__), keyfile),
-        os.path.join(os.path.dirname(__file__), certfile),
+        str(Path(__file__).parent / keyfile),
+        str(Path(__file__).parent / certfile),
     )
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.3 because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--type", type=str, choices=("http", "dns"), default="http")
+    parser.add_argument(
+        "-t", "--type", type=str, choices=("http", "dns"), default="http"
+    )
     args = parser.parse_args()
 
     if args.type == "http":
@@ -372,8 +378,8 @@ if __name__ == "__main__":
         def print_listening():
             httpHost = httpPort.getHost()
             httpsHost = httpsPort.getHost()
-            httpAddress = f'http://{httpHost.host}:{httpHost.port}'
-            httpsAddress = f'https://{httpsHost.host}:{httpsHost.port}'
+            httpAddress = f"http://{httpHost.host}:{httpHost.port}"
+            httpsAddress = f"https://{httpsHost.host}:{httpsHost.port}"
             print(httpAddress)
             print(httpsAddress)
 

@@ -17,7 +17,7 @@ settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
 avoid collision with existing (and future) extensions. For example, a
-hypothetic extension to handle `Google Sitemaps`_ would use settings like
+hypothetical extension to handle `Google Sitemaps`_ would use settings like
 ``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
 .. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
@@ -31,11 +31,13 @@ initialization code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
-by a string: the full Python path to the extension's class name. For example::
+by a string: the full Python path to the extension's class name. For example:
+
+.. code-block:: python
 
     EXTENSIONS = {
-        'scrapy.extensions.corestats.CoreStats': 500,
-        'scrapy.extensions.telnet.TelnetConsole': 500,
+        "scrapy.extensions.corestats.CoreStats": 500,
+        "scrapy.extensions.telnet.TelnetConsole": 500,
     }
 
 
@@ -64,10 +66,12 @@ Disabling an extension
 
 In order to disable an extension that comes enabled by default (i.e. those
 included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
-``None``. For example::
+``None``. For example:
+
+.. code-block:: python
 
     EXTENSIONS = {
-        'scrapy.extensions.corestats.CoreStats': None,
+        "scrapy.extensions.corestats.CoreStats": None,
     }
 
 Writing your own extension
@@ -98,7 +102,9 @@ in the previous section. This extension will log a message every time:
 The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
 number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
-Here is the code of such extension::
+Here is the code of such extension:
+
+.. code-block:: python
 
     import logging
     from scrapy import signals
@@ -106,8 +112,8 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging:
 
+    class SpiderOpenCloseLogging:
         def __init__(self, item_count):
             self.item_count = item_count
             self.items_scraped = 0
@@ -116,11 +122,11 @@ Here is the code of such extension::
         def from_crawler(cls, crawler):
             # first check if the extension should be enabled and raise
             # NotConfigured otherwise
-            if not crawler.settings.getbool('MYEXT_ENABLED'):
+            if not crawler.settings.getbool("MYEXT_ENABLED"):
                 raise NotConfigured
 
             # get the number of items from settings
-            item_count = crawler.settings.getint('MYEXT_ITEMCOUNT', 1000)
+            item_count = crawler.settings.getint("MYEXT_ITEMCOUNT", 1000)
 
             # instantiate the extension object
             ext = cls(item_count)

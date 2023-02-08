@@ -17,8 +17,31 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
-
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
+
+
+def NO_CALLBACK(*args, **kwargs):
+    """When assigned to the ``callback`` parameter of
+    :class:`~scrapy.http.Request`, it indicates that the request is not meant
+    to have a spider callback at all.
+
+    For example:
+
+    .. code-block:: python
+
+       Request("https://example.com", callback=NO_CALLBACK)
+
+    This value should be used by :ref:`components <topics-components>` that
+    create and handle their own requests, e.g. through
+    :meth:`scrapy.core.engine.ExecutionEngine.download`, so that downloader
+    middlewares handling such requests can treat them differently from requests
+    intended for the :meth:`~scrapy.Spider.parse` callback.
+    """
+    raise RuntimeError(
+        "The NO_CALLBACK callback has been called. This is a special callback "
+        "value intended for requests whose callback is never meant to be "
+        "called."
+    )
 
 
 class Request(object_ref):
@@ -27,9 +50,19 @@ class Request(object_ref):
     """
 
     attributes: Tuple[str, ...] = (
-        "url", "callback", "method", "headers", "body",
-        "cookies", "meta", "encoding", "priority",
-        "dont_filter", "errback", "flags", "cb_kwargs",
+        "url",
+        "callback",
+        "method",
+        "headers",
+        "body",
+        "cookies",
+        "meta",
+        "encoding",
+        "priority",
+        "dont_filter",
+        "errback",
+        "flags",
+        "cb_kwargs",
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
@@ -63,10 +96,12 @@ class Request(object_ref):
             raise TypeError(f"Request priority not an integer: {priority!r}")
         self.priority = priority
 
-        if callback is not None and not callable(callback):
-            raise TypeError(f'callback must be a callable, got {type(callback).__name__}')
-        if errback is not None and not callable(errback):
-            raise TypeError(f'errback must be a callable, got {type(errback).__name__}')
+        if not (callable(callback) or callback is None):
+            raise TypeError(
+                f"callback must be a callable, got {type(callback).__name__}"
+            )
+        if not (callable(errback) or errback is None):
+            raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
         self.callback = callback
         self.errback = errback
 
@@ -101,13 +136,13 @@ class Request(object_ref):
         self._url = escape_ajax(s)
 
         if (
-            '://' not in self._url
-            and not self._url.startswith('about:')
-            and not self._url.startswith('data:')
+            "://" not in self._url
+            and not self._url.startswith("about:")
+            and not self._url.startswith("data:")
         ):
-            raise ValueError(f'Missing scheme in request url: {self._url}')
+            raise ValueError(f"Missing scheme in request url: {self._url}")
 
-    url = property(_get_url, obsolete_setter(_set_url, 'url'))
+    url = property(_get_url, obsolete_setter(_set_url, "url"))
 
     def _get_body(self) -> bytes:
         return self._body
@@ -115,16 +150,14 @@ class Request(object_ref):
     def _set_body(self, body: Optional[Union[str, bytes]]) -> None:
         self._body = b"" if body is None else to_bytes(body, self.encoding)
 
-    body = property(_get_body, obsolete_setter(_set_body, 'body'))
+    body = property(_get_body, obsolete_setter(_set_body, "body"))
 
     @property
     def encoding(self) -> str:
         return self._encoding
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
-
-    __repr__ = __str__
 
     def copy(self) -> "Request":
         return self.replace()
@@ -133,12 +166,15 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop('cls', self.__class__)
+        cls = kwargs.pop("cls", self.__class__)
         return cls(*args, **kwargs)
 
     @classmethod
     def from_curl(
-        cls: Type[RequestTypeVar], curl_command: str, ignore_unknown_options: bool = True, **kwargs
+        cls: Type[RequestTypeVar],
+        curl_command: str,
+        ignore_unknown_options: bool = True,
+        **kwargs,
     ) -> RequestTypeVar:
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
@@ -181,21 +217,25 @@ class Request(object_ref):
         """
         d = {
             "url": self.url,  # urls are safe (safe_string_url)
-            "callback": _find_method(spider, self.callback) if callable(self.callback) else self.callback,
-            "errback": _find_method(spider, self.errback) if callable(self.errback) else self.errback,
+            "callback": _find_method(spider, self.callback)
+            if callable(self.callback)
+            else self.callback,
+            "errback": _find_method(spider, self.errback)
+            if callable(self.errback)
+            else self.errback,
             "headers": dict(self.headers),
         }
         for attr in self.attributes:
             d.setdefault(attr, getattr(self, attr))
-        if type(self) is not Request:
-            d["_class"] = self.__module__ + '.' + self.__class__.__name__
+        if type(self) is not Request:  # pylint: disable=unidiomatic-typecheck
+            d["_class"] = self.__module__ + "." + self.__class__.__name__
         return d
 
 
 def _find_method(obj, func):
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
-    if obj and hasattr(func, '__func__'):
+    if obj and hasattr(func, "__func__"):
         members = inspect.getmembers(obj, predicate=inspect.ismethod)
         for name, obj_func in members:
             # We need to use __func__ to access the original function object because instance

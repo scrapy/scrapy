@@ -26,11 +26,13 @@ CloseSpider
     :param reason: the reason for closing
     :type reason: str
 
-For example::
+For example:
+
+.. code-block:: python
 
     def parse_page(self, response):
-        if 'Bandwidth exceeded' in response.body:
-            raise CloseSpider('bandwidth_exceeded')
+        if "Bandwidth exceeded" in response.body:
+            raise CloseSpider("bandwidth_exceeded")
 
 DontCloseSpider
 ---------------
