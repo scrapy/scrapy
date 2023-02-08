@@ -20,11 +20,11 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         "DOWNLOAD_SLOTS": {
             'quotes.toscrape.com': {
                 'concurrency': 1,
-                'delay': 1.5,
+                'delay': 2,
                 'randomize_delay': False
             },
             'books.toscrape.com': {
-                'delay': 2,
+                'delay': 3,
                 'randomize_delay': False
             }
         }
