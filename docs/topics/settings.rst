@@ -793,9 +793,15 @@ Allows to define concurrency/delay parameters on per slot(domain) basis:
                 'randomize_delay': False
             }
         }
-wrapper around :func:`~scrapy.core.downloader.Slot`
 
-.. autofunction:: scrapy.core.downloader.Slot
+.. note::
+
+    For other downloader slots default settings values will be used:
+
+        -   ``DOWNLOAD_DELAY`` -> ``delay``
+        -   ``CONCURRENT_REQUESTS_PER_DOMAIN`` -> ``concurency``
+        -   ``RANDOMIZE_DOWNLOAD_DELAY`` -> ``randomize_delay``
+
 
 .. setting:: DOWNLOAD_TIMEOUT
 
