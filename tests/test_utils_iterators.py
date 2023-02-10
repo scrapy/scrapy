@@ -7,7 +7,6 @@ from tests import get_testdata
 
 
 class XmliterTestCase(unittest.TestCase):
-
     xmliter = staticmethod(xmliter)
 
     def test_xmliter(self):

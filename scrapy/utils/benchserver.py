@@ -6,7 +6,6 @@ from twisted.web.server import Site
 
 
 class Root(Resource):
-
     isLeaf = True
 
     def getChild(self, name, request):

@@ -144,7 +144,6 @@ def strip_url(
     origin_only=False,
     strip_fragment=True,
 ):
-
     """Strip URL string from some of its components:
 
     - ``strip_credentials`` removes "user:password@"

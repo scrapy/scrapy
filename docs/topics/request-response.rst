@@ -32,11 +32,20 @@ Request objects
     :type url: str
 
     :param callback: the function that will be called with the response of this
-       request (once it's downloaded) as its first parameter. For more information
-       see :ref:`topics-request-response-ref-request-callback-arguments` below.
-       If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.Spider.parse` method will be used.
-       Note that if exceptions are raised during processing, errback is called instead.
+       request (once it's downloaded) as its first parameter.
+
+       In addition to a function, the following values are supported:
+
+       -   ``None`` (default), which indicates that the spider's
+           :meth:`~scrapy.Spider.parse` method must be used.
+
+       -   :func:`~scrapy.http.request.NO_CALLBACK`
+
+       For more information, see
+       :ref:`topics-request-response-ref-request-callback-arguments`.
+
+       .. note:: If exceptions are raised during processing, ``errback`` is
+                 called instead.
 
     :type callback: collections.abc.Callable
 
@@ -67,18 +76,30 @@ Request objects
 
     :param cookies: the request cookies. These can be sent in two forms.
 
-        1. Using a dict::
+        1. Using a dict:
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={'currency': 'USD', 'country': 'UY'})
+        .. code-block:: python
 
-        2. Using a list of dicts::
+            request_with_cookies = Request(
+                url="http://www.example.com",
+                cookies={"currency": "USD", "country": "UY"},
+            )
 
-            request_with_cookies = Request(url="http://www.example.com",
-                                           cookies=[{'name': 'currency',
-                                                    'value': 'USD',
-                                                    'domain': 'example.com',
-                                                    'path': '/currency'}])
+        2. Using a list of dicts:
+
+        .. code-block:: python
+
+            request_with_cookies = Request(
+                url="http://www.example.com",
+                cookies=[
+                    {
+                        "name": "currency",
+                        "value": "USD",
+                        "domain": "example.com",
+                        "path": "/currency",
+                    },
+                ],
+            )
 
         The latter form allows for customizing the ``domain`` and ``path``
         attributes of the cookie. This is only useful if the cookies are saved
@@ -95,12 +116,14 @@ Request objects
         in :attr:`request.meta <scrapy.Request.meta>`.
 
         Example of a request that sends manually-defined cookies and ignores
-        cookie storage::
+        cookie storage:
+
+        .. code-block:: python
 
             Request(
                 url="http://www.example.com",
-                cookies={'currency': 'USD', 'country': 'UY'},
-                meta={'dont_merge_cookies': True},
+                cookies={"currency": "USD", "country": "UY"},
+                meta={"dont_merge_cookies": True},
             )
 
         For more info see :ref:`cookies-mw`.
@@ -228,6 +251,8 @@ Request objects
 Other functions related to requests
 -----------------------------------
 
+.. autofunction:: scrapy.http.request.NO_CALLBACK
+
 .. autofunction:: scrapy.utils.request.request_from_dict
 
 
@@ -240,11 +265,15 @@ The callback of a request is a function that will be called when the response
 of that request is downloaded. The callback function will be called with the
 downloaded :class:`Response` object as its first argument.
 
-Example::
+Example:
+
+.. code-block:: python
 
     def parse_page1(self, response):
-        return scrapy.Request("http://www.example.com/some_page.html",
-                              callback=self.parse_page2)
+        return scrapy.Request(
+            "http://www.example.com/some_page.html", callback=self.parse_page2
+        )
+
 
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
@@ -255,14 +284,17 @@ functions so you can receive the arguments later, in the second callback.
 The following example shows how to achieve this by using the
 :attr:`Request.cb_kwargs` attribute:
 
-::
+.. code-block:: python
 
     def parse(self, response):
-        request = scrapy.Request('http://www.example.com/index.html',
-                                 callback=self.parse_page2,
-                                 cb_kwargs=dict(main_url=response.url))
-        request.cb_kwargs['foo'] = 'bar'  # add more arguments for the callback
+        request = scrapy.Request(
+            "http://www.example.com/index.html",
+            callback=self.parse_page2,
+            cb_kwargs=dict(main_url=response.url),
+        )
+        request.cb_kwargs["foo"] = "bar"  # add more arguments for the callback
         yield request
+
 
     def parse_page2(self, response, main_url, foo):
         yield dict(
@@ -289,7 +321,9 @@ It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.
 
 Here's an example spider logging all errors and catching some specific
-errors if needed::
+errors if needed:
+
+.. code-block:: python
 
     import scrapy
 
@@ -297,24 +331,28 @@ errors if needed::
     from twisted.internet.error import DNSLookupError
     from twisted.internet.error import TimeoutError, TCPTimedOutError
 
+
     class ErrbackSpider(scrapy.Spider):
         name = "errback_example"
         start_urls = [
-            "http://www.httpbin.org/",              # HTTP 200 expected
-            "http://www.httpbin.org/status/404",    # Not found error
-            "http://www.httpbin.org/status/500",    # server issue
-            "http://www.httpbin.org:12345/",        # non-responding host, timeout expected
-            "https://example.invalid/",             # DNS error expected
+            "http://www.httpbin.org/",  # HTTP 200 expected
+            "http://www.httpbin.org/status/404",  # Not found error
+            "http://www.httpbin.org/status/500",  # server issue
+            "http://www.httpbin.org:12345/",  # non-responding host, timeout expected
+            "https://example.invalid/",  # DNS error expected
         ]
 
         def start_requests(self):
             for u in self.start_urls:
-                yield scrapy.Request(u, callback=self.parse_httpbin,
-                                        errback=self.errback_httpbin,
-                                        dont_filter=True)
+                yield scrapy.Request(
+                    u,
+                    callback=self.parse_httpbin,
+                    errback=self.errback_httpbin,
+                    dont_filter=True,
+                )
 
         def parse_httpbin(self, response):
-            self.logger.info('Got successful response from {}'.format(response.url))
+            self.logger.info("Got successful response from {}".format(response.url))
             # do something useful here...
 
         def errback_httpbin(self, failure):
@@ -328,16 +366,16 @@ errors if needed::
                 # these exceptions come from HttpError spider middleware
                 # you can get the non-200 response
                 response = failure.value.response
-                self.logger.error('HttpError on %s', response.url)
+                self.logger.error("HttpError on %s", response.url)
 
             elif failure.check(DNSLookupError):
                 # this is the original request
                 request = failure.request
-                self.logger.error('DNSLookupError on %s', request.url)
+                self.logger.error("DNSLookupError on %s", request.url)
 
             elif failure.check(TimeoutError, TCPTimedOutError):
                 request = failure.request
-                self.logger.error('TimeoutError on %s', request.url)
+                self.logger.error("TimeoutError on %s", request.url)
 
 
 .. _errback-cb_kwargs:
@@ -348,21 +386,27 @@ Accessing additional data in errback functions
 In case of a failure to process the request, you may be interested in
 accessing arguments to the callback functions so you can process further
 based on the arguments in the errback. The following example shows how to
-achieve this by using ``Failure.request.cb_kwargs``::
+achieve this by using ``Failure.request.cb_kwargs``:
+
+.. code-block:: python
 
     def parse(self, response):
-        request = scrapy.Request('http://www.example.com/index.html',
-                                 callback=self.parse_page2,
-                                 errback=self.errback_page2,
-                                 cb_kwargs=dict(main_url=response.url))
+        request = scrapy.Request(
+            "http://www.example.com/index.html",
+            callback=self.parse_page2,
+            errback=self.errback_page2,
+            cb_kwargs=dict(main_url=response.url),
+        )
         yield request
+
 
     def parse_page2(self, response, main_url):
         pass
 
+
     def errback_page2(self, failure):
         yield dict(
-            main_url=failure.request.cb_kwargs['main_url'],
+            main_url=failure.request.cb_kwargs["main_url"],
         )
 
 
@@ -509,18 +553,20 @@ in your :meth:`fingerprint` method implementation:
 .. autofunction:: scrapy.utils.request.fingerprint
 
 For example, to take the value of a request header named ``X-ID`` into
-account::
+account:
+
+.. code-block:: python
 
     # my_project/settings.py
-    REQUEST_FINGERPRINTER_CLASS = 'my_project.utils.RequestFingerprinter'
+    REQUEST_FINGERPRINTER_CLASS = "my_project.utils.RequestFingerprinter"
 
     # my_project/utils.py
     from scrapy.utils.request import fingerprint
 
-    class RequestFingerprinter:
 
+    class RequestFingerprinter:
         def fingerprint(self, request):
-            return fingerprint(request, include_headers=['X-ID'])
+            return fingerprint(request, include_headers=["X-ID"])
 
 You can also write your own fingerprinting logic from scratch.
 
@@ -536,15 +582,17 @@ you use :class:`~weakref.WeakKeyDictionary` to cache request fingerprints:
     references to them in your cache dictionary.
 
 For example, to take into account only the URL of a request, without any prior
-URL canonicalization or taking the request method or body into account::
+URL canonicalization or taking the request method or body into account:
+
+.. code-block:: python
 
     from hashlib import sha1
     from weakref import WeakKeyDictionary
 
     from scrapy.utils.python import to_bytes
 
-    class RequestFingerprinter:
 
+    class RequestFingerprinter:
         cache = WeakKeyDictionary()
 
         def fingerprint(self, request):
@@ -558,21 +606,25 @@ If you need to be able to override the request fingerprinting for arbitrary
 requests from your spider callbacks, you may implement a request fingerprinter
 that reads fingerprints from :attr:`request.meta <scrapy.http.Request.meta>`
 when available, and then falls back to
-:func:`scrapy.utils.request.fingerprint`. For example::
+:func:`scrapy.utils.request.fingerprint`. For example:
+
+.. code-block:: python
 
     from scrapy.utils.request import fingerprint
 
-    class RequestFingerprinter:
 
+    class RequestFingerprinter:
         def fingerprint(self, request):
-            if 'fingerprint' in request.meta:
-                return request.meta['fingerprint']
+            if "fingerprint" in request.meta:
+                return request.meta["fingerprint"]
             return fingerprint(request)
 
 If you need to reproduce the same fingerprinting algorithm as Scrapy 2.6
 without using the deprecated ``'2.6'`` value of the
 :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` setting, use the following
-request fingerprinter::
+request fingerprinter:
+
+.. code-block:: python
 
     from hashlib import sha1
     from weakref import WeakKeyDictionary
@@ -580,8 +632,8 @@ request fingerprinter::
     from scrapy.utils.python import to_bytes
     from w3lib.url import canonicalize_url
 
-    class RequestFingerprinter:
 
+    class RequestFingerprinter:
         cache = WeakKeyDictionary()
 
         def fingerprint(self, request):
@@ -589,7 +641,7 @@ request fingerprinter::
                 fp = sha1()
                 fp.update(to_bytes(request.method))
                 fp.update(to_bytes(canonicalize_url(request.url)))
-                fp.update(request.body or b'')
+                fp.update(request.body or b"")
                 self.cache[request] = fp.digest()
             return self.cache[request]
 
@@ -718,7 +770,9 @@ Stopping the download of a Response
 
 Raising a :exc:`~scrapy.exceptions.StopDownload` exception from a handler for the
 :class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`
-signals will stop the download of a given response. See the following example::
+signals will stop the download of a given response. See the following example:
+
+.. code-block:: python
 
     import scrapy
 
@@ -730,7 +784,9 @@ signals will stop the download of a given response. See the following example::
         @classmethod
         def from_crawler(cls, crawler):
             spider = super().from_crawler(crawler)
-            crawler.signals.connect(spider.on_bytes_received, signal=scrapy.signals.bytes_received)
+            crawler.signals.connect(
+                spider.on_bytes_received, signal=scrapy.signals.bytes_received
+            )
             return spider
 
         def parse(self, response):
@@ -859,11 +915,17 @@ Using FormRequest to send data via HTTP POST
 
 If you want to simulate a HTML Form POST in your spider and send a couple of
 key-value fields, you can return a :class:`FormRequest` object (from your
-spider) like this::
+spider) like this:
 
-   return [FormRequest(url="http://www.example.com/post/action",
-                       formdata={'name': 'John Doe', 'age': '27'},
-                       callback=self.after_post)]
+.. code-block:: python
+
+   return [
+       FormRequest(
+           url="http://www.example.com/post/action",
+           formdata={"name": "John Doe", "age": "27"},
+           callback=self.after_post,
+       )
+   ]
 
 .. _topics-request-response-ref-request-userlogin:
 
@@ -875,25 +937,28 @@ type="hidden">`` elements, such as session related data or authentication
 tokens (for login pages). When scraping, you'll want these fields to be
 automatically pre-populated and only override a couple of them, such as the
 user name and password. You can use the :meth:`FormRequest.from_response`
-method for this job. Here's an example spider which uses it::
+method for this job. Here's an example spider which uses it:
 
+.. code-block:: python
 
     import scrapy
+
 
     def authentication_failed(response):
         # TODO: Check the contents of the response and return True if it failed
         # or False if it succeeded.
         pass
 
+
     class LoginSpider(scrapy.Spider):
-        name = 'example.com'
-        start_urls = ['http://www.example.com/users/login.php']
+        name = "example.com"
+        start_urls = ["http://www.example.com/users/login.php"]
 
         def parse(self, response):
             return scrapy.FormRequest.from_response(
                 response,
-                formdata={'username': 'john', 'password': 'secret'},
-                callback=self.after_login
+                formdata={"username": "john", "password": "secret"},
+                callback=self.after_login,
             )
 
         def after_login(self, response):
@@ -933,13 +998,15 @@ dealing with JSON requests.
 JsonRequest usage example
 -------------------------
 
-Sending a JSON POST request with a JSON payload::
+Sending a JSON POST request with a JSON payload:
+
+.. code-block:: python
 
    data = {
-       'name1': 'value1',
-       'name2': 'value2',
+       "name1": "value1",
+       "name2": "value2",
    }
-   yield JsonRequest(url='http://www.example.com/post/action', data=data)
+   yield JsonRequest(url="http://www.example.com/post/action", data=data)
 
 
 Response objects
@@ -1174,8 +1241,10 @@ TextResponse objects
             ``str(response.body)`` is not a correct way to convert the response
             body into a string:
 
-            >>> str(b'body')
-            "b'body'"
+            .. code-block:: pycon
+
+                >>> str(b"body")
+                "b'body'"
 
 
     .. attribute:: TextResponse.encoding

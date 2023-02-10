@@ -14,11 +14,11 @@ from scrapy.http import (
     Request,
     XmlRpcRequest,
 )
+from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
-
     request_class = Request
     default_method = "GET"
     default_headers = {}
@@ -310,6 +310,14 @@ class RequestTest(unittest.TestCase):
         self.assertIs(r4.callback, a_function)
         self.assertIs(r4.errback, a_function)
 
+        r5 = self.request_class(
+            url="http://example.com",
+            callback=NO_CALLBACK,
+            errback=NO_CALLBACK,
+        )
+        self.assertIs(r5.callback, NO_CALLBACK)
+        self.assertIs(r5.errback, NO_CALLBACK)
+
     def test_callback_and_errback_type(self):
         with self.assertRaises(TypeError):
             self.request_class("http://example.com", callback="a_function")
@@ -321,6 +329,10 @@ class RequestTest(unittest.TestCase):
                 callback="a_function",
                 errback="a_function",
             )
+
+    def test_no_callback(self):
+        with self.assertRaises(RuntimeError):
+            NO_CALLBACK()
 
     def test_from_curl(self):
         # Note: more curated tests regarding curl conversion are in
@@ -411,7 +423,6 @@ class RequestTest(unittest.TestCase):
 
 
 class FormRequestTest(RequestTest):
-
     request_class = FormRequest
 
     def assertQueryEqual(self, first, second, msg=None):
@@ -1434,7 +1445,6 @@ def _qs(req, encoding="utf-8", to_unicode=False):
 
 
 class XmlRpcRequestTest(RequestTest):
-
     request_class = XmlRpcRequest
     default_method = "POST"
     default_headers = {b"Content-Type": [b"text/xml"]}

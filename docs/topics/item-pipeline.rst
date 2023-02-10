@@ -81,19 +81,22 @@ Price validation and dropping items with no prices
 Let's take a look at the following hypothetical pipeline that adjusts the
 ``price`` attribute for those items that do not include VAT
 (``price_excludes_vat`` attribute), and drops those items which don't
-contain a price::
+contain a price:
+
+.. code-block:: python
 
     from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
-    class PricePipeline:
 
+
+    class PricePipeline:
         vat_factor = 1.15
 
         def process_item(self, item, spider):
             adapter = ItemAdapter(item)
-            if adapter.get('price'):
-                if adapter.get('price_excludes_vat'):
-                    adapter['price'] = adapter['price'] * self.vat_factor
+            if adapter.get("price"):
+                if adapter.get("price_excludes_vat"):
+                    adapter["price"] = adapter["price"] * self.vat_factor
                 return item
             else:
                 raise DropItem(f"Missing price in {item}")
@@ -104,16 +107,18 @@ Write items to a JSON lines file
 
 The following pipeline stores all scraped items (from all spiders) into a
 single ``items.jsonl`` file, containing one item per line serialized in JSON
-format::
+format:
+
+.. code-block:: python
 
    import json
 
    from itemadapter import ItemAdapter
 
-   class JsonWriterPipeline:
 
+   class JsonWriterPipeline:
        def open_spider(self, spider):
-           self.file = open('items.jsonl', 'w')
+           self.file = open("items.jsonl", "w")
 
        def close_spider(self, spider):
            self.file.close()
@@ -135,14 +140,16 @@ MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
 The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.::
+method and how to clean up the resources properly.
+
+.. code-block:: python
 
     import pymongo
     from itemadapter import ItemAdapter
 
-    class MongoPipeline:
 
-        collection_name = 'scrapy_items'
+    class MongoPipeline:
+        collection_name = "scrapy_items"
 
         def __init__(self, mongo_uri, mongo_db):
             self.mongo_uri = mongo_uri
@@ -151,8 +158,8 @@ method and how to clean up the resources properly.::
         @classmethod
         def from_crawler(cls, crawler):
             return cls(
-                mongo_uri=crawler.settings.get('MONGO_URI'),
-                mongo_db=crawler.settings.get('MONGO_DATABASE', 'items')
+                mongo_uri=crawler.settings.get("MONGO_URI"),
+                mongo_db=crawler.settings.get("MONGO_DATABASE", "items"),
             )
 
         def open_spider(self, spider):
@@ -183,7 +190,7 @@ render a screenshot of the item URL. After the request response is downloaded,
 the item pipeline saves the screenshot to a file and adds the filename to the
 item.
 
-::
+.. code-block:: python
 
     import hashlib
     from pathlib import Path
@@ -191,6 +198,7 @@ item.
 
     import scrapy
     from itemadapter import ItemAdapter
+    from scrapy.http.request import NO_CALLBACK
     from scrapy.utils.defer import maybe_deferred_to_future
 
 
@@ -204,8 +212,10 @@ item.
             adapter = ItemAdapter(item)
             encoded_item_url = quote(adapter["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
-            request = scrapy.Request(screenshot_url)
-            response = await maybe_deferred_to_future(spider.crawler.engine.download(request, spider))
+            request = scrapy.Request(screenshot_url, callback=NO_CALLBACK)
+            response = await maybe_deferred_to_future(
+                spider.crawler.engine.download(request, spider)
+            )
 
             if response.status != 200:
                 # Error happened, return item.
@@ -228,23 +238,24 @@ Duplicates filter
 
 A filter that looks for duplicate items, and drops those items that were
 already processed. Let's say that our items have a unique id, but our spider
-returns multiples items with the same id::
+returns multiples items with the same id:
 
+.. code-block:: python
 
     from itemadapter import ItemAdapter
     from scrapy.exceptions import DropItem
 
-    class DuplicatesPipeline:
 
+    class DuplicatesPipeline:
         def __init__(self):
             self.ids_seen = set()
 
         def process_item(self, item, spider):
             adapter = ItemAdapter(item)
-            if adapter['id'] in self.ids_seen:
+            if adapter["id"] in self.ids_seen:
                 raise DropItem(f"Duplicate item found: {item!r}")
             else:
-                self.ids_seen.add(adapter['id'])
+                self.ids_seen.add(adapter["id"])
                 return item
 
 
@@ -252,11 +263,13 @@ Activating an Item Pipeline component
 =====================================
 
 To activate an Item Pipeline component you must add its class to the
-:setting:`ITEM_PIPELINES` setting, like in the following example::
+:setting:`ITEM_PIPELINES` setting, like in the following example:
+
+.. code-block:: python
 
    ITEM_PIPELINES = {
-       'myproject.pipelines.PricePipeline': 300,
-       'myproject.pipelines.JsonWriterPipeline': 800,
+       "myproject.pipelines.PricePipeline": 300,
+       "myproject.pipelines.JsonWriterPipeline": 800,
    }
 
 The integer values you assign to classes in this setting determine the

@@ -34,7 +34,6 @@ POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 
 class ReferrerPolicy:
-
     NOREFERRER_SCHEMES: Tuple[str, ...] = LOCAL_SCHEMES
     name: str
 

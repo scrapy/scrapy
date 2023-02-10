@@ -30,10 +30,11 @@ Common Stats Collector uses
 ===========================
 
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute. Here is an example of an extension that access stats::
+attribute. Here is an example of an extension that access stats:
+
+.. code-block:: python
 
     class ExtensionThatAccessStats:
-
         def __init__(self, stats):
             self.stats = stats
 
@@ -41,31 +42,43 @@ attribute. Here is an example of an extension that access stats::
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
-Set stat value::
+Set stat value:
 
-    stats.set_value('hostname', socket.gethostname())
+.. code-block:: python
 
-Increment stat value::
+    stats.set_value("hostname", socket.gethostname())
 
-    stats.inc_value('custom_count')
+Increment stat value:
 
-Set stat value only if greater than previous::
+.. code-block:: python
 
-    stats.max_value('max_items_scraped', value)
+    stats.inc_value("custom_count")
 
-Set stat value only if lower than previous::
+Set stat value only if greater than previous:
 
-    stats.min_value('min_free_memory_percent', value)
+.. code-block:: python
+
+    stats.max_value("max_items_scraped", value)
+
+Set stat value only if lower than previous:
+
+.. code-block:: python
+
+    stats.min_value("min_free_memory_percent", value)
 
 Get stat value:
 
->>> stats.get_value('custom_count')
-1
+.. code-block:: pycon
+
+    >>> stats.get_value("custom_count")
+    1
 
 Get all stats:
 
->>> stats.get_stats()
-{'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+.. code-block:: pycon
+
+    >>> stats.get_stats()
+    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 Available Stats Collectors
 ==========================

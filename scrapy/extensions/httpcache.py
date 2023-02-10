@@ -41,7 +41,6 @@ class DummyPolicy:
 
 
 class RFC2616Policy:
-
     MAXAGE = 3600 * 24 * 365  # one year
 
     def __init__(self, settings):

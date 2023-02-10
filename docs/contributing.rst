@@ -49,7 +49,7 @@ guidelines when you're going to report a new bug.
   (use "scrapy" tag).
 
 * check the `open issues`_ to see if the issue has already been reported. If it
-  has, don't dismiss the report, but check the ticket history and comments. If 
+  has, don't dismiss the report, but check the ticket history and comments. If
   you have additional useful information, please leave a comment, or consider
   :ref:`sending a pull request <writing-patches>` with a fix.
 
@@ -169,7 +169,7 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting. 
+* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
   There is a hook in the pre-commit config
   that will automatically format your code before every commit. You can also
   run black manually with ``tox -e black``.
@@ -179,29 +179,31 @@ Scrapy:
   See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
 
+.. _scrapy-pre-commit:
+
 Pre-commit
 ==========
 
-We use `pre-commit`_ to automatically address simple code issues before every 
+We use `pre-commit`_ to automatically address simple code issues before every
 commit.
 
 .. _pre-commit: https://pre-commit.com/
 
-Before you start writing a patch:
+After your create a local clone of your fork of the Scrapy repository:
 
 #.  `Install pre-commit <https://pre-commit.com/#installation>`_.
 
-#.  On the root of your local clone of the Scrapy repository, run the following 
+#.  On the root of your local clone of the Scrapy repository, run the following
     command:
 
     .. code-block:: bash
 
        pre-commit install
 
-Now pre-commit will check your changes every time you create a Git commit. Upon 
-finding issues, pre-commit aborts your commit, and either fixes those issues 
-automatically, or only reports them to you. If it fixes those issues 
-automatically, creating your commit again should succeed. Otherwise, you may 
+Now pre-commit will check your changes every time you create a Git commit. Upon
+finding issues, pre-commit aborts your commit, and either fixes those issues
+automatically, or only reports them to you. If it fixes those issues
+automatically, creating your commit again should succeed. Otherwise, you may
 need to address the corresponding issues manually first.
 
 .. _documentation-policies:

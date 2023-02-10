@@ -54,7 +54,6 @@ def create_deprecated_class(
     """
 
     class DeprecatedClass(new_class.__class__):
-
         deprecated_class = None
         warned_on_subclass = False
 

@@ -16,7 +16,6 @@ from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 
 
 class ManagerTestCase(TestCase):
-
     settings_dict = None
 
     def setUp(self):

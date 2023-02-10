@@ -292,7 +292,6 @@ class ScrapyProxyAgent(Agent):
 
 
 class ScrapyAgent:
-
     _Agent = Agent
     _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent
