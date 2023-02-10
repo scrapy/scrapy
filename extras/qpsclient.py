@@ -13,7 +13,6 @@ from scrapy.spiders import Spider
 
 
 class QPSSpider(Spider):
-
     name = "qps"
     benchurl = "http://localhost:8880/"
 

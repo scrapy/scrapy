@@ -25,7 +25,6 @@ class MockServerSpider(Spider):
 
 
 class MetaSpider(MockServerSpider):
-
     name = "meta"
 
     def __init__(self, *args, **kwargs):
@@ -37,7 +36,6 @@ class MetaSpider(MockServerSpider):
 
 
 class FollowAllSpider(MetaSpider):
-
     name = "follow"
     link_extractor = LinkExtractor()
 
@@ -59,7 +57,6 @@ class FollowAllSpider(MetaSpider):
 
 
 class DelaySpider(MetaSpider):
-
     name = "delay"
 
     def __init__(self, n=1, b=0, *args, **kwargs):
@@ -81,7 +78,6 @@ class DelaySpider(MetaSpider):
 
 
 class SimpleSpider(MetaSpider):
-
     name = "simple"
 
     def __init__(self, url="http://localhost:8998", *args, **kwargs):
@@ -93,7 +89,6 @@ class SimpleSpider(MetaSpider):
 
 
 class AsyncDefSpider(SimpleSpider):
-
     name = "asyncdef"
 
     async def parse(self, response):
@@ -102,7 +97,6 @@ class AsyncDefSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioSpider(SimpleSpider):
-
     name = "asyncdef_asyncio"
 
     async def parse(self, response):
@@ -112,7 +106,6 @@ class AsyncDefAsyncioSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioReturnSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_return"
 
     async def parse(self, response):
@@ -123,7 +116,6 @@ class AsyncDefAsyncioReturnSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_return_single_element"
 
     async def parse(self, response):
@@ -134,7 +126,6 @@ class AsyncDefAsyncioReturnSingleElementSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_reqs_return"
 
     async def parse(self, response):
@@ -191,7 +182,6 @@ class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioGenSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_gen"
 
     async def parse(self, response):
@@ -201,7 +191,6 @@ class AsyncDefAsyncioGenSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioGenLoopSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_gen_loop"
 
     async def parse(self, response):
@@ -212,7 +201,6 @@ class AsyncDefAsyncioGenLoopSpider(SimpleSpider):
 
 
 class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
-
     name = "asyncdef_asyncio_gen_complex"
     initial_reqs = 4
     following_reqs = 3
@@ -246,7 +234,6 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
 
 
 class ItemSpider(FollowAllSpider):
-
     name = "item"
 
     def parse(self, response):
@@ -261,7 +248,6 @@ class DefaultError(Exception):
 
 
 class ErrorSpider(FollowAllSpider):
-
     name = "error"
     exception_cls = DefaultError
 
@@ -275,7 +261,6 @@ class ErrorSpider(FollowAllSpider):
 
 
 class BrokenStartRequestsSpider(FollowAllSpider):
-
     fail_before_yield = False
     fail_yielding = False
 
@@ -305,7 +290,6 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
 
 class SingleRequestSpider(MetaSpider):
-
     seed = None
     callback_func = None
     errback_func = None
@@ -451,7 +435,6 @@ class CrawlSpiderWithProcessRequestCallbackKeywordArguments(CrawlSpiderWithParse
 
 
 class BytesReceivedCallbackSpider(MetaSpider):
-
     full_response_length = 2**18
 
     @classmethod

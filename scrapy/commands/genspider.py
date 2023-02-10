@@ -32,7 +32,6 @@ def extract_domain(url):
 
 
 class Command(ScrapyCommand):
-
     requires_project = False
     default_settings = {"LOG_ENABLED": False}
 

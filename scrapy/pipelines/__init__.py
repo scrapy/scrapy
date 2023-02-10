@@ -10,7 +10,6 @@ from scrapy.utils.defer import deferred_f_from_coro_f
 
 
 class ItemPipelineManager(MiddlewareManager):
-
     component_name = "item pipeline"
 
     @classmethod

@@ -37,7 +37,6 @@ def _mocked_download_func(request, info):
 
 
 class BaseMediaPipelineTestCase(unittest.TestCase):
-
     pipeline_class = MediaPipeline
     settings = None
 
@@ -213,7 +212,6 @@ class MockedMediaPipeline(MediaPipeline):
 
 
 class MediaPipelineTestCase(BaseMediaPipelineTestCase):
-
     pipeline_class = MockedMediaPipeline
 
     def _callback(self, result):

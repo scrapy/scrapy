@@ -10,7 +10,6 @@ from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 
 class Command(ScrapyCommand):
-
     requires_project = False
 
     def syntax(self):

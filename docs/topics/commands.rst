@@ -614,7 +614,7 @@ Example:
 
 .. code-block:: python
 
-    COMMANDS_MODULE = 'mybot.commands'
+    COMMANDS_MODULE = "mybot.commands"
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
@@ -633,10 +633,11 @@ The following example adds ``my_command`` command:
 
   from setuptools import setup, find_packages
 
-  setup(name='scrapy-mymodule',
-    entry_points={
-      'scrapy.commands': [
-        'my_command=my_scrapy_module.commands:MyCommand',
-      ],
-    },
-   )
+  setup(
+      name="scrapy-mymodule",
+      entry_points={
+          "scrapy.commands": [
+              "my_command=my_scrapy_module.commands:MyCommand",
+          ],
+      },
+  )

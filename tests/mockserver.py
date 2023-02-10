@@ -95,7 +95,6 @@ class BrokenDownloadResource(resource.Resource):
 
 
 class LeafResource(resource.Resource):
-
     isLeaf = True
 
     def deferRequest(self, request, delay, f, *a, **kw):

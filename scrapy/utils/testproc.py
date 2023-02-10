@@ -5,7 +5,6 @@ from twisted.internet import defer, protocol
 
 
 class ProcessTest:
-
     command = None
     prefix = [sys.executable, "-m", "scrapy.cmdline"]
     cwd = os.getcwd()  # trial chdirs to temp dir

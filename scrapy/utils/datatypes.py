@@ -11,7 +11,6 @@ from collections.abc import Mapping
 
 
 class CaselessDict(dict):
-
     __slots__ = ()
 
     def __init__(self, seq=None):
