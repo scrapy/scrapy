@@ -26,7 +26,6 @@ def _build_redirect_request(source_request, *, url, **kwargs):
 
 
 class BaseRedirectMiddleware:
-
     enabled_setting = "REDIRECT_ENABLED"
 
     def __init__(self, settings):
@@ -115,7 +114,6 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
-
     enabled_setting = "METAREFRESH_ENABLED"
 
     def __init__(self, settings):

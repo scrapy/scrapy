@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
-
     sitemap_urls = ()
     sitemap_rules = [("", "parse")]
     sitemap_follow = [""]

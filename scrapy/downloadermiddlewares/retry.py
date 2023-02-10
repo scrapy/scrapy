@@ -122,7 +122,6 @@ def get_retry_request(
 
 
 class RetryMiddleware:
-
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
     EXCEPTIONS_TO_RETRY = (

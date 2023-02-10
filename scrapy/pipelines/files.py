@@ -195,7 +195,6 @@ class S3FilesStore:
 
 
 class GCSFilesStore:
-
     GCS_PROJECT_ID = None
 
     CACHE_CONTROL = "max-age=172800"
@@ -261,7 +260,6 @@ class GCSFilesStore:
 
 
 class FTPFilesStore:
-
     FTP_USERNAME = None
     FTP_PASSWORD = None
     USE_ACTIVE_MODE = None

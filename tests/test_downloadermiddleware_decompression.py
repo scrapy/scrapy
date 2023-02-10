@@ -17,7 +17,6 @@ def _test_data(formats):
 
 
 class DecompressionMiddlewareTest(TestCase):
-
     test_formats = ["tar", "xml.bz2", "xml.gz", "zip"]
     uncompressed_body, test_responses = _test_data(test_formats)
 

@@ -27,7 +27,6 @@ HttpCacheMiddlewareTV = TypeVar("HttpCacheMiddlewareTV", bound="HttpCacheMiddlew
 
 
 class HttpCacheMiddleware:
-
     DOWNLOAD_EXCEPTIONS = (
         defer.TimeoutError,
         TimeoutError,

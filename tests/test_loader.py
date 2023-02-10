@@ -87,7 +87,6 @@ class BasicItemLoaderTest(unittest.TestCase):
 
 
 class InitializationTestMixin:
-
     item_class = None
 
     def test_keep_single_value(self):

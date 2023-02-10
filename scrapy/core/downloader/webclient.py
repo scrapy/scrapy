@@ -40,7 +40,6 @@ def _parse(url):
 
 
 class ScrapyHTTPPageGetter(HTTPClient):
-
     delimiter = b"\n"
 
     def connectionMade(self):
@@ -103,7 +102,6 @@ class ScrapyHTTPPageGetter(HTTPClient):
 # Twisted (https://github.com/twisted/twisted/pull/643), we merged its
 # non-overridden code into this class.
 class ScrapyHTTPClientFactory(ClientFactory):
-
     protocol = ScrapyHTTPPageGetter
 
     waiting = 1
