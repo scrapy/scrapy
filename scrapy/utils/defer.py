@@ -288,7 +288,7 @@ def deferred_from_coro(o) -> Any:
         if not is_asyncio_reactor_installed():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return ensureDeferred(o)
+            return ensureDeferred(cast(Coroutine[Deferred, Any, Any], o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         event_loop = _get_asyncio_event_loop()
         return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
