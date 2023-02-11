@@ -1,14 +1,14 @@
 import logging
 from unittest import TestCase
-from testfixtures import LogCapture
 
 import pytest
+from testfixtures import LogCapture
 
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response, Request
+from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes

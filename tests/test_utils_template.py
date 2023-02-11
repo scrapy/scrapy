@@ -1,9 +1,9 @@
+import unittest
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-import unittest
-from scrapy.utils.template import render_templatefile
 
+from scrapy.utils.template import render_templatefile
 
 __doctests__ = ["scrapy.utils.template"]
 
@@ -16,7 +16,6 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
         rmtree(self.tmp_path)
 
     def test_simple_render(self):
-
         context = dict(project_name="proj", name="spi", classname="TheSpider")
         template = "from ${project_name}.spiders.${name} import ${classname}"
         rendered = "from proj.spiders.spi import TheSpider"

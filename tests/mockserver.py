@@ -4,7 +4,7 @@ import random
 import sys
 from pathlib import Path
 from shutil import rmtree
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from tempfile import mkdtemp
 from urllib.parse import urlencode
 
@@ -15,7 +15,7 @@ from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
 from twisted.web import resource, server
-from twisted.web.server import GzipEncoderFactory, NOT_DONE_YET, Site
+from twisted.web.server import NOT_DONE_YET, GzipEncoderFactory, Site
 from twisted.web.static import File
 from twisted.web.util import redirectTo
 
@@ -96,7 +96,6 @@ class BrokenDownloadResource(resource.Resource):
 
 
 class LeafResource(resource.Resource):
-
     isLeaf = True
 
     def deferRequest(self, request, delay, f, *a, **kw):

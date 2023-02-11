@@ -1,16 +1,16 @@
 import random
-from time import time
-from datetime import datetime
 from collections import deque
+from datetime import datetime
+from time import time
 
 from twisted.internet import defer, task
 
+from scrapy import signals
+from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.resolver import dnscache
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.resolver import dnscache
-from scrapy import signals
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.core.downloader.handlers import DownloadHandlers
 
 
 class Slot:
@@ -69,7 +69,6 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
 
 class Downloader:
-
     DOWNLOAD_SLOT = "download_slot"
 
     def __init__(self, crawler):

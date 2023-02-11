@@ -7,8 +7,10 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 import logging
 
 from twisted.internet.defer import Deferred, maybeDeferred
-from scrapy.exceptions import NotConfigured, IgnoreRequest
+
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request
+from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import load_object
@@ -37,6 +39,8 @@ class RobotsTxtMiddleware:
 
     def process_request(self, request, spider):
         if request.meta.get("dont_obey_robotstxt"):
+            return
+        if request.url.startswith("data:") or request.url.startswith("file:"):
             return
         d = maybeDeferred(self.robot_parser, request, spider)
         d.addCallback(self.process_request_2, request, spider)
@@ -69,6 +73,7 @@ class RobotsTxtMiddleware:
                 robotsurl,
                 priority=self.DOWNLOAD_PRIORITY,
                 meta={"dont_obey_robotstxt": True},
+                callback=NO_CALLBACK,
             )
             dfd = self.crawler.engine.download(robotsreq)
             dfd.addCallback(self._parse_robots, netloc, spider)

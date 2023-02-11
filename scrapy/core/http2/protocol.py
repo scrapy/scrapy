@@ -9,9 +9,9 @@ from h2.config import H2Configuration
 from h2.connection import H2Connection
 from h2.errors import ErrorCodes
 from h2.events import (
-    Event,
     ConnectionTerminated,
     DataReceived,
+    Event,
     ResponseReceived,
     SettingsAcknowledged,
     StreamEnded,
@@ -23,7 +23,7 @@ from h2.exceptions import FrameTooLargeError, H2Error
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
-from twisted.internet.protocol import connectionDone, Factory, Protocol
+from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python.failure import Failure
@@ -34,7 +34,6 @@ from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-
 
 logger = logging.getLogger(__name__)
 

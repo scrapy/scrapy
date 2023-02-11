@@ -6,27 +6,26 @@ from unittest import mock
 
 from testfixtures import LogCapture
 from twisted.trial import unittest
-
 from w3lib.url import safe_url_string
+
 from scrapy import signals
+from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
+from scrapy.linkextractors import LinkExtractor
 from scrapy.settings import Settings
-from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
-from scrapy.spiders.init import InitSpider
 from scrapy.spiders import (
-    CSVFeedSpider,
     CrawlSpider,
+    CSVFeedSpider,
     Rule,
     SitemapSpider,
     Spider,
     XMLFeedSpider,
 )
-from scrapy.linkextractors import LinkExtractor
+from scrapy.spiders.init import InitSpider
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
 
 
 class SpiderTest(unittest.TestCase):
-
     spider_class = Spider
 
     def setUp(self):
@@ -115,12 +114,10 @@ class SpiderTest(unittest.TestCase):
 
 
 class InitSpiderTest(SpiderTest):
-
     spider_class = InitSpider
 
 
 class XMLFeedSpiderTest(SpiderTest):
-
     spider_class = XMLFeedSpider
 
     def test_register_namespace(self):
@@ -174,7 +171,6 @@ class XMLFeedSpiderTest(SpiderTest):
 
 
 class CSVFeedSpiderTest(SpiderTest):
-
     spider_class = CSVFeedSpider
 
     def test_parse_rows(self):
@@ -196,7 +192,6 @@ class CSVFeedSpiderTest(SpiderTest):
 
 
 class CrawlSpiderTest(SpiderTest):
-
     test_body = b"""<html><head><title>Page title<title>
     <body>
     <p><a href="item/12.html">Item 12</a></p>
@@ -210,7 +205,6 @@ class CrawlSpiderTest(SpiderTest):
     spider_class = CrawlSpider
 
     def test_rule_without_link_extractor(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -234,7 +228,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_links(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -261,7 +254,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_links_filter(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -290,7 +282,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_links_generator(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -318,7 +309,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_request(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -347,7 +337,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_request_with_response(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -383,7 +372,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_request_instance_method(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -410,7 +398,6 @@ class CrawlSpiderTest(SpiderTest):
         )
 
     def test_process_request_instance_method_with_response(self):
-
         response = HtmlResponse(
             "http://example.org/somepage/index.html", body=self.test_body
         )
@@ -467,7 +454,6 @@ class CrawlSpiderTest(SpiderTest):
 
 
 class SitemapSpiderTest(SpiderTest):
-
     spider_class = SitemapSpider
 
     BODY = b"SITEMAP"
@@ -689,7 +675,6 @@ class DeprecationTest(unittest.TestCase):
 
 
 class NoParseMethodSpiderTest(unittest.TestCase):
-
     spider_class = Spider
 
     def test_undefined_parse_method(self):

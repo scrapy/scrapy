@@ -7,7 +7,6 @@ from itemloaders import processors
 
 from scrapy.utils.deprecate import create_deprecated_class
 
-
 MapCompose = create_deprecated_class("MapCompose", processors.MapCompose)
 
 Compose = create_deprecated_class("Compose", processors.Compose)

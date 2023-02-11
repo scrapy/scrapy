@@ -3,10 +3,10 @@ from urllib.parse import urljoin, urlparse
 
 from w3lib.url import safe_url_string
 
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
-from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,6 @@ def _build_redirect_request(source_request, *, url, **kwargs):
 
 
 class BaseRedirectMiddleware:
-
     enabled_setting = "REDIRECT_ENABLED"
 
     def __init__(self, settings):
@@ -115,7 +114,6 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
-
     enabled_setting = "METAREFRESH_ENABLED"
 
     def __init__(self, settings):

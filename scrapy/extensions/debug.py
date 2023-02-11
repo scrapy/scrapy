@@ -4,11 +4,11 @@ Extensions for debugging Scrapy
 See documentation in docs/topics/extensions.rst
 """
 
-import sys
-import signal
 import logging
-import traceback
+import signal
+import sys
 import threading
+import traceback
 from pdb import Pdb
 
 from scrapy.utils.engine import format_engine_status

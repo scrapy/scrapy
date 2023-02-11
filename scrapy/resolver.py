@@ -1,15 +1,14 @@
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
 from twisted.internet.interfaces import (
-    IHostResolution,
     IHostnameResolver,
+    IHostResolution,
     IResolutionReceiver,
     IResolverSimple,
 )
 from zope.interface.declarations import implementer, provider
 
 from scrapy.utils.datatypes import LocalCache
-
 
 # TODO: cache misses
 dnscache = LocalCache(10000)

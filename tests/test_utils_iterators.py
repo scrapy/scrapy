@@ -1,13 +1,12 @@
 from pytest import mark
 from twisted.trial import unittest
 
-from scrapy.utils.iterators import csviter, xmliter, _body_or_str, xmliter_lxml
-from scrapy.http import XmlResponse, TextResponse, Response
+from scrapy.http import Response, TextResponse, XmlResponse
+from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
 from tests import get_testdata
 
 
 class XmliterTestCase(unittest.TestCase):
-
     xmliter = staticmethod(xmliter)
 
     def test_xmliter(self):

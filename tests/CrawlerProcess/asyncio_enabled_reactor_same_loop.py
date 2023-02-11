@@ -1,9 +1,8 @@
 import asyncio
 import sys
 
-from uvloop import Loop
-
 from twisted.internet import asyncioreactor
+from uvloop import Loop
 
 if sys.version_info >= (3, 8) and sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

@@ -6,8 +6,8 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from w3lib.url import add_or_replace_parameter
 
-from scrapy.crawler import CrawlerRunner
 from scrapy import signals
+from scrapy.crawler import CrawlerRunner
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
 
@@ -116,7 +116,6 @@ class FileDownloadCrawlTestCase(TestCase):
                 self.assertTrue((self.tmpmediastore / i["path"]).exists())
 
     def _assert_files_download_failure(self, crawler, items, code, logs):
-
         # check that the item does NOT have the "images/files" field populated
         self.assertEqual(len(items), 1)
         self.assertIn(self.media_key, items[0])
@@ -205,7 +204,6 @@ else:
 
 
 class ImageDownloadCrawlTestCase(FileDownloadCrawlTestCase):
-
     skip = skip_pillow
 
     pipeline_class = "scrapy.pipelines.images.ImagesPipeline"

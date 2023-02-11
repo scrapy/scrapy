@@ -13,15 +13,15 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
 from twisted.web.client import (
+    URI,
     Agent,
     HTTPConnectionPool,
     ResponseDone,
     ResponseFailed,
-    URI,
 )
-from twisted.web.http import _DataLoss, PotentialDataLoss
+from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
 from zope.interface import implementer
 
 from scrapy import signals
@@ -292,7 +292,6 @@ class ScrapyProxyAgent(Agent):
 
 
 class ScrapyAgent:
-
     _Agent = Agent
     _ProxyAgent = ScrapyProxyAgent
     _TunnelingAgent = TunnelingAgent

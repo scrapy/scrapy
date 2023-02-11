@@ -1,15 +1,15 @@
 import re
 from time import time
-from urllib.parse import urlparse, urlunparse, urldefrag
-from twisted.web.http import HTTPClient
+from urllib.parse import urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
+from twisted.web.http import HTTPClient
 
 from scrapy.http import Headers
+from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
@@ -40,7 +40,6 @@ def _parse(url):
 
 
 class ScrapyHTTPPageGetter(HTTPClient):
-
     delimiter = b"\n"
 
     def connectionMade(self):
@@ -103,7 +102,6 @@ class ScrapyHTTPPageGetter(HTTPClient):
 # Twisted (https://github.com/twisted/twisted/pull/643), we merged its
 # non-overridden code into this class.
 class ScrapyHTTPClientFactory(ClientFactory):
-
     protocol = ScrapyHTTPPageGetter
 
     waiting = 1

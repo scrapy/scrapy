@@ -1,24 +1,24 @@
-from typing import Optional
 import io
+from typing import Optional
 
 from testfixtures import LogCapture
-from twisted.trial import unittest
-from twisted.python.failure import Failure
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.python.failure import Failure
+from twisted.trial import unittest
 
 from scrapy import signals
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
+from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
+from scrapy.settings import Settings
+from scrapy.spiders import Spider
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
-
 
 try:
     from PIL import Image  # noqa: imported just to check for the import error
@@ -31,12 +31,12 @@ else:
 
 
 def _mocked_download_func(request, info):
+    assert request.callback is NO_CALLBACK
     response = request.meta.get("response")
     return response() if callable(response) else response
 
 
 class BaseMediaPipelineTestCase(unittest.TestCase):
-
     pipeline_class = MediaPipeline
     settings = None
 
@@ -212,7 +212,6 @@ class MockedMediaPipeline(MediaPipeline):
 
 
 class MediaPipelineTestCase(BaseMediaPipelineTestCase):
-
     pipeline_class = MockedMediaPipeline
 
     def _callback(self, result):

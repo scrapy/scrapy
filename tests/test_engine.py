@@ -14,13 +14,13 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from threading import Timer
 from urllib.parse import urlparse
-from dataclasses import dataclass
 
-import pytest
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from twisted.internet import defer, reactor
@@ -31,12 +31,11 @@ from scrapy import signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Request
-from scrapy.item import Item, Field
+from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
-
 from tests import get_testdata, tests_datadir
 
 
@@ -244,7 +243,6 @@ class CrawlerRun:
 class EngineTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_crawler(self):
-
         for spider in (
             TestSpider,
             DictItemsSpider,

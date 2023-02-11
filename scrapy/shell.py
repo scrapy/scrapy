@@ -7,7 +7,7 @@ import os
 import signal
 
 from itemadapter import is_item
-from twisted.internet import threads, defer
+from twisted.internet import defer, threads
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
@@ -20,15 +20,11 @@ from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.misc import load_object
+from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.reactor import (
-    is_asyncio_reactor_installed,
-    set_asyncio_event_loop,
-)
 
 
 class Shell:
-
     relevant_classes = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):

@@ -8,7 +8,6 @@ from scrapy.utils.conf import build_component_list
 
 
 class ExtensionManager(MiddlewareManager):
-
     component_name = "extension"
 
     @classmethod

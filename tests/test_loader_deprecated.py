@@ -16,7 +16,7 @@ from itemloaders.processors import (
     TakeFirst,
 )
 
-from scrapy.item import Item, Field
+from scrapy.item import Field, Item
 from scrapy.loader import ItemLoader
 from scrapy.loader.common import wrap_loader_context
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
@@ -469,7 +469,6 @@ class BasicItemLoaderTest(unittest.TestCase):
 
 
 class InitializationFromDictTest(unittest.TestCase):
-
     item_class = dict
 
     def test_keep_single_value(self):

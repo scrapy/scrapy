@@ -5,15 +5,20 @@ repos:
   - id: bandit
     args: [-r, -c, .bandit.yml]
 - repo: https://github.com/PyCQA/flake8
-  rev: 6.0.0
+  rev: 5.0.4  # 6.0.0 drops Python 3.7 support
   hooks:
   - id: flake8
-- repo: https://github.com/PyCQA/pylint
-  rev: v2.15.6
-  hooks:
-  - id: pylint
-    args: [conftest.py, docs, extras, scrapy, setup.py, tests]
 - repo: https://github.com/psf/black.git
-  rev: 22.12.0
+  rev: 23.1.0
   hooks:
   - id: black
+- repo: https://github.com/pycqa/isort
+  rev: 5.11.5  # 5.12 drops Python 3.7 support
+  hooks:
+  - id: isort
+- repo: https://github.com/adamchainz/blacken-docs
+  rev: 1.13.0
+  hooks:
+  - id: blacken-docs
+    additional_dependencies:
+    - black==23.1.0

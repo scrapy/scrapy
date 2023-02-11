@@ -1,21 +1,20 @@
-import sys
 import shutil
+import sys
+import tempfile
 import warnings
 from pathlib import Path
 
-import tempfile
-from zope.interface.verify import verifyObject
 from twisted.trial import unittest
-
+from zope.interface.verify import verifyObject
 
 # ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
 import scrapy
-from scrapy.interfaces import ISpiderLoader
-from scrapy.spiderloader import SpiderLoader
-from scrapy.settings import Settings
-from scrapy.http import Request
 from scrapy.crawler import CrawlerRunner
+from scrapy.http import Request
+from scrapy.interfaces import ISpiderLoader
+from scrapy.settings import Settings
+from scrapy.spiderloader import SpiderLoader
 
 module_dir = Path(__file__).resolve().parent
 
@@ -115,13 +114,11 @@ class SpiderLoaderTest(unittest.TestCase):
         self.assertEqual(crawler.spidercls.name, "spider1")
 
     def test_bad_spider_modules_exception(self):
-
         module = "tests.test_spiderloader.test_spiders.doesnotexist"
         settings = Settings({"SPIDER_MODULES": [module]})
         self.assertRaises(ImportError, SpiderLoader.from_settings, settings)
 
     def test_bad_spider_modules_warning(self):
-
         with warnings.catch_warnings(record=True) as w:
             module = "tests.test_spiderloader.test_spiders.doesnotexist"
             settings = Settings(

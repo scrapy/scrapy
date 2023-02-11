@@ -22,6 +22,7 @@ from twisted.internet import defer, threads
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request
+from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore_available
@@ -31,7 +32,6 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
-
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,6 @@ class S3FilesStore:
 
 
 class GCSFilesStore:
-
     GCS_PROJECT_ID = None
 
     CACHE_CONTROL = "max-age=172800"
@@ -253,7 +252,6 @@ class GCSFilesStore:
 
 
 class FTPFilesStore:
-
     FTP_USERNAME = None
     FTP_PASSWORD = None
     USE_ACTIVE_MODE = None
@@ -517,7 +515,7 @@ class FilesPipeline(MediaPipeline):
     # Overridable Interface
     def get_media_requests(self, item, info):
         urls = ItemAdapter(item).get(self.files_urls_field, [])
-        return [Request(u) for u in urls]
+        return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def file_downloaded(self, response, request, info, *, item=None):
         path = self.file_path(request, response=response, info=info, item=item)

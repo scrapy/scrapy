@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from pytest import mark
 
-from scrapy.utils.reactor import is_asyncio_reactor_installed, install_reactor
+from scrapy.utils.reactor import install_reactor, is_asyncio_reactor_installed
 
 
 @mark.usefixtures("reactor_pytest")

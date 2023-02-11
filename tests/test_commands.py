@@ -1,6 +1,6 @@
+import argparse
 import inspect
 import json
-import argparse
 import os
 import platform
 import re
@@ -10,7 +10,7 @@ import tempfile
 from contextlib import contextmanager
 from itertools import chain
 from pathlib import Path
-from shutil import rmtree, copytree
+from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import mkdtemp
 from threading import Timer
@@ -23,12 +23,11 @@ from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import view, ScrapyCommand, ScrapyHelpFormatter
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
-
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
 
 
@@ -224,7 +223,6 @@ def get_permissions_dict(
 
 
 class StartprojectTemplatesTest(ProjectTest):
-
     maxDiff = None
 
     def setUp(self):
@@ -506,7 +504,7 @@ class GenspiderCommandTest(CommandTest):
         # change name of spider but not its file name
         with file_path.open("r+", encoding="utf-8") as spider_file:
             file_data = spider_file.read()
-            file_data = file_data.replace("name = 'example'", "name = 'renamed'")
+            file_data = file_data.replace('name = "example"', 'name = "renamed"')
             spider_file.seek(0)
             spider_file.write(file_data)
             spider_file.truncate()
@@ -539,14 +537,14 @@ class GenspiderCommandTest(CommandTest):
             domain,
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"allowed_domains\s*=\s*\[\'(.+)\'\]",
+                r"allowed_domains\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
         self.assertEqual(
             f"http://{domain}/",
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"start_urls\s*=\s*\[\'(.+)\'\]",
+                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
 
@@ -605,7 +603,6 @@ class MiscCommandsTest(CommandTest):
 
 
 class RunSpiderCommandTest(CommandTest):
-
     spider_filename = "myspider.py"
 
     debug_log_spider = """
@@ -874,7 +871,6 @@ class MySpider(scrapy.Spider):
 
 @skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
-
     spider_filename = "myspider.pyw"
 
     def setUp(self):

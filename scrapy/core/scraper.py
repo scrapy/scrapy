@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     AsyncIterable,
@@ -13,7 +14,6 @@ from typing import (
     Iterable,
     Optional,
     Set,
-    TYPE_CHECKING,
     Tuple,
     Union,
 )
@@ -22,7 +22,7 @@ from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
-from scrapy import signals, Spider
+from scrapy import Spider, signals
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
@@ -34,11 +34,9 @@ from scrapy.utils.defer import (
     parallel,
     parallel_async,
 )
-
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
-
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
