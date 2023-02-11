@@ -5,10 +5,17 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
-from lxml.html import FormElement, HtmlElement, HTMLParser, SelectElement
+from lxml.html import (
+    FormElement,
+    HTMLParser,
+    InputElement,
+    MultipleSelectOptions,
+    SelectElement,
+    TextareaElement,
+)
 from parsel.selector import create_root_node
 from w3lib.html import strip_html5_whitespace
 
@@ -19,7 +26,8 @@ from scrapy.utils.response import get_base_url
 
 FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
 
-FormdataType = Optional[Union[dict, List[Tuple[str, str]]]]
+FormdataKVType = Tuple[str, Union[str, Iterable[str]]]
+FormdataType = Optional[Union[dict, List[FormdataKVType]]]
 
 
 class FormRequest(Request):
@@ -79,6 +87,7 @@ class FormRequest(Request):
 
 
 def _get_form_url(form: FormElement, url: Optional[str]) -> str:
+    assert form.base_url is not None  # typing
     if url is None:
         action = form.get("action")
         if action is None:
@@ -87,11 +96,11 @@ def _get_form_url(form: FormElement, url: Optional[str]) -> str:
     return urljoin(form.base_url, url)
 
 
-def _urlencode(seq: Iterable, enc: str) -> str:
+def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
     values = [
         (to_bytes(k, enc), to_bytes(v, enc))
         for k, vs in seq
-        for v in (vs if is_listlike(vs) else [vs])
+        for v in (cast(Iterable[str], vs) if is_listlike(vs) else [cast(str, vs)])
     ]
     return urlencode(values, doseq=True)
 
@@ -147,7 +156,7 @@ def _get_inputs(
     formdata: FormdataType,
     dont_click: bool,
     clickdata: Optional[dict],
-) -> List[Tuple[str, str]]:
+) -> List[FormdataKVType]:
     """Return a list of key-value pairs for the inputs found in the given form."""
     try:
         formdata_keys = dict(formdata or ()).keys()
@@ -165,7 +174,7 @@ def _get_inputs(
         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
         namespaces={"re": "http://exslt.org/regular-expressions"},
     )
-    values = [
+    values: List[FormdataKVType] = [
         (k, "" if v is None else v)
         for k, v in (_value(e) for e in inputs)
         if k and k not in formdata_keys
@@ -183,15 +192,19 @@ def _get_inputs(
     return values
 
 
-def _value(ele: HtmlElement):
+def _value(
+    ele: Union[InputElement, SelectElement, TextareaElement]
+) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
     n = ele.name
     v = ele.value
     if ele.tag == "select":
-        return _select_value(ele, n, v)
+        return _select_value(cast(SelectElement, ele), n, v)
     return n, v
 
 
-def _select_value(ele: SelectElement, n: str, v: str):
+def _select_value(
+    ele: SelectElement, n: Optional[str], v: Union[None, str, MultipleSelectOptions]
+) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
