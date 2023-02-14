@@ -118,6 +118,7 @@ Raise :class:`~scrapy.exceptions.ContractFail` from
 Here is a demo contract which checks the presence of a custom header in the
 response received:
 
+.. skip: next
 .. code-block:: python
 
     from scrapy.contracts import Contract

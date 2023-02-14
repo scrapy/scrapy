@@ -664,6 +664,8 @@ Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
 need to call urljoin. Note that ``response.follow`` just returns a Request
 instance; you still have to yield this Request.
 
+.. skip: start
+
 You can also pass a selector to ``response.follow`` instead of a string;
 this selector should extract necessary attributes:
 
@@ -693,6 +695,8 @@ or, shortening it further:
 .. code-block:: python
 
     yield from response.follow_all(css="ul.pager a", callback=self.parse)
+
+.. skip: end
 
 
 More examples and patterns
