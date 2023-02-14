@@ -59,6 +59,9 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
 .. code-block:: python
 
+    import scrapy
+
+
     class SignalSpider(scrapy.Spider):
         name = "signals"
         start_urls = ["https://quotes.toscrape.com/page/1/"]

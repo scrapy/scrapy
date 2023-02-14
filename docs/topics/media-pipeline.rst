@@ -606,6 +606,10 @@ See here the methods that you can override in your custom Files Pipeline:
 
       Here's a typical value of the ``results`` argument:
 
+      .. invisible-code-block: python
+
+          from twisted.python.failure import Failure
+
       .. code-block:: python
 
           [
