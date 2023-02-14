@@ -232,6 +232,7 @@ There is support for keeping multiple cookie sessions per spider by using the
 
 For example:
 
+.. skip: next
 .. code-block:: python
 
     for i, url in enumerate(urls):

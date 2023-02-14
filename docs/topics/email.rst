@@ -30,6 +30,7 @@ the standard ``__init__`` method:
 Or you can instantiate it passing a Scrapy settings object, which will respect
 the :ref:`settings <topics-email-settings>`:
 
+.. skip: start
 .. code-block:: python
 
     mailer = MailSender.from_settings(settings)
@@ -44,6 +45,7 @@ And here is how to use it to send an e-mail (without attachments):
         body="Some body",
         cc=["another@example.com"],
     )
+.. skip: end
 
 MailSender class reference
 ==========================

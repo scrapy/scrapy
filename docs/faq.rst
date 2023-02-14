@@ -37,6 +37,7 @@ and extract whatever data you need from it.
 
 Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser:
 
+.. skip: next
 .. code-block:: python
 
     from bs4 import BeautifulSoup
@@ -238,6 +239,9 @@ Try slowing down the crawling speed by using a download delay of ``2`` (or
 higher) in your spider:
 
 .. code-block:: python
+
+    from scrapy.spiders import CrawlSpider
+
 
     class MySpider(CrawlSpider):
         name = "myspider"
