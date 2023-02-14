@@ -7,6 +7,7 @@ Debugging Spiders
 This document explains the most common techniques for debugging spiders.
 Consider the following Scrapy spider below:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy

@@ -7,6 +7,8 @@ Common Practices
 This section documents common practices when using Scrapy. These are things
 that cover many topics and don't often fall into any other specific section.
 
+.. skip: start
+
 .. _run-from-script:
 
 Run Scrapy from a script
@@ -230,6 +232,8 @@ different for different settings:
   started.
 
 .. seealso:: :ref:`run-from-script`.
+
+.. skip: end
 
 .. _distributed-crawls:
 

@@ -76,6 +76,10 @@ Request objects
 
     :param cookies: the request cookies. These can be sent in two forms.
 
+        .. invisible-code-block: python
+
+            from scrapy.http import Request
+
         1. Using a dict:
 
         .. code-block:: python
@@ -917,6 +921,7 @@ If you want to simulate a HTML Form POST in your spider and send a couple of
 key-value fields, you can return a :class:`FormRequest` object (from your
 spider) like this:
 
+.. skip: next
 .. code-block:: python
 
    return [
@@ -1000,6 +1005,7 @@ JsonRequest usage example
 
 Sending a JSON POST request with a JSON payload:
 
+.. skip: next
 .. code-block:: python
 
    data = {

@@ -142,6 +142,7 @@ MongoDB collection is named after item class.
 The main point of this example is to show how to use :meth:`from_crawler`
 method and how to clean up the resources properly.
 
+.. skip: next
 .. code-block:: python
 
     import pymongo
