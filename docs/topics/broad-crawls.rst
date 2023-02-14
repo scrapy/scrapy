@@ -48,9 +48,11 @@ Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQ
 It works best during single-domain crawl. It does not work well with crawling
 many different domains in parallel
 
-To apply the recommended priority queue use::
+To apply the recommended priority queue use:
 
-    SCHEDULER_PRIORITY_QUEUE = 'scrapy.pqueues.DownloaderAwarePriorityQueue'
+.. code-block:: python
+
+    SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.DownloaderAwarePriorityQueue"
 
 .. _broad-crawls-concurrency:
 
@@ -71,7 +73,9 @@ many different domains in parallel, so you will want to increase it. How much
 to increase it will depend on how much CPU and memory your crawler will have
 available.
 
-A good starting point is ``100``::
+A good starting point is ``100``:
+
+.. code-block:: python
 
     CONCURRENT_REQUESTS = 100
 
@@ -92,7 +96,9 @@ hitting DNS resolver timeouts. Possible solution to increase the number of
 threads handling DNS queries. The DNS queue will be processed faster speeding
 up establishing of connection and crawling overall.
 
-To increase maximum thread pool size use::
+To increase maximum thread pool size use:
+
+.. code-block:: python
 
     REACTOR_THREADPOOL_MAXSIZE = 20
 
@@ -114,9 +120,11 @@ should not use ``DEBUG`` log level when preforming large broad crawls in
 production. Using ``DEBUG`` level when developing your (broad) crawler may be
 fine though.
 
-To set the log level use::
+To set the log level use:
 
-    LOG_LEVEL = 'INFO'
+.. code-block:: python
+
+    LOG_LEVEL = "INFO"
 
 Disable cookies
 ===============
@@ -126,7 +134,9 @@ doing broad crawls (search engine crawlers ignore them), and they improve
 performance by saving some CPU cycles and reducing the memory footprint of your
 Scrapy crawler.
 
-To disable cookies use::
+To disable cookies use:
+
+.. code-block:: python
 
     COOKIES_ENABLED = False
 
@@ -138,7 +148,9 @@ when sites causes are very slow (or fail) to respond, thus causing a timeout
 error which gets retried many times, unnecessarily, preventing crawler capacity
 to be reused for other domains.
 
-To disable retries use::
+To disable retries use:
+
+.. code-block:: python
 
     RETRY_ENABLED = False
 
@@ -149,7 +161,9 @@ Unless you are crawling from a very slow connection (which shouldn't be the
 case for broad crawls) reduce the download timeout so that stuck requests are
 discarded quickly and free up capacity to process the next ones.
 
-To reduce the download timeout use::
+To reduce the download timeout use:
+
+.. code-block:: python
 
     DOWNLOAD_TIMEOUT = 15
 
@@ -162,7 +176,9 @@ revisiting the site at a later crawl. This also help to keep the number of
 request constant per crawl batch, otherwise redirect loops may cause the
 crawler to dedicate too many resources on any specific domain.
 
-To disable redirects use::
+To disable redirects use:
+
+.. code-block:: python
 
     REDIRECT_ENABLED = False
 
@@ -179,7 +195,9 @@ Pages can indicate it in two ways:
    "main", "index" website pages.
 
 Scrapy handles (1) automatically; to handle (2) enable
-:ref:`AjaxCrawlMiddleware <ajaxcrawl-middleware>`::
+:ref:`AjaxCrawlMiddleware <ajaxcrawl-middleware>`:
+
+.. code-block:: python
 
     AJAXCRAWL_ENABLED = True
 

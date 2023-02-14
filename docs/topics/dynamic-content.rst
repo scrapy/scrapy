@@ -119,16 +119,20 @@ data from it depends on the type of response:
     <topics-selectors>` as usual.
 
 -   If the response is JSON, use :func:`json.loads` to load the desired data from
-    :attr:`response.text <scrapy.http.TextResponse.text>`::
+    :attr:`response.text <scrapy.http.TextResponse.text>`:
+
+    .. code-block:: python
 
         data = json.loads(response.text)
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
     :class:`~scrapy.Selector` and then
-    :ref:`use it <topics-selectors>` as usual::
+    :ref:`use it <topics-selectors>` as usual:
 
-        selector = Selector(data['html'])
+    .. code-block:: python
+
+        selector = Selector(data["html"])
 
 -   If the response is JavaScript, or HTML with a ``<script/>`` element
     containing the desired data, see :ref:`topics-parsing-javascript`.
@@ -179,10 +183,12 @@ data from it:
     For example, if the JavaScript code contains a separate line like
     ``var data = {"field": "value"};`` you can extract that data as follows:
 
-    >>> pattern = r'\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n'
-    >>> json_data = response.css('script::text').re_first(pattern)
-    >>> json.loads(json_data)
-    {'field': 'value'}
+    .. code-block:: pycon
+
+        >>> pattern = r"\bvar\s+data\s*=\s*(\{.*?\})\s*;\s*\n"
+        >>> json_data = response.css("script::text").re_first(pattern)
+        >>> json.loads(json_data)
+        {'field': 'value'}
 
 -   chompjs_ provides an API to parse JavaScript objects into a :class:`dict`.
 
@@ -190,11 +196,13 @@ data from it:
     ``var data = {field: "value", secondField: "second value"};``
     you can extract that data as follows:
 
-    >>> import chompjs
-    >>> javascript = response.css('script::text').get()
-    >>> data = chompjs.parse_js_object(javascript)
-    >>> data
-    {'field': 'value', 'secondField': 'second value'}
+    .. code-block:: pycon
+
+        >>> import chompjs
+        >>> javascript = response.css("script::text").get()
+        >>> data = chompjs.parse_js_object(javascript)
+        >>> data
+        {'field': 'value', 'secondField': 'second value'}
 
 -   Otherwise, use js2xml_ to convert the JavaScript code into an XML document
     that you can parse using :ref:`selectors <topics-selectors>`.
@@ -202,14 +210,16 @@ data from it:
     For example, if the JavaScript code contains
     ``var data = {field: "value"};`` you can extract that data as follows:
 
-    >>> import js2xml
-    >>> import lxml.etree
-    >>> from parsel import Selector
-    >>> javascript = response.css('script::text').get()
-    >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding='unicode')
-    >>> selector = Selector(text=xml)
-    >>> selector.css('var[name="data"]').get()
-    '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
+    .. code-block:: pycon
+
+        >>> import js2xml
+        >>> import lxml.etree
+        >>> from parsel import Selector
+        >>> javascript = response.css("script::text").get()
+        >>> xml = lxml.etree.tostring(js2xml.parse(javascript), encoding="unicode")
+        >>> selector = Selector(text=xml)
+        >>> selector.css('var[name="data"]').get()
+        '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
 .. _topics-javascript-rendering:
 
@@ -250,10 +260,13 @@ automation. By installing the :ref:`asyncio reactor <install-asyncio>`,
 it is possible to integrate ``asyncio``-based libraries which handle headless browsers.
 
 One such library is `playwright-python`_ (an official Python port of `playwright`_).
-The following is a simple snippet to illustrate its usage within a Scrapy spider::
+The following is a simple snippet to illustrate its usage within a Scrapy spider:
+
+.. code-block:: python
 
     import scrapy
     from playwright.async_api import async_playwright
+
 
     class PlaywrightSpider(scrapy.Spider):
         name = "playwright"
