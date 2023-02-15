@@ -173,16 +173,37 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
-        import botocore.session
+        if is_boto3_available():
+            import boto3.session
+            session = boto3.session.Session()
+
+            self.s3_client = session.client(
+                "s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                aws_session_token=self.session_token,
+                endpoint_url=self.endpoint_url,
+            )
+        else:
+            warnings.warn(
+                "Botocore usage is deprecated for S3FeedStorage, "
+                "please use boto3 to avoid problems",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
+            import botocore.session
+            session = botocore.get_session()
 
         session = botocore.session.get_session()
-        self.s3_client = session.create_client(
-            "s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            aws_session_token=self.session_token,
-            endpoint_url=self.endpoint_url,
-        )
+            self.s3_client = session.create_client(
+                "s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                aws_session_token=self.session_token,
+                endpoint_url=self.endpoint_url,
+            )
+
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
                 "S3 does not support appending to files. To "
