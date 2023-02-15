@@ -192,7 +192,6 @@ class S3FeedStorage(BlockingFeedStorage):
                 "`botocore` usage has been deprecated for S3 feed "
                 "export, please use `boto3` to avoid problems",
                 category=ScrapyDeprecationWarning,
-                stacklevel=2,
             )
 
             import botocore.session
