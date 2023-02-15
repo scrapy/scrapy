@@ -174,7 +174,9 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
-        if is_boto3_available():
+        self._using_boto3 = is_boto3_available()
+
+        if self._using_boto3:
             import boto3.session
             session = boto3.session.Session()
 
@@ -187,8 +189,8 @@ class S3FeedStorage(BlockingFeedStorage):
             )
         else:
             warnings.warn(
-                "Botocore usage is deprecated for S3FeedStorage, "
-                "please use boto3 to avoid problems",
+                "`botocore` usage has been deprecated for S3 feed "
+                "export, please use `boto3` to avoid problems",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -227,9 +229,14 @@ class S3FeedStorage(BlockingFeedStorage):
     def _store_in_thread(self, file):
         file.seek(0)
         kwargs = {"ACL": self.acl} if self.acl else {}
-        self.s3_client.put_object(
-            Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
-        )
+        if self._using_boto3:
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
+            )
+        else:
+            self.s3_client.put_object(
+                Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
+            )
         file.close()
 
 
