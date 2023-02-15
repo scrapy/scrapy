@@ -22,6 +22,7 @@ from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
+from scrapy.utils.boto import is_boto3_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -195,7 +196,6 @@ class S3FeedStorage(BlockingFeedStorage):
             import botocore.session
             session = botocore.get_session()
 
-        session = botocore.session.get_session()
             self.s3_client = session.create_client(
                 "s3",
                 aws_access_key_id=self.access_key,
