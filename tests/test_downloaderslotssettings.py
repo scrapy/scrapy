@@ -21,13 +21,10 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
             "quotes.toscrape.com": {
                 "concurrency": 1,
                 "delay": 2,
-                "randomize_delay": False
+                "randomize_delay": False,
             },
-            "books.toscrape.com": {
-                "delay": 3,
-                "randomize_delay": False
-            }
-        }
+            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+        },
     }
 
     def start_requests(self):
