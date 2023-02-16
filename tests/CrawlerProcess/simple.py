@@ -3,7 +3,7 @@ from scrapy.crawler import CrawlerProcess
 
 
 class NoRequestsSpider(scrapy.Spider):
-    name = 'no_request'
+    name = "no_request"
 
     def start_requests(self):
         return []

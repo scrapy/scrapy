@@ -18,14 +18,13 @@ from pathlib import Path
 
 
 def main():
-
     # Used for remembering the file (and its contents)
     # so we don't have to open the same file again.
     _filename = None
     _contents = None
 
     # A regex that matches standard linkcheck output lines
-    line_re = re.compile(r'(.*)\:\d+\:\s\[(.*)\]\s(?:(.*)\sto\s(.*)|(.*))')
+    line_re = re.compile(r"(.*)\:\d+\:\s\[(.*)\]\s(?:(.*)\sto\s(.*)|(.*))")
 
     # Read lines from the linkcheck output file
     try:
@@ -50,7 +49,6 @@ def main():
             else:
                 # If this is a new file
                 if newfilename != _filename:
-
                     # Update the previous file
                     if _filename:
                         Path(_filename).write_text(_contents, encoding="utf-8")
@@ -66,5 +64,5 @@ def main():
             print("Not Understood: " + line)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -6,6 +6,7 @@ import ctypes
 import platform
 import sys
 from pprint import pformat as pformat_
+
 from packaging.version import Version as parse_version
 
 
@@ -37,11 +38,12 @@ def _colorize(text, colorize=True):
     else:
         from pygments.formatters import TerminalFormatter
         from pygments.lexers import PythonLexer
+
         return highlight(text, PythonLexer(), TerminalFormatter())
 
 
 def pformat(obj, *args, **kwargs):
-    return _colorize(pformat_(obj), kwargs.pop('colorize', True))
+    return _colorize(pformat_(obj), kwargs.pop("colorize", True))
 
 
 def pprint(obj, *args, **kwargs):

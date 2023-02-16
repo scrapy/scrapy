@@ -2,9 +2,8 @@ from scrapy.commands import ScrapyCommand
 
 
 class Command(ScrapyCommand):
-
     requires_project = True
-    default_settings = {'LOG_ENABLED': False}
+    default_settings = {"LOG_ENABLED": False}
 
     def short_desc(self):
         return "List available spiders"
