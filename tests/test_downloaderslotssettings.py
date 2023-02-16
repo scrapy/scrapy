@@ -1,31 +1,31 @@
 import time
 
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase
+
 from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 
 from tests.mockserver import MockServer
 from tests.spiders import MetaSpider
 
-from twisted.internet import defer
-from twisted.trial.unittest import TestCase
-
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
-    name = 'downloader_slots'
+    name = "downloader_slots"
 
     custom_settings = {
         "DOWNLOAD_DELAY": 1,
         "RANDOMIZE_DOWNLOAD_DELAY": False,
         "DOWNLOAD_SLOTS": {
-            'quotes.toscrape.com': {
-                'concurrency': 1,
-                'delay': 2,
-                'randomize_delay': False
+            "quotes.toscrape.com": {
+                "concurrency": 1,
+                "delay": 2,
+                "randomize_delay": False
             },
-            'books.toscrape.com': {
-                'delay': 3,
-                'randomize_delay': False
+            "books.toscrape.com": {
+                "delay": 3,
+                "randomize_delay": False
             }
         }
     }
@@ -33,21 +33,21 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
     def start_requests(self):
         self.times = {None: []}
 
-        slots = list(self.custom_settings.get('DOWNLOAD_SLOTS', {}).keys()) + [None]
+        slots = list(self.custom_settings.get("DOWNLOAD_SLOTS", {}).keys()) + [None]
 
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
             self.times[slot] = []
-            yield Request(url, callback=self.parse, meta={'download_slot': slot})
+            yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
-        slot = response.meta.get('download_slot', None)
+        slot = response.meta.get("download_slot", None)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
-        yield Request(url, callback=self.not_parse, meta={'download_slot': slot})
+        yield Request(url, callback=self.not_parse, meta={"download_slot": slot})
 
     def not_parse(self, response):
-        slot = response.meta.get('download_slot', None)
+        slot = response.meta.get("download_slot", None)
         self.times[slot].append(time.time())
 
 
@@ -70,6 +70,9 @@ class CrawlTestCase(TestCase):
         tolerance = 0.3
 
         delays_real = {k: v[1] - v[0] for k, v in times.items()}
-        error_delta = {k: 1 - min(delays_real[k], v.delay) / max(delays_real[k], v.delay)  for k, v in slots.items()}
+        error_delta = {
+            k: 1 - min(delays_real[k], v.delay) / max(delays_real[k], v.delay)
+            for k, v in slots.items()
+        }
 
         self.assertTrue(max(list(error_delta.values())) < tolerance)
