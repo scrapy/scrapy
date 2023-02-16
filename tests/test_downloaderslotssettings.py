@@ -5,13 +5,11 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
-
 from tests.mockserver import MockServer
 from tests.spiders import MetaSpider
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
-
     name = "downloader_slots"
 
     custom_settings = {
@@ -49,7 +47,6 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
 
 class CrawlTestCase(TestCase):
-
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
