@@ -54,7 +54,7 @@ class CallLaterOnce:
         return self._func(*self._a, **self._kw)
 
 
-def get_asyncio_event_loop_policy():
+def set_asyncio_event_loop_policy():
     policy = asyncio.get_event_loop_policy()
     if (
         sys.version_info >= (3, 8)
@@ -64,8 +64,6 @@ def get_asyncio_event_loop_policy():
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
 
-    return policy
-
 
 def install_reactor(reactor_path, event_loop_path=None):
     """Installs the :mod:`~twisted.internet.reactor` with the specified
@@ -73,6 +71,7 @@ def install_reactor(reactor_path, event_loop_path=None):
     path if the asyncio reactor is enabled"""
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
+        set_asyncio_event_loop_policy()
         with suppress(error.ReactorAlreadyInstalledError):
             event_loop = set_asyncio_event_loop(event_loop_path)
             asyncioreactor.install(eventloop=event_loop)
