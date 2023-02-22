@@ -196,7 +196,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
             import botocore.session
 
-            session = botocore.get_session()
+            session = botocore.session.get_session()
 
             self.s3_client = session.create_client(
                 "s3",
