@@ -6,7 +6,12 @@ from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
 from twisted.internet.endpoints import HostnameEndpoint
 from twisted.python.failure import Failure
-from twisted.web.client import URI, BrowserLikePolicyForHTTPS, _StandardEndpointFactory
+from twisted.web.client import (
+    URI,
+    BrowserLikePolicyForHTTPS,
+    ResponseFailed,
+    _StandardEndpointFactory,
+)
 from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
@@ -83,8 +88,7 @@ class H2ConnectionPool:
         pending_requests = self._pending_requests.pop(key, None)
         while pending_requests:
             d = pending_requests.popleft()
-            # TODO: this is incorrect, errback takes a single exception
-            d.errback(errors)  # type: ignore[arg-type]
+            d.errback(ResponseFailed(errors))
 
     def close_connections(self) -> None:
         """Close all the HTTP/2 connections and remove them from pool
