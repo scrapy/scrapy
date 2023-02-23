@@ -42,7 +42,7 @@ def get_meta_refresh(
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
-        # a w3lib typing bug here
+        # a w3lib typing bug here, fixed in https://github.com/scrapy/w3lib/pull/211
         _metaref_cache[response] = html.get_meta_refresh(  # type: ignore[assignment]
             text, response.url, response.encoding, ignore_tags=ignore_tags
         )
