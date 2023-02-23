@@ -58,7 +58,7 @@ class FormRequest(Request):
         response: TextResponse,
         formname: Optional[str] = None,
         formid: Optional[str] = None,
-        formnumber: Optional[int] = 0,
+        formnumber: int = 0,
         formdata: FormdataType = None,
         clickdata: Optional[dict] = None,
         dont_click: bool = False,
@@ -109,7 +109,7 @@ def _get_form(
     response: TextResponse,
     formname: Optional[str],
     formid: Optional[str],
-    formnumber: Optional[int],
+    formnumber: int,
     formxpath: Optional[str],
 ) -> FormElement:
     """Find the wanted form element within the given response."""
@@ -142,13 +142,12 @@ def _get_form(
         raise ValueError(f"No <form> element found with {formxpath}")
 
     # If we get here, it means that either formname was None or invalid
-    if formnumber is not None:
-        try:
-            form = forms[formnumber]
-        except IndexError:
-            raise IndexError(f"Form number {formnumber} not found in {response}")
-        else:
-            return form
+    try:
+        form = forms[formnumber]
+    except IndexError:
+        raise IndexError(f"Form number {formnumber} not found in {response}")
+    else:
+        return form
 
 
 def _get_inputs(
