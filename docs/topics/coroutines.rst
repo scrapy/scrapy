@@ -95,6 +95,7 @@ coroutines, functions that return Deferreds and functions that return
 :term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
 This means you can use many useful Python libraries providing such code:
 
+.. skip: next
 .. code-block:: python
 
     class MySpiderDeferred(Spider):

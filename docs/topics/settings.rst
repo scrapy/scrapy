@@ -71,6 +71,9 @@ do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute:
 
 .. code-block:: python
 
+    import scrapy
+
+
     class MySpider(scrapy.Spider):
         name = "myspider"
 
@@ -119,6 +122,7 @@ class or a function, there are two different ways you can specify that object:
 
 For example:
 
+.. skip: next
 .. code-block:: python
 
    from mybot.pipelines.validate import ValidateMyItem
@@ -417,6 +421,7 @@ a :class:`~scrapy.Request` based on its depth.
 
 The priority of a request is adjusted as follows:
 
+.. skip: next
 .. code-block:: python
 
     request.priority = request.priority - (depth * DEPTH_PRIORITY)

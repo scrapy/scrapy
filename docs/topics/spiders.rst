@@ -161,6 +161,9 @@ scrapy.Spider
 
        .. code-block:: python
 
+           import scrapy
+
+
            class MySpider(scrapy.Spider):
                name = "myspider"
 
@@ -251,6 +254,7 @@ Return multiple Requests and items from a single callback:
 Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
 to give data more structure you can use :class:`~scrapy.Item` objects:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy
@@ -323,6 +327,7 @@ specify spider arguments when calling
 :class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
 :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
+.. skip: next
 .. code-block:: python
 
     process = CrawlerProcess()
@@ -478,9 +483,9 @@ Let's now take a look at an example CrawlSpider with rules:
         rules = (
             # Extract links matching 'category.php' (but not matching 'subsection.php')
             # and follow links from them (since no callback means follow=True by default).
-            Rule(LinkExtractor(allow=("category\.php",), deny=("subsection\.php",))),
+            Rule(LinkExtractor(allow=(r"category\.php",), deny=(r"subsection\.php",))),
             # Extract links matching 'item.php' and parse them with the spider's method parse_item
-            Rule(LinkExtractor(allow=("item\.php",)), callback="parse_item"),
+            Rule(LinkExtractor(allow=(r"item\.php",)), callback="parse_item"),
         )
 
         def parse_item(self, response):
@@ -603,6 +608,7 @@ XMLFeedSpider example
 
 These spiders are pretty easy to use, let's have a look at one example:
 
+.. skip: next
 .. code-block:: python
 
     from scrapy.spiders import XMLFeedSpider
@@ -667,6 +673,7 @@ CSVFeedSpider example
 Let's see an example similar to the previous one, but using a
 :class:`CSVFeedSpider`:
 
+.. skip: next
 .. code-block:: python
 
     from scrapy.spiders import CSVFeedSpider

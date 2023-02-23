@@ -269,6 +269,9 @@ this:
 
 .. code-block:: python
 
+    from scrapy.spiders import CrawlSpider
+
+
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [404]
 

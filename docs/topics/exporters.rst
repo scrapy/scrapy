@@ -143,6 +143,7 @@ Built-in Item Exporters reference
 Here is a list of the Item Exporters bundled with Scrapy. Some of them contain
 output examples, which assume you're exporting these two items:
 
+.. skip: next
 .. code-block:: python
 
     Item(name="Color TV", price="1200")
