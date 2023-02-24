@@ -94,7 +94,7 @@ class Downloader:
         dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
-    def needs_backout(self):
+    def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
     def _get_slot(self, request, spider):
