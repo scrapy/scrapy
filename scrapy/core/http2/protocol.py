@@ -140,6 +140,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         This is used while initiating pending streams to make sure
         that we initiate stream only during active HTTP/2 Connection
         """
+        assert self.transport is not None  # typing
         return bool(self.transport.connected) and self.metadata["settings_acknowledged"]
 
     @property
@@ -196,6 +197,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """Write data to the underlying transport connection
         from the HTTP2 connection instance if any
         """
+        assert self.transport is not None  # typing
         # Reset the idle timeout as connection is still actively sending data
         self.resetTimeout()
 
@@ -226,6 +228,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         # Initialize the timeout
         self.setTimeout(self.IDLE_TIMEOUT)
 
+        assert self.transport is not None  # typing
         destination = self.transport.getPeer()
         self.metadata["ip_address"] = ipaddress.ip_address(destination.host)
 
@@ -237,12 +240,14 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         """Helper function to lose the connection with the error sent as a
         reason"""
         self._conn_lost_errors += errors
+        assert self.transport is not None  # typing
         self.transport.loseConnection()
 
     def handshakeCompleted(self) -> None:
         """
         Close the connection if it's not made via the expected protocol
         """
+        assert self.transport is not None  # typing
         if (
             self.transport.negotiatedProtocol is not None
             and self.transport.negotiatedProtocol != PROTOCOL_NAME
@@ -275,6 +280,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
                 # hyper-h2 does not drop the connection in this scenario, we
                 # need to abort the connection manually.
                 self._conn_lost_errors += [e]
+                assert self.transport is not None  # typing
                 self.transport.abortConnection()
                 return
 
@@ -388,6 +394,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._send_pending_requests()
 
         # Update certificate when our HTTP/2 connection is established
+        assert self.transport is not None  # typing
         self.metadata["certificate"] = Certificate(self.transport.getPeerCertificate())
 
     def stream_ended(self, event: StreamEnded) -> None:

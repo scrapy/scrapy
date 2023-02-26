@@ -8,7 +8,7 @@ import sys
 import weakref
 from functools import partial, wraps
 from itertools import chain
-from typing import AsyncGenerator, AsyncIterable, Iterable, Union
+from typing import Any, AsyncGenerator, AsyncIterable, Iterable, Union
 
 from scrapy.utils.asyncgen import as_async_generator
 
@@ -45,7 +45,7 @@ def iflatten(x):
             yield el
 
 
-def is_listlike(x):
+def is_listlike(x: Any) -> bool:
     """
     >>> is_listlike("foo")
     False

@@ -5,6 +5,7 @@ import shutil
 import string
 from ipaddress import IPv4Address
 from pathlib import Path
+from typing import Dict
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
@@ -87,6 +88,7 @@ class GetDataHtmlLarge(LeafResource):
 class PostDataJsonMixin:
     @staticmethod
     def make_response(request: TxRequest, extra_data: str):
+        assert request.content is not None
         response = {
             "request-headers": {},
             "request-body": json.loads(request.content.read()),
@@ -145,7 +147,8 @@ class QueryParams(LeafResource):
         request.setHeader("Content-Type", "application/json; charset=UTF-8")
         request.setHeader("Content-Encoding", "UTF-8")
 
-        query_params = {}
+        query_params: Dict[str, str] = {}
+        assert request.args is not None
         for k, v in request.args.items():
             query_params[str(k, "utf-8")] = str(v[0], "utf-8")
 

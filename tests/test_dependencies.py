@@ -37,7 +37,3 @@ class ScrapyUtilsTest(unittest.TestCase):
         pinned_twisted_version_string = match[1]
 
         self.assertEqual(twisted_version.short(), pinned_twisted_version_string)
-
-
-if __name__ == "__main__":
-    unittest.main()

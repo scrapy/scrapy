@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 
 from OpenSSL import SSL
 from twisted.internet import defer, reactor, ssl
+from twisted.internet.protocol import ServerFactory
 from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
@@ -367,6 +368,8 @@ if __name__ == "__main__":
         "-t", "--type", type=str, choices=("http", "dns"), default="http"
     )
     args = parser.parse_args()
+
+    factory: ServerFactory
 
     if args.type == "http":
         root = Root()
