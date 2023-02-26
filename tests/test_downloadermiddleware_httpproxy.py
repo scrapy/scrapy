@@ -13,7 +13,7 @@ spider = Spider("foo")
 
 
 class TestHttpProxyMiddleware(TestCase):
-    failureException = AssertionError
+    failureException = AssertionError  # type: ignore[assignment]
 
     def setUp(self):
         self._oldenv = os.environ.copy()

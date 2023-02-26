@@ -112,6 +112,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
     Should work for process_spider_output and, when it's supported, process_start_requests.
     """
 
+    ITEM_TYPE: type
     RESULT_COUNT = 3  # to simplify checks, let everything return 3 objects
 
     @staticmethod
