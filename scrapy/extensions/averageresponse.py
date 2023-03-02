@@ -23,10 +23,10 @@ class ResponseTime:
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(o.response_received, signal=signals.response_received)
-        crawler.signals.connect(o.request_left_downloader, signal=signals.request_left_downloader)
+        crawler.signals.connect(o.request_reached_downloader, signal=signals.request_reached_downloader)
         return o
     
-    def request_left_downloader(self):
+    def request_reached_downloader(self):
         self.start_time = time.time()
 
     def spider_opened(self, spider):
