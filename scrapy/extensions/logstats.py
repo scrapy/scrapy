@@ -1,10 +1,10 @@
 import logging
 
-from pprint import pformat
 from twisted.internet import task
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ class LogStats:
         self.multiplier = 60.0 / self.interval
         self.task = None
         self.extended = extended
+        if self.extended:
+            self.encoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_include = ext_include
         self.ext_exclude = ext_exclude
 
@@ -44,24 +46,6 @@ class LogStats:
         self.task.start(self.interval)
 
     def log(self, spider):
-        items = self.stats.get_value("item_scraped_count", 0)
-        pages = self.stats.get_value("response_received_count", 0)
-        irate = (items - self.itemsprev) * self.multiplier
-        prate = (pages - self.pagesprev) * self.multiplier
-        self.pagesprev, self.itemsprev = pages, items
-
-        msg = (
-            "Crawled %(pages)d pages (at %(pagerate)d pages/min), "
-            "scraped %(items)d items (at %(itemrate)d items/min)"
-        )
-        log_args = {
-            "pages": pages,
-            "pagerate": prate,
-            "items": items,
-            "itemrate": irate,
-        }
-        logger.info(msg, log_args, extra={"spider": spider})
-
         if self.extended:
             num_stats = {
                 k: v for k, v in self.stats._stats.items()
@@ -71,10 +55,26 @@ class LogStats:
             self.stats_prev = num_stats
 
             logger.info(
-                f"Dumping periodic ({60.0 / self.multiplier} seconds) Scrapy stats ({self.log_counter}):\n" + pformat(delta),
-                log_args,
-                extra={"spider": spider})
-            self.log_counter += 1
+                self.encoder.encode(delta)
+            )
+        else:
+            items = self.stats.get_value("item_scraped_count", 0)
+            pages = self.stats.get_value("response_received_count", 0)
+            irate = (items - self.itemsprev) * self.multiplier
+            prate = (pages - self.pagesprev) * self.multiplier
+            self.pagesprev, self.itemsprev = pages, items
+
+            msg = (
+                "Crawled %(pages)d pages (at %(pagerate)d pages/min), "
+                "scraped %(items)d items (at %(itemrate)d items/min)"
+            )
+            log_args = {
+                "pages": pages,
+                "pagerate": prate,
+                "items": items,
+                "itemrate": irate,
+            }
+            logger.info(msg, log_args, extra={"spider": spider})
 
     def param_allowed(self, stat_name):
         for p in self.ext_exclude:
