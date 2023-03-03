@@ -12,18 +12,24 @@ logger = logging.getLogger(__name__)
 class LogStats:
     """Log basic scraping stats periodically"""
 
-    def __init__(self, stats, interval=60.0):
+    def __init__(self, stats, interval=60.0, extended=False, ext_include=None, ext_exclude=None):
         self.stats = stats
         self.interval = interval
         self.multiplier = 60.0 / self.interval
         self.task = None
+        self.extended = extended
+        self.ext_include = ext_include
+        self.ext_exclude = ext_exclude
 
     @classmethod
     def from_crawler(cls, crawler):
         interval = crawler.settings.getfloat("LOGSTATS_INTERVAL")
+        extended = crawler.settings.getbool("LOGSTATS_EXTENDED_ENABLED")
+        ext_include = crawler.settings.getlist("LOGSTATS_EXTENDED_INCLUDE", [])
+        ext_exclude = crawler.settings.getlist("LOGSTATS_EXTENDED_EXCLUDE", [])
         if not interval:
             raise NotConfigured
-        o = cls(crawler.stats, interval)
+        o = cls(crawler.stats, interval, extended, ext_include, ext_exclude)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
@@ -56,15 +62,31 @@ class LogStats:
         }
         logger.info(msg, log_args, extra={"spider": spider})
 
-        num_stats = {k: v for k, v in self.stats._stats.items() if isinstance(v, (int, float))}
-        delta = {k: v - self.stats_prev.get(k, 0) for k, v in num_stats.items()}
-        self.stats_prev = num_stats
+        if self.extended:
+            num_stats = {
+                k: v for k, v in self.stats._stats.items()
+                if isinstance(v, (int, float)) and self.param_allowed(k)
+            }
+            delta = {k: v - self.stats_prev.get(k, 0) for k, v in num_stats.items()}
+            self.stats_prev = num_stats
 
-        logger.info(
-            f"Dumping periodic ({60.0 / self.multiplier} seconds) Scrapy stats ({self.log_counter}):\n" + pformat(delta),
-            log_args,
-            extra={"spider": spider})
-        self.log_counter += 1
+            logger.info(
+                f"Dumping periodic ({60.0 / self.multiplier} seconds) Scrapy stats ({self.log_counter}):\n" + pformat(delta),
+                log_args,
+                extra={"spider": spider})
+            self.log_counter += 1
+
+    def param_allowed(self, stat_name):
+        for p in self.ext_exclude:
+            if p in stat_name:
+                return False
+        for p in self.ext_include:
+            if p in stat_name:
+                return True
+        if self.ext_include:
+            return False
+        else:
+            return True
 
     def spider_closed(self, spider, reason):
         if self.task and self.task.running:
