@@ -8,15 +8,15 @@ from typing import Union
 from urllib.parse import urlparse
 
 
-def render_templatefile(path: Union[str, PathLike], url=None, **kwargs):
+def render_templatefile(path: Union[str, PathLike], **kwargs):
     path_obj = Path(path)
     raw = path_obj.read_text("utf8")
 
-    if url is not None:
-        if urlparse(url).scheme in ["https", "http"]:
-            # make template match the correct url
-            raw = re.sub(r"start_urls = \[.*?\]", "start_urls = ['$url']", raw)
-            kwargs["url"] = url
+    # if url is not None:
+    #     if urlparse(url).scheme in ["https", "http"]:
+    #         # make template match the correct url
+    #         raw = re.sub(r"start_urls = \[.*?\]", "start_urls = ['$url']", raw)
+    #         kwargs["url"] = url
 
     content = string.Template(raw).substitute(**kwargs)
 

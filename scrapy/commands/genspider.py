@@ -4,7 +4,7 @@ import string
 from importlib import import_module
 from pathlib import Path
 from typing import Optional, cast
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -29,6 +29,13 @@ def extract_domain(url):
     if o.scheme == "" and o.netloc == "":
         o = urlparse("//" + url.lstrip("/"))
     return o.netloc
+
+def check_url_scheme(url):
+    """Check for url scheme and add https if needed."""
+    parsed = urlparse(url)
+    if parsed.scheme == "":
+        parsed.scheme = "https"
+    return urlunparse(parsed).strip("/")
 
 
 class Command(ScrapyCommand):
@@ -114,6 +121,7 @@ class Command(ScrapyCommand):
             "ProjectName": string_camelcase(self.settings.get("BOT_NAME")),
             "module": module,
             "name": name,
+            "url": check_url_scheme(url),
             "domain": extract_domain(url),
             "classname": f"{capitalized_module}Spider",
         }
@@ -125,7 +133,7 @@ class Command(ScrapyCommand):
             spiders_dir = Path(".")
         spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
-        render_templatefile(spider_file, url, **tvars)
+        render_templatefile(spider_file, **tvars)
         print(
             f"Created spider {name!r} using template {template_name!r} ",
             end=("" if spiders_module else "\n"),
