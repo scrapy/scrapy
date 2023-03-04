@@ -542,7 +542,7 @@ class GenspiderCommandTest(CommandTest):
             ).group(1),
         )
         self.assertEqual(
-            f"http://{domain}/",
+            f"https://{domain}",
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
                 r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
@@ -550,95 +550,64 @@ class GenspiderCommandTest(CommandTest):
         )
 
     def test_url_schema(self):
-        self.test_url("http://test.com/", "test.com")
+        self.test_url("https://test.com", "test.com")
 
-    def test_url_path(self):
-        self.test_url("test.com/some/other/page", "test.com")
-
-    def test_start_urls_schema(self, template="basic", url="test.com", schema="http"):
+    def test_template_start_urls(
+        self, url="test.com", expected="https://test.com", template="basic"
+    ):
         self.assertEqual(
-            0, self.call("genspider", "--force", "-t", template, "test_name", url)
+            0, self.call("genspider", "-t", template, "--force", "test_name", url)
         )
         self.assertEqual(
-            schema,
+            expected,
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r'start_urls\s*=\s*\[[\'"](.+)://',
+                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
 
-    def test_https_url_schema_templates(self):
-        self.test_start_urls_schema(
-            template="basic", url="https://test.com", schema="https"
+    def test_genspider_basic_start_urls(self):
+        self.test_template_start_urls("https://test.com", "https://test.com", "basic")
+        self.test_template_start_urls("http://test.com", "http://test.com", "basic")
+        self.test_template_start_urls(
+            "http://test.com/other/path", "http://test.com/other/path", "basic"
         )
-        self.test_start_urls_schema(
-            template="crawl", url="https://test.com", schema="https"
-        )
-        self.test_start_urls_schema(
-            template="xmlfeed", url="https://test.com", schema="https"
-        )
-        self.test_start_urls_schema(
-            template="csvfeed", url="https://test.com", schema="https"
+        self.test_template_start_urls(
+            "test.com/other/path", "https://test.com/other/path", "basic"
         )
 
-    def test_http_url_schema_templates(self):
-        self.test_start_urls_schema(
-            template="basic", url="http://test.com", schema="http"
+    def test_genspider_crawl_start_urls(self):
+        self.test_template_start_urls("https://test.com", "https://test.com", "crawl")
+        self.test_template_start_urls("http://test.com", "http://test.com", "crawl")
+        self.test_template_start_urls(
+            "http://test.com/other/path", "http://test.com/other/path", "crawl"
         )
-        self.test_start_urls_schema(
-            template="crawl", url="http://test.com", schema="http"
+        self.test_template_start_urls(
+            "test.com/other/path", "https://test.com/other/path", "crawl"
         )
-        self.test_start_urls_schema(
-            template="xmlfeed", url="http://test.com", schema="http"
+        self.test_template_start_urls("test.com", "https://test.com", "crawl")
+
+    def test_genspider_xmlfeed_start_urls(self):
+        self.test_template_start_urls(
+            "https://test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"
         )
-        self.test_start_urls_schema(
-            template="csvfeed", url="http://test.com", schema="http"
+        self.test_template_start_urls(
+            "http://test.com/feed.xml", "http://test.com/feed.xml", "xmlfeed"
+        )
+        self.test_template_start_urls(
+            "test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"
         )
 
-    def test_start_urls_matches_input(self, template="basic", url="https://test.com"):
-        self.assertEqual(
-            0, self.call("genspider", "--force", "-t", template, "test_name", url)
+    def test_genspider_csvfeed_start_urls(self):
+        self.test_template_start_urls(
+            "https://test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"
         )
-        self.assertEqual(
-            url,
-            self.find_in_file(
-                Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r'start_urls\s*=\s*\[[\'"](.+)[\'"]\]',
-            ).group(1),
+        self.test_template_start_urls(
+            "http://test.com/feed.xml", "http://test.com/feed.xml", "csvfeed"
         )
-
-    def test_start_urls_substitution_with_schema(self):
-        self.test_start_urls_matches_input(
-            template="basic", url="https://test.com/full/path"
+        self.test_template_start_urls(
+            "test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"
         )
-        self.test_start_urls_matches_input(
-            template="xmlfeed", url="https://test.com/full/path"
-        )
-        self.test_start_urls_matches_input(
-            template="crawl", url="https://test.com/full/path"
-        )
-        self.test_start_urls_matches_input(
-            template="csvfeed", url="https://test.com/full/path"
-        )
-
-    def test_start_urls_no_schema(self, template="basic", url="test.com"):
-        self.assertEqual(
-            0, self.call("genspider", "--force", "-t", template, "test_name", url)
-        )
-        domain = extract_domain(url)
-        self.assertEqual(
-            domain,
-            self.find_in_file(
-                Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r'start_urls\s*=\s*\[[\'"]http://(.+)/.*?[\'"]\]',
-            ).group(1),
-        )
-
-    def test_start_urls_substitution_no_schema(self):
-        self.test_start_urls_no_schema(template="basic", url="example.com")
-        self.test_start_urls_no_schema(template="crawl", url="example.com")
-        self.test_start_urls_no_schema(template="xmlfeed", url="example.com")
-        self.test_start_urls_no_schema(template="csvfeed", url="example.com")
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):
