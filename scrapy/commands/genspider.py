@@ -4,7 +4,7 @@ import string
 from importlib import import_module
 from pathlib import Path
 from typing import Optional, cast
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand

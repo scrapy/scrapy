@@ -5,7 +5,6 @@ import string
 from os import PathLike
 from pathlib import Path
 from typing import Union
-from urllib.parse import urlparse
 
 
 def render_templatefile(path: Union[str, PathLike], **kwargs):

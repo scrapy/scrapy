@@ -24,7 +24,6 @@ from twisted.trial import unittest
 
 import scrapy
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
-from scrapy.commands.genspider import extract_domain
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
