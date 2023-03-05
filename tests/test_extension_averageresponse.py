@@ -4,6 +4,7 @@ import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
+import scrapy
 
 from pytest import mark
 from testfixtures import LogCapture
@@ -11,10 +12,11 @@ from twisted.internet import defer
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
+from scrapy.extensions.averageresponse import ResponseTime
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import StopDownload
+from scrapy.exceptions import NotConfigured, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
@@ -103,16 +105,15 @@ class CrawlTestCase(TestCase):
         printed= str(log).count("average response time") > 0
         self.assertTrue(printed)
 
-    #Test settings enabled: 
+    #Test settings invalid: 
     @defer.inlineCallbacks
-    def test_setting_enabledd(self):
-
+    def test_setting_invalid(self):
         settings = {'EXTENSIONS': {
-            'scrapy.extensions.averageresponse.ResponseTime': None,
+            'scrapy.extensions.averageresponse.ResponseTime': 1000,
             'scrapy.extensions.logstats.LogStats': None,
             'scrapy.extensions.telnet.TelnetConsole': None,
-        },
-        "AVERAGERESPOSNE_ENABLED" : True
+        }, 
+        "AVERAGERESPOSNE_ENABLED" : False
         }
         crawler = get_crawler(SimpleSpider, settings)
         runner = CrawlerRunner()
@@ -125,9 +126,10 @@ class CrawlTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         printed = str(log).count("average response time") > 0
         self.assertFalse(printed)
-    
 
-    # Test invalid settings
+        
+
+    # Test disabled settings
     @defer.inlineCallbacks
     def test_setting_disabled(self):
 
@@ -135,7 +137,7 @@ class CrawlTestCase(TestCase):
             'scrapy.extensions.averageresponse.ResponseTime': None,
             'scrapy.extensions.logstats.LogStats': None,
             'scrapy.extensions.telnet.TelnetConsole': None,
-        }}
+        }, "AVERAGERESPOSNE_ENABLED" : False}
         crawler = get_crawler(SimpleSpider, settings)
         runner = CrawlerRunner()
         with LogCapture() as log:
