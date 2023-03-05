@@ -5,21 +5,24 @@ from datetime import datetime
 import time
 import logging
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 
 logger = logging.getLogger(__name__)
 
 class ResponseTime:
-    def __init__(self, stats):
+    def __init__(self, stats,crawler):
         self.stats = stats
         self.start_time = None
 
         self.response_times = []
         self.elapsed_time = None
 
+        if not crawler.settings.getbool("AVERAGERESPOSNE_ENABLED"):
+            raise NotConfigured
 
     @classmethod
     def from_crawler(cls, crawler):
-        o = cls(crawler.stats)
+        o = cls(crawler.stats, crawler)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(o.response_received, signal=signals.response_received)
