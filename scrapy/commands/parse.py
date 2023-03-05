@@ -114,8 +114,10 @@ class Command(BaseRunSpiderCommand):
         return max(max_items, max_requests)
 
     def handle_exception(self, _failure):
-        # Incomplete message
-        logger.error("", exc_info=failure_to_exc_info(_failure))
+        logger.error(
+            "An error is caught while iterating the async iterable",
+            exc_info=failure_to_exc_info(_failure),
+        )
 
     def iterate_spider_output(self, result):
         if inspect.isasyncgen(result):
