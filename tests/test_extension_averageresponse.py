@@ -149,3 +149,23 @@ class CrawlTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         printed = str(log).count("average response time") > 0
         self.assertFalse(printed)
+        
+    # Test no response
+    @defer.inlineCallbacks
+    def test_no_response(self):
+        settings = {'EXTENSIONS': {
+            'scrapy.extensions.averageresponse.ResponseTime': 1000,
+            'scrapy.extensions.logstats.LogStats': None,
+            'scrapy.extensions.telnet.TelnetConsole': None, 
+        },
+        "AVERAGERESPOSNE_ENABLED" : True
+        }
+        crawler = get_crawler(SimpleSpider, settings)
+        runner = CrawlerRunner()
+        with LogCapture() as log:
+            yield runner.crawl(
+                crawler,
+                mockserver=self.mockserver,
+            )
+        printed = str(log).count("average response time") > 0
+        self.assertFalse(printed)
