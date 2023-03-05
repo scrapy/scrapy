@@ -60,6 +60,7 @@ class CrawlTestCase(TestCase):
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
 
+    # Test single response
     @defer.inlineCallbacks
     def test_print_average(self):
         settings = {'EXTENSIONS': {
@@ -79,6 +80,47 @@ class CrawlTestCase(TestCase):
         printed = str(log).count("average response time") > 0
         self.assertTrue(printed)
 
+    #Test delay spider response
+    @defer.inlineCallbacks
+    def test_delayed_response(self):
+        settings = {'EXTENSIONS': {
+            'scrapy.extensions.averageresponse.ResponseTime': 1000,
+            'scrapy.extensions.logstats.LogStats': None,
+            'scrapy.extensions.telnet.TelnetConsole': None,
+        }}
+        crawler = get_crawler(DelaySpider, settings)
+        runner = CrawlerRunner()
+        with LogCapture() as log:            
+            yield runner.crawl(
+                crawler,
+                self.mockserver.url("/status?n=200"),
+                mockserver=self.mockserver,
+            )
+        printed= str(log).count("average response time") > 0
+        self.assertTrue(printed)
+        
+    # Test multiple response
+    @defer.inlineCallbacks
+    def test_print_average(self):
+        settings = {'EXTENSIONS': {
+            'scrapy.extensions.averageresponse.ResponseTime': 1000,
+            'scrapy.extensions.logstats.LogStats': None,
+            'scrapy.extensions.telnet.TelnetConsole': None,
+        }}
+        crawler = get_crawler(SimpleSpider, settings)
+        runner = CrawlerRunner()
+        with LogCapture() as log:
+            yield runner.crawl(
+                crawler,
+                self.mockserver.url("/status?n=200"),
+                self.mockserver.url("/status?n=200"),
+                mockserver=self.mockserver,
+            )
+        self.assertIn("Got response 200", str(log))
+        printed = str(log).count("average response time") > 0
+        self.assertTrue(printed)
+
+    # Test invalid settings
     @defer.inlineCallbacks
     def test_setting_disabled(self):
 
@@ -98,3 +140,5 @@ class CrawlTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         printed = str(log).count("average response time") > 0
         self.assertFalse(printed)
+
+    

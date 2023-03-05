@@ -17,6 +17,7 @@ class ItemSpider(Spider):
             )
 
     def parse(self, response):
+        print({"index": response.meta["index"]})
         return {"index": response.meta["index"]}
 
 
