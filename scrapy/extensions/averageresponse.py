@@ -28,7 +28,7 @@ class ResponseTime:
         crawler.signals.connect(o.response_received, signal=signals.response_received)
         crawler.signals.connect(o.request_reached_downloader, signal=signals.request_reached_downloader)
         return o
-    
+
     def request_reached_downloader(self):
         self.start_time = time.time()
 
@@ -38,11 +38,10 @@ class ResponseTime:
     def spider_closed(self, spider, reason):
         logger.info("closed spider %s", spider.name)
         if len(self.response_times) > 0:
-            averageresponsetime = sum(self.response_times) / len(self.response_times) 
+            averageresponsetime = sum(self.response_times) / len(self.response_times)
             logger.info("average response time %d ms", averageresponsetime)
         else:
             logger.info("No responses logged.")
-        
 
     def response_received(self, spider):
         self.stats.inc_value("response_received_count", spider=spider)
