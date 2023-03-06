@@ -792,7 +792,7 @@ Allows to define concurrency/delay parameters on per slot(domain) basis:
     For other downloader slots default settings values will be used:
 
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
-    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurency``
+    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
     -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
 
 
