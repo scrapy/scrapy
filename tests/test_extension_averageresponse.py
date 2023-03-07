@@ -6,51 +6,15 @@ from socket import gethostbyname
 from urllib.parse import urlparse
 import scrapy
 
-from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.ssl import Certificate
-from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
-from scrapy.extensions.averageresponse import ResponseTime
-
-from scrapy import signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import NotConfigured, StopDownload
-from scrapy.http import Request
-from scrapy.http.response import Response
-from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
-from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import MockServer
 from tests.spiders import (
-    AsyncDefAsyncioGenComplexSpider,
-    AsyncDefAsyncioGenExcSpider,
-    AsyncDefAsyncioGenLoopSpider,
-    AsyncDefAsyncioGenSpider,
-    AsyncDefAsyncioReqsReturnSpider,
-    AsyncDefAsyncioReturnSingleElementSpider,
-    AsyncDefAsyncioReturnSpider,
-    AsyncDefAsyncioSpider,
-    AsyncDefDeferredDirectSpider,
-    AsyncDefDeferredMaybeWrappedSpider,
-    AsyncDefDeferredWrappedSpider,
-    AsyncDefSpider,
-    BrokenStartRequestsSpider,
-    BytesReceivedCallbackSpider,
-    BytesReceivedErrbackSpider,
-    CrawlSpiderWithAsyncCallback,
-    CrawlSpiderWithAsyncGeneratorCallback,
-    CrawlSpiderWithErrback,
-    CrawlSpiderWithParseMethod,
-    CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
-    DuplicateStartRequestsSpider,
-    FollowAllSpider,
-    HeadersReceivedCallbackSpider,
-    HeadersReceivedErrbackSpider,
     SimpleSpider,
-    SingleRequestSpider,
 )
 
 
@@ -126,8 +90,6 @@ class CrawlTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         printed = str(log).count("average response time") > 0
         self.assertFalse(printed)
-
-        
 
     # Test disabled settings
     @defer.inlineCallbacks
