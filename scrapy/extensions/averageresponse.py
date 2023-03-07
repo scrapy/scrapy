@@ -1,16 +1,17 @@
 """
 Extension for getting the average response time of each request
 """
-from datetime import datetime
-import time
 import logging
+import time
+
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 
 logger = logging.getLogger(__name__)
 
+
 class ResponseTime:
-    def __init__(self, stats,crawler):
+    def __init__(self, stats, crawler):
         self.stats = stats
         self.start_time = None
 
@@ -26,7 +27,9 @@ class ResponseTime:
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(o.response_received, signal=signals.response_received)
-        crawler.signals.connect(o.request_reached_downloader, signal=signals.request_reached_downloader)
+        crawler.signals.connect(
+            o.request_reached_downloader, signal=signals.request_reached_downloader
+        )
         return o
 
     def request_reached_downloader(self):
@@ -45,5 +48,4 @@ class ResponseTime:
 
     def response_received(self, spider):
         self.stats.inc_value("response_received_count", spider=spider)
-        self.response_times.append((time.time()*1000 - self.start_time*1000))
-        
+        self.response_times.append((time.time() * 1000 - self.start_time * 1000))
