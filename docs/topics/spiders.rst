@@ -179,8 +179,6 @@ scrapy.Spider
                    settings.setdefault("FEEDS", {}).update(cls.custom_feed)
                    super().update_settings(settings)
 
-
-
    .. method:: start_requests()
 
        This method must return an iterable with the first Requests to crawl for
