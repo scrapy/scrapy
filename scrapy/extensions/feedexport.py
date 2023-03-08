@@ -274,8 +274,6 @@ class FTPFeedStorage(BlockingFeedStorage):
 class _FeedSlot:
     def __init__(
         self,
-        file,
-        exporter,
         storage,
         uri,
         format,
@@ -283,9 +281,14 @@ class _FeedSlot:
         batch_id,
         uri_template,
         filter,
+        feed_options,
+        spider,
+        exporters,
+        settings,
+        crawler,
     ):
-        self.file = file
-        self.exporter = exporter
+        self.file = None
+        self.exporter = None
         self.storage = storage
         # feed params
         self.batch_id = batch_id
@@ -294,14 +297,43 @@ class _FeedSlot:
         self.uri_template = uri_template
         self.uri = uri
         self.filter = filter
+        # exporter params
+        self.feed_options = feed_options
+        self.spider = spider
+        self.exporters = exporters
+        self.settings = settings
+        self.crawler = crawler
         # flags
         self.itemcount = 0
         self._exporting = False
+        self._fileloaded = False
 
     def start_exporting(self):
+        if not self._fileloaded:
+            self.file = self.storage.open(self.spider)
+            if "postprocessing" in self.feed_options:
+                self.file = PostProcessingManager(
+                    self.feed_options["postprocessing"], self.file, self.feed_options
+                )
+            self.exporter = self._get_exporter(
+                file=self.file,
+                format=self.feed_options["format"],
+                fields_to_export=self.feed_options["fields"],
+                encoding=self.feed_options["encoding"],
+                indent=self.feed_options["indent"],
+                **self.feed_options["item_export_kwargs"],
+            )
+            self._fileloaded = True
+
         if not self._exporting:
             self.exporter.start_exporting()
             self._exporting = True
+
+    def _get_instance(self, objcls, *args, **kwargs):
+        return create_instance(objcls, self.settings, self.crawler, *args, **kwargs)
+
+    def _get_exporter(self, file, format, *args, **kwargs):
+        return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
     def finish_exporting(self):
         if self._exporting:
@@ -379,15 +411,22 @@ class FeedExporter:
         deferred_list = []
         for slot in self.slots:
             d = self._close_slot(slot, spider)
-            deferred_list.append(d)
+            if d:
+                deferred_list.append(d)
         return defer.DeferredList(deferred_list) if deferred_list else None
 
     def _close_slot(self, slot, spider):
-        slot.finish_exporting()
-        if not slot.itemcount and not slot.store_empty:
-            # We need to call slot.storage.store nonetheless to get the file
-            # properly closed.
-            return defer.maybeDeferred(slot.storage.store, slot.file)
+        if slot.itemcount:
+            # Nomal case
+            slot.finish_exporting()
+        elif slot.store_empty and slot.batch_id == 1:
+            # Need Store Empty
+            slot.start_exporting()
+            slot.finish_exporting()
+        else:
+            # In this case, the file is not stored, so no processing is required.
+            return None
+
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, slot.file)
 
@@ -423,23 +462,7 @@ class FeedExporter:
         :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri, feed_options)
-        file = storage.open(spider)
-        if "postprocessing" in feed_options:
-            file = PostProcessingManager(
-                feed_options["postprocessing"], file, feed_options
-            )
-
-        exporter = self._get_exporter(
-            file=file,
-            format=feed_options["format"],
-            fields_to_export=feed_options["fields"],
-            encoding=feed_options["encoding"],
-            indent=feed_options["indent"],
-            **feed_options["item_export_kwargs"],
-        )
         slot = _FeedSlot(
-            file=file,
-            exporter=exporter,
             storage=storage,
             uri=uri,
             format=feed_options["format"],
@@ -447,9 +470,12 @@ class FeedExporter:
             batch_id=batch_id,
             uri_template=uri_template,
             filter=self.filters[uri_template],
+            feed_options=feed_options,
+            spider=spider,
+            exporters=self.exporters,
+            settings=self.settings,
+            crawler=getattr(self, "crawler", None),
         )
-        if slot.store_empty:
-            slot.start_exporting()
         return slot
 
     def item_scraped(self, item, spider):
@@ -532,14 +558,6 @@ class FeedExporter:
                 )
         else:
             logger.error("Unknown feed storage scheme: %(scheme)s", {"scheme": scheme})
-
-    def _get_instance(self, objcls, *args, **kwargs):
-        return create_instance(
-            objcls, self.settings, getattr(self, "crawler", None), *args, **kwargs
-        )
-
-    def _get_exporter(self, file, format, *args, **kwargs):
-        return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
     def _get_storage(self, uri, feed_options):
         """Fork of create_instance specific to feed storage classes
