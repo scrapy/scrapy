@@ -117,5 +117,12 @@ class LogStats:
             return True
 
     def spider_closed(self, spider, reason):
+        if self.extended:
+            data = {}
+            data.update(self.log_timing())
+            data.update(self.log_delta())
+            logger.info(
+                self.encoder.encode(data)
+            )
         if self.task and self.task.running:
             self.task.stop()
