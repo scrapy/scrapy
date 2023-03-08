@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 
 from twisted.internet import task
@@ -39,23 +40,21 @@ class LogStats:
     def spider_opened(self, spider):
         self.pagesprev = 0
         self.itemsprev = 0
-        self.stats_prev = {}
-        self.log_counter = 0
+        if self.extended:
+            self.time_prev = datetime.utcnow()
+            self.delta_prev = {}
+            self.stats_prev = {}
 
         self.task = task.LoopingCall(self.log, spider)
         self.task.start(self.interval)
 
     def log(self, spider):
         if self.extended:
-            num_stats = {
-                k: v for k, v in self.stats._stats.items()
-                if isinstance(v, (int, float)) and self.param_allowed(k)
-            }
-            delta = {k: v - self.stats_prev.get(k, 0) for k, v in num_stats.items()}
-            self.stats_prev = num_stats
-
+            data = {}
+            data.update(self.log_timing())
+            data.update(self.log_delta())
             logger.info(
-                self.encoder.encode(delta)
+                self.encoder.encode(data)
             )
         else:
             items = self.stats.get_value("item_scraped_count", 0)
@@ -76,7 +75,36 @@ class LogStats:
             }
             logger.info(msg, log_args, extra={"spider": spider})
 
-    def param_allowed(self, stat_name):
+    def log_delta(self):
+        num_stats = {
+            k: v for k, v in self.stats._stats.items()
+            if isinstance(v, (int, float)) and self.delta_param_allowed(k)
+        }
+        delta = {k: v - self.delta_prev.get(k, 0) for k, v in num_stats.items()}
+        self.delta_prev = num_stats
+        return {"delta": delta}
+
+    def log_timing(self):
+        now = datetime.utcnow()
+        time = {
+            "log_interval": self.interval,
+            "start_time": self.stats._stats["start_time"],
+            "utcnow": now,
+            "log_interval_real": (now - self.time_prev).total_seconds(),
+            "elapsed": (now - self.stats._stats["start_time"]).total_seconds()}
+        self.time_prev = now
+        return {"time": time}
+
+    def log_time(self):
+        num_stats = {
+            k: v for k, v in self.stats._stats.items()
+            if isinstance(v, (int, float)) and self.delta_param_allowed(k)
+        }
+        delta = {k: v - self.stats_prev.get(k, 0) for k, v in num_stats.items()}
+        self.stats_prev = num_stats
+        return {"delta": delta}
+
+    def delta_param_allowed(self, stat_name):
         for p in self.ext_exclude:
             if p in stat_name:
                 return False
