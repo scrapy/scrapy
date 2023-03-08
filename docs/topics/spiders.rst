@@ -145,6 +145,42 @@ scrapy.Spider
        :param kwargs: keyword arguments passed to the :meth:`__init__` method
        :type kwargs: dict
 
+   .. method:: update_settings(cls, settings)
+
+       The ``update_settings()`` method is used to modify the spider's settings
+       and can be called during initialization of a spider instance.
+
+       It takes a ``Settings`` object as a parameter and adds or updates the spider's
+       configuration values. This method is a class method, meaning that it is
+       called on the Spider class and allows all instances of the Spider to share
+       the same configuration.
+
+       To create class hierarchies for spiders, it is recommended to use the ``custom_settings``
+       attribute instead of ``update_settings()``, as it allows for default settings to be
+       defined and automatically inherited by subclasses.
+
+       For example, suppose a MySpider needs update FEEDS:
+
+       .. code-block:: python
+           import scrapy
+
+
+           class MySpider(scrapy.Spider):
+               name = "myspider"
+               custom_feed = {
+                   "/home/user/documents/items.json": {
+                       "format": "json",
+                       "indent": 4,
+                   }
+               }
+
+               @classmethod
+               def update_settings(cls, settings):
+                   settings.setdefault("FEEDS", {}).update(cls.custom_feed)
+                   super().update_settings(settings)
+
+
+
    .. method:: start_requests()
 
        This method must return an iterable with the first Requests to crawl for
