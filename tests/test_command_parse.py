@@ -30,14 +30,53 @@ import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.utils.test import get_from_asyncio_queue
+import asyncio
 
-class AsyncDefAsyncioSpider(scrapy.Spider):
 
-    name = 'asyncdef{self.spider_name}'
+class AsyncDefAsyncioReturnSpider(scrapy.Spider):
+    name = "asyncdef_asyncio_return"
 
     async def parse(self, response):
+        await asyncio.sleep(0.2)
         status = await get_from_asyncio_queue(response.status)
-        return [scrapy.Item(), dict(foo='bar')]
+        self.logger.info(f"Got response {{status}}")
+        return [{{'id': 1}}, {{'id': 2}}]
+
+class AsyncDefAsyncioReturnSingleElementSpider(scrapy.Spider):
+    name = "asyncdef_asyncio_return_single_element"
+
+    async def parse(self, response):
+        await asyncio.sleep(0.1)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.info(f"Got response {{status}}")
+        return {{'foo': 42}}
+
+class AsyncDefAsyncioGenLoopSpider(scrapy.Spider):
+    name = "asyncdef_asyncio_gen_loop"
+
+    async def parse(self, response):
+        for i in range(10):
+            await asyncio.sleep(0.1)
+            yield {{'foo': i}}
+        self.logger.info(f"Got response {{response.status}}")
+
+class AsyncDefAsyncioSpider(scrapy.Spider):
+    name = "asyncdef_asyncio"
+
+    async def parse(self, response):
+        await asyncio.sleep(0.2)
+        status = await get_from_asyncio_queue(response.status)
+        self.logger.debug(f"Got response {{status}}")
+
+class AsyncDefAsyncioGenExcSpider(scrapy.Spider):
+    name = "asyncdef_asyncio_gen_exc"
+
+    async def parse(self, response):
+        for i in range(10):
+            await asyncio.sleep(0.1)
+            yield {{'foo': i}}
+            if i > 5:
+                raise ValueError("Stopping the processing")
 
 class MySpider(scrapy.Spider):
     name = '{self.spider_name}'
@@ -213,17 +252,76 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertIn("INFO: It Works!", _textmode(stderr))
 
     @defer.inlineCallbacks
-    def test_asyncio_parse_items(self):
+    def test_async_def_asyncio_parse_items_list(self):
         status, out, stderr = yield self.execute(
             [
                 "--spider",
-                "asyncdef" + self.spider_name,
+                "asyncdef_asyncio_return",
                 "-c",
                 "parse",
                 self.url("/html"),
             ]
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        self.assertIn("INFO: Got response 200", _textmode(stderr))
+        self.assertIn("{'id': 1}", _textmode(out))
+        self.assertIn("{'id': 2}", _textmode(out))
+
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse_items_single_element(self):
+        status, out, stderr = yield self.execute(
+            [
+                "--spider",
+                "asyncdef_asyncio_return_single_element",
+                "-c",
+                "parse",
+                self.url("/html"),
+            ]
+        )
+        self.assertIn("INFO: Got response 200", _textmode(stderr))
+        self.assertIn("{'foo': 42}", _textmode(out))
+
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_loop(self):
+        status, out, stderr = yield self.execute(
+            [
+                "--spider",
+                "asyncdef_asyncio_gen_loop",
+                "-c",
+                "parse",
+                self.url("/html"),
+            ]
+        )
+        self.assertIn("INFO: Got response 200", _textmode(stderr))
+        for i in range(10):
+            self.assertIn(f"{{'foo': {i}}}", _textmode(out))
+
+    @defer.inlineCallbacks
+    def test_async_def_asyncgen_parse_exc(self):
+        status, out, stderr = yield self.execute(
+            [
+                "--spider",
+                "asyncdef_asyncio_gen_exc",
+                "-c",
+                "parse",
+                self.url("/html"),
+            ]
+        )
+        self.assertIn("ValueError", _textmode(stderr))
+        for i in range(7):
+            self.assertIn(f"{{'foo': {i}}}", _textmode(out))
+
+    @defer.inlineCallbacks
+    def test_async_def_asyncio_parse(self):
+        _, _, stderr = yield self.execute(
+            [
+                "--spider",
+                "asyncdef_asyncio",
+                "-c",
+                "parse",
+                self.url("/html"),
+            ]
+        )
+        self.assertIn("DEBUG: Got response 200", _textmode(stderr))
 
     @defer.inlineCallbacks
     def test_parse_items(self):
