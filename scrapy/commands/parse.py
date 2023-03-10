@@ -1,3 +1,4 @@
+import inspect
 import json
 import logging
 from typing import Dict
@@ -10,7 +11,11 @@ from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request
 from scrapy.utils import display
-from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
+from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.defer import aiter_errback, deferred_from_coro
+from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.spider import spidercls_for_request
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +113,25 @@ class Command(BaseRunSpiderCommand):
             max_requests = max(self.requests)
         return max(max_items, max_requests)
 
+    def handle_exception(self, _failure):
+        logger.error(
+            "An error is caught while iterating the async iterable",
+            exc_info=failure_to_exc_info(_failure),
+        )
+
+    def iterate_spider_output(self, result):
+        if inspect.isasyncgen(result):
+            d = deferred_from_coro(
+                collect_asyncgen(aiter_errback(result, self.handle_exception))
+            )
+            d.addCallback(self.iterate_spider_output)
+            return d
+        if inspect.iscoroutine(result):
+            d = deferred_from_coro(result)
+            d.addCallback(self.iterate_spider_output)
+            return d
+        return arg_to_iter(deferred_from_coro(result))
+
     def add_items(self, lvl, new_items):
         old_items = self.items.get(lvl, [])
         self.items[lvl] = old_items + new_items
@@ -165,7 +189,7 @@ class Command(BaseRunSpiderCommand):
 
     def run_callback(self, response, callback, cb_kwargs=None):
         cb_kwargs = cb_kwargs or {}
-        d = maybeDeferred(iterate_spider_output, callback(response, **cb_kwargs))
+        d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
         return d
 
     def get_callback_from_rules(self, spider, response):
