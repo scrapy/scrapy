@@ -88,6 +88,7 @@ def _get_asyncio_event_loop_policy():
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
+    return policy
 
 
 def install_reactor(reactor_path, event_loop_path=None):
