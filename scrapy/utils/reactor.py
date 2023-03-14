@@ -1,10 +1,11 @@
 import asyncio
 import sys
 from contextlib import suppress
-from warnings import catch_warnings, filterwarnings
+from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 
 
@@ -54,7 +55,31 @@ class CallLaterOnce:
         return self._func(*self._a, **self._kw)
 
 
+def set_asyncio_event_loop_policy():
+    """The policy functions from asyncio often behave unexpectedly,
+    so we restrict their use to the absolutely essential case.
+    This should only be used to install the reactor.
+    """
+    _get_asyncio_event_loop_policy()
+
+
 def get_asyncio_event_loop_policy():
+    warn(
+        "Call to deprecated function "
+        "scrapy.utils.reactor.get_asyncio_event_loop_policy().\n"
+        "\n"
+        "Please use get_event_loop, new_event_loop and set_event_loop"
+        " from asyncio instead, as the corresponding policy methods may lead"
+        " to unexpected behaviour.\n"
+        "This function is replaced by set_asyncio_event_loop_policy and"
+        " is meant to be used only when the reactor is being installed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _get_asyncio_event_loop_policy()
+
+
+def _get_asyncio_event_loop_policy():
     policy = asyncio.get_event_loop_policy()
     if (
         sys.version_info >= (3, 8)
@@ -63,7 +88,6 @@ def get_asyncio_event_loop_policy():
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
-
     return policy
 
 
@@ -73,6 +97,7 @@ def install_reactor(reactor_path, event_loop_path=None):
     path if the asyncio reactor is enabled"""
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
+        set_asyncio_event_loop_policy()
         with suppress(error.ReactorAlreadyInstalledError):
             event_loop = set_asyncio_event_loop(event_loop_path)
             asyncioreactor.install(eventloop=event_loop)
@@ -90,7 +115,6 @@ def _get_asyncio_event_loop():
 
 def set_asyncio_event_loop(event_loop_path):
     """Sets and returns the event loop with specified import path."""
-    policy = get_asyncio_event_loop_policy()
     if event_loop_path is not None:
         event_loop_class = load_object(event_loop_path)
         event_loop = event_loop_class()
@@ -109,15 +133,13 @@ def set_asyncio_event_loop(event_loop_path):
                     message="There is no current event loop",
                     category=DeprecationWarning,
                 )
-                event_loop = policy.get_event_loop()
+                event_loop = asyncio.get_event_loop()
         except RuntimeError:
             # `get_event_loop` raises RuntimeError when called with no asyncio
             # event loop yet installed in the following scenarios:
-            # - From a thread other than the main thread. For example, when
-            #   using ``scrapy shell``.
             # - Previsibly on Python 3.14 and later.
             #   https://github.com/python/cpython/issues/100160#issuecomment-1345581902
-            event_loop = policy.new_event_loop()
+            event_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(event_loop)
     return event_loop
 
