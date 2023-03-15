@@ -84,6 +84,7 @@ class Downloader:
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
         self._slot_gc_loop = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
+        self.per_slot_settings = self.settings.getdict("DOWNLOAD_SLOTS", {})
 
     def fetch(self, request, spider):
         def _deactivate(response):
@@ -94,17 +95,24 @@ class Downloader:
         dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
-    def needs_backout(self):
+    def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
     def _get_slot(self, request, spider):
         key = self._get_slot_key(request, spider)
         if key not in self.slots:
+            slot_settings = self.per_slot_settings.get(key, {})
             conc = (
                 self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
             )
             conc, delay = _get_concurrency_delay(conc, spider, self.settings)
-            self.slots[key] = Slot(conc, delay, self.randomize_delay)
+            conc, delay = (
+                slot_settings.get("concurrency", conc),
+                slot_settings.get("delay", delay),
+            )
+            randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
+            new_slot = Slot(conc, delay, randomize_delay)
+            self.slots[key] = new_slot
 
         return key, self.slots[key]
 

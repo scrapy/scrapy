@@ -7,13 +7,24 @@ For more information see docs/topics/architecture.rst
 import logging
 import warnings
 from time import time
-from typing import Callable, Iterable, Iterator, Optional, Set, Union
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    Optional,
+    Set,
+    Union,
+    cast,
+)
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
+from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
@@ -75,7 +86,7 @@ class ExecutionEngine:
         self.paused = False
         self.scheduler_cls = self._get_scheduler_class(crawler.settings)
         downloader_cls = load_object(self.settings["DOWNLOADER"])
-        self.downloader = downloader_cls(crawler)
+        self.downloader: Downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._spider_closed_callback = spider_closed_callback
 
@@ -91,20 +102,20 @@ class ExecutionEngine:
         return scheduler_cls
 
     @inlineCallbacks
-    def start(self) -> Deferred:
+    def start(self) -> Generator[Deferred, Any, None]:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
         yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
-        self._closewait = Deferred()
+        self._closewait: Deferred = Deferred()
         yield self._closewait
 
     def stop(self) -> Deferred:
         """Gracefully stop the execution engine"""
 
         @inlineCallbacks
-        def _finish_stopping_engine(_) -> Deferred:
+        def _finish_stopping_engine(_) -> Generator[Deferred, Any, None]:
             yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
             self._closewait.callback(None)
 
@@ -172,11 +183,13 @@ class ExecutionEngine:
             self._spider_idle()
 
     def _needs_backout(self) -> bool:
+        assert self.slot is not None  # typing
+        assert self.scraper.slot is not None  # typing
         return (
             not self.running
-            or self.slot.closing  # type: ignore[union-attr]
+            or bool(self.slot.closing)
             or self.downloader.needs_backout()
-            or self.scraper.slot.needs_backout()  # type: ignore[union-attr]
+            or self.scraper.slot.needs_backout()
         )
 
     def _next_request_from_scheduler(self) -> Optional[Deferred]:
@@ -196,7 +209,7 @@ class ExecutionEngine:
                 extra={"spider": self.spider},
             )
         )
-        d.addBoth(lambda _: self.slot.remove_request(request))
+        d.addBoth(lambda _: cast(Slot, self.slot).remove_request(request))
         d.addErrback(
             lambda f: logger.info(
                 "Error while removing request from slot",
@@ -424,7 +437,7 @@ class ExecutionEngine:
         dfd.addErrback(log_failure("Scraper close failure"))
 
         if hasattr(self.slot.scheduler, "close"):
-            dfd.addBoth(lambda _: self.slot.scheduler.close(reason))
+            dfd.addBoth(lambda _: cast(Slot, self.slot).scheduler.close(reason))
             dfd.addErrback(log_failure("Scheduler close failure"))
 
         dfd.addBoth(

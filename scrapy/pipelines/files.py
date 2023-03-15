@@ -13,8 +13,9 @@ from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
+from os import PathLike
 from pathlib import Path
-from typing import DefaultDict, Optional, Set
+from typing import DefaultDict, Optional, Set, Union
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -36,24 +37,31 @@ from scrapy.utils.request import referer_str
 logger = logging.getLogger(__name__)
 
 
+def _to_string(path: Union[str, PathLike]) -> str:
+    return str(path)  # convert a Path object to string
+
+
 class FileException(Exception):
     """General media error exception"""
 
 
 class FSFilesStore:
-    def __init__(self, basedir: str):
+    def __init__(self, basedir: Union[str, PathLike]):
+        basedir = _to_string(basedir)
         if "://" in basedir:
             basedir = basedir.split("://", 1)[1]
         self.basedir = basedir
         self._mkdir(Path(self.basedir))
         self.created_directories: DefaultDict[str, Set[str]] = defaultdict(set)
 
-    def persist_file(self, path: str, buf, info, meta=None, headers=None):
+    def persist_file(
+        self, path: Union[str, PathLike], buf, info, meta=None, headers=None
+    ):
         absolute_path = self._get_filesystem_path(path)
         self._mkdir(absolute_path.parent, info)
         absolute_path.write_bytes(buf.getvalue())
 
-    def stat_file(self, path: str, info):
+    def stat_file(self, path: Union[str, PathLike], info):
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = absolute_path.stat().st_mtime
@@ -65,8 +73,8 @@ class FSFilesStore:
 
         return {"last_modified": last_modified, "checksum": checksum}
 
-    def _get_filesystem_path(self, path: str) -> Path:
-        path_comps = path.split("/")
+    def _get_filesystem_path(self, path: Union[str, PathLike]) -> Path:
+        path_comps = _to_string(path).split("/")
         return Path(self.basedir, *path_comps)
 
     def _mkdir(self, dirname: Path, domain: Optional[str] = None):
@@ -332,12 +340,12 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_RESULT_FIELD = "files"
 
     def __init__(self, store_uri, download_func=None, settings=None):
+        store_uri = _to_string(store_uri)
         if not store_uri:
             raise NotConfigured
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-
         cls_name = "FilesPipeline"
         self.store = self._get_store(store_uri)
         resolve = functools.partial(

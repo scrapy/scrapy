@@ -65,6 +65,19 @@ class BaseSettingsTest(unittest.TestCase):
     def setUp(self):
         self.settings = BaseSettings()
 
+    def test_setdefault_not_existing_value(self):
+        settings = BaseSettings()
+        value = settings.setdefault("TEST_OPTION", "value")
+        self.assertEqual(settings["TEST_OPTION"], "value")
+        self.assertEqual(value, "value")
+        self.assertIsNotNone(value)
+
+    def test_setdefault_existing_value(self):
+        settings = BaseSettings({"TEST_OPTION": "value"})
+        value = settings.setdefault("TEST_OPTION", None)
+        self.assertEqual(settings["TEST_OPTION"], "value")
+        self.assertEqual(value, "value")
+
     def test_set_new_attribute(self):
         self.settings.set("TEST_OPTION", "value", 0)
         self.assertIn("TEST_OPTION", self.settings.attributes)
