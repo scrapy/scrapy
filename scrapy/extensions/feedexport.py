@@ -228,12 +228,13 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         file.seek(0)
-        kwargs = {"ACL": self.acl} if self.acl else {}
         if self._using_boto3:
+            kwargs = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
             self.s3_client.upload_fileobj(
                 Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
             )
         else:
+            kwargs = {"ACL": self.acl} if self.acl else {}
             self.s3_client.put_object(
                 Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
             )

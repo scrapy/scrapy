@@ -155,7 +155,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 # simplified when downgrading is removed.
                 if dfd.called:
                     # the result is available immediately if _process_spider_output didn't do downgrading
-                    return dfd.result
+                    return cast(MutableChain, dfd.result)
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture
                 msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
@@ -180,7 +180,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
         result: Union[Iterable, AsyncIterable],
         start_index: int = 0,
-    ) -> Deferred:
+    ) -> Generator[Deferred, Any, Union[MutableChain, MutableAsyncChain]]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
         recovered: Union[MutableChain, MutableAsyncChain]

@@ -225,12 +225,16 @@ class FilesPipelineTestCase(unittest.TestCase):
 
 
 class FilesPipelineTestCaseFieldsMixin:
+    def setUp(self):
+        self.tempdir = mkdtemp()
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
     def test_item_fields_default(self):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
-        pipeline = FilesPipeline.from_settings(
-            Settings({"FILES_STORE": "s3://example/files/"})
-        )
+        pipeline = FilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {"url": url})]
@@ -245,7 +249,7 @@ class FilesPipelineTestCaseFieldsMixin:
         pipeline = FilesPipeline.from_settings(
             Settings(
                 {
-                    "FILES_STORE": "s3://example/files/",
+                    "FILES_STORE": self.tempdir,
                     "FILES_URLS_FIELD": "custom_file_urls",
                     "FILES_RESULT_FIELD": "custom_files",
                 }
@@ -479,6 +483,22 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_inst_attr), expected_value)
+
+    def test_file_pipeline_using_pathlike_objects(self):
+        class CustomFilesPipelineWithPathLikeDir(FilesPipeline):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return Path("subdir") / Path(request.url).name
+
+        pipeline = CustomFilesPipelineWithPathLikeDir.from_settings(
+            Settings({"FILES_STORE": Path("./Temp")})
+        )
+        request = Request("http://example.com/image01.jpg")
+        self.assertEqual(pipeline.file_path(request), Path("subdir/image01.jpg"))
+
+    def test_files_store_constructor_with_pathlike_object(self):
+        path = Path("./FileDir")
+        fs_store = FSFilesStore(path)
+        self.assertEqual(fs_store.basedir, str(path))
 
 
 class TestS3FilesStore(unittest.TestCase):

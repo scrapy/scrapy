@@ -17,6 +17,7 @@ from typing import (
     List,
     Optional,
     Union,
+    cast,
 )
 
 from twisted.internet import defer
@@ -38,7 +39,7 @@ def defer_fail(_failure: Failure) -> Deferred:
     """
     from twisted.internet import reactor
 
-    d = Deferred()
+    d: Deferred = Deferred()
     reactor.callLater(0.1, d.errback, _failure)
     return d
 
@@ -52,7 +53,7 @@ def defer_succeed(result) -> Deferred:
     """
     from twisted.internet import reactor
 
-    d = Deferred()
+    d: Deferred = Deferred()
     reactor.callLater(0.1, d.callback, result)
     return d
 
@@ -84,7 +85,7 @@ def mustbe_deferred(f: Callable, *args, **kw) -> Deferred:
 
 def parallel(
     iterable: Iterable, count: int, callable: Callable, *args, **named
-) -> DeferredList:
+) -> Deferred:
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
 
@@ -182,7 +183,9 @@ class _AsyncCooperatorAdapter(Iterator):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = deferred_from_coro(self.aiterator.__anext__())
+        self.anext_deferred = cast(
+            Deferred, deferred_from_coro(self.aiterator.__anext__())
+        )
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred:
@@ -190,7 +193,7 @@ class _AsyncCooperatorAdapter(Iterator):
         # It also calls __anext__() if needed.
         if self.finished:
             raise StopIteration
-        d = Deferred()
+        d: Deferred = Deferred()
         self.waiting_deferreds.append(d)
         if not self.anext_deferred:
             self._call_anext()
@@ -199,17 +202,17 @@ class _AsyncCooperatorAdapter(Iterator):
 
 def parallel_async(
     async_iterable: AsyncIterable, count: int, callable: Callable, *args, **named
-) -> DeferredList:
+) -> Deferred:
     """Like parallel but for async iterators"""
     coop = Cooperator()
     work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
-    dl = DeferredList([coop.coiterate(work) for _ in range(count)])
+    dl: Deferred = DeferredList([coop.coiterate(work) for _ in range(count)])
     return dl
 
 
 def process_chain(callbacks: Iterable[Callable], input, *a, **kw) -> Deferred:
     """Return a Deferred built by chaining the given callbacks"""
-    d = Deferred()
+    d: Deferred = Deferred()
     for x in callbacks:
         d.addCallback(x, *a, **kw)
     d.callback(input)
@@ -220,7 +223,7 @@ def process_chain_both(
     callbacks: Iterable[Callable], errbacks: Iterable[Callable], input, *a, **kw
 ) -> Deferred:
     """Return a Deferred built by chaining the given callbacks and errbacks"""
-    d = Deferred()
+    d: Deferred = Deferred()
     for cb, eb in zip(callbacks, errbacks):
         d.addCallbacks(
             callback=cb,
@@ -242,7 +245,7 @@ def process_parallel(callbacks: Iterable[Callable], input, *a, **kw) -> Deferred
     callbacks
     """
     dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
-    d = DeferredList(dfds, fireOnOneErrback=True, consumeErrors=True)
+    d: Deferred = DeferredList(dfds, fireOnOneErrback=True, consumeErrors=True)
     d.addCallbacks(lambda r: [x[1] for x in r], lambda f: f.value.subFailure)
     return d
 
@@ -285,7 +288,7 @@ def deferred_from_coro(o) -> Any:
         if not is_asyncio_reactor_installed():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return ensureDeferred(o)
+            return ensureDeferred(cast(Coroutine[Deferred, Any, Any], o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         event_loop = _get_asyncio_event_loop()
         return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))

@@ -51,7 +51,7 @@ class DecompressionMiddleware:
         archive = BytesIO(response.body)
         try:
             zip_file = zipfile.ZipFile(archive)
-        except zipfile.BadZipfile:
+        except zipfile.BadZipFile:
             return
 
         namelist = zip_file.namelist()

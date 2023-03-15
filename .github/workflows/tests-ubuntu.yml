@@ -37,10 +37,19 @@ jobs:
         - python-version: pypy3.7
           env:
             TOXENV: pypy3-pinned
+        - python-version: 3.7.13
+          env:
+            TOXENV: extra-deps-pinned
+        - python-version: 3.7.13
+          env:
+            TOXENV: botocore-pinned
 
         - python-version: "3.11"
           env:
             TOXENV: extra-deps
+        - python-version: "3.11"
+          env:
+            TOXENV: botocore
 
     steps:
     - uses: actions/checkout@v3
