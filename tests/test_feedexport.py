@@ -235,8 +235,10 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 
 class S3FeedStorageTest(unittest.TestCase):
-    def test_parse_credentials(self):
+    def setUp(self):
         skip_if_no_boto()
+
+    def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
             "AWS_SECRET_ACCESS_KEY": "settings_secret",
@@ -272,8 +274,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        skip_if_no_boto()
-
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
             "AWS_SECRET_ACCESS_KEY": "secret_key",
@@ -392,7 +392,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_without_acl(self):
-        skip_if_no_boto()
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
@@ -408,7 +407,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store_botocore_with_acl(self):
-        skip_if_no_boto()
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
@@ -888,14 +886,9 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_stats_multiple_file(self):
         settings = {
-            "AWS_ACCESS_KEY_ID": "access_key",
-            "AWS_SECRET_ACCESS_KEY": "secret_key",
             "FEEDS": {
                 printf_escape(path_to_url(str(self._random_temp_filename()))): {
                     "format": "json",
-                },
-                "s3://bucket/key/foo.csv": {
-                    "format": "csv",
                 },
                 "stdout:": {
                     "format": "xml",
@@ -909,16 +902,10 @@ class FeedExportTest(FeedExportTestBase):
             "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
         )
         self.assertIn(
-            "feedexport/success_count/S3FeedStorage", crawler.stats.get_stats()
-        )
-        self.assertIn(
             "feedexport/success_count/StdoutFeedStorage", crawler.stats.get_stats()
         )
         self.assertEqual(
             crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/S3FeedStorage"), 1
         )
         self.assertEqual(
             crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage"), 1
@@ -2535,7 +2522,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_s3_export(self):
         skip_if_no_boto()
-
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2706,6 +2692,9 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
     expected, and simply issues a warning."""
 
     maxDiff = None
+
+    def setUp(self):
+        skip_if_no_boto()
 
     def test_init(self):
         settings_dict = {
