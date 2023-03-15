@@ -44,6 +44,7 @@ from scrapy.extensions.feedexport import (
     S3FeedStorage,
     StdoutFeedStorage,
     _FeedSlot,
+    is_boto3_available,
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -285,30 +286,39 @@ class S3FeedStorageTest(unittest.TestCase):
         verifyObject(IFeedStorage, storage)
 
         file = mock.MagicMock()
-        from botocore.stub import Stubber
 
-        with Stubber(storage.s3_client) as stub:
-            stub.add_response(
-                "put_object",
-                expected_params={
-                    "Body": file,
-                    "Bucket": bucket,
-                    "Key": key,
-                },
-                service_response={},
-            )
-
+        if is_boto3_available():
+            storage.s3_client = mock.MagicMock()
             yield storage.store(file)
-
-            stub.assert_no_pending_responses()
             self.assertEqual(
-                file.method_calls,
-                [
-                    mock.call.seek(0),
-                    # The call to read does not happen with Stubber
-                    mock.call.close(),
-                ],
+                storage.s3_client.upload_fileobj.call_args,
+                mock.call(Bucket=bucket, Key=key, Fileobj=file),
             )
+        else:
+            from botocore.stub import Stubber
+
+            with Stubber(storage.s3_client) as stub:
+                stub.add_response(
+                    "put_object",
+                    expected_params={
+                        "Body": file,
+                        "Bucket": bucket,
+                        "Key": key,
+                    },
+                    service_response={},
+                )
+
+                yield storage.store(file)
+
+                stub.assert_no_pending_responses()
+                self.assertEqual(
+                    file.method_calls,
+                    [
+                        mock.call.seek(0),
+                        # The call to read does not happen with Stubber
+                        mock.call.close(),
+                    ],
+                )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
@@ -391,7 +401,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.endpoint_url, "https://example.com")
 
     @defer.inlineCallbacks
-    def test_store_botocore_without_acl(self):
+    def test_store_without_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
@@ -403,10 +413,18 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        self.assertNotIn("ACL", storage.s3_client.put_object.call_args[1])
+        if is_boto3_available():
+            acl = (
+                storage.s3_client.upload_fileobj.call_args[1]
+                .get("ExtraArgs", {})
+                .get("ACL")
+            )
+        else:
+            acl = storage.s3_client.put_object.call_args[1].get("ACL")
+        self.assertIsNone(acl)
 
     @defer.inlineCallbacks
-    def test_store_botocore_with_acl(self):
+    def test_store_with_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
@@ -416,9 +434,11 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        self.assertEqual(
-            storage.s3_client.put_object.call_args[1].get("ACL"), "custom-acl"
-        )
+        if is_boto3_available():
+            acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
+        else:
+            acl = storage.s3_client.put_object.call_args[1]["ACL"]
+        self.assertEqual(acl, "custom-acl")
 
     def test_overwrite_default(self):
         with LogCapture() as log:
