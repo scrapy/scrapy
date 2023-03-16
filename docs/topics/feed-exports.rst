@@ -552,9 +552,10 @@ to ``.json`` or ``.xml``.
 FEED_STORE_EMPTY
 ----------------
 
-Default: ``False``
+Default: ``True``
 
 Whether to export empty feeds (i.e. feeds with no items).
+If False and there is no items, no new files are created and existing files are not modified.
 
 .. setting:: FEED_STORAGES
 
