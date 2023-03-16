@@ -35,6 +35,7 @@ import scrapy
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
+    IS_BOTO3_AVAILABLE,
     BlockingFeedStorage,
     FeedExporter,
     FileFeedStorage,
@@ -44,7 +45,6 @@ from scrapy.extensions.feedexport import (
     S3FeedStorage,
     StdoutFeedStorage,
     _FeedSlot,
-    is_boto3_available,
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -287,7 +287,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         file = mock.MagicMock()
 
-        if is_boto3_available():
+        if IS_BOTO3_AVAILABLE:
             storage.s3_client = mock.MagicMock()
             yield storage.store(file)
             self.assertEqual(
@@ -413,7 +413,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        if is_boto3_available():
+        if IS_BOTO3_AVAILABLE:
             acl = (
                 storage.s3_client.upload_fileobj.call_args[1]
                 .get("ExtraArgs", {})
@@ -434,7 +434,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        if is_boto3_available():
+        if IS_BOTO3_AVAILABLE:
             acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
         else:
             acl = storage.s3_client.put_object.call_args[1]["ACL"]

@@ -21,7 +21,7 @@ from zope.interface import Interface, implementer
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.utils.boto import is_boto3_available, is_botocore_available
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
@@ -29,6 +29,13 @@ from scrapy.utils.misc import create_instance, load_object
 from scrapy.utils.python import get_func_args, without_none_values
 
 logger = logging.getLogger(__name__)
+
+try:
+    import boto3  # noqa: F401
+
+    IS_BOTO3_AVAILABLE = True
+except ImportError:
+    IS_BOTO3_AVAILABLE = False
 
 
 def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
@@ -173,9 +180,8 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
-        self._using_boto3 = is_boto3_available()
 
-        if self._using_boto3:
+        if IS_BOTO3_AVAILABLE:
             import boto3.session
 
             session = boto3.session.Session()
@@ -228,7 +234,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         file.seek(0)
-        if self._using_boto3:
+        if IS_BOTO3_AVAILABLE:
             kwargs = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
             self.s3_client.upload_fileobj(
                 Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
