@@ -31,6 +31,8 @@ There are many ways to contribute to Scrapy. Here are some of them:
 * Answer Scrapy questions at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__.
 
+.. _contributing-to-scrapy-codebase:
+
 ===============================
 Contributing to Scrapy codebase
 ===============================
