@@ -1057,13 +1057,13 @@ class FeedExportTest(FeedExportTestBase):
                 self._random_temp_filename(): {"format": "csv"},
             },
             "FEED_STORAGES": {"file": LogOnStoreFileStorage},
+            "FEED_STORE_EMPTY": False,
         }
 
         with LogCapture() as log:
             yield self.exported_no_data(settings)
 
-        print(log)
-        self.assertEqual(str(log).count("Storage.store is called"), 3)
+        self.assertEqual(str(log).count("Storage.store is called"), 0)
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
