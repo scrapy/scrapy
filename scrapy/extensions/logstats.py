@@ -1,5 +1,5 @@
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from twisted.internet import task
 
@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 class LogStats:
     """Log basic scraping stats periodically"""
 
-    def __init__(self, stats, interval=60.0, extended=False, ext_include=None, ext_exclude=None):
+    def __init__(
+            self, stats, interval=60.0, extended=False, ext_include=None, ext_exclude=None
+    ):
         self.stats = stats
         self.interval = interval
         self.multiplier = 60.0 / self.interval
@@ -54,9 +56,7 @@ class LogStats:
             data.update(self.log_timing())
             data.update(self.log_delta())
             data.update(self.log_crawler_stats())
-            logger.info(
-                self.encoder.encode(data)
-            )
+            logger.info(self.encoder.encode(data))
         else:
             items = self.stats.get_value("item_scraped_count", 0)
             pages = self.stats.get_value("response_received_count", 0)
@@ -78,7 +78,8 @@ class LogStats:
 
     def log_delta(self):
         num_stats = {
-            k: v for k, v in self.stats._stats.items()
+            k: v
+            for k, v in self.stats._stats.items()
             if isinstance(v, (int, float)) and self.delta_param_allowed(k)
         }
         delta = {k: v - self.delta_prev.get(k, 0) for k, v in num_stats.items()}
@@ -92,13 +93,15 @@ class LogStats:
             "start_time": self.stats._stats["start_time"],
             "utcnow": now,
             "log_interval_real": (now - self.time_prev).total_seconds(),
-            "elapsed": (now - self.stats._stats["start_time"]).total_seconds()}
+            "elapsed": (now - self.stats._stats["start_time"]).total_seconds(),
+        }
         self.time_prev = now
         return {"time": time}
 
     def log_time(self):
         num_stats = {
-            k: v for k, v in self.stats._stats.items()
+            k: v
+            for k, v in self.stats._stats.items()
             if isinstance(v, (int, float)) and self.delta_param_allowed(k)
         }
         delta = {k: v - self.stats_prev.get(k, 0) for k, v in num_stats.items()}
@@ -126,8 +129,6 @@ class LogStats:
             data.update(self.log_timing())
             data.update(self.log_delta())
             data.update(self.log_crawler_stats())
-            logger.info(
-                self.encoder.encode(data)
-            )
+            logger.info(self.encoder.encode(data))
         if self.task and self.task.running:
             self.task.stop()
