@@ -53,6 +53,7 @@ class LogStats:
             data = {}
             data.update(self.log_timing())
             data.update(self.log_delta())
+            data.update(self.log_crawler_stats())
             logger.info(
                 self.encoder.encode(data)
             )
@@ -104,6 +105,9 @@ class LogStats:
         self.stats_prev = num_stats
         return {"delta": delta}
 
+    def log_crawler_stats(self):
+        return {"stats": self.stats.get_stats()}
+
     def delta_param_allowed(self, stat_name):
         for p in self.ext_exclude:
             if p in stat_name:
@@ -121,6 +125,7 @@ class LogStats:
             data = {}
             data.update(self.log_timing())
             data.update(self.log_delta())
+            data.update(self.log_crawler_stats())
             logger.info(
                 self.encoder.encode(data)
             )
