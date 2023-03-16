@@ -106,7 +106,7 @@ The storages backends supported out of the box are:
 -   :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if at least the botocore_
+not available. For example, the S3 backend is only available if the boto3_
 library is installed.
 
 
@@ -193,7 +193,7 @@ The feeds are stored on `Amazon S3`_.
 
     -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
--   Required external libraries: `boto3`_ >= 1.26.70, will fall back to botocore_ if unavailable
+-   Required external libraries: `boto3`_ >= 1.20.0
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -780,6 +780,5 @@ source spider in the feed URI:
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _boto3: https://github.com/boto/boto3
-.. _botocore: https://github.com/boto/botocore
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/
