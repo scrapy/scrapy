@@ -555,7 +555,9 @@ FEED_STORE_EMPTY
 Default: ``True``
 
 Whether to export empty feeds (i.e. feeds with no items).
-If False and there is no items, no new files are created and existing files are not modified.
+If ``False``, and there are no items to export, no new files are created and 
+existing files are not modified, even if the :ref:`overwrite feed option 
+<feed-options>` is enabled.
 
 .. setting:: FEED_STORAGES
 
