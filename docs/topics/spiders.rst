@@ -151,7 +151,7 @@ scrapy.Spider
        and is called during initialization of a spider instance.
 
        It takes a :class:`~scrapy.settings.Settings` object as a parameter and
-       can add or updates the spider's configuration values. This method is a class method,
+       can add or update the spider's configuration values. This method is a class method,
        meaning that it is called on the :class:`~scrapy.Spider` class and allows all instances
        of the spider to share the same configuration.
 
