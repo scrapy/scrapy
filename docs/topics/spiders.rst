@@ -156,7 +156,7 @@ scrapy.Spider
        of the spider to share the same configuration.
 
        One of the main advantages of ``update_settings()`` is that it allows
-       you to dynamically add, remove or change settings based on spider arguments
+       you to dynamically add, remove or change settings based on other settings 
        or other external factors.
 
        For example, suppose a spider needs to modify :setting:`FEEDS`:
