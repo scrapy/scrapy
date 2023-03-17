@@ -2,7 +2,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Request
 
 
-class StickyMetaParamsMiddleware(object):
+class StickyMetaParamsMiddleware:
     """Forward a configurable list of meta keys through subsequent requests"""
 
     @classmethod
