@@ -159,7 +159,7 @@ scrapy.Spider
        you to dynamically add, remove or change settings based on spider arguments
        or other external factors.
 
-       For example, suppose a spider needs update :setting:`FEEDS`:
+       For example, suppose a spider needs to modify :setting:`FEEDS`:
 
        .. code-block:: python
 
