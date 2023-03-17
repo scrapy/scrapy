@@ -446,7 +446,7 @@ StickyMetaParamsMiddleware
 --------------------------
 
 .. module:: scrapy.spidermiddlewares.stickymeta
-   :synopsis: Spider Middleware that forwards meta parameters through requests
+   :synopsis: Spider Middleware that forwards metadata through requests
 
 .. class:: StickyMetaParamsMiddleware
 
