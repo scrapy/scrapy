@@ -190,8 +190,8 @@ Request objects
         cloned using the ``copy()`` or ``replace()`` methods, and can also be
         accessed, in your spider, from the ``response.meta`` attribute.
 
-        Values are only acessible on the next :class:`~scrapy.http.Response`, to forward a key/value
-        through subsequent responses see :class:`~scrapy.spidermiddlewares.stickymeta.StickyMetaParamsMiddleware`.
+        To keep some data across multiple spider callbacks, consider using the 
+        :setting`STICKY_META_KEYS` setting.
 
     .. attribute:: Request.cb_kwargs
 
