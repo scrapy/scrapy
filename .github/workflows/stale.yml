@@ -1,0 +1,17 @@
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 15,22 * * 1-5'
+jobs:
+  check_stale:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v6
+      with:
+        days-before-stale: 7
+        days-before-issue-stale: -1
+        days-before-close: 3
+        exempt-pr-labels: 'in progress'
+        stale-pr-message: >
+          This PR has been marked as stale after 7 or more days of inactivity and will be closed in 3 days.
+          To keep this PR open please request a maintainer to add the 'in progress' label.
