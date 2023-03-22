@@ -153,7 +153,7 @@ class ExecutionEngine:
         if self.slot is None:
             return
 
-        assert self.spider is not None  # typing
+        assert self.spider is not None
 
         if self.paused:
             return None
