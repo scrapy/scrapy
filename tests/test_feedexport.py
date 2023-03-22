@@ -798,7 +798,7 @@ class FeedExportTest(FeedExportTestBase):
         )
         data = yield self.exported_data(items, settings)
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        # XML
+
         root = lxml.etree.fromstring(data["xml"])
         xml_rows = [{e.tag: e.text for e in it} for it in root.findall("item")]
         self.assertEqual(rows, xml_rows)
