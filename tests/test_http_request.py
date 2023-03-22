@@ -142,17 +142,6 @@ class RequestTest(unittest.TestCase):
         # should be kept untouched (just upper-cased perhaps)
         #
         # See https://tools.ietf.org/html/rfc3987#section-3.2
-        #
-        # "Conversions from URIs to IRIs MUST NOT use any character encoding
-        # other than UTF-8 in steps 3 and 4, even if it might be possible to
-        # guess from the context that another character encoding than UTF-8 was
-        # used in the URI.  For example, the URI
-        # "http://www.example.org/r%E9sum%E9.html" might with some guessing be
-        # interpreted to contain two e-acute characters encoded as iso-8859-1.
-        # It must not be converted to an IRI containing these e-acute
-        # characters.  Otherwise, in the future the IRI will be mapped to
-        # "http://www.example.org/r%C3%A9sum%C3%A9.html", which is a different
-        # URI from "http://www.example.org/r%E9sum%E9.html".
         r1 = self.request_class(url="http://www.scrapy.org/price/%a3")
         self.assertEqual(r1.url, "http://www.scrapy.org/price/%a3")
 
