@@ -50,7 +50,6 @@ class H2ConnectionPool:
             # Return this connection instance wrapped inside a deferred
             return defer.succeed(conn)
 
-        # No connection is established for the given URI
         return self._new_connection(key, uri, endpoint)
 
     def _new_connection(
