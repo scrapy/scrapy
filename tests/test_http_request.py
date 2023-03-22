@@ -1506,7 +1506,6 @@ class JsonRequestTest(RequestTest):
         self.assertEqual(r4.body, to_bytes(json.dumps([])))
 
     def test_data_method(self):
-        # data is not passed
         r1 = self.request_class(url="http://www.example.com/")
         self.assertEqual(r1.method, "GET")
 
