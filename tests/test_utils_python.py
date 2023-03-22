@@ -183,7 +183,6 @@ class UtilsPythonTestCase(unittest.TestCase):
         b.meta = {}
         self.assertTrue(equal_attributes(a, b, ["meta"]))
 
-        # compare ['meta']['a']
         a.meta["z"] = 1
         b.meta["z"] = 1
 
