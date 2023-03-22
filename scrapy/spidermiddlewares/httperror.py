@@ -28,7 +28,7 @@ class HttpErrorMiddleware:
         self.handle_httpstatus_list = settings.getlist("HTTPERROR_ALLOWED_CODES")
 
     def process_spider_input(self, response, spider):
-        if 200 <= response.status < 300:  # common case
+        if 200 <= response.status < 300:
             return
         meta = response.meta
         if meta.get("handle_httpstatus_all", False):
