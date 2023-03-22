@@ -237,7 +237,6 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(object), [])
 
         if platform.python_implementation() == "CPython":
-            # TODO: how do we fix this to return the actual argument names?
             self.assertEqual(get_func_args(str.split), [])
             self.assertEqual(get_func_args(" ".join), [])
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
