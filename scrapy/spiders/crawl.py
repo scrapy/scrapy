@@ -6,12 +6,14 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
+import warnings
 from typing import AsyncIterable, Awaitable, Sequence
 
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -67,7 +69,15 @@ class CrawlSpider(Spider):
         self._compile_rules()
 
     def _parse(self, response, **kwargs):
-        return self._parse_response(
+        cls = self.__class__
+        is_overriden = method_is_overridden(cls, CrawlSpider, "_parse_response")
+        if is_overriden:
+            warnings.warn(
+                "CrawlSpider._parse_response method is deprecated: "
+                "it will be removed in future Scrapy releases."
+                "Please use CrawlSpider.parse_with_rules method instead. "
+            )
+        return self.parse_with_rules(
             response=response,
             callback=self.parse_start_url,
             cb_kwargs=kwargs,
@@ -105,7 +115,7 @@ class CrawlSpider(Spider):
 
     def _callback(self, response, **cb_kwargs):
         rule = self._rules[response.meta["rule"]]
-        return self._parse_response(
+        return self.parse_with_rules(
             response, rule.callback, {**rule.cb_kwargs, **cb_kwargs}, rule.follow
         )
 
@@ -113,7 +123,22 @@ class CrawlSpider(Spider):
         rule = self._rules[failure.request.meta["rule"]]
         return self._handle_failure(failure, rule.errback)
 
-    async def _parse_response(self, response, callback, cb_kwargs, follow=True):
+    def parse_with_rules(self, response, callback, cb_kwargs, follow=True):
+        direct_call = True
+        return self._parse_response(response, callback, cb_kwargs, follow, direct_call)
+
+    async def _parse_response(
+        self, response, callback, cb_kwargs, follow=True, direct_call=False
+    ):
+        cls = self.__class__
+        is_overriden = method_is_overridden(cls, CrawlSpider, "_parse_response")
+        if not direct_call or is_overriden:
+            warnings.warn(
+                "CrawlSpider._parse_response method is deprecated: "
+                "it will be removed in future Scrapy releases."
+                "Please use CrawlSpider.parse_with_rules method instead. "
+            )
+
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
             if isinstance(cb_res, AsyncIterable):
