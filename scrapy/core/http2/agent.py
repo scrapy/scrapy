@@ -47,7 +47,6 @@ class H2ConnectionPool:
         # Check if we already have a connection to the remote
         conn = self._connections.get(key, None)
         if conn:
-            # Return this connection instance wrapped inside a deferred
             return defer.succeed(conn)
 
         # No connection is established for the given URI
