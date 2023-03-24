@@ -130,9 +130,9 @@ class CrawlSpider(Spider):
     async def _parse_response(self, response, callback, cb_kwargs, follow=True):
         if cb_kwargs.get("direct_call", True):
             warnings.warn(
-                "CrawlSpider._parse_response method is deprecated: "
-                "it will be removed in future Scrapy releases."
-                "Please use CrawlSpider.parse_with_rules method instead. "
+                "The CrawlSpider._parse_response method is deprecated: it "
+                "will be removed in future Scrapy releases. Please use the "
+                "CrawlSpider.parse_with_rules method instead."
             )
         cb_kwargs.pop("direct_call", None)
 
