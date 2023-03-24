@@ -73,9 +73,9 @@ class CrawlSpider(Spider):
         is_overriden = method_is_overridden(cls, CrawlSpider, "_parse_response")
         if is_overriden:
             warnings.warn(
-                "CrawlSpider._parse_response method is deprecated: "
-                "it will be removed in future Scrapy releases."
-                "Please use CrawlSpider.parse_with_rules method instead. "
+                "The CrawlSpider._parse_response method is deprecated: it "
+                "will be removed in future Scrapy releases. Please use the "
+                "CrawlSpider.parse_with_rules method instead."
             )
         return self.parse_with_rules(
             response=response,
