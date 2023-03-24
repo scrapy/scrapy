@@ -60,7 +60,6 @@ def main():
 
                 _contents = _contents.replace(match.group(3), match.group(4))
         else:
-            # We don't understand what the current line means!
             print("Not Understood: " + line)
 
 
