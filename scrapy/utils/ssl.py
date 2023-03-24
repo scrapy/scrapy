@@ -20,6 +20,9 @@ def x509name_to_string(x509name):
 
 def get_temp_key_info(ssl_object):
     # adapted from OpenSSL apps/s_cb.c::ssl_print_tmp_key()
+    if not hasattr(pyOpenSSLutil.lib, "SSL_get_server_tmp_key"):
+        # removed in cryptography 40.0.0
+        return None
     temp_key_p = pyOpenSSLutil.ffi.new("EVP_PKEY **")
     if not pyOpenSSLutil.lib.SSL_get_server_tmp_key(ssl_object, temp_key_p):
         return None
