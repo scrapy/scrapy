@@ -624,7 +624,7 @@ class TestRefererMiddlewareDefault(MixinDefault, TestRefererMiddleware):
     pass
 
 
-# --- Tests using settings to set policy using class path
+# Tests using settings to set policy using class path
 class TestSettingsNoReferrer(MixinNoReferrer, TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.NoReferrerPolicy"}
 
