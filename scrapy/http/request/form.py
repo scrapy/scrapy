@@ -231,7 +231,6 @@ def _get_clickable(
     if not clickables:
         return None
 
-    # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
         el = clickables[0]
         return (el.get("name"), el.get("value") or "")
