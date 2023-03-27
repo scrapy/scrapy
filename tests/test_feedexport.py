@@ -32,6 +32,7 @@ from zope.interface import implementer
 from zope.interface.verify import verifyObject
 
 import scrapy
+from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
@@ -2598,6 +2599,55 @@ class BatchDeliveriesTest(FeedExportTestBase):
         self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
+
+
+# Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
+class FeedExporterSignalsTest(unittest.TestCase):
+    feed_exporter_closed_received = False
+    feed_slot_closed_received = False
+
+    items = [
+        {"foo": "bar1", "egg": "spam1"},
+        {"foo": "bar2", "egg": "spam2", "baz": "quux2"},
+        {"foo": "bar3", "baz": "quux3"},
+    ]
+
+    with tempfile.NamedTemporaryFile() as tmp:
+        settings = {
+            "FEEDS": {
+                tmp.name: {
+                    "format": "json",
+                },
+            },
+        }
+
+    def feed_exporter_closed_signal_handler(self):
+        self.feed_exporter_closed_received = True
+
+    def feed_slot_closed_signal_handler(self, slot):
+        self.feed_slot_closed_received = True
+
+    def run_signaled_feed_exporter(self):
+        crawler = get_crawler(settings_dict=self.settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        spider.crawler = crawler
+        crawler.signals.connect(
+            self.feed_exporter_closed_signal_handler,
+            signal=signals.feed_exporter_closed,
+        )
+        crawler.signals.connect(
+            self.feed_slot_closed_signal_handler, signal=signals.feed_slot_closed
+        )
+        feed_exporter.open_spider(spider)
+        for item in self.items:
+            feed_exporter.item_scraped(item, spider)
+        defer.ensureDeferred(feed_exporter.close_spider(spider))
+
+    def test_feed_exporter_signals_sent(self):
+        self.run_signaled_feed_exporter()
+        self.assertTrue(self.feed_exporter_closed_received)
+        self.assertTrue(self.feed_slot_closed_received)
 
 
 class FeedExportInitTest(unittest.TestCase):
