@@ -1,101 +1,162 @@
-import hashlib
-import logging
+import os
+import signal
 
-from scrapy.utils.misc import create_instance
+from itemadapter import is_item
+from twisted.internet import defer, threads
+from twisted.python import threadable
+from w3lib.url import any_to_uri
 
-
-class PriorityQueue:
-    def __init__(self, downstream_queue_cls):
-        self.downstream_queue_cls = downstream_queue_cls
-        self.queues = {}
-
-    def add_queue(self, key):
-        self.queues[key] = create_instance(self.downstream_queue_cls, None, key)
-
-    def push(self, request):
-        priority = -request.priority
-
-        if priority not in self.queues:
-            self.add_queue(priority)
-
-        self.queues[priority].push(request)
-
-    def pop(self):
-        if not self.queues:
-            return
-
-        queue = self.queues[min(self.queues)]
-        request = queue.pop()
-
-        if not queue:
-            del self.queues[min(self.queues)]
-            queue.close()
-
-        return request
-
-    def peek(self):
-        return self.queues[min(self.queues)].peek() if self.queues else None
-
-    def close(self):
-        return [queue.close() for queue in self.queues.values()]
-
-    def __len__(self):
-        return sum([len(queue) for queue in self.queues.values()])
+from scrapy.crawler import Crawler
+from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Request, Response
+from scrapy.settings import Settings
+from scrapy.spiders import Spider
+from scrapy.utils.conf import get_config
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
+from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.misc import load_object
+from scrapy.utils.reactor import (
+    is_asyncio_reactor_installed,
+    set_asyncio_event_loop
+)
+from scrapy.utils.response import open_in_browser
 
 
-class DownloaderInterface:
+class ScrapyShell:
+    objects = (
+        Crawler,
+        Spider,
+        Request,
+        Response,
+        Settings,
+    )
+
+    def __init__(self, crawler, update_vars=None, code=None):
+        self.crawler = crawler
+        self.update_vars = update_vars or (lambda x: None)
+        self.item_class = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
+        self.spider = None
+        self.in_thread = not threadable.isInIOThread()
+        self.code = code
+        self.vars = {}
+
+    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # ignore SIGINT signal
+        self.fetch(url, spider, redirect=redirect) if url else (
+            self.fetch(request, spider) if request
+            else (self.populate_vars(response, request, spider), self.execute_code())
+        )
+
+    def _schedule(self, request, spider):
+        if is_asyncio_reactor_installed():
+            set_asyncio_event_loop(self.crawler.settings["ASYNCIO_EVENT_LOOP"])
+        spider = self._open_spider(request, spider)
+        d = _request_deferred(request)
+        d.addCallback(lambda x: (x, spider))
+        self.crawler.engine.crawl(request)
+        return d
+
+    def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+        from twisted.internet import reactor
+
+        if isinstance(request_or_url, Request):
+            request = request_or_url
+        else:
+            url = any_to_uri(request_or_url)
+            request = Request(url, dont_filter=True, **kwargs)
+            if redirect:
+                request.meta["handle_httpstatus_list"] = SequenceExclude(
+                    range(300, 400)
+                )
+            else:
+                request.meta["handle_httpstatus_all"] = True
+        response = None
+        try:
+            response, spider = threads.blockingCallFromThread(
+                reactor, self._schedule, request, spider
+            )
+        except IgnoreRequest:
+            pass
+        self.populate_vars(response, request, spider)
+        self.execute_code()
+
+    def _open_spider(self, request, spider):
+        if self.spider:
+            return self.spider
+
+        if spider is None:
+            spider = self.crawler.spider or self.crawler._create_spider()
+
+        self.crawler.spider = spider
+        self.crawler.engine.open_spider(spider, close_if_idle=False)
+        self.spider = spider
+        return spider
+
+    def populate_vars(self, response=None, request=None, spider=None):
+        import scrapy
+
+        self.vars = {
+            "scrapy": scrapy,
+            "crawler": self.crawler,
+            "item": self.item_class(),
+            "settings": self.crawler.settings,
+            "spider": spider,
+            "request": request,
+            "response": response,
+            "view": open_in_browser,
+            "shelp": self.print_help,
+        }
+        if self.in_thread:
+            self.vars["fetch"] = self.fetch
+        self.update_vars(self.vars)
+        if not self.code:
+            self.vars["banner"] = self.get_help()
+
+    def execute_code(self):
+        if self.code:
+            print(eval(self.code, globals(), self.vars))
+
+    def get_help(self):
+        return (
+            "Available Scrapy objects:\n"
+            "  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)\n{}"
+        ).format(
+            '\n'.join(
+                '  {key:<10} {value}'
+                .format(key=k, value=v)
+                for k, v in sorted(self.vars.items())
+                if self._is_relevant(v)
+            )
+        )
+
     @staticmethod
-    def _active_downloads(slot, downloader):
-        # Check active downloads in a slot.
-        return len(downloader.slots.get(slot, {}).active)
+    def print_help():
+        print(ScrapyShell().get_help())
 
     @staticmethod
-    def stats(pqueues, downloader):
-        return [(-DownloaderInterface._active_downloads(slot, downloader), slot) for slot in pqueues]
-
-    @staticmethod
-    def get_slot_key(request, downloader):
-        return downloader._get_slot_key(request, None)
+    def _is_relevant(value):
+        return isinstance(value, ScrapyShell.objects) or is_item(value)
 
 
-class DownloaderAwarePriorityQueue:
-    def __init__(self, downstream_queue_cls, *, downloader=None, slot_startprios=None):
-        if downloader and downloader.settings.getint('CONCURRENT_REQUESTS_PER_IP') != 0:
-            raise ValueError(f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP')
+def inspect_response(response, spider):
+    sigint_handler = signal.getsignal(signal.SIGINT)
+    ScrapyShell(spider.crawler).start(response=response, spider=spider)
+    signal.signal(signal.SIGINT, sigint_handler)
 
-        self.downstream_queue_cls = downstream_queue_cls
-        self.pqueues = PriorityQueue(downstream_queue_cls)
-        self.downloader_interface = DownloaderInterface()
-        self.slot_startprios = slot_startprios or {}
 
-        if downloader:
-            self._copy_state(downloader)
+def _request_deferred(request):
+    request_callback = request.callback
+    request_errback = request.errback
 
-    def _copy_state(self, downloader):
-        for slot, startprios in self.slot_startprios.items():
-            self.pqueues.add_queue(slot)
+    def _restore_callbacks(result):
+        request.callback = request_callback
+        request.errback = request_errback
+        return result
 
-            for priority in startprios:
-                requests = downloader.slot_requests(slot)
-                for request in requests:
-                    if request.priority == priority:
-                        self.push(request, slot)
+    d = defer.Deferred()
+    d.addBoth(_restore_callbacks)
+    if request.callback:
+        d.addCallbacks(request.callback, request.errback)
 
-    def push(self, request, slot=None):
-        slot = slot or self.downloader_interface.get_slot_key(request)
-        self.pqueues.push(request)
-
-    def pop(self):
-        return self.pqueues.pop()
-
-    def peek(self):
-        return self.pqueues.peek()
-
-    def close(self):
-        return self.pqueues.close()
-
-    def __len__(self):
-        return len(self.pqueues)
-
-    def __contains__(self, slot):
-        return slot in self.pqueues
+    request.callback, request.errback = d.callback, d.errback
+    return d
