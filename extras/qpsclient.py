@@ -1,121 +1,129 @@
+import warnings
 import numbers
 import os
 import sys
-import warnings
+from typing import Any, Dict, List, Optional, Tuple, Union
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
 
-from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings
+from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
+def build_component_list(compdict: Dict[str, int], custom: Optional[Union[Tuple, List]] = None, convert: Optional[callable] = update_classpath) -> List[str]:
+    """
+    Compose a component list from a { class: order } dictionary.
+    """
+    def _check_component_list(complist: List[str]):
+        """
+        Checks whether any two paths are converted to the same object.
+        """
+        unique_paths = {convert(path) for path in complist}
+        if len(unique_paths) != len(complist):
+            raise ValueError(f"Some paths in {complist!r} convert to the same object, please update your settings")
 
-def build_component_list(components: Dict[str, int], custom_components: Optional[Union[List[str], Tuple[str]], convert_func=update_classpath]) -> List[str]:
-    """Compose a component list from a {class: priority} dictionary."""
-
-    def check_components(component_list) -> None:
-        if len(set(map(convert_func, component_list))) != len(component_list):
-            raise ValueError(
-                "Some paths in {!r} convert to the same object, "
-                "please update your settings".format(component_list)
-            )
-
-    def map_keys(dictionary) -> Union[BaseSettings, Dict[str, Any]]:
-        if isinstance(dictionary, BaseSettings):
-            result = BaseSettings()
-            for key, value in dictionary.items():
-                priority = dictionary.getpriority(key)
-                if result.getpriority(convert_func(key)) == priority:
-                    raise ValueError(
-                        "Some paths in {!r} convert to the same "
-                        "object, please update your settings".format(list(dictionary.keys()))
-                    )
+    def _map_keys(compdict: Dict[str, int]):
+        """
+        Maps keys to their associated values in a dict.
+        """
+        if isinstance(compdict, BaseSettings):
+            bs = BaseSettings()
+            for k, v in compdict.items():
+                prio = compdict.getpriority(k)
+                cp_k = convert(k)
+                if bs.getpriority(cp_k) == prio:
+                    raise ValueError(f"Some paths in {list(compdict.keys())!r} convert to the same "
+                        "object, please update your settings")
                 else:
-                    result.set(convert_func(key), value, priority=priority)
-            return result
-        check_components(dictionary)
-        return {convert_func(key): value for key, value in dictionary.items()}
+                    bs.set(cp_k, v, priority=prio)
+            return bs
+        _check_component_list(compdict)
+        return {convert(k): v for k, v in compdict.items()}
 
-    def validate_values(component_dict: Dict[str, Any]) -> None:
-        for name, value in component_dict.items():
+    def _validate_values(compdict: Dict[str, int]):
+        """
+        Validates whether any value is a real number or None.
+        """
+        for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
-                raise ValueError(
-                    "Invalid value {} for component {}, please provide a real number or None instead".format(value, name)
-                )
+                raise ValueError(f"Invalid value {value} for component {name}, please provide a real number or None instead")
 
-    if isinstance(custom_components, (list, tuple)):
-        check_components(custom_components)
-        return [convert_func(component) for component in custom_components]
+    if isinstance(custom, (list, tuple)):
+        _check_component_list(custom)
+        return type(custom)(convert(c) for c in custom)
 
-    if custom_components is not None:
-        components.update(custom_components)
+    if custom is not None:
+        compdict.update(custom)
 
-    validate_values(components)
-    components = without_none_values(map_keys(components))
-    return [key for key, value in sorted(components.items(), key=itemgetter(1))]
+    _validate_values(compdict)
+    compdict = without_none_values(_map_keys(compdict))
+    return [k for k, v in sorted(compdict.items(), key=itemgetter(1))]
 
-
-def arglist_to_dict(arg_list: List[str]) -> Dict[str, str]:
-    """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a dict."""
-    return dict(x.split("=", 1) for x in arg_list)
-
-
-def closest_scrapy_cfg(path: Union[str, os.PathLike] = ".", prev_path: Optional[Union[str, os.PathLike]] = None) -> str:
+def arglist_to_dict(arglist: List[str]) -> Dict[str, str]:
     """
-    Return the path to the closest scrapy.cfg file by traversing the current directory and its parents.
+    Converts a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
+    dictionary.
     """
-    if prev_path is not None and str(path) == str(prev_path):
+    return dict(x.split("=", 1) for x in arglist)
+
+def closest_scrapy_cfg(path: Union[str, os.PathLike] = ".", prevpath: Optional[Union[str, os.PathLike]] = None) -> str:
+    """
+    Returns the path to the closest scrapy.cfg file by traversing the current
+    directory and its parents
+    """
+    if prevpath is not None and str(path) == str(prevpath):
         return ""
     path = Path(path).resolve()
-    cfg_file = path / "scrapy.cfg"
-    if cfg_file.exists():
-        return str(cfg_file)
+    cfgfile = path / "scrapy.cfg"
+    if cfgfile.exists():
+        return str(cfgfile)
     return closest_scrapy_cfg(path.parent, path)
 
-
-def init_env(project: str = "default", set_sys_path: bool = True) -> None:
-    """Initialize environment to use command-line tool from inside a project dir.
-
-    This sets the Scrapy settings module and modifies the Python path to be
-    able to locate the project module.
+def init_env(project: str = "default", set_syspath: bool = True) -> None:
+    """
+    Initializes environment to use command-line tool from inside a project
+    directory. This sets the Scrapy settings module and modifies the Python 
+    path to be able to locate the project module.
     """
     cfg = get_config()
     if cfg.has_option("settings", project):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
     closest = closest_scrapy_cfg()
     if closest:
-        proj_dir = str(Path(closest).parent)
-        if set_sys_path and proj_dir not in sys.path:
-            sys.path.append(proj_dir)
-
+        projdir = str(Path(closest).parent)
+        if set_syspath and projdir not in sys.path:
+            sys.path.append(projdir)
 
 def get_config(use_closest: bool = True) -> ConfigParser:
     """
-    Get Scrapy config file as a ConfigParser.
+    Gets Scrapy config file as a ConfigParser.
     """
     sources = get_sources(use_closest)
     cfg = ConfigParser()
     cfg.read(sources)
     return cfg
 
-
 def get_sources(use_closest: bool = True) -> List[str]:
-    XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", Path("~/.config").expanduser())
-    potential_locations = [
+    """
+    Returns all possible config file paths.
+    """
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME", Path("~/.config").expanduser())
+    sources = [
         "/etc/scrapy.cfg",
         "c:/scrapy/scrapy.cfg",
-        str(Path(XDG_CONFIG_HOME) / "scrapy.cfg"),
+        str(Path(xdg_config_home) / "scrapy.cfg"),
         str(Path("~/.scrapy.cfg").expanduser()),
     ]
     if use_closest:
-        potential_locations.append(closest_scrapy_cfg())
-    return potential_locations
-
+        sources.append(closest_scrapy_cfg())
+    return sources
 
 def feed_complete_default_values_from_settings(feed: Dict[str, Any], settings: BaseSettings) -> Dict[str, Any]:
+    """
+    Completes a feed dictionary by setting any fields that aren't already set.
+    """
     out = feed.copy()
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
@@ -129,25 +137,24 @@ def feed_complete_default_values_from_settings(feed: Dict[str, Any], settings: B
         out.setdefault("indent", settings.getint("FEED_EXPORT_INDENT"))
     return out
 
-
-def feed_process_params_from_cli(
-    settings: BaseSettings,
-    output: List[str],
-    output_format: Optional[str] = None,
-    overwrite_output: Optional[List[str]] = None,
-) -> Dict[str, Dict[str, Any]]:
+def feed_process_params_from_cli(settings: BaseSettings, 
+                                output: List[str], output_format: Optional[str] = None, 
+                                overwrite_output: Optional[List[str]] = None) -> Dict[str, Dict[str, Any]]:
     """
-    Receives feed export params (from the 'crawl' or 'runspider' commands),
+    Receives feed export parameters (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats = without_none_values(settings.getwithbase("FEED_EXPORTERS")).keys()
 
     def check_valid_format(output_format: str) -> None:
+        """
+        Raises error if output format is invalid.
+        """
         if output_format not in valid_output_formats:
             raise UsageError(
                 f"Unrecognized output format '{output_format}'. "
-                f"Set a supported one ({tuple(valid_output_formats)}) "
+                f"Set a supported one {tuple(valid_output_formats)} "
                 "after a colon at the end of the output URI (i.e. -o/-O "
                 "<URI>:<FORMAT>) or as a file extension."
             )
@@ -155,10 +162,13 @@ def feed_process_params_from_cli(
     overwrite = False
     if overwrite_output:
         if output:
-            raise UsageError("Please use only one of -o/--output and -O/--overwrite-output")
+            raise UsageError(
+                "Please use only one of -o/--output and -O/--overwrite-output"
+            )
         if output_format:
             raise UsageError(
-                "-t/--output-format is a deprecated command line option and does not work in combination with -O/--overwrite-output."
+                "-t/--output-format is a deprecated command line option"
+                " and does not work in combination with -O/--overwrite-output."
                 " To specify a format please specify it after a colon at the end of the"
                 " output URI (i.e. -O <URI>:<FORMAT>)."
                 " Example working in the tutorial: "
@@ -181,9 +191,7 @@ def feed_process_params_from_cli(
             )
             warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
             return {output[0]: {"format": output_format}}
-        raise UsageError(
-            "The -t command-line option cannot be used if multiple output URIs are specified"
-        )
+        raise UsageError("The -t command-line option cannot be used if multiple output URIs are specified")
 
     result: Dict[str, Dict[str, Any]] = {}
     for element in output:
@@ -200,6 +208,6 @@ def feed_process_params_from_cli(
         if overwrite:
             result[feed_uri]["overwrite"] = True
 
+    # FEEDS setting should take precedence over the matching CLI options
     result.update(settings.getdict("FEEDS"))
-
     return result
