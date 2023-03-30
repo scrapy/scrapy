@@ -1,206 +1,196 @@
-import unittest
-from scrapy import Request, Spider
-from scrapy.http import FormRequest, JsonRequest
-from scrapy.utils.request import request_from_dict
+from testfixtures import LogCapture
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase
+from scrapy.http import Request
+from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer
+from tests.spiders import MockServerSpider
 
-class CustomRequest(Request):
-    pass
+class InjectArgumentsDownloaderMiddleware:
+    """
+    Allow downloader middlewares to update the keyword arguments
+    """
+    def process_request(self, request, spider):
+        if request.callback.__name__ == "parse_downloader_mw":
+            request.cb_kwargs.setdefault('from_process_request', True)
+        return None
 
-class RequestSerializationTest(unittest.TestCase):
+    def process_response(self, request, response, spider):
+        if request.callback.__name__ == "parse_downloader_mw":
+            request.cb_kwargs.setdefault('from_process_response', True)
+        return response
+    
+
+class InjectArgumentsSpiderMiddleware:
+    """
+    Allow spider middlewares to update the keyword arguments 
+    """
+    def process_start_requests(self, start_requests, spider):    
+        for request in start_requests:
+            if request.callback.__name__ == "parse_spider_mw":
+                request.cb_kwargs.setdefault('from_process_start_requests', True)
+            yield request
+            
+    def process_spider_input(self, response, spider):     
+        request = response.request   
+        if request.callback.__name__ == "parse_spider_mw":
+            request.cb_kwargs.setdefault('from_process_spider_input' , True)  
+        return None    
+
+    def process_spider_output(self, response, result, spider):
+        for element in result:
+            if isinstance(element, Request) and element.callback.__name__ == "parse_spider_mw_2":
+                element.cb_kwargs.setdefault('from_process_spider_output', True)
+            yield element
+
+class KeywordArgumentsSpider(MockServerSpider):
+
+    name = "kwargs"
+    custom_settings = {
+        "DOWNLOADER_MIDDLEWARES": {
+            InjectArgumentsDownloaderMiddleware: 750,
+        },
+        "SPIDER_MIDDLEWARES": {
+            InjectArgumentsSpiderMiddleware: 750,
+        },
+    }
+
+    checks = []
+    
+    def start_requests(self):
+              
+        yield Request(self.mockserver.url("/first"), meta={"key":"value", "number":123, "callback":"some_callback"}, callback=self.parse_first)       
+        yield Request(self.mockserver.url("/general_with"),self.parse_general,
+                      meta= {"key":"value","number":123,"callback":"some_callback"})
+        yield Request(self.mockserver.url("/general_without"), self.parse_general)
+        yield Request(self.mockserver.url("/no_kwargs"), self.parse_no_kwargs)
+        yield Request(self.mockserver.url("/default"),meta={"key":"value", "number":123},callback=self.parse_default)
+        yield Request(self.mockserver.url("/takes_less"),meta={"key":"value", "callback":"some_callback"},callback=self.parse_takes_less)
+        yield Request(self.mockserver.url("/takes_more"),meta={"key":"value", "number":123, "callback":"some_callback", "other":"another_callback"},callback=self.parse_takes_more)
+        yield Request(self.mockserver.url("/downloader_mw"), callback=self.parse_downloader_mw)
+        yield Request(self.mockserver.url("/spider_mw"), callback=self.parse_spider_mw)
+
+        
+    def parse_first(self, response):
+        key = response.meta["key"]
+        number = response.meta["number"]
+        
+        self.checks.append(key == "value")
+        self.checks.append(number == 123)
+        
+        self.crawler.stats.inc_value("boolean_checks", 2)
+        
+        yield response.follow(
+            self.mockserver.url("/two"),
+            self.parse_second,
+            meta={"new_key": "new_value"},
+        )
+        
+    def parse_second(self, response):       
+        new_key = response.meta["new_key"]
+        
+        self.checks.append(new_key == "new_value")
+        self.crawler.stats.inc_value("boolean_checks")
+        
+    def parse_general(self, response, **kwargs): 
+        if response.url.endswith("/general_with"):
+            self.checks.append(kwargs["key"] == "value")
+            self.checks.append(kwargs["number"] == 123)
+            self.checks.append(kwargs["callback"] == "some_callback")
+            
+            self.crawler.stats.inc_value("boolean_checks", 3)
+        elif response.url.endswith("/general_without"):
+            self.checks.append(kwargs == {})
+            self.crawler.stats.inc_value("boolean_checks")
+            
+    def parse_no_kwargs(self, response):
+        self.checks.append(response.url.endswith("/no_kwargs"))
+        self.crawler.stats.inc_value("boolean_checks")
+        
+    def parse_default(self, response):
+        key = response.meta["key"]
+        number = response.meta["number"]
+        default = response.meta.setdefault("default",99)
+        
+        self.checks.append(response.url.endswith("/default"))
+        self.checks.append(key == "value")
+        self.checks.append(number == 123)
+        self.checks.append(default == 99)
+        
+        self.crawler.stats.inc_value("boolean_checks", 4)
+        
+    def parse_takes_less(self, response):
+        """
+        Should raise
+        TypeError: parse_takes_less() got an unexpected keyword argument 'number'
+        """
+        pass
+
+    def parse_takes_more(self, response):
+        """
+        Should raise
+        TypeError: parse_takes_more() missing 1 required positional argument: 'other'
+        """
+        pass              
+
+    def parse_downloader_mw (self, response):       
+        from_process_request = response.request.cb_kwargs.get('from_process_request')
+        from_process_response = response.request.cb_kwargs.get('from_process_response')
+        
+        self.checks.append(bool(from_process_request))
+        self.checks.append(bool(from_process_response))
+        
+        self.crawler.stats.inc_value("boolean_checks", 2)
+
+    def parse_spider_mw (self, response):
+        from_process_spider_input = response.request.cb_kwargs.get('from_process_spider_input') 
+        from_process_start_requests = response.request.cb_kwargs.get('from_process_start_requests')         
+
+        self.checks.append(bool(from_process_spider_input))
+        self.checks.append(bool(from_process_start_requests))
+          
+        self.crawler.stats.inc_value("boolean_checks", 2)
+        return Request(self.mockserver.url("/spider_mw_2"), self.parse_spider_mw_2)
+        
+
+    def parse_spider_mw_2 (self, response):       
+        from_process_spider_output = response.request.cb_kwargs["from_process_spider_output"]
+        self.checks.append(bool(from_process_spider_output))
+        self.crawler.stats.inc_value("boolean_checks",1)
+
+
+class CallbackKeywordArgumentsTestCase (TestCase):
+     
+    maxDiff = None
+   
     def setUp(self):
-        self.spider = TestSpider()
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
 
-    def test_basic(self):
-        r = Request("http://www.example.com")
-        self.assert_serializes_ok(r)
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
 
-    def test_all_attributes(self):
-        r = Request(
-            url="http://www.example.com",
-            callback=self.spider.parse_item,
-            errback=self.spider.handle_error,
-            method="POST",
-            body=b"some body",
-            headers={"content-encoding": "text/html; charset=latin-1"},
-            cookies={"currency": "руб"},
-            encoding="latin-1",
-            priority=20,
-            meta={"a": "b"},
-            cb_kwargs={"k": "v"},
-            flags=["testFlag"],
+    @defer.inlineCallbacks
+    def test_callback_kwargs(self):
+        crawler = get_crawler(KeywordArgumentsSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(mockserver=self.mockserver)
+            
+        self.assertTrue(all(crawler.spider.checks))
+        self.assertEqual(
+            len(crawler.spider.checks), crawler.stats.get_value("boolean_checks")
         )
-        self.assert_serializes_ok(r, spider=self.spider)
+        exceptions = {}
+        for line in log.records:
+            for key in ("takes_less", "takes_more"):
+                if key in line.getMessage():
+                    exceptions[key] = line
+        self.assertEqual(exceptions["takes_less"].exc_info[0], TypeError)
+        self.assertTrue(
+            str(exceptions["takes_less"].exc_info[1]).endswith("parse_takes_less() got an unexpected keyword argument 'number'"),
+                       msg="Exception message: " + str(exceptions["takes_less"].exc_info[1]))
 
-    def test_latin1_body(self):
-        r = Request("http://www.example.com", body=b"\xa3")
-        self.assert_serializes_ok(r)
-
-    def test_utf8_body(self):
-        r = Request("http://www.example.com", body=b"\xc2\xa3")
-        self.assert_serializes_ok(r)
-
-    def assert_serializes_ok(self, request, spider=None):
-        d = request.to_dict(spider=spider)
-        request2 = request_from_dict(d, spider=spider)
-        self.assert_same_request(request, request2)
-
-    def assert_same_request(self, r1, r2):
-        self.assertEqual(type(r1), type(r2))
-        for attr in [
-            "url", "callback", "errback", "method", "body",
-            "headers", "cookies", "meta", "cb_kwargs",
-            "encoding", "_encoding", "priority", "dont_filter",
-            "flags"
-        ]:
-            self.assertEqual(getattr(r1, attr), getattr(r2, attr))
-        if isinstance(r1, JsonRequest):
-            self.assertEqual(r1.dumps_kwargs, r2.dumps_kwargs)
-
-    def test_request_class(self):
-        r1 = FormRequest("http://www.example.com")
-        self.assert_serializes_ok(r1, spider=self.spider)
-        r2 = CustomRequest("http://www.example.com")
-        self.assert_serializes_ok(r2, spider=self.spider)
-        r3 = JsonRequest("http://www.example.com", dumps_kwargs={"indent": 4})
-        self.assert_serializes_ok(r3, spider=self.spider)
-
-    def test_callback_serialization(self):
-        r = Request(
-            "http://www.example.com",
-            callback=self.spider.parse_item,
-            errback=self.spider.handle_error,
-        )
-
-    def test_reference_callback_serialization(self):
-        r = Request(
-            "http://www.example.com",
-            callback=self.spider.parse_item_reference,
-            errback=self.spider.handle_error_reference,
-        )
-        self.assert_serializes_ok(r, spider=self.spider)
-        request_dict = r.to_dict(spider=self.spider)
-        self.assertEqual(request_dict["callback"], "parse_item_reference")
-        self.assertEqual(request_dict["errback"], "handle_error_reference")
-
-    def test_private_reference_callback_serialization(self):
-        r = Request(
-            "http://www.example.com",
-            callback=self.spider._TestSpider__parse_item_reference,
-            errback=self.spider._TestSpider__handle_error_reference,
-        )
-        self.assert_serializes_ok(r, spider=self.spider)
-        request_dict = r.to_dict(spider=self.spider)
-        self.assertEqual(request_dict["callback"], "_TestSpider__parse_item_reference")
-        self.assertEqual(request_dict["errback"], "_TestSpider__handle_error_reference")
-
-    def test_private_callback_serialization(self):
-        r = Request(
-            "http://www.example.com",
-            callback=self.spider._TestSpider__parse_item_private,
-            errback=self.spider.handle_error,
-        )
-        self.assert_serializes_ok(r, spider=self.spider)
-
-    def test_mixin_private_callback_serialization(self):
-        r = Request(
-            "http://www.example.com",
-            callback=self.spider._TestSpiderMixin__mixin_callback,
-            errback=self.spider.handle_error,
-        )
-        self.assert_serializes_ok(r, spider=self.spider)
-
-    def test_delegated_callback_serialization(self):
-        r = Request(
-            "http://www.example.com",
-            callback=self.spider.delegated_callback,
-            errback=self.spider.handle_error,
-        )
-        self.assert_serializes_ok(r, spider=self.spider)
-
-    def test_unserializable_callback1(self):
-        r = Request("http://www.example.com", callback=lambda x: x)
-        self.assertRaises(ValueError, r.to_dict, spider=self.spider)
-
-    def test_unserializable_callback2(self):
-        r = Request("http://www.example.com", callback=self.spider.parse_item)
-        self.assertRaises(ValueError, r.to_dict, spider=None)
-
-    def test_unserializable_callback3(self):
-        """Parser method is removed or replaced dynamically."""
-
-        class MySpider(Spider):
-            name = "my_spider"
-
-            def parse(self, response):
-                pass
-
-        spider = MySpider()
-        r = Request("http://www.example.com", callback=spider.parse)
-        setattr(spider, "parse", None)
-        self.assertRaises(ValueError, r.to_dict, spider=spider)
-
-    def test_callback_not_available(self):
-        """Callback method is not available in the spider passed to from_dict"""
-        spider = TestSpiderDelegation()
-        r = Request("http://www.example.com", callback=spider.delegated_callback)
-        d = r.to_dict(spider=spider)
-        self.assertRaises(ValueError, request_from_dict, d, spider=Spider("foo"))
-
-
-class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
-    def assert_serializes_ok(self, request, spider=None):
-        with self.assertWarns(
-            category=ScrapyDeprecationWarning,
-            msg=(
-                "Module scrapy.utils.reqser is deprecated, please use request.to_dict method"
-                " and/or scrapy.utils.request.request_from_dict instead"
-            )
-        ):
-            request_copy = request_from_dict(request.to_dict(spider=spider), spider)
-            self.assert_same_request(request, request_copy)
-
-
-class TestSpiderMixin:
-    def __mixin_callback(self, response):
-        pass
-
-
-class TestSpiderDelegation:
-    def delegated_callback(self, response):
-        pass
-
-
-def parse_item(response):
-    pass
-
-
-def handle_error(failure):
-    pass
-
-
-def private_parse_item(response):
-    pass
-
-
-def private_handle_error(failure):
-    pass
-
-
-class TestSpider(Spider, TestSpiderMixin):
-    name = "test"
-    parse_item_reference = parse_item
-    handle_error_reference = handle_error
-    __parse_item_reference = private_parse_item
-    __handle_error_reference = private_handle_error
-
-    def __init__(self):
-        self.delegated_callback = TestSpiderDelegation().delegated_callback
-
-    def parse_item(self, response):
-        pass
-
-    def handle_error(self, failure):
-        pass
-
-    def __parse_item_private(self, response):
-        pass
+        self.assertEqual(exceptions["takes_more"].exc_info[0], TypeError)
+        self.assertTrue(
+            str(exceptions["takes_more"].exc_info[1]).endswith("parse_takes_more() missing 1 required positional argument: 'other'"),
+                       msg="Exception message: " + str(exceptions["takes_more"].exc_info[1])) 
