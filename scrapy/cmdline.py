@@ -1,186 +1,206 @@
-import argparse
-import cProfile
-import inspect
-import os
-import sys
+import unittest
+from scrapy import Request, Spider
+from scrapy.http import FormRequest, JsonRequest
+from scrapy.utils.request import request_from_dict
 
-import pkg_resources
+class CustomRequest(Request):
+    pass
 
-import scrapy
-from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
-from scrapy.crawler import CrawlerProcess
-from scrapy.exceptions import UsageError
-from scrapy.utils.misc import walk_modules
-from scrapy.utils.project import get_project_settings, inside_project
-from scrapy.utils.python import garbage_collect
+class RequestSerializationTest(unittest.TestCase):
+    def setUp(self):
+        self.spider = TestSpider()
 
+    def test_basic(self):
+        r = Request("http://www.example.com")
+        self.assert_serializes_ok(r)
 
-class ScrapyArgumentParser(argparse.ArgumentParser):
-    def _parse_optional(self, arg_string):
-        # if starts with -: it means that is a parameter not a argument
-        if arg_string[:2] == "-:":
-            return None
+    def test_all_attributes(self):
+        r = Request(
+            url="http://www.example.com",
+            callback=self.spider.parse_item,
+            errback=self.spider.handle_error,
+            method="POST",
+            body=b"some body",
+            headers={"content-encoding": "text/html; charset=latin-1"},
+            cookies={"currency": "руб"},
+            encoding="latin-1",
+            priority=20,
+            meta={"a": "b"},
+            cb_kwargs={"k": "v"},
+            flags=["testFlag"],
+        )
+        self.assert_serializes_ok(r, spider=self.spider)
 
-        return super()._parse_optional(arg_string)
+    def test_latin1_body(self):
+        r = Request("http://www.example.com", body=b"\xa3")
+        self.assert_serializes_ok(r)
 
+    def test_utf8_body(self):
+        r = Request("http://www.example.com", body=b"\xc2\xa3")
+        self.assert_serializes_ok(r)
 
-def _iter_command_classes(module_name):
-    # TODO: add `name` attribute to commands and merge this function with
-    # scrapy.utils.spider.iter_spider_classes
-    for module in walk_modules(module_name):
-        for obj in vars(module).values():
-            if (
-                inspect.isclass(obj)
-                and issubclass(obj, ScrapyCommand)
-                and obj.__module__ == module.__name__
-                and obj not in (ScrapyCommand, BaseRunSpiderCommand)
-            ):
-                yield obj
+    def assert_serializes_ok(self, request, spider=None):
+        d = request.to_dict(spider=spider)
+        request2 = request_from_dict(d, spider=spider)
+        self.assert_same_request(request, request2)
 
+    def assert_same_request(self, r1, r2):
+        self.assertEqual(type(r1), type(r2))
+        for attr in [
+            "url", "callback", "errback", "method", "body",
+            "headers", "cookies", "meta", "cb_kwargs",
+            "encoding", "_encoding", "priority", "dont_filter",
+            "flags"
+        ]:
+            self.assertEqual(getattr(r1, attr), getattr(r2, attr))
+        if isinstance(r1, JsonRequest):
+            self.assertEqual(r1.dumps_kwargs, r2.dumps_kwargs)
 
-def _get_commands_from_module(module, inproject):
-    d = {}
-    for cmd in _iter_command_classes(module):
-        if inproject or not cmd.requires_project:
-            cmdname = cmd.__module__.split(".")[-1]
-            d[cmdname] = cmd()
-    return d
+    def test_request_class(self):
+        r1 = FormRequest("http://www.example.com")
+        self.assert_serializes_ok(r1, spider=self.spider)
+        r2 = CustomRequest("http://www.example.com")
+        self.assert_serializes_ok(r2, spider=self.spider)
+        r3 = JsonRequest("http://www.example.com", dumps_kwargs={"indent": 4})
+        self.assert_serializes_ok(r3, spider=self.spider)
 
+    def test_callback_serialization(self):
+        r = Request(
+            "http://www.example.com",
+            callback=self.spider.parse_item,
+            errback=self.spider.handle_error,
+        )
 
-def _get_commands_from_entry_points(inproject, group="scrapy.commands"):
-    cmds = {}
-    for entry_point in pkg_resources.iter_entry_points(group):
-        obj = entry_point.load()
-        if inspect.isclass(obj):
-            cmds[entry_point.name] = obj()
-        else:
-            raise Exception(f"Invalid entry point {entry_point.name}")
-    return cmds
+    def test_reference_callback_serialization(self):
+        r = Request(
+            "http://www.example.com",
+            callback=self.spider.parse_item_reference,
+            errback=self.spider.handle_error_reference,
+        )
+        self.assert_serializes_ok(r, spider=self.spider)
+        request_dict = r.to_dict(spider=self.spider)
+        self.assertEqual(request_dict["callback"], "parse_item_reference")
+        self.assertEqual(request_dict["errback"], "handle_error_reference")
 
+    def test_private_reference_callback_serialization(self):
+        r = Request(
+            "http://www.example.com",
+            callback=self.spider._TestSpider__parse_item_reference,
+            errback=self.spider._TestSpider__handle_error_reference,
+        )
+        self.assert_serializes_ok(r, spider=self.spider)
+        request_dict = r.to_dict(spider=self.spider)
+        self.assertEqual(request_dict["callback"], "_TestSpider__parse_item_reference")
+        self.assertEqual(request_dict["errback"], "_TestSpider__handle_error_reference")
 
-def _get_commands_dict(settings, inproject):
-    cmds = _get_commands_from_module("scrapy.commands", inproject)
-    cmds.update(_get_commands_from_entry_points(inproject))
-    cmds_module = settings["COMMANDS_MODULE"]
-    if cmds_module:
-        cmds.update(_get_commands_from_module(cmds_module, inproject))
-    return cmds
+    def test_private_callback_serialization(self):
+        r = Request(
+            "http://www.example.com",
+            callback=self.spider._TestSpider__parse_item_private,
+            errback=self.spider.handle_error,
+        )
+        self.assert_serializes_ok(r, spider=self.spider)
 
+    def test_mixin_private_callback_serialization(self):
+        r = Request(
+            "http://www.example.com",
+            callback=self.spider._TestSpiderMixin__mixin_callback,
+            errback=self.spider.handle_error,
+        )
+        self.assert_serializes_ok(r, spider=self.spider)
 
-def _pop_command_name(argv):
-    i = 0
-    for arg in argv[1:]:
-        if not arg.startswith("-"):
-            del argv[i]
-            return arg
-        i += 1
+    def test_delegated_callback_serialization(self):
+        r = Request(
+            "http://www.example.com",
+            callback=self.spider.delegated_callback,
+            errback=self.spider.handle_error,
+        )
+        self.assert_serializes_ok(r, spider=self.spider)
 
+    def test_unserializable_callback1(self):
+        r = Request("http://www.example.com", callback=lambda x: x)
+        self.assertRaises(ValueError, r.to_dict, spider=self.spider)
 
-def _print_header(settings, inproject):
-    version = scrapy.__version__
-    if inproject:
-        print(f"Scrapy {version} - active project: {settings['BOT_NAME']}\n")
+    def test_unserializable_callback2(self):
+        r = Request("http://www.example.com", callback=self.spider.parse_item)
+        self.assertRaises(ValueError, r.to_dict, spider=None)
 
-    else:
-        print(f"Scrapy {version} - no active project\n")
+    def test_unserializable_callback3(self):
+        """Parser method is removed or replaced dynamically."""
 
+        class MySpider(Spider):
+            name = "my_spider"
 
-def _print_commands(settings, inproject):
-    _print_header(settings, inproject)
-    print("Usage:")
-    print("  scrapy <command> [options] [args]\n")
-    print("Available commands:")
-    cmds = _get_commands_dict(settings, inproject)
-    for cmdname, cmdclass in sorted(cmds.items()):
-        print(f"  {cmdname:<13} {cmdclass.short_desc()}")
-    if not inproject:
-        print()
-        print("  [ more ]      More commands available when run from project directory")
-    print()
-    print('Use "scrapy <command> -h" to see more info about a command')
+            def parse(self, response):
+                pass
 
+        spider = MySpider()
+        r = Request("http://www.example.com", callback=spider.parse)
+        setattr(spider, "parse", None)
+        self.assertRaises(ValueError, r.to_dict, spider=spider)
 
-def _print_unknown_command(settings, cmdname, inproject):
-    _print_header(settings, inproject)
-    print(f"Unknown command: {cmdname}\n")
-    print('Use "scrapy" to see available commands')
-
-
-def _run_print_help(parser, func, *a, **kw):
-    try:
-        func(*a, **kw)
-    except UsageError as e:
-        if str(e):
-            parser.error(str(e))
-        if e.print_help:
-            parser.print_help()
-        sys.exit(2)
-
-
-def execute(argv=None, settings=None):
-    if argv is None:
-        argv = sys.argv
-
-    if settings is None:
-        settings = get_project_settings()
-        # set EDITOR from environment if available
-        try:
-            editor = os.environ["EDITOR"]
-        except KeyError:
-            pass
-        else:
-            settings["EDITOR"] = editor
-
-    inproject = inside_project()
-    cmds = _get_commands_dict(settings, inproject)
-    cmdname = _pop_command_name(argv)
-    if not cmdname:
-        _print_commands(settings, inproject)
-        sys.exit(0)
-    elif cmdname not in cmds:
-        _print_unknown_command(settings, cmdname, inproject)
-        sys.exit(2)
-
-    cmd = cmds[cmdname]
-    parser = ScrapyArgumentParser(
-        formatter_class=ScrapyHelpFormatter,
-        usage=f"scrapy {cmdname} {cmd.syntax()}",
-        conflict_handler="resolve",
-        description=cmd.long_desc(),
-    )
-    settings.setdict(cmd.default_settings, priority="command")
-    cmd.settings = settings
-    cmd.add_options(parser)
-    opts, args = parser.parse_known_args(args=argv[1:])
-    _run_print_help(parser, cmd.process_options, args, opts)
-
-    cmd.crawler_process = CrawlerProcess(settings)
-    _run_print_help(parser, _run_command, cmd, args, opts)
-    sys.exit(cmd.exitcode)
+    def test_callback_not_available(self):
+        """Callback method is not available in the spider passed to from_dict"""
+        spider = TestSpiderDelegation()
+        r = Request("http://www.example.com", callback=spider.delegated_callback)
+        d = r.to_dict(spider=spider)
+        self.assertRaises(ValueError, request_from_dict, d, spider=Spider("foo"))
 
 
-def _run_command(cmd, args, opts):
-    if opts.profile:
-        _run_command_profiled(cmd, args, opts)
-    else:
-        cmd.run(args, opts)
+class DeprecatedMethodsRequestSerializationTest(RequestSerializationTest):
+    def assert_serializes_ok(self, request, spider=None):
+        with self.assertWarns(
+            category=ScrapyDeprecationWarning,
+            msg=(
+                "Module scrapy.utils.reqser is deprecated, please use request.to_dict method"
+                " and/or scrapy.utils.request.request_from_dict instead"
+            )
+        ):
+            request_copy = request_from_dict(request.to_dict(spider=spider), spider)
+            self.assert_same_request(request, request_copy)
 
 
-def _run_command_profiled(cmd, args, opts):
-    if opts.profile:
-        sys.stderr.write(f"scrapy: writing cProfile stats to {opts.profile!r}\n")
-    loc = locals()
-    p = cProfile.Profile()
-    p.runctx("cmd.run(args, opts)", globals(), loc)
-    if opts.profile:
-        p.dump_stats(opts.profile)
+class TestSpiderMixin:
+    def __mixin_callback(self, response):
+        pass
 
 
-if __name__ == "__main__":
-    try:
-        execute()
-    finally:
-        # Twisted prints errors in DebugInfo.__del__, but PyPy does not run gc.collect() on exit:
-        # http://doc.pypy.org/en/latest/cpython_differences.html
-        # ?highlight=gc.collect#differences-related-to-garbage-collection-strategies
-        garbage_collect()
+class TestSpiderDelegation:
+    def delegated_callback(self, response):
+        pass
+
+
+def parse_item(response):
+    pass
+
+
+def handle_error(failure):
+    pass
+
+
+def private_parse_item(response):
+    pass
+
+
+def private_handle_error(failure):
+    pass
+
+
+class TestSpider(Spider, TestSpiderMixin):
+    name = "test"
+    parse_item_reference = parse_item
+    handle_error_reference = handle_error
+    __parse_item_reference = private_parse_item
+    __handle_error_reference = private_handle_error
+
+    def __init__(self):
+        self.delegated_callback = TestSpiderDelegation().delegated_callback
+
+    def parse_item(self, response):
+        pass
+
+    def handle_error(self, failure):
+        pass
+
+    def __parse_item_private(self, response):
+        pass
