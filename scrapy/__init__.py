@@ -1,203 +1,180 @@
-import logging
-import sys
-import warnings
-from logging.config import dictConfig
-from twisted.python import log as twisted_log
-from twisted.python.failure import Failure
-import scrapy
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.settings import Settings
-from scrapy.utils.versions import scrapy_components_versions
+# import only the necessary modules, remove unnecessary ones
+import shutil
+from pathlib import Path
+
+from testfixtures import LogCapture
+from twisted.internet import defer
+from twisted.trial.unittest import TestCase
+from w3lib.url import add_or_replace_parameter
+
+from scrapy import signals
+from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import NotConfigured  # add missing exception import
+from scrapy.utils.project import get_project_settings  # add a settings function to get existing settings
+from scrapy.utils.test import get_crawler  # add a function to get a crawler by name
+from tests.mockserver import MockServer
+from tests.spiders import SimpleSpider
 
 
-def configure_logging(settings=None, install_root_handler=True):
-    """
-    Initialize logging defaults for Scrapy.
+# create a parent spider class that contains shared code and methods
+class BaseMediaDownloadSpider(SimpleSpider):
+    # create class variables that will be used by multiple spider classes
+    media_key = None
+    media_urls_key = None
 
-    :param settings: settings used to configure the logging.
-    :type settings: scrapy.settings.Settings or None
+    def _process_url(self, url):
+        return url
 
-    :param install_root_handler: whether to install root logging handler.
-    :type install_root_handler: bool
-
-    This function does:
-
-    - Route warnings and twisted logging through Python standard logging
-    - Assign DEBUG and ERROR level to Scrapy and Twisted loggers, respectively
-    - Route stdout to log if LOG_STDOUT setting is True
-    - Install a logging handler for the root logger
-
-    When ``settings`` is None, default settings are used.
-    """
-    logging.captureWarnings(True)  # Route warnings through python logging
-
-    observer = twisted_log.PythonLoggingObserver("twisted")
-    observer.start()  # Route Twisted logging through python logging
-
-    settings = settings or Settings()  # Use default settings if not provided
-
-    # Initialize logging configuration for Scrapy
-    dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "default": {
-                    "format": "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-                    "datefmt": "%Y-%m-%d %H:%M:%S",
-                }
-            },
-            "handlers": {
-                "console": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "default",
-                    "level": "INFO",
-                }
-            },
-            "root": {"handlers": ["console"], "level": "DEBUG" if settings.getbool("LOG_STDOUT") else "INFO"},
+    def parse(self, response):
+        self.logger.info(response.headers)
+        self.logger.info(response.text)
+        item = {
+            self.media_key: [],
+            self.media_urls_key: [
+                self._process_url(response.urljoin(href))
+                for href in response.xpath(
+                    '//table[thead/tr/th="Filename"]/tbody//a/@href'
+                ).getall()
+            ],
         }
-    )
-
-    if settings.getbool("LOG_STDOUT"):
-        sys.stdout = StreamLogger(logging.getLogger("stdout"))  # Route stdout to log
-
-    if install_root_handler:
-        install_scrapy_root_handler(settings)
+        yield item
 
 
-def install_scrapy_root_handler(settings):
-    """
-    Install a logging handler for the root logger according to given settings.
-
-    :param settings: settings used to configure the logging.
-    :type settings: scrapy.settings.Settings
-
-    """
-    global _scrapy_root_handler
-
-    if (
-        _scrapy_root_handler is not None
-        and _scrapy_root_handler in logging.root.handlers
-    ):
-        logging.root.removeHandler(_scrapy_root_handler)
-
-    filename = settings.get("LOG_FILE")
-    if filename:
-        mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
-        encoding = settings.get("LOG_ENCODING")
-        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
-    elif settings.getbool("LOG_STDOUT"):
-        handler = logging.StreamHandler()
-    else:
-        handler = logging.NullHandler()
-
-    if settings.getbool("LOG_SHORT_NAMES"):
-        handler.addFilter(TopLevelFormatter(["scrapy"]))
-
-    formatter = logging.Formatter(
-        fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
-    )
-    handler.setFormatter(formatter)
-    handler.setLevel(settings.get("LOG_LEVEL"))
-
-    logging.root.addHandler(handler)
-    _scrapy_root_handler = handler
+# inherit from the base class and set the class variables to the appropriate values
+class MediaDownloadSpider(BaseMediaDownloadSpider):
+    name = "mediadownload"
+    media_key = "files"
+    media_urls_key = "file_urls"
 
 
-class StreamLogger:
-    """
-    Fake file-like stream object that redirects writes to a logger instance.
+class BrokenLinksMediaDownloadSpider(BaseMediaDownloadSpider):
+    name = "brokenmedia"
+    media_key = "files"
+    media_urls_key = "file_urls"
 
-    Taken from:
-        https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
-    """
-
-    def __init__(self, logger, log_level=logging.INFO):
-        self.logger = logger
-        self.log_level = log_level
-        self.linebuf = ""
-
-    def write(self, buf):
-        for line in buf.rstrip().splitlines():
-            self.logger.log(self.log_level, line.rstrip())
-
-    def flush(self):
-        for h in self.logger.handlers:
-            h.flush()
+    # modify the _process_url method to introduce a bug that will be tested later
+    # change ".foo" to ".bar"
+    def _process_url(self, url):
+        return url + ".bar"
 
 
-class TopLevelFormatter(logging.Filter):
-    """
-    Keep only top level loggers's name (direct children from root) from records.
+class RedirectedMediaDownloadSpider(BaseMediaDownloadSpider):
+    name = "redirectedmedia"
+    media_key = "files"
+    media_urls_key = "file_urls"
 
-    This filter will replace Scrapy loggers' names with 'scrapy'. This mimics
-    the old Scrapy log behaviour and helps shortening long names.
-
-    Since it can't be set for just one logger (it won't propagate for its
-    children), it's going to be set in the root handler, with a parametrized
-    `loggers` list where it should act.
-    """
-
-    def __init__(self, loggers=None):
-        super().__init__()
-        self.loggers = loggers or []
-
-    def filter(self, record):
-        if any(record.name.startswith(logger + ".") for logger in self.loggers):
-            record.name = record.name.split(".", 1)[0]
-        return True
-
-
-_default_logging_settings = {
-    "LOG_ENABLED": True,
-    "LOG_LEVEL": "DEBUG",
-    "LOG_STDOUT": False,
-    "LOG_FORMAT": "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    "LOG_DATEFORMAT": "%Y-%m-%d %H:%M:%S",
-    "LOG_SHORT_NAMES": False,
-    "LOG_FILE": None,
-    "LOG_FILE_APPEND": False,
-    "LOG_ENCODING": "utf-8",
-}
-
-
-def log_scrapy_info(settings: Settings) -> None:
-    """
-    Log Scrapy version and components versions.
-
-    :param settings: settings used to configure the logging.
-    :type settings: scrapy.settings.Settings
-
-    """
-    logger.info(
-        "Scrapy %(version)s started (bot: %(bot)s)",
-        {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
-    )
-
-    versions = [
-        f"{name} {version}"
-        for name, version in scrapy_components_versions()
-        if name != "Scrapy"
-    ]
-    logger.info("Versions: %(versions)s", {"versions": ", ".join(versions)})
-
-
-def log_reactor_info() -> None:
-    """
-    Log reactor information.
-
-    This logs the reactor and, if using AsyncioSelectorReactor, the asyncio
-    event loop.
-
-    """
-    from twisted.internet import reactor
-
-    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
-
-    from twisted.internet import asyncioreactor
-    if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
-        logger.debug(
-            "Using asyncio event loop: %s.%s",
-            reactor._asyncioEventloop.__module__,
-            reactor._asyncioEventloop.__class__.__name__,
+    def _process_url(self, url):
+        return add_or_replace_parameter(
+            self.mockserver.url("/redirect-to"), "goto", url
         )
+
+
+class FileDownloadCrawlTestCase(TestCase):
+    skip_reason = None  # add a skip reason variable
+    pipeline_class = None
+    store_setting_key = None
+    media_key = None
+    media_urls_key = None
+    expected_checksums = None
+
+    @classmethod
+    def setUpClass(cls):
+        # create the CrawlerRunner only once for all test cases
+        settings = get_project_settings()
+        if cls.store_setting_key not in settings:
+            raise NotConfigured(f"{cls.store_setting_key} not in settings")  # raise an error if the store setting key is not in the settings
+        cls.runner = CrawlerRunner(settings)
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
+
+    def setUp(self):
+        # create a new crawler for each test case
+        self.crawler = get_crawler(self.__class__.__name__, settings=self.runner.settings)
+        self.crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
+        self.items = []
+
+        # prepare a directory for storing files
+        self.tmpmediastore = Path(self.mktemp())
+        self.tmpmediastore.mkdir()
+
+    def tearDown(self):
+        # clean up the files downloaded and remove the tmp directory
+        shutil.rmtree(self.tmpmediastore)
+        self.items = []
+
+    @classmethod
+    def tearDownClass(cls):
+        # clean up the mock server
+        cls.mockserver.__exit__(None, None, None)
+
+    def _on_item_scraped(self, item):
+        self.items.append(item)
+
+    @defer.inlineCallbacks
+    def test_download_media(self):
+        with LogCapture() as log:
+            yield self.crawler.crawl(
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+            )
+        self._assert_files_downloaded(self.items, str(log))
+
+    @defer.inlineCallbacks
+    def test_download_media_wrong_urls(self):
+        with LogCapture() as log:
+            yield self.crawler.crawl(
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+            )
+        self._assert_files_download_failure(self.crawler, self.items, 404, str(log))
+
+    @defer.inlineCallbacks
+    def test_download_media_redirected_default_failure(self):
+        # skip this test if allow_redirects is not set
+        if not self.runner.settings.getbool("MEDIA_ALLOW_REDIRECTS"):
+            self.skipTest("MEDIA_ALLOW_REDIRECTS is not set")
+        with LogCapture() as log:
+            yield self.crawler.crawl(
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+                mockserver=self.mockserver,
+            )
+        self._assert_files_download_failure(self.crawler, self.items, 302, str(log))
+
+    @defer.inlineCallbacks
+    def test_download_media_redirected_allowed(self):
+        # skip this test if allow_redirects is not set
+        if not self.runner.settings.getbool("MEDIA_ALLOW_REDIRECTS"):
+            self.skipTest("MEDIA_ALLOW_REDIRECTS is not set")
+        runner = CrawlerRunner(get_project_settings())
+        crawler = get_crawler(
+            "RedirectedMediaDownloadSpider",
+            runner.settings,
+            mockserver=self.mockserver,
+        )
+        with LogCapture() as log:
+            yield runner.crawl(
+                crawler,
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+            )
+        self._assert_files_downloaded(self.items, str(log))
+        self.assertEqual(
+            crawler.stats.get_value("downloader/response_status_count/302"), 3
+        )
+
+
+class ImageDownloadCrawlTestCase(FileDownloadCrawlTestCase):
+    skip_reason = skip_pillow  # set the skip reason variable to skip_pillow
+
+    pipeline_class = "scrapy.pipelines.images.ImagesPipeline"
+    store_setting_key = "IMAGES_STORE"
+    media_key = "images"
+    media_urls_key = "image_urls"
+
+    # somehow checksums for images are different for Python 3.3
+    expected_checksums = None
