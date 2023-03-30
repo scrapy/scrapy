@@ -322,7 +322,7 @@ feed_slot_closed
 
 
 feed_exporter_closed
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. signal:: feed_exporter_closed
 .. function:: feed_exporter_closed()
