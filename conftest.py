@@ -1,231 +1,232 @@
-import re
-from time import time
-from urllib.parse import urldefrag, urlparse, urlunparse
+"""
+Base class for Scrapy commands
+"""
+import argparse
+import os
+from pathlib import Path
+from typing import Any, Dict, Optional
 
-import scrapy
-from twisted.internet import defer
-from twisted.internet.protocol import ClientFactory
-from twisted.web.http import HTTPClient
+from twisted.python import failure
 
-from scrapy.responsetypes import responsetypes
-from scrapy.utils.httpobj import urlparse_cached
-
-
-def _parsed_url_args(parsed):
-    """
-    Returns a tuple of (scheme, netloc, host, port, path), where everything except the port is in bytes, and port is an
-    integer. Assumes that 'parsed' argument was parsed from a Request.url received via safe_url_string, and is ascii-only.
-    """
-    path = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
-    path = scrapy.utils.python.to_bytes(path, encoding="ascii")
-    host = scrapy.utils.python.to_bytes(parsed.hostname, encoding="ascii")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    scheme = scrapy.utils.python.to_bytes(parsed.scheme, encoding="ascii")
-    netloc = scrapy.utils.python.to_bytes(parsed.netloc, encoding="ascii")
-    return scheme, netloc, host, port, path
+from scrapy.crawler import CrawlerProcess
+from scrapy.exceptions import UsageError
+from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 
 
-def parse_url(url):
-    """
-    Returns a tuple of (scheme, netloc, host, port, path), where everything except the port is in bytes, and port is an
-    integer. Assumes that 'url' argument came from Request.url and is ascii-only.
-    """
-    url = url.strip()
-    if not re.match(r"^\w+://", url):
-        url = "//" + url
-    parsed = urlparse(url)
-    return _parsed_url_args(parsed)
+class ScrapyCommand:
+    def __init__(self) -> None:
+        self.settings: Optional[Dict[str, Any]] = None
 
+    def syntax(self) -> str:
+        """
+        Command syntax (preferably one-line). Do not include command name.
+        """
+        raise NotImplementedError
 
-class ScrapyHTTPPageGetter(HTTPClient):
+    def short_desc(self) -> str:
+        """
+        A short description of the command
+        """
+        raise NotImplementedError
 
-    delimiter = b"\n"
+    def long_desc(self) -> str:
+        """
+        A long description of the command. Return short description when not
+        available. It cannot contain newlines since contents will be formatted
+        by optparser which removes newlines and wraps text.
+        """
+        return self.short_desc()
 
-    def connectionMade(self):
-        self.headers = scrapy.http.Headers()
+    def help(self) -> str:
+        """
+        An extensive help for the command. It will be shown when using the
+        "help" command. It can contain newlines since no post-formatting will
+        be applied to its contents.
+        """
+        return self.long_desc()
 
-        # Method command
-        self.sendCommand(self.factory.method, self.factory.path)
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        """
+        Populate option parse with options available for this command
+        """
+        group = parser.add_argument_group(title="Global Options")
+        group.add_argument(
+            "--logfile",
+            metavar="FILE",
+            help="log file. if omitted stderr will be used",
+        )
+        group.add_argument(
+            "-L",
+            "--loglevel",
+            metavar="LEVEL",
+            default=None,
+            help="log level (default: LOG_LEVEL)",
+        )
+        group.add_argument(
+            "--nolog",
+            action="store_true",
+            help="disable logging completely",
+        )
+        group.add_argument(
+            "--profile",
+            metavar="FILE",
+            default=None,
+            help="write python cProfile stats to FILE",
+        )
+        group.add_argument(
+            "--pidfile",
+            metavar="FILE",
+            help="write process ID to FILE",
+        )
+        group.add_argument(
+            "-s",
+            "--set",
+            action="append",
+            default=[],
+            metavar="NAME=VALUE",
+            help="set/override setting (may be repeated)",
+        )
+        group.add_argument(
+            "--pdb",
+            action="store_true",
+            help="enable pdb on failure",
+        )
 
-        # Headers
-        for key, values in self.factory.headers.items():
-            for value in values:
-                self.sendHeader(key, value)
-        self.endHeaders()
-
-        # Body
-        if self.factory.body is not None:
-            self.transport.write(self.factory.body)
-
-    def lineReceived(self, line):
-        return super().lineReceived(line.rstrip())
-
-    def handleHeader(self, key, value):
-        self.headers.appendlist(key, value)
-
-    def handleStatus(self, version, status, message):
-        self.factory.gotStatus(version, status, message)
-
-    def handleEndHeaders(self):
-        self.factory.gotHeaders(self.headers)
-
-    def connectionLost(self, reason):
-        self.factory.noPage(reason)
-        super().connectionLost(reason)
-
-    def handleResponse(self, response):
-        if self.factory.method.upper() == b'HEAD':
-            self.factory.page(b'')
-        elif self.length is not None and self.length > 0:
-            self.factory.noPage(self._connection_lost_reason)
-        else:
-            self.factory.page(response)
-        self.transport.loseConnection()
-
-    def timeout(self):
-        self.transport.loseConnection()
-
-        # Transport cleanup needed for HTTPS connections
-        if self.factory.url.startswith(b"https"):
-            self.transport.stopProducing()
-
-        self.factory.noPage(
-            defer.TimeoutError(
-                f"Getting {self.factory.url} took longer than {self.factory.timeout} seconds."
+    def process_options(
+        self, args: argparse.Namespace, opts: dict
+    ) -> Dict[str, Any]:
+        settings = self.settings
+        try:
+            settings.setdict(
+                arglist_to_dict(opts.set),
+                priority="cmdline",
             )
-        )
+        except ValueError:
+            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
+        if opts.logfile:
+            settings.set("LOG_ENABLED", True, priority="cmdline")
+            settings.set("LOG_FILE", opts.logfile, priority="cmdline")
 
-class ScrapyHTTPClientFactory(ClientFactory):
+        if opts.loglevel:
+            settings.set("LOG_ENABLED", True, priority="cmdline")
+            settings.set("LOG_LEVEL", opts.loglevel, priority="cmdline")
 
-    protocol = ScrapyHTTPPageGetter
+        if opts.nolog:
+            settings.set("LOG_ENABLED", False, priority="cmdline")
 
-    waiting = 1
-    noisy = False
-    followRedirect = False
-    afterFoundGet = False
-
-    def __init__(self, request, timeout=180):
-        self._url = urldefrag(request.url)[0]
-        # Could not 'to_bytes' the entire url, because urldefrag() requires Unicode input,
-        # and converted characters would become percent-encoded. Instead, only the scheme,
-        # hostname, netloc, and path were converted. The remaining bit (fragment identifier)
-        # is assumed to not have any characters requiring conversion.
-        parsed_url = urlparse(self._url)
-        self.url = urlunparse(
-            (
-                scrapy.utils.python.to_bytes(parsed_url.scheme, encoding="ascii"),
-                "",
-                scrapy.utils.python.to_bytes(parsed_url.netloc, encoding="ascii"),
-                "",
-                "",
-                "",
+        if opts.pidfile:
+            Path(opts.pidfile).write_text(
+                str(os.getpid()) + os.linesep, encoding="utf-8"
             )
+
+        if opts.pdb:
+            failure.startDebugMode()
+        return settings
+
+    def run(self, args: argparse.Namespace, opts: dict) -> None:
+        """
+        Entry point for running commands
+        """
+        raise NotImplementedError
+
+
+class BaseRunSpiderCommand(ScrapyCommand):
+    """
+    Common class used to share functionality between the crawl, parse,
+    and runspider commands.
+    """
+
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
+        parser.add_argument(
+            "-a",
+            dest="spargs",
+            action="append",
+            default=[],
+            metavar="NAME=VALUE",
+            help="set spider argument (may be repeated)",
         )
-        self.method = scrapy.utils.python.to_bytes(request.method, encoding="ascii")
-        self.body = request.body or None
-        self.headers = scrapy.http.Headers(request.headers)
-        self.response_headers = None
-        self.timeout = request.meta.get("download_timeout", timeout)
-        self.start_time = time()
-        self.deferred = defer.Deferred().addCallback(self._build_response, request)
-
-        # Fixes Twisted 11.1.0+ support as HTTPClientFactory is expected
-        # to have _disconnectedDeferred. See Twisted r32329.
-        # As Scrapy implements its own logic to handle redirects is not
-        # needed to add the callback _waitForDisconnect.
-        # Specifically this avoids the AttributeError exception when
-        # clientConnectionFailed method is called.
-        self._disconnectedDeferred = defer.Deferred()
-
-        # Set Host header based on url
-        self.headers.setdefault("Host", urlparse_cached(request).hostname)
-
-        # Set Content-Length based len of body
-        if self.body is not None:
-            self.headers["Content-Length"] = str(len(self.body)).encode("utf-8")
-            # Just in case a broken http/1.1 decides to keep connection alive
-            self.headers.setdefault("Connection", "close")
-        # Content-Length must be specified in POST method even with no body
-        elif self.method == b"POST":
-            self.headers["Content-Length"] = b"0"
-
-    def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.url}>"
-
-    def buildProtocol(self, addr):
-        p = super().buildProtocol(addr)
-        p.followRedirect = self.followRedirect
-        p.afterFoundGet = self.afterFoundGet
-        if self.timeout:
-            from twisted.internet import reactor
-
-            timeoutCall = reactor.callLater(self.timeout, p.timeout)
-            self.deferred.addBoth(self._cancelTimeout, timeoutCall)
-        return p
-
-    def _cancelTimeout(self, result, timeoutCall):
-        if timeoutCall.active():
-            timeoutCall.cancel()
-        return result
-
-    def _set_connection_attributes(self, request):
-        parsed = urlparse_cached(request)
-        self.scheme, _, self.host, self.port, self.path = _parsed_url_args(parsed)
-        proxy = request.meta.get("proxy")
-        if proxy:
-            self.scheme, _, self.host, self.port, _ = parse_url(proxy)
-            self.path = self.url
-
-    def _build_response(self, body, request):
-        request.meta["download_latency"] = self.headers_time - self.start_time
-        status = int(self.status)
-        headers = scrapy.http.Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self._url, body=body)
-        return respcls(
-            url=self._url,
-            status=status,
-            headers=headers,
-            body=body,
-            protocol=scrapy.utils.python.to_unicode(self.version),
+        parser.add_argument(
+            "-o",
+            "--output",
+            metavar="FILE",
+            action="append",
+            help=(
+                "append scraped items to the end of FILE "
+                "(use - for stdout). "
+                "to define format set a colon at the end of the output URI "
+                "(i.e. -o FILE:FORMAT)"
+            ),
+        )
+        parser.add_argument(
+            "-O",
+            "--overwrite-output",
+            metavar="FILE",
+            action="append",
+            help=(
+                "dump scraped items into FILE, overwriting any existing file,"
+                "to define format set a colon at the end of the output URI "
+                "(i.e. -O FILE:FORMAT)"
+            ),
+        )
+        parser.add_argument(
+            "-t",
+            "--output-format",
+            metavar="FORMAT",
+            help="format to use for dumping items",
         )
 
-    def gotHeaders(self, headers):
-        self.headers_time = time()
-        self.response_headers = headers
+    def process_options(self, args: argparse.Namespace, opts: dict) -> Dict[str, Any]:
+        settings = super().process_options(args, opts)
+        try:
+            opts.spargs = arglist_to_dict(opts.spargs)
+        except ValueError:
+            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
 
-    def gotStatus(self, version, status, message):
-        """
-        Set the status of the request on us.
-        @param version: The HTTP version.
-        @type version: L{bytes}
-        @param status: The HTTP status code, an integer represented as a
-        bytestring.
-        @type status: L{bytes}
-        @param message: The HTTP status message.
-        @type message: L{bytes}
-        """
-        self.version, self.status, self.message = version, status, message
+        if opts.output or opts.overwrite_output:
+            feeds = feed_process_params_from_cli(
+                settings,
+                opts.output,
+                opts.output_format,
+                opts.overwrite_output,
+            )
+            settings.set("FEEDS", feeds, priority="cmdline")
 
-    def page(self, page):
-        if self.waiting:
-            self.waiting = 0
-            self.deferred.callback(page)
+        return settings
 
-    def noPage(self, reason):
-        if self.waiting:
-            self.waiting = 0
-            self.deferred.errback(reason)
 
-    def clientConnectionFailed(self, _, reason):
+class ScrapyHelpFormatter(argparse.HelpFormatter):
+    """
+    Help Formatter for scrapy command line help messages.
+    """
+
+    def __init__(self, prog, indent_increment=2,
+                 max_help_position=24, width=None):
+        super().__init__(
+            prog,
+            indent_increment=indent_increment,
+            max_help_position=max_help_position,
+            width=width,
+        )
+
+    def _join_parts(self, part_strings):
+        super()._join_parts(parts)
+
+    def format_part_strings(self, part_strings):
         """
-        When a connection attempt fails, the request cannot be issued.  If no
-        result has yet been provided to the result Deferred, provide the
-        connection failure reason as an error result.
+        Underline and title case command line help message headers.
         """
-        if self.waiting:
-            self.waiting = 0
-            # If the connection attempt failed, there is nothing more to
-            # disconnect, so just fire that Deferred now.
-            self._disconnectedDeferred.callback(None)
-            self.deferred.errback(reason)
+        if part_strings and part_strings[0].startswith("usage: "):
+            part_strings[0] = "Usage\n=====\n  " \
+                               + part_strings[0][len("usage: "):]
+        headings = [
+            i for i in range(len(part_strings))
+            if part_strings[i].endswith(":\n")
+        ]
+        for index in headings[::-1]:
+            char = "-" if "Global Options" in part_strings[index] else "="
+            part_strings[index] = part_strings[index][:-2].title()
+            underline = "".join(["\n", (char * len(part_strings[index])), "\n"])
+            part_strings.insert(index + 1, underline)
+        return part_strings
