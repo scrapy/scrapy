@@ -2603,9 +2603,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
 # Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
 class FeedExporterSignalsTest(unittest.TestCase):
-    feed_exporter_closed_received = False
-    feed_slot_closed_received = False
-
     items = [
         {"foo": "bar1", "egg": "spam1"},
         {"foo": "bar2", "egg": "spam2", "baz": "quux2"},
@@ -2627,17 +2624,31 @@ class FeedExporterSignalsTest(unittest.TestCase):
     def feed_slot_closed_signal_handler(self, slot):
         self.feed_slot_closed_received = True
 
-    def run_signaled_feed_exporter(self):
+    def feed_exporter_closed_signal_handler_deferred(self):
+        d = defer.Deferred()
+        d.addCallback(lambda _: setattr(self, "feed_exporter_closed_received", True))
+        d.callback(None)
+        return d
+
+    def feed_slot_closed_signal_handler_deferred(self, slot):
+        d = defer.Deferred()
+        d.addCallback(lambda _: setattr(self, "feed_slot_closed_received", True))
+        d.callback(None)
+        return d
+
+    def run_signaled_feed_exporter(
+        self, feed_exporter_signal_handler, feed_slot_signal_handler
+    ):
         crawler = get_crawler(settings_dict=self.settings)
         feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
         spider.crawler = crawler
         crawler.signals.connect(
-            self.feed_exporter_closed_signal_handler,
+            feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,
         )
         crawler.signals.connect(
-            self.feed_slot_closed_signal_handler, signal=signals.feed_slot_closed
+            feed_slot_signal_handler, signal=signals.feed_slot_closed
         )
         feed_exporter.open_spider(spider)
         for item in self.items:
@@ -2645,9 +2656,26 @@ class FeedExporterSignalsTest(unittest.TestCase):
         defer.ensureDeferred(feed_exporter.close_spider(spider))
 
     def test_feed_exporter_signals_sent(self):
-        self.run_signaled_feed_exporter()
-        self.assertTrue(self.feed_exporter_closed_received)
+        self.feed_exporter_closed_received = False
+        self.feed_slot_closed_received = False
+
+        self.run_signaled_feed_exporter(
+            self.feed_exporter_closed_signal_handler,
+            self.feed_slot_closed_signal_handler,
+        )
         self.assertTrue(self.feed_slot_closed_received)
+        self.assertTrue(self.feed_exporter_closed_received)
+
+    def test_feed_exporter_signals_sent_deferred(self):
+        self.feed_exporter_closed_received = False
+        self.feed_slot_closed_received = False
+
+        self.run_signaled_feed_exporter(
+            self.feed_exporter_closed_signal_handler_deferred,
+            self.feed_slot_closed_signal_handler_deferred,
+        )
+        self.assertTrue(self.feed_slot_closed_received)
+        self.assertTrue(self.feed_exporter_closed_received)
 
 
 class FeedExportInitTest(unittest.TestCase):

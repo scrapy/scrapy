@@ -312,7 +312,7 @@ class _FeedSlot:
 
 
 class FeedExporter:
-    pending_deferreds = []
+    _pending_deferreds = []
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -384,8 +384,8 @@ class FeedExporter:
             self._close_slot(slot, spider)
 
         # Await all deferreds
-        if self.pending_deferreds:
-            await maybe_deferred_to_future(DeferredList(self.pending_deferreds))
+        if self._pending_deferreds:
+            await maybe_deferred_to_future(DeferredList(self._pending_deferreds))
 
         # Send FEED_EXPORTER_CLOSED signal
         await maybe_deferred_to_future(
@@ -407,14 +407,13 @@ class FeedExporter:
         d.addErrback(
             self._handle_store_error, logmsg, spider, type(slot.storage).__name__
         )
-
-        self.pending_deferreds.append(d)
+        self._pending_deferreds.append(d)
         d.addCallback(
-            lambda _: self.crawler.signals.send_catch_log(
+            lambda _: self.crawler.signals.send_catch_log_deferred(
                 signals.feed_slot_closed, slot=slot
             )
         )
-        d.addBoth(lambda _: self.pending_deferreds.remove(d))
+        d.addBoth(lambda _: self._pending_deferreds.remove(d))
 
         return d
 
