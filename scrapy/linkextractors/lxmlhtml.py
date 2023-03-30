@@ -88,7 +88,11 @@ class LxmlParserLinkExtractor:
                 url = self.process_attr(attr_val)
                 if url is None:
                     continue
-            url = safe_url_string(url, encoding=response_encoding)
+            try:
+                url = safe_url_string(url, encoding=response_encoding)
+            except ValueError:
+                continue  # Disregard badly formatted urls
+
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(
