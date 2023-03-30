@@ -1,108 +1,184 @@
-import time
-from collections import defaultdict
-from unittest import TextTestResult as _TextTestResult
-from unittest import TextTestRunner
+import unittest
+import warnings
 
-from scrapy.commands import ScrapyCommand
-from scrapy.contracts import ContractsManager
-from scrapy.utils.conf import build_component_list
-from scrapy.utils.misc import load_object, set_environ
-
-
-class TextTestResult(_TextTestResult):
-    def printSummary(self, start, stop):
-        write = self.stream.write
-        writeln = self.stream.writeln
-
-        run = self.testsRun
-        plural = "s" if run != 1 else ""
-
-        writeln(self.separator2)
-        writeln(f"Ran {run} contract{plural} in {stop - start:.3f}s")
-        writeln()
-
-        infos = []
-        if not self.wasSuccessful():
-            write("FAILED")
-            failed, errored = map(len, (self.failures, self.errors))
-            if failed:
-                infos.append(f"failures={failed}")
-            if errored:
-                infos.append(f"errors={errored}")
-        else:
-            write("OK")
-
-        if infos:
-            writeln(f" ({', '.join(infos)})")
-        else:
-            write("\n")
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.settings import BaseSettings, Settings
+from scrapy.utils.conf import (
+    arglist_to_dict,
+    build_component_list,
+    feed_complete_default_values_from_settings,
+    feed_process_params_from_cli,
+)
 
 
-class Command(ScrapyCommand):
-    requires_project = True
-    default_settings = {"LOG_ENABLED": False}
+class BuildComponentListTest(unittest.TestCase):
 
-    def syntax(self):
-        return "[options] <spider>"
+    def test_build_dict(self):
+        d = {"one": 1, "two": None, "three": 8, "four": 4}
+        self.assertEqual(build_component_list(d, convert=lambda x: x), ["one", "four", "three"])
 
-    def short_desc(self):
-        return "Check spider contracts"
+    def test_backward_compatible_build_dict(self):
+        base = {"one": 1, "two": 2, "three": 3, "five": 5, "six": None}
+        custom = {"two": None, "three": 8, "four": 4}
+        self.assertEqual(build_component_list(base, custom, convert=lambda x: x), ["one", "four", "five", "three"])
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
-        parser.add_argument(
-            "-l",
-            "--list",
-            dest="list",
-            action="store_true",
-            help="only list contracts, without checking them",
-        )
-        parser.add_argument(
-            "-v",
-            "--verbose",
-            dest="verbose",
-            default=False,
-            action="store_true",
-            help="print contract tests for all spiders",
-        )
+    def test_return_list(self):
+        custom = ["a", "b", "c"]
+        self.assertEqual(build_component_list(None, custom, convert=lambda x: x), custom)
 
-    def run(self, args, opts):
-        # load contracts
-        contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
-        conman = ContractsManager(load_object(c) for c in contracts)
-        runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
-        result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
+    def test_map_dict(self):
+        custom = {"one": 1, "two": 2, "three": 3}
+        self.assertEqual(build_component_list({}, custom, convert=lambda x: x.upper()), ["ONE", "TWO", "THREE"])
 
-        # contract requests
-        contract_reqs = defaultdict(list)
+    def test_map_list(self):
+        custom = ["a", "b", "c"]
+        self.assertEqual(build_component_list(None, custom, lambda x: x.upper()), ["A", "B", "C"])
 
-        spider_loader = self.crawler_process.spider_loader
+    def test_duplicate_components_in_dict(self):
+        duplicate_dict = {"one": 1, "two": 2, "ONE": 4}
+        with self.assertRaises(ValueError):
+            build_component_list({}, duplicate_dict, convert=lambda x: x.lower())
 
-        with set_environ(SCRAPY_CHECK="true"):
-            for spidername in args or spider_loader.list():
-                spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)
+    def test_duplicate_components_in_list(self):
+        duplicate_list = ["a", "b", "a"]
+        with self.assertRaises(ValueError) as cm:
+            build_component_list(None, duplicate_list, convert=lambda x: x)
+        self.assertIn(str(duplicate_list), str(cm.exception))
 
-                tested_methods = conman.tested_methods_from_spidercls(spidercls)
-                if opts.list:
-                    for method in tested_methods:
-                        contract_reqs[spidercls.name].append(method)
-                elif tested_methods:
-                    self.crawler_process.crawl(spidercls)
+    def test_duplicate_components_in_basesettings(self):
+        # Higher priority takes precedence
+        duplicate_bs = BaseSettings({"one": 1, "two": 2}, priority=0)
+        duplicate_bs.set("ONE", 4, priority=10)
+        self.assertEqual(build_component_list(duplicate_bs, convert=lambda x: x.lower()), ["two", "one"])
+        duplicate_bs.set("one", duplicate_bs["one"], priority=20)
+        self.assertEqual(build_component_list(duplicate_bs, convert=lambda x: x.lower()), ["one", "two"])
+        # Same priority raises ValueError
+        duplicate_bs.set("ONE", duplicate_bs["ONE"], priority=20)
+        with self.assertRaises(ValueError):
+            build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
-            # start checks
-            if opts.list:
-                for spider, methods in sorted(contract_reqs.items()):
-                    if not methods and not opts.verbose:
-                        continue
-                    print(spider)
-                    for method in sorted(methods):
-                        print(f"  * {method}")
-            else:
-                start = time.time()
-                self.crawler_process.start()
-                stop = time.time()
+    def test_valid_numbers(self):
+        # work well with None and numeric values
+        d = {"a": 10, "b": None, "c": 15, "d": 5.0}
+        self.assertEqual(build_component_list(d, convert=lambda x: x), ["d", "a", "c"])
+        d = {"a": 33333333333333333333, "b": 11111111111111111111, "c": 22222222222222222222}
+        self.assertEqual(build_component_list(d, convert=lambda x: x), ["b", "c", "a"])
+        # raise exception for invalid values
+        d = {"one": "5"}
+        with self.assertRaises(ValueError):
+            build_component_list({}, d, convert=lambda x: x)
+        d = {"one": "1.0"}
+        with self.assertRaises(ValueError):
+            build_component_list({}, d, convert=lambda x: x)
+        d = {"one": [1, 2, 3]}
+        with self.assertRaises(ValueError):
+            build_component_list({}, d, convert=lambda x: x)
+        d = {"one": {"a": "a", "b": 2}}
+        with self.assertRaises(ValueError):
+            build_component_list({}, d, convert=lambda x: x)
+        d = {"one": "lorem ipsum"}
+        with self.assertRaises(ValueError):
+            build_component_list({}, d, convert=lambda x: x)
 
-                result.printErrors()
-                result.printSummary(start, stop)
-                self.exitcode = int(not result.wasSuccessful())
+
+class UtilsConfTestCase(unittest.TestCase):
+
+    def test_arglist_to_dict(self):
+        self.assertEqual(arglist_to_dict(["arg1=val1", "arg2=val2"]), {"arg1": "val1", "arg2": "val2"})
+
+
+class FeedExportConfigTestCase(unittest.TestCase):
+
+    def test_feed_export_config_invalid_format(self):
+        settings = Settings()
+        with self.assertRaises(UsageError):
+            feed_process_params_from_cli(settings, ["items.dat"], "noformat")
+
+    def test_feed_export_config_mismatch(self):
+        settings = Settings()
+        with self.assertRaises(UsageError):
+            feed_process_params_from_cli(settings, ["items1.dat", "items2.dat"], "noformat")
+
+    def test_feed_export_config_backward_compatible(self):
+        with warnings.catch_warnings(record=True) as cw:
+            settings = Settings()
+            self.assertEqual(feed_process_params_from_cli(settings, ["items.dat"], "csv"), {"items.dat": {"format": "csv"}})
+            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
+
+    def test_feed_export_config_explicit_formats(self):
+        settings = Settings()
+        self.assertEqual(
+            feed_process_params_from_cli(
+                settings, ["items_1.dat:json", "items_2.dat:xml", "items_3.dat:csv"]),
+            {
+                "items_1.dat": {"format": "json"},
+                "items_2.dat": {"format": "xml"},
+                "items_3.dat": {"format": "csv"},
+            })
+
+    def test_feed_export_config_implicit_formats(self):
+        settings = Settings()
+        self.assertEqual(
+            feed_process_params_from_cli(settings, ["items_1.json", "items_2.xml", "items_3.csv"]),
+            {
+                "items_1.json": {"format": "json"},
+                "items_2.xml": {"format": "xml"},
+                "items_3.csv": {"format": "csv"},
+            })
+
+    def test_feed_export_config_stdout(self):
+        settings = Settings()
+        self.assertEqual(feed_process_params_from_cli(settings, ["-:pickle"]), {"stdout:": {"format": "pickle"}})
+
+    def test_feed_export_config_overwrite(self):
+        settings = Settings()
+        self.assertEqual(feed_process_params_from_cli(settings, [], None, ["output.json"]), {"output.json": {"format": "json", "overwrite": True}})
+
+    def test_output_and_overwrite_output(self):
+        with self.assertRaises(UsageError):
+            feed_process_params_from_cli(Settings(), ["output1.json"], None, ["output2.json"])
+
+    def test_feed_complete_default_values_from_settings_empty(self):
+        feed = {}
+        settings = Settings({
+            "FEED_EXPORT_ENCODING": "custom encoding",
+            "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
+            "FEED_EXPORT_INDENT": 42,
+            "FEED_STORE_EMPTY": True,
+            "FEED_URI_PARAMS": (1, 2, 3, 4),
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        })
+        new_feed = feed_complete_default_values_from_settings(feed, settings)
+        self.assertEqual(new_feed, {
+            "encoding": "custom encoding",
+            "fields": ["f1", "f2", "f3"],
+            "indent": 42,
+            "store_empty": True,
+            "uri_params": (1, 2, 3, 4),
+            "batch_item_count": 2,
+            "item_export_kwargs": {},
+        })
+
+    def test_feed_complete_default_values_from_settings_non_empty(self):
+        feed = {"encoding": "other encoding", "fields": None}
+        settings = Settings({
+            "FEED_EXPORT_ENCODING": "custom encoding",
+            "FEED_EXPORT_FIELDS": ["f1", "f2", "f3"],
+            "FEED_EXPORT_INDENT": 42,
+            "FEED_STORE_EMPTY": True,
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 2,
+        })
+        new_feed = feed_complete_default_values_from_settings(feed, settings)
+        self.assertEqual(new_feed, {
+            "encoding": "other encoding",
+            "fields": None,
+            "indent": 42,
+            "store_empty": True,
+            "uri_params": None,
+            "batch_item_count": 2,
+            "item_export_kwargs": {},
+        })
+
+
+if __name__ == "__main__":
+    unittest.main()
