@@ -285,13 +285,13 @@ Usage examples::
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
-    $ scrapy -o myfile:csv myspider
+    $ scrapy crawl -o myfile:csv myspider
     [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
-    $ scrapy -O myfile:json myspider
+    $ scrapy crawl -O myfile:json myspider
     [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
 
-    $ scrapy -o myfile -t csv myspider
+    $ scrapy crawl -o myfile -t csv myspider
     [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
