@@ -822,7 +822,7 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
         <a href="http://example.org/item2.html">Good Link</a>
         <a href="http://example.org/item3.html">Good Link 2</a>
         """
-        response = HtmlResponse("http://example.org/index.html", body=html, encoding='utf-8')
+        response = HtmlResponse("http://example.org/index.html", body=html)
         lx = self.extractor_cls()
         self.assertEqual(
             [link for link in lx.extract_links(response)],
