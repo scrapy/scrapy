@@ -819,7 +819,7 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
 
     @unittest.skipIf(
         sys.version_info < (3, 8),
-        reason="Urllib3 is less strict in versions for python 3.7 so does not cause spider to crash",
+        reason="some library for python 3.7 so is less strict so bad links like htis don't crash scrapy",
     )
     def test_skip_bad_links(self):
         html = b"""
