@@ -818,11 +818,11 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
 
     def test_skip_bad_links(self):
         html = b"""
-        <a href="http://example.org/ignore_links : http://example.com/like_this">Why would you do this?</a>
+        <a href="http://Some wierd html : http://example.com/like_this">Why would you do this?</a>
         <a href="http://example.org/item2.html">Good Link</a>
         <a href="http://example.org/item3.html">Good Link 2</a>
         """
-        response = HtmlResponse("http://example.org/index.html", body=html)
+        response = HtmlResponse("http://example.org/index.html", body=html, encoding='utf-8')
         lx = self.extractor_cls()
         self.assertEqual(
             [link for link in lx.extract_links(response)],
