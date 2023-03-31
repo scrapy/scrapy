@@ -815,3 +815,26 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
 
     def test_restrict_xpaths_with_html_entities(self):
         super().test_restrict_xpaths_with_html_entities()
+
+    def test_skip_bad_links(self):
+        html = b"""
+        <a href="http://example.org/ignore_links : http://example.com/like_this">Why would you do this?</a>
+        <a href="http://example.org/item2.html">Good Link</a>
+        <a href="http://example.org/item3.html">Good Link 2</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        self.assertEqual(
+            [link for link in lx.extract_links(response)],
+            [
+                Link(
+                    url="http://example.org/item2.html",
+                    text="Good Link",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.org/item3.html",
+                    text="Good Link 2",
+                    nofollow=False,
+                ),
+            ],
+        )
