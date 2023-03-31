@@ -94,7 +94,7 @@ class LxmlParserLinkExtractor:
             try:
                 url = safe_url_string(url, encoding=response_encoding)
             except ValueError:
-                logger.error(f"Skipping extraction of bad link {url}")
+                logger.debug(f"Skipping extraction of bad link {url}")
                 continue  # Disregard badly formatted urls
 
             # to fix relative links after process_value
