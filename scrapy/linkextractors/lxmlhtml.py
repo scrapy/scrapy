@@ -2,6 +2,7 @@
 Link extractor based on lxml.html
 """
 import operator
+import logging
 from functools import partial
 from urllib.parse import urljoin, urlparse
 
@@ -22,6 +23,8 @@ from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
+
+logger = logging.getLogger(__name__)
 
 # from lxml/src/lxml/html/__init__.py
 XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
@@ -91,6 +94,7 @@ class LxmlParserLinkExtractor:
             try:
                 url = safe_url_string(url, encoding=response_encoding)
             except ValueError:
+                logger.error(f"Skipping extraction of bad link {url}")
                 continue  # Disregard badly formatted urls
 
             # to fix relative links after process_value
