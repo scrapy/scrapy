@@ -1,6 +1,7 @@
 import pickle
 import re
 import unittest
+import sys 
 
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
@@ -816,6 +817,10 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
     def test_restrict_xpaths_with_html_entities(self):
         super().test_restrict_xpaths_with_html_entities()
 
+    @unittest.skipIf(
+        sys.version_info < (3, 8),
+        reason="Urllib3 is less strict in versions for python 3.7 so does not cause spider to crash",
+    )
     def test_skip_bad_links(self):
         html = b"""
         <a href="http://Some wierd html : http://example.com/like_this">Why would you do this?</a>
