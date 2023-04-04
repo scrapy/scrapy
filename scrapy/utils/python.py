@@ -9,7 +9,6 @@ import weakref
 from functools import partial, wraps
 from itertools import chain
 from typing import Any, AsyncGenerator, AsyncIterable, Iterable, Union
-import functools
 
 from scrapy.utils.asyncgen import as_async_generator
 
@@ -182,7 +181,7 @@ def get_func_args(func, stripself=False):
     args = []
     sig = inspect.signature(func)
 
-    if isinstance(func, functools.partial):
+    if isinstance(func, partial):
         partial_args = func.args
         partial_kw = func.keywords
 
