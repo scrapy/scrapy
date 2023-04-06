@@ -191,44 +191,46 @@ all start with the ``[s]`` prefix)::
 
 After that, we can start playing with the objects:
 
->>> response.xpath('//title/text()').get()
-'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
+.. code-block:: pycon
 
->>> fetch("https://old.reddit.com/")
+    >>> response.xpath("//title/text()").get()
+    'Scrapy | A Fast and Powerful Scraping and Web Crawling Framework'
 
->>> response.xpath('//title/text()').get()
-'reddit: the front page of the internet'
+    >>> fetch("https://old.reddit.com/")
 
->>> request = request.replace(method="POST")
+    >>> response.xpath("//title/text()").get()
+    'reddit: the front page of the internet'
 
->>> fetch(request)
+    >>> request = request.replace(method="POST")
 
->>> response.status
-404
+    >>> fetch(request)
 
->>> from pprint import pprint
+    >>> response.status
+    404
 
->>> pprint(response.headers)
-{'Accept-Ranges': ['bytes'],
- 'Cache-Control': ['max-age=0, must-revalidate'],
- 'Content-Type': ['text/html; charset=UTF-8'],
- 'Date': ['Thu, 08 Dec 2016 16:21:19 GMT'],
- 'Server': ['snooserv'],
- 'Set-Cookie': ['loid=KqNLou0V9SKMX4qb4n; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
-                'loidcreated=2016-12-08T16%3A21%3A19.445Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
-                'loid=vi0ZVe4NkxNWdlH7r7; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
-                'loidcreated=2016-12-08T16%3A21%3A19.459Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure'],
- 'Vary': ['accept-encoding'],
- 'Via': ['1.1 varnish'],
- 'X-Cache': ['MISS'],
- 'X-Cache-Hits': ['0'],
- 'X-Content-Type-Options': ['nosniff'],
- 'X-Frame-Options': ['SAMEORIGIN'],
- 'X-Moose': ['majestic'],
- 'X-Served-By': ['cache-cdg8730-CDG'],
- 'X-Timer': ['S1481214079.394283,VS0,VE159'],
- 'X-Ua-Compatible': ['IE=edge'],
- 'X-Xss-Protection': ['1; mode=block']}
+    >>> from pprint import pprint
+
+    >>> pprint(response.headers)
+    {'Accept-Ranges': ['bytes'],
+    'Cache-Control': ['max-age=0, must-revalidate'],
+    'Content-Type': ['text/html; charset=UTF-8'],
+    'Date': ['Thu, 08 Dec 2016 16:21:19 GMT'],
+    'Server': ['snooserv'],
+    'Set-Cookie': ['loid=KqNLou0V9SKMX4qb4n; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                    'loidcreated=2016-12-08T16%3A21%3A19.445Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                    'loid=vi0ZVe4NkxNWdlH7r7; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure',
+                    'loidcreated=2016-12-08T16%3A21%3A19.459Z; Domain=reddit.com; Max-Age=63071999; Path=/; expires=Sat, 08-Dec-2018 16:21:19 GMT; secure'],
+    'Vary': ['accept-encoding'],
+    'Via': ['1.1 varnish'],
+    'X-Cache': ['MISS'],
+    'X-Cache-Hits': ['0'],
+    'X-Content-Type-Options': ['nosniff'],
+    'X-Frame-Options': ['SAMEORIGIN'],
+    'X-Moose': ['majestic'],
+    'X-Served-By': ['cache-cdg8730-CDG'],
+    'X-Timer': ['S1481214079.394283,VS0,VE159'],
+    'X-Ua-Compatible': ['IE=edge'],
+    'X-Xss-Protection': ['1; mode=block']}
 
 
 .. _topics-shell-inspect-response:
@@ -242,7 +244,9 @@ getting there.
 
 This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
-Here's an example of how you would call it from your spider::
+Here's an example of how you would call it from your spider:
+
+.. code-block:: python
 
     import scrapy
 
@@ -259,6 +263,7 @@ Here's an example of how you would call it from your spider::
             # We want to inspect one specific response.
             if ".org" in response.url:
                 from scrapy.shell import inspect_response
+
                 inspect_response(response, self)
 
             # Rest of parsing code.
@@ -276,14 +281,18 @@ When you run the spider, you will get something similar to this::
 
 Then, you can check if the extraction code is working:
 
->>> response.xpath('//h1[@class="fn"]')
-[]
+.. code-block:: pycon
+
+    >>> response.xpath('//h1[@class="fn"]')
+    []
 
 Nope, it doesn't. So you can open the response in your web browser and see if
 it's the response you were expecting:
 
->>> view(response)
-True
+.. code-block:: pycon
+
+    >>> view(response)
+    True
 
 Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::

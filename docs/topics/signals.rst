@@ -16,7 +16,9 @@ deliver the arguments that the handler receives.
 You can connect to signals (or send your own) through the
 :ref:`topics-api-signals`.
 
-Here is a simple example showing how you can catch signals and perform some action::
+Here is a simple example showing how you can catch signals and perform some action:
+
+.. code-block:: python
 
     from scrapy import signals
     from scrapy import Spider
@@ -30,17 +32,14 @@ Here is a simple example showing how you can catch signals and perform some acti
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/",
         ]
 
-
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             spider = super(DmozSpider, cls).from_crawler(crawler, *args, **kwargs)
             crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
             return spider
 
-
         def spider_closed(self, spider):
-            spider.logger.info('Spider closed: %s', spider.name)
-
+            spider.logger.info("Spider closed: %s", spider.name)
 
         def parse(self, response):
             pass
@@ -56,11 +55,16 @@ you to run asynchronous code that does not block Scrapy. If a signal
 handler returns one of these objects, Scrapy waits for that asynchronous
 operation to finish.
 
-Let's take an example using :ref:`coroutines <topics-coroutines>`::
+Let's take an example using :ref:`coroutines <topics-coroutines>`:
+
+.. code-block:: python
+
+    import scrapy
+
 
     class SignalSpider(scrapy.Spider):
-        name = 'signals'
-        start_urls = ['https://quotes.toscrape.com/page/1/']
+        name = "signals"
+        start_urls = ["https://quotes.toscrape.com/page/1/"]
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
@@ -71,19 +75,19 @@ Let's take an example using :ref:`coroutines <topics-coroutines>`::
         async def item_scraped(self, item):
             # Send the scraped item to the server
             response = await treq.post(
-                'http://example.com/post',
-                json.dumps(item).encode('ascii'),
-                headers={b'Content-Type': [b'application/json']}
+                "http://example.com/post",
+                json.dumps(item).encode("ascii"),
+                headers={b"Content-Type": [b"application/json"]},
             )
 
             return response
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'text': quote.css('span.text::text').get(),
-                    'author': quote.css('small.author::text').get(),
-                    'tags': quote.css('div.tags a.tag::text').getall(),
+                    "text": quote.css("span.text::text").get(),
+                    "author": quote.css("small.author::text").get(),
+                    "tags": quote.css("div.tags a.tag::text").getall(),
                 }
 
 See the :ref:`topics-signals-ref` below to know which signals support

@@ -76,14 +76,18 @@ addon_configure
 Receives the Settings object and modifies it to enable the required components.
 If it raises an exception, Scrapy will print it and exit.
 
-Examples::
+Examples:
+
+.. code-block:: python
 
     def addon_configure(settings):
-        settings.overrides['DOWNLADER_MIDDLEWARES'].update({
-            'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
-        })
+        settings.overrides["DOWNLOADER_MIDDLEWARES"].update(
+            {
+                "scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware": 900,
+            }
+        )
 
-::
+.. code-block:: python
 
     def addon_configure(settings):
         try:
@@ -100,8 +104,10 @@ is meant to be used to perform post-initialization checks like making sure the
 extension and its dependencies were configured properly. If it raises an
 exception, Scrapy will print and exit.
 
-Examples::
+Examples:
+
+.. code-block:: python
 
     def crawler_ready(crawler):
-        if 'some.other.addon' not in crawler.extensions.enabled:
+        if "some.other.addon" not in crawler.extensions.enabled:
             raise RuntimeError("Some other addon is required to use this addon")

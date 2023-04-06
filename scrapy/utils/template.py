@@ -1,30 +1,31 @@
 """Helper functions for working with templates"""
 
-import os
 import re
 import string
+from os import PathLike
+from pathlib import Path
+from typing import Union
 
 
-def render_templatefile(path, **kwargs):
-    with open(path, 'rb') as fp:
-        raw = fp.read().decode('utf8')
+def render_templatefile(path: Union[str, PathLike], **kwargs):
+    path_obj = Path(path)
+    raw = path_obj.read_text("utf8")
 
     content = string.Template(raw).substitute(**kwargs)
 
-    render_path = path[:-len('.tmpl')] if path.endswith('.tmpl') else path
+    render_path = path_obj.with_suffix("") if path_obj.suffix == ".tmpl" else path_obj
 
-    if path.endswith('.tmpl'):
-        os.rename(path, render_path)
+    if path_obj.suffix == ".tmpl":
+        path_obj.rename(render_path)
 
-    with open(render_path, 'wb') as fp:
-        fp.write(content.encode('utf8'))
+    render_path.write_text(content, "utf8")
 
 
-CAMELCASE_INVALID_CHARS = re.compile(r'[^a-zA-Z\d]')
+CAMELCASE_INVALID_CHARS = re.compile(r"[^a-zA-Z\d]")
 
 
 def string_camelcase(string):
-    """ Convert a word  to its CamelCase version and remove invalid chars
+    """Convert a word  to its CamelCase version and remove invalid chars
 
     >>> string_camelcase('lost-pound')
     'LostPound'
@@ -33,4 +34,4 @@ def string_camelcase(string):
     'MissingImages'
 
     """
-    return CAMELCASE_INVALID_CHARS.sub('', string.title())
+    return CAMELCASE_INVALID_CHARS.sub("", string.title())

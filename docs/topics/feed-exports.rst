@@ -290,10 +290,11 @@ class, which is the default value of the ``item_filter`` :ref:`feed option <feed
 You can create your own custom filtering class by implementing :class:`~scrapy.extensions.feedexport.ItemFilter`'s
 method ``accepts`` and taking ``feed_options`` as an argument.
 
-For instance::
+For instance:
+
+.. code-block:: python
 
     class MyCustomFilter:
-
         def __init__(self, feed_options):
             self.feed_options = feed_options
 
@@ -515,6 +516,10 @@ which uses safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
 Use ``utf-8`` if you want UTF-8 for JSON too.
 
+.. versionchanged:: 2.8
+   The :command:`startproject` command now sets this setting to
+   ``utf-8`` in the generated ``settings.py`` file.
+
 .. setting:: FEED_EXPORT_FIELDS
 
 FEED_EXPORT_FIELDS
@@ -590,23 +595,27 @@ For a complete list of available values, access the `Canned ACL`_ section on Ama
 FEED_STORAGES_BASE
 ------------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        '': 'scrapy.extensions.feedexport.FileFeedStorage',
-        'file': 'scrapy.extensions.feedexport.FileFeedStorage',
-        'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
-        's3': 'scrapy.extensions.feedexport.S3FeedStorage',
-        'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
+        "": "scrapy.extensions.feedexport.FileFeedStorage",
+        "file": "scrapy.extensions.feedexport.FileFeedStorage",
+        "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
+        "s3": "scrapy.extensions.feedexport.S3FeedStorage",
+        "ftp": "scrapy.extensions.feedexport.FTPFeedStorage",
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy. You
 can disable any of these backends by assigning ``None`` to their URI scheme in
 :setting:`FEED_STORAGES`. E.g., to disable the built-in FTP storage backend
-(without replacement), place this in your ``settings.py``::
+(without replacement), place this in your ``settings.py``:
+
+.. code-block:: python
 
     FEED_STORAGES = {
-        'ftp': None,
+        "ftp": None,
     }
 
 .. setting:: FEED_EXPORTERS
@@ -624,26 +633,30 @@ serialization formats and the values are paths to :ref:`Item exporter
 
 FEED_EXPORTERS_BASE
 -------------------
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'json': 'scrapy.exporters.JsonItemExporter',
-        'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
-        'jsonl': 'scrapy.exporters.JsonLinesItemExporter',
-        'jl': 'scrapy.exporters.JsonLinesItemExporter',
-        'csv': 'scrapy.exporters.CsvItemExporter',
-        'xml': 'scrapy.exporters.XmlItemExporter',
-        'marshal': 'scrapy.exporters.MarshalItemExporter',
-        'pickle': 'scrapy.exporters.PickleItemExporter',
+        "json": "scrapy.exporters.JsonItemExporter",
+        "jsonlines": "scrapy.exporters.JsonLinesItemExporter",
+        "jsonl": "scrapy.exporters.JsonLinesItemExporter",
+        "jl": "scrapy.exporters.JsonLinesItemExporter",
+        "csv": "scrapy.exporters.CsvItemExporter",
+        "xml": "scrapy.exporters.XmlItemExporter",
+        "marshal": "scrapy.exporters.MarshalItemExporter",
+        "pickle": "scrapy.exporters.PickleItemExporter",
     }
 
 A dict containing the built-in feed exporters supported by Scrapy. You can
 disable any of these exporters by assigning ``None`` to their serialization
 format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
-(without replacement), place this in your ``settings.py``::
+(without replacement), place this in your ``settings.py``:
+
+.. code-block:: python
 
     FEED_EXPORTERS = {
-        'csv': None,
+        "csv": None,
     }
 
 
@@ -673,7 +686,9 @@ generated:
   number by introducing leading zeroes as needed, use ``%(batch_id)05d``
   (e.g. ``3`` becomes ``00003``, ``123`` becomes ``00123``).
 
-For instance, if your settings include::
+For instance, if your settings include:
+
+.. code-block:: python
 
     FEED_EXPORT_BATCH_ITEM_COUNT = 100
 
@@ -742,16 +757,20 @@ The function signature should be as follows:
 For example, to include the :attr:`name <scrapy.Spider.name>` of the
 source spider in the feed URI:
 
-#.  Define the following function somewhere in your project::
+#.  Define the following function somewhere in your project:
+
+    .. code-block:: python
 
         # myproject/utils.py
         def uri_params(params, spider):
-            return {**params, 'spider_name': spider.name}
+            return {**params, "spider_name": spider.name}
 
-#.  Point :setting:`FEED_URI_PARAMS` to that function in your settings::
+#.  Point :setting:`FEED_URI_PARAMS` to that function in your settings:
+
+    .. code-block:: python
 
         # myproject/settings.py
-        FEED_URI_PARAMS = 'myproject.utils.uri_params'
+        FEED_URI_PARAMS = "myproject.utils.uri_params"
 
 #.  Use ``%(spider_name)s`` in your feed URI::
 
