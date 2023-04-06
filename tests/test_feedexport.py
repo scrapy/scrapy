@@ -1640,15 +1640,13 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_storage_file_no_postprocessing(self):
-
         @implementer(IFeedStorage)
         class Storage:
-
             def __init__(self, uri, *, feed_options=None):
                 pass
 
             def open(self, spider):
-                Storage.open_file = tempfile.NamedTemporaryFile(prefix='feed-')
+                Storage.open_file = tempfile.NamedTemporaryFile(prefix="feed-")
                 return Storage.open_file
 
             def store(self, file):
@@ -1656,23 +1654,21 @@ class FeedExportTest(FeedExportTestBase):
                 file.close()
 
         settings = {
-            'FEEDS': {self._random_temp_filename(): {'format': 'jsonlines'}},
-            'FEED_STORAGES': {'file': Storage},
+            "FEEDS": {self._random_temp_filename(): {"format": "jsonlines"}},
+            "FEED_STORAGES": {"file": Storage},
         }
         yield self.exported_no_data(settings)
         self.assertIs(Storage.open_file, Storage.store_file)
 
     @defer.inlineCallbacks
     def test_storage_file_postprocessing(self):
-
         @implementer(IFeedStorage)
         class Storage:
-
             def __init__(self, uri, *, feed_options=None):
                 pass
 
             def open(self, spider):
-                Storage.open_file = tempfile.NamedTemporaryFile(prefix='feed-')
+                Storage.open_file = tempfile.NamedTemporaryFile(prefix="feed-")
                 return Storage.open_file
 
             def store(self, file):
@@ -1680,15 +1676,15 @@ class FeedExportTest(FeedExportTestBase):
                 file.close()
 
         settings = {
-            'FEEDS': {
+            "FEEDS": {
                 self._random_temp_filename(): {
-                    'format': 'jsonlines',
-                    'postprocessing': [
-                        'scrapy.extensions.postprocessing.GzipPlugin',
+                    "format": "jsonlines",
+                    "postprocessing": [
+                        "scrapy.extensions.postprocessing.GzipPlugin",
                     ],
                 },
             },
-            'FEED_STORAGES': {'file': Storage},
+            "FEED_STORAGES": {"file": Storage},
         }
         yield self.exported_no_data(settings)
         self.assertIs(Storage.open_file, Storage.store_file)

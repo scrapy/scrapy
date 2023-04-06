@@ -115,7 +115,6 @@ class BlockingFeedStorage:
 
 @implementer(IFeedStorage)
 class StdoutFeedStorage:
-
     def __init__(self, uri, _stdout=None, *, feed_options=None):
         if not _stdout:
             _stdout = sys.stdout.buffer
@@ -384,7 +383,6 @@ class FeedExporter:
         return defer.DeferredList(deferred_list) if deferred_list else None
 
     def _close_slot(self, slot, spider):
-
         def get_file(slot_):
             if isinstance(slot_.file, PostProcessingManager):
                 return slot_.file.file
