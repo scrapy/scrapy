@@ -2609,10 +2609,10 @@ class FeedExporterSignalsTest(unittest.TestCase):
         {"foo": "bar3", "baz": "quux3"},
     ]
 
-    with tempfile.NamedTemporaryFile() as tmp:
+    with tempfile.NamedTemporaryFile(suffix="json") as tmp:
         settings = {
             "FEEDS": {
-                tmp.name: {
+                f"file:///{tmp.name}": {
                     "format": "json",
                 },
             },

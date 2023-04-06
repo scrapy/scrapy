@@ -11,7 +11,7 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Callable, Optional, Tuple, Union
+from typing import IO, Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -312,7 +312,7 @@ class _FeedSlot:
 
 
 class FeedExporter:
-    _pending_deferreds = []
+    _pending_deferreds: List[defer.Deferred] = []
 
     @classmethod
     def from_crawler(cls, crawler):
