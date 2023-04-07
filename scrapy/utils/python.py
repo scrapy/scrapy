@@ -191,14 +191,14 @@ def get_func_args(func, stripself=False):
         for name, param in sig.parameters.items():
             if param.name in partial_args:
                 continue
-            elif partial_kw and param.name in partial_kw:
+            if partial_kw and param.name in partial_kw:
                 continue
             else:
                 args.append(name)
     else:
         for name in sig.parameters.keys():
             args.append(name)
-    
+
     if stripself and args and args[0] == 'self':
         args = args[1:]
     return args
