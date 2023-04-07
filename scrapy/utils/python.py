@@ -193,8 +193,7 @@ def get_func_args(func, stripself=False):
                 continue
             if partial_kw and param.name in partial_kw:
                 continue
-            else:
-                args.append(name)
+            args.append(name)
     else:
         for name in sig.parameters.keys():
             args.append(name)
