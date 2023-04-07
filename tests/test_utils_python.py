@@ -239,10 +239,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(
             get_func_args(str.split, stripself=True), ["sep", "maxsplit"]
         )
-        # ValueError: callable operator.itemgetter(2) is not supported by signature
-        # self.assertEqual(
-        #     get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
-        # )
+        self.assertEqual(
+            get_func_args(operator.itemgetter(2), stripself=True), []
+        )
         self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
     def test_without_none_values(self):
