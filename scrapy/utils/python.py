@@ -198,7 +198,7 @@ def get_func_args(func, stripself=False):
         for name in sig.parameters.keys():
             args.append(name)
 
-    if stripself and args and args[0] == 'self':
+    if stripself and args and args[0] == "self":
         args = args[1:]
     return args
 
