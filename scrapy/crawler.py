@@ -9,9 +9,6 @@ from typing import TYPE_CHECKING, Optional, Type, Union
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
 
-from scrapy.logformatter import LogFormatter
-from scrapy.statscollectors import StatsCollector
-
 try:
     # zope >= 5.0 only supports MultipleInvalid
     from zope.interface.exceptions import MultipleInvalid
@@ -25,8 +22,10 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
+from scrapy.logformatter import LogFormatter
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
