@@ -1,6 +1,7 @@
 """Helper functions for working with signals"""
 import collections.abc
 import logging
+from typing import Any as TypingAny
 from typing import List, Tuple
 
 from pydispatch.dispatcher import (
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def send_catch_log(
     signal=Any, sender=Anonymous, *arguments, **named
-) -> List[Tuple[Any, Any]]:
+) -> List[Tuple[TypingAny, TypingAny]]:
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
     """
@@ -35,9 +36,9 @@ def send_catch_log(
     )
     dont_log += (StopDownload,)
     spider = named.get("spider", None)
-    responses: List[Tuple[Any, Any]] = []
+    responses: List[Tuple[TypingAny, TypingAny]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        result: Any
+        result: TypingAny
         try:
             response = robustApply(
                 receiver, signal=signal, sender=sender, *arguments, **named
