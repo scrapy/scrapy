@@ -338,7 +338,7 @@ class Scraper:
 
     def _itemproc_finished(
         self, output: Any, item: Any, response: Response, spider: Spider
-    ) -> None:
+    ) -> Deferred:
         """ItemProcessor finished for the given ``item`` and returned ``output``"""
         assert self.slot is not None  # typing
         self.slot.itemproc_size -= 1

@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
+from typing import Any, Callable, Union
 
 from w3lib.html import replace_entities
 
@@ -34,7 +35,7 @@ def arg_to_iter(arg):
     return [arg]
 
 
-def load_object(path):
+def load_object(path: Union[str, Callable]) -> Any:
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an

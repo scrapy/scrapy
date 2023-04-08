@@ -2,6 +2,7 @@ import logging
 import sys
 import warnings
 from logging.config import dictConfig
+from typing import Tuple
 
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -14,7 +15,7 @@ from scrapy.utils.versions import scrapy_components_versions
 logger = logging.getLogger(__name__)
 
 
-def failure_to_exc_info(failure):
+def failure_to_exc_info(failure: Failure):
     """Extract exc_info from Failure instances"""
     if isinstance(failure, Failure):
         return (failure.type, failure.value, failure.getTracebackObject())
@@ -206,7 +207,7 @@ class LogCounterHandler(logging.Handler):
         self.crawler.stats.inc_value(sname)
 
 
-def logformatter_adapter(logkws):
+def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls,

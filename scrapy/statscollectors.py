@@ -4,6 +4,8 @@ Scrapy extension for collecting scraping stats
 import logging
 import pprint
 
+from scrapy import Spider
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,10 +39,10 @@ class StatsCollector:
     def clear_stats(self, spider=None):
         self._stats.clear()
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: Spider) -> None:
         pass
 
-    def close_spider(self, spider, reason):
+    def close_spider(self, spider: Spider, reason: str) -> None:
         if self._dump:
             logger.info(
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
