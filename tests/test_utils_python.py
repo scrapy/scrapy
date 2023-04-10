@@ -1,5 +1,6 @@
 import functools
 import operator
+import platform
 
 from twisted.trial import unittest
 
@@ -234,10 +235,15 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(partial_f3), ["c"])
         self.assertEqual(get_func_args(cal), ["a", "b", "c"])
         self.assertEqual(get_func_args(object), [])
-
         self.assertEqual(get_func_args(str.split, stripself=True), ["sep", "maxsplit"])
-        self.assertEqual(get_func_args(operator.itemgetter(2), stripself=True), [])
         self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
+
+        if platform.python_implementation() == "CPython":
+            self.assertEqual(get_func_args(operator.itemgetter(2)), [])
+        if platform.python_implementation() == "PyPy":
+            self.assertEqual(
+                get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
+            )
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
