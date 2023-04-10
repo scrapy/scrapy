@@ -385,6 +385,7 @@ class FeedExporter:
     def _close_slot(self, slot, spider):
         def get_file(slot_):
             if isinstance(slot_.file, PostProcessingManager):
+                slot_.file.close()
                 return slot_.file.file
             return slot_.file
 
