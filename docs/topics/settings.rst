@@ -776,6 +776,31 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
 
+.. setting:: DOWNLOAD_SLOTS
+
+DOWNLOAD_SLOTS
+----------------
+
+Default: ``{}``
+
+Allows to define concurrency/delay parameters on per slot(domain) basis:
+
+    .. code-block:: python
+
+        DOWNLOAD_SLOTS = {
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
+            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+        }
+
+.. note::
+
+    For other downloader slots default settings values will be used:
+
+    -   :setting:`DOWNLOAD_DELAY`: ``delay``
+    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
+    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -1090,7 +1115,7 @@ LOG_FORMAT
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
 String for formatting log messages. Refer to the
-:ref:`Python logging documentation <logrecord-attributes>` for the qwhole
+:ref:`Python logging documentation <logrecord-attributes>` for the whole
 list of available placeholders.
 
 .. setting:: LOG_DATEFORMAT

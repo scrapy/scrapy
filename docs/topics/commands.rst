@@ -238,9 +238,6 @@ genspider
 
 Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
-.. note:: Even if an HTTPS URL is specified, the protocol used in
-          ``start_urls`` is always HTTP. This is a known issue: :issue:`3553`.
-
 Usage example::
 
     $ scrapy genspider -l
@@ -288,13 +285,13 @@ Usage examples::
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
-    $ scrapy -o myfile:csv myspider
+    $ scrapy crawl -o myfile:csv myspider
     [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
-    $ scrapy -O myfile:json myspider
+    $ scrapy crawl -O myfile:json myspider
     [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
 
-    $ scrapy -o myfile -t csv myspider
+    $ scrapy crawl -o myfile -t csv myspider
     [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check

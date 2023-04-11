@@ -11,10 +11,6 @@ Contributing to Scrapy
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
-* Blog about Scrapy. Tell the world how you're using Scrapy. This will help
-  newcomers with more examples and will help the Scrapy project to increase its
-  visibility.
-
 * Report bugs and request features in the `issue tracker`_, trying to follow
   the guidelines detailed in `Reporting bugs`_ below.
 
@@ -22,12 +18,15 @@ There are many ways to contribute to Scrapy. Here are some of them:
   :ref:`writing-patches` and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
+* Blog about Scrapy. Tell the world how you're using Scrapy. This will help
+  newcomers with more examples and will help the Scrapy project to increase its
+  visibility.
+
 * Join the `Scrapy subreddit`_ and share your ideas on how to
   improve Scrapy. We're always open to suggestions.
 
 * Answer Scrapy questions at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__.
-
 
 Reporting bugs
 ==============
@@ -79,6 +78,13 @@ guidelines when you're going to report a new bug.
 
 Writing patches
 ===============
+
+Scrapy has a list of `good first issues`_ and `help wanted issues`_ that you
+can work on. These issues are a great way to get started with contributing to
+Scrapy. If you're new to the codebase, you may want to focus on documentation
+or testing-related issues, as they are always useful and can help you get
+more familiar with the project. You can also check Scrapy's `test coverage`_
+to see which areas may benefit from more tests.
 
 The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
@@ -314,3 +320,6 @@ And their unit-tests are in::
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257/
 .. _pull request: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist
+.. _good first issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+.. _help wanted issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
+.. _test coverage: https://app.codecov.io/gh/scrapy/scrapy

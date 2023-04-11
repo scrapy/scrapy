@@ -4,7 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Type, Union
 
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
@@ -22,8 +22,10 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
+from scrapy.logformatter import LogFormatter
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
@@ -49,20 +51,25 @@ logger = logging.getLogger(__name__)
 
 
 class Crawler:
-    def __init__(self, spidercls, settings=None, init_reactor: bool = False):
+    def __init__(
+        self,
+        spidercls: Type[Spider],
+        settings: Union[None, dict, Settings] = None,
+        init_reactor: bool = False,
+    ):
         if isinstance(spidercls, Spider):
             raise ValueError("The spidercls argument must be a class, not an object")
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        self.spidercls = spidercls
-        self.settings = settings.copy()
+        self.spidercls: Type[Spider] = spidercls
+        self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
-        self.signals = SignalManager(self)
+        self.signals: SignalManager = SignalManager(self)
 
-        self.stats = load_object(self.settings["STATS_CLASS"])(self)
+        self.stats: StatsCollector = load_object(self.settings["STATS_CLASS"])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
         logging.root.addHandler(handler)
@@ -80,8 +87,8 @@ class Crawler:
         self.__remove_handler = lambda: logging.root.removeHandler(handler)
         self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
-        lf_cls = load_object(self.settings["LOG_FORMATTER"])
-        self.logformatter = lf_cls.from_crawler(self)
+        lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
+        self.logformatter: LogFormatter = lf_cls.from_crawler(self)
 
         self.request_fingerprinter: RequestFingerprinter = create_instance(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
@@ -89,8 +96,8 @@ class Crawler:
             crawler=self,
         )
 
-        reactor_class = self.settings["TWISTED_REACTOR"]
-        event_loop = self.settings["ASYNCIO_EVENT_LOOP"]
+        reactor_class: str = self.settings["TWISTED_REACTOR"]
+        event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
         if init_reactor:
             # this needs to be done after the spider settings are merged,
             # but before something imports twisted.internet.reactor
@@ -104,11 +111,11 @@ class Crawler:
             if is_asyncio_reactor_installed() and event_loop:
                 verify_installed_asyncio_event_loop(event_loop)
 
-        self.extensions = ExtensionManager.from_crawler(self)
+        self.extensions: ExtensionManager = ExtensionManager.from_crawler(self)
 
         self.settings.freeze()
-        self.crawling = False
-        self.spider = None
+        self.crawling: bool = False
+        self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
 
     @defer.inlineCallbacks

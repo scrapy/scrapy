@@ -416,6 +416,12 @@ class FeedExporter:
         return defer.DeferredList(deferred_list) if deferred_list else None
 
     def _close_slot(self, slot, spider):
+        def get_file(slot_):
+            if isinstance(slot_.file, PostProcessingManager):
+                slot_.file.close()
+                return slot_.file.file
+            return slot_.file
+
         if slot.itemcount:
             # Nomal case
             slot.finish_exporting()
@@ -428,7 +434,7 @@ class FeedExporter:
             return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d = defer.maybeDeferred(slot.storage.store, slot.file)
+        d = defer.maybeDeferred(slot.storage.store, get_file(slot))
 
         d.addCallback(
             self._handle_store_success, logmsg, spider, type(slot.storage).__name__

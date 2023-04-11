@@ -276,7 +276,7 @@ The following is a simple snippet to illustrate its usage within a Scrapy spider
             async with async_playwright() as pw:
                 browser = await pw.chromium.launch()
                 page = await browser.new_page()
-                await page.goto("https:/example.org")
+                await page.goto("https://example.org")
                 title = await page.title()
                 return {"title": title}
 

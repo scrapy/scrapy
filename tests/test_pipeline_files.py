@@ -480,6 +480,22 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_inst_attr), expected_value)
 
+    def test_file_pipeline_using_pathlike_objects(self):
+        class CustomFilesPipelineWithPathLikeDir(FilesPipeline):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return Path("subdir") / Path(request.url).name
+
+        pipeline = CustomFilesPipelineWithPathLikeDir.from_settings(
+            Settings({"FILES_STORE": Path("./Temp")})
+        )
+        request = Request("http://example.com/image01.jpg")
+        self.assertEqual(pipeline.file_path(request), Path("subdir/image01.jpg"))
+
+    def test_files_store_constructor_with_pathlike_object(self):
+        path = Path("./FileDir")
+        fs_store = FSFilesStore(path)
+        self.assertEqual(fs_store.basedir, str(path))
+
 
 class TestS3FilesStore(unittest.TestCase):
     @defer.inlineCallbacks
