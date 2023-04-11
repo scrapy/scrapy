@@ -671,7 +671,6 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
 class RequestToCurlTest(unittest.TestCase):
     def _test_request(self, request_object, expected_curl_command):
         curl_command = request_to_curl(request_object)
-        print(f"\n\n\n Produced curl: \n{curl_command} \n\n\n")
         self.assertEqual(curl_command, expected_curl_command)
 
     def test_get(self):
@@ -713,7 +712,7 @@ class RequestToCurlTest(unittest.TestCase):
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
-            " --data-raw '{\"foo\": \"bar\"}' -b 'foo=bar'"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
 
@@ -726,7 +725,7 @@ class RequestToCurlTest(unittest.TestCase):
         )
         expected_curl_command = (
             "curl -X POST https://www.httpbin.org/post"
-            " --data-raw '{\"foo\": \"bar\"}' -b 'foo=bar'"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
 

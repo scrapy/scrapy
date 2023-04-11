@@ -347,11 +347,11 @@ def request_to_curl(request: Request) -> str:
     url = request.url
     cookies = ""
     if isinstance(request.cookies, dict) and request.cookies:
-        cookies = "-b '{}'".format(
+        cookies = "--cookie '{}'".format(
             "; ".join("{}={}".format(k, v) for k, v in request.cookies.items())
         )
     elif isinstance(request.cookies, list):
-        cookies = "-b '{}'".format(
+        cookies = "--cookie '{}'".format(
             "; ".join(
                 "{}={}".format(list(c.keys())[0], list(c.values())[0])
                 for c in request.cookies
