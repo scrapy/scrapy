@@ -327,3 +327,35 @@ def _get_method(obj, name):
         return getattr(obj, name)
     except AttributeError:
         raise ValueError(f"Method {name!r} not found in: {obj}")
+
+
+def request_to_curl(request: Request) -> str:
+    """
+    Converts a :class:`~scrapy.Request` object to a curl command.
+
+    :param :class:`~scrapy.Request`: Request object to be converted
+    :return: string containing the curl command
+    """
+    method = request.method
+    data = (
+        "--data-raw '{}'".format(request.body.decode("utf-8")) if request.body else ""
+    )
+    headers = " ".join(
+        "-H '{}: {}'".format(k.decode(), v[0].decode())
+        for k, v in request.headers.items()
+    )
+    url = request.url
+    cookies = ""
+    if isinstance(request.cookies, dict) and request.cookies:
+        cookies = "-b '{}'".format(
+            "; ".join("{}={}".format(k, v) for k, v in request.cookies.items())
+        )
+    elif isinstance(request.cookies, list):
+        cookies = "-b '{}'".format(
+            "; ".join(
+                "{}={}".format(list(c.keys())[0], list(c.values())[0])
+                for c in request.cookies
+            )
+        )
+    curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
+    return " ".join(curl_cmd.split())
