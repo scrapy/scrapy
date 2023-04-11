@@ -4,8 +4,9 @@ from datetime import datetime
 from time import time
 
 from twisted.internet import defer, task
+from twisted.internet.defer import Deferred
 
-from scrapy import signals
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.resolver import dnscache
@@ -86,7 +87,7 @@ class Downloader:
         self._slot_gc_loop.start(60)
         self.per_slot_settings = self.settings.getdict("DOWNLOAD_SLOTS", {})
 
-    def fetch(self, request, spider):
+    def fetch(self, request: Request, spider: Spider) -> Deferred:
         def _deactivate(response):
             self.active.remove(request)
             return response
@@ -206,12 +207,12 @@ class Downloader:
 
         return dfd.addBoth(finish_transferring)
 
-    def close(self):
+    def close(self) -> None:
         self._slot_gc_loop.stop()
         for slot in self.slots.values():
             slot.close()
 
-    def _slot_gc(self, age=60):
+    def _slot_gc(self, age: float = 60) -> None:
         mintime = time() - age
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:

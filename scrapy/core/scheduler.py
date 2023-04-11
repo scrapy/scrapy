@@ -2,13 +2,15 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar, cast
 
 from twisted.internet.defer import Deferred
 
 from scrapy.crawler import Crawler
+from scrapy.dupefilters import BaseDupeFilter
 from scrapy.http.request import Request
 from scrapy.spiders import Spider
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import create_instance, load_object
 
@@ -20,10 +22,10 @@ class BaseSchedulerMeta(type):
     Metaclass to check scheduler classes against the necessary interface
     """
 
-    def __instancecheck__(cls, instance):
+    def __instancecheck__(cls, instance: Any) -> bool:
         return cls.__subclasscheck__(type(instance))
 
-    def __subclasscheck__(cls, subclass):
+    def __subclasscheck__(cls, subclass: type) -> bool:
         return (
             hasattr(subclass, "has_pending_requests")
             and callable(subclass.has_pending_requests)
@@ -168,26 +170,26 @@ class Scheduler(BaseScheduler):
 
     def __init__(
         self,
-        dupefilter,
+        dupefilter: BaseDupeFilter,
         jobdir: Optional[str] = None,
         dqclass=None,
         mqclass=None,
         logunser: bool = False,
-        stats=None,
+        stats: Optional[StatsCollector] = None,
         pqclass=None,
         crawler: Optional[Crawler] = None,
     ):
-        self.df = dupefilter
-        self.dqdir = self._dqdir(jobdir)
+        self.df: BaseDupeFilter = dupefilter
+        self.dqdir: Optional[str] = self._dqdir(jobdir)
         self.pqclass = pqclass
         self.dqclass = dqclass
         self.mqclass = mqclass
-        self.logunser = logunser
-        self.stats = stats
-        self.crawler = crawler
+        self.logunser: bool = logunser
+        self.stats: Optional[StatsCollector] = stats
+        self.crawler: Optional[Crawler] = crawler
 
     @classmethod
-    def from_crawler(cls: Type[SchedulerTV], crawler) -> SchedulerTV:
+    def from_crawler(cls: Type[SchedulerTV], crawler: Crawler) -> SchedulerTV:
         """
         Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
@@ -242,6 +244,7 @@ class Scheduler(BaseScheduler):
             self.df.log(request, self.spider)
             return False
         dqok = self._dqpush(request)
+        assert self.stats is not None
         if dqok:
             self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
         else:
@@ -259,7 +262,8 @@ class Scheduler(BaseScheduler):
         Increment the appropriate stats, such as: ``scheduler/dequeued``,
         ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
         """
-        request = self.mqs.pop()
+        request: Optional[Request] = self.mqs.pop()
+        assert self.stats is not None
         if request is not None:
             self.stats.inc_value("scheduler/dequeued/memory", spider=self.spider)
         else:
@@ -295,6 +299,7 @@ class Scheduler(BaseScheduler):
                     extra={"spider": self.spider},
                 )
                 self.logunser = False
+            assert self.stats is not None
             self.stats.inc_value("scheduler/unserializable", spider=self.spider)
             return False
         else:
@@ -351,7 +356,7 @@ class Scheduler(BaseScheduler):
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return json.load(f)
+            return cast(list, json.load(f))
 
     def _write_dqs_state(self, dqdir: str, state: list) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:

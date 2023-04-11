@@ -1,7 +1,7 @@
 import logging
 import pprint
 from collections import defaultdict, deque
-from typing import Any, Callable, Deque, Dict, Iterable, Tuple, Union, cast
+from typing import Any, Callable, Deque, Dict, Iterable, List, Tuple, Union, cast
 
 from twisted.internet.defer import Deferred
 
@@ -30,7 +30,7 @@ class MiddlewareManager:
             self._add_middleware(mw)
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: Settings) -> list:
+    def _get_mwlist_from_settings(cls, settings: Settings) -> List[Any]:
         raise NotImplementedError
 
     @classmethod
@@ -67,17 +67,17 @@ class MiddlewareManager:
     def from_crawler(cls, crawler):
         return cls.from_settings(crawler.settings, crawler)
 
-    def _add_middleware(self, mw) -> None:
+    def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "open_spider"):
             self.methods["open_spider"].append(mw.open_spider)
         if hasattr(mw, "close_spider"):
             self.methods["close_spider"].appendleft(mw.close_spider)
 
-    def _process_parallel(self, methodname: str, obj, *args) -> Deferred:
+    def _process_parallel(self, methodname: str, obj: Any, *args: Any) -> Deferred:
         methods = cast(Iterable[Callable], self.methods[methodname])
         return process_parallel(methods, obj, *args)
 
-    def _process_chain(self, methodname: str, obj, *args) -> Deferred:
+    def _process_chain(self, methodname: str, obj: Any, *args: Any) -> Deferred:
         methods = cast(Iterable[Callable], self.methods[methodname])
         return process_chain(methods, obj, *args)
 
