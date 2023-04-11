@@ -164,6 +164,7 @@ class MailSender:
                 "mailerr": errstr,
             },
         )
+        return failure
 
     def _sendmail(self, to_addrs, msg):
         from twisted.internet import reactor
