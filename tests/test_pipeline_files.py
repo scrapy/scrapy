@@ -601,7 +601,7 @@ class TestGCSFilesStore(unittest.TestCase):
         s = yield store.stat_file(path, info=None)
         self.assertIn("last_modified", s)
         self.assertIn("checksum", s)
-        self.assertEqual(s["checksum"], "zc2oVgXkbQr2EQdSdw3OPA==")
+        self.assertEqual(s["checksum"], "cdcda85605e46d0af6110752770dce3c")
         u = urlparse(uri)
         content, acl, blob = get_gcs_content_and_delete(u.hostname, u.path[1:] + path)
         self.assertEqual(content, data)
