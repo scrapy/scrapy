@@ -240,7 +240,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         if platform.python_implementation() == "CPython":
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
-        if platform.python_implementation() == "PyPy":
+        elif platform.python_implementation() == "PyPy":
             self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
             )
