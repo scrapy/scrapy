@@ -1,8 +1,8 @@
 """
 Link extractor based on lxml.html
 """
-import operator
 import logging
+import operator
 from functools import partial
 from urllib.parse import urljoin, urlparse
 
@@ -94,8 +94,8 @@ class LxmlParserLinkExtractor:
             try:
                 url = safe_url_string(url, encoding=response_encoding)
             except ValueError:
-                logger.debug(f"Skipping extraction of bad link {url}")
-                continue  # Disregard badly formatted urls
+                logger.debug(f"Skipping extraction of link with bad URL {url!r}")
+                continue
 
             # to fix relative links after process_value
             url = urljoin(response_url, url)
