@@ -3,7 +3,6 @@ This module contains essential stuff that should've come with Python itself ;)
 """
 import gc
 import inspect
-import operator
 import re
 import sys
 import weakref
@@ -176,13 +175,14 @@ def binary_is_text(data):
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable object"""
-    if isinstance(func, operator.itemgetter):
-        return []
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
 
     args = []
-    sig = inspect.signature(func)
+    try:
+        sig = inspect.signature(func)
+    except ValueError:
+        return args
 
     if isinstance(func, partial):
         partial_args = func.args
