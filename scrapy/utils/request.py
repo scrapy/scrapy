@@ -346,16 +346,17 @@ def request_to_curl(request: Request) -> str:
     )
     url = request.url
     cookies = ""
-    if isinstance(request.cookies, dict) and request.cookies:
-        cookies = "--cookie '{}'".format(
-            "; ".join("{}={}".format(k, v) for k, v in request.cookies.items())
-        )
-    elif isinstance(request.cookies, list):
-        cookies = "--cookie '{}'".format(
-            "; ".join(
-                "{}={}".format(list(c.keys())[0], list(c.values())[0])
-                for c in request.cookies
+    if request.cookies:
+        if isinstance(request.cookies, dict):
+            cookies = "--cookie '{}'".format(
+                "; ".join("{}={}".format(k, v) for k, v in request.cookies.items())
             )
-        )
+        elif isinstance(request.cookies, list):
+            cookies = "--cookie '{}'".format(
+                "; ".join(
+                    "{}={}".format(list(c.keys())[0], list(c.values())[0])
+                    for c in request.cookies
+                )
+            )
     curl_cmd = f"curl -X {method} {url} {data} {headers} {cookies}".strip()
     return " ".join(curl_cmd.split())
