@@ -1,3 +1,4 @@
+import json
 import unittest
 import warnings
 from hashlib import sha1
@@ -18,6 +19,7 @@ from scrapy.utils.request import (
     request_authenticate,
     request_fingerprint,
     request_httprepr,
+    request_to_curl,
 )
 from scrapy.utils.test import get_crawler
 
@@ -664,6 +666,68 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
         self.assertEqual(fingerprint, settings["FINGERPRINT"])
+
+
+class RequestToCurlTest(unittest.TestCase):
+    def _test_request(self, request_object, expected_curl_command):
+        curl_command = request_to_curl(request_object)
+        self.assertEqual(curl_command, expected_curl_command)
+
+    def test_get(self):
+        request_object = Request("https://www.example.com")
+        expected_curl_command = "curl -X GET https://www.example.com"
+        self._test_request(request_object, expected_curl_command)
+
+    def test_post(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            'curl -X POST https://www.httpbin.org/post --data-raw \'{"foo": "bar"}\''
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_headers(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            ' --data-raw \'{"foo": "bar"}\''
+            " -H 'Content-Type: application/json' -H 'Accept: application/json'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_dict(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies={"foo": "bar"},
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
+
+    def test_cookies_list(self):
+        request_object = Request(
+            "https://www.httpbin.org/post",
+            method="POST",
+            cookies=[{"foo": "bar"}],
+            body=json.dumps({"foo": "bar"}),
+        )
+        expected_curl_command = (
+            "curl -X POST https://www.httpbin.org/post"
+            " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
+        )
+        self._test_request(request_object, expected_curl_command)
 
 
 if __name__ == "__main__":
