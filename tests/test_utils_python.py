@@ -239,6 +239,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
         if platform.python_implementation() == "CPython":
+            # doesn't work on CPython: https://bugs.python.org/issue42785
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         elif platform.python_implementation() == "PyPy":
             self.assertEqual(
