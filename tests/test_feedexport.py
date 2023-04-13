@@ -2216,7 +2216,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
 class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
-    _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
+    _file_mark = "_#%(batch_id)02d_"
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -2398,7 +2398,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
-        """If path is without %(batch_time)s and %(batch_id) an exception must be raised"""
+        """If path is without and %(batch_id) an exception must be raised"""
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "xml"},
@@ -2542,7 +2542,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
-        So %(batch_time)s replaced with the current date.
+        So %(batch_id)d replaced with the current id.
         """
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2552,7 +2552,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = {
             "FEEDS": {
                 self._random_temp_filename()
-                / "%(batch_time)s": {
+                / "%(batch_id)d": {
                     "format": "json",
                 },
             },
@@ -2615,7 +2615,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 return super().open(*args, **kwargs)
 
         key = "export.csv"
-        uri = f"s3://{bucket}/{key}/%(batch_time)s.json"
+        uri = f"s3://{bucket}/{key}/%(batch_id)d.json"
         batch_item_count = 1
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
