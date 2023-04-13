@@ -235,20 +235,16 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(partial_f3), ["c"])
         self.assertEqual(get_func_args(cal), ["a", "b", "c"])
         self.assertEqual(get_func_args(object), [])
+        self.assertEqual(get_func_args(str.split, stripself=True), ["sep", "maxsplit"])
+        self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
         if platform.python_implementation() == "CPython":
-            # TODO: how do we fix this to return the actual argument names?
-            self.assertEqual(get_func_args(str.split), [])
-            self.assertEqual(get_func_args(" ".join), [])
+            # doesn't work on CPython: https://bugs.python.org/issue42785
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         elif platform.python_implementation() == "PyPy":
             self.assertEqual(
-                get_func_args(str.split, stripself=True), ["sep", "maxsplit"]
-            )
-            self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
             )
-            self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])

@@ -174,33 +174,33 @@ def binary_is_text(data):
 
 
 def get_func_args(func, stripself=False):
-    """Return the argument name list of a callable"""
-    if inspect.isfunction(func):
-        spec = inspect.getfullargspec(func)
-        func_args = spec.args + spec.kwonlyargs
-    elif inspect.isclass(func):
-        return get_func_args(func.__init__, True)
-    elif inspect.ismethod(func):
-        return get_func_args(func.__func__, True)
-    elif inspect.ismethoddescriptor(func):
-        return []
-    elif isinstance(func, partial):
-        return [
-            x
-            for x in get_func_args(func.func)[len(func.args) :]
-            if not (func.keywords and x in func.keywords)
-        ]
-    elif hasattr(func, "__call__"):
-        if inspect.isroutine(func):
-            return []
-        if getattr(func, "__name__", None) == "__call__":
-            return []
-        return get_func_args(func.__call__, True)
+    """Return the argument name list of a callable object"""
+    if not callable(func):
+        raise TypeError(f"func must be callable, got '{type(func).__name__}'")
+
+    args = []
+    try:
+        sig = inspect.signature(func)
+    except ValueError:
+        return args
+
+    if isinstance(func, partial):
+        partial_args = func.args
+        partial_kw = func.keywords
+
+        for name, param in sig.parameters.items():
+            if param.name in partial_args:
+                continue
+            if partial_kw and param.name in partial_kw:
+                continue
+            args.append(name)
     else:
-        raise TypeError(f"{type(func)} is not callable")
-    if stripself:
-        func_args.pop(0)
-    return func_args
+        for name in sig.parameters.keys():
+            args.append(name)
+
+    if stripself and args and args[0] == "self":
+        args = args[1:]
+    return args
 
 
 def get_spec(func):
