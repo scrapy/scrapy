@@ -329,7 +329,7 @@ the :meth:`~scrapy.selector.SelectorList.re` method to extract using
     >>> response.css("title::text").re(r"(\w+) to (\w+)")
     ['Quotes', 'Scrape']
 
-In order to find the proper CSS selectors to use, you might find useful opening
+In order to find the proper CSS selectors to use, you might find it useful to open
 the response page from the shell in your web browser using ``view(response)``.
 You can use your browser's developer tools to inspect the HTML and come up
 with a selector (see :ref:`topics-developer-tools`).
