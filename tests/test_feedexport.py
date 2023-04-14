@@ -2216,7 +2216,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
 class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
-    _file_mark = "_#%(batch_id)02d_"
+    _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
+    # _file_mark = "_#%(batch_id)02d_"
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
