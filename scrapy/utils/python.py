@@ -14,6 +14,7 @@ from typing import (
     AsyncIterable,
     Iterable,
     Mapping,
+    Optional,
     Union,
     overload,
 )
@@ -90,7 +91,9 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def to_unicode(text, encoding=None, errors="strict"):
+def to_unicode(
+    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+) -> str:
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, str):
@@ -105,7 +108,9 @@ def to_unicode(text, encoding=None, errors="strict"):
     return text.decode(encoding, errors)
 
 
-def to_bytes(text, encoding=None, errors="strict"):
+def to_bytes(
+    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+) -> bytes:
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
@@ -168,11 +173,12 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
-_BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
+_BINARYCHARS = {
+    i for i in range(32) if to_bytes(chr(i)) not in {b"\0", b"\t", b"\n", b"\r"}
+}
 
 
-def binary_is_text(data):
+def binary_is_text(data: bytes) -> bool:
     """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
