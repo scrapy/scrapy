@@ -8,7 +8,15 @@ import sys
 import weakref
 from functools import partial, wraps
 from itertools import chain
-from typing import Any, AsyncGenerator, AsyncIterable, Iterable, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    Iterable,
+    Mapping,
+    Union,
+    overload,
+)
 
 from scrapy.utils.asyncgen import as_async_generator
 
@@ -256,6 +264,16 @@ def equal_attributes(obj1, obj2, attributes):
             return False
     # all attributes equal
     return True
+
+
+@overload
+def without_none_values(iterable: Mapping) -> dict:
+    ...
+
+
+@overload
+def without_none_values(iterable: Iterable) -> Iterable:
+    ...
 
 
 def without_none_values(iterable):
