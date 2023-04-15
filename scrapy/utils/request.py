@@ -6,7 +6,18 @@ scrapy.http.Request objects
 import hashlib
 import json
 import warnings
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -19,11 +30,16 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+
 _deprecated_fingerprint_cache: "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]"
 _deprecated_fingerprint_cache = WeakKeyDictionary()
 
 
-def _serialize_headers(headers, request):
+def _serialize_headers(
+    headers: Iterable[bytes], request: Request
+) -> Generator[bytes, Any, None]:
     for header in headers:
         if header in request.headers:
             yield header
@@ -139,7 +155,7 @@ def request_fingerprint(
     return cache[cache_key]
 
 
-def _request_fingerprint_as_bytes(*args, **kwargs):
+def _request_fingerprint_as_bytes(*args: Any, **kwargs: Any) -> bytes:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return bytes.fromhex(request_fingerprint(*args, **kwargs))
@@ -231,7 +247,7 @@ class RequestFingerprinter:
     def from_crawler(cls, crawler):
         return cls(crawler)
 
-    def __init__(self, crawler=None):
+    def __init__(self, crawler: Optional["Crawler"] = None):
         if crawler:
             implementation = crawler.settings.get(
                 "REQUEST_FINGERPRINTER_IMPLEMENTATION"
@@ -265,7 +281,7 @@ class RequestFingerprinter:
                 f"and '2.7'."
             )
 
-    def fingerprint(self, request: Request):
+    def fingerprint(self, request: Request) -> bytes:
         return self._fingerprint(request)
 
 
@@ -311,7 +327,7 @@ def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
-    request_cls = load_object(d["_class"]) if "_class" in d else Request
+    request_cls: Type[Request] = load_object(d["_class"]) if "_class" in d else Request
     kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
     if d.get("callback") and spider:
         kwargs["callback"] = _get_method(spider, d["callback"])
@@ -320,7 +336,7 @@ def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
     return request_cls(**kwargs)
 
 
-def _get_method(obj, name):
+def _get_method(obj: Any, name: Any) -> Any:
     """Helper function for request_from_dict"""
     name = str(name)
     try:
