@@ -29,9 +29,9 @@ class Slot:
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
 
-        self.active: Set = set()
+        self.active: Set[Request] = set()
         self.queue: Deque[Tuple[Request, Deferred]] = deque()
-        self.transferring: Set = set()
+        self.transferring: Set[Request] = set()
         self.lastseen: float = 0
         self.latercall = None
 
