@@ -2217,7 +2217,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 class BatchDeliveriesTest(FeedExportTestBase):
     __test__ = True
     _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
-    # _file_mark = "_#%(batch_id)02d_"
 
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
@@ -2399,7 +2398,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         yield self.assertExported(items, header, rows, settings=settings)
 
     def test_wrong_path(self):
-        """If path is without and %(batch_id) an exception must be raised"""
+        """If path is without %(batch_id) an exception must be raised"""
         settings = {
             "FEEDS": {
                 self._random_temp_filename(): {"format": "xml"},
