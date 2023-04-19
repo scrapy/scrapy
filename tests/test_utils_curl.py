@@ -154,6 +154,15 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         }
         self._test_command(curl_command, expected_result)
 
+    def test_post_data_raw_with_string_prefix(self):
+        curl_command = "curl 'https://www.example.org/' --data-raw $'{\"$filters\":\"Filter\u0021\"}'"
+        expected_result = {
+            "method": "POST",
+            "url": "https://www.example.org/",
+            "body": '{"$filters":"Filter!"}',
+        }
+        self._test_command(curl_command, expected_result)
+
     def test_explicit_get_with_data(self):
         curl_command = "curl httpbin.org/anything -X GET --data asdf"
         expected_result = {
