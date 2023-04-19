@@ -11,9 +11,8 @@ from w3lib.http import basic_auth_header
 class DataAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         value = str(values).encode("utf-8").decode("utf-8")
-        if items := re.findall(r"\$(.+)", value):
-            value = items[0]
-
+        items = re.findall(r"\$(.+)", value)
+        value = items[0] if items else value
         setattr(namespace, self.dest, value)
 
 
