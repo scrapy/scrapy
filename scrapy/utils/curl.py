@@ -1,5 +1,4 @@
 import argparse
-import re
 import warnings
 from http.cookies import SimpleCookie
 from shlex import split
