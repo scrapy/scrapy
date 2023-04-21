@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/PyCQA/bandit
-  rev: 1.7.4
+  rev: 1.7.5
   hooks:
   - id: bandit
     args: [-r, -c, .bandit.yml]
