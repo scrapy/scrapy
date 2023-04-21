@@ -252,7 +252,7 @@ object:
 .. code-block:: pycon
 
     >>> response.css("title")
-    [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
+    [<Selector query='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
@@ -348,7 +348,7 @@ Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:
 .. code-block:: pycon
 
     >>> response.xpath("//title")
-    [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
+    [<Selector query='//title' data='<title>Quotes to Scrape</title>'>]
     >>> response.xpath("//title/text()").get()
     'Quotes to Scrape'
 
@@ -410,8 +410,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further
