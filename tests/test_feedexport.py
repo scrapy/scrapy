@@ -38,13 +38,13 @@ from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
     BlockingFeedStorage,
     FeedExporter,
+    FeedSlot,
     FileFeedStorage,
     FTPFeedStorage,
     GCSFeedStorage,
     IFeedStorage,
     S3FeedStorage,
     StdoutFeedStorage,
-    _FeedSlot,
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -661,8 +661,8 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         return result
 
 
-class InstrumentedFeedSlot(_FeedSlot):
-    """Instrumented _FeedSlot subclass for keeping track of calls to
+class InstrumentedFeedSlot(FeedSlot):
+    """Instrumented FeedSlot subclass for keeping track of calls to
     start_exporting and finish_exporting."""
 
     def start_exporting(self):
@@ -965,7 +965,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -983,7 +983,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -1004,7 +1004,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -1023,7 +1023,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)

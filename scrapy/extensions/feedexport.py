@@ -273,7 +273,16 @@ class FTPFeedStorage(BlockingFeedStorage):
         )
 
 
-class _FeedSlot:
+def _FeedSlot(*args, **kwargs):
+    warnings.warn(
+        "_FeedSlot is deprecated, use FeedSlot instead",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return FeedSlot(*args, **kwargs)
+
+
+class FeedSlot:
     def __init__(
         self,
         file,
@@ -455,7 +464,7 @@ class FeedExporter:
             indent=feed_options["indent"],
             **feed_options["item_export_kwargs"],
         )
-        slot = _FeedSlot(
+        slot = FeedSlot(
             file=file,
             exporter=exporter,
             storage=storage,
@@ -590,7 +599,7 @@ class FeedExporter:
         self,
         spider: Spider,
         uri_params_function: Optional[Union[str, Callable[[dict, Spider], dict]]],
-        slot: Optional[_FeedSlot] = None,
+        slot: Optional[FeedSlot] = None,
     ) -> dict:
         params = {}
         for k in dir(spider):
