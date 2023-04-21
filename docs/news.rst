@@ -3,6 +3,108 @@
 Release notes
 =============
 
+.. _release-2.9.0:
+
+Scrapy 2.9.0 (YYYY-MM-DD)
+-------------------------
+
+Highlights:
+
+-   Per-domain request settings.
+-   Compatibility with new cryptography_ and new parsel_.
+-   TBD
+
+New features
+~~~~~~~~~~~~
+
+-   Settings correponding to :setting:`DOWNLOAD_DELAY`,
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+    :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per domain basis
+    via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
+
+-   Added :func:`scrapy.utils.request.request_to_curl`, a function to produce a
+    curl command from a :class:`~scrapy.Request` object. (:issue:`5892`)
+
+-   Values of :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can now be
+    :class:`pathlib.Path` instances. (:issue:`5801`)
+
+-   :func:`scrapy.utils.request.request_from_curl` now supports $-prefixed
+    string values for the curl ``--data-raw`` argument, which are produced by
+    browsers for data that includes certain symbols. (:issue:`5899`,
+    :issue:`5901`)
+
+-   The ``scrapy parse`` command now also works with async generator callbacks.
+    (:issue:`5819`, :issue:`5824`)
+
+-   The ``scrapy genspider`` command now properly works with HTTPS URLs.
+    (:issue:`3553`, :issue:`5808`)
+
+-   Improved handling of asyncio loops. (:issue:`5831`, :issue:`5832`)
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    now skips certain malformed URLs instead of raising an exception.
+    (:issue:`5881`)
+
+-   :func:`scrapy.utils.python.get_func_args` now supports more types of
+    callables. (:issue:`5872`, :issue:`5885`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed an error when using feed postprocessing with S3 storage.
+    (:issue:`5500`, :issue:`5581`)
+
+-   Added the missing :meth:`scrapy.settings.BaseSettings.setdefault` method.
+    (:issue:`5811`, :issue:`5821`)
+
+-   Fixed an error when using cryptography_ 40.0.0+ and
+    :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` is enabled.
+    (:issue:`5857`, :issue:`5858`)
+
+-   The checksums returned by :class:`~scrapy.pipelines.files.FilesPipeline`
+    for files on Google Cloud Storage are no longer Base64-encoded.
+    (:issue:`5874`, :issue:`5891`)
+
+-   Fixed an error breaking user handling of send failures in
+    :meth:`scrapy.mail.MailSender.send()`. (:issue:`1611`, :issue:`5880`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Expanded contributing docs. (:issue:`5109`, :issue:`5851`)
+
+-   Added blacken-docs_ to pre-commit and reformatted the docs with it.
+    (:issue:`5813`, :issue:`5816`)
+
+-   Fixed a JS issue. (:issue:`5875`, :issue:`5877`)
+
+-   Fixed ``make htmlview``. (:issue:`5878`, :issue:`5879`)
+
+-   Fixed typos and other small errors. (:issue:`5827`, :issue:`5839`,
+    :issue:`5883`, :issue:`5890`, :issue:`5895`, :issue:`5904`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Extended typing hints. (:issue:`5805`, :issue:`5889`, :issue:`5896`)
+
+-   Tests for most of the examples in the docs are now run as a part of CI,
+    found problems were fixed. (:issue:`5816`, :issue:`5826`)
+
+-   Removed usage of deprecated Python classes. (:issue:`5849`)
+
+-   Silenced ``include-ignored`` warnings from coverage. (:issue:`5820`)
+
+-   Fixed a random failure of the ``test_feedexport.test_batch_path_differ``
+    test. (:issue:`5855`, :issue:`5898`)
+
+-   Updated docstrings to match output produced by parsel_ 1.8.1 so that they
+    don't cause test failures. (:issue:`5902`)
+
+-   Other CI and pre-commit improvements. (:issue:`5802`, :issue:`5823`)
+
+.. _blacken-docs: https://github.com/adamchainz/blacken-docs
+
 .. _release-2.8.0:
 
 Scrapy 2.8.0 (2023-02-02)
@@ -4207,8 +4309,6 @@ Relocations
   + Note: telnet is not enabled on Python 3
     (https://github.com/scrapy/scrapy/pull/1524#issuecomment-146985595)
 
-.. _parsel: https://github.com/scrapy/parsel
-
 
 Bugfixes
 ~~~~~~~~
@@ -5638,6 +5738,7 @@ First release of Scrapy.
 .. _LevelDB: https://github.com/google/leveldb
 .. _lxml: https://lxml.de/
 .. _marshal: https://docs.python.org/2/library/marshal.html
+.. _parsel: https://github.com/scrapy/parsel
 .. _parsel.csstranslator.GenericTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.GenericTranslator
 .. _parsel.csstranslator.HTMLTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.HTMLTranslator
 .. _parsel.csstranslator.XPathExpr: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.XPathExpr

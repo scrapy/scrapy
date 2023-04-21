@@ -783,7 +783,7 @@ DOWNLOAD_SLOTS
 
 Default: ``{}``
 
-Allows to define concurrency/delay parameters on per slot(domain) basis:
+Allows to define concurrency/delay parameters on per slot (domain) basis:
 
     .. code-block:: python
 
