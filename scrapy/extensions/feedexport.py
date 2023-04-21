@@ -226,13 +226,19 @@ class GCSFeedStorage(BlockingFeedStorage):
             uri,
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
+            crawler.settings["GCP_SERVICE_ACCOUNT_CREDENTIALS"] or None,
         )
 
     def _store_in_thread(self, file):
         file.seek(0)
         from google.cloud.storage import Client
-
-        client = Client(project=self.project_id)
+        from google.oauth2.service_account import Credentials
+        
+        if self.credentials:
+            credentials = Credentials.from_service_account_file(self.credentials)
+            client = Client(project=self.project_id, credentials=credentials)
+        else:
+            client = Client(project=self.project_id)
         bucket = client.get_bucket(self.bucket_name)
         blob = bucket.blob(self.blob_name)
         blob.upload_from_file(file, predefined_acl=self.acl)
