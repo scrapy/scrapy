@@ -25,6 +25,7 @@ from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
@@ -273,15 +274,6 @@ class FTPFeedStorage(BlockingFeedStorage):
         )
 
 
-def _FeedSlot(*args, **kwargs):
-    warnings.warn(
-        "_FeedSlot is deprecated, use FeedSlot instead",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    return FeedSlot(*args, **kwargs)
-
-
 class FeedSlot:
     def __init__(
         self,
@@ -318,6 +310,12 @@ class FeedSlot:
         if self._exporting:
             self.exporter.finish_exporting()
             self._exporting = False
+
+
+_FeedSlot = create_deprecated_class(
+    name="_FeedSlot",
+    new_class=FeedSlot,
+)
 
 
 class FeedExporter:
