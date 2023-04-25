@@ -318,7 +318,7 @@ feed_slot_closed
     This signal supports returning deferreds from its handlers.
 
     :param slot: the slot closed
-    :type failure: scrapy.extensions.feedexport.FeedSlot
+    :type slot: scrapy.extensions.feedexport.FeedSlot
 
 
 feed_exporter_closed
