@@ -139,6 +139,9 @@ class TextResponse(Response):
             self._cached_selector = Selector(self)
         return self._cached_selector
 
+    def jmespath(self, query, **kwargs):
+        return self.selector.jmespath(query, **kwargs)
+
     def xpath(self, query, **kwargs):
         return self.selector.xpath(query, **kwargs)
 
