@@ -9,15 +9,26 @@ from time import time
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import defer, protocol, ssl
+from twisted.internet.defer import CancelledError, Deferred, fail, maybeDeferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
+from twisted.web._newclient import (
+    HEADER,
+    STATUS,
+    HTTP11ClientProtocol,
+    HTTPClientParser,
+    RequestGenerationFailed,
+    RequestNotSent,
+    TransportProxyProducer,
+)
 from twisted.web.client import (
     URI,
     Agent,
     HTTPConnectionPool,
     ResponseDone,
     ResponseFailed,
+    _HTTP11ClientFactory,
 )
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
@@ -35,6 +46,121 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
+class ScrapyHTTPClientParser(HTTPClientParser):
+    # Fork of
+    # https://github.com/twisted/twisted/blob/525da4a0becad1e814c74f12c365f15fe9cd10de/src/twisted/web/_newclient.py#L269-L296
+    # that handles header not having a colon.
+    def lineReceived(self, line):
+        """
+        Handle one line from a response.
+        """
+        # Handle the normal CR LF case.
+        if line[-1:] == b"\r":
+            line = line[:-1]
+        print(f"Line: {line}")
+        if self.state == STATUS:
+            self.statusReceived(line)
+            self.state = HEADER
+        elif self.state == HEADER:
+            if not line or line[0] not in b" \t":
+                if self._partialHeader is not None:
+                    header = b"".join(self._partialHeader)
+                    name, value = header.split(b":", 1)
+                    value = value.strip()
+                    self.headerReceived(name, value)
+                if not line:
+                    # Empty line means the header section is over.
+                    self.allHeadersReceived()
+                else:
+                    # Line not beginning with LWS is another header.
+                    self._partialHeader = [line]
+            else:
+                # A line beginning with LWS is a continuation of a header
+                # begun on a previous line.
+                self._partialHeader.append(line)
+
+
+class ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
+    # Fork of
+    # https://github.com/twisted/twisted/blob/525da4a0becad1e814c74f12c365f15fe9cd10de/src/twisted/web/_newclient.py#L1487-L1552
+    # that replaces HTTPClientParser with ScrapyHTTPClientParser.
+    def request(self, request):
+        """
+        Issue C{request} over C{self.transport} and return a L{Deferred} which
+        will fire with a L{Response} instance or an error.
+
+        @param request: The object defining the parameters of the request to
+           issue.
+        @type request: L{Request}
+
+        @rtype: L{Deferred}
+        @return: The deferred may errback with L{RequestGenerationFailed} if
+            the request was not fully written to the transport due to a local
+            error.  It may errback with L{RequestTransmissionFailed} if it was
+            not fully written to the transport due to a network error.  It may
+            errback with L{ResponseFailed} if the request was sent (not
+            necessarily received) but some or all of the response was lost.  It
+            may errback with L{RequestNotSent} if it is not possible to send
+            any more requests using this L{HTTP11ClientProtocol}.
+        """
+        if self._state != "QUIESCENT":
+            return fail(RequestNotSent())
+
+        self._state = "TRANSMITTING"
+        _requestDeferred = maybeDeferred(request.writeTo, self.transport)
+
+        def cancelRequest(ign):
+            # Explicitly cancel the request's deferred if it's still trying to
+            # write when this request is cancelled.
+            if self._state in ("TRANSMITTING", "TRANSMITTING_AFTER_RECEIVING_RESPONSE"):
+                _requestDeferred.cancel()
+            else:
+                self.transport.abortConnection()
+                self._disconnectParser(Failure(CancelledError()))
+
+        self._finishedRequest = Deferred(cancelRequest)
+
+        # Keep track of the Request object in case we need to call stopWriting
+        # on it.
+        self._currentRequest = request
+
+        self._transportProxy = TransportProxyProducer(self.transport)
+        self._parser = ScrapyHTTPClientParser(request, self._finishResponse)
+        self._parser.makeConnection(self._transportProxy)
+        self._responseDeferred = self._parser._responseDeferred
+
+        def cbRequestWritten(ignored):
+            if self._state == "TRANSMITTING":
+                self._state = "WAITING"
+                self._responseDeferred.chainDeferred(self._finishedRequest)
+
+        def ebRequestWriting(err):
+            if self._state == "TRANSMITTING":
+                self._state = "GENERATION_FAILED"
+                self.transport.abortConnection()
+                self._finishedRequest.errback(Failure(RequestGenerationFailed([err])))
+            else:
+                self._log.failure(
+                    "Error writing request, but not in valid state "
+                    "to finalize request: {state}",
+                    failure=err,
+                    state=self._state,
+                )
+
+        _requestDeferred.addCallbacks(cbRequestWritten, ebRequestWriting)
+
+        return self._finishedRequest
+
+
+class ScrapyHTTP11ClientFactory(_HTTP11ClientFactory):
+    def buildProtocol(self, addr):
+        return ScrapyHTTP11ClientProtocol(self._quiescentCallback)
+
+
+class ScrapyHTTPConnectionPool(HTTPConnectionPool):
+    _factory = ScrapyHTTP11ClientFactory
+
+
 class HTTP11DownloadHandler:
     lazy = False
 
@@ -43,7 +169,7 @@ class HTTP11DownloadHandler:
 
         from twisted.internet import reactor
 
-        self._pool = HTTPConnectionPool(reactor, persistent=True)
+        self._pool = ScrapyHTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
