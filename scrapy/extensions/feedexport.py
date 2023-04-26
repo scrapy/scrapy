@@ -11,10 +11,11 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Callable, Optional, Tuple, Union
+from typing import IO, Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
+from twisted.internet.defer import DeferredList
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface, implementer
 
@@ -23,6 +24,8 @@ from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
+from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
@@ -271,7 +274,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         )
 
 
-class _FeedSlot:
+class FeedSlot:
     def __init__(
         self,
         file,
@@ -309,7 +312,15 @@ class _FeedSlot:
             self._exporting = False
 
 
+_FeedSlot = create_deprecated_class(
+    name="_FeedSlot",
+    new_class=FeedSlot,
+)
+
+
 class FeedExporter:
+    _pending_deferreds: List[defer.Deferred] = []
+
     @classmethod
     def from_crawler(cls, crawler):
         exporter = cls(crawler)
@@ -375,12 +386,18 @@ class FeedExporter:
                 )
             )
 
-    def close_spider(self, spider):
-        deferred_list = []
+    async def close_spider(self, spider):
         for slot in self.slots:
-            d = self._close_slot(slot, spider)
-            deferred_list.append(d)
-        return defer.DeferredList(deferred_list) if deferred_list else None
+            self._close_slot(slot, spider)
+
+        # Await all deferreds
+        if self._pending_deferreds:
+            await maybe_deferred_to_future(DeferredList(self._pending_deferreds))
+
+        # Send FEED_EXPORTER_CLOSED signal
+        await maybe_deferred_to_future(
+            self.crawler.signals.send_catch_log_deferred(signals.feed_exporter_closed)
+        )
 
     def _close_slot(self, slot, spider):
         def get_file(slot_):
@@ -404,6 +421,14 @@ class FeedExporter:
         d.addErrback(
             self._handle_store_error, logmsg, spider, type(slot.storage).__name__
         )
+        self._pending_deferreds.append(d)
+        d.addCallback(
+            lambda _: self.crawler.signals.send_catch_log_deferred(
+                signals.feed_slot_closed, slot=slot
+            )
+        )
+        d.addBoth(lambda _: self._pending_deferreds.remove(d))
+
         return d
 
     def _handle_store_error(self, f, logmsg, spider, slot_type):
@@ -444,7 +469,7 @@ class FeedExporter:
             indent=feed_options["indent"],
             **feed_options["item_export_kwargs"],
         )
-        slot = _FeedSlot(
+        slot = FeedSlot(
             file=file,
             exporter=exporter,
             storage=storage,
@@ -579,7 +604,7 @@ class FeedExporter:
         self,
         spider: Spider,
         uri_params_function: Optional[Union[str, Callable[[dict, Spider], dict]]],
-        slot: Optional[_FeedSlot] = None,
+        slot: Optional[FeedSlot] = None,
     ) -> dict:
         params = {}
         for k in dir(spider):
