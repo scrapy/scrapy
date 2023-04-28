@@ -1281,6 +1281,12 @@ TextResponse objects
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
 
+    .. method:: TextResponse.jmespath(query)
+
+        A shortcut to ``TextResponse.selector.jmespath(query)``::
+
+            response.jmespath('object.[*]')
+
     .. method:: TextResponse.xpath(query)
 
         A shortcut to ``TextResponse.selector.xpath(query)``::
