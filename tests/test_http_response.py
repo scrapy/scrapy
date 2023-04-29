@@ -32,6 +32,9 @@ class BaseResponseTest(unittest.TestCase):
             isinstance(self.response_class("http://example.com/"), self.response_class)
         )
         self.assertRaises(TypeError, self.response_class, b"http://example.com")
+        self.assertRaises(
+            TypeError, self.response_class, url="http://example.com", body={}
+        )
         # body can be str or None
         self.assertTrue(
             isinstance(
@@ -192,6 +195,7 @@ class BaseResponseTest(unittest.TestCase):
             self.assertRaisesRegex(AttributeError, msg, getattr, r, "text")
             self.assertRaisesRegex(NotSupported, msg, r.css, "body")
             self.assertRaisesRegex(NotSupported, msg, r.xpath, "//body")
+            self.assertRaisesRegex(NotSupported, msg, r.jmespath, "body")
         else:
             r.text
             r.css("body")
