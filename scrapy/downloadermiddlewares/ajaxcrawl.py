@@ -1,11 +1,10 @@
-import re
 import logging
+import re
 
 from w3lib import html
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,6 @@ class AjaxCrawlMiddleware:
         return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
-
         if not isinstance(response, HtmlResponse) or response.status != 200:
             return response
 

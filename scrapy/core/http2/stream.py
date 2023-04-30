@@ -1,13 +1,13 @@
 import logging
 from enum import Enum
 from io import BytesIO
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
 from hpack import HeaderTuple
-from twisted.internet.defer import Deferred, CancelledError
+from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
@@ -151,7 +151,7 @@ class Stream:
             else:
                 self.close(StreamCloseReason.CANCELLED)
 
-        self._deferred_response = Deferred(_cancel)
+        self._deferred_response: Deferred = Deferred(_cancel)
 
     def __repr__(self) -> str:
         return f"Stream(id={self.stream_id!r})"

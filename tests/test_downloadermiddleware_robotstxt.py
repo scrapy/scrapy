@@ -1,17 +1,17 @@
 from unittest import mock
 
-from twisted.internet import reactor, error
+from twisted.internet import error, reactor
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
-from scrapy.downloadermiddlewares.robotstxt import (
-    RobotsTxtMiddleware,
-    logger as mw_module_logger,
-)
+
+from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
+from scrapy.downloadermiddlewares.robotstxt import logger as mw_module_logger
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from tests.test_robotstxt_interface import rerp_available, reppy_available
+from tests.test_robotstxt_interface import reppy_available, rerp_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -58,6 +58,7 @@ Disallow: /some/randome/page.html
         return DeferredList(
             [
                 self.assertNotIgnored(Request("http://site.local/allowed"), middleware),
+                maybeDeferred(self.assertRobotsTxtRequested, "http://site.local"),
                 self.assertIgnored(Request("http://site.local/admin/main"), middleware),
                 self.assertIgnored(Request("http://site.local/static/"), middleware),
                 self.assertIgnored(
@@ -238,6 +239,12 @@ Disallow: /some/randome/page.html
         return self.assertFailure(
             maybeDeferred(middleware.process_request, request, spider), IgnoreRequest
         )
+
+    def assertRobotsTxtRequested(self, base_url):
+        calls = self.crawler.engine.download.call_args_list
+        request = calls[0][0][0]
+        self.assertEqual(request.url, f"{base_url}/robots.txt")
+        self.assertEqual(request.callback, NO_CALLBACK)
 
 
 class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):

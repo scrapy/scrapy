@@ -87,7 +87,7 @@ coverage: build
 
 htmlview: html
 	 $(PYTHON) -c "import webbrowser; from pathlib import Path; \
-	 webbrowser.open('file://' + Path('build/html/index.html').resolve())"
+	 webbrowser.open(Path('build/html/index.html').resolve().as_uri())"
 
 clean:
 	-rm -rf build/*

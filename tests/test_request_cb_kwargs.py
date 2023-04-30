@@ -4,8 +4,8 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.spiders import MockServerSpider
 from tests.mockserver import MockServer
+from tests.spiders import MockServerSpider
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -154,7 +154,6 @@ class KeywordArgumentsSpider(MockServerSpider):
 
 
 class CallbackKeywordArgumentsTestCase(TestCase):
-
     maxDiff = None
 
     def setUp(self):

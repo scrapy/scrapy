@@ -2,12 +2,13 @@ import unittest
 from unittest import mock
 
 from scrapy.settings import (
+    SETTINGS_PRIORITIES,
     BaseSettings,
     Settings,
     SettingsAttribute,
-    SETTINGS_PRIORITIES,
     get_settings_priority,
 )
+
 from . import default_settings
 
 
@@ -64,6 +65,19 @@ class BaseSettingsTest(unittest.TestCase):
     def setUp(self):
         self.settings = BaseSettings()
 
+    def test_setdefault_not_existing_value(self):
+        settings = BaseSettings()
+        value = settings.setdefault("TEST_OPTION", "value")
+        self.assertEqual(settings["TEST_OPTION"], "value")
+        self.assertEqual(value, "value")
+        self.assertIsNotNone(value)
+
+    def test_setdefault_existing_value(self):
+        settings = BaseSettings({"TEST_OPTION": "value"})
+        value = settings.setdefault("TEST_OPTION", None)
+        self.assertEqual(settings["TEST_OPTION"], "value")
+        self.assertEqual(value, "value")
+
     def test_set_new_attribute(self):
         self.settings.set("TEST_OPTION", "value", 0)
         self.assertIn("TEST_OPTION", self.settings.attributes)
@@ -92,7 +106,6 @@ class BaseSettingsTest(unittest.TestCase):
         with mock.patch.object(attr, "__setattr__") as mock_setattr, mock.patch.object(
             attr, "set"
         ) as mock_set:
-
             self.settings.attributes = {"TEST_OPTION": attr}
 
             for priority in (0, 10, 20):

@@ -1,31 +1,31 @@
-import re
+import dataclasses
 import json
 import marshal
 import pickle
+import re
 import tempfile
 import unittest
-import dataclasses
-from io import BytesIO
 from datetime import datetime
+from io import BytesIO
 from warnings import catch_warnings, filterwarnings
 
 import lxml.etree
 from itemadapter import ItemAdapter
 
-from scrapy.item import Item, Field
-from scrapy.utils.python import to_unicode
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter,
-    PprintItemExporter,
-    PickleItemExporter,
     CsvItemExporter,
-    XmlItemExporter,
-    JsonLinesItemExporter,
     JsonItemExporter,
-    PythonItemExporter,
+    JsonLinesItemExporter,
     MarshalItemExporter,
+    PickleItemExporter,
+    PprintItemExporter,
+    PythonItemExporter,
+    XmlItemExporter,
 )
+from scrapy.item import Field, Item
+from scrapy.utils.python import to_unicode
 
 
 def custom_serializer(value):
@@ -55,7 +55,6 @@ class CustomFieldDataclass:
 
 
 class BaseItemExporterTest(unittest.TestCase):
-
     item_class = TestItem
     custom_field_item_class = CustomFieldItem
 
@@ -513,13 +512,11 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
 
 class XmlItemExporterDataclassTest(XmlItemExporterTest):
-
     item_class = TestDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
-
     _expected_nested = {
         "name": "Jesus",
         "age": {"name": "Maria", "age": {"name": "Joseph", "age": "22"}},
@@ -559,13 +556,11 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
 
 
 class JsonLinesItemExporterDataclassTest(JsonLinesItemExporterTest):
-
     item_class = TestDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
 class JsonItemExporterTest(JsonLinesItemExporterTest):
-
     _expected_nested = [JsonLinesItemExporterTest._expected_nested]
 
     def _get_exporter(self, **kwargs):
@@ -627,13 +622,11 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
 
 
 class JsonItemExporterDataclassTest(JsonItemExporterTest):
-
     item_class = TestDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
 class CustomExporterItemTest(unittest.TestCase):
-
     item_class = TestItem
 
     def setUp(self):
@@ -664,7 +657,6 @@ class CustomExporterItemTest(unittest.TestCase):
 
 
 class CustomExporterDataclassTest(CustomExporterItemTest):
-
     item_class = TestDataClass
 
 

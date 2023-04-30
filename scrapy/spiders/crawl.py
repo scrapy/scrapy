@@ -8,7 +8,7 @@ See documentation in docs/topics/spiders.rst
 import copy
 from typing import AsyncIterable, Awaitable, Sequence
 
-from scrapy.http import Request, Response, HtmlResponse
+from scrapy.http import HtmlResponse, Request, Response
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -60,7 +60,6 @@ class Rule:
 
 
 class CrawlSpider(Spider):
-
     rules: Sequence[Rule] = ()
 
     def __init__(self, *a, **kw):

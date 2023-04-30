@@ -4,16 +4,16 @@ import unittest
 
 import queuelib
 
-from scrapy.squeues import (
-    PickleFifoDiskQueue,
-    PickleLifoDiskQueue,
-    MarshalFifoDiskQueue,
-    MarshalLifoDiskQueue,
-    FifoMemoryQueue,
-    LifoMemoryQueue,
-)
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.squeues import (
+    FifoMemoryQueue,
+    LifoMemoryQueue,
+    MarshalFifoDiskQueue,
+    MarshalLifoDiskQueue,
+    PickleFifoDiskQueue,
+    PickleLifoDiskQueue,
+)
 from scrapy.utils.test import get_crawler
 
 """

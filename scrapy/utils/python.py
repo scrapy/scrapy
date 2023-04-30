@@ -8,7 +8,16 @@ import sys
 import weakref
 from functools import partial, wraps
 from itertools import chain
-from typing import AsyncGenerator, AsyncIterable, Iterable, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    Iterable,
+    Mapping,
+    Optional,
+    Union,
+    overload,
+)
 
 from scrapy.utils.asyncgen import as_async_generator
 
@@ -45,7 +54,7 @@ def iflatten(x):
             yield el
 
 
-def is_listlike(x):
+def is_listlike(x: Any) -> bool:
     """
     >>> is_listlike("foo")
     False
@@ -82,7 +91,9 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def to_unicode(text, encoding=None, errors="strict"):
+def to_unicode(
+    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+) -> str:
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, str):
@@ -97,7 +108,9 @@ def to_unicode(text, encoding=None, errors="strict"):
     return text.decode(encoding, errors)
 
 
-def to_bytes(text, encoding=None, errors="strict"):
+def to_bytes(
+    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+) -> bytes:
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
@@ -160,11 +173,12 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
-_BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
+_BINARYCHARS = {
+    i for i in range(32) if to_bytes(chr(i)) not in {b"\0", b"\t", b"\n", b"\r"}
+}
 
 
-def binary_is_text(data):
+def binary_is_text(data: bytes) -> bool:
     """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
@@ -174,33 +188,33 @@ def binary_is_text(data):
 
 
 def get_func_args(func, stripself=False):
-    """Return the argument name list of a callable"""
-    if inspect.isfunction(func):
-        spec = inspect.getfullargspec(func)
-        func_args = spec.args + spec.kwonlyargs
-    elif inspect.isclass(func):
-        return get_func_args(func.__init__, True)
-    elif inspect.ismethod(func):
-        return get_func_args(func.__func__, True)
-    elif inspect.ismethoddescriptor(func):
-        return []
-    elif isinstance(func, partial):
-        return [
-            x
-            for x in get_func_args(func.func)[len(func.args) :]
-            if not (func.keywords and x in func.keywords)
-        ]
-    elif hasattr(func, "__call__"):
-        if inspect.isroutine(func):
-            return []
-        if getattr(func, "__name__", None) == "__call__":
-            return []
-        return get_func_args(func.__call__, True)
+    """Return the argument name list of a callable object"""
+    if not callable(func):
+        raise TypeError(f"func must be callable, got '{type(func).__name__}'")
+
+    args = []
+    try:
+        sig = inspect.signature(func)
+    except ValueError:
+        return args
+
+    if isinstance(func, partial):
+        partial_args = func.args
+        partial_kw = func.keywords
+
+        for name, param in sig.parameters.items():
+            if param.name in partial_args:
+                continue
+            if partial_kw and param.name in partial_kw:
+                continue
+            args.append(name)
     else:
-        raise TypeError(f"{type(func)} is not callable")
-    if stripself:
-        func_args.pop(0)
-    return func_args
+        for name in sig.parameters.keys():
+            args.append(name)
+
+    if stripself and args and args[0] == "self":
+        args = args[1:]
+    return args
 
 
 def get_spec(func):
@@ -256,6 +270,16 @@ def equal_attributes(obj1, obj2, attributes):
             return False
     # all attributes equal
     return True
+
+
+@overload
+def without_none_values(iterable: Mapping) -> dict:
+    ...
+
+
+@overload
+def without_none_values(iterable: Iterable) -> Iterable:
+    ...
 
 
 def without_none_values(iterable):

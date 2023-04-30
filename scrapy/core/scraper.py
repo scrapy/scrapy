@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     AsyncIterable,
@@ -13,8 +14,8 @@ from typing import (
     Iterable,
     Optional,
     Set,
-    TYPE_CHECKING,
     Tuple,
+    Type,
     Union,
 )
 
@@ -22,10 +23,13 @@ from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
-from scrapy import signals, Spider
+from scrapy import Spider, signals
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
+from scrapy.logformatter import LogFormatter
+from scrapy.pipelines import ItemPipelineManager
+from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import (
     aiter_errback,
     defer_fail,
@@ -34,11 +38,9 @@ from scrapy.utils.defer import (
     parallel,
     parallel_async,
 )
-
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
-
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -66,7 +68,7 @@ class Slot:
     def add_response_request(
         self, result: Union[Response, Failure], request: Request
     ) -> Deferred:
-        deferred = Deferred()
+        deferred: Deferred = Deferred()
         self.queue.append((result, request, deferred))
         if isinstance(result, Response):
             self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
@@ -98,16 +100,20 @@ class Slot:
 class Scraper:
     def __init__(self, crawler: Crawler) -> None:
         self.slot: Optional[Slot] = None
-        self.spidermw = SpiderMiddlewareManager.from_crawler(crawler)
-        itemproc_cls = load_object(crawler.settings["ITEM_PROCESSOR"])
-        self.itemproc = itemproc_cls.from_crawler(crawler)
-        self.concurrent_items = crawler.settings.getint("CONCURRENT_ITEMS")
-        self.crawler = crawler
-        self.signals = crawler.signals
-        self.logformatter = crawler.logformatter
+        self.spidermw: SpiderMiddlewareManager = SpiderMiddlewareManager.from_crawler(
+            crawler
+        )
+        itemproc_cls: Type[ItemPipelineManager] = load_object(
+            crawler.settings["ITEM_PROCESSOR"]
+        )
+        self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
+        self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
+        self.crawler: Crawler = crawler
+        self.signals: SignalManager = crawler.signals
+        self.logformatter: LogFormatter = crawler.logformatter
 
     @inlineCallbacks
-    def open_spider(self, spider: Spider):
+    def open_spider(self, spider: Spider) -> Generator[Deferred, Any, None]:
         """Open the given spider for scraping and allocate resources for it"""
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         yield self.itemproc.open_spider(spider)
@@ -137,7 +143,8 @@ class Scraper:
             raise RuntimeError("Scraper slot not assigned")
         dfd = self.slot.add_response_request(result, request)
 
-        def finish_scraping(_):
+        def finish_scraping(_: Any) -> Any:
+            assert self.slot is not None
             self.slot.finish_response(result, request)
             self._check_if_closing(spider)
             self._scrape_next(spider)
@@ -205,10 +212,12 @@ class Scraper:
                 callback=callback, callbackKeywords=result.request.cb_kwargs
             )
         else:  # result is a Failure
-            result.request = request
-            warn_on_generator_with_return_value(spider, request.errback)
+            # TODO: properly type adding this attribute to a Failure
+            result.request = request  # type: ignore[attr-defined]
             dfd = defer_fail(result)
-            dfd.addErrback(request.errback)
+            if request.errback:
+                warn_on_generator_with_return_value(spider, request.errback)
+                dfd.addErrback(request.errback)
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(
@@ -338,7 +347,7 @@ class Scraper:
 
     def _itemproc_finished(
         self, output: Any, item: Any, response: Response, spider: Spider
-    ) -> None:
+    ) -> Deferred:
         """ItemProcessor finished for the given ``item`` and returned ``output``"""
         assert self.slot is not None  # typing
         self.slot.itemproc_size -= 1

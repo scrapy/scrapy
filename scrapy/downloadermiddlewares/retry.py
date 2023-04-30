@@ -9,7 +9,7 @@ RETRY_HTTP_CODES - which HTTP response codes to retry
 Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 from typing import Optional, Union
 
 from twisted.internet import defer
@@ -30,7 +30,6 @@ from scrapy.http.request import Request
 from scrapy.spiders import Spider
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
-
 
 retry_logger = getLogger(__name__)
 
@@ -123,7 +122,6 @@ def get_retry_request(
 
 
 class RetryMiddleware:
-
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
     EXCEPTIONS_TO_RETRY = (

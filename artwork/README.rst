@@ -2,19 +2,19 @@
 Scrapy artwork
 ==============
 
-This folder contains Scrapy artwork resources such as logos and fonts.
+This folder contains the Scrapy artwork resources such as logos and fonts.
 
 scrapy-logo.jpg
 ---------------
 
-Main Scrapy logo, in JPEG format.
+The main Scrapy logo, in JPEG format.
 
 qlassik.zip
 -----------
 
-Font used for Scrapy logo. Homepage: https://www.dafont.com/qlassik.font
+The font used for the Scrapy logo. Homepage: https://www.dafont.com/qlassik.font
 
 scrapy-blog.logo.xcf
 --------------------
 
-The logo used in Scrapy blog, in Gimp format.
+The logo used in the Scrapy blog, in Gimp format.

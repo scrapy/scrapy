@@ -1,22 +1,26 @@
 """Helper functions which don't fit anywhere else"""
 import ast
+import hashlib
 import inspect
 import os
 import re
-import hashlib
 import warnings
 from collections import deque
 from contextlib import contextmanager
+from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from functools import partial
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from w3lib.html import replace_entities
 
-from scrapy.utils.datatypes import LocalWeakReferencedCache
-from scrapy.utils.python import flatten, to_unicode
 from scrapy.item import Item
+from scrapy.utils.datatypes import LocalWeakReferencedCache
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.utils.python import flatten, to_unicode
+
+if TYPE_CHECKING:
+    from scrapy import Spider
 
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
@@ -35,7 +39,7 @@ def arg_to_iter(arg):
     return [arg]
 
 
-def load_object(path):
+def load_object(path: Union[str, Callable]) -> Any:
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an
@@ -250,7 +254,7 @@ def is_generator_with_return_value(callable):
     return _generator_callbacks_cache[callable]
 
 
-def warn_on_generator_with_return_value(spider, callable):
+def warn_on_generator_with_return_value(spider: "Spider", callable: Callable) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None

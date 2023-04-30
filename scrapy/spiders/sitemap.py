@@ -1,17 +1,15 @@
-import re
 import logging
+import re
 
-from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip, gzip_magic_number
-
+from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
-
     sitemap_urls = ()
     sitemap_rules = [("", "parse")]
     sitemap_follow = [""]

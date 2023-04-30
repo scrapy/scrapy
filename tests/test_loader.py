@@ -1,12 +1,12 @@
-import unittest
 import dataclasses
+import unittest
 
 import attr
 from itemadapter import ItemAdapter
 from itemloaders.processors import Compose, Identity, MapCompose, TakeFirst
 
 from scrapy.http import HtmlResponse, Response
-from scrapy.item import Item, Field
+from scrapy.item import Field, Item
 from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
 
@@ -87,7 +87,6 @@ class BasicItemLoaderTest(unittest.TestCase):
 
 
 class InitializationTestMixin:
-
     item_class = None
 
     def test_keep_single_value(self):

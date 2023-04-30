@@ -6,17 +6,16 @@ import os
 import re
 import tempfile
 import webbrowser
-from typing import Any, Callable, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Iterable, Tuple, Union
 from weakref import WeakKeyDictionary
 
 from twisted.web import http
 from w3lib import html
+
 import scrapy
 from scrapy.http.response import Response
-
-
-from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.decorators import deprecated
+from scrapy.utils.python import to_bytes, to_unicode
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
 
@@ -38,12 +37,13 @@ _metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[floa
 
 def get_meta_refresh(
     response: "scrapy.http.response.text.TextResponse",
-    ignore_tags: Optional[Iterable[str]] = ("script", "noscript"),
+    ignore_tags: Iterable[str] = ("script", "noscript"),
 ) -> Union[Tuple[None, None], Tuple[float, str]]:
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
-        _metaref_cache[response] = html.get_meta_refresh(
+        # a w3lib typing bug here, fixed in https://github.com/scrapy/w3lib/pull/211
+        _metaref_cache[response] = html.get_meta_refresh(  # type: ignore[assignment]
             text, response.url, response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]

@@ -5,19 +5,18 @@ import platform
 from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import deferred_f_from_coro_f, aiter_errback
+from scrapy.utils.defer import aiter_errback, deferred_f_from_coro_f
 from scrapy.utils.python import (
-    memoizemethod_noargs,
+    MutableAsyncChain,
+    MutableChain,
     binary_is_text,
     equal_attributes,
     get_func_args,
+    memoizemethod_noargs,
     to_bytes,
     to_unicode,
     without_none_values,
-    MutableChain,
-    MutableAsyncChain,
 )
-
 
 __doctests__ = ["scrapy.utils.python"]
 
@@ -236,20 +235,16 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(partial_f3), ["c"])
         self.assertEqual(get_func_args(cal), ["a", "b", "c"])
         self.assertEqual(get_func_args(object), [])
+        self.assertEqual(get_func_args(str.split, stripself=True), ["sep", "maxsplit"])
+        self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
         if platform.python_implementation() == "CPython":
-            # TODO: how do we fix this to return the actual argument names?
-            self.assertEqual(get_func_args(str.split), [])
-            self.assertEqual(get_func_args(" ".join), [])
+            # doesn't work on CPython: https://bugs.python.org/issue42785
             self.assertEqual(get_func_args(operator.itemgetter(2)), [])
         elif platform.python_implementation() == "PyPy":
             self.assertEqual(
-                get_func_args(str.split, stripself=True), ["sep", "maxsplit"]
-            )
-            self.assertEqual(
                 get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
             )
-            self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
@@ -258,7 +253,3 @@ class UtilsPythonTestCase(unittest.TestCase):
             without_none_values({"one": 1, "none": None, "three": 3, "four": 4}),
             {"one": 1, "three": 3, "four": 4},
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

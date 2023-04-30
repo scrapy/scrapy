@@ -17,8 +17,31 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
-
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
+
+
+def NO_CALLBACK(*args, **kwargs):
+    """When assigned to the ``callback`` parameter of
+    :class:`~scrapy.http.Request`, it indicates that the request is not meant
+    to have a spider callback at all.
+
+    For example:
+
+    .. code-block:: python
+
+       Request("https://example.com", callback=NO_CALLBACK)
+
+    This value should be used by :ref:`components <topics-components>` that
+    create and handle their own requests, e.g. through
+    :meth:`scrapy.core.engine.ExecutionEngine.download`, so that downloader
+    middlewares handling such requests can treat them differently from requests
+    intended for the :meth:`~scrapy.Spider.parse` callback.
+    """
+    raise RuntimeError(
+        "The NO_CALLBACK callback has been called. This is a special callback "
+        "value intended for requests whose callback is never meant to be "
+        "called."
+    )
 
 
 class Request(object_ref):
@@ -73,11 +96,11 @@ class Request(object_ref):
             raise TypeError(f"Request priority not an integer: {priority!r}")
         self.priority = priority
 
-        if callback is not None and not callable(callback):
+        if not (callable(callback) or callback is None):
             raise TypeError(
                 f"callback must be a callable, got {type(callback).__name__}"
             )
-        if errback is not None and not callable(errback):
+        if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
         self.callback = callback
         self.errback = errback

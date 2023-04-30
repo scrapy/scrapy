@@ -1,11 +1,10 @@
-import json
 import copy
+import json
 from collections.abc import MutableMapping
 from importlib import import_module
 from pprint import pformat
 
 from scrapy.settings import default_settings
-
 
 SETTINGS_PRIORITIES = {
     "default": 0,
@@ -293,6 +292,13 @@ class BaseSettings(MutableMapping):
                 self.attributes[name] = SettingsAttribute(value, priority)
         else:
             self.attributes[name].set(value, priority)
+
+    def setdefault(self, name, default=None, priority="project"):
+        if name not in self:
+            self.set(name, default, priority)
+            return default
+
+        return self.attributes[name].value
 
     def setdict(self, values, priority="project"):
         self.update(values, priority)

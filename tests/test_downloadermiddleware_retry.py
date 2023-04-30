@@ -12,7 +12,7 @@ from twisted.internet.error import (
 )
 from twisted.web.client import ResponseFailed
 
-from scrapy.downloadermiddlewares.retry import get_retry_request, RetryMiddleware
+from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
@@ -127,7 +127,6 @@ class RetryTest(unittest.TestCase):
 
 
 class MaxRetryTimesTest(unittest.TestCase):
-
     invalid_url = "http://www.scrapytest.org/invalid_url"
 
     def get_spider_and_middleware(self, settings=None):

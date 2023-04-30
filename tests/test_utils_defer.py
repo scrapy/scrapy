@@ -1,11 +1,11 @@
 import random
 
 from pytest import mark
-from twisted.trial import unittest
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor
 from twisted.python.failure import Failure
+from twisted.trial import unittest
 
-from scrapy.utils.asyncgen import collect_asyncgen, as_async_generator
+from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
     aiter_errback,
     deferred_f_from_coro_f,

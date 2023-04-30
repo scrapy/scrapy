@@ -1,8 +1,9 @@
 """Some helpers for deprecation messages"""
 
-import warnings
 import inspect
+import warnings
 from typing import List, Tuple
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
@@ -53,7 +54,6 @@ def create_deprecated_class(
     """
 
     class DeprecatedClass(new_class.__class__):
-
         deprecated_class = None
         warned_on_subclass = False
 

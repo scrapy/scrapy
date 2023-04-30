@@ -15,8 +15,8 @@ from w3lib.encoding import (
     html_body_declared_encoding,
     html_to_unicode,
     http_content_type_encoding,
-    resolve_encoding,
     read_bom,
+    resolve_encoding,
 )
 from w3lib.html import strip_html5_whitespace
 
@@ -29,7 +29,6 @@ _NONE = object()
 
 
 class TextResponse(Response):
-
     _DEFAULT_ENCODING = "ascii"
     _cached_decoded_json = _NONE
 

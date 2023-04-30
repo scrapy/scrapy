@@ -1,13 +1,13 @@
 import sys
-from twisted.trial import unittest
+
 from twisted.internet import defer
+from twisted.trial import unittest
 
 import scrapy
 from scrapy.utils.testproc import ProcessTest
 
 
 class VersionTest(ProcessTest, unittest.TestCase):
-
     command = "version"
 
     @defer.inlineCallbacks

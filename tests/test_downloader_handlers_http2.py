@@ -15,17 +15,16 @@ from scrapy.utils.misc import create_instance
 from scrapy.utils.test import get_crawler
 from tests.mockserver import ssl_context_factory
 from tests.test_downloader_handlers import (
-    Https11TestCase,
-    Https11CustomCiphers,
     Http11MockServerTestCase,
     Http11ProxyTestCase,
+    Https11CustomCiphers,
+    Https11TestCase,
     UriResource,
 )
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2TestCase(Https11TestCase):
-
     scheme = "https"
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 

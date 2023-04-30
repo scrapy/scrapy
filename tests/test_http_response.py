@@ -23,7 +23,6 @@ from tests import get_testdata
 
 
 class BaseResponseTest(unittest.TestCase):
-
     response_class = Response
 
     def test_init(self):
@@ -349,7 +348,6 @@ class BaseResponseTest(unittest.TestCase):
 
 
 class TextResponseTest(BaseResponseTest):
-
     response_class = TextResponse
 
     def test_replace(self):
@@ -835,11 +833,9 @@ class TextResponseTest(BaseResponseTest):
 
 
 class HtmlResponseTest(TextResponseTest):
-
     response_class = HtmlResponse
 
     def test_html_encoding(self):
-
         body = b"""<html><head><title>Some page</title>
         <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
@@ -878,7 +874,6 @@ class HtmlResponseTest(TextResponseTest):
 
 
 class XmlResponseTest(TextResponseTest):
-
     response_class = XmlResponse
 
     def test_xml_encoding(self):

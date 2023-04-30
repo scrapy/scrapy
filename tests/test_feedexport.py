@@ -19,7 +19,7 @@ from pathlib import Path
 from string import ascii_letters, digits
 from typing import Union
 from unittest import mock
-from urllib.parse import urljoin, quote
+from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
 
 import lxml.etree
@@ -32,12 +32,13 @@ from zope.interface import implementer
 from zope.interface.verify import verifyObject
 
 import scrapy
+from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
-    _FeedSlot,
     BlockingFeedStorage,
     FeedExporter,
+    FeedSlot,
     FileFeedStorage,
     FTPFeedStorage,
     GCSFeedStorage,
@@ -47,12 +48,7 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import (
-    get_crawler,
-    mock_google_cloud_storage,
-    skip_if_no_boto,
-)
-
+from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no_boto
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
 
@@ -665,8 +661,8 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         return result
 
 
-class InstrumentedFeedSlot(_FeedSlot):
-    """Instrumented _FeedSlot subclass for keeping track of calls to
+class InstrumentedFeedSlot(FeedSlot):
+    """Instrumented FeedSlot subclass for keeping track of calls to
     start_exporting and finish_exporting."""
 
     def start_exporting(self):
@@ -969,7 +965,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -987,7 +983,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -1008,7 +1004,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -1027,7 +1023,7 @@ class FeedExportTest(FeedExportTestBase):
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
-        with mock.patch("scrapy.extensions.feedexport._FeedSlot", InstrumentedFeedSlot):
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
             self.assertFalse(listener.start_without_finish)
             self.assertFalse(listener.finish_without_start)
@@ -1073,7 +1069,6 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
-
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
             self.MyItem2({"hello": "world2", "foo": "bar2"}),
@@ -1644,6 +1639,57 @@ class FeedExportTest(FeedExportTestBase):
             data = yield self.exported_data(items, settings)
             self.assertEqual(row["expected"], data[feed_options["format"]])
 
+    @defer.inlineCallbacks
+    def test_storage_file_no_postprocessing(self):
+        @implementer(IFeedStorage)
+        class Storage:
+            def __init__(self, uri, *, feed_options=None):
+                pass
+
+            def open(self, spider):
+                Storage.open_file = tempfile.NamedTemporaryFile(prefix="feed-")
+                return Storage.open_file
+
+            def store(self, file):
+                Storage.store_file = file
+                file.close()
+
+        settings = {
+            "FEEDS": {self._random_temp_filename(): {"format": "jsonlines"}},
+            "FEED_STORAGES": {"file": Storage},
+        }
+        yield self.exported_no_data(settings)
+        self.assertIs(Storage.open_file, Storage.store_file)
+
+    @defer.inlineCallbacks
+    def test_storage_file_postprocessing(self):
+        @implementer(IFeedStorage)
+        class Storage:
+            def __init__(self, uri, *, feed_options=None):
+                pass
+
+            def open(self, spider):
+                Storage.open_file = tempfile.NamedTemporaryFile(prefix="feed-")
+                return Storage.open_file
+
+            def store(self, file):
+                Storage.store_file = file
+                file.close()
+
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {
+                    "format": "jsonlines",
+                    "postprocessing": [
+                        "scrapy.extensions.postprocessing.GzipPlugin",
+                    ],
+                },
+            },
+            "FEED_STORAGES": {"file": Storage},
+        }
+        yield self.exported_no_data(settings)
+        self.assertIs(Storage.open_file, Storage.store_file)
+
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
     __test__ = True
@@ -1716,7 +1762,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_gzip_plugin(self):
-
         filename = self._named_tempfile("gzip_file")
 
         settings = {
@@ -1736,7 +1781,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_gzip_plugin_compresslevel(self):
-
         filename_to_compressed = {
             self._named_tempfile("compresslevel_0"): self.get_gzip_compressed(
                 self.expected, compresslevel=0
@@ -1844,7 +1888,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin(self):
-
         filename = self._named_tempfile("lzma_file")
 
         settings = {
@@ -1864,7 +1907,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_format(self):
-
         filename_to_compressed = {
             self._named_tempfile("format_FORMAT_XZ"): lzma.compress(
                 self.expected, format=lzma.FORMAT_XZ
@@ -1898,7 +1940,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_check(self):
-
         filename_to_compressed = {
             self._named_tempfile("check_CHECK_NONE"): lzma.compress(
                 self.expected, check=lzma.CHECK_NONE
@@ -1932,7 +1973,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_lzma_plugin_preset(self):
-
         filename_to_compressed = {
             self._named_tempfile("preset_PRESET_0"): lzma.compress(
                 self.expected, preset=0
@@ -1991,7 +2031,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_bz2_plugin(self):
-
         filename = self._named_tempfile("bz2_file")
 
         settings = {
@@ -2011,7 +2050,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_bz2_plugin_compresslevel(self):
-
         filename_to_compressed = {
             self._named_tempfile("compresslevel_1"): bz2.compress(
                 self.expected, compresslevel=1
@@ -2061,7 +2099,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_parameter(self):
-
         expected = b"foo\r\n\nbar\r\n\n"
         filename = self._named_tempfile("newline")
 
@@ -2080,7 +2117,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_compression(self):
-
         expected = b"foo\r\n\nbar\r\n\n"
 
         filename_to_decompressor = {
@@ -2507,7 +2543,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
     def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
-        So %(batch_time)s replaced with the current date.
+        So %(batch_id)d replaced with the current id.
         """
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2517,7 +2553,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings = {
             "FEEDS": {
                 self._random_temp_filename()
-                / "%(batch_time)s": {
+                / "%(batch_id)d": {
                     "format": "json",
                 },
             },
@@ -2560,7 +2596,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
         ]
 
         class CustomS3FeedStorage(S3FeedStorage):
-
             stubs = []
 
             def open(self, *args, **kwargs):
@@ -2581,7 +2616,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 return super().open(*args, **kwargs)
 
         key = "export.csv"
-        uri = f"s3://{bucket}/{key}/%(batch_time)s.json"
+        uri = f"s3://{bucket}/{key}/%(batch_id)d.json"
         batch_item_count = 1
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
@@ -2615,6 +2650,83 @@ class BatchDeliveriesTest(FeedExportTestBase):
         self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
+
+
+# Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
+class FeedExporterSignalsTest(unittest.TestCase):
+    items = [
+        {"foo": "bar1", "egg": "spam1"},
+        {"foo": "bar2", "egg": "spam2", "baz": "quux2"},
+        {"foo": "bar3", "baz": "quux3"},
+    ]
+
+    with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+        settings = {
+            "FEEDS": {
+                f"file:///{tmp.name}": {
+                    "format": "json",
+                },
+            },
+        }
+
+    def feed_exporter_closed_signal_handler(self):
+        self.feed_exporter_closed_received = True
+
+    def feed_slot_closed_signal_handler(self, slot):
+        self.feed_slot_closed_received = True
+
+    def feed_exporter_closed_signal_handler_deferred(self):
+        d = defer.Deferred()
+        d.addCallback(lambda _: setattr(self, "feed_exporter_closed_received", True))
+        d.callback(None)
+        return d
+
+    def feed_slot_closed_signal_handler_deferred(self, slot):
+        d = defer.Deferred()
+        d.addCallback(lambda _: setattr(self, "feed_slot_closed_received", True))
+        d.callback(None)
+        return d
+
+    def run_signaled_feed_exporter(
+        self, feed_exporter_signal_handler, feed_slot_signal_handler
+    ):
+        crawler = get_crawler(settings_dict=self.settings)
+        feed_exporter = FeedExporter.from_crawler(crawler)
+        spider = scrapy.Spider("default")
+        spider.crawler = crawler
+        crawler.signals.connect(
+            feed_exporter_signal_handler,
+            signal=signals.feed_exporter_closed,
+        )
+        crawler.signals.connect(
+            feed_slot_signal_handler, signal=signals.feed_slot_closed
+        )
+        feed_exporter.open_spider(spider)
+        for item in self.items:
+            feed_exporter.item_scraped(item, spider)
+        defer.ensureDeferred(feed_exporter.close_spider(spider))
+
+    def test_feed_exporter_signals_sent(self):
+        self.feed_exporter_closed_received = False
+        self.feed_slot_closed_received = False
+
+        self.run_signaled_feed_exporter(
+            self.feed_exporter_closed_signal_handler,
+            self.feed_slot_closed_signal_handler,
+        )
+        self.assertTrue(self.feed_slot_closed_received)
+        self.assertTrue(self.feed_exporter_closed_received)
+
+    def test_feed_exporter_signals_sent_deferred(self):
+        self.feed_exporter_closed_received = False
+        self.feed_slot_closed_received = False
+
+        self.run_signaled_feed_exporter(
+            self.feed_exporter_closed_signal_handler_deferred,
+            self.feed_slot_closed_signal_handler_deferred,
+        )
+        self.assertTrue(self.feed_slot_closed_received)
+        self.assertTrue(self.feed_exporter_closed_received)
 
 
 class FeedExportInitTest(unittest.TestCase):
@@ -2833,7 +2945,6 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
 
 class URIParamsTest:
-
     spider_name = "uri_params_spider"
     deprecated_options = False
 

@@ -1,8 +1,8 @@
+import collections
 import datetime
 import shutil
 import tempfile
 import unittest
-import collections
 from contextlib import contextmanager
 from typing import Optional
 
@@ -20,7 +20,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-
 
 MockEngine = collections.namedtuple("MockEngine", ["downloader"])
 MockSlot = collections.namedtuple("MockSlot", ["active"])
@@ -526,7 +525,6 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
     @defer.inlineCallbacks
     def test_integration_downloader_aware_priority_queue(self):
         with MockServer() as mockserver:
-
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)

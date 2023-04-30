@@ -1,16 +1,14 @@
 from pathlib import Path
 
-from twisted.trial import unittest
 from twisted.internet import defer
+from twisted.trial import unittest
 
-from scrapy.utils.testsite import SiteTest
 from scrapy.utils.testproc import ProcessTest
-
-from tests import tests_datadir, NON_EXISTING_RESOLVABLE
+from scrapy.utils.testsite import SiteTest
+from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
-
     command = "shell"
 
     @defer.inlineCallbacks
