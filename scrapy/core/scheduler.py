@@ -290,6 +290,7 @@ class Scheduler(BaseScheduler):
 
     def _enqueue_request(self, request: Request) -> None:
         dqok = self._dqpush(request)
+        assert self.stats is not None
         if dqok:
             self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
         else:
@@ -328,6 +329,7 @@ class Scheduler(BaseScheduler):
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
+        assert self.stats is not None
         if request.meta.get("request_delay"):
             self._dpqpush(request)
             self.stats.inc_value(
@@ -337,7 +339,6 @@ class Scheduler(BaseScheduler):
             return True
         self._enqueue_request(request)
         self.stats.inc_value("scheduler/enqueued", spider=self.spider)
-        assert self.stats is not None
         return True
 
     def next_request(self) -> Optional[Request]:
@@ -349,7 +350,9 @@ class Scheduler(BaseScheduler):
         Increment the appropriate stats, such as: ``scheduler/dequeued``,
         ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
         """
-        delayed_request = self.dpqs.pop()
+
+        delayed_request: Optional[Request] = self.dpqs.pop()
+        assert self.stats is not None
         if delayed_request:
             self.stats.inc_value(
                 "scheduler/dequeued/delayed/memory", spider=self.spider
@@ -357,7 +360,6 @@ class Scheduler(BaseScheduler):
             delayed_request.priority += self.delay_priority_adjust
             self._enqueue_request(delayed_request)
         request: Optional[Request] = self.mqs.pop()
-        assert self.stats is not None
         if request is not None:
             self.stats.inc_value("scheduler/dequeued/memory", spider=self.spider)
         else:
