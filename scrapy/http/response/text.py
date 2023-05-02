@@ -100,11 +100,13 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _headers_encoding(self):
         content_type = self.headers.get(b"Content-Type", b"")
-        return http_content_type_encoding(to_unicode(content_type))
+        return http_content_type_encoding(to_unicode(content_type, encoding="latin-1"))
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
-            content_type = to_unicode(self.headers.get(b"Content-Type", b""))
+            content_type = to_unicode(
+                self.headers.get(b"Content-Type", b""), encoding="latin-1"
+            )
             benc, ubody = html_to_unicode(
                 content_type,
                 self.body,
