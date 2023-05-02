@@ -42,6 +42,7 @@ class ResponseTypesTest(unittest.TestCase):
             ("application/octet-stream", Response),
             ("application/x-json; encoding=UTF8;charset=UTF-8", TextResponse),
             ("application/json-amazonui-streaming;charset=UTF-8", TextResponse),
+            (b"application/x-download; filename=\x80dummy.txt", Response),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_type(source)
