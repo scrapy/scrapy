@@ -1,9 +1,15 @@
 import weakref
 
+import packaging.version as version
+import parsel
+import pytest
 from twisted.trial import unittest
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
+
+PARSEL_VERSION = version.parse(getattr(parsel, "__version__", "0.0"))
+PARSEL_18_PLUS = PARSEL_VERSION >= version.parse("1.8.0")
 
 
 class SelectorTestCase(unittest.TestCase):
@@ -111,8 +117,12 @@ class SelectorTestCase(unittest.TestCase):
 
 
 class JMESPathTestCase(unittest.TestCase):
+    @pytest.mark.skipif(
+        not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
+    )
     def test_json_has_html(self) -> None:
         """Sometimes the information is returned in a json wrapper"""
+
         body = """
         {
             "content": [
@@ -150,6 +160,9 @@ class JMESPathTestCase(unittest.TestCase):
         self.assertEqual(resp.jmespath("html").css("div > b").getall(), ["<b>f</b>"])
         self.assertEqual(resp.jmespath("content").jmespath("name.age").get(), "18")
 
+    @pytest.mark.skipif(
+        not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
+    )
     def test_html_has_json(self) -> None:
         body = """
         <div>
@@ -191,6 +204,9 @@ class JMESPathTestCase(unittest.TestCase):
         )
         self.assertEqual(resp.xpath("//div/content").jmespath("total").get(), "4")
 
+    @pytest.mark.skipif(
+        not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
+    )
     def test_jmestpath_with_re(self) -> None:
         body = """
             <div>
@@ -246,3 +262,14 @@ class JMESPathTestCase(unittest.TestCase):
             .re(r"(\d+)"),
             ["18", "32", "22", "25"],
         )
+
+    @pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
+    def test_jmespath_not_available(my_json_page) -> None:
+        body = """
+        {
+            "website": {"name": "Example"}
+        }
+        """
+        resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
+        with pytest.raises(AttributeError):
+            resp.jmespath("website.name").get()
