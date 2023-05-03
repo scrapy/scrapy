@@ -142,6 +142,12 @@ class Response(object_ref):
         """
         raise NotSupported("Response content isn't text")
 
+    def jmespath(self, *a, **kw):
+        """Shortcut method implemented only by responses whose content
+        is text (subclasses of TextResponse).
+        """
+        raise NotSupported("Response content isn't text")
+
     def xpath(self, *a, **kw):
         """Shortcut method implemented only by responses whose content
         is text (subclasses of TextResponse).
