@@ -1,8 +1,8 @@
 import weakref
 
-import packaging.version as version
 import parsel
 import pytest
+from packaging import version
 from twisted.trial import unittest
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
@@ -10,6 +10,9 @@ from scrapy.selector import Selector
 
 PARSEL_VERSION = version.parse(getattr(parsel, "__version__", "0.0"))
 PARSEL_18_PLUS = PARSEL_VERSION >= version.parse("1.8.0")
+
+print(PARSEL_VERSION)
+print(PARSEL_18_PLUS)
 
 
 class SelectorTestCase(unittest.TestCase):
