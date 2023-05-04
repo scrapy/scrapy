@@ -10,7 +10,7 @@ Scrapy 2.9.0 (YYYY-MM-DD)
 
 Highlights:
 
--   Per-domain request settings.
+-   Per-domain download settings.
 -   Compatibility with new cryptography_ and new parsel_.
 -   TBD
 
@@ -19,7 +19,7 @@ New features
 
 -   Settings correponding to :setting:`DOWNLOAD_DELAY`,
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
-    :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per domain basis
+    :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
 
 -   Added :func:`scrapy.utils.request.request_to_curl`, a function to produce a
@@ -27,26 +27,6 @@ New features
 
 -   Values of :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can now be
     :class:`pathlib.Path` instances. (:issue:`5801`)
-
--   :func:`scrapy.utils.request.request_from_curl` now supports $-prefixed
-    string values for the curl ``--data-raw`` argument, which are produced by
-    browsers for data that includes certain symbols. (:issue:`5899`,
-    :issue:`5901`)
-
--   The ``scrapy parse`` command now also works with async generator callbacks.
-    (:issue:`5819`, :issue:`5824`)
-
--   The ``scrapy genspider`` command now properly works with HTTPS URLs.
-    (:issue:`3553`, :issue:`5808`)
-
--   Improved handling of asyncio loops. (:issue:`5831`, :issue:`5832`)
-
--   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
-    now skips certain malformed URLs instead of raising an exception.
-    (:issue:`5881`)
-
--   :func:`scrapy.utils.python.get_func_args` now supports more types of
-    callables. (:issue:`5872`, :issue:`5885`)
 
 Bug fixes
 ~~~~~~~~~
@@ -64,6 +44,26 @@ Bug fixes
 -   The checksums returned by :class:`~scrapy.pipelines.files.FilesPipeline`
     for files on Google Cloud Storage are no longer Base64-encoded.
     (:issue:`5874`, :issue:`5891`)
+
+-   :func:`scrapy.utils.request.request_from_curl` now supports $-prefixed
+    string values for the curl ``--data-raw`` argument, which are produced by
+    browsers for data that includes certain symbols. (:issue:`5899`,
+    :issue:`5901`)
+
+-   The :command:`parse` command now also works with async generator callbacks.
+    (:issue:`5819`, :issue:`5824`)
+
+-   The :command:`genspider` command now properly works with HTTPS URLs.
+    (:issue:`3553`, :issue:`5808`)
+
+-   Improved handling of asyncio loops. (:issue:`5831`, :issue:`5832`)
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    now skips certain malformed URLs instead of raising an exception.
+    (:issue:`5881`)
+
+-   :func:`scrapy.utils.python.get_func_args` now supports more types of
+    callables. (:issue:`5872`, :issue:`5885`)
 
 -   Fixed an error breaking user handling of send failures in
     :meth:`scrapy.mail.MailSender.send()`. (:issue:`1611`, :issue:`5880`)
