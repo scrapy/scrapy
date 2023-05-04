@@ -12,7 +12,8 @@ Highlights:
 
 -   Per-domain download settings.
 -   Compatibility with new cryptography_ and new parsel_.
--   TBD
+-   JMESPath selectors from the new parsel_.
+-   Bug fixes.
 
 New features
 ~~~~~~~~~~~~
@@ -22,6 +23,12 @@ New features
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
 
+-   Added :meth:`TextResponse.jmespath`, a shortcut for JMESPath selectors
+    available since parsel_ 1.8.1. (:issue:`5894`, :issue:`5915`)
+
+-   Added :signal:`feed_slot_closed` and :signal:`feed_exporter_closed`
+    signals. (:issue:`5876`)
+
 -   Added :func:`scrapy.utils.request.request_to_curl`, a function to produce a
     curl command from a :class:`~scrapy.Request` object. (:issue:`5892`)
 
@@ -30,6 +37,8 @@ New features
 
 Bug fixes
 ~~~~~~~~~
+
+-   Fixed a warning with Parsel 1.8.1+. (:issue:`5903`, :issue:`5918`)
 
 -   Fixed an error when using feed postprocessing with S3 storage.
     (:issue:`5500`, :issue:`5581`)
@@ -65,6 +74,9 @@ Bug fixes
 -   :func:`scrapy.utils.python.get_func_args` now supports more types of
     callables. (:issue:`5872`, :issue:`5885`)
 
+-   Fixed an error when processing non-UTF8 values of ``Content-Type`` headers.
+    (:issue:`5914`, :issue:`5917`)
+
 -   Fixed an error breaking user handling of send failures in
     :meth:`scrapy.mail.MailSender.send()`. (:issue:`1611`, :issue:`5880`)
 
@@ -89,7 +101,7 @@ Quality assurance
 -   Extended typing hints. (:issue:`5805`, :issue:`5889`, :issue:`5896`)
 
 -   Tests for most of the examples in the docs are now run as a part of CI,
-    found problems were fixed. (:issue:`5816`, :issue:`5826`)
+    found problems were fixed. (:issue:`5816`, :issue:`5826`, :issue:`5919`)
 
 -   Removed usage of deprecated Python classes. (:issue:`5849`)
 
@@ -99,9 +111,10 @@ Quality assurance
     test. (:issue:`5855`, :issue:`5898`)
 
 -   Updated docstrings to match output produced by parsel_ 1.8.1 so that they
-    don't cause test failures. (:issue:`5902`)
+    don't cause test failures. (:issue:`5902`, :issue:`5919`)
 
--   Other CI and pre-commit improvements. (:issue:`5802`, :issue:`5823`)
+-   Other CI and pre-commit improvements. (:issue:`5802`, :issue:`5823`,
+    :issue:`5908`)
 
 .. _blacken-docs: https://github.com/adamchainz/blacken-docs
 
