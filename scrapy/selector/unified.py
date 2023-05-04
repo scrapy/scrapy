@@ -4,16 +4,13 @@ XPath selectors based on lxml
 
 from parsel import Selector as _ParselSelector
 
-try:
-    from parsel.selector import _NOT_SET
-except ImportError:
-    _NOT_SET = None
-
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
+
+_NOT_SET = object()
 
 
 def _st(response, st):
@@ -85,4 +82,8 @@ class Selector(_ParselSelector, object_ref):
             kwargs.setdefault("base_url", response.url)
 
         self.response = response
-        super().__init__(text=text, type=st, root=root, **kwargs)
+
+        if root is not _NOT_SET:
+            kwargs["root"] = root
+
+        super().__init__(text=text, type=st, **kwargs)
