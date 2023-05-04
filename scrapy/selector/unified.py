@@ -4,6 +4,11 @@ XPath selectors based on lxml
 
 from parsel import Selector as _ParselSelector
 
+try:
+    from parsel.selector import _NOT_SET
+except ImportError:
+    _NOT_SET = None
+
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
@@ -63,7 +68,7 @@ class Selector(_ParselSelector, object_ref):
     __slots__ = ["response"]
     selectorlist_cls = SelectorList
 
-    def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
+    def __init__(self, response=None, text=None, type=None, root=_NOT_SET, **kwargs):
         if response is not None and text is not None:
             raise ValueError(
                 f"{self.__class__.__name__}.__init__() received "
