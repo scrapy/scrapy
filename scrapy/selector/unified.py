@@ -10,6 +10,8 @@ from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
 
+_NOT_SET = object()
+
 
 def _st(response, st):
     if st is None:
@@ -63,7 +65,7 @@ class Selector(_ParselSelector, object_ref):
     __slots__ = ["response"]
     selectorlist_cls = SelectorList
 
-    def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
+    def __init__(self, response=None, text=None, type=None, root=_NOT_SET, **kwargs):
         if response is not None and text is not None:
             raise ValueError(
                 f"{self.__class__.__name__}.__init__() received "
@@ -80,4 +82,8 @@ class Selector(_ParselSelector, object_ref):
             kwargs.setdefault("base_url", response.url)
 
         self.response = response
-        super().__init__(text=text, type=st, root=root, **kwargs)
+
+        if root is not _NOT_SET:
+            kwargs["root"] = root
+
+        super().__init__(text=text, type=st, **kwargs)
