@@ -14,8 +14,6 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
 from twisted.web._newclient import (
-    HEADER,
-    STATUS,
     HTTP11ClientProtocol,
     HTTPClientParser,
     RequestGenerationFailed,
@@ -47,37 +45,9 @@ logger = logging.getLogger(__name__)
 
 
 class ScrapyHTTPClientParser(HTTPClientParser):
-    # Fork of
-    # https://github.com/twisted/twisted/blob/525da4a0becad1e814c74f12c365f15fe9cd10de/src/twisted/web/_newclient.py#L269-L296
-    # that handles header not having a colon.
-    def lineReceived(self, line):
-        """
-        Handle one line from a response.
-        """
-        # Handle the normal CR LF case.
-        if line[-1:] == b"\r":
-            line = line[:-1]
-        print(f"Line: {line}")
-        if self.state == STATUS:
-            self.statusReceived(line)
-            self.state = HEADER
-        elif self.state == HEADER:
-            if not line or line[0] not in b" \t":
-                if self._partialHeader is not None:
-                    header = b"".join(self._partialHeader)
-                    name, value = header.split(b":", 1)
-                    value = value.strip()
-                    self.headerReceived(name, value)
-                if not line:
-                    # Empty line means the header section is over.
-                    self.allHeadersReceived()
-                else:
-                    # Line not beginning with LWS is another header.
-                    self._partialHeader = [line]
-            else:
-                # A line beginning with LWS is a continuation of a header
-                # begun on a previous line.
-                self._partialHeader.append(line)
+    # Increase the maximum length for (header) lines, which is 2**14 by
+    # default as of Twisted 22.10.0.
+    MAX_LENGTH = 2**16
 
 
 class ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):

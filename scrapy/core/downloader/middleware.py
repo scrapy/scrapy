@@ -51,10 +51,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            try:
-                return (yield download_func(request=request, spider=spider))
-            except Exception as e:
-                raise e.reasons[0]
+            return (yield download_func(request=request, spider=spider))
 
         @inlineCallbacks
         def process_response(
