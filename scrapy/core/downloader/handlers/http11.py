@@ -13,21 +13,17 @@ from twisted.internet.defer import CancelledError, Deferred, fail, maybeDeferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
+from twisted.web._newclient import HTTP11ClientProtocol as TxHTTP11ClientProtocol
+from twisted.web._newclient import HTTPClientParser as TxHTTPClientParser
 from twisted.web._newclient import (
-    HTTP11ClientProtocol,
-    HTTPClientParser,
     RequestGenerationFailed,
     RequestNotSent,
     TransportProxyProducer,
 )
-from twisted.web.client import (
-    URI,
-    Agent,
-    HTTPConnectionPool,
-    ResponseDone,
-    ResponseFailed,
-    _HTTP11ClientFactory,
-)
+from twisted.web.client import URI, Agent
+from twisted.web.client import HTTPConnectionPool as TxHTTPConnectionPool
+from twisted.web.client import ResponseDone, ResponseFailed
+from twisted.web.client import _HTTP11ClientFactory as TxHTTP11ClientFactory
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
@@ -44,35 +40,15 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
-class ScrapyHTTPClientParser(HTTPClientParser):
+class _HTTPClientParser(TxHTTPClientParser):
     # Increase the maximum length for (header) lines, which is 2**14 by
     # default as of Twisted 22.10.0.
     MAX_LENGTH = 2**16
 
 
-class ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
-    # Fork of
-    # https://github.com/twisted/twisted/blob/525da4a0becad1e814c74f12c365f15fe9cd10de/src/twisted/web/_newclient.py#L1487-L1552
-    # that replaces HTTPClientParser with ScrapyHTTPClientParser.
+# Use _HTTPClientParser.
+class _HTTP11ClientProtocol(TxHTTP11ClientProtocol):
     def request(self, request):
-        """
-        Issue C{request} over C{self.transport} and return a L{Deferred} which
-        will fire with a L{Response} instance or an error.
-
-        @param request: The object defining the parameters of the request to
-           issue.
-        @type request: L{Request}
-
-        @rtype: L{Deferred}
-        @return: The deferred may errback with L{RequestGenerationFailed} if
-            the request was not fully written to the transport due to a local
-            error.  It may errback with L{RequestTransmissionFailed} if it was
-            not fully written to the transport due to a network error.  It may
-            errback with L{ResponseFailed} if the request was sent (not
-            necessarily received) but some or all of the response was lost.  It
-            may errback with L{RequestNotSent} if it is not possible to send
-            any more requests using this L{HTTP11ClientProtocol}.
-        """
         if self._state != "QUIESCENT":
             return fail(RequestNotSent())
 
@@ -80,8 +56,6 @@ class ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
         _requestDeferred = maybeDeferred(request.writeTo, self.transport)
 
         def cancelRequest(ign):
-            # Explicitly cancel the request's deferred if it's still trying to
-            # write when this request is cancelled.
             if self._state in ("TRANSMITTING", "TRANSMITTING_AFTER_RECEIVING_RESPONSE"):
                 _requestDeferred.cancel()
             else:
@@ -90,12 +64,10 @@ class ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
 
         self._finishedRequest = Deferred(cancelRequest)
 
-        # Keep track of the Request object in case we need to call stopWriting
-        # on it.
         self._currentRequest = request
 
         self._transportProxy = TransportProxyProducer(self.transport)
-        self._parser = ScrapyHTTPClientParser(request, self._finishResponse)
+        self._parser = _HTTPClientParser(request, self._finishResponse)
         self._parser.makeConnection(self._transportProxy)
         self._responseDeferred = self._parser._responseDeferred
 
@@ -122,13 +94,13 @@ class ScrapyHTTP11ClientProtocol(HTTP11ClientProtocol):
         return self._finishedRequest
 
 
-class ScrapyHTTP11ClientFactory(_HTTP11ClientFactory):
+class _HTTP11ClientFactory(TxHTTP11ClientFactory):
     def buildProtocol(self, addr):
-        return ScrapyHTTP11ClientProtocol(self._quiescentCallback)
+        return _HTTP11ClientProtocol(self._quiescentCallback)
 
 
-class ScrapyHTTPConnectionPool(HTTPConnectionPool):
-    _factory = ScrapyHTTP11ClientFactory
+class _HTTPConnectionPool(TxHTTPConnectionPool):
+    _factory = _HTTP11ClientFactory
 
 
 class HTTP11DownloadHandler:
@@ -139,7 +111,7 @@ class HTTP11DownloadHandler:
 
         from twisted.internet import reactor
 
-        self._pool = ScrapyHTTPConnectionPool(reactor, persistent=True)
+        self._pool = _HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
