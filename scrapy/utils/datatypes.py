@@ -8,6 +8,10 @@ This module must not depend on any module outside the Standard Library.
 import collections
 import weakref
 from collections.abc import Mapping
+from typing import Any, Optional, Sequence, TypeVar
+
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 
 class CaselessDict(dict):
@@ -64,24 +68,24 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class LocalCache(collections.OrderedDict):
+class LocalCache(collections.OrderedDict[_KT, _VT]):
     """Dictionary with a finite number of keys.
 
     Older items expires first.
     """
 
-    def __init__(self, limit=None):
+    def __init__(self, limit: Optional[int] = None):
         super().__init__()
-        self.limit = limit
+        self.limit: Optional[int] = limit
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: _KT, value: _VT) -> None:
         if self.limit:
             while len(self) >= self.limit:
                 self.popitem(last=False)
         super().__setitem__(key, value)
 
 
-class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
+class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT]):
     """
     A weakref.WeakKeyDictionary implementation that uses LocalCache as its
     underlying data structure, making it ordered and capable of being size-limited.
@@ -93,17 +97,17 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
     it cannot be instantiated with an initial dictionary.
     """
 
-    def __init__(self, limit=None):
+    def __init__(self, limit: Optional[int] = None):
         super().__init__()
-        self.data = LocalCache(limit=limit)
+        self.data: LocalCache = LocalCache(limit=limit)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: _KT, value: _VT) -> None:
         try:
             super().__setitem__(key, value)
         except TypeError:
             pass  # key is not weak-referenceable, skip caching
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: _KT) -> Optional[_VT]:  # type: ignore[override]
         try:
             return super().__getitem__(key)
         except (TypeError, KeyError):
@@ -113,8 +117,8 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
 class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq):
-        self.seq = seq
+    def __init__(self, seq: Sequence):
+        self.seq: Sequence = seq
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         return item not in self.seq

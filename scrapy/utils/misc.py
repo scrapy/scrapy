@@ -214,16 +214,18 @@ def walk_callable(node):
         yield node
 
 
-_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
+_generator_callbacks_cache: LocalWeakReferencedCache[
+    Callable, bool
+] = LocalWeakReferencedCache(limit=128)
 
 
-def is_generator_with_return_value(callable):
+def is_generator_with_return_value(callable: Callable) -> bool:
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
     """
     if callable in _generator_callbacks_cache:
-        return _generator_callbacks_cache[callable]
+        return bool(_generator_callbacks_cache[callable])
 
     def returns_none(return_node):
         value = return_node.value
@@ -248,10 +250,10 @@ def is_generator_with_return_value(callable):
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
                 _generator_callbacks_cache[callable] = True
-                return _generator_callbacks_cache[callable]
+                return bool(_generator_callbacks_cache[callable])
 
     _generator_callbacks_cache[callable] = False
-    return _generator_callbacks_cache[callable]
+    return bool(_generator_callbacks_cache[callable])
 
 
 def warn_on_generator_with_return_value(spider: "Spider", callable: Callable) -> None:
