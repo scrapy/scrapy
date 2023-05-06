@@ -22,7 +22,7 @@ from typing import (
 from scrapy.utils.asyncgen import as_async_generator
 
 
-def flatten(x):
+def flatten(x: Iterable) -> list:
     """flatten(sequence) -> list
 
     Returns a single, flat list which contains all elements retrieved
@@ -42,7 +42,7 @@ def flatten(x):
     return list(iflatten(x))
 
 
-def iflatten(x):
+def iflatten(x: Iterable) -> Iterable:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
