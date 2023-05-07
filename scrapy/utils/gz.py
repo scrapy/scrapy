@@ -24,8 +24,7 @@ def gunzip(data: bytes) -> bytes:
             # some pages are quite small so output_list is empty
             if output_list:
                 break
-            else:
-                raise
+            raise
     return b"".join(output_list)
 
 

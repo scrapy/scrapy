@@ -9,8 +9,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type, Union
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
 
-from scrapy.spiderloader import SpiderLoader
-
 try:
     # zope >= 5.0 only supports MultipleInvalid
     from zope.interface.exceptions import MultipleInvalid
@@ -27,6 +25,7 @@ from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.spiderloader import SpiderLoader
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
