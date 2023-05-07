@@ -4,10 +4,12 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type, Union
 
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
+
+from scrapy.spiderloader import SpiderLoader
 
 try:
     # zope >= 5.0 only supports MultipleInvalid
@@ -171,7 +173,7 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings):
+    def _get_spider_loader(settings) -> SpiderLoader:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
@@ -190,13 +192,13 @@ class CrawlerRunner:
             )
         return loader_cls.from_settings(settings.frozencopy())
 
-    def __init__(self, settings=None):
+    def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
         self.spider_loader = self._get_spider_loader(settings)
-        self._crawlers = set()
-        self._active = set()
+        self._crawlers: Set[Crawler] = set()
+        self._active: Set[defer.Deferred] = set()
         self.bootstrap_failed = False
 
     @property
@@ -252,7 +254,9 @@ class CrawlerRunner:
 
         return d.addBoth(_done)
 
-    def create_crawler(self, crawler_or_spidercls):
+    def create_crawler(
+        self, crawler_or_spidercls: Union[Type[Spider], str, Crawler]
+    ) -> Crawler:
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
 
@@ -272,7 +276,7 @@ class CrawlerRunner:
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
 
-    def _create_crawler(self, spidercls):
+    def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
