@@ -15,6 +15,13 @@ Highlights:
 -   JMESPath selectors from the new parsel_.
 -   Bug fixes.
 
+Deprecations
+~~~~~~~~~~~~
+
+-   :class:`scrapy.extensions.feedexport._FeedSlot` is renamed to
+    :class:`scrapy.extensions.feedexport.FeedSlot` and the old name is
+    deprecated. (:issue:`5876`)
+
 New features
 ~~~~~~~~~~~~
 
