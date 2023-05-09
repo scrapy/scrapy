@@ -101,7 +101,7 @@ Futures. Scrapy provides two helpers for this:
 Async additional requests
 =========================
 
-The spider below shows a single use-case of scraping page and gathering price from a separate url::
+The spider below shows a single use-case of scraping a page and gathering a price from a separate URL::
 
 
     class SingleRequestSpider(scrapy.Spider):
@@ -118,7 +118,7 @@ The spider below shows a single use-case of scraping page and gathering price fr
             }
 
 
-Spider with gathering batch requests::
+The spider gathering batch requests::
 
     class BatchRequestsSpider(scrapy.Spider):
         name = "batch"
