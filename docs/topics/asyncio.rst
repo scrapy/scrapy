@@ -144,7 +144,6 @@ The spider gathering batch requests::
             }
 
 
-
 .. _enforce-asyncio-requirement:
 
 Enforcing asyncio as a requirement
