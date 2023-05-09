@@ -25,16 +25,20 @@ from scrapy.utils.response import response_status_message
 
 retry_logger = getLogger(__name__)
 
+
 class BackwardsCompatibilityMetaclass(type):
     @property
     def EXCEPTIONS_TO_RETRY(self):
-        warnings.warn("Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
-        "Use the RETRY_EXCEPTIONS setting instead.",
-                      ScrapyDeprecationWarning, stacklevel=2)
+        warnings.warn(
+            "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
+            "Use the RETRY_EXCEPTIONS setting instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return tuple(
-                load_object(x) if isinstance(x, six.string_types) else x
-                for x in Settings().getlist('RETRY_EXCEPTIONS')
-            )
+            load_object(x) if isinstance(x, six.string_types) else x
+            for x in Settings().getlist("RETRY_EXCEPTIONS")
+        )
 
 
 def get_retry_request(
@@ -125,7 +129,6 @@ def get_retry_request(
 
 
 class RetryMiddleware(six.with_metaclass(BackwardsCompatibilityMetaclass, object)):
-
     def __init__(self, settings):
         if not settings.getbool("RETRY_ENABLED"):
             raise NotConfigured
@@ -135,10 +138,12 @@ class RetryMiddleware(six.with_metaclass(BackwardsCompatibilityMetaclass, object
         )
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
 
-        if not hasattr(self, "EXCEPTIONS_TO_RETRY"): # If EXCEPTIONS_TO_RETRY is not "overriden"
+        if not hasattr(
+            self, "EXCEPTIONS_TO_RETRY"
+        ):  # If EXCEPTIONS_TO_RETRY is not "overriden"
             self.exceptions_to_retry = tuple(
                 load_object(x) if isinstance(x, six.string_types) else x
-                for x in settings.getlist('RETRY_EXCEPTIONS')
+                for x in settings.getlist("RETRY_EXCEPTIONS")
             )
         else:
             self.exceptions_to_retry = self.EXCEPTIONS_TO_RETRY
