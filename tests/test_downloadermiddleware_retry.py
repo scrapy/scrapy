@@ -113,24 +113,25 @@ class RetryTest(unittest.TestCase):
     def test_exception_to_retry_added(self):
         # Don't retry
         exc = ValueError
-        req = Request('http://www.scrapytest.org/%s' % exc.__name__)
-        req = self.mw.process_exception(req, exc('foo'), self.spider)
+        req = Request("http://www.scrapytest.org/%s" % exc.__name__)
+        req = self.mw.process_exception(req, exc("foo"), self.spider)
         self.assertEqual(req, None)
         # Retry
-        self.mw.exceptions_to_retry = self.mw.exceptions_to_retry + (exc, )
-        req = Request('http://www.scrapytest.org/%s' % exc.__name__)
-        self._test_retry_exception(req, exc('foo'))
+        self.mw.exceptions_to_retry = self.mw.exceptions_to_retry + (exc,)
+        req = Request("http://www.scrapytest.org/%s" % exc.__name__)
+        self._test_retry_exception(req, exc("foo"))
 
     def test_exception_to_retry_customMiddleware(self):
         exc = ValueError
+
         class MyRetryMiddleware(RetryMiddleware):
-            EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc, )
+            EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc,)
 
         mw2 = MyRetryMiddleware.from_crawler(self.crawler)
-        req = Request('http://www.scrapytest.org/%s' % exc.__name__)
-        req = mw2.process_exception(req, exc('foo'), self.spider)
+        req = Request("http://www.scrapytest.org/%s" % exc.__name__)
+        req = mw2.process_exception(req, exc("foo"), self.spider)
         assert isinstance(req, Request)
-        self.assertEqual(req.meta['retry_times'], 1)
+        self.assertEqual(req.meta["retry_times"], 1)
 
     def _test_retry_exception(self, req, exception):
         # first retry
