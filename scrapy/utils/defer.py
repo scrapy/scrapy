@@ -340,8 +340,9 @@ def deferred_to_future(d: Deferred) -> Future:
         class MySpider(Spider):
             ...
             async def parse(self, response):
-                d = treq.get('https://example.com/additional')
-                additional_response = await deferred_to_future(d)
+                additional_request = scrapy.Request('https://example.org/price')
+                deferred = self.crawler.engine.download(additional_request)
+                additional_response = await deferred_to_future(deferred)
     """
     return d.asFuture(_get_asyncio_event_loop())
 
@@ -368,8 +369,9 @@ def maybe_deferred_to_future(d: Deferred) -> Union[Deferred, Future]:
         class MySpider(Spider):
             ...
             async def parse(self, response):
-                d = treq.get('https://example.com/additional')
-                extra_response = await maybe_deferred_to_future(d)
+                additional_request = scrapy.Request('https://example.org/price')
+                deferred = self.crawler.engine.download(additional_request)
+                additional_response = await maybe_deferred_to_future(deferred)
     """
     if not is_asyncio_reactor_installed():
         return d

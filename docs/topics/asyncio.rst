@@ -98,6 +98,53 @@ Futures. Scrapy provides two helpers for this:
          into your own code.
 
 
+Async additional requests
+=====================
+
+The spider below shows a single use-case of scraping page and gathering price from a separate url::
+
+
+    class SingleRequestSpider(scrapy.Spider):
+        name = "single"
+        start_urls = ["https://example.org/product"]
+
+        async def parse(self, response, **kwargs):
+            additional_request = scrapy.Request('https://example.org/price')
+            deferred = self.crawler.engine.download(additional_request)
+            additional_response = await maybe_deferred_to_future(deferred)
+            yield {
+                'h1': response.css('h1').get(),
+                'price': additional_response.css('#price').get(),
+            }
+
+
+Spider with gathering batch requests::
+
+    class BatchRequestsSpider(scrapy.Spider):
+        name = "batch"
+        start_urls = ["https://example.com/product"]
+
+        async def parse(self, response, **kwargs):
+            additional_requests = [
+                scrapy.Request("https://example.com/price1"),
+                scrapy.Request("https://example.com/price2"),
+            ]
+            coroutines = []
+            for r in additional_requests:
+                deffered = self.crawler.engine.download(r)
+                coroutines.append(maybe_deferred_to_future(deffered))
+
+            responses = await asyncio.gather(
+                *coroutines, return_exceptions=True
+            )
+            yield {
+                'h1': response.css('h1::text').get(),
+                'price': responses[0].css('.price_color::text').get(),
+                'price2': responses[1].css('.price_color::text').get(),
+            }
+
+
+
 .. _enforce-asyncio-requirement:
 
 Enforcing asyncio as a requirement
