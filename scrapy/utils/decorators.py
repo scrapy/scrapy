@@ -14,11 +14,12 @@ def deprecated(use_instead=None):
     def deco(func):
         @wraps(func)
         def wrapped(*args, **kwargs):
-            message = "Call to deprecated function %s." % func.__name__
+            message = f"Call to deprecated function {func.__name__}."
             if use_instead:
-                message += " Use %s instead." % use_instead
+                message += f" Use {use_instead} instead."
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
+
         return wrapped
 
     if callable(use_instead):
@@ -29,16 +30,21 @@ def deprecated(use_instead=None):
 
 def defers(func):
     """Decorator to make sure a function always returns a deferred"""
+
     @wraps(func)
     def wrapped(*a, **kw):
         return defer.maybeDeferred(func, *a, **kw)
+
     return wrapped
+
 
 def inthread(func):
     """Decorator to call a function in a thread and return a deferred with the
     result
     """
+
     @wraps(func)
     def wrapped(*a, **kw):
         return threads.deferToThread(func, *a, **kw)
+
     return wrapped
