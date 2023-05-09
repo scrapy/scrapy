@@ -99,7 +99,7 @@ Futures. Scrapy provides two helpers for this:
 
 
 Async additional requests
-=====================
+=========================
 
 The spider below shows a single use-case of scraping page and gathering price from a separate url::
 
