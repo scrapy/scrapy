@@ -126,8 +126,8 @@ The spider gathering batch requests::
 
         async def parse(self, response, **kwargs):
             additional_requests = [
-                scrapy.Request("https://example.com/price1"),
-                scrapy.Request("https://example.com/price2"),
+                scrapy.Request("https://example.com/price"),
+                scrapy.Request("https://example.com/color"),
             ]
             coroutines = []
             for r in additional_requests:
@@ -139,8 +139,8 @@ The spider gathering batch requests::
             )
             yield {
                 'h1': response.css('h1::text').get(),
-                'price': responses[0].css('.price_color::text').get(),
-                'price2': responses[1].css('.price_color::text').get(),
+                'price': responses[0].css('.price::text').get(),
+                'color': responses[1].css('color::text').get(),
             }
 
 
