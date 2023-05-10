@@ -5,10 +5,9 @@ Python Standard Library.
 This module must not depend on any module outside the Standard Library.
 """
 
-import collections
 import weakref
 from collections.abc import Mapping
-from typing import Any, Optional, Sequence, TypeVar
+from typing import Any, Optional, OrderedDict, Sequence, TypeVar
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -68,7 +67,7 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class LocalCache(collections.OrderedDict[_KT, _VT]):
+class LocalCache(OrderedDict[_KT, _VT]):
     """Dictionary with a finite number of keys.
 
     Older items expires first.
@@ -85,7 +84,7 @@ class LocalCache(collections.OrderedDict[_KT, _VT]):
         super().__setitem__(key, value)
 
 
-class LocalWeakReferencedCache(weakref.WeakKeyDictionary[_KT, _VT]):
+class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
     """
     A weakref.WeakKeyDictionary implementation that uses LocalCache as its
     underlying data structure, making it ordered and capable of being size-limited.

@@ -232,9 +232,7 @@ def walk_callable(node: ast.AST) -> Generator[ast.AST, Any, None]:
         yield node
 
 
-_generator_callbacks_cache: LocalWeakReferencedCache[
-    Callable, bool
-] = LocalWeakReferencedCache(limit=128)
+_generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
 def is_generator_with_return_value(callable: Callable) -> bool:
