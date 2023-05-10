@@ -101,8 +101,10 @@ Futures. Scrapy provides two helpers for this:
 Async additional requests
 =========================
 
-The spider below shows a single use-case of scraping a page and gathering a price from a separate URL::
+The spider below shows how to send a request and await its response all from 
+within a spider callback:
 
+.. code-block:: python
 
     class SingleRequestSpider(scrapy.Spider):
         name = "single"
