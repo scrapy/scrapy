@@ -142,7 +142,7 @@ class RetryMiddleware(six.with_metaclass(BackwardsCompatibilityMetaclass, object
             self, "EXCEPTIONS_TO_RETRY"
         ):  # If EXCEPTIONS_TO_RETRY is not "overriden"
             self.exceptions_to_retry = tuple(
-                load_object(x) if isinstance(x, six.string_types) else x
+                load_object(x) if isinstance(x, str) else x
                 for x in settings.getlist("RETRY_EXCEPTIONS")
             )
         else:
