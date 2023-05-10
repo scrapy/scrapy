@@ -36,7 +36,7 @@ class BackwardsCompatibilityMetaclass(type):
             stacklevel=2,
         )
         return tuple(
-            load_object(x) if isinstance(x, six.string_types) else x
+            load_object(x) if isinstance(x, str) else x
             for x in Settings().getlist("RETRY_EXCEPTIONS")
         )
 
