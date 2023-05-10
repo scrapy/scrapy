@@ -140,7 +140,7 @@ The spider gathering batch requests::
             yield {
                 'h1': response.css('h1::text').get(),
                 'price': responses[0].css('.price::text').get(),
-                'color': responses[1].css('color::text').get(),
+                'color': responses[1].css('.color::text').get(),
             }
 
 
