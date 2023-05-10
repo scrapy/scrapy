@@ -119,8 +119,9 @@ within a spider callback:
                 'price': additional_response.css('#price').get(),
             }
 
+You can also send multiple requests in parallel:
 
-The spider gathering batch requests::
+.. code-block:: python
 
     class BatchRequestsSpider(scrapy.Spider):
         name = "batch"
