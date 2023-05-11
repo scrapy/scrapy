@@ -125,7 +125,7 @@ You can also send multiple requests in parallel:
 
 .. code-block:: python
 
-    from twisted.internet.defer import DeferredList
+    from scrapy.utils.defer import DeferredList
 
     class MultipleRequestsSpider(scrapy.Spider):
         name = "multiple"
