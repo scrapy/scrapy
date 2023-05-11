@@ -125,7 +125,7 @@ You can also send multiple requests in parallel:
 
 .. code-block:: python
 
-    from scrapy.utils.defer import DeferredList
+    from scrapy.utils.defer import DeferredList, maybe_deferred_to_future
 
     class MultipleRequestsSpider(scrapy.Spider):
         name = "multiple"
