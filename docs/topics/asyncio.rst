@@ -106,6 +106,8 @@ within a spider callback:
 
 .. code-block:: python
 
+    from scrapy.utils.defer import maybe_deferred_to_future
+
     class SingleRequestSpider(scrapy.Spider):
         name = "single"
         start_urls = ["https://example.org/product"]
