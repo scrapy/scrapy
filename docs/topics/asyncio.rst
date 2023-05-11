@@ -123,6 +123,8 @@ You can also send multiple requests in parallel:
 
 .. code-block:: python
 
+    from twisted.internet.defer import DeferredList
+
     class BatchRequestsSpider(scrapy.Spider):
         name = "batch"
         start_urls = ["https://example.com/product"]
@@ -132,14 +134,11 @@ You can also send multiple requests in parallel:
                 scrapy.Request("https://example.com/price"),
                 scrapy.Request("https://example.com/color"),
             ]
-            coroutines = []
+            deferreds = []
             for r in additional_requests:
-                deffered = self.crawler.engine.download(r)
-                coroutines.append(maybe_deferred_to_future(deffered))
-
-            responses = await asyncio.gather(
-                *coroutines, return_exceptions=True
-            )
+                deferred = self.crawler.engine.download(r)
+                deferreds.append(deferred)
+            responses = await maybe_deferred_to_future(DeferredList(deferreds))
             yield {
                 'h1': response.css('h1::text').get(),
                 'price': responses[0].css('.price::text').get(),
