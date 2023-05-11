@@ -98,7 +98,7 @@ Futures. Scrapy provides two helpers for this:
          into your own code.
 
 
-Async additional requests
+Inline requests
 =========================
 
 The spider below shows how to send a request and await its response all from 
