@@ -125,8 +125,8 @@ You can also send multiple requests in parallel:
 
     from twisted.internet.defer import DeferredList
 
-    class BatchRequestsSpider(scrapy.Spider):
-        name = "batch"
+    class MultipleRequestsSpider(scrapy.Spider):
+        name = "multiple"
         start_urls = ["https://example.com/product"]
 
         async def parse(self, response, **kwargs):
@@ -141,8 +141,8 @@ You can also send multiple requests in parallel:
             responses = await maybe_deferred_to_future(DeferredList(deferreds))
             yield {
                 'h1': response.css('h1::text').get(),
-                'price': responses[0].css('.price::text').get(),
-                'color': responses[1].css('.color::text').get(),
+                'price': responses[0][1].css('.price::text').get(),
+                'price2': responses[1][1].css('.color::text').get(),
             }
 
 
