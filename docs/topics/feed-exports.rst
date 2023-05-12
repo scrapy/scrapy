@@ -175,6 +175,12 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+storage backend is: ``True``.
+
+.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
+     previous version of your data.
+
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
 
@@ -209,6 +215,12 @@ You can also define a custom ACL and custom endpoint for exported feeds using th
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+storage backend is: ``True``.
+
+.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
+     previous version of your data.
+
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
 
@@ -235,6 +247,12 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
+
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+storage backend is: ``True``.
+
+.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
+     previous version of your data.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -487,6 +505,8 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
         <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
+
+    -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
