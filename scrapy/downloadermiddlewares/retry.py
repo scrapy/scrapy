@@ -26,7 +26,7 @@ retry_logger = getLogger(__name__)
 
 class BackwardsCompatibilityMetaclass(type):
     @property
-    def EXCEPTIONS_TO_RETRY(self):
+    def EXCEPTIONS_TO_RETRY(cls):
         warnings.warn(
             "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
             "Use the RETRY_EXCEPTIONS setting instead.",
