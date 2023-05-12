@@ -13,8 +13,6 @@ import warnings
 from logging import Logger, getLogger
 from typing import Optional, Union
 
-import six
-
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.settings import Settings
@@ -128,7 +126,7 @@ def get_retry_request(
     return None
 
 
-class RetryMiddleware(six.with_metaclass(BackwardsCompatibilityMetaclass, object)):
+class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
     def __init__(self, settings):
         if not settings.getbool("RETRY_ENABLED"):
             raise NotConfigured
