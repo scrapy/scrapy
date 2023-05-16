@@ -98,56 +98,6 @@ Futures. Scrapy provides two helpers for this:
          into your own code.
 
 
-Inline requests
-===============
-
-The spider below shows how to send a request and await its response all from 
-within a spider callback:
-
-.. code-block:: python
-
-    from scrapy.utils.defer import maybe_deferred_to_future
-
-    class SingleRequestSpider(scrapy.Spider):
-        name = "single"
-        start_urls = ["https://example.org/product"]
-
-        async def parse(self, response, **kwargs):
-            additional_request = scrapy.Request('https://example.org/price')
-            deferred = self.crawler.engine.download(additional_request)
-            additional_response = await maybe_deferred_to_future(deferred)
-            yield {
-                'h1': response.css('h1').get(),
-                'price': additional_response.css('#price').get(),
-            }
-
-You can also send multiple requests in parallel:
-
-.. code-block:: python
-
-    from scrapy.utils.defer import DeferredList, maybe_deferred_to_future
-
-    class MultipleRequestsSpider(scrapy.Spider):
-        name = "multiple"
-        start_urls = ["https://example.com/product"]
-
-        async def parse(self, response, **kwargs):
-            additional_requests = [
-                scrapy.Request("https://example.com/price"),
-                scrapy.Request("https://example.com/color"),
-            ]
-            deferreds = []
-            for r in additional_requests:
-                deferred = self.crawler.engine.download(r)
-                deferreds.append(deferred)
-            responses = await maybe_deferred_to_future(DeferredList(deferreds))
-            yield {
-                'h1': response.css('h1::text').get(),
-                'price': responses[0][1].css('.price::text').get(),
-                'price2': responses[1][1].css('.color::text').get(),
-            }
-
-
 .. _enforce-asyncio-requirement:
 
 Enforcing asyncio as a requirement
