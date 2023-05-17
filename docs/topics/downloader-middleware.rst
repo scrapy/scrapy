@@ -974,7 +974,7 @@ RETRY_EXCEPTIONS
 
 Default::
 
-    RETRY_EXCEPTIONS = [
+    [
         'twisted.internet.defer.TimeoutError',
         'twisted.internet.error.TimeoutError',
         'twisted.internet.error.DNSLookupError',
