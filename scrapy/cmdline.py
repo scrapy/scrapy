@@ -117,10 +117,12 @@ def _run_print_help(parser, func, *a, **kw):
         sys.exit(2)
 
 
-def execute(argv=None, settings=None):
-    if argv is None:
-        argv = sys.argv
-
+def execute(argv=sys.argv, settings=None):
+    """
+    Method to execute a command line argument. Takes two
+    parameters, a number of arguments and an instance of 
+    the project settings which is set to none by default.
+    """
     if settings is None:
         settings = get_project_settings()
         # set EDITOR from environment if available
@@ -148,6 +150,7 @@ def execute(argv=None, settings=None):
         conflict_handler="resolve",
         description=cmd.long_desc(),
     )
+
     settings.setdict(cmd.default_settings, priority="command")
     cmd.settings = settings
     cmd.add_options(parser)

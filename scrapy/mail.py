@@ -13,7 +13,7 @@ from email.utils import formatdate
 from io import BytesIO
 
 from twisted import version as twisted_version
-from twisted.internet import defer, ssl
+from twisted.internet import defer, reactor, ssl
 from twisted.python.versions import Version
 
 from scrapy.utils.misc import arg_to_iter
@@ -66,19 +66,44 @@ class MailSender:
             smtpssl=settings.getbool("MAIL_SSL"),
         )
 
-    def send(
-        self,
-        to,
-        subject,
-        body,
-        cc=None,
-        attachs=(),
-        mimetype="text/plain",
-        charset=None,
-        _callback=None,
-    ):
-        from twisted.internet import reactor
+    def helperMsgMethod(self, msg, to, subject):
+        """
+        Helper method that takes a dictionary as an argument
+        and populates the from, to, date and subject values
+        """
 
+        msg["From"] = self.mailfrom
+        msg["To"] = COMMASPACE.join(to)
+        msg["Date"] = formatdate(localtime=True)
+        msg["Subject"] = subject
+
+    def loggerDebugHelper(self, to, cc, subject, attachs):
+        """
+        Helper method that populates a debug loger
+        with information about a bug. Takes four
+        arguments to, cc, subject, and the attachments.
+        It doesn't return anything
+        """
+        logger.debug(
+            "Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s "
+            'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
+            {
+                "mailto": to,
+                "mailcc": cc,
+                "mailsubject": subject,
+                "mailattachs": len(attachs),
+            },
+        )
+
+    def send(self, to, subject, body, cc=None, attachs=(),
+        mimetype="text/plain", charset=None, _callback=None):
+        """
+        Method for sending an email with the results to the user. Takes
+        as arguments the address to be sent, a subject, the body of the email,
+        any attachments in the form of tuple, any cc parties. The type of the 
+        email is set by default to text/plain and charset and _callback are
+        set by default to none. It doesn't return a value. 
+        """
         if attachs:
             msg = MIMEMultipart()
         else:
@@ -87,10 +112,8 @@ class MailSender:
         to = list(arg_to_iter(to))
         cc = list(arg_to_iter(cc))
 
-        msg["From"] = self.mailfrom
-        msg["To"] = COMMASPACE.join(to)
-        msg["Date"] = formatdate(localtime=True)
-        msg["Subject"] = subject
+        self.helperMsgMethod(msg, to, subject)
+
         rcpts = to[:]
         if cc:
             rcpts.extend(cc)
@@ -116,16 +139,7 @@ class MailSender:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
-            logger.debug(
-                "Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s "
-                'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
-                {
-                    "mailto": to,
-                    "mailcc": cc,
-                    "mailsubject": subject,
-                    "mailattachs": len(attachs),
-                },
-            )
+            self.loggerDebugHelper(to, cc, subject, attachs)
             return
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))

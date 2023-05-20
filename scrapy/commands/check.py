@@ -78,6 +78,28 @@ class Command(ScrapyCommand):
 
         spider_loader = self.crawler_process.spider_loader
 
+        self.runCommandChecks(args, opts, spider_loader, contract_reqs, result, conman)
+
+    def printErrorSummary(self, result, startTime, stopTime):
+        """
+        Helper method to print error messsage and the error
+        summary. Takes as an argument an instance of
+        TextTestResult, a timestamp for when the test started and
+        a timestamp for when the test ended. It returns no values.
+        """
+        result.printErrors()
+        result.printSummary(startTime, stopTime)
+
+    def runCommandChecks(
+        self, args, opts, spider_loader, contract_reqs, result, conman
+    ):
+        """
+        Helper method that take as an argument an instance of a spider loader,
+        an instance of TextTestResult, an instance of defaultdicts from the
+        collections module, an instance of contract managers, a list of arguments,
+        and a list of options. It perfroms a running test but returns no arguments.
+        """
+
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
@@ -102,7 +124,6 @@ class Command(ScrapyCommand):
                 start = time.time()
                 self.crawler_process.start()
                 stop = time.time()
+                self.printErrorSummary(result, start, stop)
 
-                result.printErrors()
-                result.printSummary(start, stop)
                 self.exitcode = int(not result.wasSuccessful())

@@ -57,6 +57,11 @@ class Crawler:
         settings: Union[None, dict, Settings] = None,
         init_reactor: bool = False,
     ):
+        """
+        Method to initialize a web crawler. Takes as arguments an instance of 
+        spidercls, an instance of scrapy settings list and a boolean with false
+        indicating that the reactor from scrapy.utils hasn't been initialized.
+        """
         if isinstance(spidercls, Spider):
             raise ValueError("The spidercls argument must be a class, not an object")
 
@@ -66,11 +71,8 @@ class Crawler:
         self.spidercls: Type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
-
         self.signals: SignalManager = SignalManager(self)
-
         self.stats: StatsCollector = load_object(self.settings["STATS_CLASS"])(self)
-
         handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
         logging.root.addHandler(handler)
 
@@ -89,7 +91,6 @@ class Crawler:
 
         lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter: LogFormatter = lf_cls.from_crawler(self)
-
         self.request_fingerprinter: RequestFingerprinter = create_instance(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
             settings=self.settings,
@@ -112,7 +113,6 @@ class Crawler:
                 verify_installed_asyncio_event_loop(event_loop)
 
         self.extensions: ExtensionManager = ExtensionManager.from_crawler(self)
-
         self.settings.freeze()
         self.crawling: bool = False
         self.spider: Optional[Spider] = None
