@@ -119,8 +119,8 @@ def _run_print_help(parser, func, *a, **kw):
 
 def execute(argv=sys.argv, settings=None):
     """
-    Method to execute a command line argument. Takes two
-    parameters, a number of arguments and an instance of 
+    Method to execute a command line argument. Takes two parameters, a list of
+    arguments that is passed in the command line and an instance of 
     the project settings which is set to none by default.
     """
     if settings is None:
@@ -136,12 +136,13 @@ def execute(argv=sys.argv, settings=None):
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
+    # If no command argument was given or an error was generated
     if not cmdname:
         _print_commands(settings, inproject)
-        sys.exit(0)
+        sys.exit(0)     # Indicates successful end 
     elif cmdname not in cmds:
         _print_unknown_command(settings, cmdname, inproject)
-        sys.exit(2)
+        sys.exit(2)     # Indicates misusing shell command
 
     cmd = cmds[cmdname]
     parser = ScrapyArgumentParser(
