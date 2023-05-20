@@ -1103,9 +1103,10 @@ Response objects
         through all :ref:`Downloader Middlewares <topics-downloader-middleware>`.
         In particular, this means that:
 
-        - HTTP redirections will cause the original request (to the URL before
-          redirection) to be assigned to the redirected response (with the final
-          URL after redirection).
+        - HTTP redirections will create a new request from the request before
+          redirection. It has the majority of the same metadata and original
+          request attributes and gets assigned to the redirected response
+          instead of the propagation of the original request.
 
         - Response.request.url doesn't always equal Response.url
 
