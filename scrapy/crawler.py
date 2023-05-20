@@ -58,9 +58,9 @@ class Crawler:
         init_reactor: bool = False,
     ):
         """
-        Method to initialize a web crawler. Takes as arguments an instance of 
-        spidercls, an instance of scrapy settings list and a boolean with false
-        indicating that the reactor from scrapy.utils hasn't been initialized.
+        Method to initialize a web crawler. Takes as arguments an instance of spidercls, 
+        an instance of scrapy settings list with default None value and a boolean 
+        with false indicating that the reactor from scrapy.utils hasn't been initialized.
         """
         if isinstance(spidercls, Spider):
             raise ValueError("The spidercls argument must be a class, not an object")
