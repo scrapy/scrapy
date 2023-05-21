@@ -1,6 +1,7 @@
 import unittest
 from io import StringIO
 from unittest import TestCase, mock
+import builtins
 
 from scrapy.utils.display import pformat, pprint
 
@@ -93,8 +94,6 @@ class TestDisplay(TestCase):
     @mock.patch("sys.stdout.isatty")
     def test_pformat_no_pygments(self, isatty):
         isatty.return_value = True
-
-        import builtins
 
         real_import = builtins.__import__
 
