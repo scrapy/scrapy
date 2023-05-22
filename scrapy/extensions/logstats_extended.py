@@ -46,13 +46,6 @@ class LogStatsExtended:
         except:
             ext_delta = {"enabled": True} if crawler.settings.getdict("PERIODIC_LOG_DELTA") else None
         ext_timing_enabled = crawler.settings.getbool("PERIODIC_LOG_TIMING_ENABLED", False)
-        ext_stats_enabled = crawler.settings.getbool("LOGSTATS_EXT_STATS_ENABLED")
-        ext_stats_include = crawler.settings.getlist("LOGSTATS_EXT_STATS_INCLUDE", [])
-        ext_stats_exclude = crawler.settings.getlist("LOGSTATS_EXT_STATS_EXCLUDE", [])
-        ext_delta_enabled = crawler.settings.getbool("LOGSTATS_EXT_DELTA_ENABLED")
-        ext_delta_include = crawler.settings.getlist("LOGSTATS_EXT_DELTA_INCLUDE", [])
-        ext_delta_exclude = crawler.settings.getlist("LOGSTATS_EXT_DELTA_EXCLUDE", [])
-        #ext_timing_enabled = crawler.settings.getbool("LOGSTATS_EXT_TIMING_ENABLED")
         if not interval:
             raise NotConfigured
         if not (ext_stats or ext_delta or ext_timing_enabled):
@@ -72,10 +65,10 @@ class LogStatsExtended:
         self.delta_prev = {}
         self.stats_prev = {}
 
-        self.task = task.LoopingCall(self.log, spider)
+        self.task = task.LoopingCall(self.log)
         self.task.start(self.interval)
 
-    def log(self, spider):
+    def log(self):
         data = {}
         if self.ext_timing_enabled:
             data.update(self.log_timing())
@@ -127,6 +120,6 @@ class LogStatsExtended:
 
 
     def spider_closed(self, spider, reason):
-        self.log(spider)
+        self.log()
         if self.task and self.task.running:
             self.task.stop()
