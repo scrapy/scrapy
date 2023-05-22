@@ -15,54 +15,52 @@ class LogStatsExtended:
 
     def __init__(
             self, stats, interval=60.0,
-            ext_stats_enabled=False,
-            ext_stats_include=None,
-            ext_stats_exclude=None,
-            ext_delta_enabled=False,
-            ext_delta_include=None,
-            ext_delta_exclude=None,
+            ext_stats={},
+            ext_delta={},
             ext_timing_enabled=False,
-            ext_timing_include=None,
-            ext_timing_exclude=None,
     ):
         self.stats = stats
         self.interval = interval
         self.multiplier = 60.0 / self.interval
         self.task = None
         self.encoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
-        self.ext_stats_enabled = ext_stats_enabled
-        self.ext_stats_include = ext_stats_include
-        self.ext_stats_exclude = ext_stats_exclude
-        self.ext_delta_enabled = ext_delta_enabled
-        self.ext_delta_include = ext_delta_include
-        self.ext_delta_exclude = ext_delta_exclude
+        self.ext_stats_enabled = bool(ext_stats)
+        self.ext_stats_include = ext_stats.get("include", [])
+        self.ext_stats_exclude = ext_stats.get("exclude", [])
+        self.ext_delta_enabled = bool(ext_delta)
+        self.ext_delta_include = ext_delta.get("include", [])
+        self.ext_delta_exclude = ext_delta.get("exclude", [])
         self.ext_timing_enabled = ext_timing_enabled
-        self.ext_timing_include = ext_timing_include
-        self.ext_timing_exclude = ext_timing_exclude
 
 
     @classmethod
     def from_crawler(cls, crawler):
         interval = crawler.settings.getfloat("LOGSTATS_INTERVAL")
+        try:
+            ext_stats = crawler.settings.getdict("PERIODIC_LOG_STATS")
+        except:
+            ext_stats = {"enabled": True} if crawler.settings.getbool("PERIODIC_LOG_STATS") else None
+
+        try:
+            ext_delta = crawler.settings.getdict("PERIODIC_LOG_DELTA")
+        except:
+            ext_delta = {"enabled": True} if crawler.settings.getdict("PERIODIC_LOG_DELTA") else None
+        ext_timing_enabled = crawler.settings.getbool("PERIODIC_LOG_TIMING_ENABLED", False)
         ext_stats_enabled = crawler.settings.getbool("LOGSTATS_EXT_STATS_ENABLED")
         ext_stats_include = crawler.settings.getlist("LOGSTATS_EXT_STATS_INCLUDE", [])
         ext_stats_exclude = crawler.settings.getlist("LOGSTATS_EXT_STATS_EXCLUDE", [])
         ext_delta_enabled = crawler.settings.getbool("LOGSTATS_EXT_DELTA_ENABLED")
         ext_delta_include = crawler.settings.getlist("LOGSTATS_EXT_DELTA_INCLUDE", [])
         ext_delta_exclude = crawler.settings.getlist("LOGSTATS_EXT_DELTA_EXCLUDE", [])
-        ext_timing_enabled = crawler.settings.getbool("LOGSTATS_EXT_TIMING_ENABLED")
+        #ext_timing_enabled = crawler.settings.getbool("LOGSTATS_EXT_TIMING_ENABLED")
         if not interval:
             raise NotConfigured
-        if not (ext_stats_enabled or ext_delta_enabled or ext_timing_enabled):
+        if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
         o = cls(crawler.stats,
                 interval,
-                ext_stats_enabled,
-                ext_stats_include,
-                ext_stats_exclude,
-                ext_delta_enabled,
-                ext_delta_include,
-                ext_delta_exclude,
+                ext_stats,
+                ext_delta,
                 ext_timing_enabled,
                )
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
@@ -117,6 +115,8 @@ class LogStatsExtended:
         return {"stats": stats}
 
     def param_allowed(self, stat_name, include, exclude):
+        if not include and not exclude:
+            return True
         for p in exclude:
             if p in stat_name:
                 return False
