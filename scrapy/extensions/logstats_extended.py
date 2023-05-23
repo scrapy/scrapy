@@ -14,10 +14,12 @@ class LogStatsExtended:
     """Log basic scraping stats periodically"""
 
     def __init__(
-            self, stats, interval=60.0,
-            ext_stats={},
-            ext_delta={},
-            ext_timing_enabled=False,
+        self,
+        stats,
+        interval=60.0,
+        ext_stats={},
+        ext_delta={},
+        ext_timing_enabled=False,
     ):
         self.stats = stats
         self.interval = interval
@@ -32,30 +34,40 @@ class LogStatsExtended:
         self.ext_delta_exclude = ext_delta.get("exclude", [])
         self.ext_timing_enabled = ext_timing_enabled
 
-
     @classmethod
     def from_crawler(cls, crawler):
         interval = crawler.settings.getfloat("LOGSTATS_INTERVAL")
         try:
             ext_stats = crawler.settings.getdict("PERIODIC_LOG_STATS")
-        except:
-            ext_stats = {"enabled": True} if crawler.settings.getbool("PERIODIC_LOG_STATS") else None
+        except ValueError:
+            ext_stats = (
+                {"enabled": True}
+                if crawler.settings.getbool("PERIODIC_LOG_STATS")
+                else None
+            )
 
         try:
             ext_delta = crawler.settings.getdict("PERIODIC_LOG_DELTA")
-        except:
-            ext_delta = {"enabled": True} if crawler.settings.getdict("PERIODIC_LOG_DELTA") else None
-        ext_timing_enabled = crawler.settings.getbool("PERIODIC_LOG_TIMING_ENABLED", False)
+        except ValueError:
+            ext_delta = (
+                {"enabled": True}
+                if crawler.settings.getdict("PERIODIC_LOG_DELTA")
+                else None
+            )
+        ext_timing_enabled = crawler.settings.getbool(
+            "PERIODIC_LOG_TIMING_ENABLED", False
+        )
         if not interval:
             raise NotConfigured
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
-        o = cls(crawler.stats,
-                interval,
-                ext_stats,
-                ext_delta,
-                ext_timing_enabled,
-               )
+        o = cls(
+            crawler.stats,
+            interval,
+            ext_stats,
+            ext_delta,
+            ext_timing_enabled,
+        )
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
@@ -82,7 +94,8 @@ class LogStatsExtended:
         num_stats = {
             k: v
             for k, v in self.stats._stats.items()
-            if isinstance(v, (int, float)) and self.param_allowed(k,self.ext_delta_include,self.ext_delta_exclude)
+            if isinstance(v, (int, float))
+            and self.param_allowed(k, self.ext_delta_include, self.ext_delta_exclude)
         }
         delta = {k: v - self.delta_prev.get(k, 0) for k, v in num_stats.items()}
         self.delta_prev = num_stats
@@ -104,7 +117,8 @@ class LogStatsExtended:
         stats = {
             k: v
             for k, v in self.stats._stats.items()
-            if self.param_allowed(k,self.ext_stats_include, self.ext_stats_exclude)}
+            if self.param_allowed(k, self.ext_stats_include, self.ext_stats_exclude)
+        }
         return {"stats": stats}
 
     def param_allowed(self, stat_name, include, exclude):
@@ -117,7 +131,6 @@ class LogStatsExtended:
             if p in stat_name:
                 return True
         return False
-
 
     def spider_closed(self, spider, reason):
         self.log()
