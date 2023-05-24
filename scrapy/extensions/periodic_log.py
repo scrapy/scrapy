@@ -10,7 +10,7 @@ from scrapy.utils.serialize import ScrapyJSONEncoder
 logger = logging.getLogger(__name__)
 
 
-class LogStatsExtended:
+class PeriodicLog:
     """Log basic scraping stats periodically"""
 
     def __init__(
