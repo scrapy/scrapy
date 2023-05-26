@@ -348,8 +348,8 @@ class FeedExporter:
                 stacklevel=2,
             )
             uri = self.settings["FEED_URI"]
-            if isinstance(uri, Path):  # handle pathlib.Path objects
-                uri = uri.as_uri()
+            # handle pathlib.Path objects
+            uri = str(uri) if not isinstance(uri, Path) else uri.as_uri()
             feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -359,8 +359,8 @@ class FeedExporter:
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict("FEEDS").items():
-            if isinstance(uri, Path):  # handle pathlib.Path objects
-                uri = uri.as_uri()
+            # handle pathlib.Path objects
+            uri = str(uri) if not isinstance(uri, Path) else uri.as_uri()
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
