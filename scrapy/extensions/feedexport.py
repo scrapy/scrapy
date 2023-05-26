@@ -347,7 +347,9 @@ class FeedExporter:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            uri = str(self.settings["FEED_URI"])  # handle pathlib.Path objects
+            uri = self.settings["FEED_URI"]
+            if isinstance(uri, Path):  # handle pathlib.Path objects
+                uri = uri.as_uri()
             feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -357,7 +359,8 @@ class FeedExporter:
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict("FEEDS").items():
-            uri = str(uri)  # handle pathlib.Path objects
+            if isinstance(uri, Path):  # handle pathlib.Path objects
+                uri = uri.as_uri()
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
