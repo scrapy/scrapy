@@ -318,6 +318,16 @@ _FeedSlot = create_deprecated_class(
 )
 
 
+def _check_local_path(uri: str):
+    """
+    Checks if uri is a local filesystem path
+    or Path object and converts it to a uri.
+    """
+    if Path(uri).parent.exists() and re.match(r"\w+:/*?$", uri) is None:
+        return Path(uri).resolve().as_uri()
+    return uri
+
+
 class FeedExporter:
     _pending_deferreds: List[defer.Deferred] = []
 
@@ -348,8 +358,7 @@ class FeedExporter:
                 stacklevel=2,
             )
             uri = self.settings["FEED_URI"]
-            # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.as_uri()
+            uri = _check_local_path(str(uri))  # handle pathlib.Path objects
             feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -359,8 +368,7 @@ class FeedExporter:
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict("FEEDS").items():
-            # handle pathlib.Path objects
-            uri = str(uri) if not isinstance(uri, Path) else uri.as_uri()
+            uri = _check_local_path(str(uri))  # handle pathlib.Path objects
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )

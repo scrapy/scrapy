@@ -155,9 +155,9 @@ The feeds are stored in the local filesystem.
 -   Example URI: ``file:///tmp/export.csv``
 -   Required external libraries: none
 
-Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv``. This only works on Unix
-systems though.
+Note that for the local filesystem storage (only) you can omit the scheme, and
+use an absolute or relative filesystem path (or a :class:`pathlib.Path`
+object) instead.
 
 .. _topics-feed-storage-ftp:
 
@@ -175,7 +175,7 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -215,7 +215,7 @@ You can also define a custom ACL and custom endpoint for exported feeds using th
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -248,7 +248,7 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
