@@ -156,8 +156,7 @@ The feeds are stored in the local filesystem.
 -   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme, and
-use an absolute or relative filesystem path (or a :class:`pathlib.Path`
-object) instead.
+use an absolute filesystem path (or a :class:`pathlib.Path` object) instead.
 
 .. _topics-feed-storage-ftp:
 
