@@ -318,16 +318,6 @@ _FeedSlot = create_deprecated_class(
 )
 
 
-def _check_local_path(uri: str):
-    """
-    Checks if uri is a local filesystem path
-    or Path object and converts it to a uri.
-    """
-    if Path(uri).parent.exists() and re.match(r"\w+:/*?$", uri) is None:
-        return Path(uri).resolve().as_uri()
-    return uri
-
-
 class FeedExporter:
     _pending_deferreds: List[defer.Deferred] = []
 
