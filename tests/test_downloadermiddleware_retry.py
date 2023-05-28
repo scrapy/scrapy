@@ -1,5 +1,6 @@
 import logging
 import unittest
+import warnings
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -15,6 +16,7 @@ from twisted.web.client import ResponseFailed
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
+from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
@@ -111,21 +113,25 @@ class RetryTest(unittest.TestCase):
         )
 
     def test_exception_to_retry_added(self):
-        # Don't retry
         exc = ValueError
-        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
-        req = self.mw.process_exception(req, exc("foo"), self.spider)
-        self.assertEqual(req, None)
-        # Retry
         self.mw.exceptions_to_retry = self.mw.exceptions_to_retry + (exc,)
+        settings_dict = {
+            "RETRY_EXCEPTIONS": list(RETRY_EXCEPTIONS) + [ValueError],
+        }
+        crawler = get_crawler(Spider, settings_dict=settings_dict)
+        mw = RetryMiddleware.from_crawler(crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
-        self._test_retry_exception(req, exc("foo"))
+        self._test_retry_exception(req, exc("foo"), mw)
 
     def test_exception_to_retry_customMiddleware(self):
         exc = ValueError
 
-        class MyRetryMiddleware(RetryMiddleware):
-            EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc,)
+        with warnings.catch_warnings(record=True) as warns:
+
+            class MyRetryMiddleware(RetryMiddleware):
+                EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc,)
+
+            self.assertEqual(len(warns), 1)
 
         mw2 = MyRetryMiddleware.from_crawler(self.crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
@@ -133,7 +139,7 @@ class RetryTest(unittest.TestCase):
         assert isinstance(req, Request)
         self.assertEqual(req.meta["retry_times"], 1)
 
-    def _test_retry_exception(self, req, exception):
+    def _test_retry_exception(self, req, exception, mw=None):
         # first retry
         req = self.mw.process_exception(req, exception, self.spider)
         assert isinstance(req, Request)

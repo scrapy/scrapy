@@ -991,7 +991,9 @@ Default::
 List of exceptions to retry.
 
 It may contain either an exception or a string, in which case Scrapy would load
-the exception from the absolute object path specified by the string.
+the exception from the absolute object path specified by the string. 
+If an exception is not retried earlier, middlewares get to process it; 
+if none handles it, the request errback gets it. 
 
 .. setting:: RETRY_PRIORITY_ADJUST
 
