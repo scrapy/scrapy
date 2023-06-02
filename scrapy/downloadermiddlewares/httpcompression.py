@@ -29,7 +29,7 @@ class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __init__(self, stats=None):
+    def __init__(self, stats=None, settings=None):
         self.stats = stats
 
     @classmethod
