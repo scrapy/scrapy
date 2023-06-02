@@ -31,22 +31,51 @@ class HttpCompressionMiddleware:
 
     def __init__(self, stats=None, settings=None):
         self.stats = stats
+        if not stats:
+            warnings.warn(
+                "The default value of COMPRESSION_KEEP_ENCODING_HEADER, "
+                "False, is deprecated, and will stop working and stop "
+                "being its default value in a future version of Scrapy. "
+                "Set COMPRESSION_KEEP_ENCODING_HEADER=True in your "
+                "settings to remove this warning.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        if settings:
+            self.keep_encoding_header = settings.getbool('COMPRESSION_KEEP_ENCODING_HEADER')
+            if not self.keep_encoding_header:
+                warnings.warn(
+                    "Setting COMPRESSION_KEEP_ENCODING_HEADER=False is deprecated",
+                    ScrapyDeprecationWarning,
+                )
+        else:
+            self.keep_encoding_header = False
+            warnings.warn(
+                "The default value of COMPRESSION_KEEP_ENCODING_HEADER, "
+                "False, is deprecated, and will stop working and stop "
+                "being its default value in a future version of Scrapy. "
+                "Set COMPRESSION_KEEP_ENCODING_HEADER=True in your "
+                "settings to remove this warning.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
         try:
-            return cls(stats=crawler.stats)
+            return cls(stats=crawler.stats, settings=crawler.settings)
         except TypeError:
             warnings.warn(
                 "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'stats' parameter or "
+                "their '__init__' method to support 'stats' and 'settings' parameters or "
                 "reimplement the 'from_crawler' method.",
                 ScrapyDeprecationWarning,
             )
             result = cls()
             result.stats = crawler.stats
+            result.keep_encoding_header = False
             return result
 
     def process_request(self, request, spider):
@@ -55,32 +84,30 @@ class HttpCompressionMiddleware:
     def process_response(self, request, response, spider):
         if request.method == "HEAD":
             return response
-        if isinstance(response, Response):
-            content_encoding = response.headers.getlist("Content-Encoding")
-            if content_encoding:
-                encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
-                if self.stats:
-                    self.stats.inc_value(
-                        "httpcompression/response_bytes",
-                        len(decoded_body),
-                        spider=spider,
-                    )
-                    self.stats.inc_value(
-                        "httpcompression/response_count", spider=spider
-                    )
-                respcls = responsetypes.from_args(
-                    headers=response.headers, url=response.url, body=decoded_body
-                )
-                kwargs = dict(cls=respcls, body=decoded_body)
-                if issubclass(respcls, TextResponse):
-                    # force recalculating the encoding until we make sure the
-                    # responsetypes guessing is reliable
-                    kwargs["encoding"] = None
-                response = response.replace(**kwargs)
-                if not content_encoding:
-                    del response.headers["Content-Encoding"]
+        if b'decoded' in response.flags:
+            return response
+        content_encoding = response.headers.getlist('Content-Encoding')
+        if not content_encoding:
+            return response
 
+        encoding = content_encoding[0]
+        decoded_body = self._decode(response.body, encoding.lower())
+        if self.stats:
+            self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
+            self.stats.inc_value('httpcompression/response_count', spider=spider)
+        respcls = responsetypes.from_args(
+            headers=response.headers, url=response.url, body=decoded_body
+        )
+        kwargs = dict(cls=respcls, body=decoded_body)
+        if issubclass(respcls, TextResponse):
+            # force recalculating the encoding until we make sure the
+            # responsetypes guessing is reliable
+            kwargs['encoding'] = None
+
+        kwargs['flags'] = response.flags + [b'decoded']
+        response = response.replace(**kwargs)
+        if not self.keep_encoding_header:
+            del response.headers['Content-Encoding']
         return response
 
     def _decode(self, body, encoding):
