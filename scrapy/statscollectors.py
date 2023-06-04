@@ -51,7 +51,7 @@ class StatsCollector:
         self._stats.clear()
 
     def open_spider(self, spider: Spider) -> None:
-        pass
+        pass 
 
     def close_spider(self, spider: Spider, reason: str) -> None:
         if self._dump:

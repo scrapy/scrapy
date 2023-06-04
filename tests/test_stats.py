@@ -165,7 +165,7 @@ class StatsCollectorTest(unittest.TestCase):
         stats = StatsCollector(self.crawler)
         stats.set_value("test12", 40)
         stats.min_value("test12", 60)
-        self.assertEqual(stats.get_value("test12"), 60)
+        self.assertEqual(stats.get_value("test12"), 40)
 
     def test_collector_13(self):
         """
