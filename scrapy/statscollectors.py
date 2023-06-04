@@ -4,9 +4,9 @@ Scrapy extension for collecting scraping stats
 import logging
 import pprint
 from typing import TYPE_CHECKING, Any, Dict, Optional
-from scrapy.extensions.corestats import CoreStats
 
 from scrapy import Spider
+from scrapy.extensions.corestats import CoreStats
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -53,7 +53,7 @@ class StatsCollector:
 
     def open_spider(self, spider: Spider) -> None:
         ext = spider.from_crawler(self.crawler)
-        ext.spider_opened(self.spider) 
+        ext.spider_opened(self.spider)
 
     def close_spider(self, spider: Spider, reason: str) -> None:
         if self._dump:

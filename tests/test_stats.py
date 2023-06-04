@@ -38,6 +38,7 @@ class CoreStatsExtensionTest(unittest.TestCase):
             },
         )
 
+
 class StatsCollectorTest(unittest.TestCase):
     def setUp(self):
         self.crawler = get_crawler(Spider)
@@ -45,8 +46,8 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_1(self):
         """
-        Test case method to test if when initializing a 
-        stats collector the stats are an empty dictionary. 
+        Test case method to test if when initializing a
+        stats collector the stats are an empty dictionary.
         """
         stats = StatsCollector(self.crawler)
         self.assertEqual(stats.get_stats(), {})
@@ -69,17 +70,17 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_4(self):
         """
-        Test case to tets if a test collector is set to have value 
-        as value it will return value when asked for its stats. 
+        Test case to tets if a test collector is set to have value
+        as value it will return value when asked for its stats.
         """
         stats = StatsCollector(self.crawler)
         stats.set_value("test", "value")
         self.assertEqual(stats.get_stats(), {"test": "value"})
 
     def test_collector_5(self):
-        """"
+        """ "
         Test case to check if set_value function for a stats collector
-        successfully sets the stats value to 23. 
+        successfully sets the stats value to 23.
         """
         stats = StatsCollector(self.crawler)
         stats.set_value("test5", 23)
@@ -87,7 +88,7 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_6(self):
         """
-        Test case to check if setting stats value to 26 
+        Test case to check if setting stats value to 26
         successfully returns 26
         """
         stats = StatsCollector(self.crawler)
@@ -96,8 +97,8 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_7(self):
         """
-        Test case to check if setting calue to 23 and using 
-        inc_value to increase value successfully return the 
+        Test case to check if setting calue to 23 and using
+        inc_value to increase value successfully return the
         value 24
         """
         stats = StatsCollector(self.crawler)
@@ -107,8 +108,8 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_8(self):
         """
-        Test case to confirm that setting the value to 24 
-        and then increasing the stats_value by 6 successfully 
+        Test case to confirm that setting the value to 24
+        and then increasing the stats_value by 6 successfully
         returns the value 30.
         """
         stats = StatsCollector(self.crawler)
@@ -120,7 +121,7 @@ class StatsCollectorTest(unittest.TestCase):
         """
         Test case to check if setting the stats value to have
         maximum value of 6 changes the result of the stats value
-        that was set using set_value. 
+        that was set using set_value.
         """
         stats = StatsCollector(self.crawler)
         stats.set_value("test9", 24)
@@ -138,8 +139,8 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_11(self):
         """
-        Test if setting stats max value to 1 successfully 
-        sets the value to 1. 
+        Test if setting stats max value to 1 successfully
+        sets the value to 1.
         """
         stats = StatsCollector(self.crawler)
         stats.max_value("test11", 1)
@@ -147,7 +148,7 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_12(self):
         """
-        Test if setting min_value for an instance of 
+        Test if setting min_value for an instance of
         stats collector to 60 successfully sets the value
         to 60
         """
@@ -158,7 +159,7 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_13(self):
         """
-        Test if setting the min value for an instance of 
+        Test if setting the min value for an instance of
         stats collector to 35 without previously setting any
         other value successfully sets the stats value to 35
         """
@@ -168,8 +169,8 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_14(self):
         """
-        Tests if setting the min_value for stats collector 
-        to 7 without previously setting to another value 
+        Tests if setting the min_value for stats collector
+        to 7 without previously setting to another value
         successfully sets the value to 7
         """
         stats = StatsCollector(self.crawler)
@@ -178,7 +179,7 @@ class StatsCollectorTest(unittest.TestCase):
 
     def test_collector_15(self):
         """
-        Tests the clear_stats method to empty the 
+        Tests the clear_stats method to empty the
         dictionary of stats from the class
         """
         stats = StatsCollector(self.crawler)

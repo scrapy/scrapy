@@ -14,7 +14,7 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_1(self):
         """
-        Tests if two instances of Link with the 
+        Tests if two instances of Link with the
         same url recognize they have the same url
         """
         l1 = Link("http://www.example.com")
@@ -23,8 +23,8 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_2(self):
         """
-        Tests if two instances of Link with different 
-        url address recognize they are different even 
+        Tests if two instances of Link with different
+        url address recognize they are different even
         if the initial part is the same.
         """
         l1 = Link("http://www.example.com")
@@ -34,9 +34,9 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_3(self):
         """
-        Checks if two instances of Link successufully 
-        capture the address they are point two if it is 
-        the same address. 
+        Checks if two instances of Link successufully
+        capture the address they are point two if it is
+        the same address.
         """
         l1 = Link("http://www.example.com")
         l3 = Link("http://www.example.com")
@@ -53,7 +53,7 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_5(self):
         """
-        Tests if two instances of Link that point to the same url 
+        Tests if two instances of Link that point to the same url
         are not evaluating that they point to the same url if they
         have different text variable values.
         """
@@ -64,7 +64,7 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_6(self):
         """
-        Tests if two instances of Link that point to the same url 
+        Tests if two instances of Link that point to the same url
         are evaluated that they point to the same url if they
         have the same text variable values.
         """
@@ -74,9 +74,9 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_7(self):
         """
-        Tests if two instances of Link that point to the same url 
+        Tests if two instances of Link that point to the same url
         are evaluated that they point to the same url if they
-        have the same text and fragment variable values and they both 
+        have the same text and fragment variable values and they both
         have the nofollow option set to False.
         """
         l7 = Link(
@@ -89,9 +89,9 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_8(self):
         """
-        Tests if two instances of Link that point to the same url 
-        are evaluated as different if they point to the same url and 
-        have the same text and fragment variable values but one is set  
+        Tests if two instances of Link that point to the same url
+        are evaluated as different if they point to the same url and
+        have the same text and fragment variable values but one is set
         to have the nofollow option set to False while the other to True.
         """
         l7 = Link(
@@ -104,9 +104,9 @@ class LinkTest(unittest.TestCase):
 
     def test_eq_and_hash_9(self):
         """
-        Tests if two instances of Link that point to the same url 
-        are evaluated as different if they point to the same url and 
-        have the same text variable values and both haves set the 
+        Tests if two instances of Link that point to the same url
+        are evaluated as different if they point to the same url and
+        have the same text variable values and both haves set the
         nofollow option to False but they have different fragment values.
         """
         l7 = Link(
@@ -130,7 +130,7 @@ class LinkTest(unittest.TestCase):
 
     def test_bytes_url(self):
         """
-        Tests if a wrong argument is passed in the initialization of 
+        Tests if a wrong argument is passed in the initialization of
         a Link instance successfully raises a TypeError.
         """
         with self.assertRaises(TypeError):

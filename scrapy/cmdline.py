@@ -117,12 +117,10 @@ def _run_print_help(parser, func, *a, **kw):
         sys.exit(2)
 
 
-def execute(argv=sys.argv, settings=None):
-    """
-    Method to execute a command line argument. Takes two parameters, a list of
-    arguments that is passed in the command line and an instance of 
-    the project settings which is set to none by default.
-    """
+def execute(argv=None, settings=None):
+    if argv is None:
+        argv = sys.argv
+
     if settings is None:
         settings = get_project_settings()
         # set EDITOR from environment if available
@@ -136,13 +134,12 @@ def execute(argv=sys.argv, settings=None):
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
-    # If no command argument was given or an error was generated
     if not cmdname:
         _print_commands(settings, inproject)
-        sys.exit(0)     # Indicates successful end 
+        sys.exit(0)
     elif cmdname not in cmds:
         _print_unknown_command(settings, cmdname, inproject)
-        sys.exit(2)     # Indicates misusing shell command
+        sys.exit(2)
 
     cmd = cmds[cmdname]
     parser = ScrapyArgumentParser(
@@ -151,7 +148,6 @@ def execute(argv=sys.argv, settings=None):
         conflict_handler="resolve",
         description=cmd.long_desc(),
     )
-
     settings.setdict(cmd.default_settings, priority="command")
     cmd.settings = settings
     cmd.add_options(parser)

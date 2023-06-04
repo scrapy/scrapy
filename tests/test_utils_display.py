@@ -1,7 +1,7 @@
+import builtins
 import unittest
 from io import StringIO
 from unittest import TestCase, mock
-import builtins
 
 from scrapy.utils.display import pformat, pprint
 
