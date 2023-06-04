@@ -4,6 +4,7 @@ Scrapy extension for collecting scraping stats
 import logging
 import pprint
 from typing import TYPE_CHECKING, Any, Dict, Optional
+from scrapy.extensions.corestats import CoreStats
 
 from scrapy import Spider
 
@@ -51,7 +52,8 @@ class StatsCollector:
         self._stats.clear()
 
     def open_spider(self, spider: Spider) -> None:
-        pass 
+        ext = spider.from_crawler(self.crawler)
+        ext.spider_opened(self.spider) 
 
     def close_spider(self, spider: Spider, reason: str) -> None:
         if self._dump:
@@ -62,7 +64,7 @@ class StatsCollector:
         self._persist_stats(self._stats, spider)
 
     def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
-        pass
+        spider.custom_settings = stats
 
 
 class MemoryStatsCollector(StatsCollector):
@@ -72,27 +74,3 @@ class MemoryStatsCollector(StatsCollector):
 
     def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
         self.spider_stats[spider.name] = stats
-
-
-class DummyStatsCollector(StatsCollector):
-    def get_value(
-        self, key: str, default: Any = None, spider: Optional[Spider] = None
-    ) -> Any:
-        return default
-
-    def set_value(self, key: str, value: Any, spider: Optional[Spider] = None) -> None:
-        pass
-
-    def set_stats(self, stats: StatsT, spider: Optional[Spider] = None) -> None:
-        pass
-
-    def inc_value(
-        self, key: str, count: int = 1, start: int = 0, spider: Optional[Spider] = None
-    ) -> None:
-        pass
-
-    def max_value(self, key: str, value: Any, spider: Optional[Spider] = None) -> None:
-        pass
-
-    def min_value(self, key: str, value: Any, spider: Optional[Spider] = None) -> None:
-        pass

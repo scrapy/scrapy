@@ -4,7 +4,7 @@ from unittest import mock
 
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
-from scrapy.statscollectors import DummyStatsCollector, StatsCollector
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.test import get_crawler
 
 
@@ -37,17 +37,6 @@ class CoreStatsExtensionTest(unittest.TestCase):
                 "elapsed_time_seconds": 0.0,
             },
         )
-
-    def test_core_stats_dummy_stats_collector(self):
-        self.crawler.stats = DummyStatsCollector(self.crawler)
-        ext = CoreStats.from_crawler(self.crawler)
-        ext.spider_opened(self.spider)
-        ext.item_scraped({}, self.spider)
-        ext.response_received(self.spider)
-        ext.item_dropped({}, self.spider, ZeroDivisionError())
-        ext.spider_closed(self.spider, "finished")
-        self.assertEqual(ext.stats._stats, {})
-
 
 class StatsCollectorTest(unittest.TestCase):
     def setUp(self):
@@ -187,61 +176,26 @@ class StatsCollectorTest(unittest.TestCase):
         stats.min_value("test14", 7)
         self.assertEqual(stats.get_value("test14"), 7)
 
-    def test_dummy_collector_1(self):
+    def test_collector_15(self):
         """
-        Tests if initializing an instance of dummy stats
-        collector successfully returns an empty dictionary 
-        if no previous data were passed when we ask for the stats
-        of the dummy stats collector. 
+        Tests the clear_stats method to empty the 
+        dictionary of stats from the class
         """
-        stats = DummyStatsCollector(self.crawler)
+        stats = StatsCollector(self.crawler)
+        stats.set_value("test15", 100)
+        stats.clear_stats()
+        self.assertIsNone(stats.get_value("test15"))
+
+    def test_collector_16(self):
+        """
+        Tests if set_stats correctly sets a new dictionary
+        with stats
+        """
+        stats = StatsCollector(self.crawler)
+        stats.set_value("test16", 100)
+        new_stats = {}
+        stats.set_stats(new_stats)
         self.assertEqual(stats.get_stats(), {})
-
-    def test_dummy_collector_2(self):
-        """
-        Tests if no values was set for a dummy stats
-        collector. The return value is None.
-        """
-        stats = DummyStatsCollector(self.crawler)
-        self.assertEqual(stats.get_value("anything"), None)
-
-    def test_dummy_collector_3(self):
-        """
-        Tests if no value has been set for a dummy stats collector
-        when ask for a value with default setting it returns default.
-        """
-        stats = DummyStatsCollector(self.crawler)
-        self.assertEqual(stats.get_value("anything", "default"), "default")
-
-    def test_dummy_collector_4(self):
-        """
-        Tests if changing the value of a dummy stats collector
-        multiple times, will result to always keep the last value 
-        that the dummy stats collector was set. 
-        """
-        stats = DummyStatsCollector(self.crawler)
-        stats.set_value("test", "value")
-        stats.inc_value("v1")
-        stats.max_value("v2", 100)
-        stats.min_value("v3", 100)
-        stats.open_spider("a")
-        stats.set_value("test", "value", spider=self.spider)
-        self.assertEqual(stats.get_stats(), {})
-
-    def test_dummy_collector_5(self):
-        """
-        Test that when opening a new spider instance from a 
-        dummy stats collector instance, the initialize value is 
-        an empty dictionary for the stats of the new spider instance
-        """
-        stats = DummyStatsCollector(self.crawler)
-        stats.set_value("test", "value")
-        stats.inc_value("v1")
-        stats.max_value("v2", 100)
-        stats.min_value("v3", 100)
-        stats.open_spider("a")
-        stats.set_value("test", "value", spider=self.spider)
-        self.assertEqual(stats.get_stats("a"), {})
 
 
 if __name__ == "__main__":
