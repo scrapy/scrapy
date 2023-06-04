@@ -990,10 +990,13 @@ Default::
 
 List of exceptions to retry.
 
-It may contain either an exception or a string, in which case Scrapy would load
-the exception from the absolute object path specified by the string. 
-If an exception is not retried earlier, middlewares get to process it; 
-if none handles it, the request errback gets it. 
+Each list entry may be an exception type or its import path as a string.
+
+An exception will not be caught when the exception type is not in
+:setting:`RETRY_EXCEPTIONS` or when the maximum number of retries for a request
+has been exceeded (see :setting:`RETRY_TIMES`). To learn about uncaught
+exception propagation, see
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`.
 
 .. setting:: RETRY_PRIORITY_ADJUST
 
