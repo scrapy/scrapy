@@ -307,6 +307,33 @@ spider_error
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.Spider` object
 
+feed_slot_closed
+~~~~~~~~~~~~~~~~
+
+.. signal:: feed_slot_closed
+.. function:: feed_slot_closed(slot)
+
+    Sent when a :ref:`feed exports <topics-feed-exports>` slot is closed.
+
+    This signal supports returning deferreds from its handlers.
+
+    :param slot: the slot closed
+    :type slot: scrapy.extensions.feedexport.FeedSlot
+
+
+feed_exporter_closed
+~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: feed_exporter_closed
+.. function:: feed_exporter_closed()
+
+    Sent when the :ref:`feed exports <topics-feed-exports>` extension is closed,
+    during the handling of the :signal:`spider_closed` signal by the extension,
+    after all feed exporting has been handled.
+
+    This signal supports returning deferreds from its handlers.
+
+
 Request signals
 ---------------
 

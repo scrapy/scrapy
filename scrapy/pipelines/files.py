@@ -3,6 +3,7 @@ Files Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
+import base64
 import functools
 import hashlib
 import logging
@@ -228,7 +229,7 @@ class GCSFilesStore:
     def stat_file(self, path, info):
         def _onsuccess(blob):
             if blob:
-                checksum = blob.md5_hash
+                checksum = base64.b64decode(blob.md5_hash).hex()
                 last_modified = time.mktime(blob.updated.timetuple())
                 return {"checksum": checksum, "last_modified": last_modified}
             return {}

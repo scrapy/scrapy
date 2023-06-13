@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict
 
 from OpenSSL import SSL
 from service_identity.exceptions import CertificateError
@@ -20,7 +21,7 @@ METHOD_TLSv11 = "TLSv1.1"
 METHOD_TLSv12 = "TLSv1.2"
 
 
-openssl_methods = {
+openssl_methods: Dict[str, int] = {
     METHOD_TLS: SSL.SSLv23_METHOD,  # protocol negotiation (recommended)
     METHOD_TLSv10: SSL.TLSv1_METHOD,  # TLS 1.0 only
     METHOD_TLSv11: SSL.TLSv1_1_METHOD,  # TLS 1.1 only
@@ -39,11 +40,13 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
     logging warnings. Also, HTTPS connection parameters logging is added.
     """
 
-    def __init__(self, hostname, ctx, verbose_logging=False):
+    def __init__(self, hostname: str, ctx: SSL.Context, verbose_logging: bool = False):
         super().__init__(hostname, ctx)
-        self.verbose_logging = verbose_logging
+        self.verbose_logging: bool = verbose_logging
 
-    def _identityVerifyingInfoCallback(self, connection, where, ret):
+    def _identityVerifyingInfoCallback(
+        self, connection: SSL.Connection, where: int, ret: Any
+    ) -> None:
         if where & SSL.SSL_CB_HANDSHAKE_START:
             connection.set_tlsext_host_name(self._hostnameBytes)
         elif where & SSL.SSL_CB_HANDSHAKE_DONE:
@@ -55,11 +58,12 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                     connection.get_cipher_name(),
                 )
                 server_cert = connection.get_peer_certificate()
-                logger.debug(
-                    'SSL connection certificate: issuer "%s", subject "%s"',
-                    x509name_to_string(server_cert.get_issuer()),
-                    x509name_to_string(server_cert.get_subject()),
-                )
+                if server_cert:
+                    logger.debug(
+                        'SSL connection certificate: issuer "%s", subject "%s"',
+                        x509name_to_string(server_cert.get_issuer()),
+                        x509name_to_string(server_cert.get_subject()),
+                    )
                 key_info = get_temp_key_info(connection._ssl)
                 if key_info:
                     logger.debug("SSL temp key: %s", key_info)
@@ -82,4 +86,6 @@ class ScrapyClientTLSOptions(ClientTLSOptions):
                 )
 
 
-DEFAULT_CIPHERS = AcceptableCiphers.fromOpenSSLCipherString("DEFAULT")
+DEFAULT_CIPHERS: AcceptableCiphers = AcceptableCiphers.fromOpenSSLCipherString(
+    "DEFAULT"
+)

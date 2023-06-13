@@ -2,6 +2,10 @@ import pickle
 import re
 import unittest
 
+from packaging.version import Version
+from pytest import mark
+from w3lib import __version__ as w3lib_version
+
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
 from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
@@ -815,3 +819,34 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
 
     def test_restrict_xpaths_with_html_entities(self):
         super().test_restrict_xpaths_with_html_entities()
+
+    @mark.skipif(
+        Version(w3lib_version) < Version("2.0.0"),
+        reason=(
+            "Before w3lib 2.0.0, w3lib.url.safe_url_string would not complain "
+            "about an invalid port value."
+        ),
+    )
+    def test_skip_bad_links(self):
+        html = b"""
+        <a href="http://example.org:non-port">Why would you do this?</a>
+        <a href="http://example.org/item2.html">Good Link</a>
+        <a href="http://example.org/item3.html">Good Link 2</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        lx = self.extractor_cls()
+        self.assertEqual(
+            [link for link in lx.extract_links(response)],
+            [
+                Link(
+                    url="http://example.org/item2.html",
+                    text="Good Link",
+                    nofollow=False,
+                ),
+                Link(
+                    url="http://example.org/item3.html",
+                    text="Good Link 2",
+                    nofollow=False,
+                ),
+            ],
+        )

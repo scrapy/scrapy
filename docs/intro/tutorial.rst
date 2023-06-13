@@ -252,7 +252,7 @@ object:
 .. code-block:: pycon
 
     >>> response.css("title")
-    [<Selector xpath='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
+    [<Selector query='descendant-or-self::title' data='<title>Quotes to Scrape</title>'>]
 
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
@@ -329,7 +329,7 @@ the :meth:`~scrapy.selector.SelectorList.re` method to extract using
     >>> response.css("title::text").re(r"(\w+) to (\w+)")
     ['Quotes', 'Scrape']
 
-In order to find the proper CSS selectors to use, you might find useful opening
+In order to find the proper CSS selectors to use, you might find it useful to open
 the response page from the shell in your web browser using ``view(response)``.
 You can use your browser's developer tools to inspect the HTML and come up
 with a selector (see :ref:`topics-developer-tools`).
@@ -348,7 +348,7 @@ Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:
 .. code-block:: pycon
 
     >>> response.xpath("//title")
-    [<Selector xpath='//title' data='<title>Quotes to Scrape</title>'>]
+    [<Selector query='//title' data='<title>Quotes to Scrape</title>'>]
     >>> response.xpath("//title/text()").get()
     'Quotes to Scrape'
 
@@ -410,8 +410,8 @@ We get a list of selectors for the quote HTML elements with:
 .. code-block:: pycon
 
     >>> response.css("div.quote")
-    [<Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
-    <Selector xpath="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    [<Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
+    <Selector query="descendant-or-self::div[@class and contains(concat(' ', normalize-space(@class), ' '), ' quote ')]" data='<div class="quote" itemscope itemtype...'>,
     ...]
 
 Each of the selectors returned by the query above allows us to run further

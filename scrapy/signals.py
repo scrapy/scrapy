@@ -22,6 +22,8 @@ bytes_received = object()
 item_scraped = object()
 item_dropped = object()
 item_error = object()
+feed_slot_closed = object()
+feed_exporter_closed = object()
 
 # for backward compatibility
 stats_spider_opened = spider_opened
