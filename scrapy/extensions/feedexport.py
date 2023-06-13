@@ -492,20 +492,6 @@ class FeedExporter:
         :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri, feed_options)
-        file = storage.open(spider)
-        if "postprocessing" in feed_options:
-            file = PostProcessingManager(
-                feed_options["postprocessing"], file, feed_options
-            )
-
-        exporter = self._get_exporter(
-            file=file,
-            format=feed_options["format"],
-            fields_to_export=feed_options["fields"],
-            encoding=feed_options["encoding"],
-            indent=feed_options["indent"],
-            **feed_options["item_export_kwargs"],
-        )
         slot = FeedSlot(
             storage=storage,
             uri=uri,
