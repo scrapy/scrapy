@@ -2,9 +2,11 @@ import warnings
 from collections import OrderedDict, defaultdict
 from collections.abc import Mapping
 from inspect import isclass
+from typing import Dict
 
 import zope.interface
-from pkg_resources import Distribution, Requirement, WorkingSet
+from packaging.requirements import Requirement
+from packaging.version import Version
 from zope.interface.verify import verifyObject
 
 from scrapy.interfaces import IAddon
@@ -303,7 +305,7 @@ class AddonManager(Mapping):
         for a, c in zip(addons, configs):
             self.add(a, c)
 
-    def check_dependency_clashes(self):
+    def check_dependency_clashes(self) -> None:
         """Check for incompatibilities in add-on dependencies.
 
         Add-ons can provide information about their dependencies in their
@@ -320,24 +322,20 @@ class AddonManager(Mapping):
         add-on.
         """
         # Collect all active add-ons and the components they provide
-        ws = WorkingSet("")
+        versions: Dict[str, Version] = {}
 
-        def add_dist(project_name, version, **kwargs):
-            if project_name in ws.entry_keys.get("scrapy", []):
+        def add_version(project_name, version):
+            if project_name in versions:
                 raise ImportError(
                     f"Component {project_name} provided by multiple add-ons"
                 )
-            else:
-                dist = Distribution(
-                    project_name=project_name, version=version, **kwargs
-                )
-                ws.add(dist, entry="scrapy")
+            versions[project_name] = Version(version)
 
         for name in self:
             ver = self[name].version
-            add_dist(name, ver)
+            add_version(name, ver)
             for provides_name in getattr(self[name], "provides", []):
-                add_dist(provides_name, ver)
+                add_version(provides_name, ver)
 
         # Collect all required and modified components
         def compile_attribute_dict(attribute_name):
@@ -352,10 +350,8 @@ class AddonManager(Mapping):
 
         req_or_mod = set(required.keys()).union(modified.keys())
         for reqstr in req_or_mod:
-            req = Requirement.parse(reqstr)
-            # May raise VersionConflict. Do we want to catch it and raise
-            # our own exception or is it helpful enough?
-            if ws.find(req) is None:
+            req = Requirement(reqstr)
+            if req.name not in versions or versions[req.name] not in req.specifier:
                 raise ImportError(
                     f"Add-ons {required[reqstr] + modified[reqstr]} require"
                     f" or modify missing component {reqstr}"

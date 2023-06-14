@@ -4,7 +4,6 @@ import warnings
 from collections import OrderedDict
 from unittest import mock
 
-from pkg_resources import VersionConflict
 from zope.interface import directlyProvides
 from zope.interface.exceptions import BrokenImplementation, MultipleInvalid
 from zope.interface.verify import verifyObject
@@ -347,7 +346,7 @@ class AddonManagerTest(unittest.TestCase):
         self.assertRaises(ImportError, check_with, requires)
         self.assertRaises(ImportError, check_with, modifies)
         self.assertRaises(ImportError, check_with, provides, provides2)
-        self.assertRaises(VersionConflict, check_with, provides, requires_newer)
+        self.assertRaises(ImportError, check_with, provides, requires_newer)
         with warnings.catch_warnings(record=True) as w:
             check_with(provides, modifies)
             check_with(provides)
