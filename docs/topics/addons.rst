@@ -236,6 +236,7 @@ convenience functions by overwriting
 :meth:`~scrapy.addons.Addon.update_settings`.
 
 .. module:: scrapy.addons
+   :noindex:
 
 .. autoclass:: Addon
    :members:
