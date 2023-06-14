@@ -17,11 +17,6 @@ class ISpiderLoader(Interface):
         """Return the list of spiders names that can handle the given request"""
 
 
-# ISpiderManager is deprecated, don't use it!
-# An alias is kept for backwards compatibility.
-ISpiderManager = ISpiderLoader
-
-
 class IAddon(Interface):
     """Scrapy add-on"""
 
