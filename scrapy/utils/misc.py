@@ -85,7 +85,7 @@ def load_module_or_object(path):
         return load_object(path)
     except (ValueError, NameError, ImportError):
         pass
-    raise NameError("Could not load '%s'" % path)
+    raise NameError(f"Could not load '{path}'")
 
 
 def walk_modules(path):

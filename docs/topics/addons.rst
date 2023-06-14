@@ -350,29 +350,31 @@ Check configuration of fully initialized crawler (see
 
 Provide add-on interface through a module:
 
-.. No idea why just using '::' doesn't work for this one
 .. code-block:: python
 
-    name = 'AddonModule'
-    version = '1.0'
+    name = "AddonModule"
+    version = "1.0"
+
 
     class MyPipeline(object):
-        # ...
+        ...
+
 
     class MyDownloaderMiddleware(object):
-        # ...
+        ...
+
 
     def update_settings(config, settings):
         settings.set(
-            'ITEM_PIPELINES',
+            "ITEM_PIPELINES",
             {MyPipeline(): 200},
-            priority='addon',
-            }
+            priority="addon",
+        )
         settings.set(
-            'DOWNLOADER_MIDDLEWARES',
+            "DOWNLOADER_MIDDLEWARES",
             {MyDownloaderMiddleware(): 800},
-            priority='addon',
-            }
+            priority="addon",
+        )
 
 Forward to other add-ons depending on Python version::
 

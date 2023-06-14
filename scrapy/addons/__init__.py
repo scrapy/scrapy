@@ -1,10 +1,10 @@
-from collections import defaultdict, Mapping, OrderedDict
-from inspect import isclass
-import six
 import warnings
+from collections import OrderedDict, defaultdict
+from collections.abc import Mapping
+from inspect import isclass
 
-from pkg_resources import WorkingSet, Distribution, Requirement
 import zope.interface
+from pkg_resources import Distribution, Requirement, WorkingSet
 from zope.interface.verify import verifyObject
 
 from scrapy.interfaces import IAddon
@@ -14,7 +14,6 @@ from scrapy.utils.misc import load_module_or_object
 
 @zope.interface.implementer(IAddon)
 class Addon(object):
-
     basic_settings = None
     """``dict`` of settings that will be exported via :meth:`export_basics`."""
 
@@ -83,8 +82,8 @@ class Addon(object):
             else:
                 # e.g. for DOWNLOADER_MIDDLEWARES: {'myclass': 100}
                 k = comp
-                v = config.get('order', self.component_order)
-            settings[self.component_type].update({k: v}, 'addon')
+                v = config.get("order", self.component_order)
+            settings[self.component_type].update({k: v}, "addon")
 
     def export_basics(self, settings):
         """Export the :attr:`basic_settings` attribute into the settings object.
@@ -95,8 +94,8 @@ class Addon(object):
         :param settings: Settings object into which to expose the basic settings
         :type settings: :class:`~scrapy.settings.Settings`
         """
-        for setting, value in six.iteritems(self.basic_settings or {}):
-            settings.set(setting, value, 'addon')
+        for setting, value in (self.basic_settings or {}).items():
+            settings.set(setting, value, "addon")
 
     def export_config(self, config, settings):
         """Export the add-on configuration, all keys in caps and with
@@ -121,14 +120,13 @@ class Addon(object):
         prefix = self.settings_prefix or self.name
         # Since default exported config is case-insensitive (everything will be
         # uppercased), make mapped config case-insensitive as well
-        conf_mapping = {k.lower(): v
-                        for k, v in six.iteritems(self.config_mapping or {})}
-        for key, val in six.iteritems(conf):
+        conf_mapping = {k.lower(): v for k, v in (self.config_mapping or {}).items()}
+        for key, val in conf.items():
             if key.lower() in conf_mapping:
                 key = conf_mapping[key.lower()]
             else:
-                key = (prefix + '_' + key).upper()
-            settings.set(key, val, 'addon')
+                key = (prefix + "_" + key).upper()
+            settings.set(key, val, "addon")
 
     def update_settings(self, config, settings):
         """Export both the basic settings and the add-on configuration. I.e.,
@@ -210,11 +208,11 @@ class AddonManager(Mapping):
         verifyObject(IAddon, addon)
         name = addon.name
         if name in self:
-            raise ValueError("Addon '{}' already loaded".format(name))
+            raise ValueError(f"Addon '{name}' already loaded")
         self._addons[name] = addon
         self.configs[name] = config or {}
         if name in self._disable_on_add:
-            self.configs[name]['_enabled'] = False
+            self.configs[name]["_enabled"] = False
             self._disable_on_add.remove(name)
 
     def remove(self, addon):
@@ -229,7 +227,7 @@ class AddonManager(Mapping):
         """
         if addon in self:
             del self[addon]
-        elif hasattr(addon, 'name') and addon.name in self:
+        elif hasattr(addon, "name") and addon.name in self:
             del self[addon.name]
         else:
             try:
@@ -250,14 +248,14 @@ class AddonManager(Mapping):
         :param path: Python or file path to an add-on
         :type path: ``str``
         """
-        if isinstance(path, six.string_types):
+        if isinstance(path, str):
             try:
                 obj = load_module_or_object(path)
             except NameError:
-                raise NameError("Could not find add-on '%s'" % path)
+                raise NameError(f"Could not find add-on '{path}'")
         else:
             obj = path
-        if hasattr(obj, '_addon'):
+        if hasattr(obj, "_addon"):
             obj = AddonManager.get_addon(obj._addon)
         return obj
 
@@ -284,7 +282,7 @@ class AddonManager(Mapping):
             and values correspond to their configuration
         :type addonsdict: ``dict``
         """
-        for addonpath, addoncfg in six.iteritems(addonsdict):
+        for addonpath, addoncfg in addonsdict.items():
             self.add(addonpath, addoncfg)
 
     def load_settings(self, settings):
@@ -299,7 +297,7 @@ class AddonManager(Mapping):
             which to read the add-on configuration
         :type settings: :class:`~scrapy.settings.Settings`
         """
-        paths = build_component_list(settings['ADDONS'])
+        paths = build_component_list(settings["ADDONS"])
         addons = [self.get_addon(path) for path in paths]
         configs = [settings.getdict(addon.name.upper()) for addon in addons]
         for a, c in zip(addons, configs):
@@ -322,20 +320,23 @@ class AddonManager(Mapping):
         add-on.
         """
         # Collect all active add-ons and the components they provide
-        ws = WorkingSet('')
+        ws = WorkingSet("")
 
         def add_dist(project_name, version, **kwargs):
-            if project_name in ws.entry_keys.get('scrapy', []):
-                raise ImportError("Component {} provided by multiple add-ons"
-                                  "".format(project_name))
+            if project_name in ws.entry_keys.get("scrapy", []):
+                raise ImportError(
+                    f"Component {project_name} provided by multiple add-ons"
+                )
             else:
-                dist = Distribution(project_name=project_name, version=version,
-                                    **kwargs)
-                ws.add(dist, entry='scrapy')
+                dist = Distribution(
+                    project_name=project_name, version=version, **kwargs
+                )
+                ws.add(dist, entry="scrapy")
+
         for name in self:
             ver = self[name].version
             add_dist(name, ver)
-            for provides_name in getattr(self[name], 'provides', []):
+            for provides_name in getattr(self[name], "provides", []):
                 add_dist(provides_name, ver)
 
         # Collect all required and modified components
@@ -345,8 +346,9 @@ class AddonManager(Mapping):
                 for entry in getattr(self[name], attribute_name, []):
                     attrs[entry].append(name)
             return attrs
-        modified = compile_attribute_dict('modifies')
-        required = compile_attribute_dict('requires')
+
+        modified = compile_attribute_dict("modifies")
+        required = compile_attribute_dict("requires")
 
         req_or_mod = set(required.keys()).union(modified.keys())
         for reqstr in req_or_mod:
@@ -355,15 +357,16 @@ class AddonManager(Mapping):
             # our own exception or is it helpful enough?
             if ws.find(req) is None:
                 raise ImportError(
-                    "Add-ons {} require or modify missing component {}"
-                    "".format(required[reqstr]+modified[reqstr], reqstr)
+                    f"Add-ons {required[reqstr] + modified[reqstr]} require"
+                    f" or modify missing component {reqstr}"
                 )
 
         mod_and_req = set(required.keys()).intersection(modified.keys())
         for conflict in mod_and_req:
-            warnings.warn("Component '{}', required by add-ons {}, is modified "
-                          "by add-ons {}".format(conflict, required[conflict],
-                                                 modified[conflict]))
+            warnings.warn(
+                f"Component '{conflict}', required by add-ons {required[conflict]},"
+                f" is modified by add-ons {modified[conflict]}"
+            )
 
     def disable(self, addon):
         """Disable an add-on, i.e. prevent its callbacks from being called.
@@ -375,7 +378,7 @@ class AddonManager(Mapping):
         :type addon: ``str``
         """
         if addon in self:
-            self.configs[addon]['_enabled'] = False
+            self.configs[addon]["_enabled"] = False
         else:
             self._disable_on_add.append(addon)
 
@@ -389,23 +392,23 @@ class AddonManager(Mapping):
         :type addon: ``str``
         """
         if addon in self:
-            self.configs[addon]['_enabled'] = True
+            self.configs[addon]["_enabled"] = True
         elif addon in self._disable_on_add:
             self._disable_on_add.remove(addon)
         else:
-            raise ValueError("Add-ons need to be added before they can be "
-                             "enabled")
+            raise ValueError("Add-ons need to be added before they can be " "enabled")
 
     @property
     def disabled(self):
         """Names of disabled add-ons"""
-        return ([a for a in self if not self.configs[a].get('_enabled', True)] +
-                self._disable_on_add)
+        return [
+            a for a in self if not self.configs[a].get("_enabled", True)
+        ] + self._disable_on_add
 
     @property
     def enabled(self):
         """Names of enabled add-ons"""
-        return [a for a in self if self.configs[a].get('_enabled', True)]
+        return [a for a in self if self.configs[a].get("_enabled", True)]
 
     def _call_if_exists(self, obj, cbname, *args, **kwargs):
         if obj is None:
@@ -418,9 +421,10 @@ class AddonManager(Mapping):
             cb(*args, **kwargs)
 
     def _call_addon(self, addonname, cbname, *args, **kwargs):
-        if self.configs[addonname].get('_enabled', True):
-            self._call_if_exists(self[addonname], cbname,
-                                 self.configs[addonname], *args, **kwargs)
+        if self.configs[addonname].get("_enabled", True):
+            self._call_if_exists(
+                self[addonname], cbname, self.configs[addonname], *args, **kwargs
+            )
 
     def update_addons(self):
         """Call ``update_addons()`` of all held add-ons.
@@ -432,7 +436,7 @@ class AddonManager(Mapping):
         while called_addons != set(self):
             for name in set(self).difference(called_addons):
                 called_addons.add(name)
-                self._call_addon(name, 'update_addons', self)
+                self._call_addon(name, "update_addons", self)
 
     def update_settings(self, settings):
         """Call ``update_settings()`` of all held add-ons.
@@ -442,7 +446,7 @@ class AddonManager(Mapping):
         :type settings: :class:`~scrapy.settings.Settings`
         """
         for name in self:
-            self._call_addon(name, 'update_settings', settings)
+            self._call_addon(name, "update_settings", settings)
 
     def check_configuration(self, crawler):
         """Call ``check_configuration()`` of all held add-ons.
@@ -451,7 +455,7 @@ class AddonManager(Mapping):
         :type crawler: :class:`~scrapy.crawler.Crawler`
         """
         for name in self:
-            self._call_addon(name, 'check_configuration', crawler)
+            self._call_addon(name, "check_configuration", crawler)
 
 
-from scrapy.addons.builtins import *
+from scrapy.addons.builtins import *  # noqa

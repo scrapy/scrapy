@@ -1,18 +1,16 @@
 import zope.interface
 
-from scrapy.addons import Addon
 from scrapy.interfaces import IAddon
 
 
 class Addon(object):
-    FROM = 'test_addons.addons'
+    FROM = "test_addons.addons"
 
 
 @zope.interface.declarations.implementer(IAddon)
 class GoodAddon(object):
-
-    name = 'GoodAddon'
-    version = '1.0'
+    name = "GoodAddon"
+    version = "1.0"
 
     def __init__(self, name=None, version=None):
         if name is not None:
@@ -32,8 +30,7 @@ class GoodAddon(object):
 
 @zope.interface.declarations.implementer(IAddon)
 class BrokenAddon(object):
-
-    name = 'BrokenAddon'
+    name = "BrokenAddon"
     # No version
 
 

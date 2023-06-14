@@ -419,7 +419,7 @@ with multiples lines
 
         addonmgr = AddonManager()
         addonmgr.add(FailedCheckAddon())
-        crawler = self.runner.create_crawler(SimpleSpider)
+        crawler = get_crawler(SimpleSpider)
         crawler.addons = addonmgr
         # Doesn't work in 'precise' test environment:
         # with self.assertRaises(ValueError):
