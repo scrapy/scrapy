@@ -11,7 +11,7 @@ from zope.interface.verify import verifyObject
 
 from scrapy.interfaces import IAddon
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_module_or_object
 
 
 @zope.interface.implementer(IAddon)
@@ -252,8 +252,8 @@ class AddonManager(Mapping):
         """
         if isinstance(path, str):
             try:
-                obj = load_object(path)
-            except (ValueError, NameError, ImportError):
+                obj = load_module_or_object(path)
+            except NameError:
                 raise NameError(f"Could not find add-on '{path}'")
         else:
             obj = path

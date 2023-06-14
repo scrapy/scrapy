@@ -72,6 +72,22 @@ def load_object(path: Union[str, Callable]) -> Any:
     return obj
 
 
+def load_module_or_object(path):
+    """Load python module or (non-module) object from given path.
+
+    Path can be both a Python or a file path.
+    """
+    try:
+        return import_module(path)
+    except ImportError:
+        pass
+    try:
+        return load_object(path)
+    except (ValueError, NameError, ImportError):
+        pass
+    raise NameError(f"Could not load '{path}'")
+
+
 def walk_modules(path):
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
