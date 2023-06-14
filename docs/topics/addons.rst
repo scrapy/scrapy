@@ -20,15 +20,15 @@ only then, the add-on manager will read a list of enabled add-ons and their
 configurations from your settings. There are two places where you can provide
 the paths to add-ons you want to enable:
 
-* the ``INSTALLED_ADDONS`` setting, and
+* the ``ADDONS`` setting, and
 * the ``scrapy.cfg`` file.
 
 As Scrapy settings can be modified from many places, e.g. in a project's
 ``settings.py``, in a Spider's ``custom_settings`` attribute, or from the
-command line, using the ``INSTALLED_ADDONS`` setting is the preferred way to
+command line, using the ``ADDONS`` setting is the preferred way to
 manage add-ons.
 
-The ``INSTALLED_ADDONS`` setting a tuple in which every item is a path to an
+The ``ADDONS`` setting a tuple in which every item is a path to an
 add-on. The path can be both a Python or a file path. While more precise, it is
 not necessary to specify the full add-on Python path if it is either built into
 Scrapy or lives in your project's ``addons`` submodule.
@@ -40,7 +40,7 @@ This is an example where an internal add-on and two third-party add-ons (in this
 case with one requiring no configuration) are enabled/configured in a project's
 ``settings.py``::
 
-    INSTALLED_ADDONS = (
+    ADDONS = (
         'httpcache',
         'path.to.some.addon',
     )
@@ -79,7 +79,7 @@ Enabling and configuring add-ons within Python code
 The :class:`~scrapy.addons.AddonManager` will only read from Scrapy's settings
 and from ``scrapy.cfg`` *at the beginning* of Scrapy's start-up process.
 Afterwards, i.e. as soon as the :class:`~scrapy.addons.AddonManager` is
-populated, changing the ``INSTALLED_ADDONS`` setting or any of the add-on
+populated, changing the ``ADDONS`` setting or any of the add-on
 configuration dictionary settings will have no effect.
 
 If you want to enable, disable, or configure add-ons in Python code, for example
@@ -202,7 +202,7 @@ specify :pep:`440`-style information about required versions. Examples::
     requires = ['otheraddon >= 2.0', 'yetanotheraddon']
 
 The Python object or module that is pointed to by an add-on path (e.g. given in
-the ``INSTALLED_ADDONS`` setting, or given to
+the ``ADDONS`` setting, or given to
 :meth:`~scrapy.addons.AddonManager.add`) does not necessarily have to be an
 add-on. Instead, it can provide an ``_addon`` attribute. This attribute can be
 either an add-on or another add-on path.
@@ -401,7 +401,7 @@ of placing this in your ``settings.py``::
 
 you can also use the add-on framework::
 
-    INSTALLED_ADDONS = (
+    ADDONS = (
         # ...,
         'httpcache',
     )
@@ -412,9 +412,9 @@ you can also use the add-on framework::
         }
 
 Note that you *must* enable built-in addons by placing them in your
-``INSTALLED_ADDONS`` setting before you can use them for configuring built-in
+``ADDONS`` setting before you can use them for configuring built-in
 components. I.e., configuring the ``HTTPCACHE`` setting will have no effect
-when ``httpcache`` is not listed in ``INSTALLED_ADDONS``.
+when ``httpcache`` is not listed in ``ADDONS``.
 
 In general, the add-on names match the lowercase name of the component, with its
 type suffix removed (i.e. the add-on configuring the

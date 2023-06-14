@@ -201,6 +201,16 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
+.. setting:: ADDONS
+
+ADDONS
+------
+
+Default: ``()``
+
+A tuple containing paths to the add-ons enabled in your project. For more
+information, see :ref:`topics-addons`.
+
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -963,16 +973,6 @@ some of them need to be enabled through a setting.
 
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
-
-.. setting:: INSTALLED_ADDONS
-
-INSTALLED_ADDONS
-----------------
-
-Default: ``()``
-
-A tuple containing paths to the add-ons enabled in your project. For more
-information, see :ref:`topics-addons`.
 
 .. setting:: FEED_TEMPDIR
 
