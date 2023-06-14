@@ -1,10 +1,8 @@
-import zope.interface
+from zope.interface import moduleProvides
 
 from scrapy.interfaces import IAddon
 
-zope.interface.moduleProvides(IAddon)
-
-FROM = "test_addons.addonmod"
+moduleProvides(IAddon)
 
 name = "AddonModule"
 version = "1.0"

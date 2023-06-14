@@ -43,7 +43,6 @@ case with one requiring no configuration) are enabled/configured in a project's
     INSTALLED_ADDONS = (
         'httpcache',
         'path.to.some.addon',
-        'path/to/other/addon.py',
     )
 
     HTTPCACHE = {
@@ -72,8 +71,6 @@ dictionary keys. I.e., the configuration from above would look like this:
 
     [addon:path.to.some.addon]
     some_config = true
-
-    [addon:path/to/other/addon.py]
 
 
 Enabling and configuring add-ons within Python code

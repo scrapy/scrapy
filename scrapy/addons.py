@@ -156,10 +156,10 @@ class AddonManager(Mapping):
 
         addons = AddonManager()
         # ... load some add-ons here
-        print addons.enabled  # prints names of all enabled add-ons
-        print addons['TestAddon'].version  # prints version of add-on with name
+        print(addons.enabled)  # prints names of all enabled add-ons
+        print(addons['TestAddon'].version)  # prints version of add-on with name
                                            # 'TestAddon'
-        print addons.configs['TestAddon']  # prints configuration of 'TestAddon'
+        print(addons.configs['TestAddon'])  # prints configuration of 'TestAddon'
 
     """
 

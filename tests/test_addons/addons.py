@@ -1,13 +1,9 @@
-import zope.interface
+from zope.interface import implementer
 
 from scrapy.interfaces import IAddon
 
 
-class Addon(object):
-    FROM = "test_addons.addons"
-
-
-@zope.interface.declarations.implementer(IAddon)
+@implementer(IAddon)
 class GoodAddon(object):
     name = "GoodAddon"
     version = "1.0"
@@ -28,7 +24,7 @@ class GoodAddon(object):
         pass
 
 
-@zope.interface.declarations.implementer(IAddon)
+@implementer(IAddon)
 class BrokenAddon(object):
     name = "BrokenAddon"
     # No version
