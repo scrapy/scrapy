@@ -1,7 +1,7 @@
-import zope.interface
+from zope.interface import Attribute, Interface
 
-class ISpiderLoader(zope.interface.Interface):
 
+class ISpiderLoader(Interface):
     def from_settings(settings):
         """Return an instance of the class for the given settings"""
 
@@ -22,20 +22,20 @@ class ISpiderLoader(zope.interface.Interface):
 ISpiderManager = ISpiderLoader
 
 
-class IAddon(zope.interface.Interface):
+class IAddon(Interface):
     """Scrapy add-on"""
 
-    name = zope.interface.Attribute("""Add-on name""")
-    version = zope.interface.Attribute("""Add-on version string (PEP440)""")
+    name = Attribute("""Add-on name""")
+    version = Attribute("""Add-on version string (PEP440)""")
 
     # XXX: Can methods be declared optional? I.e., can I enforce the signature
     #      but not the existence of a method?
 
-    #def update_addons(config, addons):
+    # def update_addons(config, addons):
     #    """Enables and configures other add-ons"""
 
-    #def update_settings(config, settings):
+    # def update_settings(config, settings):
     #    """Modifies `settings` to enable and configure required components"""
 
-    #def check_configuration(config, crawler):
+    # def check_configuration(config, crawler):
     #    """Performs post-initialization checks on fully configured `crawler`"""

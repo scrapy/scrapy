@@ -7,8 +7,7 @@ Extensions
 The extensions framework provides a mechanism for inserting your own
 custom functionality into Scrapy.
 
-Extensions are just regular classes that are instantiated at Scrapy startup,
-when extensions are initialized.
+Extensions are just regular classes.
 
 Extension settings
 ==================
@@ -17,26 +16,28 @@ Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
 settings, just like any other Scrapy code.
 
 It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, an
-hypothetic extension to handle `Google Sitemaps`_ would use settings like
-`GOOGLESITEMAP_ENABLED`, `GOOGLESITEMAP_DEPTH`, and so on.
+avoid collision with existing (and future) extensions. For example, a
+hypothetical extension to handle `Google Sitemaps`_ would use settings like
+``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
 
-.. _Google Sitemaps: http://en.wikipedia.org/wiki/Sitemaps
+.. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
 
 Loading & activating extensions
 ===============================
 
 Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class. Therefore, all the extension initialization
-code must be performed in the class constructor (``__init__`` method).
+instance of the extension class per spider being run. All the extension
+initialization code must be performed in the class ``__init__`` method.
 
 To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
-by a string: the full Python path to the extension's class name. For example::
+by a string: the full Python path to the extension's class name. For example:
+
+.. code-block:: python
 
     EXTENSIONS = {
-        'scrapy.extensions.corestats.CoreStats': 500,
-        'scrapy.extensions.telnet.TelnetConsole': 500,
+        "scrapy.extensions.corestats.CoreStats": 500,
+        "scrapy.extensions.telnet.TelnetConsole": 500,
     }
 
 
@@ -63,12 +64,14 @@ but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
 Disabling an extension
 ======================
 
-In order to disable an extension that comes enabled by default (ie. those
+In order to disable an extension that comes enabled by default (i.e. those
 included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
-``None``. For example::
+``None``. For example:
+
+.. code-block:: python
 
     EXTENSIONS = {
-        'scrapy.extensions.corestats.CoreStats': None,
+        "scrapy.extensions.corestats.CoreStats": None,
     }
 
 Writing your own extension
@@ -99,7 +102,9 @@ in the previous section. This extension will log a message every time:
 The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
 number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
-Here is the code of such extension::
+Here is the code of such extension:
+
+.. code-block:: python
 
     import logging
     from scrapy import signals
@@ -107,8 +112,8 @@ Here is the code of such extension::
 
     logger = logging.getLogger(__name__)
 
-    class SpiderOpenCloseLogging(object):
 
+    class SpiderOpenCloseLogging:
         def __init__(self, item_count):
             self.item_count = item_count
             self.items_scraped = 0
@@ -117,11 +122,11 @@ Here is the code of such extension::
         def from_crawler(cls, crawler):
             # first check if the extension should be enabled and raise
             # NotConfigured otherwise
-            if not crawler.settings.getbool('MYEXT_ENABLED'):
+            if not crawler.settings.getbool("MYEXT_ENABLED"):
                 raise NotConfigured
 
             # get the number of items from settings
-            item_count = crawler.settings.getint('MYEXT_ITEMCOUNT', 1000)
+            item_count = crawler.settings.getint("MYEXT_ITEMCOUNT", 1000)
 
             # instantiate the extension object
             ext = cls(item_count)
@@ -144,7 +149,7 @@ Here is the code of such extension::
             self.items_scraped += 1
             if self.items_scraped % self.item_count == 0:
                 logger.info("scraped %d items", self.items_scraped)
-                
+
 
 .. _topics-extensions-ref:
 
@@ -220,7 +225,6 @@ can be configured with the following settings:
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
 * :setting:`MEMUSAGE_NOTIFY_MAIL`
-* :setting:`MEMUSAGE_REPORT`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
@@ -258,6 +262,12 @@ settings:
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
+.. note::
+
+   When a certain closing condition is met, requests which are 
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS` 
+   requests) are still processed.
+
 .. setting:: CLOSESPIDER_TIMEOUT
 
 CLOSESPIDER_TIMEOUT
@@ -278,16 +288,14 @@ CLOSESPIDER_ITEMCOUNT
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
-that amount if items and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itemcount``. If zero (or
-non set), spiders won't be closed by number of passed items.
+that amount and those items are passed by the item pipeline, the
+spider will be closed with the reason ``closespider_itemcount``.
+If zero (or non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
 CLOSESPIDER_PAGECOUNT
 """""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -300,8 +308,6 @@ number of crawled responses.
 
 CLOSESPIDER_ERRORCOUNT
 """"""""""""""""""""""
-
-.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -322,6 +328,11 @@ This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
+
+Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
+full list of parameters, including examples on how to instantiate
+:class:`~scrapy.mail.MailSender` and use mail settings, see
+:ref:`topics-email`.
 
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
@@ -344,7 +355,7 @@ signal is received. The information dumped is the following:
 After the stack trace and engine status is dumped, the Scrapy process continues
 running normally.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows),
+This extension only works on POSIX-compliant platforms (i.e. not Windows),
 because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
 
 There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
@@ -355,21 +366,20 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 
     kill -QUIT <pid>
 
-.. _SIGUSR2: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
-.. _SIGQUIT: http://en.wikipedia.org/wiki/SIGQUIT
+.. _SIGUSR2: https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+.. _SIGQUIT: https://en.wikipedia.org/wiki/SIGQUIT
 
 Debugger extension
 ~~~~~~~~~~~~~~~~~~
 
 .. class:: Debugger
 
-Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`.
+For more info see `Debugging in Python`_.
 
-This extension only works on POSIX-compliant platforms (ie. not Windows).
+This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
-.. _Python debugger: https://docs.python.org/2/library/pdb.html
-.. _Debugging in Python: http://www.ferg.org/papers/debugging_in_python.html
+.. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

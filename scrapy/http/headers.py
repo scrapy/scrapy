@@ -1,14 +1,24 @@
-import six
+from collections.abc import Mapping
+
 from w3lib.http import headers_dict_to_raw
+
 from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.python import to_unicode
 
 
 class Headers(CaselessDict):
     """Case insensitive http headers dictionary"""
 
-    def __init__(self, seq=None, encoding='utf-8'):
+    def __init__(self, seq=None, encoding="utf-8"):
         self.encoding = encoding
-        super(Headers, self).__init__(seq)
+        super().__init__(seq)
+
+    def update(self, seq):
+        seq = seq.items() if isinstance(seq, Mapping) else seq
+        iseq = {}
+        for k, v in seq:
+            iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
+        super().update(iseq)
 
     def normkey(self, key):
         """Normalize key to bytes"""
@@ -18,9 +28,9 @@ class Headers(CaselessDict):
         """Normalize values to bytes"""
         if value is None:
             value = []
-        elif isinstance(value, (six.text_type, bytes)):
+        elif isinstance(value, (str, bytes)):
             value = [value]
-        elif not hasattr(value, '__iter__'):
+        elif not hasattr(value, "__iter__"):
             value = [value]
 
         return [self._tobytes(x) for x in value]
@@ -28,28 +38,27 @@ class Headers(CaselessDict):
     def _tobytes(self, x):
         if isinstance(x, bytes):
             return x
-        elif isinstance(x, six.text_type):
+        if isinstance(x, str):
             return x.encode(self.encoding)
-        elif isinstance(x, int):
-            return six.text_type(x).encode(self.encoding)
-        else:
-            raise TypeError('Unsupported value type: {}'.format(type(x)))
+        if isinstance(x, int):
+            return str(x).encode(self.encoding)
+        raise TypeError(f"Unsupported value type: {type(x)}")
 
     def __getitem__(self, key):
         try:
-            return super(Headers, self).__getitem__(key)[-1]
+            return super().__getitem__(key)[-1]
         except IndexError:
             return None
 
     def get(self, key, def_val=None):
         try:
-            return super(Headers, self).get(key, def_val)[-1]
+            return super().get(key, def_val)[-1]
         except IndexError:
             return None
 
     def getlist(self, key, def_val=None):
         try:
-            return super(Headers, self).__getitem__(key)
+            return super().__getitem__(key)
         except KeyError:
             if def_val is not None:
                 return self.normvalue(def_val)
@@ -67,9 +76,6 @@ class Headers(CaselessDict):
         self[key] = lst
 
     def items(self):
-        return list(self.iteritems())
-
-    def iteritems(self):
         return ((k, self.getlist(k)) for k in self.keys())
 
     def values(self):
@@ -78,8 +84,19 @@ class Headers(CaselessDict):
     def to_string(self):
         return headers_dict_to_raw(self)
 
+    def to_unicode_dict(self):
+        """Return headers as a CaselessDict with unicode keys
+        and unicode values. Multiple values are joined with ','.
+        """
+        return CaselessDict(
+            (
+                to_unicode(key, encoding=self.encoding),
+                to_unicode(b",".join(value), encoding=self.encoding),
+            )
+            for key, value in self.items()
+        )
+
     def __copy__(self):
         return self.__class__(self)
+
     copy = __copy__
-
-

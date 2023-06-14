@@ -22,7 +22,7 @@ Instead, the hooks are spread over:
 * Downloader handlers (``DOWNLOADER_HANDLERS``)
 * Item pipelines (``ITEM_PIPELINES``)
 * Feed exporters and storages (``FEED_EXPORTERS``, ``FEED_STORAGES``)
-* Overrideable components (``DUPEFILTER_CLASS``, ``STATS_CLASS``,
+* Overridable components (``DUPEFILTER_CLASS``, ``STATS_CLASS``,
   ``SCHEDULER``, ``SPIDER_MANAGER_CLASS``, ``ITEM_PROCESSOR``, etc.)
 * Generic extensions (``EXTENSIONS``)
 * CLI commands (``COMMANDS_MODULE``)
@@ -159,17 +159,19 @@ Purpose:
 Examples:
 ~~~~~~~~~
 
-::
+.. code-block:: python
 
     def update_addons(config, addons):
-        if 'httpcache' not in addons.enabled:
-            addons.add('httpcache', {'expiration_secs': 60})
+        if "httpcache" not in addons.enabled:
+            addons.add("httpcache", {"expiration_secs": 60})
 
-or::
+or:
+
+.. code-block:: python
 
     def update_addons(config, addons):
-        if 'otheraddon' in addons.enabled:
-            addons.configs['otheraddon']['some_config_name'] = True
+        if "otheraddon" in addons.enabled:
+            addons.configs["otheraddon"]["some_config_name"] = True
 
 update_settings()
 -----------------

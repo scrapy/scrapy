@@ -4,8 +4,6 @@
 Core API
 ========
 
-.. versionadded:: 0.15
-
 This section documents the Scrapy core API, and it's intended for developers of
 extensions and middlewares.
 
@@ -31,8 +29,15 @@ how you :ref:`configure the downloader middlewares
 .. class:: Crawler(spidercls, settings)
 
     The Crawler object must be instantiated with a
-    :class:`scrapy.spiders.Spider` subclass and a
+    :class:`scrapy.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
+
+    .. attribute:: request_fingerprinter
+
+        The request fingerprint builder of this crawler.
+
+        This is used from extensions and middlewares to build short, unique
+        identifiers for requests. See :ref:`request-fingerprints`.
 
     .. attribute:: settings
 
@@ -91,13 +96,15 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(\*args, \**kwargs)
+    .. method:: crawl(*args, **kwargs)
 
         Starts the crawler by instantiating its spider class with the given
-        `args` and `kwargs` arguments, while setting the execution engine in
+        ``args`` and ``kwargs`` arguments, while setting the execution engine in
         motion.
 
         Returns a deferred that is fired when the crawl is finished.
+
+    .. automethod:: stop
 
 .. autoclass:: CrawlerRunner
    :members:
@@ -125,16 +132,14 @@ Settings API
     precedence over lesser ones when setting and retrieving values in the
     :class:`~scrapy.settings.Settings` class.
 
-    .. highlight:: python
-
-    ::
+    .. code-block:: python
 
         SETTINGS_PRIORITIES = {
-            'default': 0,
-            'command': 10,
-            'project': 20,
-            'spider': 30,
-            'cmdline': 40,
+            "default": 0,
+            "command": 10,
+            "project": 20,
+            "spider": 30,
+            "cmdline": 40,
         }
 
     For a detailed explanation on each settings sources, see:
@@ -165,7 +170,7 @@ AddonManager API
 SpiderLoader API
 ================
 
-.. module:: scrapy.loader
+.. module:: scrapy.spiderloader
    :synopsis: The spider loader
 
 .. class:: SpiderLoader
@@ -182,7 +187,8 @@ SpiderLoader API
 
        This class method is used by Scrapy to create an instance of the class.
        It's called with the current project settings, and it loads the spiders
-       found in the modules of the :setting:`SPIDER_MODULES` setting.
+       found recursively in the modules of the :setting:`SPIDER_MODULES`
+       setting.
 
        :param settings: project settings
        :type settings: :class:`~scrapy.settings.Settings` instance
@@ -190,7 +196,7 @@ SpiderLoader API
     .. method:: load(spider_name)
 
        Get the Spider class with the given name. It'll look into the previously
-       loaded spiders for a spider class with name `spider_name` and will raise
+       loaded spiders for a spider class with name ``spider_name`` and will raise
        a KeyError if not found.
 
        :param spider_name: spider class name
@@ -206,7 +212,7 @@ SpiderLoader API
        match the request's url against the domains of the spiders.
 
        :param request: queried request
-       :type request: :class:`~scrapy.http.Request` instance
+       :type request: :class:`~scrapy.Request` instance
 
 .. _topics-api-signals:
 
@@ -281,5 +287,3 @@ class (which they all inherit from).
 
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
-
-.. _reactor: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

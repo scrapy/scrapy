@@ -1,23 +1,20 @@
-# -*- coding: utf-8 -*-
 from scrapy.spiders import CSVFeedSpider
-
-from $project_name.items import ${ProjectName}Item
 
 
 class $classname(CSVFeedSpider):
-    name = '$name'
-    allowed_domains = ['$domain']
-    start_urls = ['http://www.$domain/feed.csv']
-    # headers = ['id', 'name', 'description', 'image_link']
-    # delimiter = '\t'
+    name = "$name"
+    allowed_domains = ["$domain"]
+    start_urls = ["$url"]
+    #headers = ["id", "name", "description", "image_link"]
+    #delimiter = "\t"
 
     # Do any adaptations you need here
     #def adapt_response(self, response):
     #    return response
 
     def parse_row(self, response, row):
-        i = ${ProjectName}Item()
-        #i['url'] = row['url']
-        #i['name'] = row['name']
-        #i['description'] = row['description']
+        i = {}
+        #i["url"] = row["url"]
+        #i["name"] = row["name"]
+        #i["description"] = row["description"]
         return i

@@ -1,21 +1,21 @@
-# -*- coding: utf-8 -*-
-
-import sys
 import logging
+import sys
 import warnings
 from logging.config import dictConfig
+from typing import Tuple
 
-from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
+from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import overridden_settings, Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.settings import Settings
+from scrapy.utils.versions import scrapy_components_versions
 
 logger = logging.getLogger(__name__)
 
 
-def failure_to_exc_info(failure):
+def failure_to_exc_info(failure: Failure):
     """Extract exc_info from Failure instances"""
     if isinstance(failure, Failure):
         return (failure.type, failure.value, failure.getTracebackObject())
@@ -30,29 +30,35 @@ class TopLevelFormatter(logging.Filter):
 
     Since it can't be set for just one logger (it won't propagate for its
     children), it's going to be set in the root handler, with a parametrized
-    `loggers` list where it should act.
+    ``loggers`` list where it should act.
     """
 
     def __init__(self, loggers=None):
         self.loggers = loggers or []
 
     def filter(self, record):
-        if any(record.name.startswith(l + '.') for l in self.loggers):
-            record.name = record.name.split('.', 1)[0]
+        if any(record.name.startswith(logger + ".") for logger in self.loggers):
+            record.name = record.name.split(".", 1)[0]
         return True
 
 
 DEFAULT_LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'loggers': {
-        'scrapy': {
-            'level': 'DEBUG',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "loggers": {
+        "filelock": {
+            "level": "ERROR",
         },
-        'twisted': {
-            'level': 'ERROR',
+        "hpack": {
+            "level": "ERROR",
         },
-    }
+        "scrapy": {
+            "level": "DEBUG",
+        },
+        "twisted": {
+            "level": "ERROR",
+        },
+    },
 }
 
 
@@ -84,7 +90,7 @@ def configure_logging(settings=None, install_root_handler=True):
         # Route warnings through python logging
         logging.captureWarnings(True)
 
-    observer = twisted_log.PythonLoggingObserver('twisted')
+    observer = twisted_log.PythonLoggingObserver("twisted")
     observer.start()
 
     dictConfig(DEFAULT_LOGGING)
@@ -92,94 +98,135 @@ def configure_logging(settings=None, install_root_handler=True):
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
 
-    if settings.getbool('LOG_STDOUT'):
-        sys.stdout = StreamLogger(logging.getLogger('stdout'))
+    if settings.getbool("LOG_STDOUT"):
+        sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
     if install_root_handler:
-        logging.root.setLevel(logging.NOTSET)
-        handler = _get_handler(settings)
-        logging.root.addHandler(handler)
+        install_scrapy_root_handler(settings)
+
+
+def install_scrapy_root_handler(settings):
+    global _scrapy_root_handler
+
+    if (
+        _scrapy_root_handler is not None
+        and _scrapy_root_handler in logging.root.handlers
+    ):
+        logging.root.removeHandler(_scrapy_root_handler)
+    logging.root.setLevel(logging.NOTSET)
+    _scrapy_root_handler = _get_handler(settings)
+    logging.root.addHandler(_scrapy_root_handler)
+
+
+def get_scrapy_root_handler():
+    return _scrapy_root_handler
+
+
+_scrapy_root_handler = None
 
 
 def _get_handler(settings):
-    """ Return a log handler object according to settings """
-    filename = settings.get('LOG_FILE')
+    """Return a log handler object according to settings"""
+    filename = settings.get("LOG_FILE")
     if filename:
-        encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
-    elif settings.getbool('LOG_ENABLED'):
+        mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
+        encoding = settings.get("LOG_ENCODING")
+        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
+    elif settings.getbool("LOG_ENABLED"):
         handler = logging.StreamHandler()
     else:
         handler = logging.NullHandler()
 
     formatter = logging.Formatter(
-        fmt=settings.get('LOG_FORMAT'),
-        datefmt=settings.get('LOG_DATEFORMAT')
+        fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
     )
     handler.setFormatter(formatter)
-    handler.setLevel(settings.get('LOG_LEVEL'))
-    handler.addFilter(TopLevelFormatter(['scrapy']))
+    handler.setLevel(settings.get("LOG_LEVEL"))
+    if settings.getbool("LOG_SHORT_NAMES"):
+        handler.addFilter(TopLevelFormatter(["scrapy"]))
     return handler
 
 
-def log_scrapy_info(settings):
-    logger.info("Scrapy %(version)s started (bot: %(bot)s)",
-                {'version': scrapy.__version__, 'bot': settings['BOT_NAME']})
+def log_scrapy_info(settings: Settings) -> None:
+    logger.info(
+        "Scrapy %(version)s started (bot: %(bot)s)",
+        {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
+    )
+    versions = [
+        f"{name} {version}"
+        for name, version in scrapy_components_versions()
+        if name != "Scrapy"
+    ]
+    logger.info("Versions: %(versions)s", {"versions": ", ".join(versions)})
 
-    logger.info("Optional features available: %(features)s",
-                {'features': ", ".join(scrapy.optional_features)})
 
-    d = dict(overridden_settings(settings))
-    logger.info("Overridden settings: %(settings)r", {'settings': d})
+def log_reactor_info() -> None:
+    from twisted.internet import reactor
+
+    logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
+    from twisted.internet import asyncioreactor
+
+    if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
+        logger.debug(
+            "Using asyncio event loop: %s.%s",
+            reactor._asyncioEventloop.__module__,
+            reactor._asyncioEventloop.__class__.__name__,
+        )
 
 
-class StreamLogger(object):
+class StreamLogger:
     """Fake file-like stream object that redirects writes to a logger instance
 
     Taken from:
-        http://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
+        https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
     """
+
     def __init__(self, logger, log_level=logging.INFO):
         self.logger = logger
         self.log_level = log_level
-        self.linebuf = ''
+        self.linebuf = ""
 
     def write(self, buf):
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
+
+    def flush(self):
+        for h in self.logger.handlers:
+            h.flush()
 
 
 class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
 
     def __init__(self, crawler, *args, **kwargs):
-        super(LogCounterHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.crawler = crawler
 
     def emit(self, record):
-        sname = 'log_count/{}'.format(record.levelname)
+        sname = f"log_count/{record.levelname}"
         self.crawler.stats.inc_value(sname)
 
 
-def logformatter_adapter(logkws):
+def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls,
     handling backward compatibility as well.
     """
-    if not {'level', 'msg', 'args'} <= set(logkws):
-        warnings.warn('Missing keys in LogFormatter method',
-                      ScrapyDeprecationWarning)
+    if not {"level", "msg", "args"} <= set(logkws):
+        warnings.warn("Missing keys in LogFormatter method", ScrapyDeprecationWarning)
 
-    if 'format' in logkws:
-        warnings.warn('`format` key in LogFormatter methods has been '
-                      'deprecated, use `msg` instead',
-                      ScrapyDeprecationWarning)
+    if "format" in logkws:
+        warnings.warn(
+            "`format` key in LogFormatter methods has been "
+            "deprecated, use `msg` instead",
+            ScrapyDeprecationWarning,
+        )
 
-    level = logkws.get('level', logging.INFO)
-    message = logkws.get('format', logkws.get('msg'))
+    level = logkws.get("level", logging.INFO)
+    message = logkws.get("format", logkws.get("msg"))
     # NOTE: This also handles 'args' being an empty dict, that case doesn't
     # play well in logger.log calls
-    args = logkws if not logkws.get('args') else logkws['args']
+    args = logkws if not logkws.get("args") else logkws["args"]
 
     return (level, message, args)

@@ -1,10 +1,12 @@
-import os
-from six.moves import cPickle as pickle
+import pickle
+from pathlib import Path
 
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
 
-class SpiderState(object):
+
+class SpiderState:
     """Store and load spider state during a scraping job"""
 
     def __init__(self, jobdir=None):
@@ -12,23 +14,27 @@ class SpiderState(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        obj = cls(job_dir(crawler.settings))
+        jobdir = job_dir(crawler.settings)
+        if not jobdir:
+            raise NotConfigured
+
+        obj = cls(jobdir)
         crawler.signals.connect(obj.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
         return obj
 
     def spider_closed(self, spider):
         if self.jobdir:
-            with open(self.statefn, 'wb') as f:
-                pickle.dump(spider.state, f, protocol=2)
+            with Path(self.statefn).open("wb") as f:
+                pickle.dump(spider.state, f, protocol=4)
 
     def spider_opened(self, spider):
-        if self.jobdir and os.path.exists(self.statefn):
-            with open(self.statefn, 'rb') as f:
+        if self.jobdir and Path(self.statefn).exists():
+            with Path(self.statefn).open("rb") as f:
                 spider.state = pickle.load(f)
         else:
             spider.state = {}
 
     @property
-    def statefn(self):
-        return os.path.join(self.jobdir, 'spider.state')
+    def statefn(self) -> str:
+        return str(Path(self.jobdir, "spider.state"))

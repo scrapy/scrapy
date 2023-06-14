@@ -1,23 +1,18 @@
-import six
-import json
 import copy
-import warnings
-from collections import MutableMapping
+import json
+from collections.abc import MutableMapping
 from importlib import import_module
+from pprint import pformat
 
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
-
-from . import default_settings
-
+from scrapy.settings import default_settings
 
 SETTINGS_PRIORITIES = {
-    'default': 0,
-    'command': 10,
-    'addon': 15,
-    'project': 20,
-    'spider': 30,
-    'cmdline': 40,
+    "default": 0,
+    "command": 10,
+    "addon": 15,
+    "project": 20,
+    "spider": 30,
+    "cmdline": 40,
 }
 
 
@@ -27,13 +22,12 @@ def get_settings_priority(priority):
     :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its
     numerical value, or directly returns a given numerical priority.
     """
-    if isinstance(priority, six.string_types):
+    if isinstance(priority, str):
         return SETTINGS_PRIORITIES[priority]
-    else:
-        return priority
+    return priority
 
 
-class SettingsAttribute(object):
+class SettingsAttribute:
 
     """Class for storing data related to settings attributes.
 
@@ -56,11 +50,8 @@ class SettingsAttribute(object):
             self.value = value
             self.priority = priority
 
-    def __str__(self):
-        return "<SettingsAttribute value={self.value!r} " \
-               "priority={self.priority}>".format(self=self)
-
-    __repr__ = __str__
+    def __repr__(self):
+        return f"<SettingsAttribute value={self.value!r} priority={self.priority}>"
 
 
 class BaseSettings(MutableMapping):
@@ -85,10 +76,11 @@ class BaseSettings(MutableMapping):
     highest priority will be retrieved.
     """
 
-    def __init__(self, values=None, priority='project'):
+    def __init__(self, values=None, priority="project"):
         self.frozen = False
         self.attributes = {}
-        self.update(values, priority)
+        if values:
+            self.update(values, priority)
 
     def __getitem__(self, opt_name):
         if opt_name not in self:
@@ -103,10 +95,10 @@ class BaseSettings(MutableMapping):
         Get a setting value without affecting its original type.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         return self[name] if self[name] is not None else default
 
@@ -114,29 +106,41 @@ class BaseSettings(MutableMapping):
         """
         Get a setting value as a boolean.
 
-        ``1``, ``'1'``, and ``True`` return ``True``, while ``0``, ``'0'``,
-        ``False`` and ``None`` return ``False``.
+        ``1``, ``'1'``, `True`` and ``'True'`` return ``True``,
+        while ``0``, ``'0'``, ``False``, ``'False'`` and ``None`` return ``False``.
 
         For example, settings populated through environment variables set to
         ``'0'`` will return ``False`` when using this method.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
-        return bool(int(self.get(name, default)))
+        got = self.get(name, default)
+        try:
+            return bool(int(got))
+        except ValueError:
+            if got in ("True", "true"):
+                return True
+            if got in ("False", "false"):
+                return False
+            raise ValueError(
+                "Supported values for boolean settings "
+                "are 0/1, True/False, '0'/'1', "
+                "'True'/'False' and 'true'/'false'"
+            )
 
     def getint(self, name, default=0):
         """
         Get a setting value as an int.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         return int(self.get(name, default))
 
@@ -145,10 +149,10 @@ class BaseSettings(MutableMapping):
         Get a setting value as a float.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         return float(self.get(name, default))
 
@@ -161,14 +165,14 @@ class BaseSettings(MutableMapping):
         ``'one,two'`` will return a list ['one', 'two'] when using this method.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param default: the value to return if no setting is found
-        :type default: any
+        :type default: object
         """
         value = self.get(name, default or [])
-        if isinstance(value, six.string_types):
-            value = value.split(',')
+        if isinstance(value, str):
+            value = value.split(",")
         return list(value)
 
     def getdict(self, name, default=None):
@@ -182,25 +186,57 @@ class BaseSettings(MutableMapping):
         and losing all information about priority and mutability.
 
         :param name: the setting name
+        :type name: str
+
+        :param default: the value to return if no setting is found
+        :type default: object
+        """
+        value = self.get(name, default or {})
+        if isinstance(value, str):
+            value = json.loads(value)
+        return dict(value)
+
+    def getdictorlist(self, name, default=None):
+        """Get a setting value as either a :class:`dict` or a :class:`list`.
+
+        If the setting is already a dict or a list, a copy of it will be
+        returned.
+
+        If it is a string it will be evaluated as JSON, or as a comma-separated
+        list of strings as a fallback.
+
+        For example, settings populated from the command line will return:
+
+        -   ``{'key1': 'value1', 'key2': 'value2'}`` if set to
+            ``'{"key1": "value1", "key2": "value2"}'``
+
+        -   ``['one', 'two']`` if set to ``'["one", "two"]'`` or ``'one,two'``
+
+        :param name: the setting name
         :type name: string
 
         :param default: the value to return if no setting is found
         :type default: any
         """
-        value = self.get(name, default or {})
-        if isinstance(value, six.string_types):
-            value = json.loads(value)
-        return dict(value)
+        value = self.get(name, default)
+        if value is None:
+            return {}
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value.split(",")
+        return copy.deepcopy(value)
 
     def getwithbase(self, name):
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
 
         :param name: name of the dictionary-like setting
-        :type name: string
+        :type name: str
         """
         compbs = BaseSettings()
-        compbs.update(self[name + '_BASE'])
+        compbs.update(self[name + "_BASE"])
         compbs.update(self[name])
         return compbs
 
@@ -210,7 +246,7 @@ class BaseSettings(MutableMapping):
         the given ``name`` does not exist.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
         """
         if name not in self:
             return None
@@ -225,13 +261,12 @@ class BaseSettings(MutableMapping):
         """
         if len(self) > 0:
             return max(self.getpriority(name) for name in self)
-        else:
-            return get_settings_priority('default')
+        return get_settings_priority("default")
 
     def __setitem__(self, name, value):
         self.set(name, value)
 
-    def set(self, name, value, priority='project'):
+    def set(self, name, value, priority="project"):
         """
         Store a key/value attribute with a given priority.
 
@@ -240,14 +275,14 @@ class BaseSettings(MutableMapping):
         otherwise they won't have any effect.
 
         :param name: the setting name
-        :type name: string
+        :type name: str
 
         :param value: the value to associate with the setting
-        :type value: any
+        :type value: object
 
         :param priority: the priority of the setting. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
         priority = get_settings_priority(priority)
@@ -259,10 +294,17 @@ class BaseSettings(MutableMapping):
         else:
             self.attributes[name].set(value, priority)
 
-    def setdict(self, values, priority='project'):
+    def setdefault(self, name, default=None, priority="project"):
+        if name not in self:
+            self.set(name, default, priority)
+            return default
+
+        return self.attributes[name].value
+
+    def setdict(self, values, priority="project"):
         self.update(values, priority)
 
-    def setmodule(self, module, priority='project'):
+    def setmodule(self, module, priority="project"):
         """
         Store settings from a module with a given priority.
 
@@ -271,20 +313,20 @@ class BaseSettings(MutableMapping):
         uppercase variable of ``module`` with the provided ``priority``.
 
         :param module: the module or the path of the module
-        :type module: module object or string
+        :type module: types.ModuleType or str
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
-        if isinstance(module, six.string_types):
+        if isinstance(module, str):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
 
-    def update(self, values, priority='project'):
+    def update(self, values, priority="project"):
         """
         Store key/value pairs with a given priority.
 
@@ -304,20 +346,20 @@ class BaseSettings(MutableMapping):
 
         :param priority: the priority of the settings. Should be a key of
             :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
-        :type priority: string or int
+        :type priority: str or int
         """
         self._assert_mutability()
-        if isinstance(values, six.string_types):
+        if isinstance(values, str):
             values = json.loads(values)
         if values is not None:
             if isinstance(values, BaseSettings):
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, values.getpriority(name))
             else:
-                for name, value in six.iteritems(values):
+                for name, value in values.items():
                     self.set(name, value, priority)
 
-    def delete(self, name, priority='project'):
+    def delete(self, name, priority="project"):
         self._assert_mutability()
         priority = get_settings_priority(priority)
         if priority >= self.getpriority(name):
@@ -369,59 +411,40 @@ class BaseSettings(MutableMapping):
     def __len__(self):
         return len(self.attributes)
 
-    def __str__(self):
-        return str(self.attributes)
+    def _to_dict(self):
+        return {
+            self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
+            for k, v in self.items()
+        }
 
-    def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.attributes)
+    def _get_key(self, key_value):
+        return (
+            key_value
+            if isinstance(key_value, (bool, float, int, str, type(None)))
+            else str(key_value)
+        )
 
-    @property
-    def overrides(self):
-        warnings.warn("`Settings.overrides` attribute is deprecated and won't "
-                      "be supported in Scrapy 0.26, use "
-                      "`Settings.set(name, value, priority='cmdline')` instead",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        try:
-            o = self._overrides
-        except AttributeError:
-            self._overrides = o = _DictProxy(self, 'cmdline')
-        return o
+    def copy_to_dict(self):
+        """
+        Make a copy of current settings and convert to a dict.
 
-    @property
-    def defaults(self):
-        warnings.warn("`Settings.defaults` attribute is deprecated and won't "
-                      "be supported in Scrapy 0.26, use "
-                      "`Settings.set(name, value, priority='default')` instead",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        try:
-            o = self._defaults
-        except AttributeError:
-            self._defaults = o = _DictProxy(self, 'default')
-        return o
+        This method returns a new dict populated with the same values
+        and their priorities as the current settings.
 
+        Modifications to the returned dict won't be reflected on the original
+        settings.
 
-class _DictProxy(MutableMapping):
+        This method can be useful for example for printing settings
+        in Scrapy shell.
+        """
+        settings = self.copy()
+        return settings._to_dict()
 
-    def __init__(self, settings, priority):
-        self.o = {}
-        self.settings = settings
-        self.priority = priority
-
-    def __len__(self):
-        return len(self.o)
-
-    def __getitem__(self, k):
-        return self.o[k]
-
-    def __setitem__(self, k, v):
-        self.settings.set(k, v, priority=self.priority)
-        self.o[k] = v
-
-    def __delitem__(self, k):
-        del self.o[k]
-
-    def __iter__(self, k, v):
-        return iter(self.o)
+    def _repr_pretty_(self, p, cycle):
+        if cycle:
+            p.text(repr(self))
+        else:
+            p.text(pformat(self.copy_to_dict()))
 
 
 class Settings(BaseSettings):
@@ -435,41 +458,18 @@ class Settings(BaseSettings):
     described on :ref:`topics-settings-ref` already populated.
     """
 
-    def __init__(self, values=None, priority='project'):
+    def __init__(self, values=None, priority="project"):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
-        super(Settings, self).__init__()
-        self.setmodule(default_settings, 'default')
+        super().__init__()
+        self.setmodule(default_settings, "default")
         # Promote default dictionaries to BaseSettings instances for per-key
         # priorities
-        for name, val in six.iteritems(self):
+        for name, val in self.items():
             if isinstance(val, dict):
-                self.set(name, BaseSettings(val, 'default'), 'default')
+                self.set(name, BaseSettings(val, "default"), "default")
         self.update(values, priority)
-
-
-class CrawlerSettings(Settings):
-
-    def __init__(self, settings_module=None, **kw):
-        self.settings_module = settings_module
-        Settings.__init__(self, **kw)
-
-    def __getitem__(self, opt_name):
-        if opt_name in self.overrides:
-            return self.overrides[opt_name]
-        if self.settings_module and hasattr(self.settings_module, opt_name):
-            return getattr(self.settings_module, opt_name)
-        if opt_name in self.defaults:
-            return self.defaults[opt_name]
-        return Settings.__getitem__(self, opt_name)
-
-    def __str__(self):
-        return "<CrawlerSettings module=%r>" % self.settings_module
-
-CrawlerSettings = create_deprecated_class(
-    'CrawlerSettings', CrawlerSettings,
-    new_class_path='scrapy.settings.Settings')
 
 
 def iter_default_settings():

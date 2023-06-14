@@ -12,6 +12,17 @@ dist
 .idea
 htmlcov/
 .coverage
+.pytest_cache/
+.coverage.*
+coverage.*
+test-output.*
+.cache/
+.mypy_cache/
+/tests/keys/localhost.crt
+/tests/keys/localhost.key
 
 # Windows
 Thumbs.db
+
+# OSX miscellaneous
+.DS_Store

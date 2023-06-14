@@ -4,7 +4,7 @@
 Scrapy at a glance
 ==================
 
-Scrapy is an application framework for crawling web sites and extracting
+Scrapy (/ˈskreɪpaɪ/) is an application framework for crawling web sites and extracting
 structured data which can be used for a wide range of useful applications, like
 data mining, information processing or historical archival.
 
@@ -19,74 +19,58 @@ Walk-through of an example spider
 In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
-So, here's the code for a spider that follows the links to the top
-voted questions on StackOverflow and scrapes some data from each page::
+Here's the code for a spider that scrapes famous quotes from website
+https://quotes.toscrape.com, following the pagination:
+
+.. code-block:: python
 
     import scrapy
 
 
-    class StackOverflowSpider(scrapy.Spider):
-        name = 'stackoverflow'
-        start_urls = ['http://stackoverflow.com/questions?sort=votes']
+    class QuotesSpider(scrapy.Spider):
+        name = "quotes"
+        start_urls = [
+            "https://quotes.toscrape.com/tag/humor/",
+        ]
 
         def parse(self, response):
-            for href in response.css('.question-summary h3 a::attr(href)'):
-                full_url = response.urljoin(href.extract())
-                yield scrapy.Request(full_url, callback=self.parse_question)
+            for quote in response.css("div.quote"):
+                yield {
+                    "author": quote.xpath("span/small/text()").get(),
+                    "text": quote.css("span.text::text").get(),
+                }
 
-        def parse_question(self, response):
-            yield {
-                'title': response.css('h1 a::text').extract()[0],
-                'votes': response.css('.question .vote-count-post::text').extract()[0],
-                'body': response.css('.question .post-text').extract()[0],
-                'tags': response.css('.question .post-tag::text').extract(),
-                'link': response.url,
-            }
+            next_page = response.css('li.next a::attr("href")').get()
+            if next_page is not None:
+                yield response.follow(next_page, self.parse)
 
-
-Put this in a file, name it to something like ``stackoverflow_spider.py``
+Put this in a text file, name it to something like ``quotes_spider.py``
 and run the spider using the :command:`runspider` command::
 
-    scrapy runspider stackoverflow_spider.py -o top-stackoverflow-questions.json
+    scrapy runspider quotes_spider.py -o quotes.jsonl
 
+When this finishes you will have in the ``quotes.jsonl`` file a list of the
+quotes in JSON Lines format, containing text and author, looking like this::
 
-When this finishes you will have in the ``top-stackoverflow-questions.json`` file
-a list of the most upvoted questions in StackOverflow in JSON format, containing the
-title, link, number of upvotes, a list of the tags and the question content in HTML,
-looking like this (reformatted for easier reading)::
-
-    [{
-        "body": "... LONG HTML HERE ...",
-        "link": "http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array",
-        "tags": ["java", "c++", "performance", "optimization"],
-        "title": "Why is processing a sorted array faster than an unsorted array?",
-        "votes": "9924"
-    },
-    {
-        "body": "... LONG HTML HERE ...",
-        "link": "http://stackoverflow.com/questions/1260748/how-do-i-remove-a-git-submodule",
-        "tags": ["git", "git-submodules"],
-        "title": "How do I remove a Git submodule?",
-        "votes": "1764"
-    },
-    ...]
-
+    {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}
+    {"author": "Steve Martin", "text": "\u201cA day without sunshine is like, you know, night.\u201d"}
+    {"author": "Garrison Keillor", "text": "\u201cAnyone who thinks sitting in church can make you a Christian must also think that sitting in a garage can make you a car.\u201d"}
+    ...
 
 
 What just happened?
 -------------------
 
-When you ran the command ``scrapy runspider somefile.py``, Scrapy looked for a
+When you ran the command ``scrapy runspider quotes_spider.py``, Scrapy looked for a
 Spider definition inside it and ran it through its crawler engine.
 
 The crawl started by making requests to the URLs defined in the ``start_urls``
-attribute (in this case, only the URL for StackOverflow top questions page)
+attribute (in this case, only the URL for quotes in *humor* category)
 and called the default callback method ``parse``, passing the response object as
-an argument. In the ``parse`` callback we extract the links to the
-question pages using a CSS Selector with a custom extension that allows to get
-the value for an attribute. Then we yield a few more requests to be sent,
-registering the method ``parse_question`` as the callback to be called for each
-of them as they finish.
+an argument. In the ``parse`` callback, we loop through the quote elements
+using a CSS Selector, yield a Python dict with the extracted quote text and author,
+look for a link to the next page and schedule another request using the same
+``parse`` method as callback.
 
 Here you notice one of the main advantages about Scrapy: requests are
 :ref:`scheduled and processed asynchronously <topics-architecture>`.  This
@@ -102,10 +86,6 @@ control over the politeness of the crawl through :ref:`a few settings
 each request, limiting amount of concurrent requests per domain or per IP, and
 even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
 to figure out these automatically.
-
-Finally, the ``parse_question`` callback scrapes the question data for each
-page yielding a dict, which Scrapy then collects and writes to a JSON file as
-requested in the command line.
 
 .. note::
 
@@ -145,12 +125,13 @@ scraping easy and efficient, such as:
   :ref:`pipelines <topics-item-pipeline>`).
 
 * Wide range of built-in extensions and middlewares for handling:
-    * cookies and session handling
-    * HTTP features like compression, authentication, caching
-    * user-agent spoofing
-    * robots.txt
-    * crawl depth restriction
-    * and more
+
+  - cookies and session handling
+  - HTTP features like compression, authentication, caching
+  - user-agent spoofing
+  - robots.txt
+  - crawl depth restriction
+  - and more
 
 * A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python
   console running inside your Scrapy process, to introspect and debug your
@@ -165,12 +146,12 @@ What's next?
 ============
 
 The next steps for you are to :ref:`install Scrapy <intro-install>`,
-:ref:`follow through the tutorial <intro-tutorial>` to learn how to organize
-your code in Scrapy projects and `join the community`_. Thanks for your
+:ref:`follow through the tutorial <intro-tutorial>` to learn how to create
+a full-blown Scrapy project and `join the community`_. Thanks for your
 interest!
 
-.. _join the community: http://scrapy.org/community/
-.. _web scraping: http://en.wikipedia.org/wiki/Web_scraping
-.. _Amazon Associates Web Services: http://aws.amazon.com/associates/
-.. _Amazon S3: http://aws.amazon.com/s3/
-.. _Sitemaps: http://www.sitemaps.org
+.. _join the community: https://scrapy.org/community/
+.. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
+.. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
+.. _Amazon S3: https://aws.amazon.com/s3/
+.. _Sitemaps: https://www.sitemaps.org/index.html
