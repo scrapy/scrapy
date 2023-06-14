@@ -38,7 +38,7 @@ singletons members of that object, as explained below:
   ``scrapy.core.manager.ExecutionManager``) - instantiated with a ``Settings``
   object
 
-   - **crawler.settings**: ``scrapy.conf.Settings`` instance (passed in the constructor)
+   - **crawler.settings**: ``scrapy.conf.Settings`` instance (passed in the ``__init__`` method)
    - **crawler.extensions**: ``scrapy.extension.ExtensionManager`` instance
    - **crawler.engine**: ``scrapy.core.engine.ExecutionEngine`` instance
       - ``crawler.engine.scheduler``
@@ -55,7 +55,7 @@ singletons members of that object, as explained below:
      ``STATS_CLASS`` setting)
    - **crawler.log**: Logger class with methods replacing the current
      ``scrapy.log`` functions. Logging would be started (if enabled) on
-     ``Crawler`` constructor, so no log starting functions are required.
+     ``Crawler`` instantiation, so no log starting functions are required.
 
       - ``crawler.log.msg``
    - **crawler.signals**: signal handling
@@ -69,35 +69,37 @@ Required code changes after singletons removal
 ==============================================
 
 All components (extensions, middlewares, etc) will receive this ``Crawler``
-object in their constructors, and this will be the only mechanism for accessing
+object in their ``__init__`` methods, and this will be the only mechanism for accessing
 any other components (as opposed to importing each singleton from their
 respective module). This will also serve to stabilize the core API, something
 which we haven't documented so far (partly because of this).
 
-So, for a typical middleware constructor code, instead of this:
+So, for a typical middleware ``__init__`` method code, instead of this:
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.core.exceptions import NotConfigured
    from scrapy.conf import settings
 
+
    class SomeMiddleware(object):
-      def __init__(self):
-         if not settings.getbool('SOMEMIDDLEWARE_ENABLED'):
-             raise NotConfigured
+       def __init__(self):
+           if not settings.getbool("SOMEMIDDLEWARE_ENABLED"):
+               raise NotConfigured
 
 We'd write this:
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.core.exceptions import NotConfigured
 
+
    class SomeMiddleware(object):
-      def __init__(self, crawler):
-         if not crawler.settings.getbool('SOMEMIDDLEWARE_ENABLED'):
-             raise NotConfigured
+       def __init__(self, crawler):
+           if not crawler.settings.getbool("SOMEMIDDLEWARE_ENABLED"):
+               raise NotConfigured
 
 Running from command line
 =========================
@@ -125,13 +127,13 @@ Open issues to resolve
 
 - Should we pass ``Settings`` object to ``ScrapyCommand.add_options()``?
 - How should spiders access settings?
-   - Option 1. Pass ``Crawler`` object to spider constructors too
+   - Option 1. Pass ``Crawler`` object to spider ``__init__`` methods too
       - pro: one way to access all components (settings and signals being the
         most relevant to spiders)
       - con?: spider code can access (and control) any crawler component -
         since we don't want to support spiders messing with the crawler (write
         an extension or spider middleware if you need that)
-   - Option 2. Pass ``Settings`` object to spider constructors, which would
+   - Option 2. Pass ``Settings`` object to spider ``__init__`` methods, which would
      then be accessed through ``self.settings``, like logging which is accessed
      through ``self.log``
 

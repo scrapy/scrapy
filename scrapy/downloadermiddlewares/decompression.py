@@ -4,33 +4,36 @@ and extract the potentially compressed responses that may arrive.
 
 import bz2
 import gzip
-import zipfile
-import tarfile
 import logging
+import tarfile
+import zipfile
+from io import BytesIO
 from tempfile import mktemp
+from warnings import warn
 
-import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.responsetypes import responsetypes
+
+warn(
+    "scrapy.downloadermiddlewares.decompression is deprecated",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
+
 
 logger = logging.getLogger(__name__)
 
 
-class DecompressionMiddleware(object):
-    """ This middleware tries to recognise and extract the possibly compressed
-    responses that may arrive. """
+class DecompressionMiddleware:
+    """This middleware tries to recognise and extract the possibly compressed
+    responses that may arrive."""
 
     def __init__(self):
         self._formats = {
-            'tar': self._is_tar,
-            'zip': self._is_zip,
-            'gz': self._is_gzip,
-            'bz2': self._is_bzip2
+            "tar": self._is_tar,
+            "zip": self._is_zip,
+            "gz": self._is_gzip,
+            "bz2": self._is_bzip2,
         }
 
     def _is_tar(self, response):
@@ -48,7 +51,7 @@ class DecompressionMiddleware(object):
         archive = BytesIO(response.body)
         try:
             zip_file = zipfile.ZipFile(archive)
-        except zipfile.BadZipfile:
+        except zipfile.BadZipFile:
             return
 
         namelist = zip_file.namelist()
@@ -79,10 +82,13 @@ class DecompressionMiddleware(object):
         if not response.body:
             return response
 
-        for fmt, func in six.iteritems(self._formats):
+        for fmt, func in self._formats.items():
             new_response = func(response)
             if new_response:
-                logger.debug('Decompressed response with format: %(responsefmt)s',
-                             {'responsefmt': fmt}, extra={'spider': spider})
+                logger.debug(
+                    "Decompressed response with format: %(responsefmt)s",
+                    {"responsefmt": fmt},
+                    extra={"spider": spider},
+                )
                 return new_response
         return response

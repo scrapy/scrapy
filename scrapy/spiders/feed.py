@@ -4,11 +4,11 @@ for scraping from an XML feed.
 
 See documentation in docs/topics/spiders.rst
 """
-from scrapy.spiders import Spider
-from scrapy.utils.iterators import xmliter, csviter
-from scrapy.utils.spider import iterate_spider_output
-from scrapy.selector import Selector
 from scrapy.exceptions import NotConfigured, NotSupported
+from scrapy.selector import Selector
+from scrapy.spiders import Spider
+from scrapy.utils.iterators import csviter, xmliter
+from scrapy.utils.spider import iterate_spider_output
 
 
 class XMLFeedSpider(Spider):
@@ -21,8 +21,8 @@ class XMLFeedSpider(Spider):
     use iternodes, since it's a faster and cleaner.
     """
 
-    iterator = 'iternodes'
-    itertag = 'item'
+    iterator = "iternodes"
+    itertag = "item"
     namespaces = ()
 
     def process_results(self, response, results):
@@ -31,7 +31,7 @@ class XMLFeedSpider(Spider):
         processing required before returning the results to the framework core,
         for example setting the item GUIDs. It receives a list of results and
         the response which originated that results. It must return a list of
-        results (Items or Requests).
+        results (items or requests).
         """
         return results
 
@@ -43,8 +43,8 @@ class XMLFeedSpider(Spider):
         return response
 
     def parse_node(self, response, selector):
-        """This method must be overriden with your custom spider functionality"""
-        if hasattr(self, 'parse_item'):  # backward compatibility
+        """This method must be overridden with your custom spider functionality"""
+        if hasattr(self, "parse_item"):  # backward compatibility
             return self.parse_item(response, selector)
         raise NotImplementedError
 
@@ -52,7 +52,7 @@ class XMLFeedSpider(Spider):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an Selector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a BaseItem, a Request, or a list
+        This method must return either an item, a request, or a list
         containing any of them.
         """
 
@@ -61,23 +61,25 @@ class XMLFeedSpider(Spider):
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
-        if not hasattr(self, 'parse_node'):
-            raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
+    def _parse(self, response, **kwargs):
+        if not hasattr(self, "parse_node"):
+            raise NotConfigured(
+                "You must define parse_node method in order to scrape this XML feed"
+            )
 
         response = self.adapt_response(response)
-        if self.iterator == 'iternodes':
+        if self.iterator == "iternodes":
             nodes = self._iternodes(response)
-        elif self.iterator == 'xml':
-            selector = Selector(response, type='xml')
+        elif self.iterator == "xml":
+            selector = Selector(response, type="xml")
             self._register_namespaces(selector)
-            nodes = selector.xpath('//%s' % self.itertag)
-        elif self.iterator == 'html':
-            selector = Selector(response, type='html')
+            nodes = selector.xpath(f"//{self.itertag}")
+        elif self.iterator == "html":
+            selector = Selector(response, type="html")
             self._register_namespaces(selector)
-            nodes = selector.xpath('//%s' % self.itertag)
+            nodes = selector.xpath(f"//{self.itertag}")
         else:
-            raise NotSupported('Unsupported node iterator')
+            raise NotSupported("Unsupported node iterator")
 
         return self.parse_nodes(response, nodes)
 
@@ -87,7 +89,7 @@ class XMLFeedSpider(Spider):
             yield node
 
     def _register_namespaces(self, selector):
-        for (prefix, uri) in self.namespaces:
+        for prefix, uri in self.namespaces:
             selector.register_namespace(prefix, uri)
 
 
@@ -100,8 +102,12 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter = None # When this is None, python's csv module's default delimiter is used
-    quotechar = None # When this is None, python's csv module's default quotechar is used
+    delimiter = (
+        None  # When this is None, python's csv module's default delimiter is used
+    )
+    quotechar = (
+        None  # When this is None, python's csv module's default quotechar is used
+    )
     headers = None
 
     def process_results(self, response, results):
@@ -113,7 +119,7 @@ class CSVFeedSpider(Spider):
         return response
 
     def parse_row(self, response, row):
-        """This method must be overriden with your custom spider functionality"""
+        """This method must be overridden with your custom spider functionality"""
         raise NotImplementedError
 
     def parse_rows(self, response):
@@ -123,14 +129,17 @@ class CSVFeedSpider(Spider):
         process_results methods for pre and post-processing purposes.
         """
 
-        for row in csviter(response, self.delimiter, self.headers, self.quotechar):
+        for row in csviter(
+            response, self.delimiter, self.headers, quotechar=self.quotechar
+        ):
             ret = iterate_spider_output(self.parse_row(response, row))
             for result_item in self.process_results(response, ret):
                 yield result_item
 
-    def parse(self, response):
-        if not hasattr(self, 'parse_row'):
-            raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
+    def _parse(self, response, **kwargs):
+        if not hasattr(self, "parse_row"):
+            raise NotConfigured(
+                "You must define parse_row method in order to scrape this CSV feed"
+            )
         response = self.adapt_response(response)
         return self.parse_rows(response)
-

@@ -8,7 +8,7 @@ PYTHON       = python
 SPHINXOPTS   =
 PAPER        =
 SOURCES      =
-SHELL        = /bin/bash
+SHELL        = /usr/bin/env bash
 
 ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees \
                 -D latex_elements.papersize=$(PAPER) \
@@ -82,9 +82,12 @@ pydoc-topics: build
 	@echo "Building finished; now copy build/pydoc-topics/pydoc_topics.py " \
 	      "into the Lib/ directory"
 
+coverage: BUILDER = coverage
+coverage: build
+
 htmlview: html
-	 $(PYTHON) -c "import webbrowser, os; webbrowser.open('file://' + \
-	 os.path.realpath('build/html/index.html'))"
+	 $(PYTHON) -c "import webbrowser; from pathlib import Path; \
+	 webbrowser.open(Path('build/html/index.html').resolve().as_uri())"
 
 clean:
 	-rm -rf build/*

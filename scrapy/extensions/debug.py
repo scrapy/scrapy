@@ -4,11 +4,11 @@ Extensions for debugging Scrapy
 See documentation in docs/topics/extensions.rst
 """
 
-import sys
-import signal
 import logging
-import traceback
+import signal
+import sys
 import threading
+import traceback
 from pdb import Pdb
 
 from scrapy.utils.engine import format_engine_status
@@ -17,8 +17,7 @@ from scrapy.utils.trackref import format_live_refs
 logger = logging.getLogger(__name__)
 
 
-class StackTraceDump(object):
-
+class StackTraceDump:
     def __init__(self, crawler=None):
         self.crawler = crawler
         try:
@@ -34,25 +33,28 @@ class StackTraceDump(object):
 
     def dump_stacktrace(self, signum, frame):
         log_args = {
-            'stackdumps': self._thread_stacks(),
-            'enginestatus': format_engine_status(self.crawler.engine),
-            'liverefs': format_live_refs(),
+            "stackdumps": self._thread_stacks(),
+            "enginestatus": format_engine_status(self.crawler.engine),
+            "liverefs": format_live_refs(),
         }
-        logger.info("Dumping stack trace and engine status\n"
-                    "%(enginestatus)s\n%(liverefs)s\n%(stackdumps)s",
-                    log_args, extra={'crawler': self.crawler})
+        logger.info(
+            "Dumping stack trace and engine status\n"
+            "%(enginestatus)s\n%(liverefs)s\n%(stackdumps)s",
+            log_args,
+            extra={"crawler": self.crawler},
+        )
 
     def _thread_stacks(self):
         id2name = dict((th.ident, th.name) for th in threading.enumerate())
-        dumps = ''
+        dumps = ""
         for id_, frame in sys._current_frames().items():
-            name = id2name.get(id_, '')
-            dump = ''.join(traceback.format_stack(frame))
-            dumps += "# Thread: {0}({1})\n{2}\n".format(name, id_, dump)
+            name = id2name.get(id_, "")
+            dump = "".join(traceback.format_stack(frame))
+            dumps += f"# Thread: {name}({id_})\n{dump}\n"
         return dumps
 
 
-class Debugger(object):
+class Debugger:
     def __init__(self):
         try:
             signal.signal(signal.SIGUSR2, self._enter_debugger)
