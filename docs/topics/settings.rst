@@ -206,10 +206,10 @@ component must be enabled in order for the setting to have any effect.
 ADDONS
 ------
 
-Default: ``()``
+Default: ``{}``
 
-A tuple containing paths to the add-ons enabled in your project. For more
-information, see :ref:`topics-addons`.
+A dict containing paths to the add-ons enabled in your project and their
+priorities. For more information, see :ref:`topics-addons`.
 
 .. setting:: AWS_ACCESS_KEY_ID
 
