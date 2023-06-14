@@ -1,11 +1,13 @@
 import argparse
 import json
+import os
 import random
 import sys
 from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
+from typing import Dict
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
@@ -20,7 +22,6 @@ from twisted.web.static import File
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.test import get_testenv
 
 
 def getarg(request, name, default=None, type=None):
@@ -30,6 +31,16 @@ def getarg(request, name, default=None, type=None):
             value = type(value)
         return value
     return default
+
+
+def get_mockserver_env() -> Dict[str, str]:
+    """Return a OS environment dict suitable to run mockserver processes."""
+
+    tests_path = Path(__file__).parent.parent
+    pythonpath = str(tests_path) + os.pathsep + os.environ.get("PYTHONPATH", "")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = pythonpath
+    return env
 
 
 # most of the following resources are copied from twisted.web.test.test_webclient
@@ -264,7 +275,7 @@ class MockServer:
         self.proc = Popen(
             [sys.executable, "-u", "-m", "tests.mockserver", "-t", "http"],
             stdout=PIPE,
-            env=get_testenv(),
+            env=get_mockserver_env(),
         )
         http_address = self.proc.stdout.readline().strip().decode("ascii")
         https_address = self.proc.stdout.readline().strip().decode("ascii")
@@ -308,7 +319,7 @@ class MockDNSServer:
         self.proc = Popen(
             [sys.executable, "-u", "-m", "tests.mockserver", "-t", "dns"],
             stdout=PIPE,
-            env=get_testenv(),
+            env=get_mockserver_env(),
         )
         self.host = "127.0.0.1"
         self.port = int(
@@ -331,7 +342,7 @@ class MockFTPServer:
         self.proc = Popen(
             [sys.executable, "-u", "-m", "tests.ftpserver", "-d", str(self.path)],
             stderr=PIPE,
-            env=get_testenv(),
+            env=get_mockserver_env(),
         )
         for line in self.proc.stderr:
             if b"starting FTP server" in line:
