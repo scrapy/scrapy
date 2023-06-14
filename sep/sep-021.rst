@@ -322,28 +322,3 @@ with ``scrapy.addons.`` prepended (i.e. pointing to Scrapy's ``addons``
 submodule). If the object found has an ``_addon`` attribute, that attribute
 will be treated as the found add-on. This allows, for example, to change the
 add-on based on the Python version.
-
-Updating existing extensions
-----------------------------
-
-An ``Addon`` class is introduced that add-on developers may or may not subclass
-depending on how much of the 'default functionality' they want. Naturally, it
-does not provide ``NAME`` and ``VERSION``. Its default ``update_settings()``
-exposes the add-on configuration into the global settings namespace with an
-appropriate name, e.g. this section from ``scrapy.cfg``::
-
-    [httpcache]
-    dir = /some/dir
-
-would expose ``HTTPCACHE_DIR``.
-
-Add-on modules will be written for all built-in extensions and placed in
-``scrapy.addons``. For many default Scrapy components, it will be sufficient to
-create a subclass of ``Addon`` with minor or no method modifications. The
-component code remains where it is (i.e. in ``scrapy.pipelines``, etc.).
-
-Later, the global settings namespace could be cleaned up in a backwards
--incompatible fashion by deprecating support for the global setting names, e.g.
-``HTTPCACHE_DIR``, and instead instantiate the components with the add-on
-configuration in ``update_settings()``.
-

@@ -456,6 +456,3 @@ class AddonManager(Mapping):
         """
         for name in self:
             self._call_addon(name, "check_configuration", crawler)
-
-
-from scrapy.addons.builtins import *  # noqa
