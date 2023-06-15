@@ -30,9 +30,7 @@ class Addon(object):
 
     component_type = None
     """Component setting into which to export via :meth:`export_component`. Can
-    be any of the dictionary-like component setting names (e.g.
-    ``DOWNLOADER_MIDDLEWARES``) or any of their abbreviations in
-    :attr:`~scrapy.addons.COMPONENT_TYPE_ABBR`. If ``None``,
+    be any of the dictionary-like component setting names. If ``None``,
     :meth:`export_component` will do nothing.
     """
 
@@ -50,9 +48,8 @@ class Addon(object):
     component = None
     """Component to be inserted via :meth:`export_component`. This can be
     anything that can be used in the dictionary-like component settings, i.e.
-    a class path, a class, or an instance. If ``None``, it is assumed that the
-    add-on itself is also provides the component interface, and ``self`` will be
-    used.
+    a class path or a class. If ``None``, it is assumed that the add-on itself
+    also provides the component interface, and ``self`` will be used.
     """
 
     settings_prefix = None
@@ -241,13 +238,13 @@ class AddonManager(Mapping):
     def get_addon(path):
         """Get an add-on object by its Python or file path.
 
-        ``path`` is assumed to be either a Python or a file path of a Scrapy
-        add-on. If the object or module pointed to by ``path`` has an attribute
-        named ``_addon`` that attribute will be assumed to be the add-on.
-        :meth:`get_addon` will keep following ``_addon`` attributes until it
-        finds an object that does not have an attribute named ``_addon``.
+        ``path`` is assumed to be an import path of an add-on. If the object or
+        module pointed to by ``path`` has an attribute named ``_addon`` that
+        attribute will be assumed to be the add-on. :meth:`get_addon` will keep
+        following ``_addon`` attributes until it finds an object that does not
+        have an attribute named ``_addon``.
 
-        :param path: Python or file path to an add-on
+        :param path: Import path of an add-on
         :type path: ``str``
         """
         if isinstance(path, str):
@@ -366,7 +363,7 @@ class AddonManager(Mapping):
         elif addon in self._disable_on_add:
             self._disable_on_add.remove(addon)
         else:
-            raise ValueError("Add-ons need to be added before they can be " "enabled")
+            raise ValueError("Add-ons need to be added before they can be enabled")
 
     @property
     def disabled(self):
