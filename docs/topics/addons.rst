@@ -17,16 +17,7 @@ Activating and configuring add-ons
 Add-ons and their configuration live in Scrapy's
 :class:`~scrapy.addons.AddonManager`. During Scrapy's start-up process, and
 only then, the add-on manager will read a list of enabled add-ons and their
-configurations from your settings. There are two places where you can provide
-the paths to add-ons you want to enable:
-
-* the ``ADDONS`` setting, and
-* the ``scrapy.cfg`` file.
-
-As Scrapy settings can be modified from many places, e.g. in a project's
-``settings.py``, in a Spider's ``custom_settings`` attribute, or from the
-command line, using the ``ADDONS`` setting is the preferred way to
-manage add-ons.
+configurations from your ``ADDONS`` setting.
 
 The ``ADDONS`` setting a tuple in which every item is a path to an
 add-on. The path can be both a Python or a file path. While more precise, it is
@@ -54,30 +45,11 @@ case with one requiring no configuration) are enabled/configured in a project's
         'some_config': True,
     }
 
-It is also possible to manage add-ons from ``scrapy.cfg``. While the syntax is
-a little friendlier, be aware that this file, and therefore the configuration in
-it, is not bound to a particular Scrapy project. While this should not pose a
-problem when you use the project on your development machine only, a common
-stumbling block is that ``scrapy.cfg`` is not deployed via ``scrapyd-deploy``.
-
-In ``scrapy.cfg``, section names, prepended with ``addon:``, replace the
-dictionary keys. I.e., the configuration from above would look like this:
-
-.. code-block:: cfg
-
-    [addon:httpcache]
-    expiration_secs = 60
-    ignore_http_codes = 404,405
-
-    [addon:path.to.some.addon]
-    some_config = true
-
-
 Enabling and configuring add-ons within Python code
 ---------------------------------------------------
 
 The :class:`~scrapy.addons.AddonManager` will only read from Scrapy's settings
-and from ``scrapy.cfg`` *at the beginning* of Scrapy's start-up process.
+*at the beginning* of Scrapy's start-up process.
 Afterwards, i.e. as soon as the :class:`~scrapy.addons.AddonManager` is
 populated, changing the ``ADDONS`` setting or any of the add-on
 configuration dictionary settings will have no effect.

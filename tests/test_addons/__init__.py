@@ -1,7 +1,6 @@
 import itertools
 import unittest
 import warnings
-from collections import OrderedDict
 from unittest import mock
 
 from zope.interface import directlyProvides
@@ -178,24 +177,7 @@ class AddonManagerTest(unittest.TestCase):
         x._addon._addon = addons.GoodAddon("inner")
         self.assertIs(self.manager.get_addon(x), x._addon._addon)
 
-    def test_load_dict_load_settings(self):
-        def _test_load_method(func, *args, **kwargs):
-            manager = AddonManager()
-            getattr(manager, func)(*args, **kwargs)
-            self.assertCountEqual(manager, ["GoodAddon", "AddonModule"])
-            self.assertIsInstance(manager["GoodAddon"], addons.GoodAddon)
-            self.assertCountEqual(manager.configs["GoodAddon"], ["key"])
-            self.assertEqual(manager.configs["GoodAddon"]["key"], "val2")
-            self.assertEqual(manager["AddonModule"], addonmod)
-            self.assertIn("key", manager.configs["AddonModule"])
-            self.assertEqual(manager.configs["AddonModule"]["key"], "val1")
-
-        addonsdict = {
-            "tests.test_addons.addonmod": {"key": "val1"},
-            "tests.test_addons.addons.GoodAddon": {"key": "val2"},
-        }
-        _test_load_method("load_dict", addonsdict)
-
+    def test_load_settings(self):
         settings = BaseSettings()
         settings.set(
             "ADDONS",
@@ -203,25 +185,28 @@ class AddonManagerTest(unittest.TestCase):
         )
         settings.set("ADDONMODULE", {"key": "val1"})
         settings.set("GOODADDON", {"key": "val2"})
-        _test_load_method("load_settings", settings)
+        manager = AddonManager()
+        manager.load_settings(settings)
+        self.assertCountEqual(manager, ["GoodAddon", "AddonModule"])
+        self.assertIsInstance(manager["GoodAddon"], addons.GoodAddon)
+        self.assertCountEqual(manager.configs["GoodAddon"], ["key"])
+        self.assertEqual(manager.configs["GoodAddon"]["key"], "val2")
+        self.assertEqual(manager["AddonModule"], addonmod)
+        self.assertIn("key", manager.configs["AddonModule"])
+        self.assertEqual(manager.configs["AddonModule"]["key"], "val1")
 
-    def test_load_dict_load_settings_order(self):
-        def _test_load_method(expected_order, func, *args, **kwargs):
-            manager = AddonManager()
-            getattr(manager, func)(*args, **kwargs)
-            self.assertEqual(list(manager.keys()), expected_order)
-
+    def test_load_settings_order(self):
         # Get three addons named 0, 1, 2
         addonlist = [addons.GoodAddon(str(x)) for x in range(3)]
         # Test both methods for every possible mutation
         for ordered_addons in itertools.permutations(addonlist):
             expected_order = [a.name for a in ordered_addons]
-            addonsdict = OrderedDict((a, {}) for a in ordered_addons)
-            _test_load_method(expected_order, "load_dict", addonsdict)
             settings = BaseSettings(
                 {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
             )
-            _test_load_method(expected_order, "load_settings", settings)
+            manager = AddonManager()
+            manager.load_settings(settings)
+            self.assertEqual(list(manager.keys()), expected_order)
 
     def test_enabled_disabled(self):
         manager = AddonManager()

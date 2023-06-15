@@ -261,32 +261,6 @@ class AddonManager(Mapping):
             obj = AddonManager.get_addon(obj._addon)
         return obj
 
-    def load_dict(self, addonsdict):
-        """Load add-ons and configurations from given dictionary.
-
-        Each add-on should be an entry in the dictionary, where the key
-        corresponds to the add-on path. The value should be a dictionary
-        representing the add-on configuration.
-
-        Example add-on dictionary::
-
-            addonsdict = {
-                'path.to.addon1': {
-                    'setting1': 'value',
-                    'setting2': 42,
-                    },
-                'path/to/addon2.py': {
-                    'addon2setting': True,
-                    },
-                }
-
-        :param addonsdict: dictionary where keys correspond to add-on paths \
-            and values correspond to their configuration
-        :type addonsdict: ``dict``
-        """
-        for addonpath, addoncfg in addonsdict.items():
-            self.add(addonpath, addoncfg)
-
     def load_settings(self, settings):
         """Load add-ons and configurations from settings object.
 
