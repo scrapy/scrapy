@@ -237,7 +237,7 @@ Extending Scrapy
     Understand the Scrapy architecture.
 
 :doc:`topics/addons`
-    Enable and configure built-in and third-party extensions.
+    Enable and configure third-party extensions.
 
 :doc:`topics/downloader-middleware`
     Customize how pages get requested and downloaded.

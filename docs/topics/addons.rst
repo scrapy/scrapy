@@ -19,26 +19,18 @@ Add-ons and their configuration live in Scrapy's
 only then, the add-on manager will read a list of enabled add-ons and their
 configurations from your ``ADDONS`` setting.
 
-The ``ADDONS`` setting a tuple in which every item is a path to an
-add-on. The path can be both a Python or a file path. While more precise, it is
-not necessary to specify the full add-on Python path if it is either built into
-Scrapy or lives in your project's ``addons`` submodule.
+The ``ADDONS`` setting is a dict in which every key is an addon class or its
+import path and the vaoue is its priority.
 
 The configuration of an add-on, if necessary at all, is stored as a dictionary
 setting whose name is the uppercase add-on name.
 
-This is an example where an internal add-on and two third-party add-ons (in this
-case with one requiring no configuration) are enabled/configured in a project's
-``settings.py``::
+This is an example where two add-ons (in this case with one requiring no
+configuration) are enabled/configured in a project's ``settings.py``::
 
     ADDONS = {
-        'httpcache': 0,
-        'path.to.some.addon': 0,
-    }
-
-    HTTPCACHE = {
-        'expiration_secs': 60,
-        'ignore_http_codes': [404, 405],
+        'path.to.someaddon': 0,
+        path.to.someaddon2: 1,
     }
 
     SOMEADDON = {
@@ -67,7 +59,7 @@ add-ons framework, e.g.:
 * :meth:`~scrapy.addons.AddonManager.enable` and
   :meth:`~scrapy.addons.AddonManager.disable` methods,
 * the :attr:`~scrapy.addons.AddonManager.configs` dictionary which holds the
-  configuration of all add-ons
+  configuration of all add-ons.
 
 In this example, we ensure that the ``httpcache`` add-on is loaded, and that
 its ``expiration_secs`` configuration is set to ``60``::
@@ -88,9 +80,9 @@ Python object up the developer. Examples:
 
 * for a small pipeline, the add-on interface could be implemented in the same
   class that also implements the ``open/close_spider`` and ``process_item``
-  callbacks
+  callbacks,
 * for larger add-ons, or for clearer structure, the interface could be provided
-  by a stand-alone module
+  by a stand-alone module.
 
 The absolute minimum interface consists of two attributes:
 
@@ -137,9 +129,7 @@ crawling process:
     This method is called immediately before :meth:`update_settings`, and should
     be used to enable and configure other *add-ons* only.
 
-    When using this callback, be aware that there is no guarantee in which order
-    the :meth:`update_addons` callbacks of enabled add-ons will be called.
-    Add-ons that are added to the :class:`~scrapy.addons.AddonManager` during 
+    Add-ons that are added to the :class:`~scrapy.addons.AddonManager` during
     this callback will also have their :meth:`update_addons` method called.
 
     :param config: Configuration of this add-on
@@ -244,8 +234,7 @@ Check dependencies::
                 import boto
             except ImportError:
                 raise RuntimeError("myaddon requires the boto library")
-            else:
-                self.export_config(config, settings)
+            self.export_config(config, settings)
 
 Enable a component that lives relative to the add-on (see
 :ref:`topics-api-settings`)::
