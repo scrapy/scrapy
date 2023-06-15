@@ -4,7 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Optional, Set, Type, Union
 
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
@@ -57,7 +57,7 @@ class Crawler:
         spidercls: Type[Spider],
         settings: Union[None, dict, Settings] = None,
         init_reactor: bool = False,
-        addons=None,
+        addons: Optional[AddonManager] = None,
     ):
         if isinstance(spidercls, Spider):
             raise ValueError("The spidercls argument must be a class, not an object")
@@ -69,7 +69,7 @@ class Crawler:
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
-        self.addons = addons if addons is not None else AddonManager()
+        self.addons: AddonManager = addons if addons is not None else AddonManager()
         self.addons.load_settings(self.settings)
         self.addons.update_addons()
         self.addons.check_dependency_clashes()
@@ -199,14 +199,14 @@ class CrawlerRunner:
             )
         return loader_cls.from_settings(settings.frozencopy())
 
-    def __init__(self, settings=None, addons=None):
+    def __init__(self, settings=None, addons: Optional[AddonManager] = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
-        self.addons = addons
+        self.addons: Optional[AddonManager] = addons
         self.spider_loader = self._get_spider_loader(settings)
-        self._crawlers = set()
-        self._active = set()
+        self._crawlers: Set[Crawler] = set()
+        self._active: Set[defer.Deferred] = set()
         self.bootstrap_failed = False
 
     @property
@@ -285,7 +285,7 @@ class CrawlerRunner:
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, self.settings, self.addons)
+        return Crawler(spidercls, self.settings, addons=self.addons)
 
     def stop(self):
         """
@@ -331,7 +331,12 @@ class CrawlerProcess(CrawlerRunner):
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings=None, install_root_handler=True, addons=None):
+    def __init__(
+        self,
+        settings=None,
+        install_root_handler: bool = True,
+        addons: Optional[AddonManager] = None,
+    ):
         super().__init__(settings, addons)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
