@@ -198,7 +198,7 @@ class AddonManagerTest(unittest.TestCase):
     def test_load_settings_order(self):
         # Get three addons named 0, 1, 2
         addonlist = [addons.GoodAddon(str(x)) for x in range(3)]
-        # Test both methods for every possible mutation
+        # Test for every possible ordering
         for ordered_addons in itertools.permutations(addonlist):
             expected_order = [a.name for a in ordered_addons]
             settings = BaseSettings(

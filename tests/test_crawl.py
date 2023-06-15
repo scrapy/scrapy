@@ -421,10 +421,8 @@ with multiples lines
         addonmgr.add(FailedCheckAddon())
         crawler = get_crawler(SimpleSpider)
         crawler.addons = addonmgr
-        # Doesn't work in 'precise' test environment:
-        # with self.assertRaises(ValueError):
-        #    yield crawler.crawl()
-        yield self.assertFailure(crawler.crawl(), ValueError)
+        with self.assertRaises(ValueError):
+            yield crawler.crawl()
 
 
 class CrawlSpiderTestCase(TestCase):
