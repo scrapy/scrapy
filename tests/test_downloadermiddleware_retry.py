@@ -140,18 +140,21 @@ class RetryTest(unittest.TestCase):
         self.assertEqual(req.meta["retry_times"], 1)
 
     def _test_retry_exception(self, req, exception, mw=None):
+        if mw is None:
+            mw = self.mw
+
         # first retry
-        req = self.mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception, self.spider)
         assert isinstance(req, Request)
         self.assertEqual(req.meta["retry_times"], 1)
 
         # second retry
-        req = self.mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception, self.spider)
         assert isinstance(req, Request)
         self.assertEqual(req.meta["retry_times"], 2)
 
         # discard it
-        req = self.mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception, self.spider)
         self.assertEqual(req, None)
 
 
