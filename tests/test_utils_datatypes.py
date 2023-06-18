@@ -1,6 +1,7 @@
 import copy
 import unittest
 from collections.abc import Mapping, MutableMapping
+from time import sleep
 
 from scrapy.http import Request
 from scrapy.utils.datatypes import (
@@ -246,6 +247,19 @@ class LocalCacheTest(unittest.TestCase):
         self.assertIn("c", cache)
         self.assertEqual(cache["b"], 2)
         self.assertEqual(cache["c"], 3)
+
+    def test_cache_time_limit(self):
+        cache = LocalCache(time_limit=2)
+        cache['a'] = 1
+        cache['b'] = 2
+        cache['c'] = 3
+        self.assertIn('a', cache)
+        self.assertIn('b', cache)
+        self.assertIn('c', cache)
+        sleep(3)
+        self.assertNotIn('a', cache)
+        self.assertNotIn('b', cache)
+        self.assertNotIn('c', cache)
 
     def test_cache_without_limit(self):
         maximum = 10**4

@@ -8,6 +8,7 @@ This module must not depend on any module outside the Standard Library.
 import collections
 import weakref
 from collections.abc import Mapping
+from datetime import datetime
 
 
 class CaselessDict(dict):
@@ -65,20 +66,56 @@ class CaselessDict(dict):
 
 
 class LocalCache(collections.OrderedDict):
-    """Dictionary with a finite number of keys.
-
-    Older items expires first.
+    """
+    Dictionary with a finite number of keys.
+    Older items expire first.
     """
 
-    def __init__(self, limit=None):
+    def __init__(self, limit=None, time_limit=None):
         super().__init__()
         self.limit = limit
+        self.time_limit = time_limit
 
     def __setitem__(self, key, value):
-        if self.limit:
+        now = datetime.now()
+        value = (value, now)
+
+        if self.limit is not None:
             while len(self) >= self.limit:
                 self.popitem(last=False)
+
+        while True:
+            try:
+                val = next(iter(self.values()))
+            except StopIteration as e:
+                break
+            
+            if (datetime.now() - val[1]).total_seconds() > self.time_limit:
+                self.popitem(last=False)
+            else:
+                break
+            
         super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        if self.time_limit is None:
+            return super().__getitem__(key)[0]
+
+        while True:
+            try:
+                val = self.values().__iter__().__next__()
+            except StopIteration as e:
+                break
+            
+            if (datetime.now() - val[1]).total_seconds() > self.time_limit:
+                self.popitem(last=False)
+            else:
+                break
+        
+        val = (super().__getitem__(key)[0],datetime.now())
+        super().__setitem__(key, val)
+        return val[0]
+
 
 
 class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
