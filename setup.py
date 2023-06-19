@@ -20,7 +20,7 @@ def has_environment_marker_platform_impl_support():
 
 install_requires = [
     "Twisted>=18.9.0",
-    "cryptography>=3.4.6",
+    "cryptography>=36.0.0",
     "cssselect>=0.9.1",
     "itemloaders>=1.0.1",
     "parsel>=1.5.0",
@@ -34,7 +34,7 @@ install_requires = [
     "setuptools",
     "packaging",
     "tldextract",
-    "lxml>=4.3.0",
+    "lxml>=4.4.1",
 ]
 extras_require = {}
 cpython_dependencies = [
@@ -80,7 +80,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -91,7 +90,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=install_requires,
     extras_require=extras_require,
 )
