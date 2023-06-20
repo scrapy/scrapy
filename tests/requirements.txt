@@ -14,4 +14,3 @@ brotli  # optional for HTTP compress downloader middleware tests
 zstandard; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
 ipython
 pywin32; sys_platform == "win32"
-packaging

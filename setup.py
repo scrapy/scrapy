@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from packaging.version import parse as parse_version
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 
@@ -15,6 +14,8 @@ def has_environment_marker_platform_impl_support():
     it is 18.5, see:
     https://setuptools.readthedocs.io/en/latest/history.html#id235
     """
+    from packaging.version import parse as parse_version
+
     return parse_version(setuptools_version) >= parse_version("18.5")
 
 
