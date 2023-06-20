@@ -1,22 +1,8 @@
 from pathlib import Path
 
-from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 
 version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
-
-
-def has_environment_marker_platform_impl_support():
-    """Code extracted from 'pytest/setup.py'
-    https://github.com/pytest-dev/pytest/blob/7538680c/setup.py#L31
-
-    The first known release to support environment marker with range operators
-    it is 18.5, see:
-    https://setuptools.readthedocs.io/en/latest/history.html#id235
-    """
-    from packaging.version import parse as parse_version
-
-    return parse_version(setuptools_version) >= parse_version("18.5")
 
 
 install_requires = [
@@ -37,19 +23,10 @@ install_requires = [
     "tldextract",
     "lxml>=4.4.1",
 ]
-extras_require = {}
-cpython_dependencies = [
-    "PyDispatcher>=2.0.5",
-]
-if has_environment_marker_platform_impl_support():
-    extras_require[
-        ':platform_python_implementation == "CPython"'
-    ] = cpython_dependencies
-    extras_require[':platform_python_implementation == "PyPy"'] = [
-        "PyPyDispatcher>=2.1.0",
-    ]
-else:
-    install_requires.extend(cpython_dependencies)
+extras_require = {
+    ':platform_python_implementation == "CPython"': ["PyDispatcher>=2.0.5"],
+    ':platform_python_implementation == "PyPy"': ["PyPyDispatcher>=2.1.0"],
+}
 
 
 setup(
