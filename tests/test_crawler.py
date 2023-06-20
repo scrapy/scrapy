@@ -6,7 +6,7 @@ import sys
 import warnings
 from pathlib import Path
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from pytest import mark, raises
 from twisted import version as twisted_version
 from twisted.internet import defer

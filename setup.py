@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 
