@@ -1,4 +1,5 @@
 import json
+import os
 import pstats
 import shutil
 import sys
@@ -14,6 +15,8 @@ from scrapy.utils.test import get_testenv
 class CmdlineTest(unittest.TestCase):
     def setUp(self):
         self.env = get_testenv()
+        tests_path = Path(__file__).parent.parent
+        self.env["PYTHONPATH"] += os.pathsep + str(tests_path.parent)
         self.env["SCRAPY_SETTINGS_MODULE"] = "tests.test_cmdline.settings"
 
     def _execute(self, *new_args, **kwargs):

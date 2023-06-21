@@ -7,7 +7,6 @@ from tests import get_testdata
 
 
 class XmliterTestCase(unittest.TestCase):
-
     xmliter = staticmethod(xmliter)
 
     def test_xmliter(self):
@@ -528,7 +527,3 @@ class TestHelper(unittest.TestCase):
             type(a) is type(b), f"Got {type(a)}, expected {type(b)} for { obj!r}"
         )
         self.assertEqual(a, b)
-
-
-if __name__ == "__main__":
-    unittest.main()

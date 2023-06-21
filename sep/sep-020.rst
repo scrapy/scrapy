@@ -54,18 +54,18 @@ required.
 Before
 ------
 
-::
+.. code-block:: python
 
     xpath = '//div[@class="geeks"]/dl/dt[contains(text(),"%s")]/following-sibling::dd[1]//text()'
     gl = XPathItemLoader(response=response, item=dict())
     gl.default_output_processor = Compose(TakeFirst(), lambda v: v.strip())
-    gl.add_xpath('hacker', xpath % 'hacker')
-    gl.add_xpath('nerd', xpath % 'nerd')
+    gl.add_xpath("hacker", xpath % "hacker")
+    gl.add_xpath("nerd", xpath % "nerd")
 
 After
 -----
 
-::
+.. code-block:: python
 
     bil = BulkItemLoader(response=response)
     bil.parse_dl('//div[@class="geeks"]/dl')
@@ -75,33 +75,34 @@ Code Proposal
 
 This is a working code sample that covers just the basics.
 
-::
+.. code-block:: python
 
     from scrapy.contrib.loader import XPathItemLoader
     from scrapy.contrib.loader.processor import MapCompose
 
+
     class BulkItemLoader(XPathItemLoader):
-        """ Item loader based on specified pattern recognition
-        """
+        """Item loader based on specified pattern recognition"""
+
         default_item_class = dict
-        base_xpath = '//body'
+        base_xpath = "//body"
         ignore = ()
 
         def _get_label(self, entity):
-            """ Pull the text label out of selected markup
+            """Pull the text label out of selected markup
 
             :param entity: Found markup
             :type entity: Selector
             """
-            label = ' '.join(entity.xpath('.//text()').extract())
-            label = label.encode('ascii', 'xmlcharrefreplace') if label else ''
-            label = label.strip('&#160;') if '&#160;' in label else label
-            label = label.strip(':') if ':' in label else label
+            label = " ".join(entity.xpath(".//text()").extract())
+            label = label.encode("ascii", "xmlcharrefreplace") if label else ""
+            label = label.strip("&#160;") if "&#160;" in label else label
+            label = label.strip(":") if ":" in label else label
             label = label.strip()
             return label
 
         def _get_entities(self, xpath):
-            """ Retrieve the list of selectors for a given sub-pattern
+            """Retrieve the list of selectors for a given sub-pattern
 
             :param xpath: The xpath to select
             :type xpath: String
@@ -110,20 +111,21 @@ This is a working code sample that covers just the basics.
             """
             return self.selector.xpath(self.base_xpath + xpath)
 
-        def parse_dl(self, xpath=u'//dl'):
-            """ Look for the specified definition list pattern and store all found
+        def parse_dl(self, xpath="//dl"):
+            """Look for the specified definition list pattern and store all found
             values for the enclosed terms and descriptions.
 
             :param xpath: The xpath to select
             :type xpath: String
             """
-            for term in self._get_entities(xpath + '/dt'):
+            for term in self._get_entities(xpath + "/dt"):
                 label = self._get_label(term)
                 if label and label not in self.ignore:
-                    value = term.xpath('following-sibling::dd[1]//text()')
+                    value = term.xpath("following-sibling::dd[1]//text()")
                     if value:
-                        self.add_value(label, value.extract(),
-                            MapCompose(lambda v: v.strip()))
+                        self.add_value(
+                            label, value.extract(), MapCompose(lambda v: v.strip())
+                        )
 
 Example Spider
 ==============
@@ -133,22 +135,24 @@ This spider uses the bulk loader above.
 Spider code
 -----------
 
-::
+.. code-block:: python
 
     from scrapy.spider import BaseSpider
     from scrapy.contrib.loader.bulk import BulkItemLoader
 
+
     class W3cSpider(BaseSpider):
         name = "w3c"
         allowed_domains = ["w3.org"]
-        start_urls = ('http://www.w3.org/TR/html401/struct/lists.html',)
+        start_urls = ("http://www.w3.org/TR/html401/struct/lists.html",)
 
         def parse(self, response):
             el = BulkItemLoader(response=response)
-            el.parse_dl('//dl[2]')
+            el.parse_dl("//dl[2]")
             item = el.load_item()
 
             from pprint import pprint
+
             pprint(item)
 
 Log Output

@@ -23,7 +23,6 @@ from tests import get_testdata
 
 
 class BaseResponseTest(unittest.TestCase):
-
     response_class = Response
 
     def test_init(self):
@@ -33,6 +32,9 @@ class BaseResponseTest(unittest.TestCase):
             isinstance(self.response_class("http://example.com/"), self.response_class)
         )
         self.assertRaises(TypeError, self.response_class, b"http://example.com")
+        self.assertRaises(
+            TypeError, self.response_class, url="http://example.com", body={}
+        )
         # body can be str or None
         self.assertTrue(
             isinstance(
@@ -193,6 +195,7 @@ class BaseResponseTest(unittest.TestCase):
             self.assertRaisesRegex(AttributeError, msg, getattr, r, "text")
             self.assertRaisesRegex(NotSupported, msg, r.css, "body")
             self.assertRaisesRegex(NotSupported, msg, r.xpath, "//body")
+            self.assertRaisesRegex(NotSupported, msg, r.jmespath, "body")
         else:
             r.text
             r.css("body")
@@ -349,7 +352,6 @@ class BaseResponseTest(unittest.TestCase):
 
 
 class TextResponseTest(BaseResponseTest):
-
     response_class = TextResponse
 
     def test_replace(self):
@@ -450,6 +452,13 @@ class TextResponseTest(BaseResponseTest):
             body=codecs.BOM_UTF8 + b"\xc2\xa3",
             headers={"Content-type": ["text/html; charset=cp1251"]},
         )
+        r9 = self.response_class(
+            "http://www.example.com",
+            body=b"\x80",
+            headers={
+                "Content-type": [b"application/x-download; filename=\x80dummy.txt"]
+            },
+        )
 
         self.assertEqual(r1._headers_encoding(), "utf-8")
         self.assertEqual(r2._headers_encoding(), None)
@@ -460,9 +469,12 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r4._headers_encoding(), None)
         self.assertEqual(r5._headers_encoding(), None)
         self.assertEqual(r8._headers_encoding(), "cp1251")
+        self.assertEqual(r9._headers_encoding(), None)
         self.assertEqual(r8._declared_encoding(), "utf-8")
+        self.assertEqual(r9._declared_encoding(), None)
         self._assert_response_encoding(r5, "utf-8")
         self._assert_response_encoding(r8, "utf-8")
+        self._assert_response_encoding(r9, "cp1252")
         assert (
             r4._body_inferred_encoding() is not None
             and r4._body_inferred_encoding() != "ascii"
@@ -472,6 +484,7 @@ class TextResponseTest(BaseResponseTest):
         self._assert_response_values(r3, "iso-8859-1", "\xa3")
         self._assert_response_values(r6, "gb18030", "\u2015")
         self._assert_response_values(r7, "gb18030", "\u2015")
+        self._assert_response_values(r9, "cp1252", "€")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         self.assertRaises(
@@ -835,11 +848,9 @@ class TextResponseTest(BaseResponseTest):
 
 
 class HtmlResponseTest(TextResponseTest):
-
     response_class = HtmlResponse
 
     def test_html_encoding(self):
-
         body = b"""<html><head><title>Some page</title>
         <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
@@ -878,7 +889,6 @@ class HtmlResponseTest(TextResponseTest):
 
 
 class XmlResponseTest(TextResponseTest):
-
     response_class = XmlResponse
 
     def test_xml_encoding(self):

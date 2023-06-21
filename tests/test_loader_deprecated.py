@@ -469,7 +469,6 @@ class BasicItemLoaderTest(unittest.TestCase):
 
 
 class InitializationFromDictTest(unittest.TestCase):
-
     item_class = dict
 
     def test_keep_single_value(self):

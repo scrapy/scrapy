@@ -60,7 +60,6 @@ class Rule:
 
 
 class CrawlSpider(Spider):
-
     rules: Sequence[Rule] = ()
 
     def __init__(self, *a, **kw):

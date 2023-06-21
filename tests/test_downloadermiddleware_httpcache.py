@@ -14,7 +14,6 @@ from scrapy.utils.test import get_crawler
 
 
 class _BaseTest(unittest.TestCase):
-
     storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
@@ -146,12 +145,10 @@ class DefaultStorageTest(_BaseTest):
 
 
 class DbmStorageTest(DefaultStorageTest):
-
     storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
 
 
 class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
-
     dbm_module = "tests.mocks.dummydbm"
 
     def _get_settings(self, **new_settings):
@@ -165,7 +162,6 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 
 
 class FilesystemStorageTest(DefaultStorageTest):
-
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 
@@ -176,7 +172,6 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
 
 
 class DummyPolicyTest(_BaseTest):
-
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
     def test_middleware(self):
@@ -270,7 +265,6 @@ class DummyPolicyTest(_BaseTest):
 
 
 class RFC2616PolicyTest(DefaultStorageTest):
-
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
     def _process_requestresponse(self, mw, request, response):

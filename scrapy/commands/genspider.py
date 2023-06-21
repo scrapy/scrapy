@@ -31,8 +31,15 @@ def extract_domain(url):
     return o.netloc
 
 
-class Command(ScrapyCommand):
+def verify_url_scheme(url):
+    """Check url for scheme and insert https if none found."""
+    parsed = urlparse(url)
+    if parsed.scheme == "" and parsed.netloc == "":
+        parsed = urlparse("//" + url)._replace(scheme="https")
+    return parsed.geturl()
 
+
+class Command(ScrapyCommand):
     requires_project = False
     default_settings = {"LOG_ENABLED": False}
 
@@ -92,7 +99,7 @@ class Command(ScrapyCommand):
             raise UsageError()
 
         name, url = args[0:2]
-        domain = extract_domain(url)
+        url = verify_url_scheme(url)
         module = sanitize_module_name(name)
 
         if self.settings.get("BOT_NAME") == module:
@@ -104,18 +111,20 @@ class Command(ScrapyCommand):
 
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, name, domain, opts.template, template_file)
+            self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
                 self.exitcode = os.system(f'scrapy edit "{name}"')
 
-    def _genspider(self, module, name, domain, template_name, template_file):
+    def _genspider(self, module, name, url, template_name, template_file):
         """Generate the spider module, based on the given template"""
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
+        domain = extract_domain(url)
         tvars = {
             "project_name": self.settings.get("BOT_NAME"),
             "ProjectName": string_camelcase(self.settings.get("BOT_NAME")),
             "module": module,
             "name": name,
+            "url": url,
             "domain": domain,
             "classname": f"{capitalized_module}Spider",
         }

@@ -223,7 +223,6 @@ def get_permissions_dict(
 
 
 class StartprojectTemplatesTest(ProjectTest):
-
     maxDiff = None
 
     def setUp(self):
@@ -505,7 +504,7 @@ class GenspiderCommandTest(CommandTest):
         # change name of spider but not its file name
         with file_path.open("r+", encoding="utf-8") as spider_file:
             file_data = spider_file.read()
-            file_data = file_data.replace("name = 'example'", "name = 'renamed'")
+            file_data = file_data.replace('name = "example"', 'name = "renamed"')
             spider_file.seek(0)
             spider_file.write(file_data)
             spider_file.truncate()
@@ -538,25 +537,76 @@ class GenspiderCommandTest(CommandTest):
             domain,
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"allowed_domains\s*=\s*\[\'(.+)\'\]",
+                r"allowed_domains\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
         self.assertEqual(
-            f"http://{domain}/",
+            f"https://{domain}",
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"start_urls\s*=\s*\[\'(.+)\'\]",
+                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
             ).group(1),
         )
 
     def test_url_schema(self):
-        self.test_url("http://test.com", "test.com")
+        self.test_url("https://test.com", "test.com")
 
-    def test_url_path(self):
-        self.test_url("test.com/some/other/page", "test.com")
+    def test_template_start_urls(
+        self, url="test.com", expected="https://test.com", template="basic"
+    ):
+        self.assertEqual(
+            0, self.call("genspider", "-t", template, "--force", "test_name", url)
+        )
+        self.assertEqual(
+            expected,
+            self.find_in_file(
+                Path(self.proj_mod_path, "spiders", "test_name.py"),
+                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
+            ).group(1),
+        )
 
-    def test_url_schema_path(self):
-        self.test_url("https://test.com/some/other/page", "test.com")
+    def test_genspider_basic_start_urls(self):
+        self.test_template_start_urls("https://test.com", "https://test.com", "basic")
+        self.test_template_start_urls("http://test.com", "http://test.com", "basic")
+        self.test_template_start_urls(
+            "http://test.com/other/path", "http://test.com/other/path", "basic"
+        )
+        self.test_template_start_urls(
+            "test.com/other/path", "https://test.com/other/path", "basic"
+        )
+
+    def test_genspider_crawl_start_urls(self):
+        self.test_template_start_urls("https://test.com", "https://test.com", "crawl")
+        self.test_template_start_urls("http://test.com", "http://test.com", "crawl")
+        self.test_template_start_urls(
+            "http://test.com/other/path", "http://test.com/other/path", "crawl"
+        )
+        self.test_template_start_urls(
+            "test.com/other/path", "https://test.com/other/path", "crawl"
+        )
+        self.test_template_start_urls("test.com", "https://test.com", "crawl")
+
+    def test_genspider_xmlfeed_start_urls(self):
+        self.test_template_start_urls(
+            "https://test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"
+        )
+        self.test_template_start_urls(
+            "http://test.com/feed.xml", "http://test.com/feed.xml", "xmlfeed"
+        )
+        self.test_template_start_urls(
+            "test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"
+        )
+
+    def test_genspider_csvfeed_start_urls(self):
+        self.test_template_start_urls(
+            "https://test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"
+        )
+        self.test_template_start_urls(
+            "http://test.com/feed.xml", "http://test.com/feed.xml", "csvfeed"
+        )
+        self.test_template_start_urls(
+            "test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"
+        )
 
 
 class GenspiderStandaloneCommandTest(ProjectTest):
@@ -604,7 +654,6 @@ class MiscCommandsTest(CommandTest):
 
 
 class RunSpiderCommandTest(CommandTest):
-
     spider_filename = "myspider.py"
 
     debug_log_spider = """
@@ -873,7 +922,6 @@ class MySpider(scrapy.Spider):
 
 @skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
-
     spider_filename = "myspider.pyw"
 
     def setUp(self):

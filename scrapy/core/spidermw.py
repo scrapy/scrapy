@@ -13,6 +13,8 @@ from typing import (
     Callable,
     Generator,
     Iterable,
+    List,
+    Optional,
     Tuple,
     Union,
     cast,
@@ -25,6 +27,7 @@ from scrapy import Request, Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
+from scrapy.settings import BaseSettings
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
@@ -41,23 +44,22 @@ logger = logging.getLogger(__name__)
 ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
 
 
-def _isiterable(o) -> bool:
+def _isiterable(o: Any) -> bool:
     return isinstance(o, (Iterable, AsyncIterable))
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
-
     component_name = "spider middleware"
 
-    def __init__(self, *middlewares):
+    def __init__(self, *middlewares: Any):
         super().__init__(*middlewares)
         self.downgrade_warning_done = False
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings):
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
         return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
 
-    def _add_middleware(self, mw):
+    def _add_middleware(self, mw: Any) -> None:
         super()._add_middleware(mw)
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
@@ -99,7 +101,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         exception_processor_index: int,
         recover_to: Union[MutableChain, MutableAsyncChain],
     ) -> Union[Generator, AsyncGenerator]:
-        def process_sync(iterable: Iterable):
+        def process_sync(iterable: Iterable) -> Generator:
             try:
                 for r in iterable:
                     yield r
@@ -111,7 +113,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     raise
                 recover_to.extend(exception_result)
 
-        async def process_async(iterable: AsyncIterable):
+        async def process_async(iterable: AsyncIterable) -> AsyncGenerator:
             try:
                 async for r in iterable:
                     yield r
@@ -156,7 +158,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 # simplified when downgrading is removed.
                 if dfd.called:
                     # the result is available immediately if _process_spider_output didn't do downgrading
-                    return dfd.result
+                    return cast(MutableChain, dfd.result)
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture
                 msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
@@ -181,7 +183,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
         result: Union[Iterable, AsyncIterable],
         start_index: int = 0,
-    ) -> Deferred:
+    ) -> Generator[Deferred, Any, Union[MutableChain, MutableAsyncChain]]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
         recovered: Union[MutableChain, MutableAsyncChain]
@@ -281,7 +283,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if isinstance(recovered, AsyncIterable):
             recovered_collected = await collect_asyncgen(recovered)
             recovered = MutableChain(recovered_collected)
-        return MutableChain(result, recovered)  # type: ignore[arg-type]
+        return MutableChain(result, recovered)
 
     def scrape_response(
         self,
@@ -307,7 +309,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
         )
         return dfd
 
-    def process_start_requests(self, start_requests, spider: Spider) -> Deferred:
+    def process_start_requests(
+        self, start_requests: Iterable[Request], spider: Spider
+    ) -> Deferred:
         return self._process_chain("process_start_requests", start_requests, spider)
 
     # This method is only needed until _async compatibility methods are removed.
@@ -315,9 +319,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _get_async_method_pair(
         mw: Any, methodname: str
     ) -> Union[None, Callable, Tuple[Callable, Callable]]:
-        normal_method = getattr(mw, methodname, None)
+        normal_method: Optional[Callable] = getattr(mw, methodname, None)
         methodname_async = methodname + "_async"
-        async_method = getattr(mw, methodname_async, None)
+        async_method: Optional[Callable] = getattr(mw, methodname_async, None)
         if not async_method:
             return normal_method
         if not normal_method:

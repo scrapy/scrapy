@@ -13,7 +13,6 @@ from scrapy.utils.url import guess_scheme
 
 
 class Command(ScrapyCommand):
-
     requires_project = False
     default_settings = {
         "KEEP_ALIVE": True,

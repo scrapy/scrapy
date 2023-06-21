@@ -1,22 +1,25 @@
 import re
 from time import time
-from urllib.parse import urldefrag, urlparse, urlunparse
+from typing import Optional, Tuple
+from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
+from scrapy import Request
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 
 
-def _parsed_url_args(parsed):
+def _parsed_url_args(parsed: ParseResult) -> Tuple[bytes, bytes, bytes, int, bytes]:
     # Assume parsed is urlparse-d from Request.url,
     # which was passed via safe_url_string and is ascii-only.
-    path = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
-    path = to_bytes(path, encoding="ascii")
+    path_str = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
+    path = to_bytes(path_str, encoding="ascii")
+    assert parsed.hostname is not None
     host = to_bytes(parsed.hostname, encoding="ascii")
     port = parsed.port
     scheme = to_bytes(parsed.scheme, encoding="ascii")
@@ -26,7 +29,7 @@ def _parsed_url_args(parsed):
     return scheme, netloc, host, port, path
 
 
-def _parse(url):
+def _parse(url: str) -> Tuple[bytes, bytes, bytes, int, bytes]:
     """Return tuple of (scheme, netloc, host, port, path),
     all in bytes except for port which is int.
     Assume url is from Request.url, which was passed via safe_url_string
@@ -40,7 +43,6 @@ def _parse(url):
 
 
 class ScrapyHTTPPageGetter(HTTPClient):
-
     delimiter = b"\n"
 
     def connectionMade(self):
@@ -103,7 +105,6 @@ class ScrapyHTTPPageGetter(HTTPClient):
 # Twisted (https://github.com/twisted/twisted/pull/643), we merged its
 # non-overridden code into this class.
 class ScrapyHTTPClientFactory(ClientFactory):
-
     protocol = ScrapyHTTPPageGetter
 
     waiting = 1
@@ -134,17 +135,19 @@ class ScrapyHTTPClientFactory(ClientFactory):
             self.scheme, _, self.host, self.port, _ = _parse(proxy)
             self.path = self.url
 
-    def __init__(self, request, timeout=180):
-        self._url = urldefrag(request.url)[0]
+    def __init__(self, request: Request, timeout: float = 180):
+        self._url: str = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
-        self.url = to_bytes(self._url, encoding="ascii")
-        self.method = to_bytes(request.method, encoding="ascii")
-        self.body = request.body or None
-        self.headers = Headers(request.headers)
-        self.response_headers = None
-        self.timeout = request.meta.get("download_timeout") or timeout
-        self.start_time = time()
-        self.deferred = defer.Deferred().addCallback(self._build_response, request)
+        self.url: bytes = to_bytes(self._url, encoding="ascii")
+        self.method: bytes = to_bytes(request.method, encoding="ascii")
+        self.body: Optional[bytes] = request.body or None
+        self.headers: Headers = Headers(request.headers)
+        self.response_headers: Optional[Headers] = None
+        self.timeout: float = request.meta.get("download_timeout") or timeout
+        self.start_time: float = time()
+        self.deferred: defer.Deferred = defer.Deferred().addCallback(
+            self._build_response, request
+        )
 
         # Fixes Twisted 11.1.0+ support as HTTPClientFactory is expected
         # to have _disconnectedDeferred. See Twisted r32329.
@@ -152,7 +155,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         # needed to add the callback _waitForDisconnect.
         # Specifically this avoids the AttributeError exception when
         # clientConnectionFailed method is called.
-        self._disconnectedDeferred = defer.Deferred()
+        self._disconnectedDeferred: defer.Deferred = defer.Deferred()
 
         self._set_connection_attributes(request)
 
@@ -168,8 +171,8 @@ class ScrapyHTTPClientFactory(ClientFactory):
         elif self.method == b"POST":
             self.headers["Content-Length"] = 0
 
-    def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.url}>"
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {self._url}>"
 
     def _cancelTimeout(self, result, timeoutCall):
         if timeoutCall.active():

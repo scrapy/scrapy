@@ -12,7 +12,6 @@ from scrapy.utils.python import binary_is_text, to_bytes, to_unicode
 
 
 class ResponseTypes:
-
     CLASSES = {
         "text/html": "scrapy.http.HtmlResponse",
         "application/atom+xml": "scrapy.http.XmlResponse",
@@ -52,7 +51,9 @@ class ResponseTypes:
         header"""
         if content_encoding:
             return Response
-        mimetype = to_unicode(content_type).split(";")[0].strip().lower()
+        mimetype = (
+            to_unicode(content_type, encoding="latin-1").split(";")[0].strip().lower()
+        )
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(self, content_disposition):

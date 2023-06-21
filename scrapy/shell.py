@@ -25,7 +25,6 @@ from scrapy.utils.response import open_in_browser
 
 
 class Shell:
-
     relevant_classes = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):

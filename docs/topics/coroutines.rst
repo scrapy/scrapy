@@ -58,49 +58,59 @@ There are several use cases for coroutines in Scrapy.
 
 Code that would return Deferreds when written for previous Scrapy versions,
 such as downloader middlewares and signal handlers, can be rewritten to be
-shorter and cleaner::
+shorter and cleaner:
+
+.. code-block:: python
 
     from itemadapter import ItemAdapter
+
 
     class DbPipeline:
         def _update_item(self, data, item):
             adapter = ItemAdapter(item)
-            adapter['field'] = data
+            adapter["field"] = data
             return item
 
         def process_item(self, item, spider):
             adapter = ItemAdapter(item)
-            dfd = db.get_some_data(adapter['id'])
+            dfd = db.get_some_data(adapter["id"])
             dfd.addCallback(self._update_item, item)
             return dfd
 
-becomes::
+becomes:
+
+.. code-block:: python
 
     from itemadapter import ItemAdapter
+
 
     class DbPipeline:
         async def process_item(self, item, spider):
             adapter = ItemAdapter(item)
-            adapter['field'] = await db.get_some_data(adapter['id'])
+            adapter["field"] = await db.get_some_data(adapter["id"])
             return item
 
 Coroutines may be used to call asynchronous code. This includes other
 coroutines, functions that return Deferreds and functions that return
 :term:`awaitable objects <awaitable>` such as :class:`~asyncio.Future`.
-This means you can use many useful Python libraries providing such code::
+This means you can use many useful Python libraries providing such code:
+
+.. skip: next
+.. code-block:: python
 
     class MySpiderDeferred(Spider):
         # ...
         async def parse(self, response):
-            additional_response = await treq.get('https://additional.url')
+            additional_response = await treq.get("https://additional.url")
             additional_data = await treq.content(additional_response)
             # ... use response and additional_data to yield items and requests
+
 
     class MySpiderAsyncio(Spider):
         # ...
         async def parse(self, response):
             async with aiohttp.ClientSession() as session:
-                async with session.get('https://additional.url') as additional_response:
+                async with session.get("https://additional.url") as additional_response:
                     additional_data = await additional_response.text()
             # ... use response and additional_data to yield items and requests
 
@@ -122,6 +132,63 @@ Common use cases for asynchronous code include:
   (see :ref:`the screenshot pipeline example<ScreenshotPipeline>`).
 
 .. _aio-libs: https://github.com/aio-libs
+
+
+.. _inline-requests:
+
+Inline requests
+===============
+
+The spider below shows how to send a request and await its response all from
+within a spider callback:
+
+.. code-block:: python
+
+    from scrapy import Spider, Request
+    from scrapy.utils.defer import maybe_deferred_to_future
+
+
+    class SingleRequestSpider(Spider):
+        name = "single"
+        start_urls = ["https://example.org/product"]
+
+        async def parse(self, response, **kwargs):
+            additional_request = Request("https://example.org/price")
+            deferred = self.crawler.engine.download(additional_request)
+            additional_response = await maybe_deferred_to_future(deferred)
+            yield {
+                "h1": response.css("h1").get(),
+                "price": additional_response.css("#price").get(),
+            }
+
+You can also send multiple requests in parallel:
+
+.. code-block:: python
+
+    from scrapy import Spider, Request
+    from scrapy.utils.defer import maybe_deferred_to_future
+    from twisted.internet.defer import DeferredList
+
+
+    class MultipleRequestsSpider(Spider):
+        name = "multiple"
+        start_urls = ["https://example.com/product"]
+
+        async def parse(self, response, **kwargs):
+            additional_requests = [
+                Request("https://example.com/price"),
+                Request("https://example.com/color"),
+            ]
+            deferreds = []
+            for r in additional_requests:
+                deferred = self.crawler.engine.download(r)
+                deferreds.append(deferred)
+            responses = await maybe_deferred_to_future(DeferredList(deferreds))
+            yield {
+                "h1": response.css("h1::text").get(),
+                "price": responses[0][1].css(".price::text").get(),
+                "price2": responses[1][1].css(".color::text").get(),
+            }
 
 
 .. _sync-async-spider-middleware:
@@ -192,7 +259,9 @@ while maintaining support for older Scrapy versions, you may define
 :term:`asynchronous generator` version of that method with an alternative name:
 ``process_spider_output_async``.
 
-For example::
+For example:
+
+.. code-block:: python
 
     class UniversalSpiderMiddleware:
         def process_spider_output(self, response, result, spider):
