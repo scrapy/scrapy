@@ -4,7 +4,6 @@ import scrapy
 
 
 class ToplevelTestCase(TestCase):
-
     def test_version(self):
         self.assertIs(type(scrapy.__version__), str)
 
@@ -12,19 +11,23 @@ class ToplevelTestCase(TestCase):
         self.assertIs(type(scrapy.version_info), tuple)
 
     def test_request_shortcut(self):
-        from scrapy.http import Request, FormRequest
+        from scrapy.http import FormRequest, Request
+
         self.assertIs(scrapy.Request, Request)
         self.assertIs(scrapy.FormRequest, FormRequest)
 
     def test_spider_shortcut(self):
         from scrapy.spiders import Spider
+
         self.assertIs(scrapy.Spider, Spider)
 
     def test_selector_shortcut(self):
         from scrapy.selector import Selector
+
         self.assertIs(scrapy.Selector, Selector)
 
     def test_item_shortcut(self):
-        from scrapy.item import Item, Field
+        from scrapy.item import Field, Item
+
         self.assertIs(scrapy.Item, Item)
         self.assertIs(scrapy.Field, Field)

@@ -4,7 +4,6 @@ from scrapy.link import Link
 
 
 class LinkTest(unittest.TestCase):
-
     def _assert_same_links(self, link1, link2):
         self.assertEqual(link1, link2)
         self.assertEqual(hash(link1), hash(link2))
@@ -30,16 +29,26 @@ class LinkTest(unittest.TestCase):
         self._assert_different_links(l4, l5)
         self._assert_same_links(l4, l6)
 
-        l7 = Link("http://www.example.com", text="test", fragment='something', nofollow=False)
-        l8 = Link("http://www.example.com", text="test", fragment='something', nofollow=False)
-        l9 = Link("http://www.example.com", text="test", fragment='something', nofollow=True)
-        l10 = Link("http://www.example.com", text="test", fragment='other', nofollow=False)
+        l7 = Link(
+            "http://www.example.com", text="test", fragment="something", nofollow=False
+        )
+        l8 = Link(
+            "http://www.example.com", text="test", fragment="something", nofollow=False
+        )
+        l9 = Link(
+            "http://www.example.com", text="test", fragment="something", nofollow=True
+        )
+        l10 = Link(
+            "http://www.example.com", text="test", fragment="other", nofollow=False
+        )
         self._assert_same_links(l7, l8)
         self._assert_different_links(l7, l9)
         self._assert_different_links(l7, l10)
 
     def test_repr(self):
-        l1 = Link("http://www.example.com", text="test", fragment='something', nofollow=True)
+        l1 = Link(
+            "http://www.example.com", text="test", fragment="something", nofollow=True
+        )
         l2 = eval(repr(l1))
         self._assert_same_links(l1, l2)
 

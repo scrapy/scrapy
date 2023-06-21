@@ -15,7 +15,6 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class CaselessDict(dict):
-
     __slots__ = ()
 
     def __new__(cls, *args, **kwargs):
@@ -46,10 +45,12 @@ class CaselessDict(dict):
 
     def __contains__(self, key):
         return dict.__contains__(self, self.normkey(key))
+
     has_key = __contains__
 
     def __copy__(self):
         return self.__class__(self)
+
     copy = __copy__
 
     def normkey(self, key):

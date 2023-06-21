@@ -1,31 +1,32 @@
-import OpenSSL
+from typing import Any, Optional, cast
+
 import OpenSSL._util as pyOpenSSLutil
+import OpenSSL.SSL
+import OpenSSL.version
+from OpenSSL.crypto import X509Name
 
 from scrapy.utils.python import to_unicode
 
 
-# The OpenSSL symbol is present since 1.1.1 but it's not currently supported in any version of pyOpenSSL.
-# Using the binding directly, as this code does, requires cryptography 2.4.
-SSL_OP_NO_TLSv1_3 = getattr(pyOpenSSLutil.lib, 'SSL_OP_NO_TLSv1_3', 0)
-
-
-def ffi_buf_to_string(buf):
+def ffi_buf_to_string(buf: Any) -> str:
     return to_unicode(pyOpenSSLutil.ffi.string(buf))
 
 
-def x509name_to_string(x509name):
+def x509name_to_string(x509name: X509Name) -> str:
     # from OpenSSL.crypto.X509Name.__repr__
-    result_buffer = pyOpenSSLutil.ffi.new("char[]", 512)
-    pyOpenSSLutil.lib.X509_NAME_oneline(x509name._name, result_buffer, len(result_buffer))
+    result_buffer: Any = pyOpenSSLutil.ffi.new("char[]", 512)
+    pyOpenSSLutil.lib.X509_NAME_oneline(
+        x509name._name, result_buffer, len(result_buffer)  # type: ignore[attr-defined]
+    )
 
     return ffi_buf_to_string(result_buffer)
 
 
-def get_temp_key_info(ssl_object):
-    if not hasattr(pyOpenSSLutil.lib, 'SSL_get_server_tmp_key'):  # requires OpenSSL 1.0.2
-        return None
-
+def get_temp_key_info(ssl_object: Any) -> Optional[str]:
     # adapted from OpenSSL apps/s_cb.c::ssl_print_tmp_key()
+    if not hasattr(pyOpenSSLutil.lib, "SSL_get_server_tmp_key"):
+        # removed in cryptography 40.0.0
+        return None
     temp_key_p = pyOpenSSLutil.ffi.new("EVP_PKEY **")
     if not pyOpenSSLutil.lib.SSL_get_server_tmp_key(ssl_object, temp_key_p):
         return None
@@ -36,26 +37,30 @@ def get_temp_key_info(ssl_object):
     key_info = []
     key_type = pyOpenSSLutil.lib.EVP_PKEY_id(temp_key)
     if key_type == pyOpenSSLutil.lib.EVP_PKEY_RSA:
-        key_info.append('RSA')
+        key_info.append("RSA")
     elif key_type == pyOpenSSLutil.lib.EVP_PKEY_DH:
-        key_info.append('DH')
+        key_info.append("DH")
     elif key_type == pyOpenSSLutil.lib.EVP_PKEY_EC:
-        key_info.append('ECDH')
+        key_info.append("ECDH")
         ec_key = pyOpenSSLutil.lib.EVP_PKEY_get1_EC_KEY(temp_key)
         ec_key = pyOpenSSLutil.ffi.gc(ec_key, pyOpenSSLutil.lib.EC_KEY_free)
-        nid = pyOpenSSLutil.lib.EC_GROUP_get_curve_name(pyOpenSSLutil.lib.EC_KEY_get0_group(ec_key))
+        nid = pyOpenSSLutil.lib.EC_GROUP_get_curve_name(
+            pyOpenSSLutil.lib.EC_KEY_get0_group(ec_key)
+        )
         cname = pyOpenSSLutil.lib.EC_curve_nid2nist(nid)
         if cname == pyOpenSSLutil.ffi.NULL:
             cname = pyOpenSSLutil.lib.OBJ_nid2sn(nid)
         key_info.append(ffi_buf_to_string(cname))
     else:
         key_info.append(ffi_buf_to_string(pyOpenSSLutil.lib.OBJ_nid2sn(key_type)))
-    key_info.append(f'{pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key)} bits')
-    return ', '.join(key_info)
+    key_info.append(f"{pyOpenSSLutil.lib.EVP_PKEY_bits(temp_key)} bits")
+    return ", ".join(key_info)
 
 
-def get_openssl_version():
-    system_openssl = OpenSSL.SSL.SSLeay_version(
-        OpenSSL.SSL.SSLEAY_VERSION
-    ).decode('ascii', errors='replace')
-    return f'{OpenSSL.version.__version__} ({system_openssl})'
+def get_openssl_version() -> str:
+    # https://github.com/python/typeshed/issues/10024
+    system_openssl_bytes = cast(
+        bytes, OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)
+    )
+    system_openssl = system_openssl_bytes.decode("ascii", errors="replace")
+    return f"{OpenSSL.version.__version__} ({system_openssl})"

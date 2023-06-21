@@ -1,20 +1,18 @@
-import re
 import logging
+import re
 
-from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip, gzip_magic_number
-
+from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
-
     sitemap_urls = ()
-    sitemap_rules = [('', 'parse')]
-    sitemap_follow = ['']
+    sitemap_rules = [("", "parse")]
+    sitemap_follow = [""]
     sitemap_alternate_links = False
 
     def __init__(self, *a, **kw):
@@ -39,24 +37,27 @@ class SitemapSpider(Spider):
             yield entry
 
     def _parse_sitemap(self, response):
-        if response.url.endswith('/robots.txt'):
+        if response.url.endswith("/robots.txt"):
             for url in sitemap_urls_from_robots(response.text, base_url=response.url):
                 yield Request(url, callback=self._parse_sitemap)
         else:
             body = self._get_sitemap_body(response)
             if body is None:
-                logger.warning("Ignoring invalid sitemap: %(response)s",
-                               {'response': response}, extra={'spider': self})
+                logger.warning(
+                    "Ignoring invalid sitemap: %(response)s",
+                    {"response": response},
+                    extra={"spider": self},
+                )
                 return
 
             s = Sitemap(body)
             it = self.sitemap_filter(s)
 
-            if s.type == 'sitemapindex':
+            if s.type == "sitemapindex":
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
-            elif s.type == 'urlset':
+            elif s.type == "urlset":
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
@@ -69,7 +70,7 @@ class SitemapSpider(Spider):
         """
         if isinstance(response, XmlResponse):
             return response.body
-        elif gzip_magic_number(response):
+        if gzip_magic_number(response):
             return gunzip(response.body)
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
@@ -80,7 +81,7 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
+        if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
             return response.body
 
 
@@ -92,8 +93,8 @@ def regex(x):
 
 def iterloc(it, alt=False):
     for d in it:
-        yield d['loc']
+        yield d["loc"]
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
-        if alt and 'alternate' in d:
-            yield from d['alternate']
+        if alt and "alternate" in d:
+            yield from d["alternate"]
