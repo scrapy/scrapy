@@ -1,21 +1,28 @@
 import functools
 import logging
 from collections import defaultdict
+from inspect import signature
+from warnings import warn
+
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
+from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import mustbe_deferred, defer_result
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.defer import defer_result, mustbe_deferred
+from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.misc import arg_to_iter
 
 logger = logging.getLogger(__name__)
 
 
-class MediaPipeline:
+def _DUMMY_CALLBACK(response):
+    return response
 
+
+class MediaPipeline:
     LOG_FAILED_RESULTS = True
 
     class SpiderInfo:
@@ -27,16 +34,18 @@ class MediaPipeline:
 
     def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
+        self._expects_item = {}
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        resolve = functools.partial(self._key_for_pipe,
-                                    base_class_name="MediaPipeline",
-                                    settings=settings)
-        self.allow_redirects = settings.getbool(
-            resolve('MEDIA_ALLOW_REDIRECTS'), False
+        resolve = functools.partial(
+            self._key_for_pipe, base_class_name="MediaPipeline", settings=settings
         )
+        self.allow_redirects = settings.getbool(resolve("MEDIA_ALLOW_REDIRECTS"), False)
         self._handle_statuses(self.allow_redirects)
+
+        # Check if deprecated methods are being used and make them compatible
+        self._make_compatible()
 
     def _handle_statuses(self, allow_redirects):
         self.handle_httpstatus_list = None
@@ -53,11 +62,12 @@ class MediaPipeline:
         'MYPIPE_IMAGES'
         """
         class_name = self.__class__.__name__
-        formatted_key = "{}_{}".format(class_name.upper(), key)
+        formatted_key = f"{class_name.upper()}_{key}"
         if (
             not base_class_name
             or class_name == base_class_name
-            or settings and not settings.get(formatted_key)
+            or settings
+            and not settings.get(formatted_key)
         ):
             return key
         return formatted_key
@@ -69,6 +79,7 @@ class MediaPipeline:
         except AttributeError:
             pipe = cls()
         pipe.crawler = crawler
+        pipe._fingerprinter = crawler.request_fingerprinter
         return pipe
 
     def open_spider(self, spider):
@@ -77,15 +88,18 @@ class MediaPipeline:
     def process_item(self, item, spider):
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
-        dlist = [self._process_request(r, info) for r in requests]
-        dfd = DeferredList(dlist, consumeErrors=1)
+        dlist = [self._process_request(r, info, item) for r in requests]
+        dfd = DeferredList(dlist, consumeErrors=True)
         return dfd.addCallback(self.item_completed, item, info)
 
-    def _process_request(self, request, info):
-        fp = request_fingerprint(request)
-        cb = request.callback or (lambda _: _)
+    def _process_request(self, request, info, item):
+        fp = self._fingerprinter.fingerprint(request)
+        if not request.callback or request.callback is NO_CALLBACK:
+            cb = _DUMMY_CALLBACK
+        else:
+            cb = request.callback
         eb = request.errback
-        request.callback = None
+        request.callback = NO_CALLBACK
         request.errback = None
 
         # Return cached result if request was already seen
@@ -102,35 +116,91 @@ class MediaPipeline:
 
         # Download request checking media_to_download hook output first
         info.downloading.add(fp)
-        dfd = mustbe_deferred(self.media_to_download, request, info)
-        dfd.addCallback(self._check_media_to_download, request, info)
+        dfd = mustbe_deferred(self.media_to_download, request, info, item=item)
+        dfd.addCallback(self._check_media_to_download, request, info, item=item)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
-        dfd.addErrback(lambda f: logger.error(
-            f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
+        dfd.addErrback(
+            lambda f: logger.error(
+                f.value, exc_info=failure_to_exc_info(f), extra={"spider": info.spider}
+            )
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
+    def _make_compatible(self):
+        """Make overridable methods of MediaPipeline and subclasses backwards compatible"""
+        methods = [
+            "file_path",
+            "thumb_path",
+            "media_to_download",
+            "media_downloaded",
+            "file_downloaded",
+            "image_downloaded",
+            "get_images",
+        ]
+
+        for method_name in methods:
+            method = getattr(self, method_name, None)
+            if callable(method):
+                setattr(self, method_name, self._compatible(method))
+
+    def _compatible(self, func):
+        """Wrapper for overridable methods to allow backwards compatibility"""
+        self._check_signature(func)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if self._expects_item[func.__name__]:
+                return func(*args, **kwargs)
+
+            kwargs.pop("item", None)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    def _check_signature(self, func):
+        sig = signature(func)
+        self._expects_item[func.__name__] = True
+
+        if "item" not in sig.parameters:
+            old_params = str(sig)[1:-1]
+            new_params = old_params + ", *, item=None"
+            warn(
+                f"{func.__name__}(self, {old_params}) is deprecated, "
+                f"please use {func.__name__}(self, {new_params})",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self._expects_item[func.__name__] = False
+
     def _modify_media_request(self, request):
         if self.handle_httpstatus_list:
-            request.meta['handle_httpstatus_list'] = self.handle_httpstatus_list
+            request.meta["handle_httpstatus_list"] = self.handle_httpstatus_list
         else:
-            request.meta['handle_httpstatus_all'] = True
+            request.meta["handle_httpstatus_all"] = True
 
-    def _check_media_to_download(self, result, request, info):
+    def _check_media_to_download(self, result, request, info, item):
         if result is not None:
             return result
         if self.download_func:
             # this ugly code was left only to support tests. TODO: remove
             dfd = mustbe_deferred(self.download_func, request, info.spider)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info),
-                errback=self.media_failed, errbackArgs=(request, info))
+                callback=self.media_downloaded,
+                callbackArgs=(request, info),
+                callbackKeywords={"item": item},
+                errback=self.media_failed,
+                errbackArgs=(request, info),
+            )
         else:
             self._modify_media_request(request)
-            dfd = self.crawler.engine.download(request, info.spider)
+            dfd = self.crawler.engine.download(request)
             dfd.addCallbacks(
-                callback=self.media_downloaded, callbackArgs=(request, info),
-                errback=self.media_failed, errbackArgs=(request, info))
+                callback=self.media_downloaded,
+                callbackArgs=(request, info),
+                callbackKeywords={"item": item},
+                errback=self.media_failed,
+                errbackArgs=(request, info),
+            )
         return dfd
 
     def _cache_result_and_execute_waiters(self, result, fp, info):
@@ -161,9 +231,9 @@ class MediaPipeline:
             #
             # This problem does not occur in Python 2.7 since we don't have
             # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
-            context = getattr(result.value, '__context__', None)
+            context = getattr(result.value, "__context__", None)
             if isinstance(context, StopIteration):
-                setattr(result.value, '__context__', None)
+                setattr(result.value, "__context__", None)
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result
@@ -171,7 +241,7 @@ class MediaPipeline:
             defer_result(result).chainDeferred(wad)
 
     # Overridable Interface
-    def media_to_download(self, request, info):
+    def media_to_download(self, request, info, *, item=None):
         """Check request before starting download"""
         pass
 
@@ -179,7 +249,7 @@ class MediaPipeline:
         """Returns the media requests to download"""
         pass
 
-    def media_downloaded(self, response, request, info):
+    def media_downloaded(self, response, request, info, *, item=None):
         """Handler for success downloads"""
         return response
 
@@ -193,9 +263,13 @@ class MediaPipeline:
             for ok, value in results:
                 if not ok:
                     logger.error(
-                        '%(class)s found errors processing %(item)s',
-                        {'class': self.__class__.__name__, 'item': item},
+                        "%(class)s found errors processing %(item)s",
+                        {"class": self.__class__.__name__, "item": item},
                         exc_info=failure_to_exc_info(value),
-                        extra={'spider': info.spider}
+                        extra={"spider": info.spider},
                     )
         return item
+
+    def file_path(self, request, response=None, info=None, *, item=None):
+        """Returns the path where downloaded media should be stored"""
+        pass

@@ -11,7 +11,6 @@ from collections.abc import Mapping
 
 
 class CaselessDict(dict):
-
     __slots__ = ()
 
     def __init__(self, seq=None):
@@ -30,10 +29,12 @@ class CaselessDict(dict):
 
     def __contains__(self, key):
         return dict.__contains__(self, self.normkey(key))
+
     has_key = __contains__
 
     def __copy__(self):
         return self.__class__(self)
+
     copy = __copy__
 
     def normkey(self, key):
@@ -41,7 +42,7 @@ class CaselessDict(dict):
         return key.lower()
 
     def normvalue(self, value):
-        """Method to normalize values prior to be setted"""
+        """Method to normalize values prior to be set"""
         return value
 
     def get(self, key, def_val=None):

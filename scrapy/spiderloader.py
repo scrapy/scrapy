@@ -17,8 +17,8 @@ class SpiderLoader:
     """
 
     def __init__(self, settings):
-        self.spider_modules = settings.getlist('SPIDER_MODULES')
-        self.warn_only = settings.getbool('SPIDER_LOADER_WARN_ONLY')
+        self.spider_modules = settings.getlist("SPIDER_MODULES")
+        self.warn_only = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders = {}
         self._found = defaultdict(list)
         self._load_all_spiders()
@@ -26,17 +26,19 @@ class SpiderLoader:
     def _check_name_duplicates(self):
         dupes = []
         for name, locations in self._found.items():
-            dupes.extend([
-                "  {cls} named {name!r} (in {module})".format(module=mod, cls=cls, name=name)
-                for mod, cls in locations
-                if len(locations) > 1
-            ])
+            dupes.extend(
+                [
+                    f"  {cls} named {name!r} (in {mod})"
+                    for mod, cls in locations
+                    if len(locations) > 1
+                ]
+            )
 
         if dupes:
             dupes_string = "\n\n".join(dupes)
             warnings.warn(
                 "There are several spiders with the same name:\n\n"
-                "{}\n\n  This can cause unexpected behavior.".format(dupes_string),
+                f"{dupes_string}\n\n  This can cause unexpected behavior.",
                 category=UserWarning,
             )
 
@@ -53,10 +55,9 @@ class SpiderLoader:
             except ImportError:
                 if self.warn_only:
                     warnings.warn(
-                        "\n{tb}Could not load spiders from module '{modname}'. "
-                        "See above traceback for details.".format(
-                            modname=name, tb=traceback.format_exc()
-                        ),
+                        f"\n{traceback.format_exc()}Could not load spiders "
+                        f"from module '{name}'. "
+                        "See above traceback for details.",
                         category=RuntimeWarning,
                     )
                 else:
@@ -75,15 +76,14 @@ class SpiderLoader:
         try:
             return self._spiders[spider_name]
         except KeyError:
-            raise KeyError("Spider not found: {}".format(spider_name))
+            raise KeyError(f"Spider not found: {spider_name}")
 
     def find_by_request(self, request):
         """
         Return the list of spider names that can handle the given request.
         """
         return [
-            name for name, cls in self._spiders.items()
-            if cls.handles_request(request)
+            name for name, cls in self._spiders.items() if cls.handles_request(request)
         ]
 
     def list(self):

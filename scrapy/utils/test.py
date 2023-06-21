@@ -4,60 +4,30 @@ This module contains some assorted functions used in tests
 
 import asyncio
 import os
+from importlib import import_module
+from pathlib import Path
 from posixpath import split
 from unittest import mock
 
-from importlib import import_module
 from twisted.trial.unittest import SkipTest
 
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.boto import is_botocore
-
-
-def assert_aws_environ():
-    """Asserts the current environment is suitable for running AWS testsi.
-    Raises SkipTest with the reason if it's not.
-    """
-    skip_if_no_boto()
-    if 'AWS_ACCESS_KEY_ID' not in os.environ:
-        raise SkipTest("AWS keys not found")
+from scrapy.utils.boto import is_botocore_available
 
 
 def assert_gcs_environ():
-    if 'GCS_PROJECT_ID' not in os.environ:
+    if "GCS_PROJECT_ID" not in os.environ:
         raise SkipTest("GCS_PROJECT_ID not found")
 
 
 def skip_if_no_boto():
-    try:
-        is_botocore()
-    except NotConfigured as e:
-        raise SkipTest(e)
-
-
-def get_s3_content_and_delete(bucket, path, with_key=False):
-    """ Get content from s3 key, and delete key afterwards.
-    """
-    if is_botocore():
-        import botocore.session
-        session = botocore.session.get_session()
-        client = session.create_client('s3')
-        key = client.get_object(Bucket=bucket, Key=path)
-        content = key['Body'].read()
-        client.delete_object(Bucket=bucket, Key=path)
-    else:
-        import boto
-        # assuming boto=2.2.2
-        bucket = boto.connect_s3().get_bucket(bucket, validate=False)
-        key = bucket.get_key(path)
-        content = key.get_contents_as_string()
-        bucket.delete_key(path)
-    return (content, key) if with_key else content
+    if not is_botocore_available():
+        raise SkipTest("missing botocore library")
 
 
 def get_gcs_content_and_delete(bucket, path):
     from google.cloud import storage
-    client = storage.Client(project=os.environ.get('GCS_PROJECT_ID'))
+
+    client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
     blob = bucket.get_blob(path)
     content = blob.download_as_string()
@@ -67,9 +37,10 @@ def get_gcs_content_and_delete(bucket, path):
 
 
 def get_ftp_content_and_delete(
-        path, host, port, username,
-        password, use_active_mode=False):
+    path, host, port, username, password, use_active_mode=False
+):
     from ftplib import FTP
+
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -79,14 +50,15 @@ def get_ftp_content_and_delete(
 
     def buffer_data(data):
         ftp_data.append(data)
-    ftp.retrbinary('RETR %s' % path, buffer_data)
+
+    ftp.retrbinary(f"RETR {path}", buffer_data)
     dirname, filename = split(path)
     ftp.cwd(dirname)
     ftp.delete(filename)
     return "".join(ftp_data)
 
 
-def get_crawler(spidercls=None, settings_dict=None):
+def get_crawler(spidercls=None, settings_dict=None, prevent_warnings=True):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
     priority.
@@ -94,15 +66,20 @@ def get_crawler(spidercls=None, settings_dict=None):
     from scrapy.crawler import CrawlerRunner
     from scrapy.spiders import Spider
 
-    runner = CrawlerRunner(settings_dict)
+    # Set by default settings that prevent deprecation warnings.
+    settings = {}
+    if prevent_warnings:
+        settings["REQUEST_FINGERPRINTER_IMPLEMENTATION"] = "2.7"
+    settings.update(settings_dict or {})
+    runner = CrawlerRunner(settings)
     return runner.create_crawler(spidercls or Spider)
 
 
-def get_pythonpath():
+def get_pythonpath() -> str:
     """Return a PYTHONPATH suitable to use in processes so that they find this
     installation of Scrapy"""
-    scrapy_path = import_module('scrapy').__path__[0]
-    return os.path.dirname(scrapy_path) + os.pathsep + os.environ.get('PYTHONPATH', '')
+    scrapy_path = import_module("scrapy").__path__[0]
+    return str(Path(scrapy_path).parent) + os.pathsep + os.environ.get("PYTHONPATH", "")
 
 
 def get_testenv():
@@ -110,7 +87,7 @@ def get_testenv():
     this installation of Scrapy, instead of a system installed one.
     """
     env = os.environ.copy()
-    env['PYTHONPATH'] = get_pythonpath()
+    env["PYTHONPATH"] = get_pythonpath()
     return env
 
 
@@ -132,7 +109,8 @@ def mock_google_cloud_storage():
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """
-    from google.cloud.storage import Client, Bucket, Blob
+    from google.cloud.storage import Blob, Bucket, Client
+
     client_mock = mock.create_autospec(Client)
 
     bucket_mock = mock.create_autospec(Bucket)
@@ -142,3 +120,11 @@ def mock_google_cloud_storage():
     bucket_mock.blob.return_value = blob_mock
 
     return (client_mock, bucket_mock, blob_mock)
+
+
+def get_web_client_agent_req(url):
+    from twisted.internet import reactor
+    from twisted.web.client import Agent  # imports twisted.internet.reactor
+
+    agent = Agent(reactor)
+    return agent.request(b"GET", url.encode("utf-8"))
