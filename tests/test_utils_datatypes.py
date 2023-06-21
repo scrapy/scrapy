@@ -1,9 +1,13 @@
 import copy
 import unittest
+import warnings
 from collections.abc import Mapping, MutableMapping
+from typing import Iterator
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.datatypes import (
+    CaseInsensitiveDict,
     CaselessDict,
     LocalCache,
     LocalWeakReferencedCache,
@@ -14,16 +18,16 @@ from scrapy.utils.python import garbage_collect
 __doctests__ = ["scrapy.utils.datatypes"]
 
 
-class CaselessDictTest(unittest.TestCase):
+class CaseInsensitiveDictMixin:
     def test_init_dict(self):
         seq = {"red": 1, "black": 3}
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d["red"], 1)
         self.assertEqual(d["black"], 3)
 
     def test_init_pair_sequence(self):
         seq = (("red", 1), ("black", 3))
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d["red"], 1)
         self.assertEqual(d["black"], 3)
 
@@ -42,7 +46,7 @@ class CaselessDictTest(unittest.TestCase):
                 return len(self._d)
 
         seq = MyMapping(red=1, black=3)
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d["red"], 1)
         self.assertEqual(d["black"], 3)
 
@@ -67,12 +71,12 @@ class CaselessDictTest(unittest.TestCase):
                 return len(self._d)
 
         seq = MyMutableMapping(red=1, black=3)
-        d = CaselessDict(seq)
+        d = self.dict_class(seq)
         self.assertEqual(d["red"], 1)
         self.assertEqual(d["black"], 3)
 
     def test_caseless(self):
-        d = CaselessDict()
+        d = self.dict_class()
         d["key_Lower"] = 1
         self.assertEqual(d["KEy_loWer"], 1)
         self.assertEqual(d.get("KEy_loWer"), 1)
@@ -82,7 +86,7 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d.get("key_Lower"), 3)
 
     def test_delete(self):
-        d = CaselessDict({"key_lower": 1})
+        d = self.dict_class({"key_lower": 1})
         del d["key_LOWER"]
         self.assertRaises(KeyError, d.__getitem__, "key_LOWER")
         self.assertRaises(KeyError, d.__getitem__, "key_lower")
@@ -107,15 +111,15 @@ class CaselessDictTest(unittest.TestCase):
     def test_fromkeys(self):
         keys = ("a", "b")
 
-        d = CaselessDict.fromkeys(keys)
+        d = self.dict_class.fromkeys(keys)
         self.assertEqual(d["A"], None)
         self.assertEqual(d["B"], None)
 
-        d = CaselessDict.fromkeys(keys, 1)
+        d = self.dict_class.fromkeys(keys, 1)
         self.assertEqual(d["A"], 1)
         self.assertEqual(d["B"], 1)
 
-        instance = CaselessDict()
+        instance = self.dict_class()
         d = instance.fromkeys(keys)
         self.assertEqual(d["A"], None)
         self.assertEqual(d["B"], None)
@@ -125,30 +129,34 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d["B"], 1)
 
     def test_contains(self):
-        d = CaselessDict()
+        d = self.dict_class()
         d["a"] = 1
-        assert "a" in d
+        assert "A" in d
 
     def test_pop(self):
-        d = CaselessDict()
+        d = self.dict_class()
         d["a"] = 1
         self.assertEqual(d.pop("A"), 1)
         self.assertRaises(KeyError, d.pop, "A")
 
     def test_normkey(self):
-        class MyDict(CaselessDict):
-            def normkey(self, key):
+        class MyDict(self.dict_class):
+            def _normkey(self, key):
                 return key.title()
+
+            normkey = _normkey  # deprecated CaselessDict class
 
         d = MyDict()
         d["key-one"] = 2
         self.assertEqual(list(d.keys()), ["Key-One"])
 
     def test_normvalue(self):
-        class MyDict(CaselessDict):
-            def normvalue(self, value):
+        class MyDict(self.dict_class):
+            def _normvalue(self, value):
                 if value is not None:
                     return value + 1
+
+            normvalue = _normvalue  # deprecated CaselessDict class
 
         d = MyDict({"key": 1})
         self.assertEqual(d["key"], 2)
@@ -174,11 +182,51 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d.get("key"), 2)
 
     def test_copy(self):
-        h1 = CaselessDict({"header1": "value"})
+        h1 = self.dict_class({"header1": "value"})
         h2 = copy.copy(h1)
+        assert isinstance(h2, self.dict_class)
         self.assertEqual(h1, h2)
         self.assertEqual(h1.get("header1"), h2.get("header1"))
-        assert isinstance(h2, CaselessDict)
+        self.assertEqual(h1.get("header1"), h2.get("HEADER1"))
+        h3 = h1.copy()
+        assert isinstance(h3, self.dict_class)
+        self.assertEqual(h1, h3)
+        self.assertEqual(h1.get("header1"), h3.get("header1"))
+        self.assertEqual(h1.get("header1"), h3.get("HEADER1"))
+
+
+class CaseInsensitiveDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
+    dict_class = CaseInsensitiveDict
+
+    def test_repr(self):
+        d1 = self.dict_class({"foo": "bar"})
+        self.assertEqual(repr(d1), "<CaseInsensitiveDict: {'foo': 'bar'}>")
+        d2 = self.dict_class({"AsDf": "QwErTy", "FoO": "bAr"})
+        self.assertEqual(
+            repr(d2), "<CaseInsensitiveDict: {'AsDf': 'QwErTy', 'FoO': 'bAr'}>"
+        )
+
+    def test_iter(self):
+        d = self.dict_class({"AsDf": "QwErTy", "FoO": "bAr"})
+        iterkeys = iter(d)
+        self.assertIsInstance(iterkeys, Iterator)
+        self.assertEqual(list(iterkeys), ["AsDf", "FoO"])
+
+
+class CaselessDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
+    dict_class = CaselessDict
+
+    def test_deprecation_message(self):
+        with warnings.catch_warnings(record=True) as caught:
+            self.dict_class({"foo": "bar"})
+
+            self.assertEqual(len(caught), 1)
+            self.assertTrue(issubclass(caught[0].category, ScrapyDeprecationWarning))
+            self.assertEqual(
+                "scrapy.utils.datatypes.CaselessDict is deprecated,"
+                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead",
+                str(caught[0].message),
+            )
 
 
 class SequenceExcludeTest(unittest.TestCase):
