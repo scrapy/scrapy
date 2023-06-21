@@ -291,7 +291,7 @@ def without_none_values(iterable):
     try:
         return {k: v for k, v in iterable.items() if v is not None}
     except AttributeError:
-        return type(iterable)((v for v in iterable if v is not None))
+        return type(iterable)(v for v in iterable if v is not None)
 
 
 def global_object_name(obj):

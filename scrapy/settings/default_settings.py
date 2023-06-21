@@ -268,9 +268,9 @@ RETRY_EXCEPTIONS = [
     "twisted.internet.error.ConnectionLost",
     "twisted.internet.error.TCPTimedOutError",
     "twisted.web.client.ResponseFailed",
-    # IOError is raised by the HttpCompression middleware when trying to
+    # OSError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
-    IOError,
+    OSError,
     "scrapy.core.downloader.handlers.http11.TunnelError",
 ]
 

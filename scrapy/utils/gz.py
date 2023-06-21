@@ -15,7 +15,7 @@ def gunzip(data):
         try:
             chunk = f.read1(8196)
             output_list.append(chunk)
-        except (IOError, EOFError, struct.error):
+        except (OSError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
             # some pages are quite small so output_list is empty and f.extrabuf
