@@ -439,10 +439,10 @@ class FeedExporter:
             return slot_.file
 
         if slot.itemcount:
-            # Nomal case
+            # Normal case
             slot.finish_exporting()
         elif slot.store_empty and slot.batch_id == 1:
-            # Need Store Empty
+            # Need to store the empty file
             slot.start_exporting()
             slot.finish_exporting()
         else:
