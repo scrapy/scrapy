@@ -70,7 +70,7 @@ class DefaultsTest(ManagerTestCase):
         In particular when some website returns a 30x response with header
         'Content-Encoding: gzip' giving as result the error below:
 
-            exceptions.IOError: Not a gzipped file
+            BadGzipFile: Not a gzipped file (...)
 
         """
         req = Request("http://example.com")
@@ -108,7 +108,7 @@ class DefaultsTest(ManagerTestCase):
                 "Location": "http://example.com/login",
             },
         )
-        self.assertRaises(IOError, self._download, request=req, response=resp)
+        self.assertRaises(OSError, self._download, request=req, response=resp)
 
 
 class ResponseFromProcessRequestTest(ManagerTestCase):
