@@ -451,6 +451,19 @@ class SettingsTest(unittest.TestCase):
         self.assertIsInstance(myhandler_instance, FileDownloadHandler)
         self.assertTrue(hasattr(myhandler_instance, "download_request"))
 
+    def test_pop_item_with_default_value(self):
+        settings = Settings()
+
+        with self.assertRaises(KeyError):
+            settings.pop("DUMMY_CONFIG")
+
+        dummy_config = settings.pop("DUMMY_CONFIG", "dummy_value")
+
+        self.assertEqual(
+            repr(dummy_config), "<SettingsAttribute value='dummy_value' priority=20>"
+        )
+        self.assertEqual(dummy_config.value, "dummy_value")
+
 
 if __name__ == "__main__":
     unittest.main()
