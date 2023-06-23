@@ -464,6 +464,22 @@ class SettingsTest(unittest.TestCase):
         )
         self.assertEqual(dummy_config.value, "dummy_value")
 
+    def test_pop_item_with_frozen_settings(self):
+        settings = Settings(
+            {"DUMMY_CONFIG": "dummy_value", "OTHER_DUMMY_CONFIG": "other_dummy_value"}
+        )
+
+        self.assertEqual(settings.pop("DUMMY_CONFIG").value, "dummy_value")
+
+        settings.freeze()
+
+        with self.assertRaises(TypeError) as error:
+            settings.pop("OTHER_DUMMY_CONFIG")
+
+        self.assertEqual(
+            str(error.exception), "Trying to modify an immutable Settings object"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

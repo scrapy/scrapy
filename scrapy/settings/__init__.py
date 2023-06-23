@@ -456,7 +456,7 @@ class BaseSettings(MutableMapping):
 
             return SettingsAttribute(default, get_settings_priority("project"))
         else:
-            del self.attributes[name]
+            self.__delitem__(name)
             return value
 
 
