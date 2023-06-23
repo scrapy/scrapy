@@ -464,7 +464,7 @@ class SettingsTest(unittest.TestCase):
         )
         self.assertEqual(dummy_config.value, "dummy_value")
 
-    def test_pop_item_with_frozen_settings(self):
+    def test_pop_item_with_immutable_settings(self):
         settings = Settings(
             {"DUMMY_CONFIG": "dummy_value", "OTHER_DUMMY_CONFIG": "other_dummy_value"}
         )
