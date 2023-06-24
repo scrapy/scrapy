@@ -451,6 +451,35 @@ class SettingsTest(unittest.TestCase):
         self.assertIsInstance(myhandler_instance, FileDownloadHandler)
         self.assertTrue(hasattr(myhandler_instance, "download_request"))
 
+    def test_pop_item_with_default_value(self):
+        settings = Settings()
+
+        with self.assertRaises(KeyError):
+            settings.pop("DUMMY_CONFIG")
+
+        dummy_config = settings.pop("DUMMY_CONFIG", "dummy_value")
+
+        self.assertEqual(
+            repr(dummy_config), "<SettingsAttribute value='dummy_value' priority=20>"
+        )
+        self.assertEqual(dummy_config.value, "dummy_value")
+
+    def test_pop_item_with_immutable_settings(self):
+        settings = Settings(
+            {"DUMMY_CONFIG": "dummy_value", "OTHER_DUMMY_CONFIG": "other_dummy_value"}
+        )
+
+        self.assertEqual(settings.pop("DUMMY_CONFIG").value, "dummy_value")
+
+        settings.freeze()
+
+        with self.assertRaises(TypeError) as error:
+            settings.pop("OTHER_DUMMY_CONFIG")
+
+        self.assertEqual(
+            str(error.exception), "Trying to modify an immutable Settings object"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
