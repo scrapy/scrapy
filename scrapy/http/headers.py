@@ -2,7 +2,7 @@ from collections.abc import Mapping
 
 from w3lib.http import headers_dict_to_raw
 
-from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.datatypes import CaseInsensitiveDict, CaselessDict
 from scrapy.utils.python import to_unicode
 
 
@@ -88,7 +88,7 @@ class Headers(CaselessDict):
         """Return headers as a CaselessDict with unicode keys
         and unicode values. Multiple values are joined with ','.
         """
-        return CaselessDict(
+        return CaseInsensitiveDict(
             (
                 to_unicode(key, encoding=self.encoding),
                 to_unicode(b",".join(value), encoding=self.encoding),

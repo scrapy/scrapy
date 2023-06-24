@@ -90,6 +90,10 @@ class BaseItemExporterTest(unittest.TestCase):
             if self.ie.__class__ is not BaseItemExporter:
                 raise
         self.ie.finish_exporting()
+        # Delete the item exporter object, so that if it causes the output
+        # file handle to be closed, which should not be the case, follow-up
+        # interactions with the output file handle will surface the issue.
+        del self.ie
         self._check_output()
 
     def test_export_item(self):
@@ -243,6 +247,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
         ie.export_item(i1)
         ie.export_item(i2)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         f.seek(0)
         self.assertEqual(self.item_class(**pickle.load(f)), i1)
         self.assertEqual(self.item_class(**pickle.load(f)), i2)
@@ -254,6 +259,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         self.assertEqual(pickle.loads(fp.getvalue()), item)
 
 
@@ -279,6 +285,7 @@ class MarshalItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         fp.seek(0)
         self.assertEqual(marshal.load(fp), item)
 
@@ -314,6 +321,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         self.assertCsvEqual(fp.getvalue(), expected)
 
     def test_header_export_all(self):
@@ -345,6 +353,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
             ie.export_item(item)
             ie.export_item(item)
             ie.finish_exporting()
+            del ie  # See the first “del self.ie” in this file for context.
             self.assertCsvEqual(
                 output.getvalue(), b"age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n"
             )
@@ -429,6 +438,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         self.assertXmlEquivalent(fp.getvalue(), expected_value)
 
     def _check_output(self):
@@ -536,6 +546,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         self.assertEqual(exported, self._expected_nested)
 
@@ -550,6 +561,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(item)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         item["time"] = str(item["time"])
         self.assertEqual(exported, item)
@@ -575,6 +587,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.export_item(item)
         self.ie.export_item(item)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         self.assertEqual(
             exported, [ItemAdapter(item).asdict(), ItemAdapter(item).asdict()]
@@ -593,6 +606,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         expected = {
             "name": "Jesus",
@@ -607,6 +621,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         expected = {"name": "Jesus", "age": {"name": "Maria", "age": i1}}
         self.assertEqual(exported, [expected])
@@ -616,6 +631,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(item)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         item["time"] = str(item["time"])
         self.assertEqual(exported, [item])

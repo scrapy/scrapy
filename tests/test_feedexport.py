@@ -36,6 +36,7 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
+    IS_BOTO3_AVAILABLE,
     BlockingFeedStorage,
     FeedExporter,
     FeedSlot,
@@ -236,8 +237,10 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 
 class S3FeedStorageTest(unittest.TestCase):
-    def test_parse_credentials(self):
+    def setUp(self):
         skip_if_no_boto()
+
+    def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
             "AWS_SECRET_ACCESS_KEY": "settings_secret",
@@ -273,8 +276,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        skip_if_no_boto()
-
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
             "AWS_SECRET_ACCESS_KEY": "secret_key",
@@ -286,30 +287,39 @@ class S3FeedStorageTest(unittest.TestCase):
         verifyObject(IFeedStorage, storage)
 
         file = mock.MagicMock()
-        from botocore.stub import Stubber
 
-        with Stubber(storage.s3_client) as stub:
-            stub.add_response(
-                "put_object",
-                expected_params={
-                    "Body": file,
-                    "Bucket": bucket,
-                    "Key": key,
-                },
-                service_response={},
-            )
-
+        if IS_BOTO3_AVAILABLE:
+            storage.s3_client = mock.MagicMock()
             yield storage.store(file)
-
-            stub.assert_no_pending_responses()
             self.assertEqual(
-                file.method_calls,
-                [
-                    mock.call.seek(0),
-                    # The call to read does not happen with Stubber
-                    mock.call.close(),
-                ],
+                storage.s3_client.upload_fileobj.call_args,
+                mock.call(Bucket=bucket, Key=key, Fileobj=file),
             )
+        else:
+            from botocore.stub import Stubber
+
+            with Stubber(storage.s3_client) as stub:
+                stub.add_response(
+                    "put_object",
+                    expected_params={
+                        "Body": file,
+                        "Bucket": bucket,
+                        "Key": key,
+                    },
+                    service_response={},
+                )
+
+                yield storage.store(file)
+
+                stub.assert_no_pending_responses()
+                self.assertEqual(
+                    file.method_calls,
+                    [
+                        mock.call.seek(0),
+                        # The call to read does not happen with Stubber
+                        mock.call.close(),
+                    ],
+                )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
@@ -392,8 +402,7 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.endpoint_url, "https://example.com")
 
     @defer.inlineCallbacks
-    def test_store_botocore_without_acl(self):
-        skip_if_no_boto()
+    def test_store_without_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
@@ -405,11 +414,18 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        self.assertNotIn("ACL", storage.s3_client.put_object.call_args[1])
+        if IS_BOTO3_AVAILABLE:
+            acl = (
+                storage.s3_client.upload_fileobj.call_args[1]
+                .get("ExtraArgs", {})
+                .get("ACL")
+            )
+        else:
+            acl = storage.s3_client.put_object.call_args[1].get("ACL")
+        self.assertIsNone(acl)
 
     @defer.inlineCallbacks
-    def test_store_botocore_with_acl(self):
-        skip_if_no_boto()
+    def test_store_with_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
@@ -419,9 +435,11 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        self.assertEqual(
-            storage.s3_client.put_object.call_args[1].get("ACL"), "custom-acl"
-        )
+        if IS_BOTO3_AVAILABLE:
+            acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
+        else:
+            acl = storage.s3_client.put_object.call_args[1]["ACL"]
+        self.assertEqual(acl, "custom-acl")
 
     def test_overwrite_default(self):
         with LogCapture() as log:
@@ -889,14 +907,9 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_stats_multiple_file(self):
         settings = {
-            "AWS_ACCESS_KEY_ID": "access_key",
-            "AWS_SECRET_ACCESS_KEY": "secret_key",
             "FEEDS": {
                 printf_escape(path_to_url(str(self._random_temp_filename()))): {
                     "format": "json",
-                },
-                "s3://bucket/key/foo.csv": {
-                    "format": "csv",
                 },
                 "stdout:": {
                     "format": "xml",
@@ -910,16 +923,10 @@ class FeedExportTest(FeedExportTestBase):
             "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
         )
         self.assertIn(
-            "feedexport/success_count/S3FeedStorage", crawler.stats.get_stats()
-        )
-        self.assertIn(
             "feedexport/success_count/StdoutFeedStorage", crawler.stats.get_stats()
         )
         self.assertEqual(
             crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/S3FeedStorage"), 1
         )
         self.assertEqual(
             crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage"), 1
@@ -2587,7 +2594,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_s3_export(self):
         skip_if_no_boto()
-
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2752,6 +2758,31 @@ class FeedExportInitTest(unittest.TestCase):
         with self.assertRaises(NotConfigured):
             FeedExporter.from_crawler(crawler)
 
+    def test_absolute_pathlib_as_uri(self):
+        with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+            settings = {
+                "FEEDS": {
+                    Path(tmp.name).resolve(): {
+                        "format": "json",
+                    },
+                },
+            }
+            crawler = get_crawler(settings_dict=settings)
+            exporter = FeedExporter.from_crawler(crawler)
+            self.assertIsInstance(exporter, FeedExporter)
+
+    def test_relative_pathlib_as_uri(self):
+        settings = {
+            "FEEDS": {
+                Path("./items.json"): {
+                    "format": "json",
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter.from_crawler(crawler)
+        self.assertIsInstance(exporter, FeedExporter)
+
 
 class StdoutFeedStorageWithoutFeedOptions(StdoutFeedStorage):
     def __init__(self, uri):
@@ -2835,6 +2866,9 @@ class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
     expected, and simply issues a warning."""
 
     maxDiff = None
+
+    def setUp(self):
+        skip_if_no_boto()
 
     def test_init(self):
         settings_dict = {

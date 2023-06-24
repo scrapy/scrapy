@@ -33,6 +33,13 @@ from scrapy.utils.python import get_func_args, without_none_values
 
 logger = logging.getLogger(__name__)
 
+try:
+    import boto3  # noqa: F401
+
+    IS_BOTO3_AVAILABLE = True
+except ImportError:
+    IS_BOTO3_AVAILABLE = False
+
 
 def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
     argument_names = get_func_args(builder)
@@ -176,16 +183,38 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
-        import botocore.session
 
-        session = botocore.session.get_session()
-        self.s3_client = session.create_client(
-            "s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            aws_session_token=self.session_token,
-            endpoint_url=self.endpoint_url,
-        )
+        if IS_BOTO3_AVAILABLE:
+            import boto3.session
+
+            session = boto3.session.Session()
+
+            self.s3_client = session.client(
+                "s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                aws_session_token=self.session_token,
+                endpoint_url=self.endpoint_url,
+            )
+        else:
+            warnings.warn(
+                "`botocore` usage has been deprecated for S3 feed "
+                "export, please use `boto3` to avoid problems",
+                category=ScrapyDeprecationWarning,
+            )
+
+            import botocore.session
+
+            session = botocore.session.get_session()
+
+            self.s3_client = session.create_client(
+                "s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                aws_session_token=self.session_token,
+                endpoint_url=self.endpoint_url,
+            )
+
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
                 "S3 does not support appending to files. To "
@@ -208,10 +237,16 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file):
         file.seek(0)
-        kwargs = {"ACL": self.acl} if self.acl else {}
-        self.s3_client.put_object(
-            Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
-        )
+        if IS_BOTO3_AVAILABLE:
+            kwargs = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
+            )
+        else:
+            kwargs = {"ACL": self.acl} if self.acl else {}
+            self.s3_client.put_object(
+                Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
+            )
         file.close()
 
 
@@ -347,7 +382,9 @@ class FeedExporter:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            uri = str(self.settings["FEED_URI"])  # handle pathlib.Path objects
+            uri = self.settings["FEED_URI"]
+            # handle pathlib.Path objects
+            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
             feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -357,7 +394,8 @@ class FeedExporter:
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict("FEEDS").items():
-            uri = str(uri)  # handle pathlib.Path objects
+            # handle pathlib.Path objects
+            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )

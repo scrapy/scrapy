@@ -226,12 +226,16 @@ class FilesPipelineTestCase(unittest.TestCase):
 
 
 class FilesPipelineTestCaseFieldsMixin:
+    def setUp(self):
+        self.tempdir = mkdtemp()
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
     def test_item_fields_default(self):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
-        pipeline = FilesPipeline.from_settings(
-            Settings({"FILES_STORE": "s3://example/files/"})
-        )
+        pipeline = FilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {"url": url})]
@@ -246,7 +250,7 @@ class FilesPipelineTestCaseFieldsMixin:
         pipeline = FilesPipeline.from_settings(
             Settings(
                 {
-                    "FILES_STORE": "s3://example/files/",
+                    "FILES_STORE": self.tempdir,
                     "FILES_URLS_FIELD": "custom_file_urls",
                     "FILES_RESULT_FIELD": "custom_files",
                 }

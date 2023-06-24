@@ -101,12 +101,12 @@ The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
 -   :ref:`topics-feed-storage-ftp`
--   :ref:`topics-feed-storage-s3` (requires botocore_)
+-   :ref:`topics-feed-storage-s3` (requires boto3_)
 -   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
 -   :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if the botocore_
+not available. For example, the S3 backend is only available if the boto3_
 library is installed.
 
 
@@ -156,8 +156,8 @@ The feeds are stored in the local filesystem.
 -   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv``. This only works on Unix
-systems though.
+you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
+Alternatively you can also use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
 
@@ -174,6 +174,12 @@ FTP supports two different connection modes: `active or passive
 <https://stackoverflow.com/a/1699163>`_. Scrapy uses the passive connection
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
+
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+storage backend is: ``True``.
+
+.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
+     previous version of your data.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -193,7 +199,7 @@ The feeds are stored on `Amazon S3`_.
 
     -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
--   Required external libraries: `botocore`_ >= 1.4.87
+-   Required external libraries: `boto3`_ >= 1.20.0
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -208,6 +214,12 @@ You can also define a custom ACL and custom endpoint for exported feeds using th
 
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
+
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+storage backend is: ``True``.
+
+.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
+     previous version of your data.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -235,6 +247,12 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
+
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+storage backend is: ``True``.
+
+.. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
+     previous version of your data.
 
 This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 
@@ -487,6 +505,8 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
         <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
+
+    -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
@@ -779,6 +799,6 @@ source spider in the feed URI:
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _botocore: https://github.com/boto/botocore
+.. _boto3: https://github.com/boto/boto3
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/
