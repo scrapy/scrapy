@@ -39,29 +39,16 @@ class PeriodicLog:
         interval = crawler.settings.getfloat("LOGSTATS_INTERVAL")
         try:
             ext_stats = crawler.settings.getdict("PERIODIC_LOG_STATS")
-        except ValueError:
+        except (TypeError, ValueError):
             ext_stats = (
                 {"enabled": True}
                 if crawler.settings.getbool("PERIODIC_LOG_STATS")
                 else None
             )
-        except TypeError:
-            ext_stats = (
-                {"enabled": True}
-                if crawler.settings.getbool("PERIODIC_LOG_STATS")
-                else None
-            )
-
         try:
             ext_delta = crawler.settings.getdict("PERIODIC_LOG_DELTA")
-        except ValueError:
+        except (TypeError, ValueError):
             ext_delta = (
-                {"enabled": True}
-                if crawler.settings.getdict("PERIODIC_LOG_DELTA")
-                else None
-            )
-        except TypeError:
-            ext_stats = (
                 {"enabled": True}
                 if crawler.settings.getbool("PERIODIC_LOG_DELTA")
                 else None

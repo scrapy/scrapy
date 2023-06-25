@@ -51,20 +51,78 @@ stats_dump_2 = {
 }
 
 
+def extension(settings=None):
+    return PeriodicLog.from_crawler(
+        Crawler(
+            MetaSpider,
+            settings=settings,
+        )
+    )
+
+
 class TestPeriodicLog(unittest.TestCase):
     def test_extension_enabled(self):
-        extension = PeriodicLog.from_crawler(
-            Crawler(
-                MetaSpider,
-                settings={"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 60},
-            )
-        )
-        # Test enabled
-        assert extension
+        # Expected that settings for this extension loaded succesfully
+        # And on certain conditions - extension raising NotConfigured
+
+        # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
+        # due to TypeError exception from settings.getdict
+        assert extension({"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 60})
+
+        # "PERIODIC_LOG_STATS": "True" -> set to {"enabled": True}
+        # due to JSONDecodeError(ValueError) exception from settings.getdict
+        assert extension({"PERIODIC_LOG_STATS": "True", "LOGSTATS_INTERVAL": 60})
+
+        # The ame for PERIODIC_LOG_DELTA:
+        assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
+        assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
         # Raise not configured if not set by settings
         with self.assertRaises(NotConfigured):
-            PeriodicLog.from_crawler(Crawler(MetaSpider))
+            extension()
+
+        # Regular use cases:
+        assert extension(
+            {
+                "PERIODIC_LOG_STATS": {
+                    "include": [
+                        "downloader/",
+                        "scheduler/",
+                        "log_count/",
+                        "item_scraped_count/",
+                    ],
+                    "exclude": ["scheduler/"],
+                }
+            }
+        )
+
+        assert extension(
+            {
+                "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
+                "PERIODIC_LOG_TIMING_ENABLED": True,
+            }
+        )
+
+        assert extension(
+            {
+                "PERIODIC_LOG_TIMING_ENABLED": True,
+            }
+        )
+
+        assert extension(
+            {
+                "PERIODIC_LOG_STATS": {
+                    "include": [
+                        "downloader/",
+                        "scheduler/",
+                        "log_count/",
+                        "item_scraped_count/",
+                    ],
+                    "exclude": ["scheduler/"],
+                },
+                "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
+            }
+        )
 
     def test_periodic_log_stats(self):
         pass
