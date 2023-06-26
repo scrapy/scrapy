@@ -1,5 +1,4 @@
-from collections.abc import Mapping
-from typing import Any, Dict, Iterator, Optional, OrderedDict
+from typing import Any, Dict, Iterator, Mapping, Optional, OrderedDict
 
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.misc import load_object
