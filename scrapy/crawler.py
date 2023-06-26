@@ -58,7 +58,6 @@ class Crawler:
         spidercls: Type[Spider],
         settings: Union[None, dict, Settings] = None,
         init_reactor: bool = False,
-        addons: Optional[AddonManager] = None,
     ):
         if isinstance(spidercls, Spider):
             raise ValueError("The spidercls argument must be a class, not an object")
@@ -70,10 +69,8 @@ class Crawler:
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
-        self.addons: AddonManager = addons if addons is not None else AddonManager()
+        self.addons: AddonManager = AddonManager()
         self.addons.load_settings(self.settings)
-        self.addons.update_addons()
-        self.addons.check_dependency_clashes()
         self.addons.update_settings(self.settings)
 
         self.signals: SignalManager = SignalManager(self)
@@ -200,15 +197,10 @@ class CrawlerRunner:
             )
         return loader_cls.from_settings(settings.frozencopy())
 
-    def __init__(
-        self,
-        settings: Union[Dict[str, Any], Settings, None] = None,
-        addons: Optional[AddonManager] = None,
-    ):
+    def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
-        self.addons: Optional[AddonManager] = addons
         self.spider_loader = self._get_spider_loader(settings)
         self._crawlers: Set[Crawler] = set()
         self._active: Set[defer.Deferred] = set()
@@ -292,7 +284,7 @@ class CrawlerRunner:
     def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, self.settings, addons=self.addons)
+        return Crawler(spidercls, self.settings)
 
     def stop(self):
         """
@@ -338,13 +330,8 @@ class CrawlerProcess(CrawlerRunner):
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(
-        self,
-        settings=None,
-        install_root_handler: bool = True,
-        addons: Optional[AddonManager] = None,
-    ):
-        super().__init__(settings, addons)
+    def __init__(self, settings=None, install_root_handler=True):
+        super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
         self._initialized_reactor = False

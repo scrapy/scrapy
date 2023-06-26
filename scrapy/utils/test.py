@@ -73,7 +73,6 @@ def get_crawler(
     spidercls: Optional[Type[Spider]] = None,
     settings_dict: Optional[Dict[str, Any]] = None,
     prevent_warnings: bool = True,
-    addons=None,
 ) -> Crawler:
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used to populate the crawler settings with a project level
@@ -87,7 +86,7 @@ def get_crawler(
     if prevent_warnings:
         settings["REQUEST_FINGERPRINTER_IMPLEMENTATION"] = "2.7"
     settings.update(settings_dict or {})
-    runner = CrawlerRunner(settings, addons)
+    runner = CrawlerRunner(settings)
     return runner.create_crawler(spidercls or Spider)
 
 

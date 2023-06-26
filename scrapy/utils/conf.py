@@ -99,18 +99,12 @@ def init_env(project="default", set_syspath=True):
             sys.path.append(projdir)
 
 
-def config_from_filepath(sources):
-    """Create a ConfigParser and read in the given `sources`, which can be
-    either a filename or a list of filenames."""
-    cfg = ConfigParser()
-    cfg.read(sources)
-    return cfg
-
-
 def get_config(use_closest=True):
     """Get Scrapy config file as a ConfigParser"""
     sources = get_sources(use_closest)
-    return config_from_filepath(sources)
+    cfg = ConfigParser()
+    cfg.read(sources)
+    return cfg
 
 
 def get_sources(use_closest=True) -> List[str]:

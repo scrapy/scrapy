@@ -8,7 +8,6 @@ from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
     create_instance,
-    load_module_or_object,
     load_object,
     rel_has_nofollow,
     set_environ,
@@ -35,12 +34,6 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertRaises(ImportError, load_object, "nomodule999.mod.function")
         self.assertRaises(NameError, load_object, "scrapy.utils.misc.load_object999")
         self.assertRaises(TypeError, load_object, {})
-
-    def test_load_module_or_object(self):
-        testmod = load_module_or_object(__name__ + ".testmod")
-        self.assertTrue(hasattr(testmod, "TESTVAR"))
-        obj = load_object("scrapy.utils.misc.load_object")
-        self.assertIs(obj, load_object)
 
     def test_walk_modules(self):
         mods = walk_modules("tests.test_utils_misc.test_walk_modules")

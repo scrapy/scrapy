@@ -67,7 +67,7 @@ def load_object(path: Union[str, Callable]) -> Any:
         if callable(path):
             return path
         raise TypeError(
-            "Unexpected argument type, expected string " f"or object, got: {type(path)}"
+            f"Unexpected argument type, expected string or object, got: {type(path)}"
         )
 
     try:
@@ -84,22 +84,6 @@ def load_object(path: Union[str, Callable]) -> Any:
         raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
 
     return obj
-
-
-def load_module_or_object(path):
-    """Load python module or (non-module) object from given path.
-
-    Path can be both a Python or a file path.
-    """
-    try:
-        return import_module(path)
-    except ImportError:
-        pass
-    try:
-        return load_object(path)
-    except (ValueError, NameError, ImportError):
-        pass
-    raise NameError(f"Could not load '{path}'")
 
 
 def walk_modules(path: str) -> List[ModuleType]:

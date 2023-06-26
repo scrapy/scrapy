@@ -6,7 +6,6 @@ import sys
 from importlib.metadata import entry_points
 
 import scrapy
-from scrapy.addons import AddonManager
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.crawler import CrawlerProcess
 from scrapy.exceptions import UsageError
@@ -131,8 +130,6 @@ def execute(argv=None, settings=None):
         else:
             settings["EDITOR"] = editor
 
-    addons = AddonManager()
-
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
@@ -156,7 +153,7 @@ def execute(argv=None, settings=None):
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    cmd.crawler_process = CrawlerProcess(settings, addons=addons)
+    cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 

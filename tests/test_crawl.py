@@ -412,7 +412,6 @@ with multiples lines
     def test_abort_on_addon_failed_check(self):
         class FailedCheckAddon(Addon):
             name = "FailedCheckAddon"
-            version = "1.0"
 
             def check_configuration(self, config, crawler):
                 raise ValueError
