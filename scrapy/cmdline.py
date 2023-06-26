@@ -3,8 +3,7 @@ import cProfile
 import inspect
 import os
 import sys
-
-import pkg_resources
+from importlib.metadata import entry_points
 
 import scrapy
 from scrapy.addons import AddonManager
@@ -50,7 +49,7 @@ def _get_commands_from_module(module, inproject):
 
 def _get_commands_from_entry_points(inproject, group="scrapy.commands"):
     cmds = {}
-    for entry_point in pkg_resources.iter_entry_points(group):
+    for entry_point in entry_points().get(group, {}):
         obj = entry_point.load()
         if inspect.isclass(obj):
             cmds[entry_point.name] = obj()

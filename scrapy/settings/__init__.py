@@ -76,6 +76,8 @@ class BaseSettings(MutableMapping):
     highest priority will be retrieved.
     """
 
+    __default = object()
+
     def __init__(self, values=None, priority="project"):
         self.frozen = False
         self.attributes = {}
@@ -445,6 +447,18 @@ class BaseSettings(MutableMapping):
             p.text(repr(self))
         else:
             p.text(pformat(self.copy_to_dict()))
+
+    def pop(self, name, default=__default):
+        try:
+            value = self.attributes[name]
+        except KeyError:
+            if default is self.__default:
+                raise
+
+            return SettingsAttribute(default, get_settings_priority("project"))
+        else:
+            self.__delitem__(name)
+            return value
 
 
 class Settings(BaseSettings):

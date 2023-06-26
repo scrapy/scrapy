@@ -1,10 +1,13 @@
 import traceback
 import warnings
 from collections import defaultdict
+from typing import DefaultDict, Dict, List, Tuple, Type
 
 from zope.interface import implementer
 
+from scrapy import Spider
 from scrapy.interfaces import ISpiderLoader
+from scrapy.settings import BaseSettings
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
@@ -16,11 +19,11 @@ class SpiderLoader:
     in a Scrapy project.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings: BaseSettings):
         self.spider_modules = settings.getlist("SPIDER_MODULES")
         self.warn_only = settings.getbool("SPIDER_LOADER_WARN_ONLY")
-        self._spiders = {}
-        self._found = defaultdict(list)
+        self._spiders: Dict[str, Type[Spider]] = {}
+        self._found: DefaultDict[str, List[Tuple[str, str]]] = defaultdict(list)
         self._load_all_spiders()
 
     def _check_name_duplicates(self):
@@ -68,7 +71,7 @@ class SpiderLoader:
     def from_settings(cls, settings):
         return cls(settings)
 
-    def load(self, spider_name):
+    def load(self, spider_name: str) -> Type[Spider]:
         """
         Return the Spider class for the given spider name. If the spider
         name is not found, raise a KeyError.

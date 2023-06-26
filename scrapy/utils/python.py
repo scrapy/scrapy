@@ -1,6 +1,7 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
+import collections.abc
 import gc
 import inspect
 import re
@@ -12,9 +13,17 @@ from typing import (
     Any,
     AsyncGenerator,
     AsyncIterable,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Generator,
     Iterable,
+    Iterator,
+    List,
     Mapping,
     Optional,
+    Pattern,
+    Tuple,
     Union,
     overload,
 )
@@ -22,7 +31,7 @@ from typing import (
 from scrapy.utils.asyncgen import as_async_generator
 
 
-def flatten(x):
+def flatten(x: Iterable) -> list:
     """flatten(sequence) -> list
 
     Returns a single, flat list which contains all elements retrieved
@@ -42,7 +51,7 @@ def flatten(x):
     return list(iflatten(x))
 
 
-def iflatten(x):
+def iflatten(x: Iterable) -> Iterable:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
@@ -78,7 +87,7 @@ def is_listlike(x: Any) -> bool:
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_, key=lambda x: x):
+def unique(list_: Iterable, key: Callable[[Any], Any] = lambda x: x) -> list:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
     result = []
@@ -124,7 +133,9 @@ def to_bytes(
     return text.encode(encoding, errors)
 
 
-def re_rsearch(pattern, text, chunk_size=1024):
+def re_rsearch(
+    pattern: Union[str, Pattern], text: str, chunk_size: int = 1024
+) -> Optional[Tuple[int, int]]:
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -138,7 +149,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter():
+    def _chunk_iter() -> Generator[Tuple[str, int], Any, None]:
         offset = len(text)
         while True:
             offset -= chunk_size * 1024
@@ -158,14 +169,14 @@ def re_rsearch(pattern, text, chunk_size=1024):
     return None
 
 
-def memoizemethod_noargs(method):
+def memoizemethod_noargs(method: Callable) -> Callable:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
-    cache = weakref.WeakKeyDictionary()
+    cache: weakref.WeakKeyDictionary[Any, Any] = weakref.WeakKeyDictionary()
 
     @wraps(method)
-    def new_method(self, *args, **kwargs):
+    def new_method(self: Any, *args: Any, **kwargs: Any) -> Any:
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
@@ -187,12 +198,12 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
-def get_func_args(func, stripself=False):
+def get_func_args(func: Callable, stripself: bool = False) -> List[str]:
     """Return the argument name list of a callable object"""
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
 
-    args = []
+    args: List[str] = []
     try:
         sig = inspect.signature(func)
     except ValueError:
@@ -217,7 +228,7 @@ def get_func_args(func, stripself=False):
     return args
 
 
-def get_spec(func):
+def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
@@ -246,7 +257,7 @@ def get_spec(func):
     else:
         raise TypeError(f"{type(func)} is not callable")
 
-    defaults = spec.defaults or []
+    defaults: Tuple[Any, ...] = spec.defaults or ()
 
     firstdefault = len(spec.args) - len(defaults)
     args = spec.args[:firstdefault]
@@ -254,7 +265,9 @@ def get_spec(func):
     return args, kwargs
 
 
-def equal_attributes(obj1, obj2, attributes):
+def equal_attributes(
+    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable]]]
+) -> bool:
     """Compare two objects attributes"""
     # not attributes given return False by default
     if not attributes:
@@ -282,19 +295,20 @@ def without_none_values(iterable: Iterable) -> Iterable:
     ...
 
 
-def without_none_values(iterable):
+def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have
     value ``None`` have been removed.
     """
-    try:
+    if isinstance(iterable, collections.abc.Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
-    except AttributeError:
-        return type(iterable)((v for v in iterable if v is not None))
+    else:
+        # the iterable __init__ must take another iterable
+        return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
 
 
-def global_object_name(obj):
+def global_object_name(obj: Any) -> str:
     """
     Return full name of a global object.
 
@@ -307,14 +321,14 @@ def global_object_name(obj):
 
 if hasattr(sys, "pypy_version_info"):
 
-    def garbage_collect():
+    def garbage_collect() -> None:
         # Collecting weakreferences can take two collections on PyPy.
         gc.collect()
         gc.collect()
 
 else:
 
-    def garbage_collect():
+    def garbage_collect() -> None:
         gc.collect()
 
 
@@ -329,10 +343,10 @@ class MutableChain(Iterable):
     def extend(self, *iterables: Iterable) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return self
 
-    def __next__(self):
+    def __next__(self) -> Any:
         return next(self.data)
 
 
@@ -353,8 +367,8 @@ class MutableAsyncChain(AsyncIterable):
     def extend(self, *iterables: Union[Iterable, AsyncIterable]) -> None:
         self.data = _async_chain(self.data, _async_chain(*iterables))
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator:
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> Any:
         return await self.data.__anext__()

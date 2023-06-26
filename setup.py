@@ -1,26 +1,13 @@
 from pathlib import Path
 
-from pkg_resources import parse_version
-from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 
 version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
 
 
-def has_environment_marker_platform_impl_support():
-    """Code extracted from 'pytest/setup.py'
-    https://github.com/pytest-dev/pytest/blob/7538680c/setup.py#L31
-
-    The first known release to support environment marker with range operators
-    it is 18.5, see:
-    https://setuptools.readthedocs.io/en/latest/history.html#id235
-    """
-    return parse_version(setuptools_version) >= parse_version("18.5")
-
-
 install_requires = [
     "Twisted>=18.9.0",
-    "cryptography>=3.4.6",
+    "cryptography>=36.0.0",
     "cssselect>=0.9.1",
     "itemloaders>=1.0.1",
     "parsel>=1.5.0",
@@ -34,21 +21,12 @@ install_requires = [
     "setuptools",
     "packaging",
     "tldextract",
-    "lxml>=4.3.0",
+    "lxml>=4.4.1",
 ]
-extras_require = {}
-cpython_dependencies = [
-    "PyDispatcher>=2.0.5",
-]
-if has_environment_marker_platform_impl_support():
-    extras_require[
-        ':platform_python_implementation == "CPython"'
-    ] = cpython_dependencies
-    extras_require[':platform_python_implementation == "PyPy"'] = [
-        "PyPyDispatcher>=2.1.0",
-    ]
-else:
-    install_requires.extend(cpython_dependencies)
+extras_require = {
+    ':platform_python_implementation == "CPython"': ["PyDispatcher>=2.0.5"],
+    ':platform_python_implementation == "PyPy"': ["PyPyDispatcher>=2.1.0"],
+}
 
 
 setup(
@@ -80,7 +58,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -91,7 +68,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=install_requires,
     extras_require=extras_require,
 )

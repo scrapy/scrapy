@@ -2758,6 +2758,31 @@ class FeedExportInitTest(unittest.TestCase):
         with self.assertRaises(NotConfigured):
             FeedExporter.from_crawler(crawler)
 
+    def test_absolute_pathlib_as_uri(self):
+        with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+            settings = {
+                "FEEDS": {
+                    Path(tmp.name).resolve(): {
+                        "format": "json",
+                    },
+                },
+            }
+            crawler = get_crawler(settings_dict=settings)
+            exporter = FeedExporter.from_crawler(crawler)
+            self.assertIsInstance(exporter, FeedExporter)
+
+    def test_relative_pathlib_as_uri(self):
+        settings = {
+            "FEEDS": {
+                Path("./items.json"): {
+                    "format": "json",
+                },
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter.from_crawler(crawler)
+        self.assertIsInstance(exporter, FeedExporter)
+
 
 class StdoutFeedStorageWithoutFeedOptions(StdoutFeedStorage):
     def __init__(self, uri):

@@ -1,11 +1,12 @@
 import logging
+import os
 import platform
 import subprocess
 import sys
 import warnings
 from pathlib import Path
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from pytest import mark, raises
 from twisted import version as twisted_version
 from twisted.internet import defer
@@ -24,8 +25,8 @@ from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.misc import load_object
 from scrapy.utils.spider import DefaultSpider
-from scrapy.utils.test import get_crawler, get_testenv
-from tests.mockserver import MockServer
+from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer, get_mockserver_env
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -316,12 +317,16 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 class ScriptRunnerMixin:
     script_dir: Path
+    cwd = os.getcwd()
 
     def run_script(self, script_name: str, *script_args):
         script_path = self.script_dir / script_name
         args = [sys.executable, str(script_path)] + list(script_args)
         p = subprocess.Popen(
-            args, env=get_testenv(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            args,
+            env=get_mockserver_env(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         stdout, stderr = p.communicate()
         return stderr.decode("utf-8")

@@ -10,7 +10,21 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import TYPE_CHECKING, Any, Callable, Union
+from types import ModuleType
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Deque,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Pattern,
+    Union,
+    cast,
+)
 
 from w3lib.html import replace_entities
 
@@ -26,7 +40,7 @@ if TYPE_CHECKING:
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
 
 
-def arg_to_iter(arg):
+def arg_to_iter(arg: Any) -> Iterable[Any]:
     """Convert an argument to an iterable. The argument can be a None, single
     value, or an iterable.
 
@@ -35,7 +49,7 @@ def arg_to_iter(arg):
     if arg is None:
         return []
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return arg
+        return cast(Iterable[Any], arg)
     return [arg]
 
 
@@ -88,7 +102,7 @@ def load_module_or_object(path):
     raise NameError(f"Could not load '{path}'")
 
 
-def walk_modules(path):
+def walk_modules(path: str) -> List[ModuleType]:
     """Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
@@ -96,7 +110,7 @@ def walk_modules(path):
     For example: walk_modules('scrapy.utils')
     """
 
-    mods = []
+    mods: List[ModuleType] = []
     mod = import_module(path)
     mods.append(mod)
     if hasattr(mod, "__path__"):
@@ -110,7 +124,9 @@ def walk_modules(path):
     return mods
 
 
-def extract_regex(regex, text, encoding="utf-8"):
+def extract_regex(
+    regex: Union[str, Pattern], text: str, encoding: str = "utf-8"
+) -> List[str]:
     """Extract a list of unicode strings from the given text/encoding using the following policies:
 
     * if the regex contains a named group called "extract" that will be returned
@@ -127,9 +143,11 @@ def extract_regex(regex, text, encoding="utf-8"):
         regex = re.compile(regex, re.UNICODE)
 
     try:
-        strings = [regex.search(text).group("extract")]  # named group
+        # named group
+        strings = [regex.search(text).group("extract")]  # type: ignore[union-attr]
     except Exception:
-        strings = regex.findall(text)  # full regex or numbered groups
+        # full regex or numbered groups
+        strings = regex.findall(text)
     strings = flatten(strings)
 
     if isinstance(text, str):
@@ -139,7 +157,7 @@ def extract_regex(regex, text, encoding="utf-8"):
     ]
 
 
-def md5sum(file):
+def md5sum(file: IO) -> str:
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
 
@@ -156,7 +174,7 @@ def md5sum(file):
     return m.hexdigest()
 
 
-def rel_has_nofollow(rel):
+def rel_has_nofollow(rel: Optional[str]) -> bool:
     """Return True if link rel attribute has nofollow type"""
     return rel is not None and "nofollow" in rel.replace(",", " ").split()
 
@@ -197,7 +215,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
 
 
 @contextmanager
-def set_environ(**kwargs):
+def set_environ(**kwargs: str) -> Generator[None, Any, None]:
     """Temporarily set environment variables inside the context manager and
     fully restore previous environment afterwards
     """
@@ -214,11 +232,11 @@ def set_environ(**kwargs):
                 os.environ[k] = v
 
 
-def walk_callable(node):
+def walk_callable(node: ast.AST) -> Generator[ast.AST, Any, None]:
     """Similar to ``ast.walk``, but walks only function body and skips nested
     functions defined within the node.
     """
-    todo = deque([node])
+    todo: Deque[ast.AST] = deque([node])
     walked_func_def = False
     while todo:
         node = todo.popleft()
@@ -233,15 +251,15 @@ def walk_callable(node):
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
-def is_generator_with_return_value(callable):
+def is_generator_with_return_value(callable: Callable) -> bool:
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
     """
     if callable in _generator_callbacks_cache:
-        return _generator_callbacks_cache[callable]
+        return bool(_generator_callbacks_cache[callable])
 
-    def returns_none(return_node):
+    def returns_none(return_node: ast.Return) -> bool:
         value = return_node.value
         return (
             value is None or isinstance(value, ast.NameConstant) and value.value is None
@@ -264,10 +282,10 @@ def is_generator_with_return_value(callable):
         for node in walk_callable(tree):
             if isinstance(node, ast.Return) and not returns_none(node):
                 _generator_callbacks_cache[callable] = True
-                return _generator_callbacks_cache[callable]
+                return bool(_generator_callbacks_cache[callable])
 
     _generator_callbacks_cache[callable] = False
-    return _generator_callbacks_cache[callable]
+    return bool(_generator_callbacks_cache[callable])
 
 
 def warn_on_generator_with_return_value(spider: "Spider", callable: Callable) -> None:

@@ -4,7 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type, Union
 
 from twisted.internet import defer
 from zope.interface.exceptions import DoesNotImplement
@@ -26,6 +26,7 @@ from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.spiderloader import SpiderLoader
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
@@ -180,7 +181,7 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings):
+    def _get_spider_loader(settings) -> SpiderLoader:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
@@ -199,7 +200,11 @@ class CrawlerRunner:
             )
         return loader_cls.from_settings(settings.frozencopy())
 
-    def __init__(self, settings=None, addons: Optional[AddonManager] = None):
+    def __init__(
+        self,
+        settings: Union[Dict[str, Any], Settings, None] = None,
+        addons: Optional[AddonManager] = None,
+    ):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
@@ -262,7 +267,9 @@ class CrawlerRunner:
 
         return d.addBoth(_done)
 
-    def create_crawler(self, crawler_or_spidercls):
+    def create_crawler(
+        self, crawler_or_spidercls: Union[Type[Spider], str, Crawler]
+    ) -> Crawler:
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
 
@@ -282,7 +289,7 @@ class CrawlerRunner:
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
 
-    def _create_crawler(self, spidercls):
+    def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings, addons=self.addons)

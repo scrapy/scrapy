@@ -129,7 +129,7 @@ class FileTestCase(unittest.TestCase):
     def test_non_existent(self):
         request = Request(f"file://{self.mktemp()}")
         d = self.download_request(request, Spider("foo"))
-        return self.assertFailure(d, IOError)
+        return self.assertFailure(d, OSError)
 
 
 class ContentLengthHeaderResource(resource.Resource):
