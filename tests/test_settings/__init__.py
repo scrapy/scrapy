@@ -457,19 +457,15 @@ class SettingsTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             settings.pop("DUMMY_CONFIG")
 
-        dummy_config = settings.pop("DUMMY_CONFIG", "dummy_value")
-
-        self.assertEqual(
-            repr(dummy_config), "<SettingsAttribute value='dummy_value' priority=20>"
-        )
-        self.assertEqual(dummy_config.value, "dummy_value")
+        dummy_config_value = settings.pop("DUMMY_CONFIG", "dummy_value")
+        self.assertEqual(dummy_config_value, "dummy_value")
 
     def test_pop_item_with_immutable_settings(self):
         settings = Settings(
             {"DUMMY_CONFIG": "dummy_value", "OTHER_DUMMY_CONFIG": "other_dummy_value"}
         )
 
-        self.assertEqual(settings.pop("DUMMY_CONFIG").value, "dummy_value")
+        self.assertEqual(settings.pop("DUMMY_CONFIG"), "dummy_value")
 
         settings.freeze()
 
