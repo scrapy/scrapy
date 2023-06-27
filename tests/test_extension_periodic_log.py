@@ -184,5 +184,58 @@ class TestPeriodicLog(unittest.TestCase):
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k and "scheduler/" not in k),
+            and ("downloader/" in k and "bytes" not in k),
         )
+
+    def test_log_stats(self):
+        def emulate(settings=None):
+            ext = extension(settings)
+            ext.spider_opened(MetaSpider)
+            ext.set_a()
+            a = ext.log_crawler_stats()
+            ext.set_a()
+            b = ext.log_crawler_stats()
+            return ext, a, b
+
+        def check(settings: dict, condition: callable):
+            ext, a, b = emulate(settings)
+            assert list(a["stats"].keys()) == [
+                k for k, v in ext.stats._stats.items() if condition(k, v)
+            ]
+            assert list(b["stats"].keys()) == [
+                k for k, v in ext.stats._stats.items() if condition(k, v)
+            ]
+
+        # Including all
+        check({"PERIODIC_LOG_STATS": True}, lambda k, v: True)
+
+        # include:
+        check(
+            {"PERIODIC_LOG_STATS": {"include": ["downloader/"]}},
+            lambda k, v: "downloader/" in k,
+        )
+
+        # include multiple
+        check(
+            {"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}},
+            lambda k, v: "downloader/" in k or "scheduler/" in k,
+        )
+
+        # exclude
+        check(
+            {"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}},
+            lambda k, v: "downloader/" not in k,
+        )
+
+        # exclude multiple
+        check(
+            {"PERIODIC_LOG_STATS": {"exclude": ["downloader/", "scheduler/"]}},
+            lambda k, v: "downloader/" not in k and "scheduler/" not in k,
+        )
+
+        # include exclude combined
+        check(
+            {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
+            lambda k, v: "downloader/" in k and "bytes" not in k,
+        )
+        #
