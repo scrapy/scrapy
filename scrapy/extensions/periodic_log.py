@@ -127,6 +127,8 @@ class PeriodicLog:
         for p in exclude:
             if p in stat_name:
                 return False
+        if exclude and not include:
+            return True
         for p in include:
             if p in stat_name:
                 return True
