@@ -51,8 +51,16 @@ stats_dump_2 = {
 }
 
 
+class TestExtPeriodicLog(PeriodicLog):
+    def set_a(self):
+        self.stats._stats = stats_dump_1
+
+    def set_b(self):
+        self.stats._stats = stats_dump_2
+
+
 def extension(settings=None):
-    return PeriodicLog.from_crawler(
+    return TestExtPeriodicLog.from_crawler(
         Crawler(
             MetaSpider,
             settings=settings,
@@ -124,14 +132,57 @@ class TestPeriodicLog(unittest.TestCase):
             }
         )
 
-    def test_periodic_log_stats(self):
-        pass
-
     def test_log_delta(self):
-        pass
+        def emulate(settings=None):
+            ext = extension(settings)
+            ext.spider_opened(MetaSpider)
+            ext.set_a()
+            a = ext.log_delta()
+            ext.set_a()
+            b = ext.log_delta()
+            return ext, a, b
 
-    def test_settings_include(self):
-        pass
+        def check(settings: dict, condition: callable):
+            ext, a, b = emulate(settings)
+            assert list(a["delta"].keys()) == [
+                k for k, v in ext.stats._stats.items() if condition(k, v)
+            ]
+            assert list(b["delta"].keys()) == [
+                k for k, v in ext.stats._stats.items() if condition(k, v)
+            ]
 
-    def test_settings_exclude(self):
-        pass
+        # Including all
+        check({"PERIODIC_LOG_DELTA": True}, lambda k, v: isinstance(v, (int, float)))
+
+        # include:
+        check(
+            {"PERIODIC_LOG_DELTA": {"include": ["downloader/"]}},
+            lambda k, v: isinstance(v, (int, float)) and "downloader/" in k,
+        )
+
+        # include multiple
+        check(
+            {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
+            lambda k, v: isinstance(v, (int, float))
+            and ("downloader/" in k or "scheduler/" in k),
+        )
+
+        # exclude
+        check(
+            {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}},
+            lambda k, v: isinstance(v, (int, float)) and "downloader/" not in k,
+        )
+
+        # exclude multiple
+        check(
+            {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
+            lambda k, v: isinstance(v, (int, float))
+            and ("downloader/" not in k and "scheduler/" not in k),
+        )
+
+        # include exclude combined
+        check(
+            {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
+            lambda k, v: isinstance(v, (int, float))
+            and ("downloader/" in k and "scheduler/" not in k),
+        )
