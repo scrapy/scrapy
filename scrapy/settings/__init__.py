@@ -449,12 +449,12 @@ class BaseSettings(MutableMapping):
 
     def pop(self, name, default=__default):
         try:
-            value = self.attributes[name]
+            value = self.attributes[name].value
         except KeyError:
             if default is self.__default:
                 raise
 
-            return SettingsAttribute(default, get_settings_priority("project"))
+            return default
         else:
             self.__delitem__(name)
             return value
