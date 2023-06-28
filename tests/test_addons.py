@@ -1,47 +1,29 @@
 import unittest
+from typing import Any, Dict, Optional
 
-from scrapy.addons import Addon, AddonManager
+from scrapy.addons import AddonManager
 from scrapy.settings import BaseSettings
 
 
-class GoodAddon(object):
+class GoodAddon:
     name = "GoodAddon"
 
-    def update_settings(self, config, settings):
-        pass
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+        super().__init__()
+        self.config = config or {}
 
-    def check_configuration(self, config, crawler):
-        pass
+    def update_settings(self, settings):
+        settings.update(self.config, "addon")
 
 
 class AddonTest(unittest.TestCase):
-    def setUp(self):
-        class AddonWithAttributes(Addon):
-            name = "Test"
-
-        self.testaddon = AddonWithAttributes()
-
-    def test_export_config(self):
-        settings = BaseSettings()
-        self.testaddon.config_mapping = {"MAPPED_key": "MAPPING_WORKED"}
-        self.testaddon.default_config = {"key": 55, "defaultkey": 100}
-        self.testaddon.export_config(
-            {"key": 313, "OTHERKEY": True, "mapped_KEY": 99}, settings
-        )
-        self.assertEqual(settings["KEY"], 313)
-        self.assertEqual(settings["DEFAULTKEY"], 100)
-        self.assertEqual(settings["OTHERKEY"], True)
-        self.assertNotIn("MAPPED_key", settings)
-        self.assertNotIn("MAPPED_KEY", settings)
-        self.assertEqual(settings["MAPPING_WORKED"], 99)
-        self.assertEqual(settings.getpriority("KEY"), 15)
-
     def test_update_settings(self):
         settings = BaseSettings()
         settings.set("KEY1", "default", priority="default")
         settings.set("KEY2", "project", priority="project")
-        addon_config = {"key1": "addon", "key2": "addon", "key3": "addon"}
-        self.testaddon.update_settings(addon_config, settings)
+        addon_config = {"KEY1": "addon", "KEY2": "addon", "KEY3": "addon"}
+        testaddon = GoodAddon(addon_config)
+        testaddon.update_settings(settings)
         self.assertEqual(settings["KEY1"], "addon")
         self.assertEqual(settings["KEY2"], "project")
         self.assertEqual(settings["KEY3"], "addon")
@@ -54,8 +36,7 @@ class AddonManagerTest(unittest.TestCase):
     def test_add(self):
         manager = AddonManager()
         manager.add("tests.test_addons.GoodAddon")
-        self.assertCountEqual(manager, ["GoodAddon"])
-        self.assertIsInstance(manager["GoodAddon"], GoodAddon)
+        self.assertIsInstance(manager.addons[0], GoodAddon)
 
     def test_load_settings(self):
         settings = BaseSettings()
@@ -66,7 +47,4 @@ class AddonManagerTest(unittest.TestCase):
         settings.set("GOODADDON", {"key": "val2"})
         manager = AddonManager()
         manager.load_settings(settings)
-        self.assertCountEqual(manager, ["GoodAddon"])
-        self.assertIsInstance(manager["GoodAddon"], GoodAddon)
-        self.assertCountEqual(manager.configs["GoodAddon"], ["key"])
-        self.assertEqual(manager.configs["GoodAddon"]["key"], "val2")
+        self.assertIsInstance(manager.addons[0], GoodAddon)

@@ -13,7 +13,6 @@ from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
-from scrapy.addons import Addon, AddonManager
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import StopDownload
 from scrapy.http import Request
@@ -407,21 +406,6 @@ with multiples lines
 
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
-
-    @defer.inlineCallbacks
-    def test_abort_on_addon_failed_check(self):
-        class FailedCheckAddon(Addon):
-            name = "FailedCheckAddon"
-
-            def check_configuration(self, config, crawler):
-                raise ValueError
-
-        addonmgr = AddonManager()
-        addonmgr.add(FailedCheckAddon())
-        crawler = get_crawler(SimpleSpider)
-        crawler.addons = addonmgr
-        with self.assertRaises(ValueError):
-            yield crawler.crawl()
 
 
 class CrawlSpiderTestCase(TestCase):
