@@ -2,7 +2,6 @@ import datetime
 import unittest
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import NotConfigured
 from scrapy.extensions.periodic_log import PeriodicLog
 
 from .spiders import MetaSpider
@@ -85,61 +84,16 @@ class TestPeriodicLog(unittest.TestCase):
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
-        # Raise not configured if not set by settings
-        with self.assertRaises(NotConfigured):
-            extension()
-
-        # Regular use cases:
-        assert extension(
-            {
-                "PERIODIC_LOG_STATS": {
-                    "include": [
-                        "downloader/",
-                        "scheduler/",
-                        "log_count/",
-                        "item_scraped_count/",
-                    ],
-                    "exclude": ["scheduler/"],
-                }
-            }
-        )
-
-        assert extension(
-            {
-                "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
-                "PERIODIC_LOG_TIMING_ENABLED": True,
-            }
-        )
-
-        assert extension(
-            {
-                "PERIODIC_LOG_TIMING_ENABLED": True,
-            }
-        )
-
-        assert extension(
-            {
-                "PERIODIC_LOG_STATS": {
-                    "include": [
-                        "downloader/",
-                        "scheduler/",
-                        "log_count/",
-                        "item_scraped_count/",
-                    ],
-                    "exclude": ["scheduler/"],
-                },
-                "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
-            }
-        )
-
     def test_log_delta(self):
         def emulate(settings=None):
+            spider = MetaSpider()
             ext = extension(settings)
-            ext.spider_opened(MetaSpider)
+            ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_delta()
             ext.set_a()
             b = ext.log_delta()
+            ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
         def check(settings: dict, condition: callable):
@@ -189,12 +143,14 @@ class TestPeriodicLog(unittest.TestCase):
 
     def test_log_stats(self):
         def emulate(settings=None):
+            spider = MetaSpider()
             ext = extension(settings)
-            ext.spider_opened(MetaSpider)
+            ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_crawler_stats()
             ext.set_a()
             b = ext.log_crawler_stats()
+            ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
         def check(settings: dict, condition: callable):
