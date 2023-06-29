@@ -1,16 +1,29 @@
 import unittest
 from typing import Any, Dict, Optional
 
-from scrapy.addons import AddonManager
+from scrapy.crawler import Crawler
 from scrapy.settings import BaseSettings
+from scrapy.utils.test import get_crawler
 
 
 class GoodAddon:
-    name = "GoodAddon"
-
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         super().__init__()
         self.config = config or {}
+
+    def update_settings(self, settings):
+        settings.update(self.config, "addon")
+
+
+class CreateInstanceAddon:
+    def __init__(self, crawler: Crawler) -> None:
+        super().__init__()
+        self.crawler = crawler
+        self.config = crawler.settings.getdict("MYADDON")
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler):
+        return cls(crawler)
 
     def update_settings(self, settings):
         settings.update(self.config, "addon")
@@ -30,21 +43,26 @@ class AddonTest(unittest.TestCase):
 
 
 class AddonManagerTest(unittest.TestCase):
-    def setUp(self):
-        self.manager = AddonManager()
-
     def test_add(self):
-        manager = AddonManager()
+        crawler = get_crawler()
+        manager = crawler.addons
         manager.add("tests.test_addons.GoodAddon")
         self.assertIsInstance(manager.addons[0], GoodAddon)
 
     def test_load_settings(self):
-        settings = BaseSettings()
-        settings.set(
-            "ADDONS",
-            {"tests.test_addons.GoodAddon": 0},
-        )
-        settings.set("GOODADDON", {"key": "val2"})
-        manager = AddonManager()
-        manager.load_settings(settings)
+        settings_dict = {
+            "ADDONS": {"tests.test_addons.GoodAddon": 0},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        manager = crawler.addons
         self.assertIsInstance(manager.addons[0], GoodAddon)
+
+    def test_create_instance(self):
+        settings_dict = {
+            "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
+            "MYADDON": {"MYADDON_KEY": "val"},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        manager = crawler.addons
+        self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
+        self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")

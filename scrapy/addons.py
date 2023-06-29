@@ -1,13 +1,17 @@
-from typing import Any, List
+from typing import TYPE_CHECKING, Any, List
 
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import create_instance, load_object
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
 
 
 class AddonManager:
     """This class facilitates loading and storing :ref:`topics-addons`."""
 
-    def __init__(self) -> None:
+    def __init__(self, crawler: "Crawler") -> None:
+        self.crawler: "Crawler" = crawler
         self.addons: List[Any] = []
 
     def add(self, addon: Any) -> None:
@@ -22,7 +26,7 @@ class AddonManager:
         if isinstance(addon, (type, str)):
             addon = load_object(addon)
         if isinstance(addon, type):
-            addon = addon()
+            addon = create_instance(addon, settings=None, crawler=self.crawler)
         self.addons.append(addon)
 
     def load_settings(self, settings) -> None:

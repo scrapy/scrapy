@@ -69,7 +69,7 @@ class Crawler:
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
 
-        self.addons: AddonManager = AddonManager()
+        self.addons: AddonManager = AddonManager(self)
         self.addons.load_settings(self.settings)
         self.addons.update_settings(self.settings)
 

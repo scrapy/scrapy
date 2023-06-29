@@ -34,7 +34,7 @@ This is an example where two add-ons are enabled in a project's
 Writing your own add-ons
 ========================
 
-Add-ons are (any) Python *objects* that include the following method:
+Add-ons are (any) Python objects that include the following method:
 
 .. method:: update_settings(settings)
 
@@ -46,6 +46,20 @@ Add-ons are (any) Python *objects* that include the following method:
 
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.Settings`
+
+They can also have the following method:
+
+.. classmethod:: from_crawler(cls, crawler)
+   :noindex:
+
+   If present, this class method is called to create an addon instance
+   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+   of the addon. Crawler object provides access to all Scrapy core
+   components like settings and signals; it is a way for pipeline to
+   access them and hook its functionality into Scrapy.
+
+   :param crawler: The crawler that uses this addon
+   :type crawler: :class:`~scrapy.crawler.Crawler`
 
 
 Add-on examples
@@ -66,4 +80,18 @@ Check dependencies::
                 import boto
             except ImportError:
                 raise RuntimeError("MyAddon requires the boto library")
+            ...
+
+Access the crawler instance::
+
+    class MyAddon:
+        def __init__(self, crawler) -> None:
+            super().__init__()
+            self.crawler = crawler
+
+        @classmethod
+        def from_crawler(cls, crawler: Crawler):
+            return cls(crawler)
+
+        def update_settings(self, settings):
             ...
