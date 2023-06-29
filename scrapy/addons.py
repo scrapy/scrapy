@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Any, List
 
 from scrapy.utils.conf import build_component_list
@@ -5,6 +6,8 @@ from scrapy.utils.misc import create_instance, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+
+logger = logging.getLogger(__name__)
 
 
 class AddonManager:
@@ -43,6 +46,13 @@ class AddonManager:
         addons = [load_object(path) for path in paths]
         for a in addons:
             self.add(a)
+        logger.info(
+            "Enabled addons:\n%(addons)s",
+            {
+                "addons": addons,
+            },
+            extra={"crawler": self.crawler},
+        )
 
     def update_settings(self, settings) -> None:
         """Call ``update_settings()`` of all held add-ons.
