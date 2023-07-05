@@ -12,8 +12,8 @@ DATADIR_CFG_SECTION = "datadir"
 
 
 def inside_project():
-    scrapy_module = os.environ.get("SCRAPY_SETTINGS_MODULE")
-    if scrapy_module is not None:
+    scrapy_module = os.environ.get(ENVVAR)
+    if scrapy_module:
         try:
             import_module(scrapy_module)
         except ImportError as exc:
