@@ -62,13 +62,15 @@ def data_path(path: str, createdir=False) -> str:
 
 def get_project_settings():
     if ENVVAR not in os.environ:
-        project = os.environ.get("SCRAPY_PROJECT", "default")
-        init_env(project)
+        init_env(project=os.environ.get("SCRAPY_PROJECT", "default"))
 
     settings = Settings()
     settings_module_path = os.environ.get(ENVVAR)
     if settings_module_path:
         settings.setmodule(settings_module_path, priority="project")
+        os.environ.setdefault(
+            "SCRAPY_PROJECT", next(iter(settings_module_path.split(".") or []), None)
+        )
 
     valid_envvars = {
         "CHECK",
