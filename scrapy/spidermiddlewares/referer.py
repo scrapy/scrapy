@@ -15,6 +15,11 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
 
+from scrapy import signals
+from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
+
+
 LOCAL_SCHEMES = (
     "about",
     "blob",
@@ -306,11 +311,18 @@ def _load_policy_class(policy, warning_only=False):
                 return None
 
 
-class RefererMiddleware:
+class RefererMiddleware(BaseSpiderMiddleware):
+    _sm_component_name = "RefererMiddleware"
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy
         if settings is not None:
             self.default_policy = _load_policy_class(settings.get("REFERRER_POLICY"))
+
+    def handle(self, packet, spider, result):
+        if isinstance(packet, Response):
+            result = self.process_spider_output(packet, result, spider)
+
+        self.get_next().handle(packet, spider, result)
 
     @classmethod
     def from_crawler(cls, crawler):

@@ -1,17 +1,16 @@
-"""
-Depth Spider Middleware
-
-See documentation in docs/topics/spider-middleware.rst
-"""
-
 import logging
+from typing import Any
 
-from scrapy.http import Request
+from scrapy import Request
+from scrapy.http import Response
+from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
 
-class DepthMiddleware:
+class DepthMiddleware(BaseSpiderMiddleware):
+    _sm_component_name = "DepthMiddleware"
+
     def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
         self.maxdepth = maxdepth
         self.stats = stats
@@ -26,15 +25,15 @@ class DepthMiddleware:
         prio = settings.getint("DEPTH_PRIORITY")
         return cls(maxdepth, crawler.stats, verbose, prio)
 
+    def handle(self, packet: Any, spider, result):
+        if isinstance(packet, Response):
+            self.process_spider_output(packet, result, spider)
+
+        self.get_next().handle(packet, spider, result)
+
     def process_spider_output(self, response, result, spider):
         self._init_depth(response, spider)
         return (r for r in result or () if self._filter(r, response, spider))
-
-    async def process_spider_output_async(self, response, result, spider):
-        self._init_depth(response, spider)
-        async for r in result or ():
-            if self._filter(r, response, spider):
-                yield r
 
     def _init_depth(self, response, spider):
         # base case (depth=0)
