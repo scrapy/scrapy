@@ -5,7 +5,7 @@ import pickle
 import re
 import tempfile
 import unittest
-from datetime import datetime, date
+from datetime import datetime
 from io import BytesIO
 from warnings import catch_warnings, filterwarnings
 
@@ -600,9 +600,11 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.assertTwoItemsExported(ItemAdapter(self.i).asdict())
 
     def test_two_items_with_failure_between(self):
-        i1 = TestItem(name=u'Joseph\xa3', age='22')
-        i2 = TestItem(name=u'Maria', age=1j)  # Invalid datetimes didn't consistently fail between Python versions
-        i3 = TestItem(name=u'Jesus', age='44')
+        i1 = TestItem(name="Joseph\xa3", age="22")
+        i2 = TestItem(
+            name="Maria", age=1j
+        )  # Invalid datetimes didn't consistently fail between Python versions
+        i3 = TestItem(name="Jesus", age="44")
         self.ie.start_exporting()
         self.ie.export_item(i1)
         self.assertRaises(TypeError, self.ie.export_item, i2)
@@ -652,19 +654,19 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
 
 class JsonItemExporterToBytesTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
-        kwargs['encoding'] = 'latin'
+        kwargs["encoding"] = "latin"
         return JsonItemExporter(self.output, **kwargs)
 
     def test_two_items_with_failure_between(self):
-        i1 = TestItem(name=u'Joseph', age='22')
-        i2 = TestItem(name=u'\u263a', age=u'11')
-        i3 = TestItem(name=u'Jesus', age='44')
+        i1 = TestItem(name="Joseph", age="22")
+        i2 = TestItem(name="\u263a", age="11")
+        i3 = TestItem(name="Jesus", age="44")
         self.ie.start_exporting()
         self.ie.export_item(i1)
         self.assertRaises(UnicodeEncodeError, self.ie.export_item, i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
-        exported = json.loads(to_unicode(self.output.getvalue(), encoding='latin'))
+        exported = json.loads(to_unicode(self.output.getvalue(), encoding="latin"))
         self.assertEqual(exported, [dict(i1), dict(i3)])
 
 
