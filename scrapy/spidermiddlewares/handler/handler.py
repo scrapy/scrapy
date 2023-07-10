@@ -5,7 +5,7 @@ from typing import Any
 
 class Handler(ABC):
   @abstractmethod
-  def set_next(self, handler: Handler) -> Handler:
+  def set_next(self, handler: AbstractHandler) -> AbstractHandler:
     pass
 
   @abstractmethod
@@ -14,12 +14,15 @@ class Handler(ABC):
 
 
 class AbstractHandler(Handler):
-  _next_handler: Handler = None
+  _next_handler: AbstractHandler = None
 
   @abstractmethod
-  def set_next(self, handler: Handler) -> Handler:
+  def set_next(self, handler: AbstractHandler):
     self._next_handler = handler
-    return handler
+
+  @abstractmethod
+  def get_next(self) -> AbstractHandler:
+    return self.handler
 
   @abstractmethod
   def handle(self, request: Any) -> str:
