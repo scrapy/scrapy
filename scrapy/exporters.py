@@ -149,6 +149,7 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item):
+        # catch exception and don't add empty item for export
         try:
             itemdict = dict(self._get_serialized_fields(item))
             data = to_bytes(self.encoder.encode(itemdict), self.encoding)
