@@ -137,7 +137,7 @@ class JsonItemExporter(BaseItemExporter):
         if self.first_item:
             self.first_item = False
         else:
-            self.file.write(b',')
+            self.file.write(b",")
             self._beautify_newline()
 
     def start_exporting(self):
@@ -149,14 +149,18 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item):
+        try:
+            itemdict = dict(self._get_serialized_fields(item))
+            data = to_bytes(self.encoder.encode(itemdict), self.encoding)
+        except TypeError as e:
+            raise e
+
         if self.first_item:
             self.first_item = False
         else:
             self.file.write(b",")
             self._beautify_newline()
 
-        itemdict = dict(self._get_serialized_fields(item))
-        data = to_bytes(self.encoder.encode(itemdict), self.encoding)
         self._add_comma_after_first()
         self.file.write(data)
 
