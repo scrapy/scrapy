@@ -202,7 +202,8 @@ def feed_process_params_from_cli(
     for element in output:
         try:
             feed_uri, feed_format = element.rsplit(":", 1)
-        except ValueError:
+            check_valid_format(feed_format)
+        except (ValueError, UsageError):
             feed_uri = element
             feed_format = Path(element).suffix.replace(".", "")
         else:
