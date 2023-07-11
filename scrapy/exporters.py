@@ -156,12 +156,6 @@ class JsonItemExporter(BaseItemExporter):
         except TypeError as e:
             raise e
 
-        if self.first_item:
-            self.first_item = False
-        else:
-            self.file.write(b",")
-            self._beautify_newline()
-
         self._add_comma_after_first()
         self.file.write(data)
 
