@@ -246,3 +246,65 @@ def _find_method(obj, func):
             if obj_func.__func__ is func.__func__:
                 return name
     raise ValueError(f"Function {func} is not an instance method in: {obj}")
+
+
+class RequestBuilder:
+    request: Request
+
+    def __init__(self):
+        pass
+
+    def set_url(self, url: str):
+        self.request._set_url(url)
+        return self
+
+    def set_callback(self, callback: Callable):
+        self.request.callback = callback
+        return self
+
+    def set_method(self, method: str):
+        self.request.method = str(method).upper()
+        return self
+
+    def set_headers(self, headers: Headers):
+        self.request.headers = headers
+        return self
+
+    def set_body(self, body: bytes | str):
+        self.request._set_body(body)
+        return self
+
+    def set_cookies(self, cookies: dict | List[dict]):
+        self.request.cookies = cookies
+        return self
+
+    def set_meta(self, meta: dict):
+        self.request.meta = meta
+        return self
+
+    def set_encoding(self, encoding: str):
+        self.request._encoding = str(encoding)
+        return self
+
+    def set_priority(self, priority: int):
+        self.request.priority = int(priority)
+        return self
+
+    def set_dont_filter(self, dont_filter: bool):
+        self.request.dont_filter = bool(dont_filter)
+        return self
+
+    def set_errback(self, errback: Callable):
+        self.request.errback = errback
+        return self
+
+    def set_flags(self, flags: List[str]):
+        self.request.flags = flags
+        return self
+
+    def set_cb_kwargs(self, cb_kwargs: dict):
+        self.request.cb_kwargs = cb_kwargs
+        return self
+
+    def build(self):
+        return self.request

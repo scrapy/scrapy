@@ -4,7 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator, Tuple
+from typing import Any, Generator, List, Tuple
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -253,3 +253,49 @@ class Response(object_ref):
             )
             for url in urls
         )
+
+
+class ResponseBuilder:
+    response: Response
+
+    def __init__(self):
+        pass
+
+    def set_url(self, url: str):
+        self.response._set_url(url)
+        return self
+
+    def set_status(self, status: int):
+        self.response.status = int(status)
+        return self
+
+    def set_headers(self, headers: Headers):
+        self.response.headers = headers
+        return self
+
+    def set_body(self, body: bytes | str):
+        self.response._set_body(body)
+        return self
+
+    def set_flags(self, flags: List[str]):
+        self.response.flags = flags
+        return self
+
+    def set_request(self, request: Any):
+        self.response.request = request
+        return self
+
+    def set_certificate(self, certificate: Any):
+        self.response.certificate = certificate
+        return self
+
+    def set_ip_address(self, ip_address: Any):
+        self.response.ip_address = ip_address
+        return self
+
+    def set_protocol(self, protocol: Any):
+        self.response.protocol = protocol
+        return self
+
+    def build(self) -> Response:
+        return self.response
