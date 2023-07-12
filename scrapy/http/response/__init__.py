@@ -258,8 +258,8 @@ class Response(object_ref):
 class ResponseBuilder:
     response: Response
 
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        self.response = Response(**kwargs)
 
     def set_url(self, url: str):
         self.response._set_url(url)

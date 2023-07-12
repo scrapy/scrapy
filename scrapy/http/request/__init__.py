@@ -251,8 +251,8 @@ def _find_method(obj, func):
 class RequestBuilder:
     request: Request
 
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        self.request = Request(**kwargs)
 
     def set_url(self, url: str):
         self.request._set_url(url)
