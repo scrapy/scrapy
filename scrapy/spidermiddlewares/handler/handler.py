@@ -1,32 +1,29 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 
 class Handler(ABC):
-  @abstractmethod
-  def set_next(self, handler: AbstractHandler) -> AbstractHandler:
-    pass
+    @abstractmethod
+    def set_next(self, handler: Handler) -> Handler:
+        pass
 
-  @abstractmethod
-  def handle(self, request: Any) -> any:
-    pass
+    @abstractmethod
+    def handle(self, packet: Any, spider, result) -> Any:
+        pass
 
 
 class AbstractHandler(Handler):
-  _next_handler: AbstractHandler = None
+    _next_handler: Optional[Handler] = None
 
-  @abstractmethod
-  def set_next(self, handler: AbstractHandler):
-    self._next_handler = handler
+    def set_next(self, handler: Handler):
+        self._next_handler = handler
 
-  @abstractmethod
-  def get_next(self) -> AbstractHandler:
-    return self.handler
+    def get_next(self) -> Handler:
+        return self._next_handler
 
-  @abstractmethod
-  def handle(self, request: Any) -> str:
-    if self._next_handler:
-      return self._next_handler.handle(request)
+    def handle(self, packet: Any, spider, result) -> Any:
+        if self._next_handler:
+            return self._next_handler.handle(packet, spider, result)
 
-    return None
+        return None

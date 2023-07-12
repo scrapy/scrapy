@@ -11,14 +11,10 @@ from w3lib.url import safe_url_string
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
-
-from scrapy import signals
-from scrapy.http import Request, Response
-from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
-
 
 LOCAL_SCHEMES = (
     "about",
@@ -313,6 +309,7 @@ def _load_policy_class(policy, warning_only=False):
 
 class RefererMiddleware(BaseSpiderMiddleware):
     _sm_component_name = "RefererMiddleware"
+
     def __init__(self, settings=None):
         self.default_policy = DefaultReferrerPolicy
         if settings is not None:

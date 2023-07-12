@@ -28,6 +28,9 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.settings import BaseSettings
+from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
+from scrapy.spidermiddlewares.referer import RefererMiddleware
+from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
@@ -50,10 +53,14 @@ def _isiterable(o: Any) -> bool:
 
 class SpiderMiddlewareManager(MiddlewareManager):
     component_name = "spider middleware"
+    baseSpiderChain = BaseSpiderMiddleware()
 
     def __init__(self, *middlewares: Any):
         super().__init__(*middlewares)
         self.downgrade_warning_done = False
+        self.baseSpiderChain.set_next(
+            UrlLengthMiddleware(800).set_next(RefererMiddleware())
+        )
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
@@ -77,20 +84,22 @@ class SpiderMiddlewareManager(MiddlewareManager):
         request: Request,
         spider: Spider,
     ) -> Any:
-        for method in self.methods["process_spider_input"]:
-            method = cast(Callable, method)
-            try:
-                result = method(response=response, spider=spider)
-                if result is not None:
-                    msg = (
-                        f"{method.__qualname__} must return None "
-                        f"or raise an exception, got {type(result)}"
-                    )
-                    raise _InvalidOutput(msg)
-            except _InvalidOutput:
-                raise
-            except Exception:
-                return scrape_func(Failure(), request, spider)
+        # for method in self.methods["process_spider_input"]:
+        #     method = cast(Callable, method)
+        #     try:
+        #         result = method(response=response, spider=spider)
+        #         if result is not None:
+        #             msg = (
+        #                 f"{method.__qualname__} must return None "
+        #                 f"or raise an exception, got {type(result)}"
+        #             )
+        #             raise _InvalidOutput(msg)
+        #     except _InvalidOutput:
+        #         raise
+        #     except Exception:
+        #         return scrape_func(Failure(), request, spider)
+        result = None
+        self.baseSpiderChain.handle(response, spider, result)
         return scrape_func(response, request, spider)
 
     def _evaluate_iterable(
