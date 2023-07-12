@@ -13,7 +13,7 @@ from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
-from scrapy.http import Request, Response
+from scrapy.http import Request, RequestBuilder, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
@@ -106,7 +106,9 @@ class Shell:
             request = request_or_url
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True, **kwargs)
+            request = (
+                RequestBuilder(**kwargs).set_url(url).set_dont_filter(True).build()
+            )
             if redirect:
                 request.meta["handle_httpstatus_list"] = SequenceExclude(
                     range(300, 400)

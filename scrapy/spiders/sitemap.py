@@ -1,7 +1,7 @@
 import logging
 import re
 
-from scrapy.http import Request, XmlResponse
+from scrapy.http import RequestBuilder, XmlResponse
 from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
@@ -26,7 +26,10 @@ class SitemapSpider(Spider):
 
     def start_requests(self):
         for url in self.sitemap_urls:
-            yield Request(url, self._parse_sitemap)
+            request = (
+                RequestBuilder().set_url(url).set_callback(self._parse_sitemap).build()
+            )
+            yield request
 
     def sitemap_filter(self, entries):
         """This method can be used to filter sitemap entries by their
@@ -39,7 +42,13 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response):
         if response.url.endswith("/robots.txt"):
             for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
+                request = (
+                    RequestBuilder()
+                    .set_url(url)
+                    .set_callback(self._parse_sitemap)
+                    .build()
+                )
+                yield request
         else:
             body = self._get_sitemap_body(response)
             if body is None:
@@ -56,12 +65,21 @@ class SitemapSpider(Spider):
             if s.type == "sitemapindex":
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
+                        request = (
+                            RequestBuilder()
+                            .set_url(loc)
+                            .set_callback(self._parse_sitemap)
+                            .build()
+                        )
+                        yield request
             elif s.type == "urlset":
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
-                            yield Request(loc, callback=c)
+                            request = (
+                                RequestBuilder().set_url(loc).set_callback(c).build()
+                            )
+                            yield request
                             break
 
     def _get_sitemap_body(self, response):

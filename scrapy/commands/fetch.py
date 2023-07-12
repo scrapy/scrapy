@@ -4,7 +4,7 @@ from w3lib.url import is_url
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.http import Request
+from scrapy.http import RequestBuilder
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
@@ -60,11 +60,13 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
-        request = Request(
-            args[0],
-            callback=self._print_response,
-            cb_kwargs={"opts": opts},
-            dont_filter=True,
+        request = (
+            RequestBuilder()
+            .set_url(args[0])
+            .set_callback(self._print_response)
+            .set_cb_kwargs({"opts": opts})
+            .set_dont_filter(True)
+            .build()
         )
         # by default, let the framework handle redirects,
         # i.e. command handles all codes expect 3xx

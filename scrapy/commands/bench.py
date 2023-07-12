@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 import scrapy
 from scrapy.commands import ScrapyCommand
+from scrapy.http import RequestBuilder
 from scrapy.linkextractors import LinkExtractor
 
 
@@ -50,8 +51,12 @@ class _BenchSpider(scrapy.Spider):
     def start_requests(self):
         qargs = {"total": self.total, "show": self.show}
         url = f"{self.baseurl}?{urlencode(qargs, doseq=True)}"
-        return [scrapy.Request(url, dont_filter=True)]
+        request = RequestBuilder().set_url(url).set_dont_filter(True).build()
+        return [request]
 
     def parse(self, response):
         for link in self.link_extractor.extract_links(response):
-            yield scrapy.Request(link.url, callback=self.parse)
+            request = (
+                RequestBuilder().set_url(link.url).set_callback(self.parse).build()
+            )
+            yield request

@@ -8,7 +8,7 @@ See documentation in docs/topics/spiders.rst
 import copy
 from typing import AsyncIterable, Awaitable, Sequence
 
-from scrapy.http import HtmlResponse, Request, Response
+from scrapy.http import HtmlResponse, RequestBuilder, Response
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -81,12 +81,16 @@ class CrawlSpider(Spider):
         return results
 
     def _build_request(self, rule_index, link):
-        return Request(
-            url=link.url,
-            callback=self._callback,
-            errback=self._errback,
-            meta=dict(rule=rule_index, link_text=link.text),
+        request = (
+            RequestBuilder()
+            .set_url(link.url)
+            .set_callback(self._callback)
+            .set_method(self._errback)
+            .set_meta(dict(rule=rule_index, link_text=link.text))
+            .build()
         )
+
+        return request
 
     def _requests_to_follow(self, response):
         if not isinstance(response, HtmlResponse):

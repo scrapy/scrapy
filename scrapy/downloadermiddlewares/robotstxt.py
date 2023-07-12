@@ -9,7 +9,7 @@ import logging
 from twisted.internet.defer import Deferred, maybeDeferred
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured
-from scrapy.http import Request
+from scrapy.http import RequestBuilder
 from scrapy.http.request import NO_CALLBACK
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
@@ -69,11 +69,13 @@ class RobotsTxtMiddleware:
         if netloc not in self._parsers:
             self._parsers[netloc] = Deferred()
             robotsurl = f"{url.scheme}://{url.netloc}/robots.txt"
-            robotsreq = Request(
-                robotsurl,
-                priority=self.DOWNLOAD_PRIORITY,
-                meta={"dont_obey_robotstxt": True},
-                callback=NO_CALLBACK,
+            robotsreq = (
+                RequestBuilder()
+                .set_url(robotsurl)
+                .set_priority(self.DOWNLOAD_PRIORITY)
+                .set_meta({"dont_obey_robotstxt": True})
+                .set_callback(NO_CALLBACK)
+                .build()
             )
             dfd = self.crawler.engine.download(robotsreq)
             dfd.addCallback(self._parse_robots, netloc, spider)

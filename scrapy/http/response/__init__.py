@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 from scrapy.exceptions import NotSupported
 from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
-from scrapy.http.request import Request
+from scrapy.http.request import Request, RequestBuilder
 from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
@@ -189,21 +189,25 @@ class Response(object_ref):
             raise ValueError("url can't be None")
         url = self.urljoin(url)
 
-        return Request(
-            url=url,
-            callback=callback,
-            method=method,
-            headers=headers,
-            body=body,
-            cookies=cookies,
-            meta=meta,
-            encoding=encoding,
-            priority=priority,
-            dont_filter=dont_filter,
-            errback=errback,
-            cb_kwargs=cb_kwargs,
-            flags=flags,
+        request = (
+            RequestBuilder()
+            .set_url(url)
+            .set_callback(callback)
+            .set_method(method)
+            .set_headers(headers)
+            .set_body(body)
+            .set_cookies(cookies)
+            .set_meta(meta)
+            .set_encoding(encoding)
+            .set_priority(priority)
+            .set_dont_filter(dont_filter)
+            .set_errback(errback)
+            .set_cb_kwargs(cb_kwargs)
+            .set_flags(flags)
+            .build()
         )
+
+        return request
 
     def follow_all(
         self,

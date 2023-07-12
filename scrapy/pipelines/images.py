@@ -12,7 +12,7 @@ from io import BytesIO
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.http import RequestBuilder
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException, FilesPipeline
 
@@ -215,7 +215,9 @@ class ImagesPipeline(FilesPipeline):
 
     def get_media_requests(self, item, info):
         urls = ItemAdapter(item).get(self.images_urls_field, [])
-        return [Request(u, callback=NO_CALLBACK) for u in urls]
+        return [
+            RequestBuilder().set_url(u).set_callback(NO_CALLBACK).build() for u in urls
+        ]
 
     def item_completed(self, results, item, info):
         with suppress(KeyError):
