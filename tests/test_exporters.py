@@ -610,7 +610,6 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.assertRaises(TypeError, self.ie.export_item, i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
-        print(f"values are=={self.output.getvalue()}")
         exported = json.loads(to_unicode(self.output.getvalue()))
         self.assertEqual(exported, [dict(i1), dict(i3)])
 
