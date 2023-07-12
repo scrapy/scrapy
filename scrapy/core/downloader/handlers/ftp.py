@@ -35,7 +35,7 @@ from urllib.parse import unquote
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
 
-from scrapy.http import Response
+from scrapy.http import ResponseBuilder
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
@@ -119,7 +119,12 @@ class FTPDownloadHandler:
             if m:
                 ftpcode = m.group()
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
-                return Response(
-                    url=request.url, status=httpcode, body=to_bytes(message)
+                response = (
+                    ResponseBuilder()
+                    .set_url(request.url)
+                    .set_status(httpcode)
+                    .set_body(to_bytes(message))
+                    .build()
                 )
+                return response
         raise result.type(result.value)

@@ -4,7 +4,7 @@ from collections import defaultdict
 from tldextract import TLDExtract
 
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response
+from scrapy.http import ResponseBuilder
 from scrapy.http.cookies import CookieJar
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
@@ -140,5 +140,10 @@ class CookiesMiddleware:
         else:
             cookies = request.cookies
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
-        response = Response(request.url, headers={"Set-Cookie": formatted})
+        response = (
+            ResponseBuilder()
+            .set_url(request.url)
+            .set_headers({"Set-Cookie": formatted})
+            .build()
+        )
         return jar.make_cookies(response, request)
