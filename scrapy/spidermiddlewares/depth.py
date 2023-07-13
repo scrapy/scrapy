@@ -3,7 +3,7 @@ from typing import Any
 
 from scrapy import Request
 from scrapy.http import Response
-from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
+from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,9 @@ class DepthMiddleware(BaseSpiderMiddleware):
     def process_spider_output(self, response, result, spider):
         self._init_depth(response, spider)
         return (r for r in result or () if self._filter(r, response, spider))
+
+    def process_spider_input(self, request, spider, result):
+        return result
 
     def _init_depth(self, response, spider):
         # base case (depth=0)

@@ -1,6 +1,8 @@
 import logging
 
 from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Response
+from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -13,14 +15,23 @@ class HttpError(IgnoreRequest):
         super().__init__(*args, **kwargs)
 
 
-class HttpErrorMiddleware:
+class HttpErrorMiddleware(BaseSpiderMiddleware):
+    _sm_component_name = "HttpErrorMiddleware"
+
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings)
+        settings = crawler.settings
+        return cls(settings)
 
     def __init__(self, settings):
         self.handle_httpstatus_all = settings.getbool("HTTPERROR_ALLOW_ALL")
         self.handle_httpstatus_list = settings.getlist("HTTPERROR_ALLOWED_CODES")
+
+    def handle(self, packet, spider, result):
+        if isinstance(packet, Response):
+            self.process_spider_input(packet, result, spider)
+
+        self.get_next().handle(packet, spider, result)
 
     def process_spider_input(self, response, spider):
         if 200 <= response.status < 300:  # common case
@@ -39,6 +50,9 @@ class HttpErrorMiddleware:
         if response.status in allowed_statuses:
             return
         raise HttpError(response, "Ignoring non-200 response")
+
+    def process_spider_output(self, packet, spider, result):
+        return result
 
     def process_spider_exception(self, response, exception, spider):
         if isinstance(exception, HttpError):

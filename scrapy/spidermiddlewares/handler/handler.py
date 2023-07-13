@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any  # , Optional
 
 
 class Handler(ABC):
@@ -14,16 +15,18 @@ class Handler(ABC):
 
 
 class AbstractHandler(Handler):
-    _next_handler: Optional[Handler] = None
+    _next_handler: None
 
     def set_next(self, handler: Handler):
         self._next_handler = handler
 
-    def get_next(self) -> Handler:
-        return self._next_handler
+    def get_next(self) -> Any:
+        if self._next_handler:
+            return Handler
+        return None
 
     def handle(self, packet: Any, spider, result) -> Any:
         if self._next_handler:
             return self._next_handler.handle(packet, spider, result)
 
-        return None
+        return result

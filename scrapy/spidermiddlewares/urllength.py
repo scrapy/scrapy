@@ -8,7 +8,7 @@ import logging
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, response
-from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
+from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,9 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
 
     def process_spider_output(self, response, result, spider):
         return (r for r in result or () if self._filter(r, spider))
+
+    def process_spider_input(self, request, spider, result):
+        return result
 
     async def process_spider_output_async(self, response, result, spider):
         async for r in result or ():

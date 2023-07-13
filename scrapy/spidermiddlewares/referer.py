@@ -11,7 +11,7 @@ from w3lib.url import safe_url_string
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
+from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
@@ -359,6 +359,9 @@ class RefererMiddleware(BaseSpiderMiddleware):
 
     def process_spider_output(self, response, result, spider):
         return (self._set_referer(r, response) for r in result or ())
+
+    def process_spider_input(self, request, spider, result):
+        return result
 
     async def process_spider_output_async(self, response, result, spider):
         async for r in result or ():

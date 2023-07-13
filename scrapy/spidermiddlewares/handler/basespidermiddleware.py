@@ -1,5 +1,5 @@
 from typing import Any
-
+from abc import abstractmethod
 from scrapy.spidermiddlewares.handler.handler import AbstractHandler
 
 
@@ -11,8 +11,11 @@ class BaseSpiderMiddleware(AbstractHandler):
             return self._next_handler.handle(packet, spider, result)
         return
 
-    def process_spider_input(self):
+    @abstractmethod
+    def process_spider_input(self, packet, spider, result):
         pass
 
-    def process_spider_output(self):
+
+    @abstractmethod
+    def process_spider_output(self, packet, spider, result):
         pass
