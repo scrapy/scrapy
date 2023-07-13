@@ -22,10 +22,10 @@ data see the :ref:`topics-feed-exports`. Otherwise, if you want to know how
 Item Exporters work or need more custom functionality (not covered by the
 default exports), continue reading below.
 
-In order to use an Item Exporter, you  must instantiate it with its required
-args. Each Item Exporter requires different arguments, so check each exporter
-documentation to be sure, in :ref:`topics-exporters-reference`. After you have
-instantiated your exporter, you have to:
+In order to use an Item Exporter, you must use the Factory Method to instantiate
+it. Each Item Exporter requires different arguments, so check each exporter's
+documentation in :ref:topics-exporters-reference. After you have instantiated
+your exporter, you have to:
 
 1. call the method :meth:`~BaseItemExporter.start_exporting` in order to
 signal the beginning of the exporting process
@@ -42,35 +42,36 @@ value of one of their fields:
 
 .. code-block:: python
 
-    from itemadapter import ItemAdapter
-    from scrapy.exporters import XmlItemExporter
+   from itemadapter import ItemAdapter
+   from item_exporters import ItemExporterFactory
 
 
-    class PerYearXmlExportPipeline:
-        """Distribute items across multiple XML files according to their 'year' field"""
+   class PerYearExporterPipeline:
+       """Distribute items across multiple files according to their 'year' field"""
 
-        def open_spider(self, spider):
-            self.year_to_exporter = {}
+       def open_spider(self, spider):
+           self.year_to_exporter = {}
 
-        def close_spider(self, spider):
-            for exporter, xml_file in self.year_to_exporter.values():
-                exporter.finish_exporting()
-                xml_file.close()
+       def close_spider(self, spider):
+           for exporter, file in self.year_to_exporter.values():
+               exporter.finish_exporting()
+               file.close()
 
-        def _exporter_for_item(self, item):
-            adapter = ItemAdapter(item)
-            year = adapter["year"]
-            if year not in self.year_to_exporter:
-                xml_file = open(f"{year}.xml", "wb")
-                exporter = XmlItemExporter(xml_file)
-                exporter.start_exporting()
-                self.year_to_exporter[year] = (exporter, xml_file)
-            return self.year_to_exporter[year][0]
+       def _exporter_for_item(self, item):
+           adapter = ItemAdapter(item)
+           year = adapter["year"]
+           if year not in self.year_to_exporter:
+               file = open(f"{year}.xml", "wb")
+               exporter = ItemExporterFactory.create_exporter(file, "xml")
+               exporter.start_exporting()
+               self.year_to_exporter[year] = (exporter, file)
+           return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
-            exporter = self._exporter_for_item(item)
-            exporter.export_item(item)
-            return item
+       def process_item(self, item, spider):
+           exporter = self._exporter_for_item(item)
+           exporter.export_item(item)
+           return item
+
 
 
 .. _topics-exporters-field-serialization:
