@@ -29,7 +29,10 @@ class DepthMiddleware(BaseSpiderMiddleware):
         if isinstance(packet, Response):
             self.process_spider_output(packet, result, spider)
 
-        self.get_next().handle(packet, spider, result)
+        if self._next_handler:
+            return self._next_handler.handle(packet, spider, result)
+
+        return
 
     def process_spider_output(self, response, result, spider):
         self._init_depth(response, spider)

@@ -319,7 +319,9 @@ class RefererMiddleware(BaseSpiderMiddleware):
         if isinstance(packet, Response):
             result = self.process_spider_output(packet, result, spider)
 
-        self.get_next().handle(packet, spider, result)
+        if self._next_handler:
+            return self._next_handler.handle(packet, spider, result)
+        return
 
     @classmethod
     def from_crawler(cls, crawler):

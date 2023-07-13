@@ -28,7 +28,8 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.settings import BaseSettings
-from scrapy.spidermiddlewares.basespidermiddleware import BaseSpiderMiddleware
+
+# from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 from scrapy.spidermiddlewares.referer import RefererMiddleware
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
@@ -53,14 +54,12 @@ def _isiterable(o: Any) -> bool:
 
 class SpiderMiddlewareManager(MiddlewareManager):
     component_name = "spider middleware"
-    baseSpiderChain = BaseSpiderMiddleware()
+    baseSpiderChain = UrlLengthMiddleware(800)
 
     def __init__(self, *middlewares: Any):
         super().__init__(*middlewares)
         self.downgrade_warning_done = False
-        self.baseSpiderChain.set_next(
-            UrlLengthMiddleware(800).set_next(RefererMiddleware())
-        )
+        self.baseSpiderChain.set_next(RefererMiddleware())
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:

@@ -29,11 +29,13 @@ class HttpErrorMiddleware(BaseSpiderMiddleware):
 
     def handle(self, packet, spider, result):
         if isinstance(packet, Response):
-            self.process_spider_input(packet, result, spider)
+            self.process_spider_input(packet, spider, result)
 
-        self.get_next().handle(packet, spider, result)
+        if self._next_handler:
+            return self._next_handler.handle(packet, spider, result)
+        return
 
-    def process_spider_input(self, response, spider):
+    def process_spider_input(self, response, spider, result):
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
@@ -54,7 +56,8 @@ class HttpErrorMiddleware(BaseSpiderMiddleware):
     def process_spider_output(self, packet, spider, result):
         return result
 
-    def process_spider_exception(self, response, exception, spider):
+    @staticmethod
+    def process_spider_exception(response, exception, spider):
         if isinstance(exception, HttpError):
             spider.crawler.stats.inc_value("httperror/response_ignored_count")
             spider.crawler.stats.inc_value(

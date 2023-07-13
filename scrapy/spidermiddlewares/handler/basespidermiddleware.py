@@ -1,5 +1,6 @@
-from typing import Any
 from abc import abstractmethod
+from typing import Any
+
 from scrapy.spidermiddlewares.handler.handler import AbstractHandler
 
 
@@ -14,7 +15,6 @@ class BaseSpiderMiddleware(AbstractHandler):
     @abstractmethod
     def process_spider_input(self, packet, spider, result):
         pass
-
 
     @abstractmethod
     def process_spider_output(self, packet, spider, result):

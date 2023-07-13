@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 import logging
 
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, response
+from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 
 logger = logging.getLogger(__name__)
@@ -18,10 +18,12 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
         self.maxlength = maxlength
 
     def handle(self, packet, spider, result):
-        if isinstance(packet, response):
+        if isinstance(packet, Response):
             result = self.process_spider_output(packet, result, spider)
 
-        self.get_next().handle(packet, spider, result)
+        if self._next_handler:
+            return self._next_handler.handle(packet, spider, result)
+        return
 
     @classmethod
     def from_settings(cls, settings):

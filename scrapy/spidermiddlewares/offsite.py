@@ -26,7 +26,9 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
         if isinstance(packet, Request):
             result = self.process_spider_output(packet, result, spider)
 
-        self.get_next().handle(packet, spider, result)
+        if self._next_handler:
+            return self._next_handler.handle(packet, spider, result)
+        return
 
     def process_spider_output(self, response, result, spider):
         return (r for r in result or () if self._filter(r, spider))
