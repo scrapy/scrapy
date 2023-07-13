@@ -6,6 +6,7 @@ import warnings
 from typing import Tuple
 from urllib.parse import urlparse
 
+from twisted.python.failure import Failure
 from w3lib.url import safe_url_string
 
 from scrapy import signals
@@ -316,9 +317,11 @@ class RefererMiddleware(BaseSpiderMiddleware):
             self.default_policy = _load_policy_class(settings.get("REFERRER_POLICY"))
 
     def handle(self, packet, spider, result):
-        if isinstance(packet, Response):
-            result = self.process_spider_output(packet, result, spider)
-
+        try:
+            if isinstance(packet, Response):
+                result = self.process_spider_output(packet, result, spider)
+        except Exception:
+            return self.scrape_func(Failure(), packet, spider)
         if self._next_handler:
             return self._next_handler.handle(packet, spider, result)
         return

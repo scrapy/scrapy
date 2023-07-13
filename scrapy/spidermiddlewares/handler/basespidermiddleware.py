@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 from twisted.python.failure import Failure
 
@@ -8,11 +8,6 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.spidermiddlewares.handler.handler import AbstractHandler
 
-from typing import (
-    Any,
-    Callable,
-    Union,
-)
 ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
 
 
@@ -34,12 +29,9 @@ class BaseSpiderMiddleware(AbstractHandler):
         pass
 
     def check_integrity(self, result):
-        try:
-            if result is not None:
-                msg = (
-                    f"{self._sm_component_name.__qualname__} must return None "
-                    f"or raise an exception, got {type(result)}"
-                )
-                raise _InvalidOutput(msg)
-        except _InvalidOutput:
-            raise
+        if result is not None:
+            msg = (
+                f"{self._sm_component_name.__qualname__} must return None "
+                f"or raise an exception, got {type(result)}"
+            )
+            raise _InvalidOutput(msg)

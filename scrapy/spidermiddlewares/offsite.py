@@ -2,6 +2,8 @@ import logging
 import re
 import warnings
 
+from twisted.python.failure import Failure
+
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
@@ -23,9 +25,11 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
         return o
 
     def handle(self, packet, spider, result):
-        if isinstance(packet, Request):
-            result = self.process_spider_output(packet, result, spider)
-
+        try:
+            if isinstance(packet, Request):
+                result = self.process_spider_output(packet, result, spider)
+        except Exception:
+            return self.scrape_func(Failure(), packet, spider)
         if self._next_handler:
             return self._next_handler.handle(packet, spider, result)
         return

@@ -1,7 +1,10 @@
 import logging
 from typing import Any
 
+from twisted.python.failure import Failure
+
 from scrapy import Request
+from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 
@@ -26,8 +29,14 @@ class DepthMiddleware(BaseSpiderMiddleware):
         return cls(maxdepth, crawler.stats, verbose, prio)
 
     def handle(self, packet: Any, spider, result):
-        if isinstance(packet, Response):
-            self.process_spider_output(packet, result, spider)
+        try:
+            if isinstance(packet, Response):
+                self.process_spider_output(packet, result, spider)
+                self.check_integrity(result)
+        except _InvalidOutput:
+            raise
+        except Exception:
+            return self.scrape_func(Failure(), packet, spider)
 
         if self._next_handler:
             return self._next_handler.handle(packet, spider, result)
