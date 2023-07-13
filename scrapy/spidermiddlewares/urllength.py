@@ -6,6 +6,8 @@ See documentation in docs/topics/spider-middleware.rst
 
 import logging
 
+from twisted.python.failure import Failure
+
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
@@ -18,9 +20,11 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
         self.maxlength = maxlength
 
     def handle(self, packet, spider, result):
-        if isinstance(packet, Response):
-            result = self.process_spider_output(packet, result, spider)
-
+        try:
+            if isinstance(packet, Response):
+                result = self.process_spider_output(packet, result, spider)
+        except Exception:
+            return self.scrape_func(Failure(), packet, spider)
         if self._next_handler:
             return self._next_handler.handle(packet, spider, result)
         return
