@@ -70,6 +70,39 @@ this:
 9. The process repeats (from step 3) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
 
+Sequence diagram
+==========
+
+The following diagram shows how the system works in the process of crawling a 
+request. This process begins with the user setting the basic data of the request 
+and finishes with the system returning a response to the user with the data 
+required. This process is the main function of the system, so it includes the 
+participation of all the components.
+
+.. image:: _images/scrapy_sequence_01.png
+   :width: 700
+   :height: 470
+   :alt: Scrapy sequence diagram
+
+The diagram has 8 lifelines that represents the 7 basic components of the system 
+(:ref:`Spider <component-spiders>`, 
+:ref:`Spider Middleware <component-spider-middleware>`, :ref:`Engine <component-engine>`, 
+:ref:`Scheduler <component-scheduler>`
+:ref:`Downloader <component-downloader>`, 
+:ref:`Downloader Middlewares <component-downloader-middleware>`
+and :ref:`Item Pipelines <component-pipelines>`) and the user, that is the one that starts the process making 
+a request and finish it receiving a response. All of them have their respectives 
+execution occurrences when each of them have active participation in the process, 
+and none have a destruction occurrence because the system works with a cycle of 
+solving requests, so the instances of the components already exist and each of 
+them keep working for next requests. 
+
+Each execution occurrences of the lifelines are connected with messages. This is 
+because of the nature of the system, because it works in a serial way, so each 
+of the components needs to receive information to work on, and while it is 
+working, no one else participates in the process. This also explains why the 
+messages are all synchronic and there aren't asynchrony messages.
+
 Components
 ==========
 
