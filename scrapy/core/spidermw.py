@@ -28,8 +28,6 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.settings import BaseSettings
-
-# from scrapy.spidermiddlewares.handler.basespidermiddleware import BaseSpiderMiddleware
 from scrapy.spidermiddlewares.referer import RefererMiddleware
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
