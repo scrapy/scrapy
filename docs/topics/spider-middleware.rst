@@ -204,6 +204,29 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
        :param crawler: crawler that uses this middleware
        :type crawler: :class:`~scrapy.crawler.Crawler` object
 
+Parsing process order
+---------------------
+
+We must take into account the specific order of events when talking about the
+middleware's input processing, the parsing of the response by the spider, and
+the middleware's output processing. Even though the response goes "up" the 
+middleware through input processing, to eventually get to the spider, and 
+then go "down" the middleware back to the engine through the output 
+processing, there is one factor to be taken into account. The spider's parse
+method gets executed only after the response gets to the output processing, and
+not before, when it gets to the spider itself. This phenomenon might be better 
+explained in the following graph:
+
+.. image:: _images/middleware_parsing_order.png
+   :width: 700
+   :height: 470
+   :alt: Middleware parsing order
+
+As you can see, the response is not parsed when it gets to the spider itself,
+but when the execution flow gets to the output processing. It's then when the
+response is finally parsed through the spider's parse method. So, do take this
+into account when working with the middleware.
+
 .. _topics-spider-middleware-ref:
 
 Built-in spider middleware reference
