@@ -363,3 +363,34 @@ class PythonItemExporter(BaseItemExporter):
         if self.binary:
             result = dict(self._serialize_item(result))
         return result
+
+
+class ItemExporterFactory:
+    @staticmethod
+    def create_exporter(
+        file,
+        exporter_type,
+        protocol=4,
+        include_headers_line=True,
+        join_multivalued=",",
+        errors=None,
+        **kwargs,
+    ):
+        if exporter_type == "jsonlines":
+            return JsonLinesItemExporter(file, **kwargs)
+        elif exporter_type == "json":
+            return JsonItemExporter(file, **kwargs)
+        elif exporter_type == "xml":
+            return XmlItemExporter(file, **kwargs)
+        elif exporter_type == "csv":
+            return CsvItemExporter(
+                file, include_headers_line, join_multivalued, errors, **kwargs
+            )
+        elif exporter_type == "pickle":
+            return PickleItemExporter(file, protocol, **kwargs)
+        elif exporter_type == "marshal":
+            return MarshalItemExporter(file, **kwargs)
+        elif exporter_type == "pprint":
+            return PprintItemExporter(file, **kwargs)
+        else:
+            raise ValueError("Invalid exporter type")
