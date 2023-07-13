@@ -6,7 +6,7 @@ import re
 import tempfile
 import unittest
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 from warnings import catch_warnings, filterwarnings
 
 import lxml.etree
@@ -16,6 +16,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter,
     CsvItemExporter,
+    ItemExporterFactory,
     JsonItemExporter,
     JsonLinesItemExporter,
     MarshalItemExporter,
@@ -674,6 +675,46 @@ class CustomExporterItemTest(unittest.TestCase):
 
 class CustomExporterDataclassTest(CustomExporterItemTest):
     item_class = TestDataClass
+
+
+class ItemExporterFactoryTest(unittest.TestCase):
+    def setUp(self):
+        self.file = StringIO()
+
+    def test_create_exporter_csv(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "csv")
+        self.assertIsInstance(exporter, CsvItemExporter)
+
+    def test_create_exporter_json(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "json")
+        self.assertIsInstance(exporter, JsonItemExporter)
+
+    def test_create_exporter_xml(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "xml")
+        self.assertIsInstance(exporter, XmlItemExporter)
+
+    def test_create_exporter_jsonlines(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "jsonlines")
+        self.assertIsInstance(exporter, JsonLinesItemExporter)
+
+    def test_create_exporter_pickle(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "pickle")
+        self.assertIsInstance(exporter, PickleItemExporter)
+
+    def test_create_exporter_marshal(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "marshal")
+        self.assertIsInstance(exporter, MarshalItemExporter)
+
+    def test_create_exporter_pprint(self):
+        exporter = ItemExporterFactory.create_exporter(self.file, "pprint")
+        self.assertIsInstance(exporter, PprintItemExporter)
+
+    def test_create_exporter_invalid_type(self):
+        with self.assertRaises(ValueError):
+            ItemExporterFactory.create_exporter(self.file, "invalid")
+
+    def tearDown(self):
+        self.file.close()
 
 
 if __name__ == "__main__":
