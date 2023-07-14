@@ -932,18 +932,19 @@ class MySpider(scrapy.Spider):
     def parse(self, response):
         yield {"hello": "world"}
         """
+        temp_dir = mkdtemp()
 
-        args = ["-o", "/tmp/dump/output1.json:json"]
+        args = ["-o", f"{temp_dir}/output1.json:json"]
         log = self.get_log(spider_code, args=args)
         self.assertIn(
-            "[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: /tmp/dump/output1.json",
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output1.json",
             log,
         )
 
-        args = ["-o", "/tmp/dump/output2.json"]
+        args = ["-o", f"{temp_dir}/output2.json"]
         log = self.get_log(spider_code, args=args)
         self.assertIn(
-            "[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: /tmp/dump/output2.json",
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output2.json",
             log,
         )
 

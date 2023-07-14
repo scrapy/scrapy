@@ -617,7 +617,7 @@ class FeedExporter:
         It supports not passing the *feed_options* parameters to classes that
         do not support it, and issuing a deprecation warning instead.
         """
-        feedcls = self.storages.get(urlparse(uri).scheme) or self.storages["file"]
+        feedcls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
         crawler = getattr(self, "crawler", None)
 
         def build_instance(builder, *preargs):
