@@ -61,6 +61,14 @@ They can also have the following method:
    :param crawler: The crawler that uses this addon
    :type crawler: :class:`~scrapy.crawler.Crawler`
 
+The settings set by the addon should use the ``addon`` priority (see
+:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`). This
+allows users to override these settings in the project or spider configuration.
+This is not possible with settings that are mutable objects, such as the dict
+that is a value of :setting:`ITEM_PIPELINES`. In these cases you can provide an
+addon-specific setting that governs whether the addon will modify
+:setting:`ITEM_PIPELINES`.
+
 
 Add-on examples
 ===============
@@ -70,7 +78,7 @@ Set some basic configuration::
     class MyAddon:
         def update_settings(self, settings):
             settings["ITEM_PIPELINES"]["path.to.mypipeline"] = 200
-            settings["DNSCACHE_ENABLED"] = True
+            settings.set("DNSCACHE_ENABLED", True, "addon")
 
 Check dependencies::
 
