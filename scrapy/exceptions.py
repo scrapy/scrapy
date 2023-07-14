@@ -4,6 +4,7 @@ Scrapy core exceptions
 These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
+from typing import Any
 
 # Internal
 
@@ -77,7 +78,7 @@ class NotSupported(Exception):
 class UsageError(Exception):
     """To indicate a command-line usage error"""
 
-    def __init__(self, *a, **kw):
+    def __init__(self, *a: Any, **kw: Any):
         self.print_help = kw.pop("print_help", True)
         super().__init__(*a, **kw)
 

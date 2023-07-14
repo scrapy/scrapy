@@ -11,7 +11,7 @@ import warnings
 from datetime import datetime
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Callable, List, Optional, Tuple, Union
+from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -282,15 +282,22 @@ class GCSFeedStorage(BlockingFeedStorage):
 
 
 class FTPFeedStorage(BlockingFeedStorage):
-    def __init__(self, uri, use_active_mode=False, *, feed_options=None):
+    def __init__(
+        self,
+        uri: str,
+        use_active_mode: bool = False,
+        *,
+        feed_options: Optional[Dict[str, Any]] = None,
+    ):
         u = urlparse(uri)
-        self.host = u.hostname
-        self.port = int(u.port or "21")
-        self.username = u.username
-        self.password = unquote(u.password or "")
-        self.path = u.path
-        self.use_active_mode = use_active_mode
-        self.overwrite = not feed_options or feed_options.get("overwrite", True)
+        assert u.hostname
+        self.host: str = u.hostname
+        self.port: int = int(u.port or "21")
+        self.username: str = u.username or ""
+        self.password: str = unquote(u.password or "")
+        self.path: str = u.path
+        self.use_active_mode: bool = use_active_mode
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
     def from_crawler(cls, crawler, uri, *, feed_options=None):
