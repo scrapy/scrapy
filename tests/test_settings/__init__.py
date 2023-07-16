@@ -206,7 +206,7 @@ class BaseSettingsTest(unittest.TestCase):
     )
     def test_update_kwargs(self):
         settings = BaseSettings({"key": 0})
-        settings.update(key=1)
+        settings.update(key=1)  # pylint: disable=unexpected-keyword-arg
 
     @pytest.mark.xfail(
         raises=AttributeError,
