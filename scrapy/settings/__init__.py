@@ -27,9 +27,10 @@ from scrapy.settings import default_settings
 _SettingsKeyT = Union[bool, float, int, str, None]
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
     # https://github.com/python/typing/issues/445#issuecomment-1131458824
     from _typeshed import SupportsItems
+
+    # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     _SettingsInputT = Union[SupportsItems[_SettingsKeyT, Any], str, None]
