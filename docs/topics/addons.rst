@@ -62,12 +62,53 @@ They can also have the following method:
    :type crawler: :class:`~scrapy.crawler.Crawler`
 
 The settings set by the addon should use the ``addon`` priority (see
-:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`). This
-allows users to override these settings in the project or spider configuration.
-This is not possible with settings that are mutable objects, such as the dict
-that is a value of :setting:`ITEM_PIPELINES`. In these cases you can provide an
-addon-specific setting that governs whether the addon will modify
-:setting:`ITEM_PIPELINES`.
+:ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`)::
+
+    class MyAddon:
+        def update_settings(self, settings):
+            settings.set("DNSCACHE_ENABLED", True, "addon")
+
+This allows users to override these settings in the project or spider
+configuration. This is not possible with settings that are mutable objects,
+such as the dict that is a value of :setting:`ITEM_PIPELINES`. In these cases
+you can provide an addon-specific setting that governs whether the addon will
+modify :setting:`ITEM_PIPELINES`::
+
+    class MyAddon:
+        def update_settings(self, settings):
+            if settings.getbool("MYADDON_ENABLE_PIPELINE"):
+                settings["ITEM_PIPELINES"]["path.to.mypipeline"] = 200
+
+Fallbacks
+---------
+
+Some components provided by addons need to fallback to "default"
+implementations, e.g. a custom download handler needs to send the request that
+it doesn't handle via the default download handler, or a stats collector that
+includes some additional processing but otherwise uses the default stats
+collector. And it's possible that a project needs to use several custom
+components of the same type, e.g. two custom download handlers that support
+different kinds of custom requests and still need to use the default download
+handler for other requests. To make such use cases easier to configure, we
+recommend that such custom components should be written in the following way:
+
+1. The custom component (e.g. ``MyDownloadHandler``) shouldn't inherit from the
+   default Scrapy one (e.g.
+   ``scrapy.core.downloader.handlers.http.HTTPDownloadHandler``), but instead
+   be able to load the class of the fallback component from a special setting
+   (e.g. ``MY_FALLBACK_DOWNLOAD_HANDLER``), create an instance of it and use
+   it.
+2. The addons that include these components should read the current value of
+   the default setting (e.g. ``DOWNLOAD_HANDLERS``) in their
+   ``update_settings()`` methods, save that value into the fallback setting
+   (``MY_FALLBACK_DOWNLOAD_HANDLER`` mentioned earlier) and set the default
+   setting to the component provided byt the addon (e.g.
+   ``MyDownloadHandler``). If the fallback setting is already set by the user,
+   they shouldn't change it.
+3. This way, if there are several addons that want to modify the same setting,
+   all of them will fallback to the component from the previous one and then to
+   the Scrapy default. The order of that depends on the priority order in the
+   ``ADDONS`` setting.
 
 
 Add-on examples
@@ -103,3 +144,39 @@ Access the crawler instance::
 
         def update_settings(self, settings):
             ...
+
+Use a fallback component::
+
+    from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+
+
+    fallback_setting = "MY_FALLBACK_DOWNLOAD_HANDLER"
+
+
+    class MyHandler:
+        lazy = False
+
+        def __init__(self, settings, crawler):
+            dhcls = load_object(settings.get(fallback_setting))
+            self._fallback_handler = create_instance(
+                dhcls,
+                settings=None,
+                crawler=crawler,
+            )
+
+        def download_request(self, request, spider):
+            if request.meta.get("my_params"):
+                # handle the request
+                ...
+            else:
+                return self._fallback_handler.download_request(request, spider)
+
+
+    class MyAddon:
+        def update_settings(self, settings):
+            if not settings.get(fallback_setting):
+                settings.set(
+                    fallback_setting,
+                    settings.getwithbase("DOWNLOAD_HANDLERS")["https"],
+                    "addon",
+                )
