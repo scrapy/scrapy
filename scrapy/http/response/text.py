@@ -71,15 +71,10 @@ class TextResponse(Response):
             or self._body_declared_encoding()
         )
 
-    def json(self):
-        """
-        .. versionadded:: 2.2
+    def json(self,response:Response):
+        json_data = json.loads(response.body)
+        return self.json_data
 
-        Deserialize a JSON document to a Python object.
-        """
-        if self._cached_decoded_json is _NONE:
-            self._cached_decoded_json = json.loads(self.text)
-        return self._cached_decoded_json
 
     @property
     def text(self):
