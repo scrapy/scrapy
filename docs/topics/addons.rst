@@ -145,7 +145,7 @@ Access the crawler instance:
             self.crawler = crawler
 
         @classmethod
-        def from_crawler(cls, crawler: Crawler):
+        def from_crawler(cls, crawler):
             return cls(crawler)
 
         def update_settings(self, settings):
