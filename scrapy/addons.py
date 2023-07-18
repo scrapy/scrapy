@@ -17,15 +17,8 @@ class AddonManager:
         self.crawler: "Crawler" = crawler
         self.addons: List[Any] = []
 
-    def add(self, addon: Any) -> None:
-        """Store an add-on.
-
-        :param addon: The add-on object (or path) to be stored
-        :type addon: Python object, class or ``str``
-
-        :param config: The add-on configuration dictionary
-        :type config: ``dict``
-        """
+    def _add(self, addon: Any) -> None:
+        """Store an add-on."""
         if isinstance(addon, (type, str)):
             addon = load_object(addon)
         if isinstance(addon, type):
@@ -33,7 +26,7 @@ class AddonManager:
         self.addons.append(addon)
 
     def load_settings(self, settings) -> None:
-        """Load add-ons and configurations from settings object.
+        """Load add-ons and configurations from a settings object.
 
         This will load the addon for every add-on path in the
         ``ADDONS`` setting.
@@ -42,10 +35,9 @@ class AddonManager:
             which to read the add-on configuration
         :type settings: :class:`~scrapy.settings.Settings`
         """
-        paths = build_component_list(settings["ADDONS"])
-        addons = [load_object(path) for path in paths]
-        for a in addons:
-            self.add(a)
+        addons = build_component_list(settings["ADDONS"])
+        for addon in build_component_list(settings["ADDONS"]):
+            self._add(addon)
         logger.info(
             "Enabled addons:\n%(addons)s",
             {

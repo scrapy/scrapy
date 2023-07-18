@@ -43,12 +43,6 @@ class AddonTest(unittest.TestCase):
 
 
 class AddonManagerTest(unittest.TestCase):
-    def test_add(self):
-        crawler = get_crawler()
-        manager = crawler.addons
-        manager.add("tests.test_addons.GoodAddon")
-        self.assertIsInstance(manager.addons[0], GoodAddon)
-
     def test_load_settings(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.GoodAddon": 0},
