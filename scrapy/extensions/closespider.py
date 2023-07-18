@@ -84,7 +84,7 @@ class CloseSpider:
             task.cancel()
 
         task_no_item = getattr(self, "task_no_item", False)
-        if task_no_item.running:
+        if task_no_item and task_no_item.running:
             task_no_item.stop()
 
     def spider_opened_no_item(self, spider):
