@@ -28,7 +28,7 @@ class AddonManager:
     def load_settings(self, settings) -> None:
         """Load add-ons and configurations from a settings object.
 
-        This will load the addon for every add-on path in the
+        This will load the add-on for every add-on path in the
         ``ADDONS`` setting.
 
         :param settings: The :class:`~scrapy.settings.Settings` object from \

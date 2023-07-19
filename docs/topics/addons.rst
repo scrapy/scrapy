@@ -19,7 +19,7 @@ Add-ons and their configuration live in Scrapy's
 initialization the add-on manager will read a list of enabled add-ons from your
 ``ADDONS`` setting.
 
-The ``ADDONS`` setting is a dict in which every key is an addon class or its
+The ``ADDONS`` setting is a dict in which every key is an add-on class or its
 import path and the value is its priority.
 
 This is an example where two add-ons are enabled in a project's
@@ -52,16 +52,16 @@ They can also have the following method:
 .. classmethod:: from_crawler(cls, crawler)
    :noindex:
 
-   If present, this class method is called to create an addon instance
+   If present, this class method is called to create an add-on instance
    from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the addon. The crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for the addon to access
+   of the add-on. The crawler object provides access to all Scrapy core
+   components like settings and signals; it is a way for the add-on to access
    them and hook its functionality into Scrapy.
 
-   :param crawler: The crawler that uses this addon
+   :param crawler: The crawler that uses this add-on
    :type crawler: :class:`~scrapy.crawler.Crawler`
 
-The settings set by the addon should use the ``addon`` priority (see
+The settings set by the add-on should use the ``addon`` priority (see
 :ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`)::
 
     class MyAddon:
@@ -71,7 +71,7 @@ The settings set by the addon should use the ``addon`` priority (see
 This allows users to override these settings in the project or spider
 configuration. This is not possible with settings that are mutable objects,
 such as the dict that is a value of :setting:`ITEM_PIPELINES`. In these cases
-you can provide an addon-specific setting that governs whether the addon will
+you can provide an add-on-specific setting that governs whether the add-on will
 modify :setting:`ITEM_PIPELINES`::
 
     class MyAddon:
@@ -82,7 +82,7 @@ modify :setting:`ITEM_PIPELINES`::
 Fallbacks
 ---------
 
-Some components provided by addons need to fall back to "default"
+Some components provided by add-ons need to fall back to "default"
 implementations, e.g. a custom download handler needs to send the request that
 it doesn't handle via the default download handler, or a stats collector that
 includes some additional processing but otherwise uses the default stats
@@ -98,14 +98,14 @@ recommend that such custom components should be written in the following way:
    be able to load the class of the fallback component from a special setting
    (e.g. ``MY_FALLBACK_DOWNLOAD_HANDLER``), create an instance of it and use
    it.
-2. The addons that include these components should read the current value of
+2. The add-ons that include these components should read the current value of
    the default setting (e.g. ``DOWNLOAD_HANDLERS``) in their
    ``update_settings()`` methods, save that value into the fallback setting
    (``MY_FALLBACK_DOWNLOAD_HANDLER`` mentioned earlier) and set the default
-   setting to the component provided by the addon (e.g.
+   setting to the component provided by the add-on (e.g.
    ``MyDownloadHandler``). If the fallback setting is already set by the user,
    they shouldn't change it.
-3. This way, if there are several addons that want to modify the same setting,
+3. This way, if there are several add-ons that want to modify the same setting,
    all of them will fallback to the component from the previous one and then to
    the Scrapy default. The order of that depends on the priority order in the
    ``ADDONS`` setting.

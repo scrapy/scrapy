@@ -40,7 +40,7 @@ precedence:
  1. Command line options (most precedence)
  2. Settings per-spider
  3. Project settings module
- 4. Settings set by addons
+ 4. Settings set by add-ons
  5. Default settings per-command
  6. Default global settings (less precedence)
 
@@ -90,10 +90,10 @@ project, it's where most of your custom settings will be populated. For a
 standard Scrapy project, this means you'll be adding or changing the settings
 in the ``settings.py`` file created for your project.
 
-4. Settings set by addons
--------------------------
+4. Settings set by add-ons
+--------------------------
 
-:ref:`Addons <topics-addons>` can modify settings. They should do this with
+:ref:`Add-ons <topics-addons>` can modify settings. They should do this with
 this priority, though this is not enforced.
 
 5. Default settings per-command
