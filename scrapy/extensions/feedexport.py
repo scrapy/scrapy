@@ -169,6 +169,7 @@ class S3FeedStorage(BlockingFeedStorage):
         secret_key=None,
         acl=None,
         endpoint_url=None,
+        region_name=None,
         *,
         feed_options=None,
         session_token=None,
@@ -183,6 +184,7 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
+        self.region_name = region_name
 
         if IS_BOTO3_AVAILABLE:
             import boto3.session
@@ -195,6 +197,7 @@ class S3FeedStorage(BlockingFeedStorage):
                 aws_secret_access_key=self.secret_key,
                 aws_session_token=self.session_token,
                 endpoint_url=self.endpoint_url,
+                region_name=self.region_name,
             )
         else:
             warnings.warn(
@@ -213,6 +216,7 @@ class S3FeedStorage(BlockingFeedStorage):
                 aws_secret_access_key=self.secret_key,
                 aws_session_token=self.session_token,
                 endpoint_url=self.endpoint_url,
+                region_name=self.region_name,
             )
 
         if feed_options and feed_options.get("overwrite", True) is False:
@@ -232,6 +236,7 @@ class S3FeedStorage(BlockingFeedStorage):
             session_token=crawler.settings["AWS_SESSION_TOKEN"],
             acl=crawler.settings["FEED_STORAGE_S3_ACL"] or None,
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
+            region_name=crawler.settings["AWS_REGION_NAME"] or None,
             feed_options=feed_options,
         )
 

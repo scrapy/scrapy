@@ -349,6 +349,19 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, "secret_key")
         self.assertEqual(storage.endpoint_url, "https://example.com")
 
+    def test_init_with_region_name(self):
+        region_name = "ap-east-1"
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            region_name=region_name,
+        )
+        self.assertEqual(storage.access_key, "access_key")
+        self.assertEqual(storage.secret_key, "secret_key")
+        self.assertEqual(storage.region_name, region_name)
+        self.assertEqual(storage.s3_client._client_config.region_name, region_name)
+
     def test_from_crawler_without_acl(self):
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
@@ -377,6 +390,20 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, "secret_key")
         self.assertEqual(storage.endpoint_url, None)
 
+    def test_without_region_name(self):
+        settings = {
+            "AWS_ACCESS_KEY_ID": "access_key",
+            "AWS_SECRET_ACCESS_KEY": "secret_key",
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            "s3://mybucket/export.csv",
+        )
+        self.assertEqual(storage.access_key, "access_key")
+        self.assertEqual(storage.secret_key, "secret_key")
+        self.assertEqual(storage.s3_client._client_config.region_name, "us-east-1")
+
     def test_from_crawler_with_acl(self):
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
@@ -403,6 +430,20 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.access_key, "access_key")
         self.assertEqual(storage.secret_key, "secret_key")
         self.assertEqual(storage.endpoint_url, "https://example.com")
+
+    def test_from_crawler_with_region_name(self):
+        region_name = "ap-east-1"
+        settings = {
+            "AWS_ACCESS_KEY_ID": "access_key",
+            "AWS_SECRET_ACCESS_KEY": "secret_key",
+            "AWS_REGION_NAME": region_name,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        self.assertEqual(storage.access_key, "access_key")
+        self.assertEqual(storage.secret_key, "secret_key")
+        self.assertEqual(storage.region_name, region_name)
+        self.assertEqual(storage.s3_client._client_config.region_name, region_name)
 
     @defer.inlineCallbacks
     def test_store_without_acl(self):
