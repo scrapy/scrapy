@@ -599,6 +599,20 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
     def test_two_dict_items(self):
         self.assertTwoItemsExported(ItemAdapter(self.i).asdict())
 
+    def test_two_items_with_failure_between(self):
+        i1 = TestItem(name="Joseph\xa3", age="22")
+        i2 = TestItem(
+            name="Maria", age=1j
+        )  # Invalid datetimes didn't consistently fail between Python versions
+        i3 = TestItem(name="Jesus", age="44")
+        self.ie.start_exporting()
+        self.ie.export_item(i1)
+        self.assertRaises(TypeError, self.ie.export_item, i2)
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue()))
+        self.assertEqual(exported, [dict(i1), dict(i3)])
+
     def test_nested_item(self):
         i1 = self.item_class(name="Joseph\xa3", age="22")
         i2 = self.item_class(name="Maria", age=i1)
@@ -635,6 +649,24 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         exported = json.loads(to_unicode(self.output.getvalue()))
         item["time"] = str(item["time"])
         self.assertEqual(exported, [item])
+
+
+class JsonItemExporterToBytesTest(BaseItemExporterTest):
+    def _get_exporter(self, **kwargs):
+        kwargs["encoding"] = "latin"
+        return JsonItemExporter(self.output, **kwargs)
+
+    def test_two_items_with_failure_between(self):
+        i1 = TestItem(name="Joseph", age="22")
+        i2 = TestItem(name="\u263a", age="11")
+        i3 = TestItem(name="Jesus", age="44")
+        self.ie.start_exporting()
+        self.ie.export_item(i1)
+        self.assertRaises(UnicodeEncodeError, self.ie.export_item, i2)
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue(), encoding="latin"))
+        self.assertEqual(exported, [dict(i1), dict(i3)])
 
 
 class JsonItemExporterDataclassTest(JsonItemExporterTest):
