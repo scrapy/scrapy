@@ -747,10 +747,9 @@ class FeedExportTest(FeedExportTestBase):
                 yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
-                if not Path(file_path).exists():
-                    continue
-
-                content[feed_options["format"]] = Path(file_path).read_bytes()
+                content[feed_options["format"]] = (
+                    Path(file_path).read_bytes() if Path(file_path).exists() else None
+                )
 
         finally:
             for file_path in FEEDS.keys():
@@ -956,9 +955,10 @@ class FeedExportTest(FeedExportTestBase):
                 "FEEDS": {
                     self._random_temp_filename(): {"format": fmt},
                 },
+                "FEED_STORE_EMPTY": False,
             }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(b"", data[fmt])
+            self.assertEqual(None, data[fmt])
 
     @defer.inlineCallbacks
     def test_start_finish_exporting_items(self):
@@ -1074,8 +1074,7 @@ class FeedExportTest(FeedExportTestBase):
         with LogCapture() as log:
             yield self.exported_no_data(settings)
 
-        print(log)
-        self.assertEqual(str(log).count("Storage.store is called"), 3)
+        self.assertEqual(str(log).count("Storage.store is called"), 0)
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
@@ -1742,10 +1741,9 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
-                if not Path(file_path).exists():
-                    continue
-
-                content[str(file_path)] = Path(file_path).read_bytes()
+                content[str(file_path)] = (
+                    Path(file_path).read_bytes() if Path(file_path).exists() else None
+                )
 
         finally:
             for file_path in FEEDS.keys():
@@ -2246,6 +2244,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
             for path, feed in FEEDS.items():
                 dir_name = Path(path).parent
+                if not dir_name.exists():
+                    content[feed["format"]] = []
+                    continue
                 for file in sorted(dir_name.iterdir()):
                     content[feed["format"]].append(file.read_bytes())
         finally:
@@ -2429,10 +2430,11 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     / self._file_mark: {"format": fmt},
                 },
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+                "FEED_STORE_EMPTY": False,
             }
             data = yield self.exported_no_data(settings)
             data = dict(data)
-            self.assertEqual(b"", data[fmt][0])
+            self.assertEqual(0, len(data[fmt]))
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -2546,9 +2548,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
             for expected_batch, got_batch in zip(expected, data[fmt]):
                 self.assertEqual(expected_batch, got_batch)
 
-    @pytest.mark.skipif(
-        sys.platform == "win32", reason="Odd behaviour on file creation/output"
-    )
     @defer.inlineCallbacks
     def test_batch_path_differ(self):
         """
@@ -2570,7 +2569,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         data = yield self.exported_data(items, settings)
-        self.assertEqual(len(items), len([_ for _ in data["json"] if _]))
+        self.assertEqual(len(items), len(data["json"]))
 
     @defer.inlineCallbacks
     def test_stats_batch_file_success(self):
@@ -2656,7 +2655,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             crawler = get_crawler(TestSpider, settings)
             yield crawler.crawl()
 
-        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
+        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items))
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
 
