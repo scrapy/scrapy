@@ -18,6 +18,10 @@ def _py_files(folder):
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
+    "tests/ftpserver.py",
+    "tests/mockserver.py",
+    "tests/pipelines.py",
+    "tests/spiders.py",
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
