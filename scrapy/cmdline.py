@@ -48,7 +48,11 @@ def _get_commands_from_module(module, inproject):
 
 def _get_commands_from_entry_points(inproject, group="scrapy.commands"):
     cmds = {}
-    for entry_point in entry_points().get(group, {}):
+    if sys.version_info >= (3, 10):
+        eps = entry_points(group=group)
+    else:
+        eps = entry_points().get(group, ())
+    for entry_point in eps:
         obj = entry_point.load()
         if inspect.isclass(obj):
             cmds[entry_point.name] = obj()
