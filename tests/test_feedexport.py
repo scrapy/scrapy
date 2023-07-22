@@ -125,6 +125,9 @@ class FileFeedStorageTest(unittest.TestCase):
             path.unlink()
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 12), reason="pyftpdlib doesn't support Python 3.12 yet"
+)
 class FTPFeedStorageTest(unittest.TestCase):
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):

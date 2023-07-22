@@ -1,6 +1,7 @@
 import dataclasses
 import os
 import random
+import sys
 import time
 from datetime import datetime
 from io import BytesIO
@@ -11,6 +12,7 @@ from unittest import mock
 from urllib.parse import urlparse
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -641,6 +643,9 @@ class TestGCSFilesStore(unittest.TestCase):
                     store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 12), reason="pyftpdlib doesn't support Python 3.12 yet"
+)
 class TestFTPFileStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):

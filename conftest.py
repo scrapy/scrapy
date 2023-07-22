@@ -87,6 +87,8 @@ def requires_uvloop(request):
         pytest.skip("uvloop does not support Windows")
     if twisted_version == Version("twisted", 21, 2, 0):
         pytest.skip("https://twistedmatrix.com/trac/ticket/10106")
+    if sys.version_info >= (3, 12):
+        pytest.skip("uvloop doesn't support Python 3.12 yet")
 
 
 def pytest_configure(config):
