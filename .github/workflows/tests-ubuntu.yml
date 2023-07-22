@@ -48,6 +48,16 @@ jobs:
           env:
             TOXENV: botocore
 
+        - python-version: "3.12.0-beta.4"
+          env:
+            TOXENV: py
+        - python-version: "3.12.0-beta.4"
+          env:
+            TOXENV: asyncio
+        - python-version: "3.12.0-beta.4"
+          env:
+            TOXENV: extra-deps
+
     steps:
     - uses: actions/checkout@v3
 
@@ -57,7 +67,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install system libraries
-      if: matrix.python-version == 'pypy3.9' || contains(matrix.env.TOXENV, 'pinned')
+      if: matrix.python-version == 'pypy3.9' || contains(matrix.env.TOXENV, 'pinned')  || contains(matrix.python-version, '3.12.0')
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
