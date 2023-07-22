@@ -1,6 +1,10 @@
+import platform
+import sys
 from pathlib import Path
 
 import pytest
+from twisted import version as twisted_version
+from twisted.python.versions import Version
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import install_reactor
@@ -14,6 +18,10 @@ def _py_files(folder):
 collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testsite.py",
+    "tests/ftpserver.py",
+    "tests/mockserver.py",
+    "tests/pipelines.py",
+    "tests/spiders.py",
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
@@ -71,6 +79,20 @@ def only_not_asyncio(request, reactor_pytest):
         and reactor_pytest == "asyncio"
     ):
         pytest.skip("This test is only run without --reactor=asyncio")
+
+
+@pytest.fixture(autouse=True)
+def requires_uvloop(request):
+    if not request.node.get_closest_marker("requires_uvloop"):
+        return
+    if sys.implementation.name == "pypy":
+        pytest.skip("uvloop does not support pypy properly")
+    if platform.system() == "Windows":
+        pytest.skip("uvloop does not support Windows")
+    if twisted_version == Version("twisted", 21, 2, 0):
+        pytest.skip("https://twistedmatrix.com/trac/ticket/10106")
+    if sys.version_info >= (3, 12):
+        pytest.skip("uvloop doesn't support Python 3.12 yet")
 
 
 def pytest_configure(config):
