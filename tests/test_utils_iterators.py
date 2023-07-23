@@ -211,8 +211,7 @@ class XmliterTestCase(unittest.TestCase):
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
         my_iter = self.xmliter(response, "g:link_image")
-        with self.assertRaises(StopIteration):
-            next(my_iter)
+        self.assertRaises(StopIteration, next, my_iter)
 
     def test_xmliter_exception(self):
         body = (
