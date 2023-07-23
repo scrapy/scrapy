@@ -818,8 +818,11 @@ class TextResponseTest(BaseResponseTest):
 
     def test_follow_all_too_many_arguments(self):
         response = self._links_response()
-        self.assertRaises(ValueError, response.follow_all, css='a[href*="example.com"]',
-                          xpath='//a[contains(@href, "example.com")]')
+        with self.assertRaises(ValueError):
+            response.follow_all(
+                css='a[href*="example.com"]',
+                xpath='//a[contains(@href, "example.com")]',
+            )
 
     def test_json_response(self):
         json_body = b"""{"ip": "109.187.217.200"}"""
