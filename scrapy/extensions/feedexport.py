@@ -169,10 +169,10 @@ class S3FeedStorage(BlockingFeedStorage):
         secret_key=None,
         acl=None,
         endpoint_url=None,
-        region_name=None,
         *,
         feed_options=None,
         session_token=None,
+        region_name=None,
     ):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
