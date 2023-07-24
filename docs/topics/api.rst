@@ -155,17 +155,6 @@ Settings API
 .. autoclass:: BaseSettings
    :members:
 
-.. _topics-api-addonmanager:
-
-AddonManager API
-================
-
-.. module:: scrapy.addons
-   :synopsis: Add-on manager
-
-.. autoclass:: AddonManager
-   :members:
-
 .. _topics-api-spiderloader:
 
 SpiderLoader API

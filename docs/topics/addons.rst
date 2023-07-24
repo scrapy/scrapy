@@ -14,10 +14,8 @@ developers.
 Activating and configuring add-ons
 ==================================
 
-Add-ons and their configuration live in Scrapy's
-:class:`~scrapy.addons.AddonManager`. During a :class:`~scrapy.crawler.Crawler`
-initialization the add-on manager will read a list of enabled add-ons from your
-``ADDONS`` setting.
+During :class:`~scrapy.crawler.Crawler` initialization, the list of enabled
+add-ons is read from your ``ADDONS`` setting.
 
 The ``ADDONS`` setting is a dict in which every key is an add-on class or its
 import path and the value is its priority.
@@ -27,7 +25,7 @@ This is an example where two add-ons are enabled in a project's
 
     ADDONS = {
         'path.to.someaddon': 0,
-        path.to.someaddon2: 1,
+        SomeAddonClass: 1,
     }
 
 
@@ -158,14 +156,14 @@ Use a fallback component:
     from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 
 
-    fallback_setting = "MY_FALLBACK_DOWNLOAD_HANDLER"
+    FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
 
 
     class MyHandler:
         lazy = False
 
         def __init__(self, settings, crawler):
-            dhcls = load_object(settings.get(fallback_setting))
+            dhcls = load_object(settings.get(FALLBACK_SETTING))
             self._fallback_handler = create_instance(
                 dhcls,
                 settings=None,
@@ -182,9 +180,10 @@ Use a fallback component:
 
     class MyAddon:
         def update_settings(self, settings):
-            if not settings.get(fallback_setting):
+            if not settings.get(FALLBACK_SETTING):
                 settings.set(
-                    fallback_setting,
+                    FALLBACK_SETTING,
                     settings.getwithbase("DOWNLOAD_HANDLERS")["https"],
                     "addon",
                 )
+            settings["DOWNLOAD_HANDLERS"]["http"] = "path.to.MyHandler"
