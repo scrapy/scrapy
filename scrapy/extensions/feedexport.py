@@ -9,7 +9,7 @@ import re
 import sys
 import warnings
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
@@ -615,7 +615,7 @@ class FeedExporter:
 
     def _storage_supported(self, uri, feed_options):
         scheme = urlparse(uri).scheme
-        if scheme in self.storages:
+        if scheme in self.storages or PureWindowsPath(uri).drive:
             try:
                 self._get_storage(uri, feed_options)
                 return True
@@ -633,7 +633,7 @@ class FeedExporter:
         It supports not passing the *feed_options* parameters to classes that
         do not support it, and issuing a deprecation warning instead.
         """
-        feedcls = self.storages[urlparse(uri).scheme]
+        feedcls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
         crawler = getattr(self, "crawler", None)
 
         def build_instance(builder, *preargs):

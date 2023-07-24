@@ -907,6 +907,64 @@ class MySpider(scrapy.Spider):
         log = self.get_log(spider_code, args=args)
         self.assertIn("[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}", log)
 
+    @skipIf(platform.system() == "Windows", reason="Linux only")
+    def test_absolute_path_linux(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    start_urls = ["data:,"]
+
+    def parse(self, response):
+        yield {"hello": "world"}
+        """
+        temp_dir = mkdtemp()
+
+        args = ["-o", f"{temp_dir}/output1.json:json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output1.json",
+            log,
+        )
+
+        args = ["-o", f"{temp_dir}/output2.json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output2.json",
+            log,
+        )
+
+    @skipIf(platform.system() != "Windows", reason="Windows only")
+    def test_absolute_path_windows(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    start_urls = ["data:,"]
+
+    def parse(self, response):
+        yield {"hello": "world"}
+        """
+        temp_dir = mkdtemp()
+
+        args = ["-o", f"{temp_dir}\\output1.json:json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output1.json",
+            log,
+        )
+
+        args = ["-o", f"{temp_dir}\\output2.json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output2.json",
+            log,
+        )
+
 
 @skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
