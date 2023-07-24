@@ -28,6 +28,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
             compbs = BaseSettings()
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
+                assert prio is not None
                 if compbs.getpriority(convert(k)) == prio:
                     raise ValueError(
                         f"Some paths in {list(compdict.keys())!r} "

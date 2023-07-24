@@ -55,7 +55,7 @@ class Crawler:
     def __init__(
         self,
         spidercls: Type[Spider],
-        settings: Union[None, dict, Settings] = None,
+        settings: Union[None, Dict[str, Any], Settings] = None,
         init_reactor: bool = False,
     ):
         if isinstance(spidercls, Spider):
