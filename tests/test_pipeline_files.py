@@ -468,8 +468,13 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedFilesPipeline.from_settings(
             Settings({"FILES_STORE": self.tempdir})
         )
-        self.assertEqual(pipeline.files_result_field, "this")
-        self.assertEqual(pipeline.files_urls_field, "that")
+        self.assertEqual(
+            pipeline.files_result_field,
+            UserDefinedFilesPipeline.DEFAULT_FILES_RESULT_FIELD,
+        )
+        self.assertEqual(
+            pipeline.files_urls_field, UserDefinedFilesPipeline.DEFAULT_FILES_URLS_FIELD
+        )
 
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of FilesPipeline,

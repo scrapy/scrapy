@@ -228,14 +228,14 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
     def test_crawler_runner_bootstrap_successful(self):
         runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner.bootstrap_failed, False)
+        self.assertFalse(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful_for_several(self):
         runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner.bootstrap_failed, False)
+        self.assertFalse(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_failed(self):
@@ -248,7 +248,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         else:
             self.fail("Exception should be raised from spider")
 
-        self.assertEqual(runner.bootstrap_failed, True)
+        self.assertTrue(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_failed_for_several(self):
@@ -263,7 +263,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         yield runner.crawl(NoRequestsSpider)
 
-        self.assertEqual(runner.bootstrap_failed, True)
+        self.assertTrue(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
