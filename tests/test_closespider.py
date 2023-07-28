@@ -3,7 +3,7 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-from tests.spiders import ErrorSpider, FollowAllSpider, ItemSpider
+from tests.spiders import ErrorSpider, FollowAllSpider, ItemSpider, SlowSpider
 
 
 class TestCloseSpider(TestCase):
@@ -54,3 +54,13 @@ class TestCloseSpider(TestCase):
         self.assertEqual(reason, "closespider_timeout")
         total_seconds = crawler.stats.get_value("elapsed_time_seconds")
         self.assertTrue(total_seconds >= close_on)
+
+    @defer.inlineCallbacks
+    def test_closespider_timeout_no_item(self):
+        timeout = 1
+        crawler = get_crawler(SlowSpider, {"CLOSESPIDER_TIMEOUT_NO_ITEM": timeout})
+        yield crawler.crawl(n=3, mockserver=self.mockserver)
+        reason = crawler.spider.meta["close_reason"]
+        self.assertEqual(reason, "closespider_timeout_no_item")
+        total_seconds = crawler.stats.get_value("elapsed_time_seconds")
+        self.assertTrue(total_seconds >= timeout)

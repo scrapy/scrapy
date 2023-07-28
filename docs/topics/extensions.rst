@@ -258,6 +258,7 @@ The conditions for closing a spider can be configured through the following
 settings:
 
 * :setting:`CLOSESPIDER_TIMEOUT`
+* :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`
 * :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
@@ -279,6 +280,18 @@ An integer which specifies a number of seconds. If the spider remains open for
 more than that number of second, it will be automatically closed with the
 reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
 timeout.
+
+.. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
+
+CLOSESPIDER_TIMEOUT_NO_ITEM
+"""""""""""""""""""""""""""
+
+Default: ``0``
+
+An integer which specifies a number of seconds. If the spider has not produced
+any items in the last number of seconds, it will be closed with the reason
+``closespider_timeout_no_item``. If zero (or non set), spiders won't be closed
+regardless if it hasn't produced any items.
 
 .. setting:: CLOSESPIDER_ITEMCOUNT
 
