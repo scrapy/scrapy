@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import logging
 import sys
 import warnings
 from logging.config import dictConfig
-from typing import Tuple
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union, cast
 
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -12,13 +15,25 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.versions import scrapy_components_versions
 
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+
 logger = logging.getLogger(__name__)
 
 
-def failure_to_exc_info(failure: Failure):
+def failure_to_exc_info(
+    failure: Failure,
+) -> Optional[Tuple[Type[BaseException], BaseException, Optional[TracebackType]]]:
     """Extract exc_info from Failure instances"""
     if isinstance(failure, Failure):
-        return (failure.type, failure.value, failure.getTracebackObject())
+        assert failure.type
+        assert failure.value
+        return (
+            failure.type,
+            failure.value,
+            cast(Optional[TracebackType], failure.getTracebackObject()),
+        )
+    return None
 
 
 class TopLevelFormatter(logging.Filter):
@@ -33,10 +48,10 @@ class TopLevelFormatter(logging.Filter):
     ``loggers`` list where it should act.
     """
 
-    def __init__(self, loggers=None):
-        self.loggers = loggers or []
+    def __init__(self, loggers: Optional[List[str]] = None):
+        self.loggers: List[str] = loggers or []
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         if any(record.name.startswith(logger + ".") for logger in self.loggers):
             record.name = record.name.split(".", 1)[0]
         return True
@@ -62,7 +77,9 @@ DEFAULT_LOGGING = {
 }
 
 
-def configure_logging(settings=None, install_root_handler=True):
+def configure_logging(
+    settings: Union[Settings, dict, None] = None, install_root_handler: bool = True
+) -> None:
     """
     Initialize logging defaults for Scrapy.
 
@@ -99,13 +116,13 @@ def configure_logging(settings=None, install_root_handler=True):
         settings = Settings(settings)
 
     if settings.getbool("LOG_STDOUT"):
-        sys.stdout = StreamLogger(logging.getLogger("stdout"))
+        sys.stdout = StreamLogger(logging.getLogger("stdout"))  # type: ignore[assignment]
 
     if install_root_handler:
         install_scrapy_root_handler(settings)
 
 
-def install_scrapy_root_handler(settings):
+def install_scrapy_root_handler(settings: Settings) -> None:
     global _scrapy_root_handler
 
     if (
@@ -118,16 +135,17 @@ def install_scrapy_root_handler(settings):
     logging.root.addHandler(_scrapy_root_handler)
 
 
-def get_scrapy_root_handler():
+def get_scrapy_root_handler() -> Optional[logging.Handler]:
     return _scrapy_root_handler
 
 
-_scrapy_root_handler = None
+_scrapy_root_handler: Optional[logging.Handler] = None
 
 
-def _get_handler(settings):
+def _get_handler(settings: Settings) -> logging.Handler:
     """Return a log handler object according to settings"""
     filename = settings.get("LOG_FILE")
+    handler: logging.Handler
     if filename:
         mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
         encoding = settings.get("LOG_ENCODING")
@@ -181,16 +199,16 @@ class StreamLogger:
         https://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
     """
 
-    def __init__(self, logger, log_level=logging.INFO):
-        self.logger = logger
-        self.log_level = log_level
-        self.linebuf = ""
+    def __init__(self, logger: logging.Logger, log_level: int = logging.INFO):
+        self.logger: logging.Logger = logger
+        self.log_level: int = log_level
+        self.linebuf: str = ""
 
-    def write(self, buf):
+    def write(self, buf: str) -> None:
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
 
-    def flush(self):
+    def flush(self) -> None:
         for h in self.logger.handlers:
             h.flush()
 
@@ -198,11 +216,11 @@ class StreamLogger:
 class LogCounterHandler(logging.Handler):
     """Record log levels count into a crawler stats"""
 
-    def __init__(self, crawler, *args, **kwargs):
+    def __init__(self, crawler: Crawler, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.crawler = crawler
+        self.crawler: Crawler = crawler
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
         self.crawler.stats.inc_value(sname)
 
