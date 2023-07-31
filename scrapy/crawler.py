@@ -71,7 +71,6 @@ class Crawler:
 
         self.addons: AddonManager = AddonManager(self)
         self.addons.load_settings(self.settings)
-        self.addons.update_settings(self.settings)
 
         self.signals: SignalManager = SignalManager(self)
 

@@ -77,6 +77,10 @@ modify :setting:`ITEM_PIPELINES`::
             if settings.getbool("MYADDON_ENABLE_PIPELINE"):
                 settings["ITEM_PIPELINES"]["path.to.mypipeline"] = 200
 
+If the ``update_settings`` method raises
+:exc:`scrapy.exceptions.NotConfigured`, the add-on will not be skipped. This
+makes it easy to enable an add-on only when some conditions are met.
+
 Fallbacks
 ---------
 
@@ -130,7 +134,7 @@ Check dependencies:
             try:
                 import boto
             except ImportError:
-                raise RuntimeError("MyAddon requires the boto library")
+                raise NotConfigured("MyAddon requires the boto library")
             ...
 
 Access the crawler instance:

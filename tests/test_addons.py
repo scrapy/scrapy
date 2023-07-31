@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
+from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.test import get_crawler
 
@@ -56,6 +57,18 @@ class AddonManagerTest(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings_dict)
         manager = crawler.addons
         self.assertIsInstance(manager.addons[0], SimpleAddon)
+
+    def test_notconfigured(self):
+        class NotConfiguredAddon:
+            def update_settings(self, settings):
+                raise NotConfigured()
+
+        settings_dict = {
+            "ADDONS": {NotConfiguredAddon: 0},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        manager = crawler.addons
+        self.assertFalse(manager.addons)
 
     def test_load_settings_order(self):
         # Get three addons with different settings

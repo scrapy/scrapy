@@ -1,6 +1,8 @@
 import logging
 from typing import TYPE_CHECKING, Any, List
 
+from scrapy.exceptions import NotConfigured
+from scrapy.settings import Settings
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.misc import create_instance, load_object
 
@@ -17,19 +19,23 @@ class AddonManager:
         self.crawler: "Crawler" = crawler
         self.addons: List[Any] = []
 
-    def _add(self, addon: Any) -> None:
+    def _add(self, addon: Any, settings: Settings) -> None:
         """Store an add-on."""
         if isinstance(addon, (type, str)):
             addon = load_object(addon)
         if isinstance(addon, type):
             addon = create_instance(addon, settings=None, crawler=self.crawler)
-        self.addons.append(addon)
+        try:
+            addon.update_settings(settings)
+            self.addons.append(addon)
+        except NotConfigured:
+            pass
 
-    def load_settings(self, settings) -> None:
+    def load_settings(self, settings: Settings) -> None:
         """Load add-ons and configurations from a settings object.
 
         This will load the add-on for every add-on path in the
-        ``ADDONS`` setting.
+        ``ADDONS`` setting and execute their ``update_settings`` methods.
 
         :param settings: The :class:`~scrapy.settings.Settings` object from \
             which to read the add-on configuration
@@ -37,7 +43,7 @@ class AddonManager:
         """
         addons = build_component_list(settings["ADDONS"])
         for addon in build_component_list(settings["ADDONS"]):
-            self._add(addon)
+            self._add(addon, settings)
         logger.info(
             "Enabled addons:\n%(addons)s",
             {
@@ -45,13 +51,3 @@ class AddonManager:
             },
             extra={"crawler": self.crawler},
         )
-
-    def update_settings(self, settings) -> None:
-        """Call ``update_settings()`` of all held add-ons.
-
-        :param settings: The :class:`~scrapy.settings.Settings` object to be \
-            updated
-        :type settings: :class:`~scrapy.settings.Settings`
-        """
-        for addon in self.addons:
-            addon.update_settings(settings)
