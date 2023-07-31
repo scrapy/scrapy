@@ -186,4 +186,4 @@ Use a fallback component:
                     settings.getwithbase("DOWNLOAD_HANDLERS")["https"],
                     "addon",
                 )
-            settings["DOWNLOAD_HANDLERS"]["http"] = "path.to.MyHandler"
+            settings["DOWNLOAD_HANDLERS"]["https"] = "path.to.MyHandler"

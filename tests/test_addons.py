@@ -1,18 +1,24 @@
+import itertools
 import unittest
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from scrapy.crawler import Crawler
-from scrapy.settings import BaseSettings
+from scrapy import Spider
+from scrapy.crawler import Crawler, CrawlerRunner
+from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.test import get_crawler
 
 
-class GoodAddon:
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
-        super().__init__()
-        self.config = config or {}
-
+class SimpleAddon:
     def update_settings(self, settings):
-        settings.update(self.config, "addon")
+        pass
+
+
+def get_addon_cls(config: Dict[str, Any]) -> type:
+    class AddonWithConfig:
+        def update_settings(self, settings: BaseSettings):
+            settings.update(config, priority="addon")
+
+    return AddonWithConfig
 
 
 class CreateInstanceAddon:
@@ -35,7 +41,7 @@ class AddonTest(unittest.TestCase):
         settings.set("KEY1", "default", priority="default")
         settings.set("KEY2", "project", priority="project")
         addon_config = {"KEY1": "addon", "KEY2": "addon", "KEY3": "addon"}
-        testaddon = GoodAddon(addon_config)
+        testaddon = get_addon_cls(addon_config)()
         testaddon.update_settings(settings)
         self.assertEqual(settings["KEY1"], "addon")
         self.assertEqual(settings["KEY2"], "project")
@@ -45,11 +51,27 @@ class AddonTest(unittest.TestCase):
 class AddonManagerTest(unittest.TestCase):
     def test_load_settings(self):
         settings_dict = {
-            "ADDONS": {"tests.test_addons.GoodAddon": 0},
+            "ADDONS": {"tests.test_addons.SimpleAddon": 0},
         }
         crawler = get_crawler(settings_dict=settings_dict)
         manager = crawler.addons
-        self.assertIsInstance(manager.addons[0], GoodAddon)
+        self.assertIsInstance(manager.addons[0], SimpleAddon)
+
+    def test_load_settings_order(self):
+        # Get three addons with different settings
+        addonlist = []
+        for i in range(3):
+            addon = get_addon_cls({"KEY1": i})
+            addon.number = i
+            addonlist.append(addon)
+        # Test for every possible ordering
+        for ordered_addons in itertools.permutations(addonlist):
+            expected_order = [a.number for a in ordered_addons]
+            settings = {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
+            crawler = get_crawler(settings_dict=settings)
+            manager = crawler.addons
+            self.assertEqual([a.number for a in manager.addons], expected_order)
+            self.assertEqual(crawler.settings.getint("KEY1"), expected_order[-1])
 
     def test_create_instance(self):
         settings_dict = {
@@ -60,3 +82,64 @@ class AddonManagerTest(unittest.TestCase):
         manager = crawler.addons
         self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
         self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
+
+    def test_settings_priority(self):
+        config = {
+            "KEY": 15,  # priority=addon
+        }
+        settings_dict = {
+            "ADDONS": {get_addon_cls(config): 1},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        self.assertEqual(crawler.settings.getint("KEY"), 15)
+
+        settings = Settings(settings_dict)
+        settings.set("KEY", 0, priority="default")
+        runner = CrawlerRunner(settings)
+        crawler = runner.create_crawler(Spider)
+        self.assertEqual(crawler.settings.getint("KEY"), 15)
+
+        settings_dict = {
+            "KEY": 20,  # priority=project
+            "ADDONS": {get_addon_cls(config): 1},
+        }
+        settings = Settings(settings_dict)
+        settings.set("KEY", 0, priority="default")
+        runner = CrawlerRunner(settings)
+        crawler = runner.create_crawler(Spider)
+        self.assertEqual(crawler.settings.getint("KEY"), 20)
+
+    def test_fallback_workflow(self):
+        FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
+
+        class AddonWithFallback:
+            def update_settings(self, settings):
+                if not settings.get(FALLBACK_SETTING):
+                    settings.set(
+                        FALLBACK_SETTING,
+                        settings.getwithbase("DOWNLOAD_HANDLERS")["https"],
+                        "addon",
+                    )
+                settings["DOWNLOAD_HANDLERS"]["https"] = "AddonHandler"
+
+        settings_dict = {
+            "ADDONS": {AddonWithFallback: 1},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        self.assertEqual(
+            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"], "AddonHandler"
+        )
+        self.assertEqual(
+            crawler.settings.get(FALLBACK_SETTING),
+            "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+        )
+
+        settings_dict = {
+            "ADDONS": {AddonWithFallback: 1},
+            "DOWNLOAD_HANDLERS": {"https": "UserHandler"},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        self.assertEqual(
+            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"], "AddonHandler"
+        )
+        self.assertEqual(crawler.settings.get(FALLBACK_SETTING), "UserHandler")
