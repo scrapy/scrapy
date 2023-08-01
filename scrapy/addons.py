@@ -19,18 +19,6 @@ class AddonManager:
         self.crawler: "Crawler" = crawler
         self.addons: List[Any] = []
 
-    def _add(self, addon: Any, settings: Settings) -> None:
-        """Store an add-on."""
-        if isinstance(addon, (type, str)):
-            addon = load_object(addon)
-        if isinstance(addon, type):
-            addon = create_instance(addon, settings=None, crawler=self.crawler)
-        try:
-            addon.update_settings(settings)
-            self.addons.append(addon)
-        except NotConfigured:
-            pass
-
     def load_settings(self, settings: Settings) -> None:
         """Load add-ons and configurations from a settings object.
 
@@ -41,13 +29,29 @@ class AddonManager:
             which to read the add-on configuration
         :type settings: :class:`~scrapy.settings.Settings`
         """
-        addons = build_component_list(settings["ADDONS"])
-        for addon in build_component_list(settings["ADDONS"]):
-            self._add(addon, settings)
+        enabled = []
+        for clspath in build_component_list(settings["ADDONS"]):
+            try:
+                addoncls = load_object(clspath)
+                addon = create_instance(
+                    addoncls, settings=settings, crawler=self.crawler
+                )
+                addon.update_settings(settings)
+                self.addons.append(addon)
+            except NotConfigured as e:
+                if e.args:
+                    clsname = (
+                        clspath.split(".")[-1] if isinstance(clspath, str) else clspath
+                    )
+                    logger.warning(
+                        "Disabled %(clsname)s: %(eargs)s",
+                        {"clsname": clsname, "eargs": e.args[0]},
+                        extra={"crawler": self.crawler},
+                    )
         logger.info(
             "Enabled addons:\n%(addons)s",
             {
-                "addons": addons,
+                "addons": enabled,
             },
             extra={"crawler": self.crawler},
         )
