@@ -29,7 +29,7 @@ class AddonManager:
             which to read the add-on configuration
         :type settings: :class:`~scrapy.settings.Settings`
         """
-        enabled = []
+        enabled: List[Any] = []
         for clspath in build_component_list(settings["ADDONS"]):
             try:
                 addoncls = load_object(clspath)
