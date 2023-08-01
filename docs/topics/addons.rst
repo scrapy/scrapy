@@ -78,8 +78,8 @@ modify :setting:`ITEM_PIPELINES`::
                 settings["ITEM_PIPELINES"]["path.to.mypipeline"] = 200
 
 If the ``update_settings`` method raises
-:exc:`scrapy.exceptions.NotConfigured`, the add-on will not be skipped. This
-makes it easy to enable an add-on only when some conditions are met.
+:exc:`scrapy.exceptions.NotConfigured`, the add-on will be skipped. This makes
+it easy to enable an add-on only when some conditions are met.
 
 Fallbacks
 ---------
