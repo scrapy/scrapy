@@ -67,7 +67,7 @@ def load_object(path: Union[str, Callable]) -> Any:
         if callable(path):
             return path
         raise TypeError(
-            "Unexpected argument type, expected string " f"or object, got: {type(path)}"
+            f"Unexpected argument type, expected string or object, got: {type(path)}"
         )
 
     try:

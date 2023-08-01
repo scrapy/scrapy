@@ -40,8 +40,9 @@ precedence:
  1. Command line options (most precedence)
  2. Settings per-spider
  3. Project settings module
- 4. Default settings per-command
- 5. Default global settings (less precedence)
+ 4. Settings set by add-ons
+ 5. Default settings per-command
+ 6. Default global settings (less precedence)
 
 The population of these settings sources is taken care of internally, but a
 manual handling is possible using API calls. See the
@@ -89,7 +90,13 @@ project, it's where most of your custom settings will be populated. For a
 standard Scrapy project, this means you'll be adding or changing the settings
 in the ``settings.py`` file created for your project.
 
-4. Default settings per-command
+4. Settings set by add-ons
+--------------------------
+
+:ref:`Add-ons <topics-addons>` can modify settings. They should do this with
+this priority, though this is not enforced.
+
+5. Default settings per-command
 -------------------------------
 
 Each :doc:`Scrapy tool </topics/commands>` command can have its own default
@@ -97,7 +104,7 @@ settings, which override the global default settings. Those custom command
 settings are specified in the ``default_settings`` attribute of the command
 class.
 
-5. Default global settings
+6. Default global settings
 --------------------------
 
 The global defaults are located in the ``scrapy.settings.default_settings``
@@ -200,6 +207,16 @@ The scope, where available, shows where the setting is being used, if it's tied
 to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
+
+.. setting:: ADDONS
+
+ADDONS
+------
+
+Default: ``{}``
+
+A dict containing paths to the add-ons enabled in your project and their
+priorities. For more information, see :ref:`topics-addons`.
 
 .. setting:: AWS_ACCESS_KEY_ID
 
@@ -963,7 +980,6 @@ some of them need to be enabled through a setting.
 
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
-
 
 .. setting:: FEED_TEMPDIR
 

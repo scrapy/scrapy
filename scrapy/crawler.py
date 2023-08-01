@@ -18,6 +18,7 @@ except ImportError:
 from zope.interface.verify import verifyClass
 
 from scrapy import Spider, signals
+from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
@@ -67,6 +68,9 @@ class Crawler:
         self.spidercls: Type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
+
+        self.addons: AddonManager = AddonManager(self)
+        self.addons.load_settings(self.settings)
 
         self.signals: SignalManager = SignalManager(self)
 

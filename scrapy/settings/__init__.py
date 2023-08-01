@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 SETTINGS_PRIORITIES: Dict[str, int] = {
     "default": 0,
     "command": 10,
+    "addon": 15,
     "project": 20,
     "spider": 30,
     "cmdline": 40,
