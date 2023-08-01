@@ -46,10 +46,9 @@ class MiddlewareManager:
                 enabled.append(clspath)
             except NotConfigured as e:
                 if e.args:
-                    clsname = clspath.split(".")[-1]
                     logger.warning(
-                        "Disabled %(clsname)s: %(eargs)s",
-                        {"clsname": clsname, "eargs": e.args[0]},
+                        "Disabled %(clspath)s: %(eargs)s",
+                        {"clspath": clspath, "eargs": e.args[0]},
                         extra={"crawler": crawler},
                     )
 

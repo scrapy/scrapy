@@ -40,12 +40,9 @@ class AddonManager:
                 self.addons.append(addon)
             except NotConfigured as e:
                 if e.args:
-                    clsname = (
-                        clspath.split(".")[-1] if isinstance(clspath, str) else clspath
-                    )
                     logger.warning(
-                        "Disabled %(clsname)s: %(eargs)s",
-                        {"clsname": clsname, "eargs": e.args[0]},
+                        "Disabled %(clspath)s: %(eargs)s",
+                        {"clspath": clspath, "eargs": e.args[0]},
                         extra={"crawler": self.crawler},
                     )
         logger.info(
