@@ -1,13 +1,18 @@
+from typing import Callable, Iterable, Union
+
 from pytest import mark
 from twisted.trial import unittest
 
+from scrapy import Selector
 from scrapy.http import Response, TextResponse, XmlResponse
 from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
 from tests import get_testdata
 
 
 class XmliterTestCase(unittest.TestCase):
-    xmliter = staticmethod(xmliter)
+    xmliter: Callable[
+        [Union[TextResponse, str, bytes], str], Iterable[Selector]
+    ] = staticmethod(xmliter)
 
     def test_xmliter(self):
         body = b"""

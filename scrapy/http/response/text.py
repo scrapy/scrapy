@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 import json
 from contextlib import suppress
-from typing import Generator, Tuple
+from typing import Generator, Optional, Tuple
 from urllib.parse import urljoin
 
 import parsel
@@ -37,7 +37,7 @@ class TextResponse(Response):
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop("encoding", None)
         self._cached_benc = None
-        self._cached_ubody = None
+        self._cached_ubody: Optional[str] = None
         self._cached_selector = None
         super().__init__(*args, **kwargs)
 
@@ -82,7 +82,7 @@ class TextResponse(Response):
         return self._cached_decoded_json
 
     @property
-    def text(self):
+    def text(self) -> str:
         """Body as unicode"""
         # access self.encoding before _cached_ubody to make sure
         # _body_inferred_encoding is called
