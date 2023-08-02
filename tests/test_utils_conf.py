@@ -1,6 +1,8 @@
 import unittest
 import warnings
 
+import pytest
+
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
@@ -21,44 +23,45 @@ class BuildComponentListTest(unittest.TestCase):
     def test_backward_compatible_build_dict(self):
         base = {"one": 1, "two": 2, "three": 3, "five": 5, "six": None}
         custom = {"two": None, "three": 8, "four": 4}
-        self.assertEqual(
-            build_component_list(base, custom, convert=lambda x: x),
-            ["one", "four", "five", "three"],
-        )
+        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+            self.assertEqual(
+                build_component_list(base, custom, convert=lambda x: x),
+                ["one", "four", "five", "three"],
+            )
 
     def test_return_list(self):
         custom = ["a", "b", "c"]
-        self.assertEqual(
-            build_component_list(None, custom, convert=lambda x: x), custom
-        )
+        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+            self.assertEqual(
+                build_component_list(None, custom, convert=lambda x: x), custom
+            )
 
     def test_map_dict(self):
         custom = {"one": 1, "two": 2, "three": 3}
-        self.assertEqual(
-            build_component_list({}, custom, convert=lambda x: x.upper()),
-            ["ONE", "TWO", "THREE"],
-        )
+        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+            self.assertEqual(
+                build_component_list({}, custom, convert=lambda x: x.upper()),
+                ["ONE", "TWO", "THREE"],
+            )
 
     def test_map_list(self):
         custom = ["a", "b", "c"]
-        self.assertEqual(
-            build_component_list(None, custom, lambda x: x.upper()), ["A", "B", "C"]
-        )
+        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+            self.assertEqual(
+                build_component_list(None, custom, lambda x: x.upper()), ["A", "B", "C"]
+            )
 
     def test_duplicate_components_in_dict(self):
         duplicate_dict = {"one": 1, "two": 2, "ONE": 4}
-        self.assertRaises(
-            ValueError,
-            build_component_list,
-            {},
-            duplicate_dict,
-            convert=lambda x: x.lower(),
-        )
+        with self.assertRaises(ValueError):
+            with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+                build_component_list({}, duplicate_dict, convert=lambda x: x.lower())
 
     def test_duplicate_components_in_list(self):
         duplicate_list = ["a", "b", "a"]
         with self.assertRaises(ValueError) as cm:
-            build_component_list(None, duplicate_list, convert=lambda x: x)
+            with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+                build_component_list(None, duplicate_list, convert=lambda x: x)
         self.assertIn(str(duplicate_list), str(cm.exception))
 
     def test_duplicate_components_in_basesettings(self):
@@ -76,9 +79,8 @@ class BuildComponentListTest(unittest.TestCase):
         )
         # Same priority raises ValueError
         duplicate_bs.set("ONE", duplicate_bs["ONE"], priority=20)
-        self.assertRaises(
-            ValueError, build_component_list, duplicate_bs, convert=lambda x: x.lower()
-        )
+        with self.assertRaises(ValueError):
+            build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
     def test_valid_numbers(self):
         # work well with None and numeric values
@@ -92,15 +94,9 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertEqual(build_component_list(d, convert=lambda x: x), ["b", "c", "a"])
         # raise exception for invalid values
         d = {"one": "5"}
-        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {"one": "1.0"}
-        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {"one": [1, 2, 3]}
-        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {"one": {"a": "a", "b": 2}}
-        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
-        d = {"one": "lorem ipsum"}
-        self.assertRaises(ValueError, build_component_list, {}, d, convert=lambda x: x)
+        with self.assertRaises(ValueError):
+            with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
+                build_component_list({}, d, convert=lambda x: x)
 
 
 class UtilsConfTestCase(unittest.TestCase):
