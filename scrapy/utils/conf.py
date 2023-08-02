@@ -50,11 +50,17 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
                     "please provide a real number or None instead"
                 )
 
-    if isinstance(custom, (list, tuple)):
-        _check_components(custom)
-        return type(custom)(convert(c) for c in custom)
-
     if custom is not None:
+        warnings.warn(
+            "The 'custom' attribute of build_component_list() is deprecated. "
+            "Please merge its value into 'compdict' manually or change your "
+            "code to use Settings.getwithbase().",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        if isinstance(custom, (list, tuple)):
+            _check_components(custom)
+            return type(custom)(convert(c) for c in custom)
         compdict.update(custom)
 
     _validate_values(compdict)
