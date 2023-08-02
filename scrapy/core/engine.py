@@ -211,7 +211,7 @@ class ExecutionEngine:
         if request is None:
             return None
 
-        d = self._download(request, self.spider)
+        d = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
         d.addErrback(
             lambda f: logger.info(
@@ -297,9 +297,7 @@ class ExecutionEngine:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request, self.spider).addBoth(
-            self._downloaded, request, self.spider
-        )
+        return self._download(request).addBoth(self._downloaded, request, self.spider)
 
     def _downloaded(
         self, result: Union[Response, Request], request: Request
@@ -308,13 +306,10 @@ class ExecutionEngine:
         self.slot.remove_request(request)
         return self.download(result) if isinstance(result, Request) else result
 
-    def _download(self, request: Request, spider: Optional[Spider]) -> Deferred:
+    def _download(self, request: Request) -> Deferred:
         assert self.slot is not None  # typing
 
         self.slot.add_request(request)
-
-        if spider is None:
-            spider = self.spider
 
         def _on_success(result: Union[Response, Request]) -> Union[Response, Request]:
             if not isinstance(result, (Response, Request)):
@@ -324,15 +319,17 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
-                assert spider is not None
-                logkws = self.logformatter.crawled(result.request, result, spider)
+                assert self.spider is not None
+                logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
-                    logger.log(*logformatter_adapter(logkws), extra={"spider": spider})
+                    logger.log(
+                        *logformatter_adapter(logkws), extra={"spider": self.spider}
+                    )
                 self.signals.send_catch_log(
                     signal=signals.response_received,
                     response=result,
                     request=result.request,
-                    spider=spider,
+                    spider=self.spider,
                 )
             return result
 
@@ -341,8 +338,8 @@ class ExecutionEngine:
             self.slot.nextcall.schedule()
             return _
 
-        assert spider is not None
-        dwld = self.downloader.fetch(request, spider)
+        assert self.spider is not None
+        dwld = self.downloader.fetch(request, self.spider)
         dwld.addCallbacks(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
