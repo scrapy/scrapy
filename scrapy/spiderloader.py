@@ -1,11 +1,12 @@
 import traceback
 import warnings
 from collections import defaultdict
+from types import ModuleType
 from typing import DefaultDict, Dict, List, Tuple, Type
 
 from zope.interface import implementer
 
-from scrapy import Spider
+from scrapy import Request, Spider
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import BaseSettings
 from scrapy.utils.misc import walk_modules
@@ -45,12 +46,12 @@ class SpiderLoader:
                 category=UserWarning,
             )
 
-    def _load_spiders(self, module):
+    def _load_spiders(self, module: ModuleType) -> None:
         for spcls in iter_spider_classes(module):
             self._found[spcls.name].append((module.__name__, spcls.__name__))
             self._spiders[spcls.name] = spcls
 
-    def _load_all_spiders(self):
+    def _load_all_spiders(self) -> None:
         for name in self.spider_modules:
             try:
                 for module in walk_modules(name):
@@ -81,7 +82,7 @@ class SpiderLoader:
         except KeyError:
             raise KeyError(f"Spider not found: {spider_name}")
 
-    def find_by_request(self, request):
+    def find_by_request(self, request: Request) -> List[str]:
         """
         Return the list of spider names that can handle the given request.
         """
