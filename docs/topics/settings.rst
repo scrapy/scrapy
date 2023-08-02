@@ -66,8 +66,8 @@ Example::
 ----------------------
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
-own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute:
+own settings that will take precedence and override the project ones. One way
+to do so is by setting their :attr:`~scrapy.Spider.custom_settings` attribute:
 
 .. code-block:: python
 
@@ -80,6 +80,22 @@ do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute:
         custom_settings = {
             "SOME_SETTING": "some value",
         }
+
+It's often better to provide a :meth:`~scrapy.Spider.update_settings` instead,
+and settings set there should use the "spider" priority explicitly:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        @classmethod
+        def update_settings(cls, settings):
+            settings.set("SOME_SETTING", "some value", priority="spider")
+            super().update_settings(settings)
 
 3. Project settings module
 --------------------------

@@ -151,13 +151,18 @@ scrapy.Spider
        and is called during initialization of a spider instance.
 
        It takes a :class:`~scrapy.settings.Settings` object as a parameter and
-       can add or update the spider's configuration values. This method is a class method,
-       meaning that it is called on the :class:`~scrapy.Spider` class and allows all instances
-       of the spider to share the same configuration.
+       can add or update the spider's configuration values. This method is a
+       class method, meaning that it is called on the :class:`~scrapy.Spider`
+       class and allows all instances of the spider to share the same
+       configuration.
 
-       One of the main advantages of ``update_settings()`` is that it allows
-       you to dynamically add, remove or change settings based on other settings 
-       or other external factors.
+       While per-spider settings can be set in
+       :attr:`~scrapy.Spider.custom_settings`, using ``update_settings()``
+       allows you to dynamically add, remove or change settings based on other
+       settings, spider attributes or other factors and use setting priorities
+       other than ``'spider'``. Also, it's easy to extend ``update_settings()``
+       in a subclass by overriding it, while doing the same with
+       :attr:`~scrapy.Spider.custom_settings` is hard or impossible.
 
        For example, suppose a spider needs to modify :setting:`FEEDS`:
 
