@@ -162,7 +162,7 @@ scrapy.Spider
        settings, spider attributes or other factors and use setting priorities
        other than ``'spider'``. Also, it's easy to extend ``update_settings()``
        in a subclass by overriding it, while doing the same with
-       :attr:`~scrapy.Spider.custom_settings` is hard or impossible.
+       :attr:`~scrapy.Spider.custom_settings` can be hard.
 
        For example, suppose a spider needs to modify :setting:`FEEDS`:
 
@@ -182,8 +182,8 @@ scrapy.Spider
 
                @classmethod
                def update_settings(cls, settings):
-                   settings.setdefault("FEEDS", {}).update(cls.custom_feed)
                    super().update_settings(settings)
+                   settings.setdefault("FEEDS", {}).update(cls.custom_feed)
 
    .. method:: start_requests()
 
