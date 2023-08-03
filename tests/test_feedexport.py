@@ -3067,10 +3067,7 @@ class URIParamsTest:
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
 
-        with pytest.warns(
-            ScrapyDeprecationWarning, match="Modifying the params dictionary in-place"
-        ):
-            feed_exporter.open_spider(spider)
+        feed_exporter.open_spider(spider)
 
         self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
 
