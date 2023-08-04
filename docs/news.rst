@@ -3,6 +3,176 @@
 Release notes
 =============
 
+.. _release-2.10.0:
+
+Scrapy 2.10.0 (YYYY-MM-DD)
+--------------------------
+
+Highlights:
+
+-   Added Python 3.12 support, dropped Python 3.7 support.
+
+-   The add-ons framework that simplifies configuring 3rd-party components that
+    support it.
+
+-   Exceptions to retry can now be configured.
+
+-   Many fixes and improvements for feed exports.
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for Python 3.7. (:issue:`5953`)
+
+-   Added support for the upcoming Python 3.12. (:issue:`5984`)
+
+-   Minimum versions increased for these dependencies:
+
+    -   lxml_: 4.3.0 → 4.4.1
+
+    -   cryptography_: 3.4.6 → 36.0.0
+
+-   ``pkg_resources`` is no longer used. (:issue:`5956`, :issue:`5958`)
+
+-   boto3_ is now recommended for exporting to S3 instead of botocore_.
+    (:issue:`5833`).
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The value of the :setting:`FEED_STORE_EMPTY` is now ``True`` instead of
+    ``False``. In earlier Scrapy versions empty files were created even when
+    this setting was ``False`` (which was a bug that is now fixed), so the new
+    default should keep the old behavior. (:issue:`872`, :issue:`5847`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   When a function is assigned to the :setting:`FEED_URI_PARAMS` setting,
+    returning ``None`` or modifying the ``params`` input parameter, deprecated
+    in Scrapy 2.6, is no longer supported. (:issue:`5994`, :issue:`5996`)
+
+-   The ``scrapy.utils.reqser`` module, deprecated in Scrapy 2.6, is removed.
+    (:issue:`5994`, :issue:`5996`)
+
+-   The ``scrapy.squeues`` classes ``PickleFifoDiskQueueNonRequest``,
+    ``PickleLifoDiskQueueNonRequest``, ``MarshalFifoDiskQueueNonRequest``,
+    and ``MarshalLifoDiskQueueNonRequest``, deprecated in
+    Scrapy 2.6, are removed. (:issue:`5994`, :issue:`5996`)
+
+-   The property ``open_spiders`` and the methods ``has_capacity`` and
+    ``schedule`` of :class:`scrapy.core.engine.ExecutionEngine`,
+    deprecated in Scrapy 2.6, are removed. (:issue:`5994`, :issue:`5998`)
+
+-   Passing a ``spider`` argument to the
+    :meth:`~scrapy.core.engine.ExecutionEngine.spider_is_idle`,
+    :meth:`~scrapy.core.engine.ExecutionEngine.crawl` and
+    :meth:`~scrapy.core.engine.ExecutionEngine.download` methods of
+    :class:`scrapy.core.engine.ExecutionEngine`, deprecated in Scrapy 2.6, is
+    no longer supported. (:issue:`5994`, :issue:`5998`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :class:`scrapy.utils.datatypes.CaselessDict` is deprecated, use
+    :class:`scrapy.utils.datatypes.CaseInsensitiveDict` instead.
+    (:issue:`5146`)
+
+-   Passing the ``custom`` argument to
+    :func:`scrapy.utils.conf.build_component_list` is deprecated, it was used
+    in the past to merge ``FOO`` and ``FOO_BASE`` setting values but now Scrapy
+    uses :func:`scrapy.settings.BaseSettings.getwithbase` to do the same.
+    Code that uses this argument and cannot be switched to ``getwithbase()``
+    can be switched to merging the values explicitly. (:issue:`5726`,
+    :issue:`5923`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added support for :ref:`Scrapy add-ons <topics-addons>`. (:issue:`5950`)
+
+-   Added the :setting:`RETRY_EXCEPTIONS` setting that configures which
+    exceptions will be retried by
+    :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`.
+    (:issue:`2701`, :issue:`5929`)
+
+-   Added the possiiblity to close the spider if no items were produced in the
+    specified time, configured by :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`.
+    (:issue:`5979`)
+
+-   Added support for the :setting:`AWS_REGION_NAME` setting to feed exports.
+    (:issue:`5980`)
+
+-   Added support for using :class:`pathlib.Path` objects that refer to
+    absolute Windows paths in the :setting:`FEEDS` setting. (:issue:`5939`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed creating empty feeds even with ``FEED_STORE_EMPTY=False``.
+    (:issue:`872`, :issue:`5847`)
+
+-   Fixed using absolute Windows paths when specifying output files.
+    (:issue:`5969`, :issue:`5971`)
+
+-   Fixed problems with uploading large files to S3 by switching to multipart
+    uploads (requires boto3_). (:issue:`960`, :issue:`5735`, :issue:`5833`)
+
+-   Fixed the JSON exporter writing extra commas when some exceptions occur.
+    (:issue:`3090`, :issue:`5952`)
+
+-   Fixed the "read of closed file" error in the CSV exporter. (:issue:`5043`,
+    :issue:`5705`)
+
+-   Fixed an error when a component added by the class object throws
+    :exc:`~scrapy.exceptions.NotConfigured` with a message. (:issue:`5950`,
+    :issue:`5992`)
+
+-   Added the missing :meth:`scrapy.settings.BaseSettings.pop` method.
+    (:issue:`5959`, :issue:`5960`, :issue:`5963`)
+
+-   Added :class:`~scrapy.utils.datatypes.CaseInsensitiveDict` as a replacement
+    for :class:`~scrapy.utils.datatypes.CaselessDict` that fixes some API
+    inconsistencies. (:issue:`5146`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Documented :meth:`scrapy.Spider.update_settings`. (:issue:`5745`,
+    :issue:`5846`)
+
+-   Documented possible problems with early Twisted reactor installation and
+    their solutions. (:issue:`5981`, :issue:`6000`)
+
+-   Added examples of making additional requests in callbacks. (:issue:`5927`)
+
+-   Improved the feed export docs. (:issue:`5579`, :issue:`5931`)
+
+-   Clarified the docs about request objects on redirection. (:issue:`5707`,
+    :issue:`5937`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added support for running tests against the installed Scrapy version.
+    (:issue:`4914`, :issue:`5949`)
+
+-   Extended typing hints. (:issue:`5925`, :issue:`5977`)
+
+-   Fixed the ``test_utils_asyncio.AsyncioTest.test_set_asyncio_event_loop``
+    test. (:issue:`5951`)
+
+-   Fixed the ``test_feedexport.BatchDeliveriesTest.test_batch_path_differ``
+    test on Windows. (:issue:`5847`)
+
+-   Enabled CI runs for Python 3.11 on Windows. (:issue:`5999`)
+
+-   Simplified skipping tests that depend on ``uvloop``. (:issue:`5984`)
+
+-   Fixed the ``extra-deps-pinned`` tox env. (:issue:`5948`)
+
+-   Implemented cleanups. (:issue:`5965`, :issue:`5986`)
+
 .. _release-2.9.0:
 
 Scrapy 2.9.0 (2023-05-08)
@@ -5748,6 +5918,7 @@ First release of Scrapy.
 
 
 .. _AJAX crawlable urls: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started?csw=1
+.. _boto3: https://github.com/boto/boto3
 .. _botocore: https://github.com/boto/botocore
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
