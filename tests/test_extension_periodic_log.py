@@ -1,4 +1,5 @@
 import datetime
+import typing
 import unittest
 
 from scrapy.crawler import Crawler
@@ -96,7 +97,7 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: callable):
+        def check(settings: dict, condition: typing.Callable):
             ext, a, b = emulate(settings)
             assert list(a["delta"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -153,7 +154,7 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: callable):
+        def check(settings: dict, condition: typing.Callable):
             ext, a, b = emulate(settings)
             assert list(a["stats"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
