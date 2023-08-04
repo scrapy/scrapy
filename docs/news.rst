@@ -34,16 +34,17 @@ Modified requirements
 
 -   ``pkg_resources`` is no longer used. (:issue:`5956`, :issue:`5958`)
 
--   boto3_ is now recommended for exporting to S3 instead of botocore_.
+-   boto3_ is now recommended instead of botocore_ for exporting to S3.
     (:issue:`5833`).
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   The value of the :setting:`FEED_STORE_EMPTY` is now ``True`` instead of
-    ``False``. In earlier Scrapy versions empty files were created even when
-    this setting was ``False`` (which was a bug that is now fixed), so the new
-    default should keep the old behavior. (:issue:`872`, :issue:`5847`)
+-   The value of the :setting:`FEED_STORE_EMPTY` setting is now ``True`` 
+    instead of ``False``. In earlier Scrapy versions empty files were created 
+    even when this setting was ``False`` (which was a bug that is now fixed), 
+    so the new default should keep the old behavior. (:issue:`872`, 
+    :issue:`5847`)
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
