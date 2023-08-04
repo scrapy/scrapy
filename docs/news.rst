@@ -12,7 +12,7 @@ Highlights:
 
 -   Added Python 3.12 support, dropped Python 3.7 support.
 
--   The add-ons framework that simplifies configuring 3rd-party components that
+-   The new add-ons framework simplifies configuring 3rd-party components that
     support it.
 
 -   Exceptions to retry can now be configured.
