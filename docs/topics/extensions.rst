@@ -383,3 +383,104 @@ For more info see `Debugging in Python`_.
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
+
+Periodic log extension
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: PeriodicLog
+
+Extension provides extended stats data periodically in addition to basic data from Log Stats and Core Stats extensions (as JSON compatible  dictionary) like: ::
+
+    2023-08-04 02:30:57 [scrapy.extensions.logstats] INFO: Crawled 976 pages (at 162 pages/min), scraped 925 items (at 161 items/min)
+    2023-08-04 02:30:57 [scrapy.extensions.periodic_log] INFO: {
+        "delta": {
+            "downloader/request_bytes": 55582,
+            "downloader/request_count": 162,
+            "downloader/request_method_count/GET": 162,
+            "downloader/response_bytes": 618133,
+            "downloader/response_count": 162,
+            "downloader/response_status_count/200": 162,
+            "item_scraped_count": 161
+        },
+        "stats": {
+            "downloader/request_bytes": 338243,
+            "downloader/request_count": 992,
+            "downloader/request_method_count/GET": 992,
+            "downloader/response_bytes": 3836736,
+            "downloader/response_count": 976,
+            "downloader/response_status_count/200": 976,
+            "item_scraped_count": 925,
+            "log_count/INFO": 21,
+            "log_count/WARNING": 1,
+            "scheduler/dequeued": 992,
+            "scheduler/dequeued/memory": 992,
+            "scheduler/enqueued": 1050,
+            "scheduler/enqueued/memory": 1050
+        },
+        "time": {
+            "elapsed": 360.008903,
+            "log_interval": 60.0,
+            "log_interval_real": 60.006694,
+            "start_time": "2023-08-03 23:24:57",
+            "utcnow": "2023-08-03 23:30:57"
+        }
+    }
+
+``"delta"`` section shows numeric difference in stats values between current and previous log entry with period of ``LOGSTATS_INTERVAL`` (60 seconds by default). Its applicable for stats with values types ``int`` and ``float``.
+Stats values displayed in this section configured by :setting:`PERIODIC_LOG_DELTA` setting.
+
+``"stats"`` section shows stats values as is at the moment of current period.
+Stats values displayed in this section configured by :setting:`PERIODIC_LOG_STATS` setting.
+
+``"time"`` This extension produce log entries on startup, periodically, and on end of crawl. As final log entry produced earlier than ``LOGSTATS_INTERVAL`` value - detailed timing data required for more precise stats.
+
+Configured by :setting:`PERIODIC_LOG_TIMING_ENABLED`
+
+
+Example extension configuration:
+
+.. code-block:: python
+
+    custom_settings = {
+        "LOG_LEVEL": "INFO",
+        "PERIODIC_LOG_STATS": {
+            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count/"],
+        },
+        "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
+        "PERIODIC_LOG_TIMING_ENABLED": True,
+        "EXTENSIONS": {
+            "scrapy.extensions.periodic_log.PeriodicLog": 0,
+        },
+    }
+
+.. setting:: PERIODIC_LOG_DELTA
+
+PERIODIC_LOG_DELTA
+""""""""""""""""""
+
+Default: ``None``
+
+* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stats values.
+* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - include stats deltas for stats with names that have listed substrings in stats names.
+* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - include all stats deltas except stats with listed substrings in stats names.
+
+.. setting:: PERIODIC_LOG_STATS
+
+PERIODIC_LOG_STATS
+""""""""""""""""""
+
+Default: ``None``
+
+* ``"PERIODIC_LOG_STATS": True`` - show all available stats keys/values
+* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - include stats for keys that have listed substrings in stats names.
+* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - include all stats deltas except stats with listed substrings in stats names.
+
+
+.. setting:: PERIODIC_LOG_TIMING_ENABLED
+
+PERIODIC_LOG_TIMING_ENABLED
+"""""""""""""""""""""""""""
+
+Default: ``None``
+
+``"PERIODIC_LOG_TIMING_ENABLED": True`` - enables logging of timing data
