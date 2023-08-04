@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.10.0:
 
-Scrapy 2.10.0 (YYYY-MM-DD)
+Scrapy 2.10.0 (2023-08-04)
 --------------------------
 
 Highlights:
