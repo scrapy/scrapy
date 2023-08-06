@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, cast
 
 from twisted.internet.defer import Deferred
 
@@ -13,6 +15,11 @@ from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import create_instance, load_object
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +61,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     """
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         """
         Factory method which receives the current :class:`~scrapy.crawler.Crawler` object as argument.
         """
@@ -325,6 +332,7 @@ class Scheduler(BaseScheduler):
 
     def _dq(self):
         """Create a new priority queue instance, with disk storage"""
+        assert self.dqdir
         state = self._read_dqs_state(self.dqdir)
         q = create_instance(
             self.pqclass,
