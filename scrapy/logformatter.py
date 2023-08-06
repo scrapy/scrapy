@@ -114,7 +114,7 @@ class LogFormatter:
         }
 
     def item_error(
-        self, item: Any, exception, response: Response, spider: Spider
+        self, item: Any, exception: BaseException, response: Response, spider: Spider
     ) -> dict:
         """Logs a message when an item causes an error while it is passing
         through the item pipeline.
