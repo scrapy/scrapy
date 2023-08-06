@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import csv
 import logging
 import re
@@ -78,7 +76,7 @@ def xmliter(
 
 
 def xmliter_lxml(
-    obj: Union[TextResponse, str, bytes],
+    obj: Union[Response, str, bytes],
     nodename: str,
     namespace: Optional[str] = None,
     prefix: str = "x",
@@ -87,8 +85,9 @@ def xmliter_lxml(
 
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
+    # technically, etree.iterparse only needs .read() AFAICS, but this is how it's typed
     iterable = etree.iterparse(
-        cast(SupportsReadClose[bytes], reader), tag=tag, encoding=reader.encoding
+        cast("SupportsReadClose[bytes]", reader), tag=tag, encoding=reader.encoding
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
     for _, node in iterable:
@@ -101,11 +100,13 @@ def xmliter_lxml(
 
 
 class _StreamReader:
-    def __init__(self, obj: Union[TextResponse, str, bytes]):
+    def __init__(self, obj: Union[Response, str, bytes]):
         self._ptr: int = 0
         self._text: Union[str, bytes]
         if isinstance(obj, TextResponse):
             self._text, self.encoding = obj.body, obj.encoding
+        elif isinstance(obj, Response):
+            self._text, self.encoding = obj.body, "utf-8"
         else:
             self._text, self.encoding = obj, "utf-8"
         self._is_unicode: bool = isinstance(self._text, str)
