@@ -4,9 +4,14 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Type, Union
 
-from twisted.internet import defer
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    inlineCallbacks,
+    maybeDeferred,
+)
 from zope.interface.exceptions import DoesNotImplement
 
 try:
@@ -24,7 +29,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
-from scrapy.settings import Settings, overridden_settings
+from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoader
 from scrapy.statscollectors import StatsCollector
@@ -123,8 +128,8 @@ class Crawler:
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
 
-    @defer.inlineCallbacks
-    def crawl(self, *args, **kwargs):
+    @inlineCallbacks
+    def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         self.crawling = True
@@ -134,26 +139,27 @@ class Crawler:
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
-            yield defer.maybeDeferred(self.engine.start)
+            yield maybeDeferred(self.engine.start)
         except Exception:
             self.crawling = False
             if self.engine is not None:
                 yield self.engine.close()
             raise
 
-    def _create_spider(self, *args, **kwargs):
+    def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
-    def _create_engine(self):
+    def _create_engine(self) -> ExecutionEngine:
         return ExecutionEngine(self, lambda _: self.stop())
 
-    @defer.inlineCallbacks
-    def stop(self):
+    @inlineCallbacks
+    def stop(self) -> Generator[Deferred, Any, None]:
         """Starts a graceful stop of the crawler and returns a deferred that is
         fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
-            yield defer.maybeDeferred(self.engine.stop)
+            assert self.engine
+            yield maybeDeferred(self.engine.stop)
 
 
 class CrawlerRunner:
@@ -176,10 +182,10 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings) -> SpiderLoader:
+    def _get_spider_loader(settings: BaseSettings) -> SpiderLoader:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
-        loader_cls = load_object(cls_path)
+        loader_cls: Type[SpiderLoader] = load_object(cls_path)
         excs = (
             (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
         )
@@ -201,11 +207,11 @@ class CrawlerRunner:
         self.settings = settings
         self.spider_loader = self._get_spider_loader(settings)
         self._crawlers: Set[Crawler] = set()
-        self._active: Set[defer.Deferred] = set()
+        self._active: Set[Deferred] = set()
         self.bootstrap_failed = False
 
     @property
-    def spiders(self):
+    def spiders(self) -> SpiderLoader:
         warnings.warn(
             "CrawlerRunner.spiders attribute is renamed to "
             "CrawlerRunner.spider_loader.",
@@ -214,7 +220,12 @@ class CrawlerRunner:
         )
         return self.spider_loader
 
-    def crawl(self, crawler_or_spidercls, *args, **kwargs):
+    def crawl(
+        self,
+        crawler_or_spidercls: Union[Type[Spider], str, Crawler],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Deferred:
         """
         Run a crawler with the provided arguments.
 
@@ -244,12 +255,12 @@ class CrawlerRunner:
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
-    def _crawl(self, crawler, *args, **kwargs):
+    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred:
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
 
-        def _done(result):
+        def _done(result: Any) -> Any:
             self.crawlers.discard(crawler)
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
@@ -284,16 +295,16 @@ class CrawlerRunner:
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
 
-    def stop(self):
+    def stop(self) -> Deferred:
         """
         Stops simultaneously all the crawling jobs taking place.
 
         Returns a deferred that is fired when they all have ended.
         """
-        return defer.DeferredList([c.stop() for c in list(self.crawlers)])
+        return DeferredList([c.stop() for c in list(self.crawlers)])
 
-    @defer.inlineCallbacks
-    def join(self):
+    @inlineCallbacks
+    def join(self) -> Generator[Deferred, Any, None]:
         """
         join()
 
@@ -301,7 +312,7 @@ class CrawlerRunner:
         completed their executions.
         """
         while self._active:
-            yield defer.DeferredList(self._active)
+            yield DeferredList(self._active)
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -328,13 +339,17 @@ class CrawlerProcess(CrawlerRunner):
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings=None, install_root_handler=True):
+    def __init__(
+        self,
+        settings: Union[Dict[str, Any], Settings, None] = None,
+        install_root_handler: bool = True,
+    ):
         super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
         self._initialized_reactor = False
 
-    def _signal_shutdown(self, signum, _):
+    def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(self._signal_kill)
@@ -345,7 +360,7 @@ class CrawlerProcess(CrawlerRunner):
         )
         reactor.callFromThread(self._graceful_stop_reactor)
 
-    def _signal_kill(self, signum, _):
+    def _signal_kill(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
         install_shutdown_handlers(signal.SIG_IGN)
@@ -355,14 +370,16 @@ class CrawlerProcess(CrawlerRunner):
         )
         reactor.callFromThread(self._stop_reactor)
 
-    def _create_crawler(self, spidercls):
+    def _create_crawler(self, spidercls: Union[Type[Spider], str]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
         return Crawler(spidercls, self.settings, init_reactor=init_reactor)
 
-    def start(self, stop_after_crawl=True, install_signal_handlers=True):
+    def start(
+        self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
+    ) -> None:
         """
         This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
         size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
@@ -396,12 +413,12 @@ class CrawlerProcess(CrawlerRunner):
         reactor.addSystemEventTrigger("before", "shutdown", self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
 
-    def _graceful_stop_reactor(self):
+    def _graceful_stop_reactor(self) -> Deferred:
         d = self.stop()
         d.addBoth(self._stop_reactor)
         return d
 
-    def _stop_reactor(self, _=None):
+    def _stop_reactor(self, _: Any = None) -> None:
         from twisted.internet import reactor
 
         try:
