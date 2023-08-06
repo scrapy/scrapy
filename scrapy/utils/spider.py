@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import inspect
 import logging
-from types import ModuleType
+from types import CoroutineType, ModuleType
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncIterable,
+    AsyncGenerator,
     Generator,
     Iterable,
+    Literal,
     Optional,
     Type,
+    TypeVar,
     Union,
+    overload,
 )
 
 from twisted.internet.defer import Deferred
@@ -26,8 +29,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
 
-def iterate_spider_output(result: Any) -> Union[Iterable, AsyncIterable, Deferred]:
+
+# https://stackoverflow.com/questions/60222982
+@overload
+def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator:  # type: ignore[misc]
+    ...
+
+
+@overload
+def iterate_spider_output(result: CoroutineType) -> Deferred:
+    ...
+
+
+@overload
+def iterate_spider_output(result: _T) -> Iterable:
+    ...
+
+
+def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferred]:
     if inspect.isasyncgen(result):
         return result
     if inspect.iscoroutine(result):
@@ -53,6 +74,39 @@ def iter_spider_classes(module: ModuleType) -> Generator[Type[Spider], Any, None
             and getattr(obj, "name", None)
         ):
             yield obj
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    default_spidercls: Type[Spider],
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> Type[Spider]:
+    ...
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    default_spidercls: Literal[None],
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> Optional[Type[Spider]]:
+    ...
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    *,
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> Optional[Type[Spider]]:
+    ...
 
 
 def spidercls_for_request(

@@ -27,7 +27,7 @@ class SpiderLoader:
         self._found: DefaultDict[str, List[Tuple[str, str]]] = defaultdict(list)
         self._load_all_spiders()
 
-    def _check_name_duplicates(self):
+    def _check_name_duplicates(self) -> None:
         dupes = []
         for name, locations in self._found.items():
             dupes.extend(
