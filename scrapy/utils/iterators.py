@@ -110,12 +110,17 @@ class _StreamReader:
         else:
             self._text, self.encoding = obj, "utf-8"
         self._is_unicode: bool = isinstance(self._text, str)
+        self._is_first_read: bool = True
 
     def read(self, n: int = 65535) -> bytes:
-        self.read: Callable[[int], bytes] = (  # type: ignore[method-assign]
+        method: Callable[[int], bytes] = (
             self._read_unicode if self._is_unicode else self._read_string
         )
-        return self.read(n).lstrip()
+        result = method(n)
+        if self._is_first_read:
+            self._is_first_read = False
+            result = result.lstrip()
+        return result
 
     def _read_string(self, n: int = 65535) -> bytes:
         s, e = self._ptr, self._ptr + n
