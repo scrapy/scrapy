@@ -5,7 +5,18 @@ import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Union,
+)
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.settings import BaseSettings
@@ -13,17 +24,21 @@ from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 
-def build_component_list(compdict, custom=None, convert=update_classpath):
+def build_component_list(
+    compdict: MutableMapping[Any, Any],
+    custom: Any = None,
+    convert: Callable[[Any], Any] = update_classpath,
+) -> List[Any]:
     """Compose a component list from a { class: order } dictionary."""
 
-    def _check_components(complist):
+    def _check_components(complist: Collection[Any]) -> None:
         if len({convert(c) for c in complist}) != len(complist):
             raise ValueError(
                 f"Some paths in {complist!r} convert to the same object, "
                 "please update your settings"
             )
 
-    def _map_keys(compdict):
+    def _map_keys(compdict: Mapping[Any, Any]) -> Union[BaseSettings, Dict[Any, Any]]:
         if isinstance(compdict, BaseSettings):
             compbs = BaseSettings()
             for k, v in compdict.items():
@@ -41,7 +56,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         _check_components(compdict)
         return {convert(k): v for k, v in compdict.items()}
 
-    def _validate_values(compdict):
+    def _validate_values(compdict: Mapping[Any, Any]) -> None:
         """Fail if a value in the components dict is not a real number or None."""
         for name, value in compdict.items():
             if value is not None and not isinstance(value, numbers.Real):
@@ -60,7 +75,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
         )
         if isinstance(custom, (list, tuple)):
             _check_components(custom)
-            return type(custom)(convert(c) for c in custom)
+            return type(custom)(convert(c) for c in custom)  # type: ignore[return-value]
         compdict.update(custom)
 
     _validate_values(compdict)
@@ -68,7 +83,7 @@ def build_component_list(compdict, custom=None, convert=update_classpath):
     return [k for k, v in sorted(compdict.items(), key=itemgetter(1))]
 
 
-def arglist_to_dict(arglist):
+def arglist_to_dict(arglist: List[str]) -> Dict[str, str]:
     """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
     dict
     """
@@ -91,7 +106,7 @@ def closest_scrapy_cfg(
     return closest_scrapy_cfg(path.parent, path)
 
 
-def init_env(project="default", set_syspath=True):
+def init_env(project: str = "default", set_syspath: bool = True) -> None:
     """Initialize environment to use command-line tool from inside a project
     dir. This sets the Scrapy settings module and modifies the Python path to
     be able to locate the project module.
@@ -106,7 +121,7 @@ def init_env(project="default", set_syspath=True):
             sys.path.append(projdir)
 
 
-def get_config(use_closest=True):
+def get_config(use_closest: bool = True) -> ConfigParser:
     """Get Scrapy config file as a ConfigParser"""
     sources = get_sources(use_closest)
     cfg = ConfigParser()
@@ -114,7 +129,7 @@ def get_config(use_closest=True):
     return cfg
 
 
-def get_sources(use_closest=True) -> List[str]:
+def get_sources(use_closest: bool = True) -> List[str]:
     xdg_config_home = (
         os.environ.get("XDG_CONFIG_HOME") or Path("~/.config").expanduser()
     )
@@ -129,7 +144,9 @@ def get_sources(use_closest=True) -> List[str]:
     return sources
 
 
-def feed_complete_default_values_from_settings(feed, settings):
+def feed_complete_default_values_from_settings(
+    feed: Dict[str, Any], settings: BaseSettings
+) -> Dict[str, Any]:
     out = feed.copy()
     out.setdefault("batch_item_count", settings.getint("FEED_EXPORT_BATCH_ITEM_COUNT"))
     out.setdefault("encoding", settings["FEED_EXPORT_ENCODING"])
@@ -145,21 +162,21 @@ def feed_complete_default_values_from_settings(feed, settings):
 
 
 def feed_process_params_from_cli(
-    settings,
+    settings: BaseSettings,
     output: List[str],
-    output_format=None,
+    output_format: Optional[str] = None,
     overwrite_output: Optional[List[str]] = None,
-):
+) -> Dict[str, Dict[str, Any]]:
     """
     Receives feed export params (from the 'crawl' or 'runspider' commands),
     checks for inconsistencies in their quantities and returns a dictionary
     suitable to be used as the FEEDS setting.
     """
-    valid_output_formats = without_none_values(
+    valid_output_formats: Iterable[str] = without_none_values(
         settings.getwithbase("FEED_EXPORTERS")
     ).keys()
 
-    def check_valid_format(output_format):
+    def check_valid_format(output_format: str) -> None:
         if output_format not in valid_output_formats:
             raise UsageError(
                 f"Unrecognized output format '{output_format}'. "

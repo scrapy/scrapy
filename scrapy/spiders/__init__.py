@@ -82,7 +82,7 @@ class Spider(object_ref):
         settings.setdict(cls.custom_settings or {}, priority="spider")
 
     @classmethod
-    def handles_request(cls, request):
+    def handles_request(cls, request: Request) -> bool:
         return url_is_from_spider(request.url, cls)
 
     @staticmethod

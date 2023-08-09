@@ -5,11 +5,13 @@ import asyncio
 import inspect
 from asyncio import Future
 from functools import wraps
+from types import CoroutineType
 from typing import (
     Any,
     AsyncGenerator,
     AsyncIterable,
     AsyncIterator,
+    Awaitable,
     Callable,
     Coroutine,
     Dict,
@@ -19,8 +21,10 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TypeVar,
     Union,
     cast,
+    overload,
 )
 
 from twisted.internet import defer
@@ -186,9 +190,7 @@ class _AsyncCooperatorAdapter(Iterator):
     def _call_anext(self) -> None:
         # This starts waiting for the next result from aiterator.
         # If aiterator is exhausted, _errback will be called.
-        self.anext_deferred = cast(
-            Deferred, deferred_from_coro(self.aiterator.__anext__())
-        )
+        self.anext_deferred = deferred_from_coro(self.aiterator.__anext__())
         self.anext_deferred.addCallbacks(self._callback, self._errback)
 
     def __next__(self) -> Deferred:
@@ -297,7 +299,21 @@ async def aiter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
-def deferred_from_coro(o: Any) -> Any:
+_CT = TypeVar("_CT", bound=Union[Awaitable, CoroutineType, Future])
+_T = TypeVar("_T")
+
+
+@overload
+def deferred_from_coro(o: _CT) -> Deferred:
+    ...
+
+
+@overload
+def deferred_from_coro(o: _T) -> _T:
+    ...
+
+
+def deferred_from_coro(o: _T) -> Union[Deferred, _T]:
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, Deferred):
         return o

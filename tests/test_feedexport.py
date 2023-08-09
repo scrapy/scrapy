@@ -2978,8 +2978,8 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
     def test_init(self):
         settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": FTPFeedStorageWithoutFeedOptions},
+            "FEED_URI": "ftp://localhost/foo",
+            "FEED_STORAGES": {"ftp": FTPFeedStorageWithoutFeedOptions},
         }
         with pytest.warns(
             ScrapyDeprecationWarning,
@@ -3000,8 +3000,8 @@ class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
 
     def test_from_crawler(self):
         settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": FTPFeedStorageWithoutFeedOptionsWithFromCrawler},
+            "FEED_URI": "ftp://localhost/foo",
+            "FEED_STORAGES": {"ftp": FTPFeedStorageWithoutFeedOptionsWithFromCrawler},
         }
         with pytest.warns(
             ScrapyDeprecationWarning,

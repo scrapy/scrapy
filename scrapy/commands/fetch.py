@@ -1,7 +1,10 @@
 import sys
+from argparse import Namespace
+from typing import List, Type
 
 from w3lib.url import is_url
 
+from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request
@@ -57,7 +60,7 @@ class Command(ScrapyCommand):
     def _print_bytes(self, bytes_):
         sys.stdout.buffer.write(bytes_ + b"\n")
 
-    def run(self, args, opts):
+    def run(self, args: List[str], opts: Namespace) -> None:
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         request = Request(
@@ -73,7 +76,8 @@ class Command(ScrapyCommand):
         else:
             request.meta["handle_httpstatus_all"] = True
 
-        spidercls = DefaultSpider
+        spidercls: Type[Spider] = DefaultSpider
+        assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
