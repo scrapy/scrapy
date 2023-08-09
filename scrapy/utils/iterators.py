@@ -85,7 +85,6 @@ def xmliter_lxml(
 
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
-    # technically, etree.iterparse only needs .read() AFAICS, but this is how it's typed
     iterable = etree.iterparse(
         cast("SupportsReadClose[bytes]", reader), tag=tag, encoding=reader.encoding
     )

@@ -290,7 +290,8 @@ class FTPFeedStorage(BlockingFeedStorage):
         feed_options: Optional[Dict[str, Any]] = None,
     ):
         u = urlparse(uri)
-        assert u.hostname
+        if not u.hostname:
+            raise ValueError(f"Got a storage URI without a hostname: {uri}")
         self.host: str = u.hostname
         self.port: int = int(u.port or "21")
         self.username: str = u.username or ""
