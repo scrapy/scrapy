@@ -7,12 +7,10 @@ import tempfile
 import unittest
 from datetime import datetime
 from io import BytesIO
-from warnings import catch_warnings, filterwarnings
 
 import lxml.etree
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter,
     CsvItemExporter,
@@ -143,7 +141,7 @@ class BaseItemExporterDataclassTest(BaseItemExporterTest):
 
 class PythonItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
-        return PythonItemExporter(binary=False, **kwargs)
+        return PythonItemExporter(**kwargs)
 
     def test_invalid_option(self):
         with self.assertRaisesRegex(TypeError, "Unexpected options: invalid_option"):
@@ -197,14 +195,6 @@ class PythonItemExporterTest(BaseItemExporterTest):
         )
         self.assertEqual(type(exported["age"][0]), dict)
         self.assertEqual(type(exported["age"][0]["age"][0]), dict)
-
-    def test_export_binary(self):
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            exporter = PythonItemExporter(binary=True)
-            value = self.item_class(name="John\xa3", age="22")
-            expected = {b"name": b"John\xc2\xa3", b"age": b"22"}
-            self.assertEqual(expected, exporter.export_item(value))
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
