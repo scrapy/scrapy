@@ -4,7 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Type, Union, cast
 
 from twisted.internet.defer import (
     Deferred,
@@ -31,7 +31,6 @@ from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
-from scrapy.spiderloader import SpiderLoader
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
@@ -182,10 +181,10 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings: BaseSettings) -> SpiderLoader:
+    def _get_spider_loader(settings: BaseSettings):
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
-        loader_cls: Type[SpiderLoader] = load_object(cls_path)
+        loader_cls = load_object(cls_path)
         excs = (
             (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
         )
@@ -211,7 +210,7 @@ class CrawlerRunner:
         self.bootstrap_failed = False
 
     @property
-    def spiders(self) -> SpiderLoader:
+    def spiders(self):
         warnings.warn(
             "CrawlerRunner.spiders attribute is renamed to "
             "CrawlerRunner.spider_loader.",
@@ -293,7 +292,8 @@ class CrawlerRunner:
     def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, self.settings)
+        # temporary cast until self.spider_loader is typed
+        return Crawler(cast(Type[Spider], spidercls), self.settings)
 
     def stop(self) -> Deferred:
         """
@@ -375,7 +375,10 @@ class CrawlerProcess(CrawlerRunner):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
-        return Crawler(spidercls, self.settings, init_reactor=init_reactor)
+        # temporary cast until self.spider_loader is typed
+        return Crawler(
+            cast(Type[Spider], spidercls), self.settings, init_reactor=init_reactor
+        )
 
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
