@@ -37,6 +37,8 @@ class PeriodicLog:
     @classmethod
     def from_crawler(cls, crawler):
         interval = crawler.settings.getfloat("LOGSTATS_INTERVAL")
+        if not interval:
+            raise NotConfigured
         try:
             ext_stats = crawler.settings.getdict("PERIODIC_LOG_STATS")
         except (TypeError, ValueError):
@@ -57,8 +59,6 @@ class PeriodicLog:
         ext_timing_enabled = crawler.settings.getbool(
             "PERIODIC_LOG_TIMING_ENABLED", False
         )
-        if not interval:
-            raise NotConfigured
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
         o = cls(
