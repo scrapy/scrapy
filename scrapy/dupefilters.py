@@ -12,7 +12,11 @@ from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
-from scrapy.utils.request import RequestFingerprinter, referer_str
+from scrapy.utils.request import (
+    RequestFingerprinter,
+    RequestFingerprinterProtocol,
+    referer_str,
+)
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -48,10 +52,10 @@ class RFPDupeFilter(BaseDupeFilter):
         path: Optional[str] = None,
         debug: bool = False,
         *,
-        fingerprinter: Optional[RequestFingerprinter] = None,
+        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
     ) -> None:
         self.file = None
-        self.fingerprinter: RequestFingerprinter = (
+        self.fingerprinter: RequestFingerprinterProtocol = (
             fingerprinter or RequestFingerprinter()
         )
         self.fingerprints: Set[str] = set()
@@ -68,7 +72,7 @@ class RFPDupeFilter(BaseDupeFilter):
         cls,
         settings: BaseSettings,
         *,
-        fingerprinter: Optional[RequestFingerprinter] = None,
+        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
     ) -> Self:
         debug = settings.getbool("DUPEFILTER_DEBUG")
         try:
