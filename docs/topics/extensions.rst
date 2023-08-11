@@ -389,7 +389,7 @@ Periodic log extension
 
 .. class:: PeriodicLog
 
-Extension provides extended stats data periodically in addition to basic data from Log Stats and Core Stats extensions (as JSON compatible  dictionary) like: ::
+This extension periodically logs rich stat data as a JSON object::
 
     2023-08-04 02:30:57 [scrapy.extensions.logstats] INFO: Crawled 976 pages (at 162 pages/min), scraped 925 items (at 161 items/min)
     2023-08-04 02:30:57 [scrapy.extensions.periodic_log] INFO: {
