@@ -204,16 +204,6 @@ class CrawlerRunner:
         self._active: Set[defer.Deferred] = set()
         self.bootstrap_failed = False
 
-    @property
-    def spiders(self):
-        warnings.warn(
-            "CrawlerRunner.spiders attribute is renamed to "
-            "CrawlerRunner.spider_loader.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.spider_loader
-
     def crawl(self, crawler_or_spidercls, *args, **kwargs):
         """
         Run a crawler with the provided arguments.

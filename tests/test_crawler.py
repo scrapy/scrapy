@@ -20,7 +20,6 @@ from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
-from scrapy.utils.misc import load_object
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer, get_mockserver_env
@@ -181,16 +180,6 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
     def test_crawler_runner_accepts_None(self):
         runner = CrawlerRunner()
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
-
-    def test_deprecated_attribute_spiders(self):
-        with warnings.catch_warnings(record=True) as w:
-            runner = CrawlerRunner(Settings())
-            spiders = runner.spiders
-            self.assertEqual(len(w), 1)
-            self.assertIn("CrawlerRunner.spiders", str(w[0].message))
-            self.assertIn("CrawlerRunner.spider_loader", str(w[0].message))
-            sl_cls = load_object(runner.settings["SPIDER_LOADER_CLASS"])
-            self.assertIsInstance(spiders, sl_cls)
 
 
 class CrawlerProcessTest(BaseCrawlerTest):
