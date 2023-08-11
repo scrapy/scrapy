@@ -426,15 +426,26 @@ Extension provides extended stats data periodically in addition to basic data fr
         }
     }
 
-``"delta"`` section shows numeric difference in stats values between current and previous log entry with period of ``LOGSTATS_INTERVAL`` (60 seconds by default). Its applicable for stats with values types ``int`` and ``float``.
-Stats values displayed in this section configured by :setting:`PERIODIC_LOG_DELTA` setting.
+This extension logs the following configurable sections:
 
-``"stats"`` section shows stats values as is at the moment of current period.
-Stats values displayed in this section configured by :setting:`PERIODIC_LOG_STATS` setting.
+-   ``"delta"`` shows how some numeric stats have changed since the last stats 
+    log message.
+    
+    The :setting:`PERIODIC_LOG_DELTA` setting determines the target stats. They 
+    must have ``int`` or ``float`` values.
 
-``"time"`` This extension produce log entries on startup, periodically, and on end of crawl. As final log entry produced earlier than ``LOGSTATS_INTERVAL`` value - detailed timing data required for more precise stats.
+-   ``"stats"`` shows the current value of some stats.
 
-Configured by :setting:`PERIODIC_LOG_TIMING_ENABLED`
+    The :setting:`PERIODIC_LOG_STATS` setting determines the target stats.
+
+-   ``"time"`` shows detailed timing data.
+
+    The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or 
+    not to show this section.
+
+This extension logs data at the start, then on a fixed time interval 
+configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally 
+right before the crawl ends.
 
 
 Example extension configuration:
