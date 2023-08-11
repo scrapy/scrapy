@@ -471,9 +471,9 @@ PERIODIC_LOG_STATS
 
 Default: ``None``
 
-* ``"PERIODIC_LOG_STATS": True`` - show all available stats keys/values
-* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - include stats for keys that have listed substrings in stats names.
-* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - include all stats deltas except stats with listed substrings in stats names.
+* ``"PERIODIC_LOG_STATS": True`` - show the current value of all stats.
+* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - show current values for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - show current values for all stats with names not containing any configured substring.
 
 
 .. setting:: PERIODIC_LOG_TIMING_ENABLED
