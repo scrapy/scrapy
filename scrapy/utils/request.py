@@ -14,6 +14,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Protocol,
     Tuple,
     Type,
     Union,
@@ -228,6 +229,11 @@ def fingerprint(
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
         cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()
     return cache[cache_key]
+
+
+class RequestFingerprinterProtocol(Protocol):
+    def fingerprint(self, request: Request) -> bytes:
+        ...
 
 
 class RequestFingerprinter:

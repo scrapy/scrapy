@@ -52,7 +52,7 @@ class StopDownload(Exception):
     should be handled by the request errback. Note that 'fail' is a keyword-only argument.
     """
 
-    def __init__(self, *, fail=True):
+    def __init__(self, *, fail: bool = True):
         super().__init__()
         self.fail = fail
 
