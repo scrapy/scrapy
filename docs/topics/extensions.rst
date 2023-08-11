@@ -460,9 +460,9 @@ PERIODIC_LOG_DELTA
 
 Default: ``None``
 
-* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stats values.
-* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - include stats deltas for stats with names that have listed substrings in stats names.
-* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - include all stats deltas except stats with listed substrings in stats names.
+* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stat values.
+* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - show deltas for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - show deltas for all stats with names not containing any configured substring.
 
 .. setting:: PERIODIC_LOG_STATS
 
