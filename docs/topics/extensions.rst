@@ -481,6 +481,6 @@ Default: ``None``
 PERIODIC_LOG_TIMING_ENABLED
 """""""""""""""""""""""""""
 
-Default: ``None``
+Default: ``False``
 
-``"PERIODIC_LOG_TIMING_ENABLED": True`` - enables logging of timing data
+``True`` enables logging of timing data (i.e. the ``"time"`` section).
