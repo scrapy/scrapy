@@ -1322,6 +1322,17 @@ class FeedExportTest(FeedExportTestBase):
         yield self.assertExportedJsonLines(items, rows_jl)
 
     @defer.inlineCallbacks
+    def test_export_tuple(self):
+        items = [
+            {"foo": "bar1", "egg": "spam1"},
+            {"foo": "bar2", "egg": "spam2", "baz": "quux"},
+        ]
+
+        settings = {"FEED_EXPORT_FIELDS": ("foo", "baz")}
+        rows = [{"foo": "bar1", "baz": ""}, {"foo": "bar2", "baz": "quux"}]
+        yield self.assertExported(items, ["foo", "baz"], rows, settings=settings)
+
+    @defer.inlineCallbacks
     def test_export_feed_export_fields(self):
         # FEED_EXPORT_FIELDS option allows to order export fields
         # and to select a subset of fields to export, both for Items and dicts.
