@@ -238,7 +238,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def getdictorlist(
         self,
         name: _SettingsKeyT,
-        default: Union[Dict[Any, Any], List[Any], None] = None,
+        default: Union[Dict[Any, Any], List[Any], Tuple[Any], None] = None,
     ) -> Union[Dict[Any, Any], List[Any]]:
         """Get a setting value as either a :class:`dict` or a :class:`list`.
 
@@ -271,6 +271,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 return value_loaded
             except ValueError:
                 return value.split(",")
+        if isinstance(value, tuple):
+            return list(value)
         assert isinstance(value, (dict, list))
         return copy.deepcopy(value)
 
