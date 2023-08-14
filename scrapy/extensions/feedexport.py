@@ -8,7 +8,7 @@ import logging
 import re
 import sys
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
@@ -676,7 +676,7 @@ class FeedExporter:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        utc_now = datetime.utcnow()
+        utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
         params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
