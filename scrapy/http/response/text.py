@@ -82,7 +82,7 @@ class TextResponse(Response):
         Deserialize a JSON document to a Python object.
         """
         if self._cached_decoded_json is _NONE:
-            self._cached_decoded_json = json.loads(self.text)
+            self._cached_decoded_json = json.loads(self.body)
         return self._cached_decoded_json
 
     @property
