@@ -38,6 +38,7 @@ IGNORED_EXTENSIONS = [
     "svg",
     "cdr",
     "ico",
+    "webp",
     # audio
     "mp3",
     "wma",
