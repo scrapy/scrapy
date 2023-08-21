@@ -1,10 +1,11 @@
 """
 XPath selectors based on lxml
 """
+from typing import Any, Optional, Type, Union
 
 from parsel import Selector as _ParselSelector
 
-from scrapy.http import HtmlResponse, XmlResponse
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 
@@ -13,14 +14,14 @@ __all__ = ["Selector", "SelectorList"]
 _NOT_SET = object()
 
 
-def _st(response, st):
+def _st(response: Optional[TextResponse], st: Optional[str]) -> str:
     if st is None:
         return "xml" if isinstance(response, XmlResponse) else "html"
     return st
 
 
-def _response_from_text(text, st):
-    rt = XmlResponse if st == "xml" else HtmlResponse
+def _response_from_text(text: Union[str, bytes], st: Optional[str]) -> TextResponse:
+    rt: Type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
     return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
 
@@ -65,7 +66,14 @@ class Selector(_ParselSelector, object_ref):
     __slots__ = ["response"]
     selectorlist_cls = SelectorList
 
-    def __init__(self, response=None, text=None, type=None, root=_NOT_SET, **kwargs):
+    def __init__(
+        self,
+        response: Optional[TextResponse] = None,
+        text: Optional[str] = None,
+        type: Optional[str] = None,
+        root: Optional[Any] = _NOT_SET,
+        **kwargs: Any,
+    ):
         if response is not None and text is not None:
             raise ValueError(
                 f"{self.__class__.__name__}.__init__() received "

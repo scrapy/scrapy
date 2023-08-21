@@ -229,7 +229,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 104)
+        self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
     def test_process_response_force_recalculate_encoding(self):
         headers = {
@@ -254,7 +254,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 104)
+        self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
     def test_process_response_no_content_type_header(self):
         headers = {
@@ -277,7 +277,7 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 104)
+        self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
     def test_process_response_gzipped_contenttype(self):
         response = self._getresponse("gzip")

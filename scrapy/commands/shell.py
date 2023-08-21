@@ -3,8 +3,11 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
+from argparse import Namespace
 from threading import Thread
+from typing import List, Type
 
+from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.shell import Shell
@@ -54,15 +57,16 @@ class Command(ScrapyCommand):
         """
         pass
 
-    def run(self, args, opts):
+    def run(self, args: List[str], opts: Namespace) -> None:
         url = args[0] if args else None
         if url:
             # first argument may be a local file
             url = guess_scheme(url)
 
+        assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
-        spidercls = DefaultSpider
+        spidercls: Type[Spider] = DefaultSpider
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
         elif url:

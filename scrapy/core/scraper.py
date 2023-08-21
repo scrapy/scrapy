@@ -364,6 +364,7 @@ class Scraper:
                     spider=spider,
                     exception=output.value,
                 )
+            assert ex
             logkws = self.logformatter.item_error(item, ex, response, spider)
             logger.log(
                 *logformatter_adapter(logkws),

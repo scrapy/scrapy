@@ -5,6 +5,7 @@ based on different criteria.
 from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
+from typing import Dict, Mapping, Optional, Type, Union
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
@@ -29,15 +30,19 @@ class ResponseTypes:
         "text/*": "scrapy.http.TextResponse",
     }
 
-    def __init__(self):
-        self.classes = {}
-        self.mimetypes = MimeTypes()
-        mimedata = get_data("scrapy", "mime.types").decode("utf8")
-        self.mimetypes.readfp(StringIO(mimedata))
+    def __init__(self) -> None:
+        self.classes: Dict[str, Type[Response]] = {}
+        self.mimetypes: MimeTypes = MimeTypes()
+        mimedata = get_data("scrapy", "mime.types")
+        if not mimedata:
+            raise ValueError(
+                "The mime.types file is not found in the Scrapy installation"
+            )
+        self.mimetypes.readfp(StringIO(mimedata.decode("utf8")))
         for mimetype, cls in self.CLASSES.items():
             self.classes[mimetype] = load_object(cls)
 
-    def from_mimetype(self, mimetype):
+    def from_mimetype(self, mimetype: str) -> Type[Response]:
         """Return the most appropriate Response class for the given mimetype"""
         if mimetype is None:
             return Response
@@ -46,7 +51,9 @@ class ResponseTypes:
         basetype = f"{mimetype.split('/')[0]}/*"
         return self.classes.get(basetype, Response)
 
-    def from_content_type(self, content_type, content_encoding=None):
+    def from_content_type(
+        self, content_type: Union[str, bytes], content_encoding: Optional[bytes] = None
+    ) -> Type[Response]:
         """Return the most appropriate Response class from an HTTP Content-Type
         header"""
         if content_encoding:
@@ -56,7 +63,9 @@ class ResponseTypes:
         )
         return self.from_mimetype(mimetype)
 
-    def from_content_disposition(self, content_disposition):
+    def from_content_disposition(
+        self, content_disposition: Union[str, bytes]
+    ) -> Type[Response]:
         try:
             filename = (
                 to_unicode(content_disposition, encoding="latin-1", errors="replace")
@@ -68,7 +77,7 @@ class ResponseTypes:
         except IndexError:
             return Response
 
-    def from_headers(self, headers):
+    def from_headers(self, headers: Mapping[bytes, bytes]) -> Type[Response]:
         """Return the most appropriate Response class by looking at the HTTP
         headers"""
         cls = Response
@@ -81,14 +90,14 @@ class ResponseTypes:
             cls = self.from_content_disposition(headers[b"Content-Disposition"])
         return cls
 
-    def from_filename(self, filename):
+    def from_filename(self, filename: str) -> Type[Response]:
         """Return the most appropriate Response class from a file name"""
         mimetype, encoding = self.mimetypes.guess_type(filename)
         if mimetype and not encoding:
             return self.from_mimetype(mimetype)
         return Response
 
-    def from_body(self, body):
+    def from_body(self, body: bytes) -> Type[Response]:
         """Try to guess the appropriate response based on the body content.
         This method is a bit magic and could be improved in the future, but
         it's not meant to be used except for special cases where response types
@@ -106,7 +115,13 @@ class ResponseTypes:
             return self.from_mimetype("text/html")
         return self.from_mimetype("text")
 
-    def from_args(self, headers=None, url=None, filename=None, body=None):
+    def from_args(
+        self,
+        headers: Optional[Mapping[bytes, bytes]] = None,
+        url: Optional[str] = None,
+        filename: Optional[str] = None,
+        body: Optional[bytes] = None,
+    ) -> Type[Response]:
         """Guess the most appropriate Response class based on
         the given arguments."""
         cls = Response
