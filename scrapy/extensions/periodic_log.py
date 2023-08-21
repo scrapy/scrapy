@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from twisted.internet import task
 
@@ -73,7 +73,7 @@ class PeriodicLog:
         return o
 
     def spider_opened(self, spider):
-        self.time_prev = datetime.utcnow()
+        self.time_prev = datetime.now(tz=timezone.utc)
         self.delta_prev = {}
         self.stats_prev = {}
 
@@ -102,7 +102,7 @@ class PeriodicLog:
         return {"delta": delta}
 
     def log_timing(self):
-        now = datetime.utcnow()
+        now = datetime.now(tz=timezone.utc)
         time = {
             "log_interval": self.interval,
             "start_time": self.stats._stats["start_time"],
