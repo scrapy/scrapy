@@ -402,7 +402,7 @@ Periodic log extension
 
 .. class:: PeriodicLog
 
-Extension provides extended stats data periodically in addition to basic data from Log Stats and Core Stats extensions (as JSON compatible  dictionary) like: ::
+This extension periodically logs rich stat data as a JSON object::
 
     2023-08-04 02:30:57 [scrapy.extensions.logstats] INFO: Crawled 976 pages (at 162 pages/min), scraped 925 items (at 161 items/min)
     2023-08-04 02:30:57 [scrapy.extensions.periodic_log] INFO: {
@@ -439,15 +439,26 @@ Extension provides extended stats data periodically in addition to basic data fr
         }
     }
 
-``"delta"`` section shows numeric difference in stats values between current and previous log entry with period of ``LOGSTATS_INTERVAL`` (60 seconds by default). Its applicable for stats with values types ``int`` and ``float``.
-Stats values displayed in this section configured by :setting:`PERIODIC_LOG_DELTA` setting.
+This extension logs the following configurable sections:
 
-``"stats"`` section shows stats values as is at the moment of current period.
-Stats values displayed in this section configured by :setting:`PERIODIC_LOG_STATS` setting.
+-   ``"delta"`` shows how some numeric stats have changed since the last stats 
+    log message.
+    
+    The :setting:`PERIODIC_LOG_DELTA` setting determines the target stats. They 
+    must have ``int`` or ``float`` values.
 
-``"time"`` This extension produce log entries on startup, periodically, and on end of crawl. As final log entry produced earlier than ``LOGSTATS_INTERVAL`` value - detailed timing data required for more precise stats.
+-   ``"stats"`` shows the current value of some stats.
 
-Configured by :setting:`PERIODIC_LOG_TIMING_ENABLED`
+    The :setting:`PERIODIC_LOG_STATS` setting determines the target stats.
+
+-   ``"time"`` shows detailed timing data.
+
+    The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or 
+    not to show this section.
+
+This extension logs data at the start, then on a fixed time interval 
+configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally 
+right before the crawl ends.
 
 
 Example extension configuration:
@@ -473,9 +484,9 @@ PERIODIC_LOG_DELTA
 
 Default: ``None``
 
-* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stats values.
-* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - include stats deltas for stats with names that have listed substrings in stats names.
-* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - include all stats deltas except stats with listed substrings in stats names.
+* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stat values.
+* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - show deltas for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - show deltas for all stats with names not containing any configured substring.
 
 .. setting:: PERIODIC_LOG_STATS
 
@@ -484,9 +495,9 @@ PERIODIC_LOG_STATS
 
 Default: ``None``
 
-* ``"PERIODIC_LOG_STATS": True`` - show all available stats keys/values
-* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - include stats for keys that have listed substrings in stats names.
-* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - include all stats deltas except stats with listed substrings in stats names.
+* ``"PERIODIC_LOG_STATS": True`` - show the current value of all stats.
+* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - show current values for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - show current values for all stats with names not containing any configured substring.
 
 
 .. setting:: PERIODIC_LOG_TIMING_ENABLED
@@ -494,6 +505,6 @@ Default: ``None``
 PERIODIC_LOG_TIMING_ENABLED
 """""""""""""""""""""""""""
 
-Default: ``None``
+Default: ``False``
 
-``"PERIODIC_LOG_TIMING_ENABLED": True`` - enables logging of timing data
+``True`` enables logging of timing data (i.e. the ``"time"`` section).
