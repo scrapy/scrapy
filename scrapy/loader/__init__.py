@@ -31,7 +31,7 @@ class ItemLoader(itemloaders.ItemLoader):
         in which case this argument is ignored.
     :type response: :class:`~scrapy.http.Response` object
 
-    If no item is given, one is instantiated automatically using the class in
+    If no item is given, one is initiated automatically using the class in
     :attr:`default_item_class`.
 
     The item, selector, response and remaining keyword arguments are
