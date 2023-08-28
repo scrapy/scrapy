@@ -732,3 +732,30 @@ class CookiesMiddlewareTest(TestCase):
             "co.uk",
             cookies=True,
         )
+
+    def test_off_domain_jar_storage(self):
+        request1 = Request(
+            "https://a.example",
+            cookies=[
+                {
+                    "name": "foo",
+                    "value": "bar",
+                    "domain": "b.example",
+                },
+            ],
+        )
+        assert self.mw.process_request(request1, self.spider) is None
+        self.assertNotIn(b"Cookie", request1.headers)
+
+        request2 = Request("https://b.example/")
+        assert self.mw.process_request(request2, self.spider) is None
+        self.assertEqual(request2.headers.get(b"Cookie"), b"foo=bar")
+
+    def test_process_response_unrelated_domain(self):
+        request = Request("http://a.example")
+        request.headers["Cookie"] = "foo=bar; domain=b.example"
+        response = Response("http://c.example")
+        response.headers["Set-Cookie"] = "asd=fgh; domain=d.example"
+        self.mw.process_response(request, response, spider=None)
+        jar = self.mw.jars[None]
+        assert not jar._cookies.get("c.example", {}).get("/", {}).get("asd")

@@ -11,9 +11,15 @@ from scrapy.utils.python import to_unicode
 IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
 
+class CustomDefaultCookiePolicy(DefaultCookiePolicy):
+    def set_ok(self, cookie, request):
+        # always set cookies
+        return True
+
+
 class CookieJar:
     def __init__(self, policy=None, check_expired_frequency=10000):
-        self.policy = policy or DefaultCookiePolicy()
+        self.policy = policy or CustomDefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
         self.jar._cookies_lock = _DummyLock()
         self.check_expired_frequency = check_expired_frequency
