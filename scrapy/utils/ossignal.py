@@ -2,6 +2,9 @@ import signal
 from types import FrameType
 from typing import Any, Callable, Dict, Optional, Union
 
+from twisted import version as twisted_version
+from twisted.python.versions import Version
+
 # copy of _HANDLER from typeshed/stdlib/signal.pyi
 SignalHandlerT = Union[
     Callable[[int, Optional[FrameType]], Any], int, signal.Handlers, None
@@ -25,7 +28,8 @@ def install_shutdown_handlers(
     """
     from twisted.internet import reactor
 
-    reactor._handleSignals()
+    if twisted_version < Version("twisted", 23, 8, 0):
+        reactor._handleSignals()
     signal.signal(signal.SIGTERM, function)
     if signal.getsignal(signal.SIGINT) == signal.default_int_handler or override_sigint:
         signal.signal(signal.SIGINT, function)
