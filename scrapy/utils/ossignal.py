@@ -25,7 +25,10 @@ def install_shutdown_handlers(
     """
     from twisted.internet import reactor
 
-    reactor._handleSignals()
+    if hasattr(reactor, "_signalsFactory"):
+        reactor._signalsFactory()
+    else:
+        reactor._handleSignals()
     signal.signal(signal.SIGTERM, function)
     if signal.getsignal(signal.SIGINT) == signal.default_int_handler or override_sigint:
         signal.signal(signal.SIGINT, function)
