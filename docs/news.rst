@@ -3,6 +3,13 @@
 Release notes
 =============
 
+.. _release-2.10.1:
+
+Scrapy 2.10.1 (YYYY-MM-DD)
+--------------------------
+
+Marked ``Twisted >= 23.8.0`` as unsupported. (:issue:`6024`, :issue:`6026`)
+
 .. _release-2.10.0:
 
 Scrapy 2.10.0 (2023-08-04)
