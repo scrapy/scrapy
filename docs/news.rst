@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.10.1:
 
-Scrapy 2.10.1 (YYYY-MM-DD)
+Scrapy 2.10.1 (2023-08-30)
 --------------------------
 
 Marked ``Twisted >= 23.8.0`` as unsupported. (:issue:`6024`, :issue:`6026`)
