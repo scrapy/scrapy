@@ -51,13 +51,13 @@ class SitemapSpider(Spider):
                 return
 
             s = Sitemap(body)
-            it = self.sitemap_filter(s)
 
             if s.type == "sitemapindex":
-                for loc in iterloc(it, self.sitemap_alternate_links):
+                for loc in iterloc(s, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == "urlset":
+                it = self.sitemap_filter(s)
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
