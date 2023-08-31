@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from cryptography.hazmat.backends import default_backend
@@ -50,8 +50,8 @@ def generate_keys():
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(random_serial_number())
-        .not_valid_before(datetime.utcnow())
-        .not_valid_after(datetime.utcnow() + timedelta(days=10))
+        .not_valid_before(datetime.now(tz=timezone.utc))
+        .not_valid_after(datetime.now(tz=timezone.utc) + timedelta(days=10))
         .add_extension(
             SubjectAlternativeName([DNSName("localhost")]),
             critical=False,

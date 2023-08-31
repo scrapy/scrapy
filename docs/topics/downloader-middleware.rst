@@ -915,6 +915,7 @@ settings (see the settings documentation for more info):
 * :setting:`RETRY_ENABLED`
 * :setting:`RETRY_TIMES`
 * :setting:`RETRY_HTTP_CODES`
+* :setting:`RETRY_EXCEPTIONS`
 
 .. reqmeta:: dont_retry
 
@@ -965,6 +966,37 @@ connections lost, etc) are always retried.
 In some cases you may want to add 400 to :setting:`RETRY_HTTP_CODES` because
 it is a common code used to indicate server overload. It is not included by
 default because HTTP specs say so.
+
+.. setting:: RETRY_EXCEPTIONS
+
+RETRY_EXCEPTIONS
+^^^^^^^^^^^^^^^^
+
+Default::
+
+    [
+        'twisted.internet.defer.TimeoutError',
+        'twisted.internet.error.TimeoutError',
+        'twisted.internet.error.DNSLookupError',
+        'twisted.internet.error.ConnectionRefusedError',
+        'twisted.internet.error.ConnectionDone',
+        'twisted.internet.error.ConnectError',
+        'twisted.internet.error.ConnectionLost',
+        'twisted.internet.error.TCPTimedOutError',
+        'twisted.web.client.ResponseFailed',
+        IOError,
+        'scrapy.core.downloader.handlers.http11.TunnelError',
+    ]
+
+List of exceptions to retry.
+
+Each list entry may be an exception type or its import path as a string.
+
+An exception will not be caught when the exception type is not in
+:setting:`RETRY_EXCEPTIONS` or when the maximum number of retries for a request
+has been exceeded (see :setting:`RETRY_TIMES`). To learn about uncaught
+exception propagation, see
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`.
 
 .. setting:: RETRY_PRIORITY_ADJUST
 

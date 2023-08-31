@@ -1,15 +1,17 @@
 # Tests requirements
 attrs
-pyftpdlib
+# https://github.com/giampaolo/pyftpdlib/issues/560
+pyftpdlib; python_version < "3.12"
 pytest
 pytest-cov==4.0.0
 pytest-xdist
 sybil >= 1.3.0  # https://github.com/cjw296/sybil/issues/20#issuecomment-605433422
 testfixtures
-uvloop; platform_system != "Windows"
+# uvloop currently doesn't build on 3.12
+uvloop; platform_system != "Windows" and python_version < "3.12"
 
-# optional for shell wrapper tests
-bpython
+# bpython requires greenlet which currently doesn't build on 3.12
+bpython; python_version < "3.12"  # optional for shell wrapper tests
 brotli  # optional for HTTP compress downloader middleware tests
 zstandard; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
 ipython

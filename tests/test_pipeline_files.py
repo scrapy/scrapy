@@ -1,6 +1,7 @@
 import dataclasses
 import os
 import random
+import sys
 import time
 from datetime import datetime
 from io import BytesIO
@@ -11,6 +12,7 @@ from unittest import mock
 from urllib.parse import urlparse
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -32,6 +34,7 @@ from scrapy.utils.test import (
     get_gcs_content_and_delete,
     skip_if_no_boto,
 )
+from tests.mockserver import MockFTPServer
 
 from .test_pipeline_media import _mocked_download_func
 
@@ -225,12 +228,16 @@ class FilesPipelineTestCase(unittest.TestCase):
 
 
 class FilesPipelineTestCaseFieldsMixin:
+    def setUp(self):
+        self.tempdir = mkdtemp()
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
     def test_item_fields_default(self):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
-        pipeline = FilesPipeline.from_settings(
-            Settings({"FILES_STORE": "s3://example/files/"})
-        )
+        pipeline = FilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {"url": url})]
@@ -245,7 +252,7 @@ class FilesPipelineTestCaseFieldsMixin:
         pipeline = FilesPipeline.from_settings(
             Settings(
                 {
-                    "FILES_STORE": "s3://example/files/",
+                    "FILES_STORE": self.tempdir,
                     "FILES_URLS_FIELD": "custom_file_urls",
                     "FILES_RESULT_FIELD": "custom_files",
                 }
@@ -461,8 +468,13 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedFilesPipeline.from_settings(
             Settings({"FILES_STORE": self.tempdir})
         )
-        self.assertEqual(pipeline.files_result_field, "this")
-        self.assertEqual(pipeline.files_urls_field, "that")
+        self.assertEqual(
+            pipeline.files_result_field,
+            UserDefinedFilesPipeline.DEFAULT_FILES_RESULT_FIELD,
+        )
+        self.assertEqual(
+            pipeline.files_urls_field, UserDefinedFilesPipeline.DEFAULT_FILES_URLS_FIELD
+        )
 
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of FilesPipeline,
@@ -636,34 +648,35 @@ class TestGCSFilesStore(unittest.TestCase):
                     store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 12), reason="pyftpdlib doesn't support Python 3.12 yet"
+)
 class TestFTPFileStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
-        uri = os.environ.get("FTP_TEST_FILE_URI")
-        if not uri:
-            raise unittest.SkipTest("No FTP URI available for testing")
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
         path = "full/filename"
-        store = FTPFilesStore(uri)
-        empty_dict = yield store.stat_file(path, info=None)
-        self.assertEqual(empty_dict, {})
-        yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
-        stat = yield store.stat_file(path, info=None)
-        self.assertIn("last_modified", stat)
-        self.assertIn("checksum", stat)
-        self.assertEqual(stat["checksum"], "d113d66b2ec7258724a268bd88eef6b6")
-        path = f"{store.basedir}/{path}"
-        content = get_ftp_content_and_delete(
-            path,
-            store.host,
-            store.port,
-            store.username,
-            store.password,
-            store.USE_ACTIVE_MODE,
-        )
-        self.assertEqual(data.decode(), content)
+        with MockFTPServer() as ftp_server:
+            store = FTPFilesStore(ftp_server.url("/"))
+            empty_dict = yield store.stat_file(path, info=None)
+            self.assertEqual(empty_dict, {})
+            yield store.persist_file(path, buf, info=None, meta=meta, headers=None)
+            stat = yield store.stat_file(path, info=None)
+            self.assertIn("last_modified", stat)
+            self.assertIn("checksum", stat)
+            self.assertEqual(stat["checksum"], "d113d66b2ec7258724a268bd88eef6b6")
+            path = f"{store.basedir}/{path}"
+            content = get_ftp_content_and_delete(
+                path,
+                store.host,
+                store.port,
+                store.username,
+                store.password,
+                store.USE_ACTIVE_MODE,
+            )
+        self.assertEqual(data, content)
 
 
 class ItemWithFiles(Item):

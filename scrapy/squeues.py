@@ -10,7 +10,6 @@ from typing import Union
 
 from queuelib import queue
 
-from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.request import request_from_dict
 
 
@@ -143,32 +142,3 @@ MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDisk
 MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
-
-
-# deprecated queue classes
-_subclass_warn_message = "{cls} inherits from deprecated class {old}"
-_instance_warn_message = "{cls} is deprecated"
-PickleFifoDiskQueueNonRequest = create_deprecated_class(
-    name="PickleFifoDiskQueueNonRequest",
-    new_class=_PickleFifoSerializationDiskQueue,
-    subclass_warn_message=_subclass_warn_message,
-    instance_warn_message=_instance_warn_message,
-)
-PickleLifoDiskQueueNonRequest = create_deprecated_class(
-    name="PickleLifoDiskQueueNonRequest",
-    new_class=_PickleLifoSerializationDiskQueue,
-    subclass_warn_message=_subclass_warn_message,
-    instance_warn_message=_instance_warn_message,
-)
-MarshalFifoDiskQueueNonRequest = create_deprecated_class(
-    name="MarshalFifoDiskQueueNonRequest",
-    new_class=_MarshalFifoSerializationDiskQueue,
-    subclass_warn_message=_subclass_warn_message,
-    instance_warn_message=_instance_warn_message,
-)
-MarshalLifoDiskQueueNonRequest = create_deprecated_class(
-    name="MarshalLifoDiskQueueNonRequest",
-    new_class=_MarshalLifoSerializationDiskQueue,
-    subclass_warn_message=_subclass_warn_message,
-    instance_warn_message=_instance_warn_message,
-)

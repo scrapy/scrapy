@@ -215,7 +215,7 @@ item.
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
             request = scrapy.Request(screenshot_url, callback=NO_CALLBACK)
             response = await maybe_deferred_to_future(
-                spider.crawler.engine.download(request, spider)
+                spider.crawler.engine.download(request)
             )
 
             if response.status != 200:

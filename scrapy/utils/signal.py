@@ -23,7 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 def send_catch_log(
-    signal=Any, sender=Anonymous, *arguments, **named
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny
 ) -> List[Tuple[TypingAny, TypingAny]]:
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
@@ -65,13 +68,18 @@ def send_catch_log(
     return responses
 
 
-def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
+def send_catch_log_deferred(
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny
+) -> Deferred:
     """Like send_catch_log but supports returning deferreds on signal handlers.
     Returns a deferred that gets fired once all signal handlers deferreds were
     fired.
     """
 
-    def logerror(failure, recv):
+    def logerror(failure: Failure, recv: Any) -> Failure:
         if dont_log is None or not isinstance(failure.value, dont_log):
             logger.error(
                 "Error caught on signal handler: %(receiver)s",
@@ -96,7 +104,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     return d
 
 
-def disconnect_all(signal=Any, sender=Any):
+def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:
     """Disconnect all signal handlers. Useful for cleaning up after running
     tests
     """

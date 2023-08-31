@@ -1,7 +1,7 @@
 """
 Extension for collecting core stats like items scraped and start/finish times
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from scrapy import signals
 
@@ -22,11 +22,11 @@ class CoreStats:
         return o
 
     def spider_opened(self, spider):
-        self.start_time = datetime.utcnow()
+        self.start_time = datetime.now(tz=timezone.utc)
         self.stats.set_value("start_time", self.start_time, spider=spider)
 
     def spider_closed(self, spider, reason):
-        finish_time = datetime.utcnow()
+        finish_time = datetime.now(tz=timezone.utc)
         elapsed_time = finish_time - self.start_time
         elapsed_time_seconds = elapsed_time.total_seconds()
         self.stats.set_value(

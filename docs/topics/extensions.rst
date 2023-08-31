@@ -258,6 +258,7 @@ The conditions for closing a spider can be configured through the following
 settings:
 
 * :setting:`CLOSESPIDER_TIMEOUT`
+* :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`
 * :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
@@ -279,6 +280,18 @@ An integer which specifies a number of seconds. If the spider remains open for
 more than that number of second, it will be automatically closed with the
 reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
 timeout.
+
+.. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
+
+CLOSESPIDER_TIMEOUT_NO_ITEM
+"""""""""""""""""""""""""""
+
+Default: ``0``
+
+An integer which specifies a number of seconds. If the spider has not produced
+any items in the last number of seconds, it will be closed with the reason
+``closespider_timeout_no_item``. If zero (or non set), spiders won't be closed
+regardless if it hasn't produced any items.
 
 .. setting:: CLOSESPIDER_ITEMCOUNT
 
@@ -383,3 +396,115 @@ For more info see `Debugging in Python`_.
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
 
 .. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
+
+Periodic log extension
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: PeriodicLog
+
+This extension periodically logs rich stat data as a JSON object::
+
+    2023-08-04 02:30:57 [scrapy.extensions.logstats] INFO: Crawled 976 pages (at 162 pages/min), scraped 925 items (at 161 items/min)
+    2023-08-04 02:30:57 [scrapy.extensions.periodic_log] INFO: {
+        "delta": {
+            "downloader/request_bytes": 55582,
+            "downloader/request_count": 162,
+            "downloader/request_method_count/GET": 162,
+            "downloader/response_bytes": 618133,
+            "downloader/response_count": 162,
+            "downloader/response_status_count/200": 162,
+            "item_scraped_count": 161
+        },
+        "stats": {
+            "downloader/request_bytes": 338243,
+            "downloader/request_count": 992,
+            "downloader/request_method_count/GET": 992,
+            "downloader/response_bytes": 3836736,
+            "downloader/response_count": 976,
+            "downloader/response_status_count/200": 976,
+            "item_scraped_count": 925,
+            "log_count/INFO": 21,
+            "log_count/WARNING": 1,
+            "scheduler/dequeued": 992,
+            "scheduler/dequeued/memory": 992,
+            "scheduler/enqueued": 1050,
+            "scheduler/enqueued/memory": 1050
+        },
+        "time": {
+            "elapsed": 360.008903,
+            "log_interval": 60.0,
+            "log_interval_real": 60.006694,
+            "start_time": "2023-08-03 23:24:57",
+            "utcnow": "2023-08-03 23:30:57"
+        }
+    }
+
+This extension logs the following configurable sections:
+
+-   ``"delta"`` shows how some numeric stats have changed since the last stats 
+    log message.
+    
+    The :setting:`PERIODIC_LOG_DELTA` setting determines the target stats. They 
+    must have ``int`` or ``float`` values.
+
+-   ``"stats"`` shows the current value of some stats.
+
+    The :setting:`PERIODIC_LOG_STATS` setting determines the target stats.
+
+-   ``"time"`` shows detailed timing data.
+
+    The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or 
+    not to show this section.
+
+This extension logs data at the start, then on a fixed time interval 
+configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally 
+right before the crawl ends.
+
+
+Example extension configuration:
+
+.. code-block:: python
+
+    custom_settings = {
+        "LOG_LEVEL": "INFO",
+        "PERIODIC_LOG_STATS": {
+            "include": ["downloader/", "scheduler/", "log_count/", "item_scraped_count/"],
+        },
+        "PERIODIC_LOG_DELTA": {"include": ["downloader/"]},
+        "PERIODIC_LOG_TIMING_ENABLED": True,
+        "EXTENSIONS": {
+            "scrapy.extensions.periodic_log.PeriodicLog": 0,
+        },
+    }
+
+.. setting:: PERIODIC_LOG_DELTA
+
+PERIODIC_LOG_DELTA
+""""""""""""""""""
+
+Default: ``None``
+
+* ``"PERIODIC_LOG_DELTA": True`` - show deltas for all ``int`` and ``float`` stat values.
+* ``"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}`` - show deltas for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}`` - show deltas for all stats with names not containing any configured substring.
+
+.. setting:: PERIODIC_LOG_STATS
+
+PERIODIC_LOG_STATS
+""""""""""""""""""
+
+Default: ``None``
+
+* ``"PERIODIC_LOG_STATS": True`` - show the current value of all stats.
+* ``"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}`` - show current values for stats with names containing any configured substring.
+* ``"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}`` - show current values for all stats with names not containing any configured substring.
+
+
+.. setting:: PERIODIC_LOG_TIMING_ENABLED
+
+PERIODIC_LOG_TIMING_ENABLED
+"""""""""""""""""""""""""""
+
+Default: ``False``
+
+``True`` enables logging of timing data (i.e. the ``"time"`` section).

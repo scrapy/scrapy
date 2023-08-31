@@ -1,12 +1,21 @@
+from __future__ import annotations
+
 import logging
 import os
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
 from scrapy.http import Response
 from scrapy.utils.request import referer_str
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
 
 SCRAPEDMSG = "Scraped from %(src)s" + os.linesep + "%(item)s"
 DROPPEDMSG = "Dropped: %(exception)s" + os.linesep + "%(item)s"
@@ -105,7 +114,7 @@ class LogFormatter:
         }
 
     def item_error(
-        self, item: Any, exception, response: Response, spider: Spider
+        self, item: Any, exception: BaseException, response: Response, spider: Spider
     ) -> dict:
         """Logs a message when an item causes an error while it is passing
         through the item pipeline.
@@ -161,5 +170,5 @@ class LogFormatter:
         }
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls()

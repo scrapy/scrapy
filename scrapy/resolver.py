@@ -1,3 +1,5 @@
+from typing import Any
+
 from twisted.internet import defer
 from twisted.internet.base import ThreadedResolver
 from twisted.internet.interfaces import (
@@ -11,7 +13,7 @@ from zope.interface.declarations import implementer, provider
 from scrapy.utils.datatypes import LocalCache
 
 # TODO: cache misses
-dnscache = LocalCache(10000)
+dnscache: LocalCache[str, Any] = LocalCache(10000)
 
 
 @implementer(IResolverSimple)
@@ -36,7 +38,7 @@ class CachingThreadedResolver(ThreadedResolver):
     def install_on_reactor(self):
         self.reactor.installResolver(self)
 
-    def getHostByName(self, name, timeout=None):
+    def getHostByName(self, name: str, timeout=None):
         if name in dnscache:
             return defer.succeed(dnscache[name])
         # in Twisted<=16.6, getHostByName() is always called with
@@ -110,7 +112,7 @@ class CachingHostnameResolver:
     def resolveHostName(
         self,
         resolutionReceiver,
-        hostName,
+        hostName: str,
         portNumber=0,
         addressTypes=None,
         transportSemantics="TCP",

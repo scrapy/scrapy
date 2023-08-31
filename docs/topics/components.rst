@@ -70,7 +70,7 @@ If your requirement is a minimum Scrapy version, you may use
 
 .. code-block:: python
 
-    from pkg_resources import parse_version
+    from packaging.version import parse as parse_version
 
     import scrapy
 

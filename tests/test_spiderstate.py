@@ -1,5 +1,5 @@
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from twisted.trial import unittest
@@ -16,7 +16,7 @@ class SpiderStateTest(unittest.TestCase):
         Path(jobdir).mkdir()
         try:
             spider = Spider(name="default")
-            dt = datetime.now()
+            dt = datetime.now(tz=timezone.utc)
 
             ss = SpiderState(jobdir)
             ss.spider_opened(spider)

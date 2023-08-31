@@ -1,6 +1,8 @@
 import unittest
 from unittest import mock
 
+import pytest
+
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -199,6 +201,21 @@ class BaseSettingsTest(unittest.TestCase):
         settings.update({"key_lowprio": 3}, priority=20)
         self.assertEqual(settings["key_lowprio"], 1)
 
+    @pytest.mark.xfail(
+        raises=TypeError, reason="BaseSettings.update doesn't support kwargs input"
+    )
+    def test_update_kwargs(self):
+        settings = BaseSettings({"key": 0})
+        settings.update(key=1)  # pylint: disable=unexpected-keyword-arg
+
+    @pytest.mark.xfail(
+        raises=AttributeError,
+        reason="BaseSettings.update doesn't support iterable input",
+    )
+    def test_update_iterable(self):
+        settings = BaseSettings({"key": 0})
+        settings.update([("key", 1)])
+
     def test_update_jsonstring(self):
         settings = BaseSettings({"number": 0, "dict": BaseSettings({"key": "val"})})
         settings.update('{"number": 1, "newnumber": 2}')
@@ -217,6 +234,10 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertIn("key_highprio", settings)
         del settings["key_highprio"]
         self.assertNotIn("key_highprio", settings)
+        with self.assertRaises(KeyError):
+            settings.delete("notkey")
+        with self.assertRaises(KeyError):
+            del settings["notkey"]
 
     def test_get(self):
         test_configuration = {
@@ -450,6 +471,31 @@ class SettingsTest(unittest.TestCase):
         myhandler_instance = create_instance(myhandler, None, get_crawler())
         self.assertIsInstance(myhandler_instance, FileDownloadHandler)
         self.assertTrue(hasattr(myhandler_instance, "download_request"))
+
+    def test_pop_item_with_default_value(self):
+        settings = Settings()
+
+        with self.assertRaises(KeyError):
+            settings.pop("DUMMY_CONFIG")
+
+        dummy_config_value = settings.pop("DUMMY_CONFIG", "dummy_value")
+        self.assertEqual(dummy_config_value, "dummy_value")
+
+    def test_pop_item_with_immutable_settings(self):
+        settings = Settings(
+            {"DUMMY_CONFIG": "dummy_value", "OTHER_DUMMY_CONFIG": "other_dummy_value"}
+        )
+
+        self.assertEqual(settings.pop("DUMMY_CONFIG"), "dummy_value")
+
+        settings.freeze()
+
+        with self.assertRaises(TypeError) as error:
+            settings.pop("OTHER_DUMMY_CONFIG")
+
+        self.assertEqual(
+            str(error.exception), "Trying to modify an immutable Settings object"
+        )
 
 
 if __name__ == "__main__":

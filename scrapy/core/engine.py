@@ -5,7 +5,6 @@ For more information see docs/topics/architecture.rst
 
 """
 import logging
-import warnings
 from time import time
 from typing import (
     TYPE_CHECKING,
@@ -14,7 +13,6 @@ from typing import (
     Generator,
     Iterable,
     Iterator,
-    List,
     Optional,
     Set,
     Type,
@@ -29,7 +27,7 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import CloseSpider, DontCloseSpider, ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, DontCloseSpider
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import BaseSettings, Settings
@@ -213,7 +211,7 @@ class ExecutionEngine:
         if request is None:
             return None
 
-        d = self._download(request, self.spider)
+        d = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
         d.addErrback(
             lambda f: logger.info(
@@ -266,13 +264,7 @@ class ExecutionEngine:
         )
         return d
 
-    def spider_is_idle(self, spider: Optional[Spider] = None) -> bool:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to ExecutionEngine.spider_is_idle is deprecated",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+    def spider_is_idle(self) -> bool:
         if self.slot is None:
             raise RuntimeError("Engine slot not assigned")
         if not self.scraper.slot.is_idle():  # type: ignore[union-attr]
@@ -285,18 +277,8 @@ class ExecutionEngine:
             return False
         return True
 
-    def crawl(self, request: Request, spider: Optional[Spider] = None) -> None:
+    def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to ExecutionEngine.crawl is deprecated",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            if spider is not self.spider:
-                raise RuntimeError(
-                    f"The spider {spider.name!r} does not match the open spider"
-                )
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         self._schedule_request(request, self.spider)
@@ -311,38 +293,23 @@ class ExecutionEngine:
                 signals.request_dropped, request=request, spider=spider
             )
 
-    def download(self, request: Request, spider: Optional[Spider] = None) -> Deferred:
+    def download(self, request: Request) -> Deferred:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to ExecutionEngine.download is deprecated",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            if spider is not self.spider:
-                logger.warning(
-                    "The spider '%s' does not match the open spider", spider.name
-                )
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request, spider).addBoth(
-            self._downloaded, request, spider
-        )
+        return self._download(request).addBoth(self._downloaded, request)
 
     def _downloaded(
-        self, result: Union[Response, Request], request: Request, spider: Spider
+        self, result: Union[Response, Request], request: Request
     ) -> Union[Deferred, Response]:
         assert self.slot is not None  # typing
         self.slot.remove_request(request)
-        return self.download(result, spider) if isinstance(result, Request) else result
+        return self.download(result) if isinstance(result, Request) else result
 
-    def _download(self, request: Request, spider: Optional[Spider]) -> Deferred:
+    def _download(self, request: Request) -> Deferred:
         assert self.slot is not None  # typing
 
         self.slot.add_request(request)
-
-        if spider is None:
-            spider = self.spider
 
         def _on_success(result: Union[Response, Request]) -> Union[Response, Request]:
             if not isinstance(result, (Response, Request)):
@@ -352,15 +319,17 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
-                assert spider is not None
-                logkws = self.logformatter.crawled(result.request, result, spider)
+                assert self.spider is not None
+                logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
-                    logger.log(*logformatter_adapter(logkws), extra={"spider": spider})
+                    logger.log(
+                        *logformatter_adapter(logkws), extra={"spider": self.spider}
+                    )
                 self.signals.send_catch_log(
                     signal=signals.response_received,
                     response=result,
                     request=result.request,
-                    spider=spider,
+                    spider=self.spider,
                 )
             return result
 
@@ -369,8 +338,8 @@ class ExecutionEngine:
             self.slot.nextcall.schedule()
             return _
 
-        assert spider is not None
-        dwld = self.downloader.fetch(request, spider)
+        assert self.spider is not None
+        dwld = self.downloader.fetch(request, self.spider)
         dwld.addCallbacks(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
@@ -485,31 +454,3 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
 
         return dfd
-
-    @property
-    def open_spiders(self) -> List[Spider]:
-        warnings.warn(
-            "ExecutionEngine.open_spiders is deprecated, please use ExecutionEngine.spider instead",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return [self.spider] if self.spider is not None else []
-
-    def has_capacity(self) -> bool:
-        warnings.warn(
-            "ExecutionEngine.has_capacity is deprecated",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return not bool(self.slot)
-
-    def schedule(self, request: Request, spider: Spider) -> None:
-        warnings.warn(
-            "ExecutionEngine.schedule is deprecated, please use "
-            "ExecutionEngine.crawl or ExecutionEngine.download instead",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        if self.slot is None:
-            raise RuntimeError("Engine slot not assigned")
-        self._schedule_request(request, spider)

@@ -37,7 +37,7 @@ class HttpCacheMiddleware:
         ConnectionLost,
         TCPTimedOutError,
         ResponseFailed,
-        IOError,
+        OSError,
     )
 
     def __init__(self, settings: Settings, stats: StatsCollector) -> None:

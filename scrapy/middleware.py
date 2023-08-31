@@ -1,7 +1,21 @@
+from __future__ import annotations
+
 import logging
 import pprint
 from collections import defaultdict, deque
-from typing import Any, Callable, Deque, Dict, Iterable, List, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 from twisted.internet.defer import Deferred
 
@@ -10,6 +24,13 @@ from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
 from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import create_instance, load_object
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +55,9 @@ class MiddlewareManager:
         raise NotImplementedError
 
     @classmethod
-    def from_settings(cls, settings: Settings, crawler=None):
+    def from_settings(
+        cls, settings: Settings, crawler: Optional[Crawler] = None
+    ) -> Self:
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []
@@ -46,10 +69,9 @@ class MiddlewareManager:
                 enabled.append(clspath)
             except NotConfigured as e:
                 if e.args:
-                    clsname = clspath.split(".")[-1]
                     logger.warning(
-                        "Disabled %(clsname)s: %(eargs)s",
-                        {"clsname": clsname, "eargs": e.args[0]},
+                        "Disabled %(clspath)s: %(eargs)s",
+                        {"clspath": clspath, "eargs": e.args[0]},
                         extra={"crawler": crawler},
                     )
 
@@ -64,7 +86,7 @@ class MiddlewareManager:
         return cls(*middlewares)
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls.from_settings(crawler.settings, crawler)
 
     def _add_middleware(self, mw: Any) -> None:

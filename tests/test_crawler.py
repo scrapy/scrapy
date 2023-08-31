@@ -1,15 +1,14 @@
 import logging
+import os
 import platform
 import subprocess
 import sys
 import warnings
 from pathlib import Path
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from pytest import mark, raises
-from twisted import version as twisted_version
 from twisted.internet import defer
-from twisted.python.versions import Version
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
 
@@ -21,10 +20,9 @@ from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
-from scrapy.utils.misc import load_object
 from scrapy.utils.spider import DefaultSpider
-from scrapy.utils.test import get_crawler, get_testenv
-from tests.mockserver import MockServer
+from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer, get_mockserver_env
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -183,16 +181,6 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
         runner = CrawlerRunner()
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
-    def test_deprecated_attribute_spiders(self):
-        with warnings.catch_warnings(record=True) as w:
-            runner = CrawlerRunner(Settings())
-            spiders = runner.spiders
-            self.assertEqual(len(w), 1)
-            self.assertIn("CrawlerRunner.spiders", str(w[0].message))
-            self.assertIn("CrawlerRunner.spider_loader", str(w[0].message))
-            sl_cls = load_object(runner.settings["SPIDER_LOADER_CLASS"])
-            self.assertIsInstance(spiders, sl_cls)
-
 
 class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_dict(self):
@@ -229,14 +217,14 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
     def test_crawler_runner_bootstrap_successful(self):
         runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner.bootstrap_failed, False)
+        self.assertFalse(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_successful_for_several(self):
         runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
-        self.assertEqual(runner.bootstrap_failed, False)
+        self.assertFalse(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_failed(self):
@@ -249,7 +237,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
         else:
             self.fail("Exception should be raised from spider")
 
-        self.assertEqual(runner.bootstrap_failed, True)
+        self.assertTrue(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_bootstrap_failed_for_several(self):
@@ -264,7 +252,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         yield runner.crawl(NoRequestsSpider)
 
-        self.assertEqual(runner.bootstrap_failed, True)
+        self.assertTrue(runner.bootstrap_failed)
 
     @defer.inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
@@ -289,12 +277,16 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 class ScriptRunnerMixin:
     script_dir: Path
+    cwd = os.getcwd()
 
     def run_script(self, script_name: str, *script_args):
         script_path = self.script_dir / script_name
         args = [sys.executable, str(script_path)] + list(script_args)
         p = subprocess.Popen(
-            args, env=get_testenv(), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            args,
+            env=get_mockserver_env(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         stdout, stderr = p.communicate()
         return stderr.decode("utf-8")
@@ -461,17 +453,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             log,
         )
 
-    @mark.skipif(
-        sys.implementation.name == "pypy",
-        reason="uvloop does not support pypy properly",
-    )
-    @mark.skipif(
-        platform.system() == "Windows", reason="uvloop does not support Windows"
-    )
-    @mark.skipif(
-        twisted_version == Version("twisted", 21, 2, 0),
-        reason="https://twistedmatrix.com/trac/ticket/10106",
-    )
+    @mark.requires_uvloop
     def test_custom_loop_asyncio(self):
         log = self.run_script("asyncio_custom_loop.py")
         self.assertIn("Spider closed (finished)", log)
@@ -480,17 +462,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         )
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
-    @mark.skipif(
-        sys.implementation.name == "pypy",
-        reason="uvloop does not support pypy properly",
-    )
-    @mark.skipif(
-        platform.system() == "Windows", reason="uvloop does not support Windows"
-    )
-    @mark.skipif(
-        twisted_version == Version("twisted", 21, 2, 0),
-        reason="https://twistedmatrix.com/trac/ticket/10106",
-    )
+    @mark.requires_uvloop
     def test_custom_loop_asyncio_deferred_signal(self):
         log = self.run_script("asyncio_deferred_signal.py", "uvloop.Loop")
         self.assertIn("Spider closed (finished)", log)
@@ -500,17 +472,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
         self.assertIn("async pipeline opened!", log)
 
-    @mark.skipif(
-        sys.implementation.name == "pypy",
-        reason="uvloop does not support pypy properly",
-    )
-    @mark.skipif(
-        platform.system() == "Windows", reason="uvloop does not support Windows"
-    )
-    @mark.skipif(
-        twisted_version == Version("twisted", 21, 2, 0),
-        reason="https://twistedmatrix.com/trac/ticket/10106",
-    )
+    @mark.requires_uvloop
     def test_asyncio_enabled_reactor_same_loop(self):
         log = self.run_script("asyncio_enabled_reactor_same_loop.py")
         self.assertIn("Spider closed (finished)", log)
@@ -519,17 +481,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         )
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
-    @mark.skipif(
-        sys.implementation.name == "pypy",
-        reason="uvloop does not support pypy properly",
-    )
-    @mark.skipif(
-        platform.system() == "Windows", reason="uvloop does not support Windows"
-    )
-    @mark.skipif(
-        twisted_version == Version("twisted", 21, 2, 0),
-        reason="https://twistedmatrix.com/trac/ticket/10106",
-    )
+    @mark.requires_uvloop
     def test_asyncio_enabled_reactor_different_loop(self):
         log = self.run_script("asyncio_enabled_reactor_different_loop.py")
         self.assertNotIn("Spider closed (finished)", log)

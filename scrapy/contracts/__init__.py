@@ -2,7 +2,8 @@ import re
 import sys
 from functools import wraps
 from inspect import getmembers
-from typing import Dict
+from types import CoroutineType
+from typing import AsyncGenerator, Dict
 from unittest import TestCase
 
 from scrapy.http import Request
@@ -37,7 +38,10 @@ class Contract:
                 else:
                     results.addSuccess(self.testcase_pre)
                 finally:
-                    return list(iterate_spider_output(cb(response, **cb_kwargs)))
+                    cb_result = cb(response, **cb_kwargs)
+                    if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                        raise TypeError("Contracts don't support async callbacks")
+                    return list(iterate_spider_output(cb_result))
 
             request.callback = wrapper
 
@@ -49,7 +53,10 @@ class Contract:
 
             @wraps(cb)
             def wrapper(response, **cb_kwargs):
-                output = list(iterate_spider_output(cb(response, **cb_kwargs)))
+                cb_result = cb(response, **cb_kwargs)
+                if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                    raise TypeError("Contracts don't support async callbacks")
+                output = list(iterate_spider_output(cb_result))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)

@@ -1,4 +1,4 @@
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import OpenSSL._util as pyOpenSSLutil
 import OpenSSL.SSL
@@ -58,9 +58,6 @@ def get_temp_key_info(ssl_object: Any) -> Optional[str]:
 
 
 def get_openssl_version() -> str:
-    # https://github.com/python/typeshed/issues/10024
-    system_openssl_bytes = cast(
-        bytes, OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)
-    )
+    system_openssl_bytes = OpenSSL.SSL.SSLeay_version(OpenSSL.SSL.SSLEAY_VERSION)
     system_openssl = system_openssl_bytes.decode("ascii", errors="replace")
     return f"{OpenSSL.version.__version__} ({system_openssl})"
