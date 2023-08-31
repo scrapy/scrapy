@@ -154,7 +154,7 @@ class Downloader:
         self.signals.send_catch_log(
             signal=signals.request_reached_downloader, request=request, spider=spider
         )
-        deferred = Deferred().addBoth(_deactivate)
+        deferred: Deferred = Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
         return deferred
