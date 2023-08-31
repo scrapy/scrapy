@@ -9,21 +9,17 @@ from time import time
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import defer, protocol, ssl
-from twisted.internet.defer import CancelledError, Deferred, fail, maybeDeferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
-from twisted.web._newclient import HTTP11ClientProtocol as TxHTTP11ClientProtocol
-from twisted.web._newclient import HTTPClientParser as TxHTTPClientParser
-from twisted.web._newclient import (
-    RequestGenerationFailed,
-    RequestNotSent,
-    TransportProxyProducer,
+from twisted.web._newclient import HTTPClientParser
+from twisted.web.client import (
+    URI,
+    Agent,
+    HTTPConnectionPool,
+    ResponseDone,
+    ResponseFailed,
 )
-from twisted.web.client import URI, Agent
-from twisted.web.client import HTTPConnectionPool as TxHTTPConnectionPool
-from twisted.web.client import ResponseDone, ResponseFailed
-from twisted.web.client import _HTTP11ClientFactory as TxHTTP11ClientFactory
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
@@ -40,67 +36,9 @@ from scrapy.utils.python import to_bytes, to_unicode
 logger = logging.getLogger(__name__)
 
 
-class _HTTPClientParser(TxHTTPClientParser):
-    # Increase the maximum length for (header) lines, which is 2**14 by
-    # default as of Twisted 22.10.0.
-    MAX_LENGTH = 2**16
-
-
-# Use _HTTPClientParser.
-class _HTTP11ClientProtocol(TxHTTP11ClientProtocol):
-    def request(self, request):
-        if self._state != "QUIESCENT":
-            return fail(RequestNotSent())
-
-        self._state = "TRANSMITTING"
-        _requestDeferred = maybeDeferred(request.writeTo, self.transport)
-
-        def cancelRequest(ign):
-            if self._state in ("TRANSMITTING", "TRANSMITTING_AFTER_RECEIVING_RESPONSE"):
-                _requestDeferred.cancel()
-            else:
-                self.transport.abortConnection()
-                self._disconnectParser(Failure(CancelledError()))
-
-        self._finishedRequest = Deferred(cancelRequest)
-
-        self._currentRequest = request
-
-        self._transportProxy = TransportProxyProducer(self.transport)
-        self._parser = _HTTPClientParser(request, self._finishResponse)
-        self._parser.makeConnection(self._transportProxy)
-        self._responseDeferred = self._parser._responseDeferred
-
-        def cbRequestWritten(ignored):
-            if self._state == "TRANSMITTING":
-                self._state = "WAITING"
-                self._responseDeferred.chainDeferred(self._finishedRequest)
-
-        def ebRequestWriting(err):
-            if self._state == "TRANSMITTING":
-                self._state = "GENERATION_FAILED"
-                self.transport.abortConnection()
-                self._finishedRequest.errback(Failure(RequestGenerationFailed([err])))
-            else:
-                self._log.failure(
-                    "Error writing request, but not in valid state "
-                    "to finalize request: {state}",
-                    failure=err,
-                    state=self._state,
-                )
-
-        _requestDeferred.addCallbacks(cbRequestWritten, ebRequestWriting)
-
-        return self._finishedRequest
-
-
-class _HTTP11ClientFactory(TxHTTP11ClientFactory):
-    def buildProtocol(self, addr):
-        return _HTTP11ClientProtocol(self._quiescentCallback)
-
-
-class _HTTPConnectionPool(TxHTTPConnectionPool):
-    _factory = _HTTP11ClientFactory
+# Monkey-patch to increase the maximum length for (header) lines, which is
+# 2**14 by default as of Twisted 22.10.0.
+HTTPClientParser.MAX_LENGTH = max(2**16, HTTPClientParser.MAX_LENGTH)
 
 
 class HTTP11DownloadHandler:
@@ -111,7 +49,7 @@ class HTTP11DownloadHandler:
 
         from twisted.internet import reactor
 
-        self._pool = _HTTPConnectionPool(reactor, persistent=True)
+        self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._pool.maxPersistentPerHost = settings.getint(
             "CONCURRENT_REQUESTS_PER_DOMAIN"
         )
