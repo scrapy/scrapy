@@ -3,6 +3,23 @@
 Release notes
 =============
 
+.. _release-2.11.0:
+
+Scrapy 2.11.0 (to be released)
+------------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method now
+    requires the response to be in a valid JSON encoding (UTF-8, UTF-16, or
+    UTF-32).
+
+    If you need to deal with JSON documents in an invalid encoding, use
+    ``json.loads(response.text)`` instead.
+
+    (:issue:`5968`)
+
 .. _release-2.10.0:
 
 Scrapy 2.10.0 (2023-08-04)
