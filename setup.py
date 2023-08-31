@@ -6,7 +6,8 @@ version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
 
 
 install_requires = [
-    "Twisted>=18.9.0",
+    # 23.8.0 incompatibility: https://github.com/scrapy/scrapy/issues/6024
+    "Twisted>=18.9.0,<23.8.0",
     "cryptography>=36.0.0",
     "cssselect>=0.9.1",
     "itemloaders>=1.0.1",
