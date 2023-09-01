@@ -221,7 +221,11 @@ class Scraper:
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(
-        self, _failure: Failure, request: Request, response: Response, spider: Spider
+        self,
+        _failure: Failure,
+        request: Request,
+        response: Union[Response, Failure],
+        spider: Spider,
     ) -> None:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
@@ -248,7 +252,7 @@ class Scraper:
         self,
         result: Union[Iterable, AsyncIterable],
         request: Request,
-        response: Response,
+        response: Union[Response, Failure],
         spider: Spider,
     ) -> Deferred:
         if not result:

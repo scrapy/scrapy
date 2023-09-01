@@ -220,7 +220,12 @@ class ExecutionEngine:
                 extra={"spider": self.spider},
             )
         )
-        d.addBoth(lambda _: cast(Slot, self.slot).remove_request(request))  # type: ignore[arg-type]
+
+        def _remove_request(_: Any) -> None:
+            assert self.slot
+            self.slot.remove_request(request)
+
+        d.addBoth(_remove_request)
         d.addErrback(
             lambda f: logger.info(
                 "Error while removing request from slot",
@@ -300,8 +305,8 @@ class ExecutionEngine:
         return self._download(request).addBoth(self._downloaded, request)
 
     def _downloaded(
-        self, result: Union[Response, Request], request: Request
-    ) -> Union[Deferred, Response]:
+        self, result: Union[Response, Request, Failure], request: Request
+    ) -> Union[Deferred, Response, Failure]:
         assert self.slot is not None  # typing
         self.slot.remove_request(request)
         return self.download(result) if isinstance(result, Request) else result

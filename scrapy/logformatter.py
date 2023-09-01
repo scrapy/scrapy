@@ -130,7 +130,11 @@ class LogFormatter:
         }
 
     def spider_error(
-        self, failure: Failure, request: Request, response: Response, spider: Spider
+        self,
+        failure: Failure,
+        request: Request,
+        response: Union[Response, Failure],
+        spider: Spider,
     ) -> dict:
         """Logs an error message from a spider.
 
