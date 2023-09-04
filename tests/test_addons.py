@@ -1,6 +1,7 @@
 import itertools
 import unittest
 from typing import Any, Dict
+from unittest.mock import patch
 
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
@@ -156,3 +157,22 @@ class AddonManagerTest(unittest.TestCase):
             crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"], "AddonHandler"
         )
         self.assertEqual(crawler.settings.get(FALLBACK_SETTING), "UserHandler")
+
+    def test_logging_message(self):
+        class LoggedAddon:
+            def update_settings(self, settings):
+                pass
+
+        with patch("scrapy.addons.logger") as logger_mock:
+            with patch("scrapy.addons.create_instance") as create_instance_mock:
+                settings_dict = {
+                    "ADDONS": {LoggedAddon: 1},
+                }
+                addon = LoggedAddon()
+                create_instance_mock.return_value = addon
+                crawler = get_crawler(settings_dict=settings_dict)
+                logger_mock.info.assert_called_once_with(
+                    "Enabled addons:\n%(addons)s",
+                    {"addons": [addon]},
+                    extra={"crawler": crawler},
+                )
