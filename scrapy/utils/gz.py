@@ -1,39 +1,32 @@
 import struct
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-
 from gzip import GzipFile
+from io import BytesIO
+from typing import List
+
+from scrapy.http import Response
 
 
-def gunzip(data):
+def gunzip(data: bytes) -> bytes:
     """Gunzip the given data and return as much data as possible.
 
     This is resilient to CRC checksum errors.
     """
     f = GzipFile(fileobj=BytesIO(data))
-    output = b''
-    chunk = b'.'
+    output_list: List[bytes] = []
+    chunk = b"."
     while chunk:
         try:
-            chunk = f.read(8196)
-            output += chunk
-        except (IOError, EOFError, struct.error):
+            chunk = f.read1(8196)
+            output_list.append(chunk)
+        except (OSError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
-            # some pages are quite small so output is '' and f.extrabuf
-            # contains the whole page content
-            if output or f.extrabuf:
-                output += f.extrabuf
+            # some pages are quite small so output_list is empty
+            if output_list:
                 break
-            else:
-                raise
-    return output
+            raise
+    return b"".join(output_list)
 
 
-def is_gzipped(response):
-    """Return True if the response is gzipped, or False otherwise"""
-    ctype = response.headers.get('Content-Type', b'')
-    return ctype in (b'application/x-gzip', b'application/gzip')
+def gzip_magic_number(response: Response) -> bool:
+    return response.body[:3] == b"\x1f\x8b\x08"

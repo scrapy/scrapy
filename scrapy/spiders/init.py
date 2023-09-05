@@ -6,14 +6,14 @@ class InitSpider(Spider):
     """Base Spider with initialization facilities"""
 
     def start_requests(self):
-        self._postinit_reqs = super(InitSpider, self).start_requests()
+        self._postinit_reqs = super().start_requests()
         return iterate_spider_output(self.init_request())
 
     def initialized(self, response=None):
         """This method must be set as the callback of your last initialization
         request. See self.init_request() docstring for more info.
         """
-        return self.__dict__.pop('_postinit_reqs')
+        return self.__dict__.pop("_postinit_reqs")
 
     def init_request(self):
         """This function should return one initialization request, with the
@@ -29,4 +29,3 @@ class InitSpider(Spider):
         spider
         """
         return self.initialized()
-

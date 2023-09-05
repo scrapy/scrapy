@@ -1,50 +1,62 @@
-from __future__ import absolute_import
-import sys
+from __future__ import annotations
+
 import os
+import sys
+from typing import Iterable, Optional, Tuple, cast
 
-from twisted.internet import reactor, defer, protocol
+from twisted.internet.defer import Deferred
+from twisted.internet.error import ProcessTerminated
+from twisted.internet.protocol import ProcessProtocol
+from twisted.python.failure import Failure
 
 
-class ProcessTest(object):
-
+class ProcessTest:
     command = None
-    prefix = [sys.executable, '-m', 'scrapy.cmdline']
+    prefix = [sys.executable, "-m", "scrapy.cmdline"]
     cwd = os.getcwd()  # trial chdirs to temp dir
 
-    def execute(self, args, check_code=True, settings=None):
+    def execute(
+        self,
+        args: Iterable[str],
+        check_code: bool = True,
+        settings: Optional[str] = None,
+    ) -> Deferred:
+        from twisted.internet import reactor
+
         env = os.environ.copy()
         if settings is not None:
-            env['SCRAPY_SETTINGS_MODULE'] = settings
+            env["SCRAPY_SETTINGS_MODULE"] = settings
         cmd = self.prefix + [self.command] + list(args)
         pp = TestProcessProtocol()
         pp.deferred.addBoth(self._process_finished, cmd, check_code)
         reactor.spawnProcess(pp, cmd[0], cmd, env=env, path=self.cwd)
         return pp.deferred
 
-    def _process_finished(self, pp, cmd, check_code):
+    def _process_finished(
+        self, pp: TestProcessProtocol, cmd: str, check_code: bool
+    ) -> Tuple[int, bytes, bytes]:
         if pp.exitcode and check_code:
-            msg = "process %s exit with code %d" % (cmd, pp.exitcode)
-            msg += "\n>>> stdout <<<\n%s" % pp.out
+            msg = f"process {cmd} exit with code {pp.exitcode}"
+            msg += f"\n>>> stdout <<<\n{pp.out.decode()}"
             msg += "\n"
-            msg += "\n>>> stderr <<<\n%s" % pp.err
+            msg += f"\n>>> stderr <<<\n{pp.err.decode()}"
             raise RuntimeError(msg)
-        return pp.exitcode, pp.out, pp.err
+        return cast(int, pp.exitcode), pp.out, pp.err
 
 
-class TestProcessProtocol(protocol.ProcessProtocol):
+class TestProcessProtocol(ProcessProtocol):
+    def __init__(self) -> None:
+        self.deferred: Deferred = Deferred()
+        self.out: bytes = b""
+        self.err: bytes = b""
+        self.exitcode: Optional[int] = None
 
-    def __init__(self):
-        self.deferred = defer.Deferred()
-        self.out = b''
-        self.err = b''
-        self.exitcode = None
-
-    def outReceived(self, data):
+    def outReceived(self, data: bytes) -> None:
         self.out += data
 
-    def errReceived(self, data):
+    def errReceived(self, data: bytes) -> None:
         self.err += data
 
-    def processEnded(self, status):
-        self.exitcode = status.value.exitCode
+    def processEnded(self, status: Failure) -> None:
+        self.exitcode = cast(ProcessTerminated, status.value).exitCode
         self.deferred.callback(self)

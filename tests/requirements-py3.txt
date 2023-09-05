@@ -1,8 +1,0 @@
-pytest==2.7.3
-pytest-twisted
-pytest-cov
-testfixtures
-jmespath
-# optional for shell wrapper tests
-bpython
-ipython

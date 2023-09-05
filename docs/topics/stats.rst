@@ -30,10 +30,11 @@ Common Stats Collector uses
 ===========================
 
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute. Here is an example of an extension that access stats::
+attribute. Here is an example of an extension that access stats:
 
-    class ExtensionThatAccessStats(object):
+.. code-block:: python
 
+    class ExtensionThatAccessStats:
         def __init__(self, stats):
             self.stats = stats
 
@@ -41,31 +42,43 @@ attribute. Here is an example of an extension that access stats::
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
-Set stat value::
+Set stat value:
 
-    stats.set_value('hostname', socket.gethostname())
+.. code-block:: python
 
-Increment stat value::
+    stats.set_value("hostname", socket.gethostname())
 
-    stats.inc_value('pages_crawled')
+Increment stat value:
 
-Set stat value only if greater than previous::
+.. code-block:: python
 
-    stats.max_value('max_items_scraped', value)
+    stats.inc_value("custom_count")
 
-Set stat value only if lower than previous::
+Set stat value only if greater than previous:
 
-    stats.min_value('min_free_memory_percent', value)
+.. code-block:: python
 
-Get stat value::
+    stats.max_value("max_items_scraped", value)
 
-    >>> stats.get_value('pages_crawled')
-    8
+Set stat value only if lower than previous:
 
-Get all stats::
+.. code-block:: python
+
+    stats.min_value("min_free_memory_percent", value)
+
+Get stat value:
+
+.. code-block:: pycon
+
+    >>> stats.get_value("custom_count")
+    1
+
+Get all stats:
+
+.. code-block:: pycon
 
     >>> stats.get_stats()
-    {'pages_crawled': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+    {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 Available Stats Collectors
 ==========================
@@ -75,8 +88,7 @@ available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
 default Stats Collector used is the :class:`MemoryStatsCollector`. 
 
-.. module:: scrapy.statscollectors
-   :synopsis: Stats Collectors
+.. currentmodule:: scrapy.statscollectors
 
 MemoryStatsCollector
 --------------------

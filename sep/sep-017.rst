@@ -13,7 +13,7 @@ SEP-017: Spider Contracts
 The motivation for Spider Contracts is to build a lightweight mechanism for
 testing your spiders, and be able to run the tests quickly without having to
 wait for all the spider to run. It's partially based on the
-[http://en.wikipedia.org/wiki/Design_by_contract Design by contract]  approach
+[https://en.wikipedia.org/wiki/Design_by_contract Design by contract]  approach
 (hence its name) where you define certain conditions that spider callbacks must
 met, and you give example testing pages.
 
@@ -35,16 +35,15 @@ gExample URL for simple callback
 The ``parse_product`` callback must return items containing the fields given in
 ``@scrapes``.
 
-::
+.. code-block:: python
 
    #!python
    class ProductSpider(BaseSpider):
-
        def parse_product(self, response):
            """
            @url http://www.example.com/store/product.php?id=123
            @scrapes name, price, description
-           """"
+           """
 
 gChained callbacks
 ------------------
@@ -55,11 +54,10 @@ other for scraping user profile info.
 The contracts assert that the first callback returns a Request and the second
 one scrape ``user, name, email`` fields.
 
-::
+.. code-block:: python
 
    #!python
    class UserProfileSpider(BaseSpider):
-
        def parse_login_page(self, response):
            """
            @url http://www.example.com/login.php
@@ -71,7 +69,7 @@ one scrape ``user, name, email`` fields.
            """
            @after parse_login_page
            @scrapes user, name, email
-           """"
+           """
            # ...
 
 Tags reference

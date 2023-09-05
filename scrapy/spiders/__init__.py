@@ -3,15 +3,24 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+from __future__ import annotations
+
 import logging
-import warnings
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Union, cast
+
+from twisted.internet.defer import Deferred
 
 from scrapy import signals
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 class Spider(object_ref):
@@ -19,24 +28,24 @@ class Spider(object_ref):
     class.
     """
 
-    name = None
-    custom_settings = None
+    name: str
+    custom_settings: Optional[dict] = None
 
-    def __init__(self, name=None, **kwargs):
+    def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
             self.name = name
-        elif not getattr(self, 'name', None):
-            raise ValueError("%s must have a name" % type(self).__name__)
+        elif not getattr(self, "name", None):
+            raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
-        if not hasattr(self, 'start_urls'):
-            self.start_urls = []
+        if not hasattr(self, "start_urls"):
+            self.start_urls: List[str] = []
 
     @property
-    def logger(self):
+    def logger(self) -> logging.LoggerAdapter:
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {'spider': self})
+        return logging.LoggerAdapter(logger, {"spider": self})
 
-    def log(self, message, level=logging.DEBUG, **kw):
+    def log(self, message: Any, level: int = logging.DEBUG, **kw: Any) -> None:
         """Log the given message at the given log level
 
         This helper wraps a log call to the logger within the spider, but you
@@ -46,71 +55,53 @@ class Spider(object_ref):
         self.logger.log(level, message, **kw)
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = cls(*args, **kwargs)
         spider._set_crawler(crawler)
         return spider
 
-    def set_crawler(self, crawler):
-        warnings.warn("set_crawler is deprecated, instantiate and bound the "
-                      "spider to this crawler with from_crawler method "
-                      "instead.",
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        assert not hasattr(self, 'crawler'), "Spider already bounded to a " \
-                                             "crawler"
-        self._set_crawler(crawler)
-
-    def _set_crawler(self, crawler):
+    def _set_crawler(self, crawler: Crawler) -> None:
         self.crawler = crawler
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    def start_requests(self):
+    def start_requests(self) -> Iterable[Request]:
+        if not self.start_urls and hasattr(self, "start_url"):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)"
+            )
         for url in self.start_urls:
-            yield self.make_requests_from_url(url)
+            yield Request(url, dont_filter=True)
 
-    def make_requests_from_url(self, url):
-        return Request(url, dont_filter=True)
+    def _parse(self, response: Response, **kwargs: Any) -> Any:
+        return self.parse(response, **kwargs)
 
-    def parse(self, response):
-        raise NotImplementedError
+    def parse(self, response: Response, **kwargs: Any) -> Any:
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.parse callback is not defined"
+        )
 
-    def update_settings(self, settings):
-        settings.setdict(self.custom_settings or {}, priority='spider')
+    def update_settings(self, settings: BaseSettings) -> None:
+        settings.setdict(self.custom_settings or {}, priority="spider")
 
     @classmethod
-    def handles_request(cls, request):
+    def handles_request(cls, request: Request) -> bool:
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider, reason):
-        closed = getattr(spider, 'closed', None)
+    def close(spider: Spider, reason: str) -> Union[Deferred, None]:
+        closed = getattr(spider, "closed", None)
         if callable(closed):
-            return closed(reason)
+            return cast(Union[Deferred, None], closed(reason))
+        return None
 
-    def __str__(self):
-        return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
 
-    __repr__ = __str__
-
-
-BaseSpider = create_deprecated_class('BaseSpider', Spider)
-
-
-class ObsoleteClass(object):
-    def __init__(self, message):
-        self.message = message
-
-    def __getattr__(self, name):
-        raise AttributeError(self.message)
-
-spiders = ObsoleteClass(
-    '"from scrapy.spider import spiders" no longer works - use '
-    '"from scrapy.spiderloader import SpiderLoader" and instantiate '
-    'it with your project settings"'
-)
 
 # Top-level imports
 from scrapy.spiders.crawl import CrawlSpider, Rule
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.spiders.feed import CSVFeedSpider, XMLFeedSpider
 from scrapy.spiders.sitemap import SitemapSpider

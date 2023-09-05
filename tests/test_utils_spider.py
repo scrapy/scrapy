@@ -1,25 +1,23 @@
 import unittest
+
+from scrapy import Spider
 from scrapy.http import Request
-from scrapy.item import BaseItem
-from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
-
-from scrapy.spiders import CrawlSpider
+from scrapy.item import Item
+from scrapy.utils.spider import iter_spider_classes, iterate_spider_output
 
 
-class MyBaseSpider(CrawlSpider):
-    pass # abstract spider
+class MySpider1(Spider):
+    name = "myspider1"
 
-class MySpider1(MyBaseSpider):
-    name = 'myspider1'
 
-class MySpider2(MyBaseSpider):
-    name = 'myspider2'
+class MySpider2(Spider):
+    name = "myspider2"
+
 
 class UtilsSpidersTestCase(unittest.TestCase):
-
     def test_iterate_spider_output(self):
-        i = BaseItem()
-        r = Request('http://scrapytest.org')
+        i = Item()
+        r = Request("http://scrapytest.org")
         o = object()
 
         self.assertEqual(list(iterate_spider_output(i)), [i])
@@ -29,9 +27,10 @@ class UtilsSpidersTestCase(unittest.TestCase):
 
     def test_iter_spider_classes(self):
         import tests.test_utils_spider
+
         it = iter_spider_classes(tests.test_utils_spider)
         self.assertEqual(set(it), {MySpider1, MySpider2})
 
+
 if __name__ == "__main__":
     unittest.main()
-

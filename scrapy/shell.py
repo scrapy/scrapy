@@ -3,48 +3,44 @@
 See documentation in docs/topics/shell.rst
 
 """
-from __future__ import print_function
-
 import os
 import signal
-import warnings
 
-from twisted.internet import reactor, threads, defer
+from itemadapter import is_item
+from twisted.internet import defer, threads
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.item import BaseItem
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.console import start_python_console
-from scrapy.utils.misc import load_object
-from scrapy.utils.response import open_in_browser
 from scrapy.utils.conf import get_config
-from scrapy.utils.console import DEFAULT_PYTHON_SHELLS
+from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
+from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.misc import load_object
+from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
+from scrapy.utils.response import open_in_browser
 
 
-class Shell(object):
-
-    relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
-                        Settings)
+class Shell:
+    relevant_classes = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
         self.update_vars = update_vars or (lambda x: None)
-        self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
+        self.item_class = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
         self.spider = None
         self.inthread = not threadable.isInIOThread()
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None):
+    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider)
+            self.fetch(url, spider, redirect=redirect)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -65,25 +61,30 @@ class Shell(object):
             shell = python
             """
             cfg = get_config()
-            section, option = 'settings', 'shell'
-            env = os.environ.get('SCRAPY_PYTHON_SHELL')
+            section, option = "settings", "shell"
+            env = os.environ.get("SCRAPY_PYTHON_SHELL")
             shells = []
             if env:
-                shells += env.strip().lower().split(',')
+                shells += env.strip().lower().split(",")
             elif cfg.has_option(section, option):
                 shells += [cfg.get(section, option).strip().lower()]
             else:  # try all by default
                 shells += DEFAULT_PYTHON_SHELLS.keys()
             # always add standard shell as fallback
-            shells += ['python']
-            start_python_console(self.vars, shells=shells,
-                                 banner=self.vars.pop('banner', ''))
+            shells += ["python"]
+            start_python_console(
+                self.vars, shells=shells, banner=self.vars.pop("banner", "")
+            )
 
     def _schedule(self, request, spider):
+        if is_asyncio_reactor_installed():
+            # set the asyncio event loop for the current thread
+            event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
+            set_asyncio_event_loop(event_loop_path)
         spider = self._open_spider(request, spider)
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
-        self.crawler.engine.crawl(request, spider)
+        self.crawler.engine.crawl(request)
         return d
 
     def _open_spider(self, request, spider):
@@ -98,37 +99,46 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None):
+    def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+        from twisted.internet import reactor
+
         if isinstance(request_or_url, Request):
             request = request_or_url
-            url = request.url
         else:
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True)
-            request.meta['handle_httpstatus_all'] = True
+            request = Request(url, dont_filter=True, **kwargs)
+            if redirect:
+                request.meta["handle_httpstatus_list"] = SequenceExclude(
+                    range(300, 400)
+                )
+            else:
+                request.meta["handle_httpstatus_all"] = True
         response = None
         try:
             response, spider = threads.blockingCallFromThread(
-                reactor, self._schedule, request, spider)
+                reactor, self._schedule, request, spider
+            )
         except IgnoreRequest:
             pass
         self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
-        self.vars['crawler'] = self.crawler
-        self.vars['item'] = self.item_class()
-        self.vars['settings'] = self.crawler.settings
-        self.vars['spider'] = spider
-        self.vars['request'] = request
-        self.vars['response'] = response
-        self.vars['sel'] = _SelectorProxy(response)
+        import scrapy
+
+        self.vars["scrapy"] = scrapy
+        self.vars["crawler"] = self.crawler
+        self.vars["item"] = self.item_class()
+        self.vars["settings"] = self.crawler.settings
+        self.vars["spider"] = spider
+        self.vars["request"] = request
+        self.vars["response"] = response
         if self.inthread:
-            self.vars['fetch'] = self.fetch
-        self.vars['view'] = open_in_browser
-        self.vars['shelp'] = self.print_help
+            self.vars["fetch"] = self.fetch
+        self.vars["view"] = open_in_browser
+        self.vars["shelp"] = self.print_help
         self.update_vars(self.vars)
         if not self.code:
-            self.vars['banner'] = self.get_help()
+            self.vars["banner"] = self.get_help()
 
     def print_help(self):
         print(self.get_help())
@@ -136,25 +146,38 @@ class Shell(object):
     def get_help(self):
         b = []
         b.append("Available Scrapy objects:")
+        b.append(
+            "  scrapy     scrapy module (contains scrapy.Request, scrapy.Selector, etc)"
+        )
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
-                b.append("  %-10s %s" % (k, v))
+                b.append(f"  {k:<10} {v}")
         b.append("Useful shortcuts:")
-        b.append("  shelp()           Shell help (print this help)")
         if self.inthread:
-            b.append("  fetch(req_or_url) Fetch request (or URL) and "
-                     "update local objects")
+            b.append(
+                "  fetch(url[, redirect=True]) "
+                "Fetch URL and update local objects (by default, redirects are followed)"
+            )
+            b.append(
+                "  fetch(req)                  "
+                "Fetch a scrapy.Request and update local objects "
+            )
+        b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join("[s] %s" % l for l in b)
+        return "\n".join(f"[s] {line}" for line in b)
 
     def _is_relevant(self, value):
-        return isinstance(value, self.relevant_classes)
+        return isinstance(value, self.relevant_classes) or is_item(value)
 
 
 def inspect_response(response, spider):
     """Open a shell to inspect the given response"""
-    Shell(spider.crawler).start(response=response)
+    # Shell.start removes the SIGINT handler, so save it and re-add it after
+    # the shell has closed
+    sigint_handler = signal.getsignal(signal.SIGINT)
+    Shell(spider.crawler).start(response=response, spider=spider)
+    signal.signal(signal.SIGINT, sigint_handler)
 
 
 def _request_deferred(request):
@@ -164,7 +187,7 @@ def _request_deferred(request):
 
     This returns a Deferred whose first pair of callbacks are the request
     callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (ie. when the request is downloaded)
+    callback/errback is executed (i.e. when the request is downloaded)
 
     WARNING: Do not call request.replace() until after the deferred is called.
     """
@@ -183,15 +206,3 @@ def _request_deferred(request):
 
     request.callback, request.errback = d.callback, d.errback
     return d
-
-
-class _SelectorProxy(object):
-
-    def __init__(self, response):
-        self._proxiedresponse = response
-
-    def __getattr__(self, name):
-        warnings.warn('"sel" shortcut is deprecated. Use "response.xpath()", '
-                      '"response.css()" or "response.selector" instead',
-                      category=ScrapyDeprecationWarning, stacklevel=2)
-        return getattr(self._proxiedresponse.selector, name)

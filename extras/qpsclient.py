@@ -1,25 +1,25 @@
 """
-A spider that generate light requests to meassure QPS troughput
+A spider that generate light requests to measure QPS throughput
 
 usage:
 
-    scrapy runspider qpsclient.py --loglevel=INFO --set RANDOMIZE_DOWNLOAD_DELAY=0 --set CONCURRENT_REQUESTS=50 -a qps=10 -a latency=0.3
+    scrapy runspider qpsclient.py --loglevel=INFO --set RANDOMIZE_DOWNLOAD_DELAY=0
+     --set CONCURRENT_REQUESTS=50 -a qps=10 -a latency=0.3
 
 """
 
-from scrapy.spiders import Spider
 from scrapy.http import Request
+from scrapy.spiders import Spider
 
 
 class QPSSpider(Spider):
-
-    name = 'qps'
-    benchurl = 'http://localhost:8880/'
+    name = "qps"
+    benchurl = "http://localhost:8880/"
 
     # Max concurrency is limited by global CONCURRENT_REQUESTS setting
     max_concurrent_requests = 8
     # Requests per second goal
-    qps = None # same as: 1 / download_delay
+    qps = None  # same as: 1 / download_delay
     download_delay = None
     # time in seconds to delay server responses
     latency = None
@@ -27,7 +27,7 @@ class QPSSpider(Spider):
     slots = 1
 
     def __init__(self, *a, **kw):
-        super(QPSSpider, self).__init__(*a, **kw)
+        super().__init__(*a, **kw)
         if self.qps is not None:
             self.qps = float(self.qps)
             self.download_delay = 1 / self.qps
@@ -37,11 +37,11 @@ class QPSSpider(Spider):
     def start_requests(self):
         url = self.benchurl
         if self.latency is not None:
-            url += '?latency={0}'.format(self.latency)
+            url += f"?latency={self.latency}"
 
         slots = int(self.slots)
         if slots > 1:
-            urls = [url.replace('localhost', '127.0.0.%d' % (x + 1)) for x in xrange(slots)]
+            urls = [url.replace("localhost", f"127.0.0.{x + 1}") for x in range(slots)]
         else:
             urls = [url]
 

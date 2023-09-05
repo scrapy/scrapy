@@ -1,0 +1,21 @@
+skips:
+- B101
+- B113  # https://github.com/PyCQA/bandit/issues/1010
+- B105
+- B301
+- B303
+- B306
+- B307
+- B311
+- B320
+- B321
+- B324
+- B402  # https://github.com/scrapy/scrapy/issues/4180
+- B403
+- B404
+- B406
+- B410
+- B503
+- B603
+- B605
+exclude_dirs: ['tests']

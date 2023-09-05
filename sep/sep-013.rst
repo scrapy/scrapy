@@ -44,7 +44,7 @@ Overview of changes proposed
 
 Most of the inconsistencies come from the fact that middlewares don't follow
 the typical
-[http://twistedmatrix.com/projects/core/documentation/howto/defer.html
+[https://twistedmatrix.com/projects/core/documentation/howto/defer.html
 deferred] callback/errback chaining logic. Twisted logic is fine and quite
 intuitive, and also fits middlewares very well. Due to some bad design choices
 the integration between middleware calls and deferred is far from optional. So
@@ -59,7 +59,7 @@ Global changes to all middlewares
 
 To be discussed:
 
-1. should we support returning deferreds (ie. ``maybeDeferred``) in middleware
+1. should we support returning deferreds (i.e. ``maybeDeferred``) in middleware
    methods?
 2. should we pass Twisted Failures instead of exceptions to error methods?
 

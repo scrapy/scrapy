@@ -1,51 +1,76 @@
-from os.path import dirname, join
-from setuptools import setup, find_packages
+from pathlib import Path
+
+from setuptools import find_packages, setup
+
+version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
 
 
-with open(join(dirname(__file__), 'scrapy/VERSION'), 'rb') as f:
-    version = f.read().decode('ascii').strip()
+install_requires = [
+    # 23.8.0 incompatibility: https://github.com/scrapy/scrapy/issues/6024
+    "Twisted>=18.9.0,<23.8.0",
+    "cryptography>=36.0.0",
+    "cssselect>=0.9.1",
+    "itemloaders>=1.0.1",
+    "parsel>=1.5.0",
+    "pyOpenSSL>=21.0.0",
+    "queuelib>=1.4.2",
+    "service_identity>=18.1.0",
+    "w3lib>=1.17.0",
+    "zope.interface>=5.1.0",
+    "protego>=0.1.15",
+    "itemadapter>=0.1.0",
+    "setuptools",
+    "packaging",
+    "tldextract",
+    "lxml>=4.4.1",
+]
+extras_require = {
+    ':platform_python_implementation == "CPython"': ["PyDispatcher>=2.0.5"],
+    ':platform_python_implementation == "PyPy"': ["PyPyDispatcher>=2.1.0"],
+}
 
 
 setup(
-    name='Scrapy',
+    name="Scrapy",
     version=version,
-    url='http://scrapy.org',
-    description='A high-level Web Crawling and Web Scraping framework',
-    long_description=open('README.rst').read(),
-    author='Scrapy developers',
-    maintainer='Pablo Hoffman',
-    maintainer_email='pablo@pablohoffman.com',
-    license='BSD',
-    packages=find_packages(exclude=('tests', 'tests.*')),
+    url="https://scrapy.org",
+    project_urls={
+        "Documentation": "https://docs.scrapy.org/",
+        "Source": "https://github.com/scrapy/scrapy",
+        "Tracker": "https://github.com/scrapy/scrapy/issues",
+    },
+    description="A high-level Web Crawling and Web Scraping framework",
+    long_description=open("README.rst", encoding="utf-8").read(),
+    author="Scrapy developers",
+    author_email="pablo@pablohoffman.com",
+    maintainer="Pablo Hoffman",
+    maintainer_email="pablo@pablohoffman.com",
+    license="BSD",
+    packages=find_packages(exclude=("tests", "tests.*")),
     include_package_data=True,
     zip_safe=False,
-    entry_points={
-        'console_scripts': ['scrapy = scrapy.cmdline:execute']
-    },
+    entry_points={"console_scripts": ["scrapy = scrapy.cmdline:execute"]},
     classifiers=[
-        'Framework :: Scrapy',
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Console',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Software Development :: Libraries :: Application Frameworks',
-        'Topic :: Software Development :: Libraries :: Python Modules',
+        "Framework :: Scrapy",
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
+        "Topic :: Internet :: WWW/HTTP",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    install_requires=[
-        'Twisted>=10.0.0',
-        'w3lib>=1.8.0',
-        'queuelib',
-        'lxml',
-        'pyOpenSSL',
-        'cssselect>=0.9',
-        'six>=1.5.2',
-        'parsel>=0.9.3',
-        'PyDispatcher>=2.0.5',
-        'service_identity',
-    ],
+    python_requires=">=3.8",
+    install_requires=install_requires,
+    extras_require=extras_require,
 )
