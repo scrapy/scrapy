@@ -14,6 +14,8 @@ htmlcov/
 .coverage
 .pytest_cache/
 .coverage.*
+coverage.*
+test-output.*
 .cache/
 .mypy_cache/
 /tests/keys/localhost.crt
@@ -21,3 +23,6 @@ htmlcov/
 
 # Windows
 Thumbs.db
+
+# OSX miscellaneous
+.DS_Store

@@ -4,7 +4,6 @@ Some pipelines used for testing
 
 
 class ZeroDivisionErrorPipeline:
-
     def open_spider(self, spider):
         1 / 0
 
@@ -12,7 +11,6 @@ class ZeroDivisionErrorPipeline:
         return item
 
 
-class ProcessWithZeroDivisionErrorPipiline:
-
+class ProcessWithZeroDivisionErrorPipeline:
     def process_item(self, item, spider):
         1 / 0

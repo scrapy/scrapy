@@ -1,22 +1,37 @@
-import platform
-import sys
-from unittest import skipIf, TestCase
+import asyncio
+import warnings
+from unittest import TestCase
 
 from pytest import mark
 
-from scrapy.utils.reactor import is_asyncio_reactor_installed, install_reactor
+from scrapy.utils.defer import deferred_f_from_coro_f
+from scrapy.utils.reactor import (
+    install_reactor,
+    is_asyncio_reactor_installed,
+    set_asyncio_event_loop,
+)
 
 
-@mark.usefixtures('reactor_pytest')
+@mark.usefixtures("reactor_pytest")
 class AsyncioTest(TestCase):
-
     def test_is_asyncio_reactor_installed(self):
         # the result should depend only on the pytest --reactor argument
-        self.assertEqual(is_asyncio_reactor_installed(), self.reactor_pytest == 'asyncio')
+        self.assertEqual(
+            is_asyncio_reactor_installed(), self.reactor_pytest == "asyncio"
+        )
 
-    # https://twistedmatrix.com/trac/ticket/9766
-    @skipIf(platform.system() == 'Windows' and sys.version_info >= (3, 8),
-            "the asyncio reactor is broken on Windows when running Python ≥ 3.8")
     def test_install_asyncio_reactor(self):
-        # this should do nothing
+        from twisted.internet import reactor as original_reactor
+
+        with warnings.catch_warnings(record=True) as w:
+            install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+            self.assertEqual(len(w), 0)
+        from twisted.internet import reactor
+
+        assert original_reactor == reactor
+
+    @mark.only_asyncio()
+    @deferred_f_from_coro_f
+    async def test_set_asyncio_event_loop(self):
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        assert set_asyncio_event_loop(None) is asyncio.get_running_loop()

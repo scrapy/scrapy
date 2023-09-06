@@ -1,12 +1,11 @@
-import unittest
-import os
-import tempfile
-import shutil
 import contextlib
+import os
+import shutil
+import tempfile
+import unittest
+import warnings
+from pathlib import Path
 
-from pytest import warns
-
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.project import data_path, get_project_settings
 
 
@@ -17,9 +16,7 @@ def inside_a_project():
 
     try:
         os.chdir(project_dir)
-        with open('scrapy.cfg', 'w') as f:
-            # create an empty scrapy.cfg
-            f.close()
+        Path("scrapy.cfg").touch()
 
         yield project_dir
     finally:
@@ -29,21 +26,15 @@ def inside_a_project():
 
 class ProjectUtilsTest(unittest.TestCase):
     def test_data_path_outside_project(self):
-        self.assertEqual(
-            os.path.join('.scrapy', 'somepath'),
-            data_path('somepath')
-        )
-        abspath = os.path.join(os.path.sep, 'absolute', 'path')
+        self.assertEqual(str(Path(".scrapy", "somepath")), data_path("somepath"))
+        abspath = str(Path(os.path.sep, "absolute", "path"))
         self.assertEqual(abspath, data_path(abspath))
 
     def test_data_path_inside_project(self):
         with inside_a_project() as proj_path:
-            expected = os.path.join(proj_path, '.scrapy', 'somepath')
-            self.assertEqual(
-                os.path.realpath(expected),
-                os.path.realpath(data_path('somepath'))
-            )
-            abspath = os.path.join(os.path.sep, 'absolute', 'path')
+            expected = Path(proj_path, ".scrapy", "somepath")
+            self.assertEqual(expected.resolve(), Path(data_path("somepath")).resolve())
+            abspath = str(Path(os.path.sep, "absolute", "path").resolve())
             self.assertEqual(abspath, data_path(abspath))
 
 
@@ -62,36 +53,34 @@ def set_env(**update):
 
 
 class GetProjectSettingsTestCase(unittest.TestCase):
-
     def test_valid_envvar(self):
-        value = 'tests.test_cmdline.settings'
+        value = "tests.test_cmdline.settings"
         envvars = {
-            'SCRAPY_SETTINGS_MODULE': value,
+            "SCRAPY_SETTINGS_MODULE": value,
         }
-        with set_env(**envvars), warns(None) as warnings:
-            settings = get_project_settings()
-        assert not warnings
-        assert settings.get('SETTINGS_MODULE') == value
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            with set_env(**envvars):
+                settings = get_project_settings()
+
+        assert settings.get("SETTINGS_MODULE") == value
 
     def test_invalid_envvar(self):
         envvars = {
-            'SCRAPY_FOO': 'bar',
+            "SCRAPY_FOO": "bar",
         }
-        with set_env(**envvars), warns(None) as warnings:
-            get_project_settings()
-        assert len(warnings) == 1
-        assert warnings[0].category == ScrapyDeprecationWarning
-        assert str(warnings[0].message).endswith(': FOO')
+        with set_env(**envvars):
+            settings = get_project_settings()
+
+        assert settings.get("SCRAPY_FOO") is None
 
     def test_valid_and_invalid_envvars(self):
-        value = 'tests.test_cmdline.settings'
+        value = "tests.test_cmdline.settings"
         envvars = {
-            'SCRAPY_FOO': 'bar',
-            'SCRAPY_SETTINGS_MODULE': value,
+            "SCRAPY_FOO": "bar",
+            "SCRAPY_SETTINGS_MODULE": value,
         }
-        with set_env(**envvars), warns(None) as warnings:
+        with set_env(**envvars):
             settings = get_project_settings()
-        assert len(warnings) == 1
-        assert warnings[0].category == ScrapyDeprecationWarning
-        assert str(warnings[0].message).endswith(': FOO')
-        assert settings.get('SETTINGS_MODULE') == value
+        assert settings.get("SETTINGS_MODULE") == value
+        assert settings.get("SCRAPY_FOO") is None

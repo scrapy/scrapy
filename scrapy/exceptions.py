@@ -4,12 +4,14 @@ Scrapy core exceptions
 These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
+from typing import Any
 
 # Internal
 
 
 class NotConfigured(Exception):
     """Indicates a missing configuration situation"""
+
     pass
 
 
@@ -18,6 +20,7 @@ class _InvalidOutput(TypeError):
     Indicates an invalid value has been returned by a middleware's processing method.
     Internal and undocumented, it should not be raised or caught by user code.
     """
+
     pass
 
 
@@ -30,13 +33,14 @@ class IgnoreRequest(Exception):
 
 class DontCloseSpider(Exception):
     """Request the spider not to be closed yet"""
+
     pass
 
 
 class CloseSpider(Exception):
     """Raise this from callbacks to request the spider to be closed"""
 
-    def __init__(self, reason='cancelled'):
+    def __init__(self, reason: str = "cancelled"):
         super().__init__()
         self.reason = reason
 
@@ -48,7 +52,7 @@ class StopDownload(Exception):
     should be handled by the request errback. Note that 'fail' is a keyword-only argument.
     """
 
-    def __init__(self, *, fail=True):
+    def __init__(self, *, fail: bool = True):
         super().__init__()
         self.fail = fail
 
@@ -58,11 +62,13 @@ class StopDownload(Exception):
 
 class DropItem(Exception):
     """Drop item from the item pipeline"""
+
     pass
 
 
 class NotSupported(Exception):
     """Indicates a feature or method is not supported"""
+
     pass
 
 
@@ -72,8 +78,8 @@ class NotSupported(Exception):
 class UsageError(Exception):
     """To indicate a command-line usage error"""
 
-    def __init__(self, *a, **kw):
-        self.print_help = kw.pop('print_help', True)
+    def __init__(self, *a: Any, **kw: Any):
+        self.print_help = kw.pop("print_help", True)
         super().__init__(*a, **kw)
 
 
@@ -81,9 +87,11 @@ class ScrapyDeprecationWarning(Warning):
     """Warning category for deprecated features, since the default
     DeprecationWarning is silenced on Python 2.7+
     """
+
     pass
 
 
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
+
     pass

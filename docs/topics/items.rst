@@ -42,7 +42,8 @@ Item objects
 :class:`Item` provides a :class:`dict`-like API plus additional features that
 make it the most feature-complete item type:
 
-.. class:: Item([arg])
+.. class:: scrapy.item.Item([arg])
+.. class:: scrapy.Item([arg])
 
     :class:`Item` objects replicate the standard :class:`dict` API, including
     its ``__init__`` method.
@@ -75,9 +76,12 @@ make it the most feature-complete item type:
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-Example::
+Example:
+
+.. code-block:: python
 
     from scrapy.item import Item, Field
+
 
     class CustomItem(Item):
         one_field = Field()
@@ -101,14 +105,12 @@ Additionally, ``dataclass`` items also allow to:
 * define custom field metadata through :func:`dataclasses.field`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-They work natively in Python 3.7 or later, or using the `dataclasses
-backport`_ in Python 3.6.
+Example:
 
-.. _dataclasses backport: https://pypi.org/project/dataclasses/
-
-Example::
+.. code-block:: python
 
     from dataclasses import dataclass
+
 
     @dataclass
     class CustomItem:
@@ -137,9 +139,12 @@ Additionally, ``attr.s`` items also allow to:
 
 In order to use this type, the :doc:`attrs package <attrs:index>` needs to be installed.
 
-Example::
+Example:
+
+.. code-block:: python
 
     import attr
+
 
     @attr.s
     class CustomItem:
@@ -156,9 +161,12 @@ Declaring Item subclasses
 -------------------------
 
 Item subclasses are declared using a simple class definition syntax and
-:class:`Field` objects. Here is an example::
+:class:`Field` objects. Here is an example:
+
+.. code-block:: python
 
     import scrapy
+
 
     class Product(scrapy.Item):
         name = scrapy.Field()
@@ -199,7 +207,8 @@ It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
 
-.. class:: Field([arg])
+.. class:: scrapy.item.Field([arg])
+.. class:: scrapy.Field([arg])
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
@@ -225,62 +234,68 @@ notice the API is very similar to the :class:`dict` API.
 Creating items
 ''''''''''''''
 
->>> product = Product(name='Desktop PC', price=1000)
->>> print(product)
-Product(name='Desktop PC', price=1000)
+.. code-block:: pycon
+
+    >>> product = Product(name="Desktop PC", price=1000)
+    >>> print(product)
+    Product(name='Desktop PC', price=1000)
 
 
 Getting field values
 ''''''''''''''''''''
 
->>> product['name']
-Desktop PC
->>> product.get('name')
-Desktop PC
+.. code-block:: pycon
 
->>> product['price']
-1000
+    >>> product["name"]
+    Desktop PC
+    >>> product.get("name")
+    Desktop PC
 
->>> product['last_updated']
-Traceback (most recent call last):
-    ...
-KeyError: 'last_updated'
+    >>> product["price"]
+    1000
 
->>> product.get('last_updated', 'not set')
-not set
+    >>> product["last_updated"]
+    Traceback (most recent call last):
+        ...
+    KeyError: 'last_updated'
 
->>> product['lala'] # getting unknown field
-Traceback (most recent call last):
-    ...
-KeyError: 'lala'
+    >>> product.get("last_updated", "not set")
+    not set
 
->>> product.get('lala', 'unknown field')
-'unknown field'
+    >>> product["lala"]  # getting unknown field
+    Traceback (most recent call last):
+        ...
+    KeyError: 'lala'
 
->>> 'name' in product  # is name field populated?
-True
+    >>> product.get("lala", "unknown field")
+    'unknown field'
 
->>> 'last_updated' in product  # is last_updated populated?
-False
+    >>> "name" in product  # is name field populated?
+    True
 
->>> 'last_updated' in product.fields  # is last_updated a declared field?
-True
+    >>> "last_updated" in product  # is last_updated populated?
+    False
 
->>> 'lala' in product.fields  # is lala a declared field?
-False
+    >>> "last_updated" in product.fields  # is last_updated a declared field?
+    True
+
+    >>> "lala" in product.fields  # is lala a declared field?
+    False
 
 
 Setting field values
 ''''''''''''''''''''
 
->>> product['last_updated'] = 'today'
->>> product['last_updated']
-today
+.. code-block:: pycon
 
->>> product['lala'] = 'test' # setting unknown field
-Traceback (most recent call last):
-    ...
-KeyError: 'Product does not support field: lala'
+    >>> product["last_updated"] = "today"
+    >>> product["last_updated"]
+    today
+
+    >>> product["lala"] = "test"  # setting unknown field
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Product does not support field: lala'
 
 
 Accessing all populated values
@@ -288,11 +303,13 @@ Accessing all populated values
 
 To access all populated values, just use the typical :class:`dict` API:
 
->>> product.keys()
-['price', 'name']
+.. code-block:: pycon
 
->>> product.items()
-[('price', 1000), ('name', 'Desktop PC')]
+    >>> product.keys()
+    ['price', 'name']
+
+    >>> product.items()
+    [('price', 1000), ('name', 'Desktop PC')]
 
 
 .. _copying-items:
@@ -317,11 +334,11 @@ If that is not the desired behavior, use a deep copy instead.
 See :mod:`copy` for more information.
 
 To create a shallow copy of an item, you can either call
-:meth:`~scrapy.item.Item.copy` on an existing item
+:meth:`~scrapy.Item.copy` on an existing item
 (``product2 = product.copy()``) or instantiate your item class from an existing
 item (``product2 = Product(product)``).
 
-To create a deep copy, call :meth:`~scrapy.item.Item.deepcopy` instead
+To create a deep copy, call :meth:`~scrapy.Item.deepcopy` instead
 (``product2 = product.deepcopy()``).
 
 
@@ -330,18 +347,20 @@ Other common tasks
 
 Creating dicts from items:
 
->>> dict(product) # create a dict from all populated values
-{'price': 1000, 'name': 'Desktop PC'}
+.. code-block:: pycon
 
-Creating items from dicts:
+    >>> dict(product)  # create a dict from all populated values
+    {'price': 1000, 'name': 'Desktop PC'}
 
->>> Product({'name': 'Laptop PC', 'price': 1500})
-Product(price=1500, name='Laptop PC')
+    Creating items from dicts:
 
->>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
-Traceback (most recent call last):
-    ...
-KeyError: 'Product does not support field: lala'
+    >>> Product({"name": "Laptop PC", "price": 1500})
+    Product(price=1500, name='Laptop PC')
+
+    >>> Product({"name": "Laptop PC", "lala": 1500})  # warning: unknown field in dict
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Product does not support field: lala'
 
 
 Extending Item subclasses
@@ -350,17 +369,21 @@ Extending Item subclasses
 You can extend Items (to add more fields or to change some metadata for some
 fields) by declaring a subclass of your original Item.
 
-For example::
+For example:
+
+.. code-block:: python
 
     class DiscountedProduct(Product):
         discount_percent = scrapy.Field(serializer=str)
         discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
-appending more values, or changing existing values, like this::
+appending more values, or changing existing values, like this:
+
+.. code-block:: python
 
     class SpecificProduct(Product):
-        name = scrapy.Field(Product.fields['name'], serializer=my_serializer)
+        name = scrapy.Field(Product.fields["name"], serializer=my_serializer)
 
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.

@@ -1,10 +1,10 @@
 import re
 import time
-from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
+from http.cookiejar import CookieJar as _CookieJar
+from http.cookiejar import DefaultCookiePolicy
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
-
 
 # Defined in the http.cookiejar module, but undocumented:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
@@ -36,7 +36,7 @@ class CookieJar:
 
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
-            if '.' not in req_host:
+            if "." not in req_host:
                 hosts += [req_host + ".local"]
         else:
             hosts = [req_host]
@@ -96,14 +96,14 @@ def potential_domain_matches(domain):
     """
     matches = [domain]
     try:
-        start = domain.index('.') + 1
-        end = domain.rindex('.')
+        start = domain.index(".") + 1
+        end = domain.rindex(".")
         while start < end:
             matches.append(domain[start:])
-            start = domain.index('.', start) + 1
+            start = domain.index(".", start) + 1
     except ValueError:
         pass
-    return matches + ['.' + d for d in matches]
+    return matches + ["." + d for d in matches]
 
 
 class _DummyLock:
@@ -140,12 +140,8 @@ class WrappedRequest:
         HTML document, and the user had no option to approve the automatic
         fetching of the image, this should be true.
         """
-        return self.request.meta.get('is_unverifiable', False)
+        return self.request.meta.get("is_unverifiable", False)
 
-    def get_origin_req_host(self):
-        return urlparse_cached(self.request).hostname
-
-    # python3 uses attributes instead of methods
     @property
     def full_url(self):
         return self.get_full_url()
@@ -164,19 +160,20 @@ class WrappedRequest:
 
     @property
     def origin_req_host(self):
-        return self.get_origin_req_host()
+        return urlparse_cached(self.request).hostname
 
     def has_header(self, name):
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_unicode(self.request.headers.get(name, default),
-                          errors='replace')
+        return to_unicode(self.request.headers.get(name, default), errors="replace")
 
     def header_items(self):
         return [
-            (to_unicode(k, errors='replace'),
-             [to_unicode(x, errors='replace') for x in v])
+            (
+                to_unicode(k, errors="replace"),
+                [to_unicode(x, errors="replace") for x in v],
+            )
             for k, v in self.request.headers.items()
         ]
 
@@ -185,7 +182,6 @@ class WrappedRequest:
 
 
 class WrappedResponse:
-
     def __init__(self, response):
         self.response = response
 
@@ -193,5 +189,6 @@ class WrappedResponse:
         return self
 
     def get_all(self, name, default=None):
-        return [to_unicode(v, errors='replace')
-                for v in self.response.headers.getlist(name)]
+        return [
+            to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
+        ]

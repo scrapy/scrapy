@@ -3,32 +3,29 @@ Scheduler queues
 """
 
 import marshal
-import os
 import pickle
+from os import PathLike
+from pathlib import Path
+from typing import Union
 
 from queuelib import queue
 
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.utils.request import request_from_dict
 
 
 def _with_mkdir(queue_class):
-
     class DirectoriesCreated(queue_class):
-
-        def __init__(self, path, *args, **kwargs):
-            dirname = os.path.dirname(path)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname, exist_ok=True)
-
+        def __init__(self, path: Union[str, PathLike], *args, **kwargs):
+            dirname = Path(path).parent
+            if not dirname.exists():
+                dirname.mkdir(parents=True, exist_ok=True)
             super().__init__(path, *args, **kwargs)
 
     return DirectoriesCreated
 
 
 def _serializable_queue(queue_class, serialize, deserialize):
-
     class SerializableQueue(queue_class):
-
         def push(self, obj):
             s = serialize(obj)
             super().push(s)
@@ -38,13 +35,27 @@ def _serializable_queue(queue_class, serialize, deserialize):
             if s:
                 return deserialize(s)
 
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError(
+                    "The underlying queue class does not implement 'peek'"
+                ) from ex
+            if s:
+                return deserialize(s)
+
     return SerializableQueue
 
 
 def _scrapy_serialization_queue(queue_class):
-
     class ScrapyRequestQueue(queue_class):
-
         def __init__(self, crawler, key):
             self.spider = crawler.spider
             super().__init__(key)
@@ -54,27 +65,50 @@ def _scrapy_serialization_queue(queue_class):
             return cls(crawler, key)
 
         def push(self, request):
-            request = request_to_dict(request, self.spider)
+            request = request.to_dict(spider=self.spider)
             return super().push(request)
 
         def pop(self):
             request = super().pop()
-
             if not request:
                 return None
+            return request_from_dict(request, spider=self.spider)
 
-            request = request_from_dict(request, self.spider)
-            return request
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            request = super().peek()
+            if not request:
+                return None
+            return request_from_dict(request, spider=self.spider)
 
     return ScrapyRequestQueue
 
 
 def _scrapy_non_serialization_queue(queue_class):
-
     class ScrapyRequestQueue(queue_class):
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             return cls()
+
+        def peek(self):
+            """Returns the next object to be returned by :meth:`pop`,
+            but without removing it from the queue.
+
+            Raises :exc:`NotImplementedError` if the underlying queue class does
+            not implement a ``peek`` method, which is optional for queues.
+            """
+            try:
+                s = super().peek()
+            except AttributeError as ex:
+                raise NotImplementedError(
+                    "The underlying queue class does not implement 'peek'"
+                ) from ex
+            return s
 
     return ScrapyRequestQueue
 
@@ -88,38 +122,23 @@ def _pickle_serialize(obj):
         raise ValueError(str(e)) from e
 
 
-PickleFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue),
-    _pickle_serialize,
-    pickle.loads
+_PickleFifoSerializationDiskQueue = _serializable_queue(
+    _with_mkdir(queue.FifoDiskQueue), _pickle_serialize, pickle.loads
 )
-PickleLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue),
-    _pickle_serialize,
-    pickle.loads
+_PickleLifoSerializationDiskQueue = _serializable_queue(
+    _with_mkdir(queue.LifoDiskQueue), _pickle_serialize, pickle.loads
 )
-MarshalFifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue),
-    marshal.dumps,
-    marshal.loads
+_MarshalFifoSerializationDiskQueue = _serializable_queue(
+    _with_mkdir(queue.FifoDiskQueue), marshal.dumps, marshal.loads
 )
-MarshalLifoDiskQueueNonRequest = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue),
-    marshal.dumps,
-    marshal.loads
+_MarshalLifoSerializationDiskQueue = _serializable_queue(
+    _with_mkdir(queue.LifoDiskQueue), marshal.dumps, marshal.loads
 )
 
-PickleFifoDiskQueue = _scrapy_serialization_queue(
-    PickleFifoDiskQueueNonRequest
-)
-PickleLifoDiskQueue = _scrapy_serialization_queue(
-    PickleLifoDiskQueueNonRequest
-)
-MarshalFifoDiskQueue = _scrapy_serialization_queue(
-    MarshalFifoDiskQueueNonRequest
-)
-MarshalLifoDiskQueue = _scrapy_serialization_queue(
-    MarshalLifoDiskQueueNonRequest
-)
+# public queue classes
+PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQueue)
+PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)
+MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDiskQueue)
+MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
