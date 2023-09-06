@@ -401,7 +401,8 @@ In code that receives an item, such as methods of :ref:`item pipelines
 :func:`~itemadapter.is_item` function to write code that works for
 any :ref:`supported item type <item-types>`:
 
-`Scrapy-Gallaecio Documentation <https://scrapy-gallaecio.readthedocs.io/en/readthedocs/index.html>`_
+:ref:`Scrapy Documentation <https://docs.scrapy.org/en/latest/topics/items.html>`_
+
 
 
 
