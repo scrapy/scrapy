@@ -6,6 +6,7 @@ import sys
 import warnings
 from pathlib import Path
 
+import pytest
 from packaging.version import parse as parse_version
 from pytest import mark, raises
 from twisted.internet import defer
@@ -45,6 +46,16 @@ class CrawlerTestCase(BaseCrawlerTest):
     def test_crawler_rejects_spider_objects(self):
         with raises(ValueError):
             Crawler(DefaultSpider())
+
+    @defer.inlineCallbacks
+    def test_crawler_crawl_twice_deprecated(self):
+        crawler = Crawler(NoRequestsSpider)
+        yield crawler.crawl()
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Running Crawler.crawl\(\) more than once is deprecated",
+        ):
+            yield crawler.crawl()
 
 
 class CrawlerLoggingTestCase(unittest.TestCase):
