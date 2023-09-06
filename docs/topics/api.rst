@@ -100,7 +100,7 @@ how you :ref:`configure the downloader middlewares
 
         Starts the crawler by instantiating its spider class with the given
         ``args`` and ``kwargs`` arguments, while setting the execution engine in
-        motion.
+        motion. Should be called only once.
 
         Returns a deferred that is fired when the crawl is finished.
 

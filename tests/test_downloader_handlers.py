@@ -743,6 +743,7 @@ class Http11MockServerTestCase(unittest.TestCase):
 
         # See issue https://twistedmatrix.com/trac/ticket/8175
         raise unittest.SkipTest("xpayload fails on PY3")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         request.headers.setdefault(b"Accept-Encoding", b"gzip,deflate")
         request = request.replace(url=self.mockserver.url("/xpayload"))
         yield crawler.crawl(seed=request)

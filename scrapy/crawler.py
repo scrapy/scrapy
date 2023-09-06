@@ -124,6 +124,7 @@ class Crawler:
 
         self.settings.freeze()
         self.crawling: bool = False
+        self._started: bool = False
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
 
@@ -131,7 +132,13 @@ class Crawler:
     def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
-        self.crawling = True
+        if self._started:
+            warnings.warn(
+                "Running Crawler.crawl() more than once is deprecated.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        self.crawling = self._started = True
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
