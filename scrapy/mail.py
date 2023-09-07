@@ -96,10 +96,9 @@ class MailSender:
             rcpts.extend(cc)
             msg["Cc"] = COMMASPACE.join(cc)
 
-        if charset:
-            msg.set_charset(charset)
-
         if attachs:
+            if charset:
+                msg.set_charset(charset)
             msg.attach(MIMEText(body, "plain", charset or "us-ascii"))
             for attach_name, mimetype, f in attachs:
                 part = MIMEBase(*mimetype.split("/"))
@@ -110,7 +109,7 @@ class MailSender:
                 )
                 msg.attach(part)
         else:
-            msg.set_payload(body)
+            msg.set_payload(body, charset)
 
         if _callback:
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
