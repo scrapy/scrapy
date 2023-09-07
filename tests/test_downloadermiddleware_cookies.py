@@ -755,7 +755,7 @@ class CookiesMiddlewareTest(TestCase):
         request = Request("http://a.example")
         request.headers["Cookie"] = "foo=bar; domain=b.example"
         response = Response("http://c.example")
-        response.headers["Set-Cookie"] = "asd=fgh; domain=d.example"
+        response.headers["Set-Cookie"] = "foo=bar; domain=c.example"
         self.mw.process_response(request, response, spider=None)
         jar = self.mw.jars[None]
-        assert not jar._cookies.get("c.example", {}).get("/", {}).get("asd")
+        assert not jar._cookies.get(".c.example", {})
