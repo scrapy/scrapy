@@ -71,6 +71,7 @@ class Crawler:
 
         self.spidercls: Type[Spider] = spidercls
         self.settings: Settings = settings.copy()
+        self.spidercls.update_settings(self.settings)
 
         self.addons: AddonManager = AddonManager(self)
         self.addons.load_settings(self.settings)
@@ -104,10 +105,10 @@ class Crawler:
             crawler=self,
         )
 
-        self._init_reactor = init_reactor
-
+        self._init_reactor: bool = init_reactor
         self.crawling: bool = False
         self._started: bool = False
+        self.extensions: Optional[ExtensionManager] = None
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
 
@@ -125,7 +126,6 @@ class Crawler:
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
-            self.spider.update_settings(self.settings)
 
             reactor_class: str = self.settings["TWISTED_REACTOR"]
             event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
@@ -142,7 +142,7 @@ class Crawler:
                 if is_asyncio_reactor_installed() and event_loop:
                     verify_installed_asyncio_event_loop(event_loop)
 
-            self.extensions: ExtensionManager = ExtensionManager.from_crawler(self)
+            self.extensions = ExtensionManager.from_crawler(self)
             self.settings.freeze()
 
             self.engine = self._create_engine()

@@ -83,8 +83,9 @@ class Spider(object_ref):
             f"{self.__class__.__name__}.parse callback is not defined"
         )
 
-    def update_settings(self, settings: BaseSettings) -> None:
-        settings.setdict(self.custom_settings or {}, priority="spider")
+    @classmethod
+    def update_settings(cls, settings: BaseSettings) -> None:
+        settings.setdict(cls.custom_settings or {}, priority="spider")
 
     @classmethod
     def handles_request(cls, request: Request) -> bool:

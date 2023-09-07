@@ -2,13 +2,16 @@ import gzip
 import inspect
 import warnings
 from io import BytesIO
+from typing import Any
 from unittest import mock
 
 from testfixtures import LogCapture
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 from w3lib.url import safe_url_string
 
 from scrapy import signals
+from scrapy.crawler import Crawler
 from scrapy.http import HtmlResponse, Request, Response, TextResponse, XmlResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.settings import Settings
@@ -91,16 +94,32 @@ class SpiderTest(unittest.TestCase):
         self.spider_class.custom_settings = spider_settings
         settings = Settings(project_settings, priority="project")
 
-        spider = self.spider_class("example.com")
-        spider.update_settings(settings)
+        self.spider_class.update_settings(settings)
         self.assertEqual(settings.get("TEST1"), "spider")
         self.assertEqual(settings.get("TEST2"), "spider")
         self.assertEqual(settings.get("TEST3"), "project")
 
-        spider_instance_settings = {"TEST1": "spider_instance"}
-        spider.custom_settings = spider_instance_settings
-        spider.update_settings(settings)
-        self.assertEqual(settings.get("TEST1"), "spider_instance")
+    @inlineCallbacks
+    def test_settings_in_from_crawler(self):
+        spider_settings = {"TEST1": "spider", "TEST2": "spider"}
+        project_settings = {"TEST1": "project", "TEST3": "project"}
+
+        class TestSpider(self.spider_class):
+            name = "test"
+            custom_settings = spider_settings
+
+            @classmethod
+            def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                spider.settings.set("TEST1", "spider_instance", priority="spider")
+                return spider
+
+        crawler = get_crawler(TestSpider, settings_dict=project_settings)
+        self.assertEqual(crawler.settings.get("TEST1"), "spider")
+        self.assertEqual(crawler.settings.get("TEST2"), "spider")
+        self.assertEqual(crawler.settings.get("TEST3"), "project")
+        yield crawler.crawl()
+        self.assertEqual(crawler.settings.get("TEST1"), "spider_instance")
 
     def test_logger(self):
         spider = self.spider_class("example.com")
