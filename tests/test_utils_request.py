@@ -1,11 +1,12 @@
 import json
-import unittest
 import warnings
 from hashlib import sha1
 from typing import Dict, Mapping, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
 import pytest
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 from w3lib.url import canonicalize_url
 
 from scrapy.http import Request
@@ -22,6 +23,7 @@ from scrapy.utils.request import (
     request_to_curl,
 )
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 
 class UtilsRequestTest(unittest.TestCase):
@@ -449,15 +451,18 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
                     )
                     self.assertEqual(fp, old_fp)
 
+    @inlineCallbacks
     def test_component_backward_compatibility(self):
         for request_object in REQUEST_OBJECTS_TO_TEST:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                crawler = get_crawler(prevent_warnings=False)
+                crawler = get_crawler(NoRequestsSpider, prevent_warnings=False)
+                yield crawler.crawl()
                 fp = crawler.request_fingerprinter.fingerprint(request_object)
             old_fp = request_fingerprint_2_6(request_object)
             self.assertEqual(fp.hex(), old_fp)
 
+    @inlineCallbacks
     def test_custom_component_backward_compatibility(self):
         """Tests that the backward-compatible request fingerprinting class featured
         in the documentation is indeed backward compatible and does not cause a
@@ -480,7 +485,8 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
                 settings = {
                     "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
                 }
-                crawler = get_crawler(settings_dict=settings)
+                crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+                yield crawler.crawl()
                 fp = crawler.request_fingerprinter.fingerprint(request_object)
             old_fp = request_fingerprint_2_6(request_object)
             self.assertEqual(fp.hex(), old_fp)
@@ -488,9 +494,11 @@ class BackwardCompatibilityTestCase(unittest.TestCase):
 
 
 class RequestFingerprinterTestCase(unittest.TestCase):
+    @inlineCallbacks
     def test_default_implementation(self):
         with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(prevent_warnings=False)
+            crawler = get_crawler(NoRequestsSpider, prevent_warnings=False)
+            yield crawler.crawl()
         request = Request("https://example.com")
         self.assertEqual(
             crawler.request_fingerprinter.fingerprint(request),
@@ -498,12 +506,14 @@ class RequestFingerprinterTestCase(unittest.TestCase):
         )
         self.assertTrue(logged_warnings)
 
+    @inlineCallbacks
     def test_deprecated_implementation(self):
         settings = {
             "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.6",
         }
         with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(settings_dict=settings)
+            crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+            yield crawler.crawl()
         request = Request("https://example.com")
         self.assertEqual(
             crawler.request_fingerprinter.fingerprint(request),
@@ -511,12 +521,14 @@ class RequestFingerprinterTestCase(unittest.TestCase):
         )
         self.assertTrue(logged_warnings)
 
+    @inlineCallbacks
     def test_recommended_implementation(self):
         settings = {
             "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(settings_dict=settings)
+            crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+            yield crawler.crawl()
         request = Request("https://example.com")
         self.assertEqual(
             crawler.request_fingerprinter.fingerprint(request),
@@ -524,15 +536,18 @@ class RequestFingerprinterTestCase(unittest.TestCase):
         )
         self.assertFalse(logged_warnings)
 
+    @inlineCallbacks
     def test_unknown_implementation(self):
         settings = {
             "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.5",
         }
         with self.assertRaises(ValueError):
-            get_crawler(settings_dict=settings)
+            crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+            yield crawler.crawl()
 
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
+    @inlineCallbacks
     def test_include_headers(self):
         class RequestFingerprinter:
             def fingerprint(self, request):
@@ -541,7 +556,8 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         settings = {
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
         }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+        yield crawler.crawl()
 
         r1 = Request("http://www.example.com", headers={"X-ID": "1"})
         fp1 = crawler.request_fingerprinter.fingerprint(r1)
@@ -549,6 +565,7 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         fp2 = crawler.request_fingerprinter.fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 
+    @inlineCallbacks
     def test_dont_canonicalize(self):
         class RequestFingerprinter:
             cache = WeakKeyDictionary()
@@ -563,7 +580,8 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         settings = {
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
         }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+        yield crawler.crawl()
 
         r1 = Request("http://www.example.com?a=1&a=2")
         fp1 = crawler.request_fingerprinter.fingerprint(r1)
@@ -571,6 +589,7 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         fp2 = crawler.request_fingerprinter.fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 
+    @inlineCallbacks
     def test_meta(self):
         class RequestFingerprinter:
             def fingerprint(self, request):
@@ -581,7 +600,8 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         settings = {
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
         }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+        yield crawler.crawl()
 
         r1 = Request("http://www.example.com")
         fp1 = crawler.request_fingerprinter.fingerprint(r1)
@@ -596,6 +616,7 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
         self.assertNotEqual(fp2, fp4)
         self.assertEqual(fp2, fp3)
 
+    @inlineCallbacks
     def test_from_crawler(self):
         class RequestFingerprinter:
             @classmethod
@@ -612,12 +633,14 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
             "FINGERPRINT": b"fingerprint",
         }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+        yield crawler.crawl()
 
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
         self.assertEqual(fingerprint, settings["FINGERPRINT"])
 
+    @inlineCallbacks
     def test_from_settings(self):
         class RequestFingerprinter:
             @classmethod
@@ -634,12 +657,14 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
             "FINGERPRINT": b"fingerprint",
         }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+        yield crawler.crawl()
 
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
         self.assertEqual(fingerprint, settings["FINGERPRINT"])
 
+    @inlineCallbacks
     def test_from_crawler_and_settings(self):
         class RequestFingerprinter:
             # This method is ignored due to the presence of from_crawler
@@ -661,7 +686,8 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
             "FINGERPRINT": b"fingerprint",
         }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+        yield crawler.crawl()
 
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
@@ -728,7 +754,3 @@ class RequestToCurlTest(unittest.TestCase):
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
-
-
-if __name__ == "__main__":
-    unittest.main()

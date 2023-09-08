@@ -74,41 +74,19 @@ class Crawler:
         self.spidercls.update_settings(self.settings)
 
         self.addons: AddonManager = AddonManager(self)
-        self.addons.load_settings(self.settings)
-
         self.signals: SignalManager = SignalManager(self)
-
-        self.stats: StatsCollector = load_object(self.settings["STATS_CLASS"])(self)
-
-        handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
-        logging.root.addHandler(handler)
-
-        d = dict(overridden_settings(self.settings))
-        logger.info(
-            "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
-        )
 
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
-        # lambda is assigned to Crawler attribute because this way it is not
-        # garbage collected after leaving __init__ scope
-        self.__remove_handler = lambda: logging.root.removeHandler(handler)
-        self.signals.connect(self.__remove_handler, signals.engine_stopped)
-
-        lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
-        self.logformatter: LogFormatter = lf_cls.from_crawler(self)
-
-        self.request_fingerprinter: RequestFingerprinter = create_instance(
-            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-            settings=self.settings,
-            crawler=self,
-        )
 
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
         self._started: bool = False
         self.extensions: Optional[ExtensionManager] = None
+        self.stats: Optional[StatsCollector] = None
+        self.logformatter: Optional[LogFormatter] = None
+        self.request_fingerprinter: Optional[RequestFingerprinter] = None
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
 
@@ -127,6 +105,25 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
 
+            self.addons.load_settings(self.settings)
+            self.stats = load_object(self.settings["STATS_CLASS"])(self)
+
+            handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
+            logging.root.addHandler(handler)
+            # lambda is assigned to Crawler attribute because this way it is not
+            # garbage collected after leaving the scope
+            self.__remove_handler = lambda: logging.root.removeHandler(handler)
+            self.signals.connect(self.__remove_handler, signals.engine_stopped)
+
+            lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
+            self.logformatter = lf_cls.from_crawler(self)
+
+            self.request_fingerprinter = create_instance(
+                load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+                settings=self.settings,
+                crawler=self,
+            )
+
             reactor_class: str = self.settings["TWISTED_REACTOR"]
             event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
             if self._init_reactor:
@@ -144,6 +141,11 @@ class Crawler:
 
             self.extensions = ExtensionManager.from_crawler(self)
             self.settings.freeze()
+
+            d = dict(overridden_settings(self.settings))
+            logger.info(
+                "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
+            )
 
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())

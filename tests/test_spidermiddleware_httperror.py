@@ -1,9 +1,9 @@
 import logging
-from unittest import TestCase
 
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
@@ -11,7 +11,7 @@ from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-from tests.spiders import MockServerSpider
+from tests.spiders import MockServerSpider, NoRequestsSpider
 
 
 class _HttpErrorSpider(MockServerSpider):
@@ -59,9 +59,11 @@ def _responses(request, status_codes):
 
 
 class TestHttpErrorMiddleware(TestCase):
+    @inlineCallbacks
     def setUp(self):
-        crawler = get_crawler(Spider)
-        self.spider = Spider.from_crawler(crawler, name="foo")
+        crawler = get_crawler(NoRequestsSpider)
+        yield crawler.crawl()
+        self.spider = crawler.spider
         self.mw = HttpErrorMiddleware(Settings({}))
         self.req = Request("http://scrapytest.org")
         self.res200, self.res404 = _responses(self.req, [200, 404])
@@ -171,7 +173,7 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
         self.assertIsNone(mw.process_spider_input(res402, self.spider))
 
 
-class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
+class TestHttpErrorMiddlewareIntegrational(TestCase):
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()

@@ -14,11 +14,11 @@ from scrapy.pipelines.files import FileException
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.spiders import Spider
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 try:
     from PIL import Image  # noqa: imported just to check for the import error
@@ -40,10 +40,11 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
     pipeline_class = MediaPipeline
     settings = None
 
+    @inlineCallbacks
     def setUp(self):
-        spider_cls = Spider
-        self.spider = spider_cls("media.com")
-        crawler = get_crawler(spider_cls, self.settings)
+        crawler = get_crawler(NoRequestsSpider, self.settings)
+        yield crawler.crawl()
+        self.spider = crawler.spider
         self.pipe = self.pipeline_class.from_crawler(crawler)
         self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(self.spider)

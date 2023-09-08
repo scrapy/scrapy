@@ -1,26 +1,28 @@
 import warnings
 from itertools import product
-from unittest import TestCase
+
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.spiders import Spider
 from scrapy.utils.response import response_httprepr
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 
 class MyException(Exception):
     pass
 
 
-class TestDownloaderStats(TestCase):
+class TestDownloaderStats(unittest.TestCase):
+    @inlineCallbacks
     def setUp(self):
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("scrapytest.org")
+        self.crawler = get_crawler(NoRequestsSpider)
+        yield self.crawler.crawl()
+        self.spider = self.crawler.spider
         self.mw = DownloaderStats(self.crawler.stats)
-
-        self.crawler.stats.open_spider(self.spider)
 
         self.req = Request("http://scrapytest.org")
         self.res = Response("scrapytest.org", status=400)

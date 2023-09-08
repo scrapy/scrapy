@@ -2,27 +2,31 @@ import email.utils
 import shutil
 import tempfile
 import time
-import unittest
 from contextlib import contextmanager
+
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.settings import Settings
-from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 
 class _BaseTest(unittest.TestCase):
     storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
+    @inlineCallbacks
     def setUp(self):
         self.yesterday = email.utils.formatdate(time.time() - 86400)
         self.today = email.utils.formatdate()
         self.tomorrow = email.utils.formatdate(time.time() + 86400)
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("example.com")
+        self.crawler = get_crawler(NoRequestsSpider)
+        yield self.crawler.crawl()
+        self.spider = self.crawler.spider
         self.tmpdir = tempfile.mkdtemp()
         self.request = Request("http://www.example.com", headers={"User-Agent": "test"})
         self.response = Response(
@@ -31,7 +35,6 @@ class _BaseTest(unittest.TestCase):
             body=b"test body",
             status=202,
         )
-        self.crawler.stats.open_spider(self.spider)
 
     def tearDown(self):
         self.crawler.stats.close_spider(self.spider, "")
@@ -566,7 +569,3 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
                 assert "cached" in res2.flags
-
-
-if __name__ == "__main__":
-    unittest.main()

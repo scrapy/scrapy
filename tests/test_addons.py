@@ -1,13 +1,15 @@
 import itertools
-import unittest
 from typing import Any, Dict
 from unittest.mock import patch
 
-from scrapy import Spider
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
+
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 
 class SimpleAddon:
@@ -51,14 +53,17 @@ class AddonTest(unittest.TestCase):
 
 
 class AddonManagerTest(unittest.TestCase):
+    @inlineCallbacks
     def test_load_settings(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.SimpleAddon": 0},
         }
-        crawler = get_crawler(settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         manager = crawler.addons
         self.assertIsInstance(manager.addons[0], SimpleAddon)
 
+    @inlineCallbacks
     def test_notconfigured(self):
         class NotConfiguredAddon:
             def update_settings(self, settings):
@@ -67,10 +72,12 @@ class AddonManagerTest(unittest.TestCase):
         settings_dict = {
             "ADDONS": {NotConfiguredAddon: 0},
         }
-        crawler = get_crawler(settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         manager = crawler.addons
         self.assertFalse(manager.addons)
 
+    @inlineCallbacks
     def test_load_settings_order(self):
         # Get three addons with different settings
         addonlist = []
@@ -82,21 +89,25 @@ class AddonManagerTest(unittest.TestCase):
         for ordered_addons in itertools.permutations(addonlist):
             expected_order = [a.number for a in ordered_addons]
             settings = {"ADDONS": {a: i for i, a in enumerate(ordered_addons)}}
-            crawler = get_crawler(settings_dict=settings)
+            crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
+            yield crawler.crawl()
             manager = crawler.addons
             self.assertEqual([a.number for a in manager.addons], expected_order)
             self.assertEqual(crawler.settings.getint("KEY1"), expected_order[-1])
 
+    @inlineCallbacks
     def test_create_instance(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
             "MYADDON": {"MYADDON_KEY": "val"},
         }
-        crawler = get_crawler(settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         manager = crawler.addons
         self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
         self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
 
+    @inlineCallbacks
     def test_settings_priority(self):
         config = {
             "KEY": 15,  # priority=addon
@@ -104,13 +115,15 @@ class AddonManagerTest(unittest.TestCase):
         settings_dict = {
             "ADDONS": {get_addon_cls(config): 1},
         }
-        crawler = get_crawler(settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         self.assertEqual(crawler.settings.getint("KEY"), 15)
 
         settings = Settings(settings_dict)
         settings.set("KEY", 0, priority="default")
         runner = CrawlerRunner(settings)
-        crawler = runner.create_crawler(Spider)
+        crawler = runner.create_crawler(NoRequestsSpider)
+        yield crawler.crawl()
         self.assertEqual(crawler.settings.getint("KEY"), 15)
 
         settings_dict = {
@@ -120,9 +133,11 @@ class AddonManagerTest(unittest.TestCase):
         settings = Settings(settings_dict)
         settings.set("KEY", 0, priority="default")
         runner = CrawlerRunner(settings)
-        crawler = runner.create_crawler(Spider)
+        crawler = runner.create_crawler(NoRequestsSpider)
+        yield crawler.crawl()
         self.assertEqual(crawler.settings.getint("KEY"), 20)
 
+    @inlineCallbacks
     def test_fallback_workflow(self):
         FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
 
@@ -139,7 +154,8 @@ class AddonManagerTest(unittest.TestCase):
         settings_dict = {
             "ADDONS": {AddonWithFallback: 1},
         }
-        crawler = get_crawler(settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         self.assertEqual(
             crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"], "AddonHandler"
         )
@@ -152,12 +168,14 @@ class AddonManagerTest(unittest.TestCase):
             "ADDONS": {AddonWithFallback: 1},
             "DOWNLOAD_HANDLERS": {"https": "UserHandler"},
         }
-        crawler = get_crawler(settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         self.assertEqual(
             crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"], "AddonHandler"
         )
         self.assertEqual(crawler.settings.get(FALLBACK_SETTING), "UserHandler")
 
+    @inlineCallbacks
     def test_logging_message(self):
         class LoggedAddon:
             def update_settings(self, settings):
@@ -170,7 +188,8 @@ class AddonManagerTest(unittest.TestCase):
                 }
                 addon = LoggedAddon()
                 create_instance_mock.return_value = addon
-                crawler = get_crawler(settings_dict=settings_dict)
+                crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+                yield crawler.crawl()
                 logger_mock.info.assert_called_once_with(
                     "Enabled addons:\n%(addons)s",
                     {"addons": [addon]},

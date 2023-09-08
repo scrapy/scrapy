@@ -1,9 +1,9 @@
 import logging
-import unittest
 import warnings
 
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.error import (
     ConnectError,
     ConnectionDone,
@@ -11,6 +11,7 @@ from twisted.internet.error import (
     DNSLookupError,
     TCPTimedOutError,
 )
+from twisted.trial import unittest
 from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
@@ -19,12 +20,15 @@ from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 
 class RetryTest(unittest.TestCase):
+    @inlineCallbacks
     def setUp(self):
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler = get_crawler(NoRequestsSpider)
+        yield self.crawler.crawl()
+        self.spider = self.crawler.spider
         self.mw = RetryMiddleware.from_crawler(self.crawler)
         self.mw.max_retry_times = 2
 
@@ -160,16 +164,19 @@ class RetryTest(unittest.TestCase):
 class MaxRetryTimesTest(unittest.TestCase):
     invalid_url = "http://www.scrapytest.org/invalid_url"
 
+    @inlineCallbacks
     def get_spider_and_middleware(self, settings=None):
-        crawler = get_crawler(Spider, settings or {})
-        spider = crawler._create_spider("foo")
+        crawler = get_crawler(NoRequestsSpider, settings or {})
+        yield crawler.crawl()
+        spider = crawler.spider
         middleware = RetryMiddleware.from_crawler(crawler)
         return spider, middleware
 
+    @inlineCallbacks
     def test_with_settings_zero(self):
         max_retry_times = 0
         settings = {"RETRY_TIMES": max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        spider, middleware = yield self.get_spider_and_middleware(settings)
         req = Request(self.invalid_url)
         self._test_retry(
             req,
@@ -179,9 +186,10 @@ class MaxRetryTimesTest(unittest.TestCase):
             middleware=middleware,
         )
 
+    @inlineCallbacks
     def test_with_metakey_zero(self):
         max_retry_times = 0
-        spider, middleware = self.get_spider_and_middleware()
+        spider, middleware = yield self.get_spider_and_middleware()
         meta = {"max_retry_times": max_retry_times}
         req = Request(self.invalid_url, meta=meta)
         self._test_retry(
@@ -192,10 +200,11 @@ class MaxRetryTimesTest(unittest.TestCase):
             middleware=middleware,
         )
 
+    @inlineCallbacks
     def test_without_metakey(self):
         max_retry_times = 5
         settings = {"RETRY_TIMES": max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        spider, middleware = yield self.get_spider_and_middleware(settings)
         req = Request(self.invalid_url)
         self._test_retry(
             req,
@@ -205,6 +214,7 @@ class MaxRetryTimesTest(unittest.TestCase):
             middleware=middleware,
         )
 
+    @inlineCallbacks
     def test_with_metakey_greater(self):
         meta_max_retry_times = 3
         middleware_max_retry_times = 2
@@ -213,7 +223,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         req2 = Request(self.invalid_url)
 
         settings = {"RETRY_TIMES": middleware_max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        spider, middleware = yield self.get_spider_and_middleware(settings)
 
         self._test_retry(
             req1,
@@ -230,6 +240,7 @@ class MaxRetryTimesTest(unittest.TestCase):
             middleware=middleware,
         )
 
+    @inlineCallbacks
     def test_with_metakey_lesser(self):
         meta_max_retry_times = 4
         middleware_max_retry_times = 5
@@ -238,7 +249,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         req2 = Request(self.invalid_url)
 
         settings = {"RETRY_TIMES": middleware_max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        spider, middleware = yield self.get_spider_and_middleware(settings)
 
         self._test_retry(
             req1,
@@ -255,9 +266,10 @@ class MaxRetryTimesTest(unittest.TestCase):
             middleware=middleware,
         )
 
+    @inlineCallbacks
     def test_with_dont_retry(self):
         max_retry_times = 4
-        spider, middleware = self.get_spider_and_middleware()
+        spider, middleware = yield self.get_spider_and_middleware()
         meta = {
             "max_retry_times": max_retry_times,
             "dont_retry": True,
@@ -292,13 +304,16 @@ class MaxRetryTimesTest(unittest.TestCase):
 
 
 class GetRetryRequestTest(unittest.TestCase):
+    @inlineCallbacks
     def get_spider(self, settings=None):
-        crawler = get_crawler(Spider, settings or {})
-        return crawler._create_spider("foo")
+        crawler = get_crawler(NoRequestsSpider, settings or {})
+        yield crawler.crawl()
+        return crawler.spider
 
+    @inlineCallbacks
     def test_basic_usage(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         with LogCapture() as log:
             new_request = get_retry_request(
                 request,
@@ -322,9 +337,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_max_retries_reached(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         max_retry_times = 0
         with LogCapture() as log:
             new_request = get_retry_request(
@@ -345,9 +361,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_one_retry(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         with LogCapture() as log:
             new_request = get_retry_request(
                 request,
@@ -372,8 +389,9 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_two_retries(self):
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         request = Request("https://example.com")
         new_request = request
         max_retry_times = 2
@@ -427,9 +445,10 @@ class GetRetryRequestTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             get_retry_request(request)  # pylint: disable=missing-kwoa
 
+    @inlineCallbacks
     def test_max_retry_times_setting(self):
         max_retry_times = 0
-        spider = self.get_spider({"RETRY_TIMES": max_retry_times})
+        spider = yield self.get_spider({"RETRY_TIMES": max_retry_times})
         request = Request("https://example.com")
         new_request = get_retry_request(
             request,
@@ -437,9 +456,10 @@ class GetRetryRequestTest(unittest.TestCase):
         )
         self.assertEqual(new_request, None)
 
+    @inlineCallbacks
     def test_max_retry_times_meta(self):
         max_retry_times = 0
-        spider = self.get_spider({"RETRY_TIMES": max_retry_times + 1})
+        spider = yield self.get_spider({"RETRY_TIMES": max_retry_times + 1})
         meta = {"max_retry_times": max_retry_times}
         request = Request("https://example.com", meta=meta)
         new_request = get_retry_request(
@@ -448,9 +468,10 @@ class GetRetryRequestTest(unittest.TestCase):
         )
         self.assertEqual(new_request, None)
 
+    @inlineCallbacks
     def test_max_retry_times_argument(self):
         max_retry_times = 0
-        spider = self.get_spider({"RETRY_TIMES": max_retry_times + 1})
+        spider = yield self.get_spider({"RETRY_TIMES": max_retry_times + 1})
         meta = {"max_retry_times": max_retry_times + 1}
         request = Request("https://example.com", meta=meta)
         new_request = get_retry_request(
@@ -460,9 +481,10 @@ class GetRetryRequestTest(unittest.TestCase):
         )
         self.assertEqual(new_request, None)
 
+    @inlineCallbacks
     def test_priority_adjust_setting(self):
         priority_adjust = 1
-        spider = self.get_spider({"RETRY_PRIORITY_ADJUST": priority_adjust})
+        spider = yield self.get_spider({"RETRY_PRIORITY_ADJUST": priority_adjust})
         request = Request("https://example.com")
         new_request = get_retry_request(
             request,
@@ -470,9 +492,10 @@ class GetRetryRequestTest(unittest.TestCase):
         )
         self.assertEqual(new_request.priority, priority_adjust)
 
+    @inlineCallbacks
     def test_priority_adjust_argument(self):
         priority_adjust = 1
-        spider = self.get_spider({"RETRY_PRIORITY_ADJUST": priority_adjust + 1})
+        spider = yield self.get_spider({"RETRY_PRIORITY_ADJUST": priority_adjust + 1})
         request = Request("https://example.com")
         new_request = get_retry_request(
             request,
@@ -481,9 +504,10 @@ class GetRetryRequestTest(unittest.TestCase):
         )
         self.assertEqual(new_request.priority, priority_adjust)
 
+    @inlineCallbacks
     def test_log_extra_retry_success(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         with LogCapture(attributes=("spider",)) as log:
             get_retry_request(
                 request,
@@ -491,9 +515,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         log.check_present(spider)
 
+    @inlineCallbacks
     def test_log_extra_retries_exceeded(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         with LogCapture(attributes=("spider",)) as log:
             get_retry_request(
                 request,
@@ -502,9 +527,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         log.check_present(spider)
 
+    @inlineCallbacks
     def test_reason_string(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = "because"
         with LogCapture() as log:
             get_retry_request(
@@ -524,9 +550,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_reason_builtin_exception(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = NotImplementedError()
         expected_reason_string = "builtins.NotImplementedError"
         with LogCapture() as log:
@@ -549,9 +576,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_reason_builtin_exception_class(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = NotImplementedError
         expected_reason_string = "builtins.NotImplementedError"
         with LogCapture() as log:
@@ -574,9 +602,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_reason_custom_exception(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = IgnoreRequest()
         expected_reason_string = "scrapy.exceptions.IgnoreRequest"
         with LogCapture() as log:
@@ -599,9 +628,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_reason_custom_exception_class(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = IgnoreRequest
         expected_reason_string = "scrapy.exceptions.IgnoreRequest"
         with LogCapture() as log:
@@ -624,10 +654,11 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_custom_logger(self):
         logger = logging.getLogger("custom-logger")
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = "because"
         with LogCapture() as log:
             get_retry_request(
@@ -644,9 +675,10 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         )
 
+    @inlineCallbacks
     def test_custom_stats_key(self):
         request = Request("https://example.com")
-        spider = self.get_spider()
+        spider = yield self.get_spider()
         expected_reason = "because"
         stats_key = "custom_retry"
         get_retry_request(
@@ -660,7 +692,3 @@ class GetRetryRequestTest(unittest.TestCase):
             f"{stats_key}/reason_count/{expected_reason}",
         ):
             self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-
-
-if __name__ == "__main__":
-    unittest.main()

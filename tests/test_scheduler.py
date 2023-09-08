@@ -1,10 +1,10 @@
 import collections
 import shutil
 import tempfile
-import unittest
 
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
@@ -12,8 +12,10 @@ from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
+from tests.spiders import NoRequestsSpider
 
 MockEngine = collections.namedtuple("MockEngine", ["downloader"])
 MockSlot = collections.namedtuple("MockSlot", ["active"])
@@ -54,6 +56,7 @@ class MockCrawler(Crawler):
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
+        self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
 class SchedulerHandler:
@@ -307,7 +310,7 @@ class StartUrlsSpider(Spider):
         pass
 
 
-class TestIntegrationWithDownloaderAwareInMemory(TestCase):
+class TestIntegrationWithDownloaderAwareInMemory(unittest.TestCase):
     def setUp(self):
         self.crawler = get_crawler(
             spidercls=StartUrlsSpider,
@@ -334,16 +337,19 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
 
 
 class TestIncompatibility(unittest.TestCase):
+    @inlineCallbacks
     def _incompatible(self):
         settings = dict(
             SCHEDULER_PRIORITY_QUEUE="scrapy.pqueues.DownloaderAwarePriorityQueue",
             CONCURRENT_REQUESTS_PER_IP=1,
         )
-        crawler = get_crawler(Spider, settings)
+        crawler = get_crawler(NoRequestsSpider, settings)
+        yield crawler.crawl()
+        spider = crawler.spider
         scheduler = Scheduler.from_crawler(crawler)
-        spider = Spider(name="spider")
         scheduler.open(spider)
 
+    @inlineCallbacks
     def test_incompatibility(self):
         with self.assertRaises(ValueError):
-            self._incompatible()
+            yield self._incompatible()

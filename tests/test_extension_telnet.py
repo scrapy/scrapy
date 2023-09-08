@@ -9,7 +9,7 @@ from scrapy.utils.test import get_crawler
 
 class TelnetExtensionTest(unittest.TestCase):
     def _get_console_and_portal(self, settings=None):
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler(settings_dict=settings, disable_telnet=False)
         console = TelnetConsole(crawler)
 
         # This function has some side effects we don't need for this test

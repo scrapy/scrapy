@@ -26,6 +26,7 @@ import lxml.etree
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 from w3lib.url import file_uri_to_path, path_to_file_uri
 from zope.interface import implementer
@@ -51,7 +52,7 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no_boto
 from tests.mockserver import MockFTPServer, MockServer
-from tests.spiders import ItemSpider
+from tests.spiders import ItemSpider, NoRequestsSpider
 
 
 def path_to_url(path):
@@ -2747,13 +2748,14 @@ class FeedExporterSignalsTest(unittest.TestCase):
         d.callback(None)
         return d
 
+    @inlineCallbacks
     def run_signaled_feed_exporter(
         self, feed_exporter_signal_handler, feed_slot_signal_handler
     ):
-        crawler = get_crawler(settings_dict=self.settings)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=self.settings)
+        yield crawler.crawl()
         feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
+        spider = crawler.spider
         crawler.signals.connect(
             feed_exporter_signal_handler,
             signal=signals.feed_exporter_closed,
@@ -2764,24 +2766,26 @@ class FeedExporterSignalsTest(unittest.TestCase):
         feed_exporter.open_spider(spider)
         for item in self.items:
             feed_exporter.item_scraped(item, spider)
-        defer.ensureDeferred(feed_exporter.close_spider(spider))
+        yield defer.ensureDeferred(feed_exporter.close_spider(spider))
 
+    @inlineCallbacks
     def test_feed_exporter_signals_sent(self):
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
-        self.run_signaled_feed_exporter(
+        yield self.run_signaled_feed_exporter(
             self.feed_exporter_closed_signal_handler,
             self.feed_slot_closed_signal_handler,
         )
         self.assertTrue(self.feed_slot_closed_received)
         self.assertTrue(self.feed_exporter_closed_received)
 
+    @inlineCallbacks
     def test_feed_exporter_signals_sent_deferred(self):
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
-        self.run_signaled_feed_exporter(
+        yield self.run_signaled_feed_exporter(
             self.feed_exporter_closed_signal_handler_deferred,
             self.feed_slot_closed_signal_handler_deferred,
         )

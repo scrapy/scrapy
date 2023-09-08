@@ -420,12 +420,16 @@ class EngineTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        crawler = get_crawler(TestSpider)
+        yield crawler.crawl()
+        e = ExecutionEngine(crawler, lambda _: None)
         yield e.close()
 
     @defer.inlineCallbacks
     def test_start_already_running_exception(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        crawler = get_crawler(TestSpider)
+        yield crawler.crawl()
+        e = ExecutionEngine(crawler, lambda _: None)
         yield e.open_spider(TestSpider(), [])
         e.start()
         try:

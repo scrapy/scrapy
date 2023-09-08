@@ -1,6 +1,8 @@
 import datetime
 import typing
-import unittest
+
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy.crawler import Crawler
 from scrapy.extensions.periodic_log import PeriodicLog
@@ -59,36 +61,44 @@ class TestExtPeriodicLog(PeriodicLog):
         self.stats._stats = stats_dump_2
 
 
+@inlineCallbacks
 def extension(settings=None):
-    return TestExtPeriodicLog.from_crawler(
-        Crawler(
-            MetaSpider,
-            settings=settings,
-        )
+    crawler = Crawler(
+        MetaSpider,
+        settings=settings,
     )
+    yield crawler.crawl()
+    return TestExtPeriodicLog.from_crawler(crawler)
 
 
 class TestPeriodicLog(unittest.TestCase):
+    @inlineCallbacks
     def test_extension_enabled(self):
         # Expected that settings for this extension loaded succesfully
         # And on certain conditions - extension raising NotConfigured
 
         # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
         # due to TypeError exception from settings.getdict
-        assert extension({"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 60})
+        assert (yield extension({"PERIODIC_LOG_STATS": True, "LOGSTATS_INTERVAL": 60}))
 
         # "PERIODIC_LOG_STATS": "True" -> set to {"enabled": True}
         # due to JSONDecodeError(ValueError) exception from settings.getdict
-        assert extension({"PERIODIC_LOG_STATS": "True", "LOGSTATS_INTERVAL": 60})
+        assert (
+            yield extension({"PERIODIC_LOG_STATS": "True", "LOGSTATS_INTERVAL": 60})
+        )
 
         # The ame for PERIODIC_LOG_DELTA:
-        assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
-        assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
+        assert (yield extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60}))
+        assert (
+            yield extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
+        )
 
+    @inlineCallbacks
     def test_log_delta(self):
+        @inlineCallbacks
         def emulate(settings=None):
             spider = MetaSpider()
-            ext = extension(settings)
+            ext = yield extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_delta()
@@ -97,8 +107,9 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
+        @inlineCallbacks
         def check(settings: dict, condition: typing.Callable):
-            ext, a, b = emulate(settings)
+            ext, a, b = yield emulate(settings)
             assert list(a["delta"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
             ]
@@ -107,45 +118,49 @@ class TestPeriodicLog(unittest.TestCase):
             ]
 
         # Including all
-        check({"PERIODIC_LOG_DELTA": True}, lambda k, v: isinstance(v, (int, float)))
+        yield check(
+            {"PERIODIC_LOG_DELTA": True}, lambda k, v: isinstance(v, (int, float))
+        )
 
         # include:
-        check(
+        yield check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"]}},
             lambda k, v: isinstance(v, (int, float)) and "downloader/" in k,
         )
 
         # include multiple
-        check(
+        yield check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
             lambda k, v: isinstance(v, (int, float))
             and ("downloader/" in k or "scheduler/" in k),
         )
 
         # exclude
-        check(
+        yield check(
             {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/"]}},
             lambda k, v: isinstance(v, (int, float)) and "downloader/" not in k,
         )
 
         # exclude multiple
-        check(
+        yield check(
             {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
             lambda k, v: isinstance(v, (int, float))
             and ("downloader/" not in k and "scheduler/" not in k),
         )
 
         # include exclude combined
-        check(
+        yield check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: isinstance(v, (int, float))
             and ("downloader/" in k and "bytes" not in k),
         )
 
+    @inlineCallbacks
     def test_log_stats(self):
+        @inlineCallbacks
         def emulate(settings=None):
             spider = MetaSpider()
-            ext = extension(settings)
+            ext = yield extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_crawler_stats()
@@ -154,8 +169,9 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
+        @inlineCallbacks
         def check(settings: dict, condition: typing.Callable):
-            ext, a, b = emulate(settings)
+            ext, a, b = yield emulate(settings)
             assert list(a["stats"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
             ]
@@ -164,35 +180,34 @@ class TestPeriodicLog(unittest.TestCase):
             ]
 
         # Including all
-        check({"PERIODIC_LOG_STATS": True}, lambda k, v: True)
+        yield check({"PERIODIC_LOG_STATS": True}, lambda k, v: True)
 
         # include:
-        check(
+        yield check(
             {"PERIODIC_LOG_STATS": {"include": ["downloader/"]}},
             lambda k, v: "downloader/" in k,
         )
 
         # include multiple
-        check(
+        yield check(
             {"PERIODIC_LOG_STATS": {"include": ["downloader/", "scheduler/"]}},
             lambda k, v: "downloader/" in k or "scheduler/" in k,
         )
 
         # exclude
-        check(
+        yield check(
             {"PERIODIC_LOG_STATS": {"exclude": ["downloader/"]}},
             lambda k, v: "downloader/" not in k,
         )
 
         # exclude multiple
-        check(
+        yield check(
             {"PERIODIC_LOG_STATS": {"exclude": ["downloader/", "scheduler/"]}},
             lambda k, v: "downloader/" not in k and "scheduler/" not in k,
         )
 
         # include exclude combined
-        check(
+        yield check(
             {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: "downloader/" in k and "bytes" not in k,
         )
-        #

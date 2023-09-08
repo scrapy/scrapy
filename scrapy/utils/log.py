@@ -222,6 +222,7 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
+        assert self.crawler.stats
         self.crawler.stats.inc_value(sname)
 
 

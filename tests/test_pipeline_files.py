@@ -15,6 +15,7 @@ import attr
 import pytest
 from itemadapter import ItemAdapter
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 
 from scrapy.http import Request, Response
@@ -35,15 +36,18 @@ from scrapy.utils.test import (
     skip_if_no_boto,
 )
 from tests.mockserver import MockFTPServer
+from tests.spiders import NoRequestsSpider
 
 from .test_pipeline_media import _mocked_download_func
 
 
 class FilesPipelineTestCase(unittest.TestCase):
+    @inlineCallbacks
     def setUp(self):
         self.tempdir = mkdtemp()
         settings_dict = {"FILES_STORE": self.tempdir}
-        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)

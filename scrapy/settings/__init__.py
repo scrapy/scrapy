@@ -563,7 +563,7 @@ def iter_default_settings() -> Iterable[Tuple[str, Any]]:
 def overridden_settings(
     settings: Mapping[_SettingsKeyT, Any]
 ) -> Iterable[Tuple[str, Any]]:
-    """Return a dict of the settings that have been overridden"""
+    """Return an iterable of the settings that have been overridden"""
     for name, defvalue in iter_default_settings():
         value = settings[name]
         if not isinstance(defvalue, dict) and value != defvalue:

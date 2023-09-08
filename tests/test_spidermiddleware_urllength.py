@@ -1,21 +1,23 @@
-from unittest import TestCase
-
 from testfixtures import LogCapture
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
-from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
+from tests.spiders import NoRequestsSpider
 
 
-class TestUrlLengthMiddleware(TestCase):
+class TestUrlLengthMiddleware(unittest.TestCase):
+    @inlineCallbacks
     def setUp(self):
         self.maxlength = 25
         settings = Settings({"URLLENGTH_LIMIT": self.maxlength})
 
-        crawler = get_crawler(Spider)
-        self.spider = crawler._create_spider("foo")
+        crawler = get_crawler(NoRequestsSpider)
+        yield crawler.crawl()
+        self.spider = crawler.spider
         self.stats = crawler.stats
         self.mw = UrlLengthMiddleware.from_settings(settings)
 

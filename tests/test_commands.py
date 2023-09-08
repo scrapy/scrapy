@@ -26,7 +26,8 @@ from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
-from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+from tests.spiders import NoRequestsSpider
+from tests.test_crawler import ExceptionSpider
 
 
 class CommandSettings(unittest.TestCase):
@@ -712,7 +713,7 @@ class BadSpider(scrapy.Spider):
 
     def test_run_good_spider(self):
         proc, _, _ = self.runspider(
-            "import scrapy\n" + inspect.getsource(NoRequestsSpider)
+            "from scrapy import Spider\n" + inspect.getsource(NoRequestsSpider)
         )
         ret = proc.returncode
         self.assertEqual(ret, 0)
