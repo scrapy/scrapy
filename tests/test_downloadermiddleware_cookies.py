@@ -753,9 +753,8 @@ class CookiesMiddlewareTest(TestCase):
 
     def test_process_response_unrelated_domain(self):
         request = Request("http://a.example")
-        request.headers["Cookie"] = "foo=bar; domain=b.example"
-        response = Response("http://c.example")
-        response.headers["Set-Cookie"] = "foo=bar; domain=c.example"
+        response = Response("http://a.example")
+        response.headers["Set-Cookie"] = "foo=bar; domain=b.example"
         self.mw.process_response(request, response, spider=None)
         jar = self.mw.jars[None]
-        assert not jar._cookies.get(".c.example", {})
+        self.assertFalse(jar._cookies)
