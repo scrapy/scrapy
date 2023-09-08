@@ -431,12 +431,14 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
 class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
     skip = skip_pillow
 
+    @inlineCallbacks
     def setUp(self):
         settings_dict = {
             "IMAGES_STORE": "store-uri",
             "IMAGES_THUMBS": {"small": (50, 50)},
         }
-        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        crawler = get_crawler(NoRequestsSpider, settings_dict=settings_dict)
+        yield crawler.crawl()
         self.pipe = MockedMediaPipelineDeprecatedMethods.from_crawler(crawler)
         self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider(None)
