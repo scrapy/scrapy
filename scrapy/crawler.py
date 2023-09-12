@@ -72,24 +72,27 @@ class Crawler:
         self.spidercls: Type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
+        self._update_root_log_handler()
 
         self.addons: AddonManager = AddonManager(self)
         self.signals: SignalManager = SignalManager(self)
-
-        if get_scrapy_root_handler() is not None:
-            # scrapy root handler already installed: update it with new settings
-            install_scrapy_root_handler(self.settings)
 
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
         self._settings_loaded: bool = False
         self._started: bool = False
+
         self.extensions: Optional[ExtensionManager] = None
         self.stats: Optional[StatsCollector] = None
         self.logformatter: Optional[LogFormatter] = None
         self.request_fingerprinter: Optional[RequestFingerprinter] = None
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
+
+    def _update_root_log_handler(self) -> None:
+        if get_scrapy_root_handler() is not None:
+            # scrapy root handler already installed: update it with new settings
+            install_scrapy_root_handler(self.settings)
 
     def _load_settings(self) -> None:
         if self._settings_loaded:
@@ -153,6 +156,7 @@ class Crawler:
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self._load_settings()
+            self._update_root_log_handler()
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)
