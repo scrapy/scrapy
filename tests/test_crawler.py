@@ -481,6 +481,11 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertNotIn("Using asyncio event loop: uvloop.Loop", log)
         self.assertIn("async pipeline opened!", log)
 
+    def test_args_change_settings(self):
+        log = self.run_script("args_settings.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("The value of FOO is 42", log)
+
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
     script_dir = Path(__file__).parent.resolve() / "CrawlerRunner"
