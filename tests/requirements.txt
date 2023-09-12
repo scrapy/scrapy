@@ -12,7 +12,9 @@ uvloop; platform_system != "Windows" and python_version < "3.12"
 
 # bpython requires greenlet which currently doesn't build on 3.12
 bpython; python_version < "3.12"  # optional for shell wrapper tests
-brotli  # optional for HTTP compress downloader middleware tests
+brotli; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
+# 1.1.0 is broken on PyPy: https://github.com/google/brotli/issues/1072
+brotli==1.0.9; implementation_name == 'pypy'  # optional for HTTP compress downloader middleware tests
 zstandard; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
 ipython
 pywin32; sys_platform == "win32"
