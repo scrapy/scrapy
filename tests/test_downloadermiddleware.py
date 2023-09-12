@@ -3,33 +3,33 @@ from unittest import mock
 
 from pytest import mark
 from twisted.internet import defer
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
+from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.spiders import NoRequestsSpider
 
 
 class ManagerTestCase(TestCase):
     settings_dict = None
 
-    @inlineCallbacks
     def setUp(self):
-        self.crawler = get_crawler(NoRequestsSpider, self.settings_dict)
-        yield self.crawler.crawl()
-        self.spider = self.crawler.spider
+        self.crawler = get_crawler(Spider, self.settings_dict)
+        self.spider = self.crawler._create_spider("foo")
         self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
-        yield self.mwman.open_spider(self.spider)
+        # some mw depends on stats collector
+        self.crawler.stats.open_spider(self.spider)
+        return self.mwman.open_spider(self.spider)
 
     def tearDown(self):
+        self.crawler.stats.close_spider(self.spider, "")
         return self.mwman.close_spider(self.spider)
 
-    @inlineCallbacks
     def _download(self, request, response=None):
         """Executes downloader mw manager's download method and returns
         the result (Request or Response) or raise exception in case of
@@ -41,21 +41,26 @@ class ManagerTestCase(TestCase):
         def download_func(**kwargs):
             return response
 
-        ret = yield self.mwman.download(download_func, request, self.spider)
+        dfd = self.mwman.download(download_func, request, self.spider)
+        # catch deferred result and return the value
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+        ret = results[0]
+        if isinstance(ret, Failure):
+            ret.raiseException()
         return ret
 
 
 class DefaultsTest(ManagerTestCase):
     """Tests default behavior with default settings"""
 
-    @inlineCallbacks
     def test_request_response(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
-        ret = yield self._download(req, resp)
+        ret = self._download(req, resp)
         self.assertTrue(isinstance(ret, Response), "Non-response returned")
 
-    @inlineCallbacks
     def test_3xx_and_invalid_gzipped_body_must_redirect(self):
         """Regression test for a failure when redirecting a compressed
         request.
@@ -81,7 +86,7 @@ class DefaultsTest(ManagerTestCase):
                 "Location": "http://example.com/login",
             },
         )
-        ret = yield self._download(request=req, response=resp)
+        ret = self._download(request=req, response=resp)
         self.assertTrue(isinstance(ret, Request), f"Not redirected: {ret!r}")
         self.assertEqual(
             to_bytes(ret.url),
@@ -89,7 +94,6 @@ class DefaultsTest(ManagerTestCase):
             "Not redirected to location header",
         )
 
-    @inlineCallbacks
     def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request("http://example.com")
         body = b"<p>You are being redirected</p>"
@@ -104,14 +108,12 @@ class DefaultsTest(ManagerTestCase):
                 "Location": "http://example.com/login",
             },
         )
-        with self.assertRaises(OSError):
-            yield self._download(request=req, response=resp)
+        self.assertRaises(OSError, self._download, request=req, response=resp)
 
 
 class ResponseFromProcessRequestTest(ManagerTestCase):
     """Tests middleware returning a response from process_request."""
 
-    @inlineCallbacks
     def test_download_func_not_called(self):
         resp = Response("http://example.com/index.html")
 
@@ -123,8 +125,12 @@ class ResponseFromProcessRequestTest(ManagerTestCase):
 
         req = Request("http://example.com/index.html")
         download_func = mock.MagicMock()
-        result = yield self.mwman.download(download_func, req, self.spider)
-        self.assertIs(result, resp)
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
 
 
@@ -191,7 +197,6 @@ class ProcessExceptionInvalidOutput(ManagerTestCase):
 class MiddlewareUsingDeferreds(ManagerTestCase):
     """Middlewares using Deferreds should work"""
 
-    @inlineCallbacks
     def test_deferred(self):
         resp = Response("http://example.com/index.html")
 
@@ -208,8 +213,12 @@ class MiddlewareUsingDeferreds(ManagerTestCase):
         self.mwman._add_middleware(DeferredMiddleware())
         req = Request("http://example.com/index.html")
         download_func = mock.MagicMock()
-        result = yield self.mwman.download(download_func, req, self.spider)
-        self.assertIs(result, resp)
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
 
 
@@ -217,7 +226,6 @@ class MiddlewareUsingDeferreds(ManagerTestCase):
 class MiddlewareUsingCoro(ManagerTestCase):
     """Middlewares using asyncio coroutines should work"""
 
-    @inlineCallbacks
     def test_asyncdef(self):
         resp = Response("http://example.com/index.html")
 
@@ -229,12 +237,15 @@ class MiddlewareUsingCoro(ManagerTestCase):
         self.mwman._add_middleware(CoroMiddleware())
         req = Request("http://example.com/index.html")
         download_func = mock.MagicMock()
-        result = yield self.mwman.download(download_func, req, self.spider)
-        self.assertIs(result, resp)
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
 
     @mark.only_asyncio()
-    @inlineCallbacks
     def test_asyncdef_asyncio(self):
         resp = Response("http://example.com/index.html")
 
@@ -247,6 +258,10 @@ class MiddlewareUsingCoro(ManagerTestCase):
         self.mwman._add_middleware(CoroMiddleware())
         req = Request("http://example.com/index.html")
         download_func = mock.MagicMock()
-        result = yield self.mwman.download(download_func, req, self.spider)
-        self.assertIs(result, resp)
+        dfd = self.mwman.download(download_func, req, self.spider)
+        results = []
+        dfd.addBoth(results.append)
+        self._wait(dfd)
+
+        self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)

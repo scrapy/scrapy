@@ -7,8 +7,6 @@ from scrapy.utils.testproc import ProcessTest
 from scrapy.utils.testsite import SiteTest
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 
-raise unittest.SkipTest("Broken for now")
-
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     command = "shell"

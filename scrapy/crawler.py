@@ -82,6 +82,7 @@ class Crawler:
 
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
+        self._settings_loaded: bool = False
         self._started: bool = False
         self.extensions: Optional[ExtensionManager] = None
         self.stats: Optional[StatsCollector] = None
@@ -89,6 +90,53 @@ class Crawler:
         self.request_fingerprinter: Optional[RequestFingerprinter] = None
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
+
+    def _load_settings(self) -> None:
+        if self._settings_loaded:
+            return
+        self._settings_loaded = True
+
+        self.addons.load_settings(self.settings)
+        self.stats = load_object(self.settings["STATS_CLASS"])(self)
+
+        handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
+        logging.root.addHandler(handler)
+        # lambda is assigned to Crawler attribute because this way it is not
+        # garbage collected after leaving the scope
+        self.__remove_handler = lambda: logging.root.removeHandler(handler)
+        self.signals.connect(self.__remove_handler, signals.engine_stopped)
+
+        lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
+        self.logformatter = lf_cls.from_crawler(self)
+
+        self.request_fingerprinter = create_instance(
+            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            settings=self.settings,
+            crawler=self,
+        )
+
+        reactor_class: str = self.settings["TWISTED_REACTOR"]
+        event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
+        if self._init_reactor:
+            # this needs to be done after the spider settings are merged,
+            # but before something imports twisted.internet.reactor
+            if reactor_class:
+                install_reactor(reactor_class, event_loop)
+            else:
+                from twisted.internet import reactor  # noqa: F401
+            log_reactor_info()
+        if reactor_class:
+            verify_installed_reactor(reactor_class)
+            if is_asyncio_reactor_installed() and event_loop:
+                verify_installed_asyncio_event_loop(event_loop)
+
+        self.extensions = ExtensionManager.from_crawler(self)
+        self.settings.freeze()
+
+        d = dict(overridden_settings(self.settings))
+        logger.info(
+            "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
+        )
 
     @inlineCallbacks
     def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
@@ -104,49 +152,7 @@ class Crawler:
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
-
-            self.addons.load_settings(self.settings)
-            self.stats = load_object(self.settings["STATS_CLASS"])(self)
-
-            handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
-            logging.root.addHandler(handler)
-            # lambda is assigned to Crawler attribute because this way it is not
-            # garbage collected after leaving the scope
-            self.__remove_handler = lambda: logging.root.removeHandler(handler)
-            self.signals.connect(self.__remove_handler, signals.engine_stopped)
-
-            lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
-            self.logformatter = lf_cls.from_crawler(self)
-
-            self.request_fingerprinter = create_instance(
-                load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-                settings=self.settings,
-                crawler=self,
-            )
-
-            reactor_class: str = self.settings["TWISTED_REACTOR"]
-            event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
-            if self._init_reactor:
-                # this needs to be done after the spider settings are merged,
-                # but before something imports twisted.internet.reactor
-                if reactor_class:
-                    install_reactor(reactor_class, event_loop)
-                else:
-                    from twisted.internet import reactor  # noqa: F401
-                log_reactor_info()
-            if reactor_class:
-                verify_installed_reactor(reactor_class)
-                if is_asyncio_reactor_installed() and event_loop:
-                    verify_installed_asyncio_event_loop(event_loop)
-
-            self.extensions = ExtensionManager.from_crawler(self)
-            self.settings.freeze()
-
-            d = dict(overridden_settings(self.settings))
-            logger.info(
-                "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
-            )
-
+            self._load_settings()
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
             yield self.engine.open_spider(self.spider, start_requests)

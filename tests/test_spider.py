@@ -114,7 +114,7 @@ class SpiderTest(unittest.TestCase):
                 spider.settings.set("TEST1", "spider_instance", priority="spider")
                 return spider
 
-        crawler = get_crawler(TestSpider, settings_dict=project_settings)
+        crawler = Crawler(TestSpider, project_settings)
         self.assertEqual(crawler.settings.get("TEST1"), "spider")
         self.assertEqual(crawler.settings.get("TEST2"), "spider")
         self.assertEqual(crawler.settings.get("TEST3"), "project")

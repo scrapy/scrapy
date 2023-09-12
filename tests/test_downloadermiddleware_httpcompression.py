@@ -1,10 +1,9 @@
 from gzip import GzipFile
 from io import BytesIO
 from pathlib import Path
+from unittest import SkipTest, TestCase
 from warnings import catch_warnings
 
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 from w3lib.encoding import resolve_encoding
 
 from scrapy.downloadermiddlewares.httpcompression import (
@@ -14,10 +13,10 @@ from scrapy.downloadermiddlewares.httpcompression import (
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
+from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
-from tests.spiders import NoRequestsSpider
 
 SAMPLEDIR = Path(tests_datadir, "compressed")
 
@@ -39,13 +38,12 @@ FORMAT = {
 }
 
 
-class HttpCompressionTest(unittest.TestCase):
-    @inlineCallbacks
+class HttpCompressionTest(TestCase):
     def setUp(self):
-        self.crawler = get_crawler(NoRequestsSpider)
-        yield self.crawler.crawl()
-        self.spider = self.crawler.spider
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
+        self.crawler.stats.open_spider(self.spider)
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
@@ -133,7 +131,7 @@ class HttpCompressionTest(unittest.TestCase):
         try:
             import brotli  # noqa: F401
         except ImportError:
-            raise unittest.SkipTest("no brotli")
+            raise SkipTest("no brotli")
         response = self._getresponse("br")
         request = response.request
         self.assertEqual(response.headers["Content-Encoding"], b"br")
@@ -148,7 +146,7 @@ class HttpCompressionTest(unittest.TestCase):
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise unittest.SkipTest("no zstd support (zstandard)")
+            raise SkipTest("no zstd support (zstandard)")
         raw_content = None
         for check_key in FORMAT:
             if not check_key.startswith("zstd-"):
@@ -376,15 +374,13 @@ class HttpCompressionTest(unittest.TestCase):
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
 
-class HttpCompressionSubclassTest(unittest.TestCase):
-    @inlineCallbacks
+class HttpCompressionSubclassTest(TestCase):
     def test_init_missing_stats(self):
         class HttpCompressionMiddlewareSubclass(HttpCompressionMiddleware):
             def __init__(self):
                 super().__init__()
 
-        crawler = get_crawler(NoRequestsSpider)
-        yield crawler.crawl()
+        crawler = get_crawler(Spider)
         with catch_warnings(record=True) as caught_warnings:
             HttpCompressionMiddlewareSubclass.from_crawler(crawler)
         messages = tuple(

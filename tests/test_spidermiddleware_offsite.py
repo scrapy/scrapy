@@ -1,8 +1,6 @@
 import warnings
+from unittest import TestCase
 from urllib.parse import urlparse
-
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.offsite import OffsiteMiddleware, PortWarning, URLWarning
@@ -10,12 +8,10 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
 
-class TestOffsiteMiddleware(unittest.TestCase):
-    @inlineCallbacks
+class TestOffsiteMiddleware(TestCase):
     def setUp(self):
         crawler = get_crawler(Spider)
-        yield crawler.crawl(**self._get_spiderargs())
-        self.spider = crawler.spider
+        self.spider = crawler._create_spider(**self._get_spiderargs())
         self.mw = OffsiteMiddleware.from_crawler(crawler)
         self.mw.spider_opened(self.spider)
 

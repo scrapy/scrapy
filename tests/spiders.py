@@ -18,13 +18,6 @@ from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
 
 
-class NoRequestsSpider(Spider):
-    name = "no_request"
-
-    def start_requests(self):
-        return []
-
-
 class MockServerSpider(Spider):
     def __init__(self, mockserver=None, *args, **kwargs):
         super().__init__(*args, **kwargs)

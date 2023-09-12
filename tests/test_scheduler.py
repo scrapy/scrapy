@@ -1,10 +1,10 @@
 import collections
 import shutil
 import tempfile
+import unittest
 
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
+from twisted.trial.unittest import TestCase
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import Scheduler
@@ -15,7 +15,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-from tests.spiders import NoRequestsSpider
 
 MockEngine = collections.namedtuple("MockEngine", ["downloader"])
 MockSlot = collections.namedtuple("MockSlot", ["active"])
@@ -310,7 +309,7 @@ class StartUrlsSpider(Spider):
         pass
 
 
-class TestIntegrationWithDownloaderAwareInMemory(unittest.TestCase):
+class TestIntegrationWithDownloaderAwareInMemory(TestCase):
     def setUp(self):
         self.crawler = get_crawler(
             spidercls=StartUrlsSpider,
@@ -337,19 +336,16 @@ class TestIntegrationWithDownloaderAwareInMemory(unittest.TestCase):
 
 
 class TestIncompatibility(unittest.TestCase):
-    @inlineCallbacks
     def _incompatible(self):
         settings = dict(
             SCHEDULER_PRIORITY_QUEUE="scrapy.pqueues.DownloaderAwarePriorityQueue",
             CONCURRENT_REQUESTS_PER_IP=1,
         )
-        crawler = get_crawler(NoRequestsSpider, settings)
-        yield crawler.crawl()
-        spider = crawler.spider
+        crawler = get_crawler(Spider, settings)
         scheduler = Scheduler.from_crawler(crawler)
+        spider = Spider(name="spider")
         scheduler.open(spider)
 
-    @inlineCallbacks
     def test_incompatibility(self):
         with self.assertRaises(ValueError):
-            yield self._incompatible()
+            self._incompatible()

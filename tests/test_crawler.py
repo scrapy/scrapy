@@ -10,7 +10,6 @@ import pytest
 from packaging.version import parse as parse_version
 from pytest import mark, raises
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
 
@@ -24,7 +23,6 @@ from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer, get_mockserver_env
-from tests.spiders import NoRequestsSpider
 
 
 class BaseCrawlerTest(unittest.TestCase):
@@ -72,7 +70,6 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         get_crawler(MySpider)
         assert get_scrapy_root_handler() is None
 
-    @inlineCallbacks
     def test_spider_custom_settings_log_level(self):
         log_file = Path(self.mktemp())
         log_file.write_text("previous message\n", encoding="utf-8")
@@ -82,20 +79,20 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             custom_settings = {
                 "LOG_LEVEL": "INFO",
                 "LOG_FILE": str(log_file),
+                # settings to avoid extra warnings
+                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
+                "TELNETCONSOLE_ENABLED": telnet.TWISTED_CONCH_AVAILABLE,
             }
-
-            def start_requests(self):
-                logging.debug("debug message")
-                logging.info("info message")
-                logging.warning("warning message")
-                logging.error("error message")
-                return []
 
         configure_logging()
         self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
         crawler = get_crawler(MySpider)
-        yield crawler.crawl()
         self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
+        info_count = crawler.stats.get_value("log_count/INFO")
+        logging.debug("debug message")
+        logging.info("info message")
+        logging.warning("warning message")
+        logging.error("error message")
 
         logged = log_file.read_text(encoding="utf-8")
 
@@ -106,7 +103,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertIn("error message", logged)
         self.assertEqual(crawler.stats.get_value("log_count/ERROR"), 1)
         self.assertEqual(crawler.stats.get_value("log_count/WARNING"), 1)
-        # self.assertEqual(crawler.stats.get_value("log_count/INFO") - info_count, 1)  TODO
+        self.assertEqual(crawler.stats.get_value("log_count/INFO") - info_count, 1)
         self.assertEqual(crawler.stats.get_value("log_count/DEBUG", 0), 0)
 
     def test_spider_custom_settings_log_append(self):
@@ -181,6 +178,13 @@ class ExceptionSpider(scrapy.Spider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         raise ValueError("Exception in from_crawler method")
+
+
+class NoRequestsSpider(scrapy.Spider):
+    name = "no_request"
+
+    def start_requests(self):
+        return []
 
 
 @mark.usefixtures("reactor_pytest")

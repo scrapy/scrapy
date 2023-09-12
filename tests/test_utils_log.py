@@ -1,10 +1,9 @@
 import logging
 import sys
+import unittest
 
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial import unittest
 
 from scrapy.extensions import telnet
 from scrapy.utils.log import (
@@ -14,7 +13,6 @@ from scrapy.utils.log import (
     failure_to_exc_info,
 )
 from scrapy.utils.test import get_crawler
-from tests.spiders import NoRequestsSpider
 
 
 class FailureToExcInfoTest(unittest.TestCase):
@@ -62,7 +60,6 @@ class TopLevelFormatterTest(unittest.TestCase):
 
 
 class LogCounterHandlerTest(unittest.TestCase):
-    @inlineCallbacks
     def setUp(self):
         settings = {"LOG_LEVEL": "WARNING"}
         if not telnet.TWISTED_CONCH_AVAILABLE:
@@ -71,8 +68,7 @@ class LogCounterHandlerTest(unittest.TestCase):
         self.logger = logging.getLogger("test")
         self.logger.setLevel(logging.NOTSET)
         self.logger.propagate = False
-        self.crawler = get_crawler(NoRequestsSpider, settings_dict=settings)
-        yield self.crawler.crawl()
+        self.crawler = get_crawler(settings_dict=settings)
         self.handler = LogCounterHandler(self.crawler)
         self.logger.addHandler(self.handler)
 
