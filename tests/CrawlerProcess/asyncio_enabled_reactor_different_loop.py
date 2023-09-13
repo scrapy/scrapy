@@ -24,5 +24,6 @@ process = CrawlerProcess(
         "ASYNCIO_EVENT_LOOP": "uvloop.Loop",
     }
 )
-process.crawl(NoRequestsSpider)
+d = process.crawl(NoRequestsSpider)
+d.addErrback(lambda failure: failure.printTraceback())
 process.start()

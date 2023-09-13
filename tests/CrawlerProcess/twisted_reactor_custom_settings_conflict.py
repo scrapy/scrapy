@@ -17,6 +17,8 @@ class AsyncioReactorSpider(scrapy.Spider):
 
 
 process = CrawlerProcess()
-process.crawl(SelectReactorSpider)
-process.crawl(AsyncioReactorSpider)
+d1 = process.crawl(SelectReactorSpider)
+d1.addErrback(lambda failure: failure.printTraceback())
+d2 = process.crawl(AsyncioReactorSpider)
+d2.addErrback(lambda failure: failure.printTraceback())
 process.start()
