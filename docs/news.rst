@@ -8,6 +8,13 @@ Release notes
 Scrapy 2.11.0 (to be released)
 ------------------------------
 
+Highlights:
+
+-
+
+-   Periodic stats logging.
+
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -19,6 +26,50 @@ Backward-incompatible changes
     ``json.loads(response.text)`` instead.
 
     (:issue:`5968`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed the binary export mode of
+    :class:`~scrapy.exporters.PythonItemExporter`, deprecated in Scrapy 1.1.0.
+    (:issue:`6006`, :issue:`6007`)
+
+-   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
+    1.0.0, use :attr:`CrawlerRunner.spider_loader
+    <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added the :class:`~scrapy.extensions.periodic_log.PeriodicLog` extension
+    which can be enabled to log stats and/or their differences periodically.
+    (:issue:`5926`)
+
+-   Links to ``.webp`` files are now ignored by :ref:`link extractors
+    <topics-link-extractors>`. (:issue:`6021`)
+
+Bug fixes
+~~~~~~~~~
+
+-   :meth:`scrapy.settings.BaseSettings.getdictorlist`, used to parse
+    :setting:`FEED_EXPORT_FIELDS`, now handles tuple values. (:issue:`6011`,
+    :issue:`6013`)
+
+-   Calls to ``datetime.utcnow()``, no longer recommended to be used, have been
+    replaced with calls to ``datetime.now()`` with a timezone. (:issue:`6014`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Updated a deprecated function call in a pipeline example. (:issue:`6008`,
+    :issue:`6009`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Extended typing hints. (:issue:`6003`, :issue:`6005`)
+
+-   Other CI and pre-commit improvements. (:issue:`6002`, :issue:`6013`)
 
 .. _release-2.10.1:
 
