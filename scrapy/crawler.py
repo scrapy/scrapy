@@ -79,7 +79,6 @@ class Crawler:
 
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
-        self._settings_loaded: bool = False
         self._started: bool = False
 
         self.extensions: Optional[ExtensionManager] = None
@@ -95,11 +94,10 @@ class Crawler:
             install_scrapy_root_handler(self.settings)
 
     def _apply_settings(self) -> None:
-        if self._settings_loaded:
+        if self.settings.frozen:
             return
-        self._settings_loaded = True
 
-        self.addons.apply_settings(self.settings)
+        self.addons.load_settings(self.settings)
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
