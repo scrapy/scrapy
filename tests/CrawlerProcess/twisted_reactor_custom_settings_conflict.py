@@ -1,3 +1,5 @@
+from twisted.python import log
+
 import scrapy
 from scrapy.crawler import CrawlerProcess
 
@@ -18,7 +20,7 @@ class AsyncioReactorSpider(scrapy.Spider):
 
 process = CrawlerProcess()
 d1 = process.crawl(SelectReactorSpider)
-d1.addErrback(lambda failure: failure.printTraceback())
+d1.addErrback(log.err)
 d2 = process.crawl(AsyncioReactorSpider)
-d2.addErrback(lambda failure: failure.printTraceback())
+d2.addErrback(log.err)
 process.start()

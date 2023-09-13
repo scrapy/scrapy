@@ -2,6 +2,7 @@ import asyncio
 import sys
 
 from twisted.internet import asyncioreactor
+from twisted.python import log
 
 if sys.version_info >= (3, 8) and sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -25,5 +26,5 @@ process = CrawlerProcess(
     }
 )
 d = process.crawl(NoRequestsSpider)
-d.addErrback(lambda failure: failure.printTraceback())
+d.addErrback(log.err)
 process.start()

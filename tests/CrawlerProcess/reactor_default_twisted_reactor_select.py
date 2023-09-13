@@ -1,4 +1,5 @@
 from twisted.internet import reactor  # noqa: F401
+from twisted.python import log
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -18,5 +19,5 @@ process = CrawlerProcess(
 )
 
 d = process.crawl(NoRequestsSpider)
-d.addErrback(lambda failure: failure.printTraceback())
+d.addErrback(log.err)
 process.start()
