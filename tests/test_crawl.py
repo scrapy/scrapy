@@ -1,7 +1,6 @@
 import json
 import logging
 import unittest
-import warnings
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
@@ -14,14 +13,11 @@ from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy import signals
-from scrapy.crawler import Crawler, CrawlerRunner
-from scrapy.exceptions import ScrapyDeprecationWarning, StopDownload
-from scrapy.extensions.throttle import AutoThrottle
+from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import MockServer
@@ -413,38 +409,6 @@ with multiples lines
 
         self._assert_retried(log)
         self.assertIn("Got response 200", str(log))
-
-    @defer.inlineCallbacks
-    def test_populate_spidercls_settings(self):
-        spider_settings = {
-            "TEST1": "spider",
-            "TEST2": "spider",
-            "AUTOTHROTTLE_ENABLED": True,
-        }
-        project_settings = {"TEST1": "project", "TEST3": "project"}
-
-        class CustomSettingsSpider(DefaultSpider):
-            custom_settings = spider_settings
-
-            def parse(self, response):
-                return
-
-        settings = Settings()
-        settings.setdict(project_settings, priority="project")
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-            crawler = Crawler(CustomSettingsSpider, settings)
-        yield crawler.crawl()
-
-        self.assertEqual(crawler.settings.get("TEST1"), "spider")
-        self.assertEqual(crawler.settings.get("TEST2"), "spider")
-        self.assertEqual(crawler.settings.get("TEST3"), "project")
-
-        enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
-        self.assertIn(AutoThrottle, enabled_exts)
-
-        self.assertFalse(settings.frozen)
-        self.assertTrue(crawler.settings.frozen)
 
 
 class CrawlSpiderTestCase(TestCase):

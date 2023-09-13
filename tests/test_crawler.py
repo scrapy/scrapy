@@ -17,6 +17,7 @@ import scrapy
 from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions import telnet
+from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
@@ -32,6 +33,25 @@ class BaseCrawlerTest(unittest.TestCase):
 
 
 class CrawlerTestCase(BaseCrawlerTest):
+    def test_populate_spidercls_settings(self):
+        spider_settings = {"TEST1": "spider", "TEST2": "spider"}
+        project_settings = {"TEST1": "project", "TEST3": "project"}
+
+        class CustomSettingsSpider(DefaultSpider):
+            custom_settings = spider_settings
+
+        settings = Settings()
+        settings.setdict(project_settings, priority="project")
+        crawler = Crawler(CustomSettingsSpider, settings)
+        crawler._load_settings()
+
+        self.assertEqual(crawler.settings.get("TEST1"), "spider")
+        self.assertEqual(crawler.settings.get("TEST2"), "spider")
+        self.assertEqual(crawler.settings.get("TEST3"), "project")
+
+        self.assertFalse(settings.frozen)
+        self.assertTrue(crawler.settings.frozen)
+
     def test_crawler_accepts_dict(self):
         crawler = get_crawler(DefaultSpider, {"foo": "bar"})
         self.assertEqual(crawler.settings["foo"], "bar")
@@ -56,6 +76,17 @@ class CrawlerTestCase(BaseCrawlerTest):
             match=r"Running Crawler.crawl\(\) more than once is deprecated",
         ):
             yield crawler.crawl()
+
+
+class SpiderSettingsTestCase(unittest.TestCase):
+    def test_spider_custom_settings(self):
+        class MySpider(scrapy.Spider):
+            name = "spider"
+            custom_settings = {"AUTOTHROTTLE_ENABLED": True}
+
+        crawler = get_crawler(MySpider)
+        enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
+        self.assertIn(AutoThrottle, enabled_exts)
 
 
 class CrawlerLoggingTestCase(unittest.TestCase):

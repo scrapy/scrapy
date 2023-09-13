@@ -3,6 +3,8 @@ import unittest
 from typing import Any, Dict
 from unittest.mock import patch
 
+from twisted.internet.defer import inlineCallbacks
+
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
@@ -177,3 +179,22 @@ class AddonManagerTest(unittest.TestCase):
                     {"addons": [addon]},
                     extra={"crawler": crawler},
                 )
+
+    @inlineCallbacks
+    def test_enable_addon_in_spider(self):
+        class MySpider(Spider):
+            name = "myspider"
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                addon_config = {"KEY": "addon"}
+                addon_cls = get_addon_cls(addon_config)
+                spider.settings.set("ADDONS", {addon_cls: 1}, priority="spider")
+                return spider
+
+        runner = CrawlerRunner({"KEY": "project"})
+        crawler = runner.create_crawler(MySpider)
+        self.assertEqual(crawler.settings.get("KEY"), "project")
+        yield crawler.crawl()
+        self.assertEqual(crawler.settings.get("KEY"), "addon")
