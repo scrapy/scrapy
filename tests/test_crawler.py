@@ -43,7 +43,7 @@ class CrawlerTestCase(BaseCrawlerTest):
         settings = Settings()
         settings.setdict(project_settings, priority="project")
         crawler = Crawler(CustomSettingsSpider, settings)
-        crawler._load_settings()
+        crawler._apply_settings()
 
         self.assertEqual(crawler.settings.get("TEST1"), "spider")
         self.assertEqual(crawler.settings.get("TEST2"), "spider")

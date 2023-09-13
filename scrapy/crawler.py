@@ -94,12 +94,12 @@ class Crawler:
             # scrapy root handler already installed: update it with new settings
             install_scrapy_root_handler(self.settings)
 
-    def _load_settings(self) -> None:
+    def _apply_settings(self) -> None:
         if self._settings_loaded:
             return
         self._settings_loaded = True
 
-        self.addons.load_settings(self.settings)
+        self.addons.apply_settings(self.settings)
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
         handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
@@ -155,7 +155,7 @@ class Crawler:
 
         try:
             self.spider = self._create_spider(*args, **kwargs)
-            self._load_settings()
+            self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())

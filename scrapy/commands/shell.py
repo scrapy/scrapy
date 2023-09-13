@@ -77,7 +77,7 @@ class Command(ScrapyCommand):
         # The crawler is created this way since the Shell manually handles the
         # crawling engine, so the set up in the crawl method won't work
         crawler = self.crawler_process._create_crawler(spidercls)
-        crawler._load_settings()
+        crawler._apply_settings()
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
         crawler.engine.start()

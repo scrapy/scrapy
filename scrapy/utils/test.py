@@ -91,7 +91,7 @@ def get_crawler(
     settings.update(settings_dict or {})
     runner = CrawlerRunner(settings)
     crawler = runner.create_crawler(spidercls or TestSpider)
-    crawler._load_settings()
+    crawler._apply_settings()
     return crawler
 
 

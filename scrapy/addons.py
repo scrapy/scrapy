@@ -19,8 +19,8 @@ class AddonManager:
         self.crawler: "Crawler" = crawler
         self.addons: List[Any] = []
 
-    def load_settings(self, settings: Settings) -> None:
-        """Load add-ons and configurations from a settings object.
+    def apply_settings(self, settings: Settings) -> None:
+        """Load add-ons and configurations from a settings object and apply them.
 
         This will load the add-on for every add-on path in the
         ``ADDONS`` setting and execute their ``update_settings`` methods.

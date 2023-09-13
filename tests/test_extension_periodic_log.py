@@ -61,7 +61,7 @@ class TestExtPeriodicLog(PeriodicLog):
 
 def extension(settings=None):
     crawler = Crawler(MetaSpider, settings=settings)
-    crawler._load_settings()
+    crawler._apply_settings()
     return TestExtPeriodicLog.from_crawler(crawler)
 
 

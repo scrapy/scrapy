@@ -113,7 +113,7 @@ class AddonManagerTest(unittest.TestCase):
         settings.set("KEY", 0, priority="default")
         runner = CrawlerRunner(settings)
         crawler = runner.create_crawler(Spider)
-        crawler._load_settings()
+        crawler._apply_settings()
         self.assertEqual(crawler.settings.getint("KEY"), 15)
 
         settings_dict = {
