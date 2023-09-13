@@ -1,9 +1,9 @@
 import itertools
-import unittest
 from typing import Any, Dict
 from unittest.mock import patch
 
 from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
@@ -193,8 +193,10 @@ class AddonManagerTest(unittest.TestCase):
                 spider.settings.set("ADDONS", {addon_cls: 1}, priority="spider")
                 return spider
 
-        runner = CrawlerRunner({"KEY": "project"})
+        settings = Settings()
+        settings.set("KEY", "default", priority="default")
+        runner = CrawlerRunner(settings)
         crawler = runner.create_crawler(MySpider)
-        self.assertEqual(crawler.settings.get("KEY"), "project")
+        self.assertEqual(crawler.settings.get("KEY"), "default")
         yield crawler.crawl()
         self.assertEqual(crawler.settings.get("KEY"), "addon")
