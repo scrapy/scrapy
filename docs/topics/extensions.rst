@@ -350,52 +350,8 @@ full list of parameters, including examples on how to instantiate
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
 
-Debugging extensions
---------------------
-
-Stack trace dump extension
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. class:: StackTraceDump
-
-Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
-signal is received. The information dumped is the following:
-
-1. engine status (using ``scrapy.utils.engine.get_engine_status()``)
-2. live references (see :ref:`topics-leaks-trackrefs`)
-3. stack trace of all threads
-
-After the stack trace and engine status is dumped, the Scrapy process continues
-running normally.
-
-This extension only works on POSIX-compliant platforms (i.e. not Windows),
-because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
-
-There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
-
-1. By pressing Ctrl-\ while a Scrapy process is running (Linux only?)
-2. By running this command (assuming ``<pid>`` is the process id of the Scrapy
-   process)::
-
-    kill -QUIT <pid>
-
-.. _SIGUSR2: https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
-.. _SIGQUIT: https://en.wikipedia.org/wiki/SIGQUIT
-
-Debugger extension
-~~~~~~~~~~~~~~~~~~
-
-.. class:: Debugger
-
-Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
-signal is received. After the debugger is exited, the Scrapy process continues
-running normally.
-
-For more info see `Debugging in Python`_.
-
-This extension only works on POSIX-compliant platforms (i.e. not Windows).
-
-.. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
+.. module:: scrapy.extensions.periodic_log
+   :synopsis: Periodic stats logging
 
 Periodic log extension
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -441,10 +397,10 @@ This extension periodically logs rich stat data as a JSON object::
 
 This extension logs the following configurable sections:
 
--   ``"delta"`` shows how some numeric stats have changed since the last stats 
+-   ``"delta"`` shows how some numeric stats have changed since the last stats
     log message.
-    
-    The :setting:`PERIODIC_LOG_DELTA` setting determines the target stats. They 
+
+    The :setting:`PERIODIC_LOG_DELTA` setting determines the target stats. They
     must have ``int`` or ``float`` values.
 
 -   ``"stats"`` shows the current value of some stats.
@@ -453,11 +409,11 @@ This extension logs the following configurable sections:
 
 -   ``"time"`` shows detailed timing data.
 
-    The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or 
+    The :setting:`PERIODIC_LOG_TIMING_ENABLED` setting determines whether or
     not to show this section.
 
-This extension logs data at the start, then on a fixed time interval 
-configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally 
+This extension logs data at the start, then on a fixed time interval
+configurable through the :setting:`LOGSTATS_INTERVAL` setting, and finally
 right before the crawl ends.
 
 
@@ -508,3 +464,51 @@ PERIODIC_LOG_TIMING_ENABLED
 Default: ``False``
 
 ``True`` enables logging of timing data (i.e. the ``"time"`` section).
+
+
+Debugging extensions
+--------------------
+
+Stack trace dump extension
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: StackTraceDump
+
+Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
+signal is received. The information dumped is the following:
+
+1. engine status (using ``scrapy.utils.engine.get_engine_status()``)
+2. live references (see :ref:`topics-leaks-trackrefs`)
+3. stack trace of all threads
+
+After the stack trace and engine status is dumped, the Scrapy process continues
+running normally.
+
+This extension only works on POSIX-compliant platforms (i.e. not Windows),
+because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
+
+There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
+
+1. By pressing Ctrl-\ while a Scrapy process is running (Linux only?)
+2. By running this command (assuming ``<pid>`` is the process id of the Scrapy
+   process)::
+
+    kill -QUIT <pid>
+
+.. _SIGUSR2: https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+.. _SIGQUIT: https://en.wikipedia.org/wiki/SIGQUIT
+
+Debugger extension
+~~~~~~~~~~~~~~~~~~
+
+.. class:: Debugger
+
+Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process when a `SIGUSR2`_
+signal is received. After the debugger is exited, the Scrapy process continues
+running normally.
+
+For more info see `Debugging in Python`_.
+
+This extension only works on POSIX-compliant platforms (i.e. not Windows).
+
+.. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/
