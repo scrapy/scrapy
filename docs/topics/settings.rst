@@ -115,8 +115,10 @@ arguments <spiderargs>` or other logic:
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
             spider = super().from_crawler(crawler, *args, **kwargs)
-            if "value" in kwargs:
-                spider.settings.set("SOME_SETTING", kwargs["value"], priority="spider")
+            if "some_argument" in kwargs:
+                spider.settings.set(
+                    "SOME_SETTING", kwargs["some_argument"], priority="spider"
+                )
             return spider
 
 3. Project settings module
