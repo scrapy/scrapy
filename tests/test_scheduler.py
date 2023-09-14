@@ -12,6 +12,7 @@ from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 
@@ -54,6 +55,7 @@ class MockCrawler(Crawler):
         )
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
+        self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
 class SchedulerHandler:

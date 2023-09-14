@@ -98,6 +98,29 @@ and settings set there should use the "spider" priority explicitly:
             super().update_settings(settings)
             settings.set("SOME_SETTING", "some value", priority="spider")
 
+.. versionadded:: VERSION
+
+It's also possible to modify the settings in the
+:meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
+arguments <spiderargs>` or other logic:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            spider = super().from_crawler(crawler, *args, **kwargs)
+            if "some_argument" in kwargs:
+                spider.settings.set(
+                    "SOME_SETTING", kwargs["some_argument"], priority="spider"
+                )
+            return spider
+
 3. Project settings module
 --------------------------
 

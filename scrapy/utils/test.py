@@ -69,6 +69,10 @@ def get_ftp_content_and_delete(
     return b"".join(ftp_data)
 
 
+class TestSpider(Spider):
+    name = "test"
+
+
 def get_crawler(
     spidercls: Optional[Type[Spider]] = None,
     settings_dict: Optional[Dict[str, Any]] = None,
@@ -79,15 +83,16 @@ def get_crawler(
     priority.
     """
     from scrapy.crawler import CrawlerRunner
-    from scrapy.spiders import Spider
 
     # Set by default settings that prevent deprecation warnings.
-    settings = {}
+    settings: Dict[str, Any] = {}
     if prevent_warnings:
         settings["REQUEST_FINGERPRINTER_IMPLEMENTATION"] = "2.7"
     settings.update(settings_dict or {})
     runner = CrawlerRunner(settings)
-    return runner.create_crawler(spidercls or Spider)
+    crawler = runner.create_crawler(spidercls or TestSpider)
+    crawler._apply_settings()
+    return crawler
 
 
 def get_pythonpath() -> str:

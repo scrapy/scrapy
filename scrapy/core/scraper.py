@@ -110,6 +110,7 @@ class Scraper:
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
+        assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
     @inlineCallbacks
@@ -244,6 +245,7 @@ class Scraper:
             response=response,
             spider=spider,
         )
+        assert self.crawler.stats
         self.crawler.stats.inc_value(
             f"spider_exceptions/{_failure.value.__class__.__name__}", spider=spider
         )

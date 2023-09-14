@@ -136,6 +136,15 @@ scrapy.Spider
        attributes in the new instance so they can be accessed later inside the
        spider's code.
 
+       .. versionchanged:: VERSION
+
+           The settings in ``crawler.settings`` can now be modified in this
+           method, which is handy if you want to modify them based on
+           arguments. As a consequence, these settings aren't the final values
+           as they can be modified later by e.g. :ref:`add-ons
+           <topics-addons>`. The final settings are available in the
+           :meth:`start_requests` method and later.
+
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance
 
