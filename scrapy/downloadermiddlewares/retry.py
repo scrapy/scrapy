@@ -23,12 +23,13 @@ from scrapy.utils.response import response_status_message
 
 retry_logger = getLogger(__name__)
 
+DEPRECATED_ATTRIBUTE = "EXCEPTIONS_TO_RETRY"
 
-class BackwardsCompatibilityMetaclass(type):
-    @property
-    def EXCEPTIONS_TO_RETRY(cls):
+
+def backwards_compatibility_getattr(self, name):
+    if name == DEPRECATED_ATTRIBUTE:
         warnings.warn(
-            "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
+            f"Attribute RetryMiddleware.{DEPRECATED_ATTRIBUTE} is deprecated. "
             "Use the RETRY_EXCEPTIONS setting instead.",
             ScrapyDeprecationWarning,
             stacklevel=2,
@@ -37,6 +38,13 @@ class BackwardsCompatibilityMetaclass(type):
             load_object(x) if isinstance(x, str) else x
             for x in Settings().getlist("RETRY_EXCEPTIONS")
         )
+    raise AttributeError(
+        f"{self.__class__.__name__!r} object has no attribute {name!r}"
+    )
+
+
+class BackwardsCompatibilityMetaclass(type):
+    __getattr__ = backwards_compatibility_getattr
 
 
 def get_retry_request(
@@ -137,15 +145,14 @@ class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
         )
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
 
-        if not hasattr(
-            self, "EXCEPTIONS_TO_RETRY"
-        ):  # If EXCEPTIONS_TO_RETRY is not "overriden"
+        try:
+            self.exceptions_to_retry = self.__getattribute__(DEPRECATED_ATTRIBUTE)
+        except AttributeError:
+            # If EXCEPTIONS_TO_RETRY is not "overridden"
             self.exceptions_to_retry = tuple(
                 load_object(x) if isinstance(x, str) else x
                 for x in settings.getlist("RETRY_EXCEPTIONS")
             )
-        else:
-            self.exceptions_to_retry = self.EXCEPTIONS_TO_RETRY
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -175,3 +182,5 @@ class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
         )
+
+    __getattr__ = backwards_compatibility_getattr
