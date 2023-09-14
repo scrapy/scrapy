@@ -11,7 +11,7 @@ once the spider has finished crawling all regular (non failed) pages.
 """
 import warnings
 from logging import Logger, getLogger
-from typing import Optional, Union
+from typing import Optional, Type, Union
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http.request import Request
@@ -43,7 +43,7 @@ def get_retry_request(
     request: Request,
     *,
     spider: Spider,
-    reason: Union[str, Exception] = "unspecified",
+    reason: Union[str, Exception, Type[Exception]] = "unspecified",
     max_retry_times: Optional[int] = None,
     priority_adjust: Optional[int] = None,
     logger: Logger = retry_logger,
@@ -90,6 +90,7 @@ def get_retry_request(
     retry-related job stats
     """
     settings = spider.crawler.settings
+    assert spider.crawler.stats
     stats = spider.crawler.stats
     retry_times = request.meta.get("retry_times", 0) + 1
     if max_retry_times is None:

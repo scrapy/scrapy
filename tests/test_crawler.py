@@ -42,9 +42,8 @@ class CrawlerTestCase(BaseCrawlerTest):
 
         settings = Settings()
         settings.setdict(project_settings, priority="project")
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-            crawler = Crawler(CustomSettingsSpider, settings)
+        crawler = Crawler(CustomSettingsSpider, settings)
+        crawler._apply_settings()
 
         self.assertEqual(crawler.settings.get("TEST1"), "spider")
         self.assertEqual(crawler.settings.get("TEST2"), "spider")
@@ -512,6 +511,11 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         )
         self.assertNotIn("Using asyncio event loop: uvloop.Loop", log)
         self.assertIn("async pipeline opened!", log)
+
+    def test_args_change_settings(self):
+        log = self.run_script("args_settings.py")
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("The value of FOO is 42", log)
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):

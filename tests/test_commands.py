@@ -965,6 +965,28 @@ class MySpider(scrapy.Spider):
             log,
         )
 
+    def test_args_change_settings(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        spider.settings.set("FOO", kwargs.get("foo"))
+        return spider
+
+    def start_requests(self):
+        self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
+        return []
+"""
+        args = ["-a", "foo=42"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("The value of FOO is 42", log)
+
 
 @skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):

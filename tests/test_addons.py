@@ -1,7 +1,9 @@
 import itertools
-import unittest
 from typing import Any, Dict
 from unittest.mock import patch
+
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial import unittest
 
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
@@ -111,6 +113,7 @@ class AddonManagerTest(unittest.TestCase):
         settings.set("KEY", 0, priority="default")
         runner = CrawlerRunner(settings)
         crawler = runner.create_crawler(Spider)
+        crawler._apply_settings()
         self.assertEqual(crawler.settings.getint("KEY"), 15)
 
         settings_dict = {
@@ -176,3 +179,24 @@ class AddonManagerTest(unittest.TestCase):
                     {"addons": [addon]},
                     extra={"crawler": crawler},
                 )
+
+    @inlineCallbacks
+    def test_enable_addon_in_spider(self):
+        class MySpider(Spider):
+            name = "myspider"
+
+            @classmethod
+            def from_crawler(cls, crawler, *args, **kwargs):
+                spider = super().from_crawler(crawler, *args, **kwargs)
+                addon_config = {"KEY": "addon"}
+                addon_cls = get_addon_cls(addon_config)
+                spider.settings.set("ADDONS", {addon_cls: 1}, priority="spider")
+                return spider
+
+        settings = Settings()
+        settings.set("KEY", "default", priority="default")
+        runner = CrawlerRunner(settings)
+        crawler = runner.create_crawler(MySpider)
+        self.assertEqual(crawler.settings.get("KEY"), "default")
+        yield crawler.crawl()
+        self.assertEqual(crawler.settings.get("KEY"), "addon")
