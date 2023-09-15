@@ -23,13 +23,11 @@ from scrapy.utils.response import response_status_message
 
 retry_logger = getLogger(__name__)
 
-DEPRECATED_ATTRIBUTE = "EXCEPTIONS_TO_RETRY"
-
 
 def backwards_compatibility_getattr(self, name):
-    if name == DEPRECATED_ATTRIBUTE:
+    if name == "EXCEPTIONS_TO_RETRY":
         warnings.warn(
-            f"Attribute RetryMiddleware.{DEPRECATED_ATTRIBUTE} is deprecated. "
+            "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
             "Use the RETRY_EXCEPTIONS setting instead.",
             ScrapyDeprecationWarning,
             stacklevel=2,
@@ -146,7 +144,7 @@ class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
 
         try:
-            self.exceptions_to_retry = self.__getattribute__(DEPRECATED_ATTRIBUTE)
+            self.exceptions_to_retry = self.__getattribute__("EXCEPTIONS_TO_RETRY")
         except AttributeError:
             # If EXCEPTIONS_TO_RETRY is not "overridden"
             self.exceptions_to_retry = tuple(
