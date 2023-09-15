@@ -98,7 +98,7 @@ and settings set there should use the "spider" priority explicitly:
             super().update_settings(settings)
             settings.set("SOME_SETTING", "some value", priority="spider")
 
-.. versionadded:: VERSION
+.. versionadded:: 2.11
 
 It's also possible to modify the settings in the
 :meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider

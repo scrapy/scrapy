@@ -136,7 +136,7 @@ scrapy.Spider
        attributes in the new instance so they can be accessed later inside the
        spider's code.
 
-       .. versionchanged:: VERSION
+       .. versionchanged:: 2.11
 
            The settings in ``crawler.settings`` can now be modified in this
            method, which is handy if you want to modify them based on
