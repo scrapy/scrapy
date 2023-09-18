@@ -14,7 +14,7 @@ Highlights:
     :meth:`~scrapy.Spider.from_crawler` methods, e.g. based on :ref:`spider
     arguments <spiderargs>`.
 
--   Periodic stats logging.
+-   Periodic logging of stats.
 
 
 Backward-incompatible changes
@@ -47,15 +47,15 @@ Deprecation removals
     :class:`~scrapy.exporters.PythonItemExporter`, deprecated in Scrapy 1.1.0.
     (:issue:`6006`, :issue:`6007`)
 
--   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
-    1.0.0, use :attr:`CrawlerRunner.spider_loader
-    <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
-
     .. note:: If you are using this Scrapy version on Scrapy Cloud with a stack
               that includes an older Scrapy version and get a "TypeError:
               Unexpected options: binary" error, you may need to add
-              ``scrapinghub-entrypoint-scrapy > 0.14.0`` to your project
+              ``scrapinghub-entrypoint-scrapy >= 0.14.1`` to your project
               requirements or switch to a stack that includes Scrapy 2.11.
+
+-   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
+    1.0.0, use :attr:`CrawlerRunner.spider_loader
+    <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -67,12 +67,8 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   Changed the :class:`scrapy.crawler.Crawler` initialization order, so that
-    most of the initialization that previously happened in
-    :meth:`~scrapy.crawler.Crawler.__init__` now happens in
-    :meth:`~scrapy.crawler.Crawler.crawl` after the spider instance is created.
-    This allows spider instances to modify settings in their
-    :meth:`~scrapy.Spider.from_crawler` methods, e.g. based on :ref:`spider
+-   Spiders can now modify settings in their
+    :meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
     arguments <spiderargs>`. (:issue:`1305`, :issue:`1580`, :issue:`2392`,
     :issue:`3663`, :issue:`6038`)
 
