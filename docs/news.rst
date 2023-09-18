@@ -5,8 +5,8 @@ Release notes
 
 .. _release-2.11.0:
 
-Scrapy 2.11.0 (to be released)
-------------------------------
+Scrapy 2.11.0 (2023-09-18)
+--------------------------
 
 Highlights:
 
