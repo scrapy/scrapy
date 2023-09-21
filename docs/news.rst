@@ -469,15 +469,16 @@ Deprecation removals
     has now been removed.
     (:issue:`5719`)
 
+-   The ``scrapy.utils.boto.is_botocore()`` function is now deprecated,
+    has now been removed.
+    (:issue:`5719`)
+
 
 Deprecations
 ~~~~~~~~~~~~
 
 -   :exc:`scrapy.pipelines.images.NoimagesDrop` is now deprecated.
     (:issue:`5368`, :issue:`5489`)
-
--   The ``scrapy.utils.boto.is_botocore()`` function is now deprecated.
-    (:issue:`5719`)
 
 -   :meth:`ImagesPipeline.convert_image
     <scrapy.pipelines.images.ImagesPipeline.convert_image>` must now accept a
