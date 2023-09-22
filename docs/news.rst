@@ -469,7 +469,7 @@ Deprecation removals
     has now been removed.
     (:issue:`5719`)
 
--   The ``scrapy.utils.boto.is_botocore()`` function is now deprecated,
+-   The ``scrapy.utils.boto.is_botocore()`` function, deprecated in Scrapy 2.4,
     has now been removed.
     (:issue:`5719`)
 
