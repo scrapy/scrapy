@@ -40,6 +40,9 @@ Backward-incompatible changes
     UTF-32). If you need to deal with JSON documents in an invalid encoding,
     use ``json.loads(response.text)`` instead. (:issue:`6016`)
 
+-   :class:`~scrapy.exporters.PythonItemExporter` used the binary output by defauilt 
+    but it no longer does (:issue:`6006`, :issue:`6007`)
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
