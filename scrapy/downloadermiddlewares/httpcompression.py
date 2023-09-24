@@ -58,8 +58,8 @@ class HttpCompressionMiddleware:
         if isinstance(response, Response):
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
-                encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                decoded_body = self._handle_encoding(response.body, content_encoding)
+
                 if self.stats:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
@@ -82,6 +82,38 @@ class HttpCompressionMiddleware:
                     del response.headers["Content-Encoding"]
 
         return response
+
+    def _handle_encoding(self, body, content_encoding):
+        content_to_decode = body
+
+        separator = b","
+        for encodings in reversed(content_encoding):
+            if separator in encodings:
+                decoded_body = ""
+                valid_encoding = True
+
+                for encoding in reversed(encodings.split(separator)):
+                    encoding = encoding.strip().lower()
+
+                    if decoded_body:
+                        content_to_decode = decoded_body
+
+                    decoded_body = self._decode(content_to_decode, encoding)
+
+                    if encoding not in ACCEPTED_ENCODINGS:
+                        valid_encoding = False
+
+                if valid_encoding:
+                    content_encoding.remove(encodings)
+
+            else:
+                encoding = encodings.strip().lower()
+                decoded_body = self._decode(content_to_decode, encoding)
+
+                if encodings in ACCEPTED_ENCODINGS:
+                    content_encoding.remove(encodings)
+
+        return decoded_body
 
     def _decode(self, body, encoding):
         if encoding == b"gzip" or encoding == b"x-gzip":
