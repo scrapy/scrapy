@@ -1,13 +1,16 @@
 import logging
 import os
 import platform
+import signal
 import subprocess
 import sys
 import warnings
 from pathlib import Path
+from typing import List
 
 import pytest
 from packaging.version import parse as parse_version
+from pexpect.popen_spawn import PopenSpawn
 from pytest import mark, raises
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -289,9 +292,12 @@ class ScriptRunnerMixin:
     script_dir: Path
     cwd = os.getcwd()
 
-    def run_script(self, script_name: str, *script_args):
+    def get_script_args(self, script_name: str, *script_args: str) -> List[str]:
         script_path = self.script_dir / script_name
-        args = [sys.executable, str(script_path)] + list(script_args)
+        return [sys.executable, str(script_path)] + list(script_args)
+
+    def run_script(self, script_name: str, *script_args: str) -> str:
+        args = self.get_script_args(script_name, *script_args)
         p = subprocess.Popen(
             args,
             env=get_mockserver_env(),
@@ -516,6 +522,27 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script("args_settings.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("The value of FOO is 42", log)
+
+    def test_shutdown_graceful(self):
+        args = self.get_script_args("sleeping.py")
+        p = PopenSpawn(args, timeout=5)
+        p.expect_exact("Spider opened")
+        p.expect_exact("Crawled (200)")
+        p.kill(signal.SIGTERM)
+        p.expect_exact("shutting down gracefully")
+        p.expect_exact("Spider closed (shutdown)")
+        p.wait()
+
+    def test_shutdown_forced(self):
+        args = self.get_script_args("sleeping.py")
+        p = PopenSpawn(args, timeout=5)
+        p.expect_exact("Spider opened")
+        p.expect_exact("Crawled (200)")
+        p.kill(signal.SIGTERM)
+        p.expect_exact("shutting down gracefully")
+        p.kill(signal.SIGTERM)
+        p.expect_exact("forcing unclean shutdown")
+        p.wait()
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
