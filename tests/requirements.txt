@@ -1,5 +1,6 @@
 # Tests requirements
 attrs
+pexpect >= 4.8.0
 # https://github.com/giampaolo/pyftpdlib/issues/560
 pyftpdlib; python_version < "3.12"
 pytest
