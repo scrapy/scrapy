@@ -215,6 +215,16 @@ class HttpCompressionTest(TestCase):
         assert "Content-Encoding" not in newresponse.headers
         assert newresponse.body.startswith(b"<!DOCTYPE")
 
+    def test_multiple_compression_invalid_compression(self):
+        response = self._getresponse("gzip-deflate")
+        response.headers["Content-Encoding"] = [b"gzip, foo, deflate"]
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        self.assertEqual(
+            newresponse.headers.getlist("Content-Encoding"), [b"gzip, foo"]
+        )
+
     def test_process_response_encoding_inside_body(self):
         headers = {
             "Content-Type": "text/html",
