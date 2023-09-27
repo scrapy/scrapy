@@ -20,30 +20,27 @@ import scrapy
 from scrapy.crawler import CrawlerProcess
 
 class test_spider(scrapy.Spider):
-	start_urls = ['http://google.com', 'http://youtube.com/']
+    start_urls = ['http://google.com', 'http://youtube.com/']
 
-	def parse(self, response):
-		pass
+    def parse(self, response):
+        pass
 
 def TestOneInput(data):
-	fdp = atheris.FuzzedDataProvider(data)
-	test = fdp.ConsumeUnicodeNoSurrogates(fdp.ConsumeIntInRange(0, 4096))
+    fdp = atheris.FuzzedDataProvider(data)
+    test = fdp.ConsumeUnicodeNoSurrogates(fdp.ConsumeIntInRange(0, 4096))
 
-	try:
-		process = CrawlerProcess(settings={
-        	test
-    	})
-		process.crawl(test_spider)
-		process.start()
-	except:
-		pass
+    try:
+	process = CrawlerProcess(settings={test})
+	process.crawl(test_spider)
+	process.start()
+    except:
+	pass
 
 
 def main():
-	atheris.instrument_all()
-	atheris.Setup(sys.argv, TestOneInput)
-	atheris.Fuzz()
-
+    atheris.instrument_all()
+    atheris.Setup(sys.argv, TestOneInput)
+    atheris.Fuzz()
 
 if __name__ == "__main__":
-	main()
+    main()
