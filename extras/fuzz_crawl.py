@@ -18,12 +18,15 @@ import sys
 import atheris
 import scrapy
 from scrapy.crawler import CrawlerProcess
+from scrapy.exceptions import CloseSpider
+
 
 class test_spider(scrapy.Spider):
-    start_urls = ['http://google.com', 'http://youtube.com/']
+    start_urls = ["http://google.com", "http://youtube.com/"]
 
     def parse(self, response):
         pass
+
 
 def TestOneInput(data):
     fdp = atheris.FuzzedDataProvider(data)
@@ -33,7 +36,7 @@ def TestOneInput(data):
         process = CrawlerProcess(settings={test})
         process.crawl(test_spider)
         process.start()
-    except:
+    except CloseSpider:
         pass
 
 
