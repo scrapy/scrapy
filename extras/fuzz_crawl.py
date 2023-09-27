@@ -14,10 +14,10 @@
 #
 ################################################################################
 
-#import sys
-#import atheris
-#import scrapy
-#from scrapy.crawler import CrawlerProcess
+import sys
+import atheris
+import scrapy
+from scrapy.crawler import CrawlerProcess
 
 class test_spider(scrapy.Spider):
 	start_urls = ['http://google.com', 'http://youtube.com/']
