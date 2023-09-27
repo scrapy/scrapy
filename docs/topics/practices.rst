@@ -47,19 +47,19 @@ Here's an example showing how to run a single spider with it.
     )
 
     process.crawl(MySpider)
-    process.start()  # the script will block here until the crawling is finished
+    process.start()  # the script will block here until the crawling is finished.
 
-Define settings within dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
+Define settings within a dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
 documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
-your spiders passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
+your spiders by passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
 use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
 instance with your project settings.
 
 What follows is a working example of how to do that, using the `testspiders`_
-project as example.
+project as an example.
 
 .. code-block:: python
 
@@ -70,19 +70,19 @@ project as example.
 
     # 'followall' is the name of one of the spiders of the project.
     process.crawl("followall", domain="scrapy.org")
-    process.start()  # the script will block here until the crawling is finished
+    process.start()  # the script will block here until the crawling is finished.
 
 There's another Scrapy utility that provides more control over the crawling
 process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
 that encapsulates some simple helpers to run multiple crawlers, but it won't
 start or interfere with existing reactors in any way.
 
-Using this class the reactor should be explicitly run after scheduling your
+Using this class, the reactor should be explicitly run after scheduling your
 spiders. It's recommended you use :class:`~scrapy.crawler.CrawlerRunner`
 instead of :class:`~scrapy.crawler.CrawlerProcess` if your application is
 already using Twisted and you want to run Scrapy in the same reactor.
 
-Note that you will also have to shutdown the Twisted reactor yourself after the
+Note that you will also have to shut down the Twisted reactor yourself after the
 spider is finished. This can be achieved by adding callbacks to the deferred
 returned by the :meth:`CrawlerRunner.crawl
 <scrapy.crawler.CrawlerRunner.crawl>` method.
@@ -108,7 +108,7 @@ reactor after ``MySpider`` has finished running.
 
     d = runner.crawl(MySpider)
     d.addBoth(lambda _: reactor.stop())
-    reactor.run()  # the script will block here until the crawling is finished
+    reactor.run()  # the script will block here until the crawling is finished.
 
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
@@ -144,7 +144,7 @@ Here is an example that runs multiple spiders simultaneously:
     process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
-    process.start()  # the script will block here until all crawling jobs are finished
+    process.start()  # the script will block here until all crawling jobs are finished.
 
 Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
@@ -175,7 +175,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     d = runner.join()
     d.addBoth(lambda _: reactor.stop())
 
-    reactor.run()  # the script will block here until all crawling jobs are finished
+    reactor.run()  # the script will block here until all crawling jobs are finished.
 
 Same example but running the spiders sequentially by chaining the deferreds:
 
@@ -210,7 +210,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
 
 
     crawl()
-    reactor.run()  # the script will block here until the last crawl call is finished
+    reactor.run()  # the script will block here until the last crawl call is finished.
 
 Different spiders can set different values for the same setting, but when they
 run in the same process it may be impossible, by design or because of some
@@ -240,25 +240,25 @@ different for different settings:
 Distributed crawls
 ==================
 
-Scrapy doesn't provide any built-in facility for running crawls in a distribute
+Scrapy doesn't provide any built-in facility for running crawls in a distributed
 (multi-server) manner. However, there are some ways to distribute crawls, which
 vary depending on how you plan to distribute them.
 
-If you have many spiders, the obvious way to distribute the load is to setup
+If you have many spiders, the obvious way to distribute the load is to set up
 many Scrapyd instances and distribute spider runs among those.
 
 If you instead want to run a single (big) spider through many machines, what
-you usually do is partition the urls to crawl and send them to each separate
+you usually do is partition the URLs to crawl and send them to each separate
 spider. Here is a concrete example:
 
-First, you prepare the list of urls to crawl and put them into separate
+First, you prepare the list of URLs to crawl and put them into separate
 files/urls::
 
     http://somedomain.com/urls-to-crawl/spider1/part1.list
     http://somedomain.com/urls-to-crawl/spider1/part2.list
     http://somedomain.com/urls-to-crawl/spider1/part3.list
 
-Then you fire a spider run on 3 different Scrapyd servers. The spider would
+Then you start a spider run on 3 different Scrapyd servers. The spider would
 receive a (spider) argument ``part`` with the number of the partition to
 crawl::
 
@@ -278,21 +278,21 @@ consider contacting `commercial support`_ if in doubt.
 
 Here are some tips to keep in mind when dealing with these kinds of sites:
 
-* rotate your user agent from a pool of well-known ones from browsers (google
-  around to get a list of them)
-* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
-  cookies to spot bot behaviour
-* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
-* if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
-  directly
-* use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
+* Rotate your user agent from a pool of well-known ones from browsers (Google
+  around to get a list of them).
+* Disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
+  cookies to spot bot behavior.
+* Use download delays (2 or higher). See the :setting:`DOWNLOAD_DELAY` setting.
+* If possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
+  directly.
+* Use a pool of rotating IPs. For example, the free `Tor project`_ or paid
+  services like `ProxyMesh`_. An open-source alternative is `Scrapoxy`_, a
   super proxy that you can attach your own proxies to.
-* use a highly distributed downloader that circumvents bans internally, so you
-  can just focus on parsing clean pages. One example of such downloaders is
-  `Zyte Smart Proxy Manager`_
+* Use a highly distributed downloader that circumvents bans internally, so you
+  can just focus on parsing clean pages. One example of such a downloader is
+  `Zyte Smart Proxy Manager`_.
 
-If you are still unable to prevent your bot getting banned, consider contacting
+If you are still unable to prevent your bot from getting banned, consider contacting
 `commercial support`_.
 
 .. _Tor project: https://www.torproject.org/
