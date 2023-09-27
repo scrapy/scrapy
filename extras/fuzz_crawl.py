@@ -30,11 +30,11 @@ def TestOneInput(data):
     test = fdp.ConsumeUnicodeNoSurrogates(fdp.ConsumeIntInRange(0, 4096))
 
     try:
-	process = CrawlerProcess(settings={test})
-	process.crawl(test_spider)
-	process.start()
+        process = CrawlerProcess(settings={test})
+        process.crawl(test_spider)
+        process.start()
     except:
-	pass
+        pass
 
 
 def main():
