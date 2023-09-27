@@ -87,6 +87,7 @@ class HttpCompressionMiddleware:
         content_to_decode = body
 
         separator = b","
+        decoded_body = ""
         for index, encodings in reversed(list(enumerate(content_encoding))):
             if separator in encodings:
                 decoded_body = ""
@@ -104,20 +105,26 @@ class HttpCompressionMiddleware:
                     if encoding not in ACCEPTED_ENCODINGS:
                         valid_encoding = False
                         break
-                    else:
-                        encodings_split.pop()
-                        encodings = b",".join(encodings_split)
-                        content_encoding[index] = encodings
+
+                    encodings_split.pop()
+                    encodings = b",".join(encodings_split)
+                    content_encoding[index] = encodings
 
                 if valid_encoding:
                     content_encoding.remove(encodings)
 
             else:
                 encoding = encodings.strip().lower()
+
+                if decoded_body:
+                    content_to_decode = decoded_body
+
                 decoded_body = self._decode(content_to_decode, encoding)
 
                 if encodings in ACCEPTED_ENCODINGS:
                     content_encoding.remove(encodings)
+                else:
+                    break
 
         return decoded_body
 
