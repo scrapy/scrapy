@@ -4,6 +4,8 @@ from scrapy.exceptions import UsageError
 
 class Command(BaseRunSpiderCommand):
     requires_project = True
+    
+    EXTENSIONS_BASE = {"scrapy.extensions.feedexport.FeedExporter": 0}
 
     def syntax(self):
         return "[options] <spider>"
