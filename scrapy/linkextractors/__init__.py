@@ -73,6 +73,7 @@ IGNORED_EXTENSIONS = [
     "pps",
     "doc",
     "docx",
+    "dotx",
     "odt",
     "ods",
     "odg",
