@@ -36,7 +36,7 @@ def TestOneInput(data):
         def start_requests(self):
             headers = {"User-Agent": test, "Accept-Language": test, "Referer": test}
 
-            scrapy.Request(self.url, headers=headers, callback=self.parse)
+            yield scrapy.Request(self.url, headers=headers, callback=self.parse)
 
         def parse(self, response):
             pass
