@@ -47,7 +47,7 @@ Here's an example showing how to run a single spider with it.
     )
 
     process.crawl(MySpider)
-    process.start()  # the script will block here until the crawling is finished.
+process.start()  # the script will block here until the crawling is finished
 
 Define settings within a dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
 documentation to get acquainted with its usage details.
