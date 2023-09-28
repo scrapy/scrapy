@@ -21,7 +21,6 @@ import atheris
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.exceptions import CloseSpider
 
 
 def TestOneInput(data):
@@ -45,8 +44,8 @@ def TestOneInput(data):
         process = CrawlerProcess()
         process.crawl(test_spider)
         process.start()
-    except CloseSpider:
-        pass
+    except Exception as e:
+        print(e)
 
 
 def main():
