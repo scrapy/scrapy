@@ -32,11 +32,9 @@ Here's an example showing how to run a single spider with it.
     import scrapy
     from scrapy.crawler import CrawlerProcess
 
-
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
-
 
     process = CrawlerProcess(
         settings={
@@ -47,14 +45,12 @@ Here's an example showing how to run a single spider with it.
     )
 
     process.crawl(MySpider)
-
     process.start()  # the script will block here until the crawling is finished
-
 
 Define settings within a dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
 documentation to get acquainted with its usage details.
 
-If you are inside a Scrapy project there are some additional helpers you can
+If you are inside a Scrapy project, there are some additional helpers you can
 use to import those components within the project. You can automatically import
 your spiders by passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
 use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
@@ -68,13 +64,11 @@ project as an example.
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
-
     process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
     process.crawl("followall", domain="scrapy.org")
     process.start()  # the script will block here until the crawling is finished
-
 
 There's another Scrapy utility that provides more control over the crawling
 process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
@@ -101,11 +95,9 @@ reactor after ``MySpider`` has finished running.
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
 
-
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
-
 
     configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
     runner = CrawlerRunner()
@@ -133,23 +125,19 @@ Here is an example that runs multiple spiders simultaneously:
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
-
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
-
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
-
 
     settings = get_project_settings()
     process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start()  # the script will block here until all crawling jobs are finished
-
 
 Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
@@ -161,16 +149,13 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
-
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
-
 
     configure_logging()
     settings = get_project_settings()
@@ -182,7 +167,6 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
     reactor.run()  # the script will block here until all crawling jobs are finished
 
-
 Same example but running the spiders sequentially by chaining the deferreds:
 
 .. code-block:: python
@@ -192,21 +176,17 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
-
 
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-
     settings = get_project_settings()
     configure_logging(settings)
     runner = CrawlerRunner(settings)
-
 
     @defer.inlineCallbacks
     def crawl():
@@ -214,10 +194,8 @@ Same example but running the spiders sequentially by chaining the deferreds:
         yield runner.crawl(MySpider2)
         reactor.stop()
 
-
     crawl()
     reactor.run()  # the script will block here until the last crawl call is finished
-
 
 Different spiders can set different values for the same setting, but when they
 run in the same process it may be impossible, by design or because of some
@@ -229,14 +207,12 @@ different for different settings:
   default one) cannot be read from the per-spider settings. These are applied
   when the :class:`~scrapy.crawler.CrawlerRunner` or
   :class:`~scrapy.crawler.CrawlerProcess` object is created.
-
-* For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` the first
-  available value is used, and if a spider requests a different reactor an
+* For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP`, the first
+  available value is used, and if a spider requests a different reactor, an
   exception will be raised. These are applied when the reactor is installed.
-
-* For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER` and the
+* For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER`, and the
   ones used by the resolver (:setting:`DNSCACHE_ENABLED`,
-  :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy)
+  :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy),
   the first available value is used. These are applied when the reactor is
   started.
 
@@ -249,18 +225,18 @@ different for different settings:
 Distributed crawls
 ==================
 
-Scrapy doesn't provide any built-in facility for running crawls in a distributed
+Scrapy doesn't provide any built-in facility for running crawls in a distribute
 (multi-server) manner. However, there are some ways to distribute crawls, which
 vary depending on how you plan to distribute them.
 
-If you have many spiders, the obvious way to distribute the load is to set up
+If you have many spiders, the obvious way to distribute the load is to setup
 many Scrapyd instances and distribute spider runs among those.
 
 If you instead want to run a single (big) spider through many machines, what
-you usually do is partition the URLs to crawl and send them to each separate
+you usually do is partition the urls to crawl and send them to each separate
 spider. Here is a concrete example:
 
-First, you prepare the list of URLs to crawl and put them into separate
+First, you prepare the list of urls to crawl and put them into separate
 files/urls::
 
     http://somedomain.com/urls-to-crawl/spider1/part1.list
@@ -290,16 +266,16 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * Rotate your user agent from a pool of well-known ones from browsers (Google
   around to get a list of them).
 * Disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
-  cookies to spot bot behavior.
+  cookies to spot bot behaviour.
 * Use download delays (2 or higher). See the :setting:`DOWNLOAD_DELAY` setting.
 * If possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
   directly.
 * Use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_. An open-source alternative is `Scrapoxy`_, a
+  services like `ProxyMesh`_. An open source alternative is `Scrapoxy`_, a
   super proxy that you can attach your own proxies to.
 * Use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such a downloader is
-  `Zyte Smart Proxy Manager`_
+  `Zyte Smart Proxy Manager`_.
 
 If you are still unable to prevent your bot from getting banned, consider contacting
 `commercial support`_.
@@ -309,5 +285,5 @@ If you are still unable to prevent your bot from getting banned, consider contac
 .. _ProxyMesh: https://proxymesh.com/
 .. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _scrapoxy: https://scrapoxy.io/
+.. _Scrapoxy: https://scrapoxy.io/
 .. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/
