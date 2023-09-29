@@ -7,13 +7,11 @@ import io
 import marshal
 import pickle
 import pprint
-import warnings
 from collections.abc import Mapping
 from xml.sax.saxutils import XMLGenerator
 
 from itemadapter import ItemAdapter, is_item
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
@@ -133,6 +131,13 @@ class JsonItemExporter(BaseItemExporter):
         if self.indent is not None:
             self.file.write(b"\n")
 
+    def _add_comma_after_first(self):
+        if self.first_item:
+            self.first_item = False
+        else:
+            self.file.write(b",")
+            self._beautify_newline()
+
     def start_exporting(self):
         self.file.write(b"[")
         self._beautify_newline()
@@ -142,14 +147,10 @@ class JsonItemExporter(BaseItemExporter):
         self.file.write(b"]")
 
     def export_item(self, item):
-        if self.first_item:
-            self.first_item = False
-        else:
-            self.file.write(b",")
-            self._beautify_newline()
         itemdict = dict(self._get_serialized_fields(item))
-        data = self.encoder.encode(itemdict)
-        self.file.write(to_bytes(data, self.encoding))
+        data = to_bytes(self.encoder.encode(itemdict), self.encoding)
+        self._add_comma_after_first()
+        self.file.write(data)
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -255,6 +256,9 @@ class CsvItemExporter(BaseItemExporter):
         values = list(self._build_row(x for _, x in fields))
         self.csv_writer.writerow(values)
 
+    def finish_exporting(self):
+        self.stream.detach()  # Avoid closing the wrapped file.
+
     def _build_row(self, values):
         for s in values:
             try:
@@ -324,13 +328,7 @@ class PythonItemExporter(BaseItemExporter):
     """
 
     def _configure(self, options, dont_fail=False):
-        self.binary = options.pop("binary", True)
         super()._configure(options, dont_fail)
-        if self.binary:
-            warnings.warn(
-                "PythonItemExporter will drop support for binary export in the future",
-                ScrapyDeprecationWarning,
-            )
         if not self.encoding:
             self.encoding = "utf-8"
 
@@ -345,18 +343,14 @@ class PythonItemExporter(BaseItemExporter):
             return dict(self._serialize_item(value))
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        encode_func = to_bytes if self.binary else to_unicode
         if isinstance(value, (str, bytes)):
-            return encode_func(value, encoding=self.encoding)
+            return to_unicode(value, encoding=self.encoding)
         return value
 
     def _serialize_item(self, item):
         for key, value in ItemAdapter(item).items():
-            key = to_bytes(key) if self.binary else key
             yield key, self._serialize_value(value)
 
     def export_item(self, item):
         result = dict(self._get_serialized_fields(item))
-        if self.binary:
-            result = dict(self._serialize_item(result))
         return result

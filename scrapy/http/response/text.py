@@ -4,10 +4,11 @@ discovering (through HTTP headers) to base Response class.
 
 See documentation in docs/topics/request-response.rst
 """
+from __future__ import annotations
 
 import json
 from contextlib import suppress
-from typing import Generator, Tuple
+from typing import TYPE_CHECKING, Any, Generator, Optional, Tuple
 from urllib.parse import urljoin
 
 import parsel
@@ -25,6 +26,9 @@ from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
+if TYPE_CHECKING:
+    from scrapy.selector import Selector
+
 _NONE = object()
 
 
@@ -34,11 +38,11 @@ class TextResponse(Response):
 
     attributes: Tuple[str, ...] = Response.attributes + ("encoding",)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         self._encoding = kwargs.pop("encoding", None)
-        self._cached_benc = None
-        self._cached_ubody = None
-        self._cached_selector = None
+        self._cached_benc: Optional[str] = None
+        self._cached_ubody: Optional[str] = None
+        self._cached_selector: Optional[Selector] = None
         super().__init__(*args, **kwargs)
 
     def _set_url(self, url):
@@ -78,11 +82,11 @@ class TextResponse(Response):
         Deserialize a JSON document to a Python object.
         """
         if self._cached_decoded_json is _NONE:
-            self._cached_decoded_json = json.loads(self.text)
+            self._cached_decoded_json = json.loads(self.body)
         return self._cached_decoded_json
 
     @property
-    def text(self):
+    def text(self) -> str:
         """Body as unicode"""
         # access self.encoding before _cached_ubody to make sure
         # _body_inferred_encoding is called
@@ -100,11 +104,13 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _headers_encoding(self):
         content_type = self.headers.get(b"Content-Type", b"")
-        return http_content_type_encoding(to_unicode(content_type))
+        return http_content_type_encoding(to_unicode(content_type, encoding="latin-1"))
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
-            content_type = to_unicode(self.headers.get(b"Content-Type", b""))
+            content_type = to_unicode(
+                self.headers.get(b"Content-Type", b""), encoding="latin-1"
+            )
             benc, ubody = html_to_unicode(
                 content_type,
                 self.body,
@@ -138,6 +144,14 @@ class TextResponse(Response):
         if self._cached_selector is None:
             self._cached_selector = Selector(self)
         return self._cached_selector
+
+    def jmespath(self, query, **kwargs):
+        if not hasattr(self.selector, "jmespath"):  # type: ignore[attr-defined]
+            raise AttributeError(
+                "Please install parsel >= 1.8.1 to get jmespath support"
+            )
+
+        return self.selector.jmespath(query, **kwargs)  # type: ignore[attr-defined]
 
     def xpath(self, query, **kwargs):
         return self.selector.xpath(query, **kwargs)

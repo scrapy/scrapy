@@ -6,12 +6,31 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import collections
+import warnings
 import weakref
 from collections.abc import Mapping
+from typing import Any, AnyStr, Optional, OrderedDict, Sequence, TypeVar
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 
 class CaselessDict(dict):
     __slots__ = ()
+
+    def __new__(cls, *args, **kwargs):
+        from scrapy.http.headers import Headers
+
+        if issubclass(cls, CaselessDict) and not issubclass(cls, Headers):
+            warnings.warn(
+                "scrapy.utils.datatypes.CaselessDict is deprecated,"
+                " please use scrapy.utils.datatypes.CaseInsensitiveDict instead",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(self, seq=None):
         super().__init__()
@@ -64,17 +83,59 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class LocalCache(collections.OrderedDict):
+class CaseInsensitiveDict(collections.UserDict):
+    """A dict-like structure that accepts strings or bytes
+    as keys and allows case-insensitive lookups.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        self._keys: dict = {}
+        super().__init__(*args, **kwargs)
+
+    def __getitem__(self, key: AnyStr) -> Any:
+        normalized_key = self._normkey(key)
+        return super().__getitem__(self._keys[normalized_key.lower()])
+
+    def __setitem__(self, key: AnyStr, value: Any) -> None:
+        normalized_key = self._normkey(key)
+        try:
+            lower_key = self._keys[normalized_key.lower()]
+            del self[lower_key]
+        except KeyError:
+            pass
+        super().__setitem__(normalized_key, self._normvalue(value))
+        self._keys[normalized_key.lower()] = normalized_key
+
+    def __delitem__(self, key: AnyStr) -> None:
+        normalized_key = self._normkey(key)
+        stored_key = self._keys.pop(normalized_key.lower())
+        super().__delitem__(stored_key)
+
+    def __contains__(self, key: AnyStr) -> bool:  # type: ignore[override]
+        normalized_key = self._normkey(key)
+        return normalized_key.lower() in self._keys
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {super().__repr__()}>"
+
+    def _normkey(self, key: AnyStr) -> AnyStr:
+        return key
+
+    def _normvalue(self, value: Any) -> Any:
+        return value
+
+
+class LocalCache(OrderedDict[_KT, _VT]):
     """Dictionary with a finite number of keys.
 
     Older items expires first.
     """
 
-    def __init__(self, limit=None):
+    def __init__(self, limit: Optional[int] = None):
         super().__init__()
-        self.limit = limit
+        self.limit: Optional[int] = limit
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: _KT, value: _VT) -> None:
         if self.limit:
             while len(self) >= self.limit:
                 self.popitem(last=False)
@@ -93,17 +154,17 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
     it cannot be instantiated with an initial dictionary.
     """
 
-    def __init__(self, limit=None):
+    def __init__(self, limit: Optional[int] = None):
         super().__init__()
-        self.data = LocalCache(limit=limit)
+        self.data: LocalCache = LocalCache(limit=limit)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: _KT, value: _VT) -> None:
         try:
             super().__setitem__(key, value)
         except TypeError:
             pass  # key is not weak-referenceable, skip caching
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: _KT) -> Optional[_VT]:  # type: ignore[override]
         try:
             return super().__getitem__(key)
         except (TypeError, KeyError):
@@ -113,8 +174,8 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
 class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq):
-        self.seq = seq
+    def __init__(self, seq: Sequence):
+        self.seq: Sequence = seq
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         return item not in self.seq

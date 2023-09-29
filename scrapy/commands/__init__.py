@@ -4,7 +4,7 @@ Base class for Scrapy commands
 import argparse
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from twisted.python import failure
 
@@ -116,7 +116,7 @@ class ScrapyCommand:
         if opts.pdb:
             failure.startDebugMode()
 
-    def run(self, args, opts):
+    def run(self, args: List[str], opts: argparse.Namespace) -> None:
         """
         Entry point for running commands
         """

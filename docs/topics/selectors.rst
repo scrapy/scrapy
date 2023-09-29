@@ -48,6 +48,8 @@ Constructing selectors
 
 .. highlight:: python
 
+.. skip: start
+
 Response objects expose a :class:`~scrapy.Selector` instance
 on ``.selector`` attribute:
 
@@ -65,6 +67,8 @@ more shortcuts: ``response.xpath()`` and ``response.css()``:
     'good'
     >>> response.css("span::text").get()
     'good'
+
+.. skip: end
 
 Scrapy selectors are instances of :class:`~scrapy.Selector` class
 constructed by passing either :class:`~scrapy.http.TextResponse` object or
@@ -93,7 +97,7 @@ Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
 
     >>> from scrapy.selector import Selector
     >>> from scrapy.http import HtmlResponse
-    >>> response = HtmlResponse(url="http://example.com", body=body)
+    >>> response = HtmlResponse(url="http://example.com", body=body, encoding="utf-8")
     >>> Selector(response=response).xpath("//span/text()").get()
     'good'
 
@@ -102,6 +106,13 @@ Constructing from response - :class:`~scrapy.http.HtmlResponse` is one of
 
 Using selectors
 ---------------
+
+.. invisible-code-block: python
+
+    html_response = response = load_response(
+        "https://docs.scrapy.org/en/latest/_static/selectors-sample1.html",
+        "../_static/selectors-sample1.html",
+    )
 
 To explain how to use the selectors we'll use the ``Scrapy shell`` (which
 provides interactive testing) and an example page located in the Scrapy
@@ -135,7 +146,7 @@ page, let's construct an XPath for selecting the text inside the title tag:
 .. code-block:: pycon
 
     >>> response.xpath("//title/text()")
-    [<Selector xpath='//title/text()' data='Example website'>]
+    [<Selector query='//title/text()' data='Example website'>]
 
 To actually extract the textual data, you must call the selector ``.get()``
 or ``.getall()`` methods, as follows:
@@ -363,11 +374,11 @@ too. Here's an example:
 
     >>> links = response.xpath('//a[contains(@href, "image")]')
     >>> links.getall()
-    ['<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>',
-    '<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>',
-    '<a href="image3.html">Name: My image 3 <br><img src="image3_thumb.jpg"></a>',
-    '<a href="image4.html">Name: My image 4 <br><img src="image4_thumb.jpg"></a>',
-    '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
+    ['<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg" alt="image1"></a>',
+    '<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg" alt="image2"></a>',
+    '<a href="image3.html">Name: My image 3 <br><img src="image3_thumb.jpg" alt="image3"></a>',
+    '<a href="image4.html">Name: My image 4 <br><img src="image4_thumb.jpg" alt="image4"></a>',
+    '<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg" alt="image5"></a>']
 
     >>> for index, link in enumerate(links):
     ...     href_xpath = link.xpath("@href").get()
@@ -447,11 +458,11 @@ Here's an example used to extract image names from the :ref:`HTML code
 .. code-block:: pycon
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re(r"Name:\s*(.*)")
-    ['My image 1',
-    'My image 2',
-    'My image 3',
-    'My image 4',
-    'My image 5']
+    ['My image 1 ',
+    'My image 2 ',
+    'My image 3 ',
+    'My image 4 ',
+    'My image 5 ']
 
 There's an additional helper reciprocating ``.get()`` (and its
 alias ``.extract_first()``) for ``.re()``, named ``.re_first()``.
@@ -460,7 +471,7 @@ Use it to extract just the first matching string:
 .. code-block:: pycon
 
     >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r"Name:\s*(.*)")
-    'My image 1'
+    'My image 1 '
 
 .. _old-extraction-api:
 
@@ -761,6 +772,8 @@ on `XPath variables`_.
 Removing namespaces
 -------------------
 
+.. skip: start
+
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
@@ -808,8 +821,8 @@ nodes can be accessed directly by their names:
 
     >>> response.selector.remove_namespaces()
     >>> response.xpath("//link")
-    [<Selector xpath='//link' data='<link rel="alternate" type="text/html" h'>,
-        <Selector xpath='//link' data='<link rel="next" type="application/atom+'>,
+    [<Selector query='//link' data='<link rel="alternate" type="text/html" h'>,
+        <Selector query='//link' data='<link rel="next" type="application/atom+'>,
         ...
 
 If you wonder why the namespace removal procedure isn't always called by default
@@ -824,6 +837,7 @@ of relevance, are:
    case some element names clash between namespaces. These cases are very rare
    though.
 
+.. skip: end
 
 Using EXSLT extensions
 ----------------------
@@ -880,6 +894,8 @@ extracting text elements for example.
 
 Example extracting microdata (sample content taken from https://schema.org/Product)
 with groups of itemscopes and corresponding itemprops:
+
+.. skip: next
 
 .. code-block:: pycon
 
@@ -977,26 +993,35 @@ Scrapy selectors also provide a sorely missed XPath extension function
 ``has-class`` that returns ``True`` for nodes that have all of the specified
 HTML classes.
 
-.. highlight:: html
+For the following HTML:
 
-For the following HTML::
+.. code-block:: pycon
 
-    <p class="foo bar-baz">First</p>
-    <p class="foo">Second</p>
-    <p class="bar">Third</p>
-    <p>Fourth</p>
-
-.. highlight:: python
+    >>> from scrapy.http import HtmlResponse
+    >>> response = HtmlResponse(
+    ...     url="http://example.com",
+    ...     body="""
+    ... <html>
+    ...     <body>
+    ...         <p class="foo bar-baz">First</p>
+    ...         <p class="foo">Second</p>
+    ...         <p class="bar">Third</p>
+    ...         <p>Fourth</p>
+    ...     </body>
+    ... </html>
+    ... """,
+    ...     encoding="utf-8",
+    ... )
 
 You can use it like this:
 
 .. code-block:: pycon
 
     >>> response.xpath('//p[has-class("foo")]')
-    [<Selector xpath='//p[has-class("foo")]' data='<p class="foo bar-baz">First</p>'>,
-    <Selector xpath='//p[has-class("foo")]' data='<p class="foo">Second</p>'>]
+    [<Selector query='//p[has-class("foo")]' data='<p class="foo bar-baz">First</p>'>,
+    <Selector query='//p[has-class("foo")]' data='<p class="foo">Second</p>'>]
     >>> response.xpath('//p[has-class("foo", "bar-baz")]')
-    [<Selector xpath='//p[has-class("foo", "bar-baz")]' data='<p class="foo bar-baz">First</p>'>]
+    [<Selector query='//p[has-class("foo", "bar-baz")]' data='<p class="foo bar-baz">First</p>'>]
     >>> response.xpath('//p[has-class("foo", "bar")]')
     []
 
@@ -1132,6 +1157,8 @@ a :class:`~scrapy.http.HtmlResponse` object like this:
 Selector examples on XML response
 ---------------------------------
 
+.. skip: start
+
 Here are some examples to illustrate concepts for :class:`Selector` objects
 instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
@@ -1153,5 +1180,7 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
       sel.register_namespace("g", "http://base.google.com/ns/1.0")
       sel.xpath("//g:price").getall()
+
+.. skip: end
 
 .. _Google Base XML feed: https://support.google.com/merchants/answer/160589?hl=en&ref_topic=2473799

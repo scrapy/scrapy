@@ -110,6 +110,7 @@ class Scraper:
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
+        assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
     @inlineCallbacks
@@ -221,7 +222,11 @@ class Scraper:
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(
-        self, _failure: Failure, request: Request, response: Response, spider: Spider
+        self,
+        _failure: Failure,
+        request: Request,
+        response: Union[Response, Failure],
+        spider: Spider,
     ) -> None:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
@@ -240,6 +245,7 @@ class Scraper:
             response=response,
             spider=spider,
         )
+        assert self.crawler.stats
         self.crawler.stats.inc_value(
             f"spider_exceptions/{_failure.value.__class__.__name__}", spider=spider
         )
@@ -248,7 +254,7 @@ class Scraper:
         self,
         result: Union[Iterable, AsyncIterable],
         request: Request,
-        response: Response,
+        response: Union[Response, Failure],
         spider: Spider,
     ) -> Deferred:
         if not result:
@@ -364,6 +370,7 @@ class Scraper:
                     spider=spider,
                     exception=output.value,
                 )
+            assert ex
             logkws = self.logformatter.item_error(item, ex, response, spider)
             logger.log(
                 *logformatter_adapter(logkws),

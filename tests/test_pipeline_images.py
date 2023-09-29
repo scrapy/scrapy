@@ -598,8 +598,14 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedImagePipeline.from_settings(
             Settings({"IMAGES_STORE": self.tempdir})
         )
-        self.assertEqual(pipeline.images_result_field, "something_else")
-        self.assertEqual(pipeline.images_urls_field, "something")
+        self.assertEqual(
+            pipeline.images_result_field,
+            UserDefinedImagePipeline.DEFAULT_IMAGES_RESULT_FIELD,
+        )
+        self.assertEqual(
+            pipeline.images_urls_field,
+            UserDefinedImagePipeline.DEFAULT_IMAGES_URLS_FIELD,
+        )
 
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of ImagePipeline,

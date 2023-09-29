@@ -63,7 +63,7 @@ class DecompressionMiddleware:
         archive = BytesIO(response.body)
         try:
             body = gzip.GzipFile(fileobj=archive).read()
-        except IOError:
+        except OSError:
             return
 
         respcls = responsetypes.from_args(body=body)
@@ -72,7 +72,7 @@ class DecompressionMiddleware:
     def _is_bzip2(self, response):
         try:
             body = bz2.decompress(response.body)
-        except IOError:
+        except OSError:
             return
 
         respcls = responsetypes.from_args(body=body)

@@ -28,7 +28,7 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore_available
-from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import md5sum
@@ -155,7 +155,7 @@ class S3FilesStore:
     def _headers_to_botocore_kwargs(self, headers):
         """Convert headers to botocore keyword arguments."""
         # This is required while we need to support both boto and botocore.
-        mapping = CaselessDict(
+        mapping = CaseInsensitiveDict(
             {
                 "Content-Type": "ContentType",
                 "Cache-Control": "CacheControl",

@@ -1,5 +1,6 @@
 import logging
 import unittest
+import warnings
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -15,6 +16,7 @@ from twisted.web.client import ResponseFailed
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
+from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
@@ -110,19 +112,63 @@ class RetryTest(unittest.TestCase):
             == 2
         )
 
-    def _test_retry_exception(self, req, exception):
+    def test_exception_to_retry_added(self):
+        exc = ValueError
+        settings_dict = {
+            "RETRY_EXCEPTIONS": list(RETRY_EXCEPTIONS) + [exc],
+        }
+        crawler = get_crawler(Spider, settings_dict=settings_dict)
+        mw = RetryMiddleware.from_crawler(crawler)
+        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
+        self._test_retry_exception(req, exc("foo"), mw)
+
+    def test_exception_to_retry_custom_middleware(self):
+        exc = ValueError
+
+        with warnings.catch_warnings(record=True) as warns:
+
+            class MyRetryMiddleware(RetryMiddleware):
+                EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc,)
+
+            self.assertEqual(len(warns), 1)
+
+        mw2 = MyRetryMiddleware.from_crawler(self.crawler)
+        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
+        req = mw2.process_exception(req, exc("foo"), self.spider)
+        assert isinstance(req, Request)
+        self.assertEqual(req.meta["retry_times"], 1)
+
+    def test_exception_to_retry_custom_middleware_self(self):
+        class MyRetryMiddleware(RetryMiddleware):
+            def process_exception(self, request, exception, spider):
+                if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
+                    return self._retry(request, exception, spider)
+
+        exc = OSError
+        mw2 = MyRetryMiddleware.from_crawler(self.crawler)
+        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
+        with warnings.catch_warnings(record=True) as warns:
+            req = mw2.process_exception(req, exc("foo"), self.spider)
+        assert isinstance(req, Request)
+        self.assertEqual(req.meta["retry_times"], 1)
+        self.assertEqual(len(warns), 1)
+
+    def _test_retry_exception(self, req, exception, mw=None):
+        if mw is None:
+            mw = self.mw
+
         # first retry
-        req = self.mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception, self.spider)
         assert isinstance(req, Request)
         self.assertEqual(req.meta["retry_times"], 1)
 
         # second retry
-        req = self.mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception, self.spider)
         assert isinstance(req, Request)
         self.assertEqual(req.meta["retry_times"], 2)
 
         # discard it
-        req = self.mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception, self.spider)
         self.assertEqual(req, None)
 
 

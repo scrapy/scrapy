@@ -129,7 +129,7 @@ class FileTestCase(unittest.TestCase):
     def test_non_existent(self):
         request = Request(f"file://{self.mktemp()}")
         d = self.download_request(request, Spider("foo"))
-        return self.assertFailure(d, IOError)
+        return self.assertFailure(d, OSError)
 
 
 class ContentLengthHeaderResource(resource.Resource):
@@ -743,12 +743,13 @@ class Http11MockServerTestCase(unittest.TestCase):
 
         # See issue https://twistedmatrix.com/trac/ticket/8175
         raise unittest.SkipTest("xpayload fails on PY3")
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         request.headers.setdefault(b"Accept-Encoding", b"gzip,deflate")
         request = request.replace(url=self.mockserver.url("/xpayload"))
         yield crawler.crawl(seed=request)
         # download_maxsize = 50 is enough for the gzipped response
         failure = crawler.spider.meta.get("failure")
-        self.assertTrue(failure is None)
+        self.assertIsNone(failure)
         reason = crawler.spider.meta["close_reason"]
         self.assertTrue(reason, "finished")
 
