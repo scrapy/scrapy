@@ -32,9 +32,11 @@ Here's an example showing how to run a single spider with it.
     import scrapy
     from scrapy.crawler import CrawlerProcess
 
+
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
+
 
     process = CrawlerProcess(
         settings={
@@ -45,7 +47,9 @@ Here's an example showing how to run a single spider with it.
     )
 
     process.crawl(MySpider)
+
     process.start()  # the script will block here until the crawling is finished
+
 
 Define settings within a dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
 documentation to get acquainted with its usage details.
@@ -64,11 +68,13 @@ project as an example.
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
+
     process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
     process.crawl("followall", domain="scrapy.org")
     process.start()  # the script will block here until the crawling is finished
+
 
 There's another Scrapy utility that provides more control over the crawling
 process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
@@ -95,9 +101,11 @@ reactor after ``MySpider`` has finished running.
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
 
+
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
+
 
     configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
     runner = CrawlerRunner()
@@ -125,19 +133,23 @@ Here is an example that runs multiple spiders simultaneously:
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
+
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
+
 
     settings = get_project_settings()
     process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start()  # the script will block here until all crawling jobs are finished
+
 
 Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
@@ -149,13 +161,16 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
+
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
+
 
     configure_logging()
     settings = get_project_settings()
@@ -167,6 +182,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
     reactor.run()  # the script will block here until all crawling jobs are finished
 
+
 Same example but running the spiders sequentially by chaining the deferreds:
 
 .. code-block:: python
@@ -176,17 +192,21 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
+
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
+
 
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
+
     settings = get_project_settings()
     configure_logging(settings)
     runner = CrawlerRunner(settings)
+
 
     @defer.inlineCallbacks
     def crawl():
@@ -194,8 +214,10 @@ Same example but running the spiders sequentially by chaining the deferreds:
         yield runner.crawl(MySpider2)
         reactor.stop()
 
+
     crawl()
     reactor.run()  # the script will block here until the last crawl call is finished
+
 
 Different spiders can set different values for the same setting, but when they
 run in the same process it may be impossible, by design or because of some
@@ -207,9 +229,11 @@ different for different settings:
   default one) cannot be read from the per-spider settings. These are applied
   when the :class:`~scrapy.crawler.CrawlerRunner` or
   :class:`~scrapy.crawler.CrawlerProcess` object is created.
+
 * For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` the first
   available value is used, and if a spider requests a different reactor an
   exception will be raised. These are applied when the reactor is installed.
+
 * For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER` and the
   ones used by the resolver (:setting:`DNSCACHE_ENABLED`,
   :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy)
