@@ -32,11 +32,9 @@ Here's an example showing how to run a single spider with it.
     import scrapy
     from scrapy.crawler import CrawlerProcess
 
-
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
-
 
     process = CrawlerProcess(
         settings={
@@ -47,7 +45,7 @@ Here's an example showing how to run a single spider with it.
     )
 
     process.crawl(MySpider)
-process.start()  # the script will block here until the crawling is finished
+    process.start()  # the script will block here until the crawling is finished
 
 Define settings within a dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
 documentation to get acquainted with its usage details.
@@ -70,7 +68,7 @@ project as an example.
 
     # 'followall' is the name of one of the spiders of the project.
     process.crawl("followall", domain="scrapy.org")
-    process.start()  # the script will block here until the crawling is finished.
+    process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
 process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
@@ -97,18 +95,16 @@ reactor after ``MySpider`` has finished running.
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
 
-
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
-
 
     configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
     runner = CrawlerRunner()
 
     d = runner.crawl(MySpider)
     d.addBoth(lambda _: reactor.stop())
-    reactor.run()  # the script will block here until the crawling is finished.
+    reactor.run()  # the script will block here until the crawling is finished
 
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
@@ -129,22 +125,19 @@ Here is an example that runs multiple spiders simultaneously:
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
-
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
-
 
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-
     settings = get_project_settings()
     process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
-    process.start()  # the script will block here until all crawling jobs are finished.
+    process.start()  # the script will block here until all crawling jobs are finished
 
 Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
@@ -156,16 +149,13 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
-
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
-
 
     configure_logging()
     settings = get_project_settings()
@@ -175,7 +165,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     d = runner.join()
     d.addBoth(lambda _: reactor.stop())
 
-    reactor.run()  # the script will block here until all crawling jobs are finished.
+    reactor.run()  # the script will block here until all crawling jobs are finished
 
 Same example but running the spiders sequentially by chaining the deferreds:
 
@@ -186,21 +176,17 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
-
 
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-
     settings = get_project_settings()
     configure_logging(settings)
     runner = CrawlerRunner(settings)
-
 
     @defer.inlineCallbacks
     def crawl():
@@ -208,9 +194,8 @@ Same example but running the spiders sequentially by chaining the deferreds:
         yield runner.crawl(MySpider2)
         reactor.stop()
 
-
     crawl()
-    reactor.run()  # the script will block here until the last crawl call is finished.
+    reactor.run()  # the script will block here until the last crawl call is finished
 
 Different spiders can set different values for the same setting, but when they
 run in the same process it may be impossible, by design or because of some
@@ -290,7 +275,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
   super proxy that you can attach your own proxies to.
 * Use a highly distributed downloader that circumvents bans internally, so you
   can just focus on parsing clean pages. One example of such a downloader is
-  `Zyte Smart Proxy Manager`_.
+  `Zyte Smart Proxy Manager`_
 
 If you are still unable to prevent your bot from getting banned, consider contacting
 `commercial support`_.
