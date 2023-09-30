@@ -84,49 +84,53 @@ class HttpCompressionMiddleware:
         return response
 
     def _handle_encoding(self, body, content_encoding):
-        content_to_decode = body
+        to_decode, to_keep = self._split_encodings(content_encoding)
 
+        for encoding in to_decode:
+            body = self._decode(body, encoding)
+        content_encoding[:] = to_keep
+
+        return body
+
+    def _split_encodings(self, content_encoding):
+        to_keep = content_encoding[:]
+        to_decode = []
         separator = b","
-        decoded_body = ""
-        for index, encodings in reversed(list(enumerate(content_encoding))):
-            if separator in encodings:
-                decoded_body = ""
-                valid_encoding = True
+        valid_encoding = True
 
+        for index, encodings in reversed(list(enumerate(to_keep))):
+            if separator in encodings:
                 encodings_split = encodings.split(separator)
+
                 for encoding in reversed(encodings_split):
                     encoding = encoding.strip().lower()
 
-                    if decoded_body:
-                        content_to_decode = decoded_body
-
-                    decoded_body = self._decode(content_to_decode, encoding)
-
+                    to_decode.append(encoding)
                     if encoding not in ACCEPTED_ENCODINGS:
                         valid_encoding = False
                         break
 
                     encodings_split.pop()
                     encodings = b",".join(encodings_split)
-                    content_encoding[index] = encodings
+                    to_keep[index] = encodings
 
                 if valid_encoding:
-                    content_encoding.remove(encodings)
+                    to_keep.remove(encodings)
 
             else:
                 encoding = encodings.strip().lower()
 
-                if decoded_body:
-                    content_to_decode = decoded_body
-
-                decoded_body = self._decode(content_to_decode, encoding)
-
-                if encodings in ACCEPTED_ENCODINGS:
-                    content_encoding.remove(encodings)
-                else:
+                if encoding not in ACCEPTED_ENCODINGS:
+                    valid_encoding = False
                     break
 
-        return decoded_body
+                to_decode.append(encoding)
+                to_keep.remove(encodings)
+
+        if not valid_encoding:
+            to_decode = []
+
+        return to_decode, to_keep
 
     def _decode(self, body, encoding):
         if encoding == b"gzip" or encoding == b"x-gzip":
