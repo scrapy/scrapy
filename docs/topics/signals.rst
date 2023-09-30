@@ -118,7 +118,8 @@ engine_started
 
 .. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
     depending on how the spider was started. So **don't** rely on this signal
-    getting fired before :signal:`spider_opened`.
+    getting fired before :signal:`spider_opened`. This may be a better place 
+    than :meth:`start_requests` to get a fully initialized crawler.
 
 engine_stopped
 ~~~~~~~~~~~~~~
