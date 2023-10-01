@@ -115,20 +115,17 @@ Request objects
         cookies for that domain and will be sent again in future requests.
         That's the typical behaviour of any regular web browser.
 
-        To create a request that does not send stored cookies and does not
-        store received cookies, set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.Request.meta>`.
-
-        Example of a request that sends manually-defined cookies and ignores
-        cookie storage:
+        Example of a request that sends manually-defined cookies:
 
         .. code-block:: python
 
             Request(
                 url="http://www.example.com",
                 cookies={"currency": "USD", "country": "UY"},
-                meta={"dont_merge_cookies": True},
             )
+
+        It is recommended not to set the ``dont_merge_cookies`` key to ``True``
+        in :attr:`request.meta <scrapy.Request.meta>` as it causes custom cookies to be ignored.
 
         For more info see :ref:`cookies-mw`.
 
