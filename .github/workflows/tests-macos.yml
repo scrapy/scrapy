@@ -1,6 +1,10 @@
 name: macOS
 on: [push, pull_request]
 
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: macos-11
