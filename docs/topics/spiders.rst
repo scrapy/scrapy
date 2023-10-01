@@ -144,6 +144,33 @@ scrapy.Spider
            as they can be modified later by e.g. :ref:`add-ons
            <topics-addons>`. The final settings are available in the
            :meth:`start_requests` method and later.
+      .. _spider-from-crawler:
+           Spider.from_crawler()
+           When you create a spider using the :meth:`Spider.from_crawler()` 
+           class method, it's important to note that the spider doesn't have all 
+           its components fully initialized at that point. Some components, such 
+           as the downloader middleware, are not yet set up.
+
+           To work with a fully initialized spider, consider using the 
+          `engine_started` signal handler as described in :ref:`engine-started- 
+           signal-handler`. This ensures that your spider has access to all its 
+           components.
+
+           .. code-block:: python
+
+              class MySpider(scrapy.Spider):
+
+                  name = 'my_spider'
+
+                  @classmethod
+                  def from_crawler(cls, crawler, *args, **kwargs):
+                      spider = super(MySpider, cls).from_crawler(crawler, *args, **kwargs)
+
+                      # Initialize additional components here if needed.
+
+                      return spider
+
+
 
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance
