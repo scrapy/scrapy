@@ -116,13 +116,13 @@ engine_started
 
     This signal supports returning deferreds from its handlers.
 
-.. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
-    depending on how the spider was started. So **don't** rely on this signal
-    getting fired before :signal:`spider_opened`.    
+.. note:: While this signal may be fired *after* the :signal:`spider_opened` signal,
+    depending on how the spider was started, it should not be relied upon to fire before :signal:`spider_opened`.    
 
-    It is **recommended** to use :signal:`engine_started` signal handler rather than :signal:`start_requests`.
-    This ensures that you have access to fully initialized components and settings
-    right at the beginning of your spider's execution. 
+    If you specifically need a fully initialized :param Crawler: instance at the beginning of your spider's execution,
+    it is **recommended** to use the :signal:`engine_started` signal handler instead of :meth:`start_requests`.
+
+ 
 
 engine_stopped
 ~~~~~~~~~~~~~~
