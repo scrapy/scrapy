@@ -33,7 +33,8 @@ Backward-incompatible changes
     finalized and frozen. This change was needed to allow changing the settings
     in :meth:`scrapy.Spider.from_crawler`. If you want to access the final
     setting values in the spider code as early as possible you can do this in
-    :meth:`~scrapy.Spider.start_requests`. (:issue:`6038`)
+    :meth:`~scrapy.Spider.start_requests`. You can also use :meth:`~scrapy.signals.engine_started`
+    to ensure access to a fully initialized components.(:issue:`6038`)
 
 -   The :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method now
     requires the response to be in a valid JSON encoding (UTF-8, UTF-16, or

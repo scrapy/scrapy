@@ -118,7 +118,11 @@ engine_started
 
 .. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
     depending on how the spider was started. So **don't** rely on this signal
-    getting fired before :signal:`spider_opened`.
+    getting fired before :signal:`spider_opened`.    
+
+    It is **recommended** to use :signal:`engine_started` signal handler rather than :signal:`start_requests`.
+    This ensures that you have access to fully initialized components and settings
+    right at the beginning of your spider's execution. 
 
 engine_stopped
 ~~~~~~~~~~~~~~

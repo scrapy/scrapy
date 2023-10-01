@@ -145,6 +145,11 @@ scrapy.Spider
            <topics-addons>`. The final settings are available in the
            :meth:`start_requests` method and later.
 
+           It's important to note that the :param crawler: at the time of execution 
+           of spider does not have most of its components fully initialized.
+           As a best practice, consider using the `engine_started` signal handler.
+           It provides a fully initialized crawler right at the beginning of your spider's execution.
+
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance
 
