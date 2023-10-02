@@ -1,6 +1,10 @@
 name: Windows
 on: [push, pull_request]
 
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: windows-latest
