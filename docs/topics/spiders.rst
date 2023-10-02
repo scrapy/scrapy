@@ -148,7 +148,7 @@ scrapy.Spider
            It's important to note that the :param crawler: in the :meth:`scrapy.Spider.from_crawler`
            does not have most of its components fully initialized.
            As a best practice, consider using the `engine_started` signal handler.
-           It provides a fully initialized crawler right at the beginning of your spider's execution.
+           It ensures a fully initialized crawler right at the beginning of your spider's execution.
 
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance

@@ -120,8 +120,10 @@ engine_started
     depending on how the spider was started. So **don't** rely on this signal
     getting fired before :signal:`spider_opened`.   
 
-    If you specifically need a fully initialized :param Crawler: instance at the beginning of your spider's execution,
-    it is **recommended** to use the :signal:`engine_started` signal handler instead of :meth:`start_requests`.
+    If you specifically need a fully initialized :param Crawler: instance within the
+    :meth:`scrapy.Spider.from_crawler`, it is **recommended** to use the
+    :signal:`engine_started` signal handler instead of :meth:`start_requests`.
+
 
  
 
