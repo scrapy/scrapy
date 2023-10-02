@@ -1,7 +1,6 @@
 # Tests requirements
 attrs
-# https://github.com/giampaolo/pyftpdlib/issues/560
-pyftpdlib; python_version < "3.12"
+pyftpdlib >= 1.5.8
 pytest
 pytest-cov==4.0.0
 pytest-xdist
