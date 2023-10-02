@@ -2,13 +2,12 @@ import logging
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseRunSpiderCommand):
     requires_project = True
-    
 
     def syntax(self):
         return "[options] <spider>"
@@ -17,18 +16,26 @@ class Command(BaseRunSpiderCommand):
         return "Run a spider"
 
     def run(self, args, opts):
-        
         if opts.output:
             extensions_base = self.settings.getdict("EXTENSIONS_BASE")
             extensions = self.settings.getdict("EXTENSIONS")
 
-            feed_exporter_base = extensions_base.get("scrapy.extensions.feedexport.FeedExporter")
+            feed_exporter_base = extensions_base.get(
+                "scrapy.extensions.feedexport.FeedExporter"
+            )
             feed_exporter = extensions.get("scrapy.extensions.feedexport.FeedExporter")
 
             if feed_exporter_base is None:
-                logger.warning("A file output was specified but the FeedExporter extension is not enabled in EXTENSIONS_BASE.")
-            elif "scrapy.extensions.feedexport.FeedExporter" in extensions.keys() and feed_exporter is None:
-                logger.warning("A file output was specified but the FeedExporter extension is not enabled in EXTENSIONS.")
+                logger.warning(
+                    "A file output was specified but the FeedExporter extension is not enabled in EXTENSIONS_BASE."
+                )
+            elif (
+                "scrapy.extensions.feedexport.FeedExporter" in extensions.keys()
+                and feed_exporter is None
+            ):
+                logger.warning(
+                    "A file output was specified but the FeedExporter extension is not enabled in EXTENSIONS."
+                )
 
         if len(args) < 1:
             raise UsageError()
