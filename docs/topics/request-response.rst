@@ -115,8 +115,9 @@ Request objects
         cookies for that domain and will be sent again in future requests.
         That's the typical behaviour of any regular web browser.
 
-        It is recommended not to set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.Request.meta>` as it causes custom cookies to be ignored.
+        Note that setting the :reqmeta:`dont_merge_cookies` key to ``True`` in
+        :attr:`request.meta <scrapy.Request.meta>` causes custom cookies to be
+        ignored.
 
         For more info see :ref:`cookies-mw`.
 
