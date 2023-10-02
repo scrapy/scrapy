@@ -115,15 +115,6 @@ Request objects
         cookies for that domain and will be sent again in future requests.
         That's the typical behaviour of any regular web browser.
 
-        Example of a request that sends manually-defined cookies:
-
-        .. code-block:: python
-
-            Request(
-                url="http://www.example.com",
-                cookies={"currency": "USD", "country": "UY"},
-            )
-
         It is recommended not to set the ``dont_merge_cookies`` key to ``True``
         in :attr:`request.meta <scrapy.Request.meta>` as it causes custom cookies to be ignored.
 
