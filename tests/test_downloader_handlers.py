@@ -127,7 +127,7 @@ class FileTestCase(unittest.TestCase):
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request(f"file://{self.mktemp()}")
+        request = Request(path_to_file_uri(self.mktemp()))
         d = self.download_request(request, Spider("foo"))
         return self.assertFailure(d, OSError)
 
