@@ -41,7 +41,7 @@ jobs:
         - python-version: 3.8.17
           env:
             TOXENV: asyncio-pinned
-        - python-version: pypy3.9
+        - python-version: pypy3.8
           env:
             TOXENV: pypy3-pinned
         - python-version: 3.8.17
