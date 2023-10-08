@@ -59,6 +59,7 @@ Requirements
 ============
 
 * Python 3.8+
+* PyCharm IDE(Best Suited For Python)
 * Works on Linux, Windows, macOS, BSD
 
 Install
