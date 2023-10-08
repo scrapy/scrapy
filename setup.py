@@ -71,6 +71,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.8",
+    pycharm ide,
     install_requires=install_requires,
     extras_require=extras_require,
 )
