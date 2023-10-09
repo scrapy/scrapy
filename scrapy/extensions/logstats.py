@@ -42,10 +42,11 @@ class LogStats:
         self.pagesprev, self.itemsprev = pages, items
 
         msg = (
-            "Crawled %(pages)d pages (at %(pagerate)d pages/min), "
+            "Spider %(name)s: Crawled %(pages)d pages (at %(pagerate)d pages/min), "
             "scraped %(items)d items (at %(itemrate)d items/min)"
         )
         log_args = {
+            "name": spider.name,
             "pages": pages,
             "pagerate": prate,
             "items": items,
