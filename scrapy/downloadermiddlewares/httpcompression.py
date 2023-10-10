@@ -95,42 +95,53 @@ class HttpCompressionMiddleware:
     def _split_encodings(self, content_encoding):
         to_keep = content_encoding[:]
         to_decode = []
-        separator = b","
-        valid_encoding = True
 
-        for index, encodings in reversed(list(enumerate(to_keep))):
-            if separator in encodings:
-                encodings_split = encodings.split(separator)
+        for i, encodings in reversed(list(enumerate(to_keep))):
+            enc_list_comma_separated = encodings.strip().split(b",")
 
-                for encoding in reversed(encodings_split):
-                    encoding = encoding.strip().lower()
-
-                    to_decode.append(encoding)
-                    if encoding not in ACCEPTED_ENCODINGS:
-                        valid_encoding = False
-                        break
-
-                    encodings_split.pop()
-                    encodings = b",".join(encodings_split)
-                    to_keep[index] = encodings
-
-                if valid_encoding:
-                    to_keep.remove(encodings)
-
+            if len(enc_list_comma_separated) > 1:
+                valid_encoding = self._parse_multi_enc_single_header(
+                    enc_list_comma_separated, to_keep, to_decode, i
+                )
             else:
-                encoding = encodings.strip().lower()
+                valid_encoding = self._parse_enc(encodings, to_keep, to_decode)
 
-                if encoding not in ACCEPTED_ENCODINGS:
-                    valid_encoding = False
-                    break
-
-                to_decode.append(encoding)
-                to_keep.remove(encodings)
-
-        if not valid_encoding:
-            to_decode = []
+            if not valid_encoding:
+                break
 
         return to_decode, to_keep
+
+    def _parse_multi_enc_single_header(self, encodings, to_keep, to_decode, i):
+        valid_encoding = True
+        for encoding in reversed(encodings):
+            encoding = encoding.strip().lower()
+
+            to_decode.append(encoding)
+            if encoding not in ACCEPTED_ENCODINGS:
+                valid_encoding = False
+                break
+
+            encodings.pop()
+            to_keep[i] = b",".join(encodings)
+
+        if valid_encoding:
+            del to_keep[i]
+        else:
+            to_decode = []
+
+        return valid_encoding
+
+    def _parse_enc(self, encodings, to_keep, to_decode):
+        valid_encoding = True
+        encoding = encodings.strip().lower()
+
+        if encoding not in ACCEPTED_ENCODINGS:
+            valid_encoding = False
+        else:
+            to_decode.append(encoding)
+            to_keep.remove(encodings)
+
+        return valid_encoding
 
     def _decode(self, body, encoding):
         if encoding == b"gzip" or encoding == b"x-gzip":
