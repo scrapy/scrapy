@@ -324,7 +324,7 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   Settings correponding to :setting:`DOWNLOAD_DELAY`,
+-   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
