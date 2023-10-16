@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Generator, Optional, Tuple, cast
 from urllib.parse import urljoin
 
 import parsel
@@ -102,14 +102,14 @@ class TextResponse(Response):
         return urljoin(get_base_url(self), url)
 
     @memoizemethod_noargs
-    def _headers_encoding(self):
-        content_type = self.headers.get(b"Content-Type", b"")
+    def _headers_encoding(self) -> Optional[str]:
+        content_type = cast(bytes, self.headers.get(b"Content-Type", b""))
         return http_content_type_encoding(to_unicode(content_type, encoding="latin-1"))
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = to_unicode(
-                self.headers.get(b"Content-Type", b""), encoding="latin-1"
+                cast(bytes, self.headers.get(b"Content-Type", b"")), encoding="latin-1"
             )
             benc, ubody = html_to_unicode(
                 content_type,

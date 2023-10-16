@@ -5,7 +5,19 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import inspect
-from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    AnyStr,
+    Callable,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from w3lib.url import safe_url_string
 
@@ -77,7 +89,7 @@ class Request(object_ref):
         url: str,
         callback: Optional[Callable] = None,
         method: str = "GET",
-        headers: Optional[dict] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[Union[dict, List[dict]]] = None,
         meta: Optional[dict] = None,

@@ -4,7 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-from typing import Generator, Tuple
+from typing import Any, AnyStr, Generator, Iterable, Mapping, Tuple, Union
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -42,7 +42,7 @@ class Response(object_ref):
         self,
         url: str,
         status=200,
-        headers=None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body=b"",
         flags=None,
         request=None,
