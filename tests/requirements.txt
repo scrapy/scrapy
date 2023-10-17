@@ -1,5 +1,6 @@
 # Tests requirements
 attrs
+pexpect >= 4.8.0
 pyftpdlib >= 1.5.8
 pytest
 pytest-cov==4.0.0
