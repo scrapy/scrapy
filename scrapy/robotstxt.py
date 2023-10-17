@@ -2,6 +2,7 @@ import logging
 import sys
 from abc import ABCMeta, abstractmethod
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import to_unicode
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,9 @@ class PythonRobotParser(RobotParser):
 
 class ReppyRobotParser(RobotParser):
     def __init__(self, robotstxt_body, spider):
+        logger.warning(
+            "ReppyRobotParser is deprecated", ScrapyDeprecationWarning, stacklevel=2
+        )
         from reppy.robots import Robots
 
         self.spider = spider
