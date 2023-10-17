@@ -275,7 +275,9 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(response.body, expected_body)
             self.assertEqual(response.request, request)
 
-            content_length = int(response.headers.get("Content-Length"))
+            content_length_header = response.headers.get("Content-Length")
+            assert content_length_header is not None
+            content_length = int(content_length_header)
             self.assertEqual(len(response.body), content_length)
 
         d = self.make_request(request)
@@ -320,11 +322,15 @@ class Https2ClientProtocolTestCase(TestCase):
             self.assertEqual(response.status, expected_status)
             self.assertEqual(response.request, request)
 
-            content_length = int(response.headers.get("Content-Length"))
+            content_length_header = response.headers.get("Content-Length")
+            assert content_length_header is not None
+            content_length = int(content_length_header)
             self.assertEqual(len(response.body), content_length)
 
             # Parse the body
-            content_encoding = str(response.headers[b"Content-Encoding"], "utf-8")
+            content_encoding_header = response.headers[b"Content-Encoding"]
+            assert content_encoding_header is not None
+            content_encoding = str(content_encoding_header, "utf-8")
             body = json.loads(str(response.body, content_encoding))
             self.assertIn("request-body", body)
             self.assertIn("extra-data", body)
@@ -562,7 +568,9 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(self.get_url(f"/query-params?{urlencode(params)}"))
 
         def assert_query_params(response: Response):
-            content_encoding = str(response.headers[b"Content-Encoding"], "utf-8")
+            content_encoding_header = response.headers[b"Content-Encoding"]
+            assert content_encoding_header is not None
+            content_encoding = str(content_encoding_header, "utf-8")
             data = json.loads(str(response.body, content_encoding))
             self.assertEqual(data, params)
 
