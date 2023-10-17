@@ -123,20 +123,6 @@ class MediaPipeline:
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
-    def _compatible(self, func):
-        """Wrapper for overridable methods to allow backwards compatibility"""
-        self._check_signature(func)
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            if self._expects_item[func.__name__]:
-                return func(*args, **kwargs)
-
-            kwargs.pop("item", None)
-            return func(*args, **kwargs)
-
-        return wrapper
-
     def _check_signature(self, func):
         sig = signature(func)
         self._expects_item[func.__name__] = True
