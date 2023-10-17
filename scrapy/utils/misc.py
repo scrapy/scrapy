@@ -21,17 +21,12 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Pattern,
     Union,
     cast,
 )
 
-from w3lib.html import replace_entities
-
 from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
-from scrapy.utils.python import flatten, to_unicode
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -106,39 +101,6 @@ def walk_modules(path: str) -> List[ModuleType]:
                 submod = import_module(fullpath)
                 mods.append(submod)
     return mods
-
-
-def extract_regex(
-    regex: Union[str, Pattern], text: str, encoding: str = "utf-8"
-) -> List[str]:
-    """Extract a list of unicode strings from the given text/encoding using the following policies:
-
-    * if the regex contains a named group called "extract" that will be returned
-    * if the regex contains multiple numbered groups, all those will be returned (flattened)
-    * if the regex doesn't contain any group the entire regex matching is returned
-    """
-    warnings.warn(
-        "scrapy.utils.misc.extract_regex has moved to parsel.utils.extract_regex.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-
-    if isinstance(regex, str):
-        regex = re.compile(regex, re.UNICODE)
-
-    try:
-        # named group
-        strings = [regex.search(text).group("extract")]  # type: ignore[union-attr]
-    except Exception:
-        # full regex or numbered groups
-        strings = regex.findall(text)
-    strings = flatten(strings)
-
-    if isinstance(text, str):
-        return [replace_entities(s, keep=["lt", "amp"]) for s in strings]
-    return [
-        replace_entities(to_unicode(s, encoding), keep=["lt", "amp"]) for s in strings
-    ]
 
 
 def md5sum(file: IO) -> str:
