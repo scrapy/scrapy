@@ -404,8 +404,8 @@ class CrawlerProcess(CrawlerRunner):
         :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
 
-        :param bool install_signal_handlers: whether to install the shutdown
-            handlers (default: True)
+        :param bool install_signal_handlers: whether to install the OS signal
+            handlers from Twisted and Scrapy (default: True)
         """
         from twisted.internet import reactor
 
@@ -416,15 +416,17 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        if install_signal_handlers:
-            install_shutdown_handlers(self._signal_shutdown)
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
         resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
         reactor.addSystemEventTrigger("before", "shutdown", self.stop)
-        reactor.run(installSignalHandlers=False)  # blocking call
+        if install_signal_handlers:
+            reactor.addSystemEventTrigger(
+                "after", "startup", install_shutdown_handlers, self._signal_shutdown
+            )
+        reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
     def _graceful_stop_reactor(self) -> Deferred:
         d = self.stop()
