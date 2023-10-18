@@ -2,7 +2,6 @@ from gzip import GzipFile
 from io import BytesIO
 from pathlib import Path
 from unittest import SkipTest, TestCase
-from warnings import catch_warnings
 
 from w3lib.encoding import resolve_encoding
 
@@ -10,7 +9,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -381,20 +380,6 @@ class HttpCompressionSubclassTest(TestCase):
                 super().__init__()
 
         crawler = get_crawler(Spider)
-        with catch_warnings(record=True) as caught_warnings:
+
+        with self.assertRaises(TypeError):
             HttpCompressionMiddlewareSubclass.from_crawler(crawler)
-        messages = tuple(
-            str(warning.message)
-            for warning in caught_warnings
-            if warning.category is ScrapyDeprecationWarning
-        )
-        self.assertEqual(
-            messages,
-            (
-                (
-                    "HttpCompressionMiddleware subclasses must either modify "
-                    "their '__init__' method to support a 'stats' parameter "
-                    "or reimplement the 'from_crawler' method."
-                ),
-            ),
-        )
