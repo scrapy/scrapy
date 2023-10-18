@@ -66,9 +66,51 @@ Install
 
 The quick way:
 
+System-wide installation
+
 .. code:: bash
 
     pip install scrapy
+
+The recommended way:
+
+Using python virtual environment
+
+1: Installing virtual environment module:
+
+.. code:: bash
+
+    pip install virtualenv 
+
+2: Creating a virtual environment:
+
+.. code:: bash
+
+    python -m venv venv
+
+3: Activating the virtual environment:
+
+.. code:: bash
+
+    source venv/bin/activate
+
+4: Installing scrapy inside virtual environment:
+
+.. code:: bash
+
+    pip install scrapy
+
+5: Now whenever we want to use scrapy we will have to activate the environment first.
+
+6: In order to deactivate the virtual environment:
+
+Make sure you are still inside the virtual environment first.
+
+.. code:: bash
+
+    deactivate
+
+
 
 See the install section in the documentation at
 https://docs.scrapy.org/en/latest/intro/install.html for more details.
