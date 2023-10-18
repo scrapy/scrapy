@@ -6,9 +6,8 @@ from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
-from scrapy.utils.response import response_httprepr
 from scrapy.utils.test import get_crawler
-
+from scrapy.utils.python import to_bytes
 
 class MyException(Exception):
     pass
@@ -56,7 +55,7 @@ class TestDownloaderStats(TestCase):
             self.mw.process_response(self.req, test_response, self.spider)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-                resp_size = len(response_httprepr(test_response))
+                resp_size = to_bytes(test_response)
             self.assertStatsEqual("downloader/response_bytes", resp_size)
 
     def test_process_exception(self):
