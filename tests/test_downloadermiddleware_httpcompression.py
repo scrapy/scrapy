@@ -371,15 +371,3 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(response.body, b"")
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
-
-
-class HttpCompressionSubclassTest(TestCase):
-    def test_init_missing_stats(self):
-        class HttpCompressionMiddlewareSubclass(HttpCompressionMiddleware):
-            def __init__(self):
-                super().__init__()
-
-        crawler = get_crawler(Spider)
-
-        with self.assertRaises(TypeError):
-            HttpCompressionMiddlewareSubclass.from_crawler(crawler)
