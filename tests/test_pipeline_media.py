@@ -15,7 +15,6 @@ from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
@@ -425,102 +424,6 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
     def image_downloaded(self, response, request, info):
         self._mockcalled.append("image_downloaded")
         return super().image_downloaded(response, request, info)
-
-
-class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
-    skip = skip_pillow
-
-    def setUp(self):
-        settings_dict = {
-            "IMAGES_STORE": "store-uri",
-            "IMAGES_THUMBS": {"small": (50, 50)},
-        }
-        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
-        self.pipe = MockedMediaPipelineDeprecatedMethods.from_crawler(crawler)
-        self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider(None)
-        self.item = dict(image_urls=["http://picsum.photos/id/1014/200/300"], images=[])
-
-    def _assert_method_called_with_warnings(self, method, message, warnings):
-        self.assertIn(method, self.pipe._mockcalled)
-        warningShown = False
-        for warning in warnings:
-            if (
-                warning["message"] == message
-                and warning["category"] == ScrapyDeprecationWarning
-            ):
-                warningShown = True
-        self.assertTrue(warningShown)
-
-    @inlineCallbacks
-    def test_media_to_download_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "media_to_download(self, request, info) is deprecated, "
-            "please use media_to_download(self, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("media_to_download", message, warnings)
-
-    @inlineCallbacks
-    def test_media_downloaded_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "media_downloaded(self, response, request, info) is deprecated, "
-            "please use media_downloaded(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("media_downloaded", message, warnings)
-
-    @inlineCallbacks
-    def test_file_downloaded_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "file_downloaded(self, response, request, info) is deprecated, "
-            "please use file_downloaded(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("file_downloaded", message, warnings)
-
-    @inlineCallbacks
-    def test_file_path_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "file_path(self, request, response=None, info=None) is deprecated, "
-            "please use file_path(self, request, response=None, info=None, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("file_path", message, warnings)
-
-    @inlineCallbacks
-    def test_thumb_path_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "thumb_path(self, request, thumb_id, response=None, info=None) is deprecated, "
-            "please use thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("thumb_path", message, warnings)
-
-    @inlineCallbacks
-    def test_get_images_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "get_images(self, response, request, info) is deprecated, "
-            "please use get_images(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("get_images", message, warnings)
-
-    @inlineCallbacks
-    def test_image_downloaded_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "image_downloaded(self, response, request, info) is deprecated, "
-            "please use image_downloaded(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("image_downloaded", message, warnings)
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
