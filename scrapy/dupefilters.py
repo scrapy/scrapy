@@ -3,14 +3,12 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Set
-from warnings import warn
 
 from twisted.internet.defer import Deferred
 
 from scrapy.http.request import Request
 from scrapy.settings import BaseSettings
 from scrapy.spiders import Spider
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
@@ -75,38 +73,15 @@ class RFPDupeFilter(BaseDupeFilter):
         fingerprinter: Optional[RequestFingerprinterProtocol] = None,
     ) -> Self:
         debug = settings.getbool("DUPEFILTER_DEBUG")
-        try:
-            return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
-        except TypeError:
-            warn(
-                "RFPDupeFilter subclasses must either modify their '__init__' "
-                "method to support a 'fingerprinter' parameter or reimplement "
-                "the 'from_settings' class method.",
-                ScrapyDeprecationWarning,
-            )
-            result = cls(job_dir(settings), debug)
-            result.fingerprinter = fingerprinter or RequestFingerprinter()
-            return result
+        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.request_fingerprinter
-        try:
-            return cls.from_settings(
-                crawler.settings,
-                fingerprinter=crawler.request_fingerprinter,
-            )
-        except TypeError:
-            warn(
-                "RFPDupeFilter subclasses must either modify their overridden "
-                "'__init__' method and 'from_settings' class method to "
-                "support a 'fingerprinter' parameter, or reimplement the "
-                "'from_crawler' class method.",
-                ScrapyDeprecationWarning,
-            )
-            result = cls.from_settings(crawler.settings)
-            result.fingerprinter = crawler.request_fingerprinter
-            return result
+        return cls.from_settings(
+            crawler.settings,
+            fingerprinter=crawler.request_fingerprinter,
+        )
 
     def request_seen(self, request: Request) -> bool:
         fp = self.request_fingerprint(request)
