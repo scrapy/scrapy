@@ -55,25 +55,6 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     return f"{status_int} {to_unicode(message)}"
 
 
-@deprecated
-def response_httprepr(response: Response) -> bytes:
-    """Return raw HTTP representation (as bytes) of the given response. This
-    is provided only for reference, since it's not the exact stream of bytes
-    that was received (that's not exposed by Twisted).
-    """
-    values = [
-        b"HTTP/1.1 ",
-        to_bytes(str(response.status)),
-        b" ",
-        to_bytes(http.RESPONSES.get(response.status, b"")),
-        b"\r\n",
-    ]
-    if response.headers:
-        values.extend([response.headers.to_string(), b"\r\n"])
-    values.extend([b"\r\n", response.body])
-    return b"".join(values)
-
-
 def open_in_browser(
     response: Union[
         "scrapy.http.response.html.HtmlResponse",
