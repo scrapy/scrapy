@@ -58,11 +58,6 @@ jobs:
           env:
             TOXENV: botocore
 
-        # keep until uvloop supports 3.12
-        - python-version: "3.11"
-          env:
-            TOXENV: asyncio
-
     steps:
     - uses: actions/checkout@v4
 
