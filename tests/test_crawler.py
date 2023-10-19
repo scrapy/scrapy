@@ -15,6 +15,7 @@ from pytest import mark, raises
 from twisted.internet import defer
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
+from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
@@ -179,11 +180,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
                 "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
             }
         )
-        with warnings.catch_warnings(record=True) as w:
-            self.assertRaises(AttributeError, CrawlerRunner, settings)
-            self.assertEqual(len(w), 1)
-            self.assertIn("SPIDER_LOADER_CLASS", str(w[0].message))
-            self.assertIn("scrapy.interfaces.ISpiderLoader", str(w[0].message))
+        self.assertRaises(MultipleInvalid, CrawlerRunner, settings)
 
     def test_crawler_runner_accepts_dict(self):
         runner = CrawlerRunner({"foo": "bar"})

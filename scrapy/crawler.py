@@ -12,7 +12,6 @@ from twisted.internet.defer import (
     inlineCallbacks,
     maybeDeferred,
 )
-from zope.interface.exceptions import DoesNotImplement
 
 try:
     # zope >= 5.0 only supports MultipleInvalid
@@ -205,19 +204,7 @@ class CrawlerRunner:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
-        excs = (
-            (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
-        )
-        try:
-            verifyClass(ISpiderLoader, loader_cls)
-        except excs:
-            warnings.warn(
-                "SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does "
-                "not fully implement scrapy.interfaces.ISpiderLoader interface. "
-                "Please add all missing methods to avoid unexpected runtime errors.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        verifyClass(ISpiderLoader, loader_cls)
         return loader_cls.from_settings(settings.frozencopy())
 
     def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):

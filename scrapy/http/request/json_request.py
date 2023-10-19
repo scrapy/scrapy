@@ -11,7 +11,6 @@ import warnings
 from typing import Optional, Tuple
 
 from scrapy.http.request import Request
-from scrapy.utils.deprecate import create_deprecated_class
 
 
 class JsonRequest(Request):
@@ -58,6 +57,3 @@ class JsonRequest(Request):
     def _dumps(self, data: dict) -> str:
         """Convert to JSON"""
         return json.dumps(data, **self._dumps_kwargs)
-
-
-JSONRequest = create_deprecated_class("JSONRequest", JsonRequest)
