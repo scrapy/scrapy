@@ -232,7 +232,8 @@ def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
     """
 
     level = logkws.get("level", logging.INFO)
-    message = str(logkws.get("msg"))
+    message = logkws.get("msg", "")
+    assert message is not None
     # NOTE: This also handles 'args' being an empty dict, that case doesn't
     # play well in logger.log calls
     args = logkws if not logkws.get("args") else logkws["args"]
