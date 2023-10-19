@@ -534,7 +534,10 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("Spider closed (shutdown)")
         p.wait()
 
+    @defer.inlineCallbacks
     def test_shutdown_forced(self):
+        from twisted.internet import reactor
+
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "-a", "sleep=10")
         p = PopenSpawn(args, timeout=5)
@@ -542,6 +545,10 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
+        # sending the second signal too fast often causes problems
+        d = defer.Deferred()
+        reactor.callLater(0.1, d.callback, None)
+        yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
         p.wait()
