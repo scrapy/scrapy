@@ -1,7 +1,7 @@
 .. _topics-yield:
 
 ==========================
-'Yield' Keyword in Python
+'Yield' Keyword in Python and its use for Scrapy Callbacks
 ==========================
   
 What is ``yield``?
@@ -9,7 +9,7 @@ What is ``yield``?
   
 ``Yield`` is a keyword in Python that returns a generator object. 
 
-What is a *Generator*?
+What is a 'generator'?
 ====================
 
 A generator in Python is a function that returns an iterator. [#]_ It uses the ``yield`` keyword instead of ``return``.
@@ -48,6 +48,7 @@ Example code:
     print(val)
   
   # or we can create a new object as yield returns a generator object
+  print("------------------------"
   temp = MyGen()
   
   # because temp is an iterable, we can use 'next' to access the values
@@ -99,6 +100,69 @@ When to use ``yield``?
 ====================
 
 We should use ``yield`` when we want to iterate over a sequence, but don’t want to store the entire sequence in memory. [#]_
+Note that `yield` and `return` cannot be successfully used in combination in a single function. For example, the following code 
+will only print values from 0 to 4. The value sent by `return` will not be included in the result.
+
+.. code-block:: python
+
+  def gen():
+    for i in range(0,5):
+        yield i
+    print ("proof") # to show that we do actually reach this line and the one following it
+    return 5
+  res = gen()
+  for x in res:
+    print(x)
+
+.. _topics-yield-scrapy:
+
+Where is ``yield`` used in Scrapy?
+==================================
+``Yield`` is used for callbacks in Scrapy, which help scrape multiple pages. For example, consider the following code
+from :ref:`overview <intro-overview>` which walks through a simple spider that scrapes quotes from https://quotes.toscrape.com. 
+
+.. code-block:: python
+
+  import scrapy
+  
+  class QuotesSpider(scrapy.Spider):
+      name = "quotes"
+      start_urls = [
+          "https://quotes.toscrape.com/tag/humor/",
+      ]
+  
+      def parse(self, response):
+          for quote in response.css("div.quote"):
+              yield {
+                  "author": quote.xpath("span/small/text()").get(),
+                  "text": quote.css("span.text::text").get(),
+              }
+  
+          next_page = response.css('li.next a::attr("href")').get()
+          if next_page is not None:
+              yield response.follow(next_page, self.parse)
+
+The working of the code is adequately covered in :ref:`overview <intro-overview>`, so we will not go into the details
+here. Now, let's address the question of the significance of using ``yield`` here.
+
+Why ``yield``?
+----------------
+Scrapy is writtern with the Twisted Framework and thus, a core feature of Scrapy is that requests are scheduled and processed asynchronously
+:ref:`topics-architecture`. As noted in :ref:`overview <intro-overview>`, this means that:
+            | Scrapy doesn't need to wait for a request to be finished and processed, it can send another request or do other things in the meantime. 
+            | This also means that other requests can keep going even if some request fails or an error happens while handling it.
+This is where ``yield`` comes in. When we use ``yield`` for a Scrapy callback, we essentially pause the execution of the callback function at that 
+point, allowing the framework to perform other tasks in a non-blocking manner. Later, the callback is resumed from where it was paused. Thus, using
+yield ensures that the Scrapy framework can continue making requests and processing responses without blocking the event loop. 
+
+Would ``return`` work?
+----------------------
+Technically, yes. If we wanted to use ``return``, we would have to wait until we had all data to ensure that nothing was missed because once the return
+statement is encountered, the function execution will be ceased immediately and the function will be exited. Thus, using ``return`` could make the spider
+inefficient, and may also lead to blocking behaviour and loss of Scrapy's asynchronous functionality. In general, using ``return`` may work in certain 
+cases, but it is not recommended as it does not align with Scrapy's event-driven, non-blocking design.
+
+Thus, in general, it is recommended to use ``yield``.
 
 |
 References/Resources:
