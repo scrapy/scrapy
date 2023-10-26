@@ -41,7 +41,7 @@ class CloseSpider(Exception):
     """Raise this from callbacks to request the spider to be closed"""
 
     def __init__(self, reason: str = "cancelled"):
-        super().__init__()
+        super().__init__(reason)
         self.reason = reason
 
 
