@@ -1,3 +1,4 @@
+import os
 import sys
 from io import BytesIO
 from pathlib import Path
@@ -147,8 +148,10 @@ class InteractiveShellTest(unittest.TestCase):
             "scrapy.cmdline",
             "shell",
         )
+        env = os.environ.copy()
+        env["SCRAPY_PYTHON_SHELL"] = "python"
         logfile = BytesIO()
-        p = PopenSpawn(args, timeout=5)
+        p = PopenSpawn(args, env=env, timeout=5)
         p.logfile_read = logfile
         p.expect_exact("Available Scrapy objects")
         with MockServer() as mockserver:
