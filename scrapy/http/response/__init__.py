@@ -54,7 +54,7 @@ class Response(object_ref):
         self.status = int(status)
         self._set_body(body)
         self._set_url(url)
-        self.request = request
+        self.request: Request = request
         self.flags = [] if flags is None else list(flags)
         self.certificate = certificate
         self.ip_address = ip_address

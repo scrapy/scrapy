@@ -6,8 +6,10 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
+from scrapy.spiders import Spider
+from $project_name.items import ${ProjectName}Item
 
 
 class ${ProjectName}Pipeline:
-    def process_item(self, item, spider):
+    def process_item(self, item: ${ProjectName}Item, spider: Spider):
         return item

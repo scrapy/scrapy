@@ -5,6 +5,11 @@ from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
+from scrapy.crawler import Crawler
+from scrapy.http import HtmlResponse
+from scrapy.http.request import Request
+from scrapy.spiders import Spider
+from typing import List, Tuple
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
@@ -24,7 +29,7 @@ class MediaPipeline:
 
     class SpiderInfo:
         def __init__(self, spider):
-            self.spider = spider
+            self.spider: Spider = spider
             self.downloading = set()
             self.downloaded = {}
             self.waiting = defaultdict(list)
@@ -67,7 +72,7 @@ class MediaPipeline:
         return formatted_key
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler):
         try:
             pipe = cls.from_settings(crawler.settings)
         except AttributeError:
@@ -76,10 +81,10 @@ class MediaPipeline:
         pipe._fingerprinter = crawler.request_fingerprinter
         return pipe
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: Spider):
         self.spiderinfo = self.SpiderInfo(spider)
 
-    def process_item(self, item, spider):
+    def process_item(self, item: dict, spider: Spider):
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]
@@ -189,15 +194,15 @@ class MediaPipeline:
             defer_result(result).chainDeferred(wad)
 
     # Overridable Interface
-    def media_to_download(self, request, info, *, item=None):
+    def media_to_download(self, request: Request, info: SpiderInfo, *, item: dict=None):
         """Check request before starting download"""
         pass
 
-    def get_media_requests(self, item, info):
+    def get_media_requests(self, item: dict, info: SpiderInfo):
         """Returns the media requests to download"""
         pass
 
-    def media_downloaded(self, response, request, info, *, item=None):
+    def media_downloaded(self, response: HtmlResponse, request: Request, info: SpiderInfo, *, item: dict=None):
         """Handler for success downloads"""
         return response
 
@@ -205,7 +210,7 @@ class MediaPipeline:
         """Handler for failed downloads"""
         return failure
 
-    def item_completed(self, results, item, info):
+    def item_completed(self, results: List[Tuple], item: dict, info: SpiderInfo):
         """Called per item when all media requests has been processed"""
         if self.LOG_FAILED_RESULTS:
             for ok, value in results:
@@ -218,6 +223,6 @@ class MediaPipeline:
                     )
         return item
 
-    def file_path(self, request, response=None, info=None, *, item=None):
+    def file_path(self, request: Request, response: HtmlResponse=None, info: SpiderInfo=None, *, item: dict=None):
         """Returns the path where downloaded media should be stored"""
         pass
