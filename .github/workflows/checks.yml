@@ -1,0 +1,46 @@
+name: Checks
+on: [push, pull_request]
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: "3.12"
+          env:
+            TOXENV: pylint
+        - python-version: 3.8
+          env:
+            TOXENV: typing
+        - python-version: "3.11"  # Keep in sync with .readthedocs.yml
+          env:
+            TOXENV: docs
+        - python-version: "3.12"
+          env:
+            TOXENV: twinecheck
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run check
+      env: ${{ matrix.env }}
+      run: |
+        pip install -U tox
+        tox
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: pre-commit/action@v3.0.0

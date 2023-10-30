@@ -1,10 +1,10 @@
+.. highlight:: none
+
 .. _topics-commands:
 
 =================
 Command line tool
 =================
-
-.. versionadded:: 0.10
 
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
@@ -27,7 +27,7 @@ in standard locations:
 1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
 2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
    for global (user-wide) settings, and
-3. ``scrapy.cfg`` inside a scrapy project's root (see next section).
+3. ``scrapy.cfg`` inside a Scrapy project's root (see next section).
 
 Settings from these files are merged in the listed order of preference:
 user-defined values have higher priority than system-wide defaults
@@ -37,7 +37,7 @@ Scrapy also understands, and can be configured through, a number of environment
 variables. Currently these are:
 
 * ``SCRAPY_SETTINGS_MODULE`` (see :ref:`topics-settings-module-envvar`)
-* ``SCRAPY_PROJECT``
+* ``SCRAPY_PROJECT`` (see :ref:`topics-project-envvar`)
 * ``SCRAPY_PYTHON_SHELL`` (see :ref:`topics-shell`)
 
 .. _topics-project-structure:
@@ -55,6 +55,7 @@ structure by default, similar to this::
    myproject/
        __init__.py
        items.py
+       middlewares.py
        pipelines.py
        settings.py
        spiders/
@@ -65,10 +66,41 @@ structure by default, similar to this::
 
 The directory where the ``scrapy.cfg`` file resides is known as the *project
 root directory*. That file contains the name of the python module that defines
-the project settings. Here is an example::
+the project settings. Here is an example:
+
+.. code-block:: ini
 
     [settings]
     default = myproject.settings
+
+.. _topics-project-envvar:
+
+Sharing the root directory between projects
+===========================================
+
+A project root directory, the one that contains the ``scrapy.cfg``, may be
+shared by multiple Scrapy projects, each with its own settings module.
+
+In that case, you must define one or more aliases for those settings modules
+under ``[settings]`` in your ``scrapy.cfg`` file:
+
+.. code-block:: ini
+
+    [settings]
+    default = myproject1.settings
+    project1 = myproject1.settings
+    project2 = myproject2.settings
+
+By default, the ``scrapy`` command-line tool will use the ``default`` settings.
+Use the ``SCRAPY_PROJECT`` environment variable to specify a different project
+for ``scrapy`` to use::
+
+    $ scrapy settings --get BOT_NAME
+    Project 1 Bot
+    $ export SCRAPY_PROJECT=project2
+    $ scrapy settings --get BOT_NAME
+    Project 2 Bot
+
 
 Using the ``scrapy`` tool
 =========================
@@ -187,7 +219,7 @@ startproject
 
 Creates a new Scrapy project named ``project_name``, under the ``project_dir``
 directory.
-If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``myproject``.
+If ``project_dir`` wasn't specified, ``project_dir`` will be the same as ``project_name``.
 
 Usage example::
 
@@ -198,10 +230,13 @@ Usage example::
 genspider
 ---------
 
-* Syntax: ``scrapy genspider [-t template] <name> <domain>``
+* Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+.. versionadded:: 2.6.0
+   The ability to pass a URL instead of a domain.
+
+Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
 
@@ -233,11 +268,31 @@ crawl
 
 Start crawling using a spider.
 
+Supported options:
+
+* ``-h, --help``: show a help message and exit
+
+* ``-a NAME=VALUE``: set a spider argument (may be repeated)
+
+* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout), to define format set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file, to define format set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
+
+* ``--output-format FORMAT`` or ``-t FORMAT``: deprecated way to define format to use for dumping items, does not work in combination with ``-O``
+
 Usage examples::
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
+    $ scrapy crawl -o myfile:csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
+
+    $ scrapy crawl -O myfile:json myspider
+    [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
+
+    $ scrapy crawl -o myfile -t csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
 
@@ -248,6 +303,8 @@ check
 * Requires project: *yes*
 
 Run contract checks.
+
+.. skip: start
 
 Usage examples::
 
@@ -265,6 +322,8 @@ Usage examples::
 
     [FAILED] first_spider:parse
     >>> Returned 92 requests, expected 0..4
+
+.. skip: end
 
 .. command:: list
 
@@ -291,12 +350,12 @@ edit
 * Syntax: ``scrapy edit <spider>``
 * Requires project: *yes*
 
-Edit the given spider using the editor defined in the :setting:`EDITOR`
-setting.
+Edit the given spider using the editor defined in the ``EDITOR`` environment
+variable or (if unset) the :setting:`EDITOR` setting.
 
 This command is provided only as a convenience shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
-debug his spiders.
+debug spiders.
 
 Usage example::
 
@@ -430,6 +489,12 @@ Supported options:
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
 
+* ``--meta`` or ``-m``: additional request meta that will be passed to the callback
+  request. This must be a valid json string. Example: --meta='{"foo" : "bar"}'
+
+* ``--cbkwargs``: additional keyword arguments that will be passed to the callback.
+  This must be a valid json string. Example: --cbkwargs='{"foo" : "bar"}'
+
 * ``--pipelines``: process items through pipelines
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
@@ -447,6 +512,12 @@ Supported options:
 
 * ``--verbose`` or ``-v``: display information for each depth level
 
+* ``--output`` or ``-o``: dump scraped items to a file
+
+  .. versionadded:: 2.3
+
+.. skip: start
+
 Usage example::
 
     $ scrapy parse http://www.example.com/ -c parse_item
@@ -454,12 +525,14 @@ Usage example::
 
     >>> STATUS DEPTH LEVEL 1 <<<
     # Scraped Items  ------------------------------------------------------------
-    [{'name': u'Example item',
-     'category': u'Furniture',
-     'length': u'12 cm'}]
+    [{'name': 'Example item',
+     'category': 'Furniture',
+     'length': '12 cm'}]
 
     # Requests  -----------------------------------------------------------------
     []
+
+.. skip: end
 
 
 .. command:: settings
@@ -514,8 +587,6 @@ and Platform info, which is useful for bug reports.
 bench
 -----
 
-.. versionadded:: 0.17
-
 * Syntax: ``scrapy bench``
 * Requires project: *no*
 
@@ -539,29 +610,34 @@ Default: ``''`` (empty string)
 A module to use for looking up custom Scrapy commands. This is used to add custom
 commands for your Scrapy project.
 
-Example::
+Example:
 
-    COMMANDS_MODULE = 'mybot.commands'
+.. code-block:: python
 
-.. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/deploy.html
+    COMMANDS_MODULE = "mybot.commands"
+
+.. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
 Register commands via setup.py entry points
 -------------------------------------------
-
-.. note:: This is an experimental feature, use with caution.
 
 You can also add Scrapy commands from an external library by adding a
 ``scrapy.commands`` section in the entry points of the library ``setup.py``
 file.
 
-The following example adds ``my_command`` command::
+The following example adds ``my_command`` command:
+
+.. skip: next
+
+.. code-block:: python
 
   from setuptools import setup, find_packages
 
-  setup(name='scrapy-mymodule',
-    entry_points={
-      'scrapy.commands': [
-        'my_command=my_scrapy_module.commands:MyCommand',
-      ],
-    },
-   )
+  setup(
+      name="scrapy-mymodule",
+      entry_points={
+          "scrapy.commands": [
+              "my_command=my_scrapy_module.commands:MyCommand",
+          ],
+      },
+  )

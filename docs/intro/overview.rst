@@ -4,7 +4,7 @@
 Scrapy at a glance
 ==================
 
-Scrapy is an application framework for crawling web sites and extracting
+Scrapy (/ˈskreɪpaɪ/) is an application framework for crawling web sites and extracting
 structured data which can be used for a wide range of useful applications, like
 data mining, information processing or historical archival.
 
@@ -20,7 +20,9 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-http://quotes.toscrape.com, following the pagination::
+https://quotes.toscrape.com, following the pagination:
+
+.. code-block:: python
 
     import scrapy
 
@@ -28,44 +30,32 @@ http://quotes.toscrape.com, following the pagination::
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
         start_urls = [
-            'http://quotes.toscrape.com/tag/humor/',
+            "https://quotes.toscrape.com/tag/humor/",
         ]
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'text': quote.css('span.text::text').extract_first(),
-                    'author': quote.xpath('span/small/text()').extract_first(),
+                    "author": quote.xpath("span/small/text()").get(),
+                    "text": quote.css("span.text::text").get(),
                 }
 
-            next_page = response.css('li.next a::attr("href")').extract_first()
+            next_page = response.css('li.next a::attr("href")').get()
             if next_page is not None:
                 yield response.follow(next_page, self.parse)
-
 
 Put this in a text file, name it to something like ``quotes_spider.py``
 and run the spider using the :command:`runspider` command::
 
-    scrapy runspider quotes_spider.py -o quotes.json
+    scrapy runspider quotes_spider.py -o quotes.jsonl
 
+When this finishes you will have in the ``quotes.jsonl`` file a list of the
+quotes in JSON Lines format, containing text and author, looking like this::
 
-When this finishes you will have in the ``quotes.json`` file a list of the
-quotes in JSON format, containing text and author, looking like this (reformatted
-here for better readability)::
-
-    [{
-        "author": "Jane Austen",
-        "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"
-    },
-    {
-        "author": "Groucho Marx",
-        "text": "\u201cOutside of a dog, a book is man's best friend. Inside of a dog it's too dark to read.\u201d"
-    },
-    {
-        "author": "Steve Martin",
-        "text": "\u201cA day without sunshine is like, you know, night.\u201d"
-    },
-    ...]
+    {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}
+    {"author": "Steve Martin", "text": "\u201cA day without sunshine is like, you know, night.\u201d"}
+    {"author": "Garrison Keillor", "text": "\u201cAnyone who thinks sitting in church can make you a Christian must also think that sitting in a garage can make you a car.\u201d"}
+    ...
 
 
 What just happened?
@@ -160,8 +150,8 @@ The next steps for you are to :ref:`install Scrapy <intro-install>`,
 a full-blown Scrapy project and `join the community`_. Thanks for your
 interest!
 
-.. _join the community: http://scrapy.org/community/
+.. _join the community: https://scrapy.org/community/
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _Sitemaps: http://www.sitemaps.org
+.. _Sitemaps: https://www.sitemaps.org/index.html
