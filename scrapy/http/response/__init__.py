@@ -185,7 +185,7 @@ class Response(object_ref):
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[Union[dict, List[dict]]] = None,
         meta: Optional[Dict[str, Any]] = None,
-        encoding: str = "utf-8",
+        encoding: Optional[str] = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable] = None,
@@ -205,6 +205,8 @@ class Response(object_ref):
         .. versionadded:: 2.0
            The *flags* parameter.
         """
+        if encoding is None:
+            raise ValueError("encoding can't be None")
         if isinstance(url, Link):
             url = url.url
         elif url is None:
@@ -236,7 +238,7 @@ class Response(object_ref):
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[Union[dict, List[dict]]] = None,
         meta: Optional[Dict[str, Any]] = None,
-        encoding: str = "utf-8",
+        encoding: Optional[str] = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable] = None,
