@@ -118,7 +118,7 @@ will only print values from 0 to 4. The value sent by `return` will not be inclu
 
 Where is ``yield`` used in Scrapy?
 ==================================
-``Yield`` is used for callbacks in Scrapy, which help scrape multiple pages. For example, consider the following code
+``Yield`` is used for callbacks in Scrapy. For example, consider the following code
 from :ref:`overview <intro-overview>` which walks through a simple spider that scrapes quotes from https://quotes.toscrape.com. 
 
 .. code-block:: python
