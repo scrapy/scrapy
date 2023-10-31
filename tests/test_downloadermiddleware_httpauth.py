@@ -1,10 +1,8 @@
 import unittest
 
-import pytest
 from w3lib.http import basic_auth_header
 
 from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.spiders import Spider
 
@@ -31,38 +29,9 @@ class HttpAuthMiddlewareLegacyTest(unittest.TestCase):
         self.spider = TestSpiderLegacy("foo")
 
     def test_auth(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="Using HttpAuthMiddleware without http_auth_domain is deprecated",
-        ):
+        with self.assertRaises(AttributeError):
             mw = HttpAuthMiddleware()
             mw.spider_opened(self.spider)
-
-        # initial request, sets the domain and sends the header
-        req = Request("http://example.com/")
-        assert mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
-
-        # subsequent request to the same domain, should send the header
-        req = Request("http://example.com/")
-        assert mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
-
-        # subsequent request to a different domain, shouldn't send the header
-        req = Request("http://example-noauth.com/")
-        assert mw.process_request(req, self.spider) is None
-        self.assertNotIn("Authorization", req.headers)
-
-    def test_auth_already_set(self):
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="Using HttpAuthMiddleware without http_auth_domain is deprecated",
-        ):
-            mw = HttpAuthMiddleware()
-            mw.spider_opened(self.spider)
-        req = Request("http://example.com/", headers=dict(Authorization="Digest 123"))
-        assert mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], b"Digest 123")
 
 
 class HttpAuthMiddlewareTest(unittest.TestCase):

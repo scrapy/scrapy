@@ -352,7 +352,7 @@ class Scheduler(BaseScheduler):
 
     def _dqdir(self, jobdir: Optional[str]) -> Optional[str]:
         """Return a folder name to keep disk queue state at"""
-        if jobdir is not None:
+        if jobdir:
             dqdir = Path(jobdir, "requests.queue")
             if not dqdir.exists():
                 dqdir.mkdir(parents=True)

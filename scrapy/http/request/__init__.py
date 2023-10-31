@@ -200,7 +200,7 @@ class Request(object_ref):
         ``ignore_unknown_options=False``.
 
         .. caution:: Using :meth:`from_curl` from :class:`~scrapy.http.Request`
-                     subclasses, such as :class:`~scrapy.http.JSONRequest`, or
+                     subclasses, such as :class:`~scrapy.http.JsonRequest`, or
                      :class:`~scrapy.http.XmlRpcRequest`, as well as having
                      :ref:`downloader middlewares <topics-downloader-middleware>`
                      and

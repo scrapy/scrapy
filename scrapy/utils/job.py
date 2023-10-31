@@ -5,7 +5,9 @@ from scrapy.settings import BaseSettings
 
 
 def job_dir(settings: BaseSettings) -> Optional[str]:
-    path: str = settings["JOBDIR"]
-    if path and not Path(path).exists():
+    path: Optional[str] = settings["JOBDIR"]
+    if not path:
+        return None
+    if not Path(path).exists():
         Path(path).mkdir(parents=True)
     return path

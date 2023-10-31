@@ -15,6 +15,7 @@ from pytest import mark, raises
 from twisted.internet import defer
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
+from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
@@ -179,11 +180,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
                 "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
             }
         )
-        with warnings.catch_warnings(record=True) as w:
-            self.assertRaises(AttributeError, CrawlerRunner, settings)
-            self.assertEqual(len(w), 1)
-            self.assertIn("SPIDER_LOADER_CLASS", str(w[0].message))
-            self.assertIn("scrapy.interfaces.ISpiderLoader", str(w[0].message))
+        self.assertRaises(MultipleInvalid, CrawlerRunner, settings)
 
     def test_crawler_runner_accepts_dict(self):
         runner = CrawlerRunner({"foo": "bar"})
@@ -525,7 +522,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_shutdown_graceful(self):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
-        args = self.get_script_args("sleeping.py")
+        args = self.get_script_args("sleeping.py", "-a", "sleep=3")
         p = PopenSpawn(args, timeout=5)
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
@@ -534,14 +531,21 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("Spider closed (shutdown)")
         p.wait()
 
+    @defer.inlineCallbacks
     def test_shutdown_forced(self):
+        from twisted.internet import reactor
+
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
-        args = self.get_script_args("sleeping.py")
+        args = self.get_script_args("sleeping.py", "-a", "sleep=10")
         p = PopenSpawn(args, timeout=5)
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
+        # sending the second signal too fast often causes problems
+        d = defer.Deferred()
+        reactor.callLater(0.1, d.callback, None)
+        yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
         p.wait()
