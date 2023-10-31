@@ -96,6 +96,16 @@ IGNORED_EXTENSIONS = [
     "dmg",
     "iso",
     "apk",
+    "jar",
+    "sh",
+    "rb",
+    "js",
+    "hta",
+    "bat",
+    "cpl",
+    "msi",
+    "msp",
+    "py",
 ]
 
 
