@@ -27,7 +27,7 @@ from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
-    from scrapy.selector import Selector
+    from scrapy.selector import Selector, SelectorList
 
 _NONE = object()
 
@@ -138,26 +138,26 @@ class TextResponse(Response):
         return read_bom(self.body)[0]
 
     @property
-    def selector(self):
+    def selector(self) -> Selector:
         from scrapy.selector import Selector
 
         if self._cached_selector is None:
             self._cached_selector = Selector(self)
         return self._cached_selector
 
-    def jmespath(self, query, **kwargs):
+    def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
         if not hasattr(self.selector, "jmespath"):  # type: ignore[attr-defined]
             raise AttributeError(
                 "Please install parsel >= 1.8.1 to get jmespath support"
             )
 
-        return self.selector.jmespath(query, **kwargs)  # type: ignore[attr-defined]
+        return cast(SelectorList, self.selector.jmespath(query, **kwargs))  # type: ignore[attr-defined]
 
-    def xpath(self, query, **kwargs):
-        return self.selector.xpath(query, **kwargs)
+    def xpath(self, query: str, **kwargs: Any) -> SelectorList:
+        return cast(SelectorList, self.selector.xpath(query, **kwargs))
 
-    def css(self, query):
-        return self.selector.css(query)
+    def css(self, query: str) -> SelectorList:
+        return cast(SelectorList, self.selector.css(query))
 
     def follow(
         self,

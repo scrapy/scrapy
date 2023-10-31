@@ -600,6 +600,7 @@ class Https2ClientProtocolTestCase(TestCase):
         def assert_metadata(response: Response):
             self.assertEqual(response.request, request)
             self.assertIsInstance(response.certificate, Certificate)
+            assert response.certificate  # typing
             self.assertIsNotNone(response.certificate.original)
             self.assertEqual(
                 response.certificate.getIssuer(), self.client_certificate.getIssuer()
