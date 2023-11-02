@@ -1,10 +1,19 @@
+from __future__ import annotations
+
 import logging
 import sys
 from abc import ABCMeta, abstractmethod
+from typing import TYPE_CHECKING, Union
 from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import to_unicode
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +40,7 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
 class RobotParser(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
-    def from_crawler(cls, crawler, robotstxt_body):
+    def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
         """Parse the content of a robots.txt_ file as bytes. This must be a class method.
         It must return a new instance of the parser backend.
 
@@ -44,14 +53,14 @@ class RobotParser(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def allowed(self, url, user_agent):
+    def allowed(self, url: Union[str, bytes], user_agent: Union[str, bytes]) -> bool:
         """Return ``True`` if  ``user_agent`` is allowed to crawl ``url``, otherwise return ``False``.
 
         :param url: Absolute URL
-        :type url: str
+        :type url: str or bytes
 
         :param user_agent: User agent
-        :type user_agent: str
+        :type user_agent: str or bytes
         """
         pass
 
