@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-import OpenSSL._util as pyOpenSSLutil
+import OpenSSL._util as pyOpenSSLutil  # type: ignore[import-untyped]
 import OpenSSL.SSL
 import OpenSSL.version
 from OpenSSL.crypto import X509Name

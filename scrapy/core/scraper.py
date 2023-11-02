@@ -206,6 +206,7 @@ class Scraper:
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
                 result.request = request
+            assert result.request
             callback = result.request.callback or spider._parse
             warn_on_generator_with_return_value(spider, callback)
             dfd = defer_succeed(result)
