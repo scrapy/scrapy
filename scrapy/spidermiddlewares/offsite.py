@@ -3,36 +3,51 @@ Offsite Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
+from __future__ import annotations
+
 import logging
 import re
 import warnings
+from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable, Set
 
-from scrapy import signals
-from scrapy.http import Request
+from scrapy import Spider, signals
+from scrapy.crawler import Crawler
+from scrapy.http import Request, Response
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.httpobj import urlparse_cached
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware:
-    def __init__(self, stats):
-        self.stats = stats
+    def __init__(self, stats: StatsCollector):
+        self.stats: StatsCollector = stats
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        assert crawler.stats
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def process_spider_output(self, response, result, spider):
-        return (r for r in result or () if self._filter(r, spider))
+    def process_spider_output(
+        self, response: Response, result: Iterable[Any], spider: Spider
+    ) -> Iterable[Any]:
+        return (r for r in result if self._filter(r, spider))
 
-    async def process_spider_output_async(self, response, result, spider):
-        async for r in result or ():
+    async def process_spider_output_async(
+        self, response: Response, result: AsyncIterable[Any], spider: Spider
+    ) -> AsyncIterable[Any]:
+        async for r in result:
             if self._filter(r, spider):
                 yield r
 
-    def _filter(self, request, spider) -> bool:
+    def _filter(self, request: Any, spider: Spider) -> bool:
         if not isinstance(request, Request):
             return True
         if request.dont_filter or self.should_follow(request, spider):
@@ -49,13 +64,13 @@ class OffsiteMiddleware:
         self.stats.inc_value("offsite/filtered", spider=spider)
         return False
 
-    def should_follow(self, request, spider):
+    def should_follow(self, request: Request, spider: Spider) -> bool:
         regex = self.host_regex
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
         return bool(regex.search(host))
 
-    def get_host_regex(self, spider):
+    def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, "allowed_domains", None)
         if not allowed_domains:
@@ -83,9 +98,9 @@ class OffsiteMiddleware:
         regex = rf'^(.*\.)?({"|".join(domains)})$'
         return re.compile(regex)
 
-    def spider_opened(self, spider):
-        self.host_regex = self.get_host_regex(spider)
-        self.domains_seen = set()
+    def spider_opened(self, spider: Spider) -> None:
+        self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
+        self.domains_seen: Set[str] = set()
 
 
 class URLWarning(Warning):
