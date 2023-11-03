@@ -1,9 +1,9 @@
 import os
 import warnings
 from importlib import import_module
+from os import PathLike
 from pathlib import Path
 from typing import Union
-from os import PathLike
 
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
