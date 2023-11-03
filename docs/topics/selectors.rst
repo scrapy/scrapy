@@ -39,6 +39,7 @@ defines selectors to associate those styles with specific HTML elements.
 .. _XPath: https://www.w3.org/TR/xpath/all/
 .. _CSS: https://www.w3.org/TR/selectors
 .. _parsel: https://parsel.readthedocs.io/en/latest/
+.. _adding your own XPath extensions: https://parsel.readthedocs.io/en/latest/usage.html#parsel.xpathfuncs.set_xpathfunc
 
 Using selectors
 ===============
@@ -1033,9 +1034,6 @@ so performance-wise its uses are limited to situations that are not easily
 described with CSS selectors.
 
 Parsel also simplifies `adding your own XPath extensions`_.
-
-
-.. _adding your own XPath extentions: https://parsel.readthedocs.io/en/latest/usage.html#parsel.xpathfuncs.set_xpathfunc
 
 .. _topics-selectors-ref:
 
