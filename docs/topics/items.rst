@@ -399,9 +399,7 @@ In code that receives an item, such as methods of :ref:`item pipelines
 <topics-spider-middleware>`, it is a good practice to use the
 :class:`~itemadapter.ItemAdapter` class and the
 :func:`~itemadapter.is_item` function to write code that works for
-any :ref:`supported item type <item-types>`:
-
-The itemadapter.ItemAdapter class is a wrapper for data container objects, providing a common interface to handle objects of different types in an uniform manner, regardless of their underlying implementation. see the: `itemadapter.ItemAdapter Documentation <https://github.com/scrapy/itemadapter>`_.
+any :ref:`supported item type <item-types>`.
 
 .. autofunction:: itemadapter.is_item
 
