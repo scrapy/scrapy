@@ -116,7 +116,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if "Location" not in response.headers or response.status not in allowed_status:
             return response
 
-        assert response.headers["Location"]
+        assert response.headers["Location"] is not None
         location = safe_url_string(response.headers["Location"])
         if response.headers["Location"].startswith(b"//"):
             request_scheme = urlparse(request.url).scheme
