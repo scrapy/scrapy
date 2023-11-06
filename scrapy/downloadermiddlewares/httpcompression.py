@@ -1,12 +1,22 @@
+from __future__ import annotations
+
 import io
 import zlib
+from typing import TYPE_CHECKING, List, Optional, Union
 
+from scrapy import Request, Spider
+from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.gz import gunzip
 
-ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
 
 try:
     import brotli
@@ -27,19 +37,24 @@ class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __init__(self, stats=None):
+    def __init__(self, stats: Optional[StatsCollector] = None):
         self.stats = stats
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
         return cls(stats=crawler.stats)
 
-    def process_request(self, request, spider):
+    def process_request(
+        self, request: Request, spider: Spider
+    ) -> Union[Request, Response, None]:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
+        return None
 
-    def process_response(self, request, response, spider):
+    def process_response(
+        self, request: Request, response: Response, spider: Spider
+    ) -> Union[Request, Response]:
         if request.method == "HEAD":
             return response
         if isinstance(response, Response):
@@ -70,7 +85,7 @@ class HttpCompressionMiddleware:
 
         return response
 
-    def _decode(self, body, encoding):
+    def _decode(self, body: bytes, encoding: bytes) -> bytes:
         if encoding == b"gzip" or encoding == b"x-gzip":
             body = gunzip(body)
 

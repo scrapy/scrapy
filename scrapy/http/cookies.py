@@ -1,8 +1,12 @@
 import re
 import time
+from http.cookiejar import Cookie
 from http.cookiejar import CookieJar as _CookieJar
 from http.cookiejar import DefaultCookiePolicy
+from typing import Sequence
 
+from scrapy import Request
+from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
@@ -24,7 +28,7 @@ class CookieJar:
         wrsp = WrappedResponse(response)
         return self.jar.extract_cookies(wrsp, wreq)
 
-    def add_cookie_header(self, request):
+    def add_cookie_header(self, request: Request) -> None:
         wreq = WrappedRequest(request)
         self.policy._now = self.jar._now = int(time.time())
 
@@ -75,7 +79,7 @@ class CookieJar:
     def set_policy(self, pol):
         return self.jar.set_policy(pol)
 
-    def make_cookies(self, response, request):
+    def make_cookies(self, response: Response, request: Request) -> Sequence[Cookie]:
         wreq = WrappedRequest(request)
         wrsp = WrappedResponse(response)
         return self.jar.make_cookies(wrsp, wreq)
@@ -83,7 +87,7 @@ class CookieJar:
     def set_cookie(self, cookie):
         self.jar.set_cookie(cookie)
 
-    def set_cookie_if_ok(self, cookie, request):
+    def set_cookie_if_ok(self, cookie: Cookie, request: Request) -> None:
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))
 
 
