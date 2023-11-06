@@ -27,7 +27,6 @@ from urllib.parse import urljoin
 from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import NotSupported
-from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.http.request import Request
 from scrapy.link import Link
@@ -102,7 +101,8 @@ class Response(object_ref):
                 "is not tied to any request"
             )
 
-    def _get_url(self) -> str:
+    @property
+    def url(self) -> str:
         return self._url
 
     def _set_url(self, url: str) -> None:
@@ -113,9 +113,8 @@ class Response(object_ref):
                 f"{type(self).__name__} url must be str, " f"got {type(url).__name__}"
             )
 
-    url = property(_get_url, obsolete_setter(_set_url, "url"))
-
-    def _get_body(self) -> bytes:
+    @property
+    def body(self) -> bytes:
         return self._body
 
     def _set_body(self, body: Optional[bytes]) -> None:
@@ -129,8 +128,6 @@ class Response(object_ref):
             )
         else:
             self._body = body
-
-    body = property(_get_body, obsolete_setter(_set_body, "body"))
 
     def __repr__(self) -> str:
         return f"<{self.status} {self.url}>"
@@ -149,7 +146,7 @@ class Response(object_ref):
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
         absolute interpretation of the latter."""
-        return urljoin(cast(str, self.url), url)
+        return urljoin(self.url, url)
 
     @property
     def text(self) -> str:

@@ -25,7 +25,6 @@ from typing import (
 from w3lib.url import safe_url_string
 
 import scrapy
-from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
@@ -142,7 +141,8 @@ class Request(object_ref):
             self._meta = {}
         return self._meta
 
-    def _get_url(self) -> str:
+    @property
+    def url(self) -> str:
         return self._url
 
     def _set_url(self, url: str) -> None:
@@ -159,15 +159,12 @@ class Request(object_ref):
         ):
             raise ValueError(f"Missing scheme in request url: {self._url}")
 
-    url = property(_get_url, obsolete_setter(_set_url, "url"))
-
-    def _get_body(self) -> bytes:
+    @property
+    def body(self) -> bytes:
         return self._body
 
     def _set_body(self, body: Optional[Union[str, bytes]]) -> None:
         self._body = b"" if body is None else to_bytes(body, self.encoding)
-
-    body = property(_get_body, obsolete_setter(_set_body, "body"))
 
     @property
     def encoding(self) -> str:
