@@ -8,6 +8,7 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
+from typing import Dict, Tuple
 
 from itemadapter import ItemAdapter
 
@@ -48,7 +49,7 @@ class ImagesPipeline(FilesPipeline):
     MIN_WIDTH = 0
     MIN_HEIGHT = 0
     EXPIRES = 90
-    THUMBS = {}
+    THUMBS: Dict[str, Tuple[int, int]] = {}
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 

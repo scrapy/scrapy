@@ -1,3 +1,5 @@
+from typing import List
+
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -62,7 +64,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         },
     }
 
-    checks = []
+    checks: List[bool] = []
 
     def start_requests(self):
         data = {"key": "value", "number": 123, "callback": "some_callback"}
