@@ -1,6 +1,7 @@
 import pickle
 import re
 import unittest
+from typing import Optional
 
 from packaging.version import Version
 from pytest import mark
@@ -15,7 +16,7 @@ from tests import get_testdata
 # a hack to skip base class tests in pytest
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
-        extractor_cls = None
+        extractor_cls: Optional[type] = None
 
         def setUp(self):
             body = get_testdata("link_extractor", "linkextractor.html")
