@@ -1,6 +1,8 @@
 import io
 import warnings
 import zlib
+import logging
+
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
@@ -31,6 +33,7 @@ class HttpCompressionMiddleware:
 
     def __init__(self, stats=None):
         self.stats = stats
+        self._can_decode_br = b'br' in ACCEPTED_ENCODINGS
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -50,7 +53,13 @@ class HttpCompressionMiddleware:
             return result
 
     def process_request(self, request, spider):
-        request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
+        #request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
+        ae = request.headers.get('Accept-Encoding') #Accept-Encoding = ae
+        if ae and not self._can_decode_br and b'br' in ae.split(b', '):
+            logging.warning('Brotli encoding (br) set in Accept-Encoding header, but brotli is not installed.')
+        else: 
+            request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
+            
 
     def process_response(self, request, response, spider):
         if request.method == "HEAD":
@@ -82,7 +91,7 @@ class HttpCompressionMiddleware:
                     del response.headers["Content-Encoding"]
 
         return response
-
+    
     def _decode(self, body, encoding):
         if encoding == b"gzip" or encoding == b"x-gzip":
             body = gunzip(body)
@@ -97,8 +106,11 @@ class HttpCompressionMiddleware:
                 # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
-        if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
-            body = brotli.decompress(body)
+        if encoding == b'br':
+            if b'br' in ACCEPTED_ENCODINGS:
+                body = brotli.decompress(body)
+            else: 
+                raise ImportError('brotlipy is not installed')
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame
