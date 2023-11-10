@@ -200,6 +200,18 @@ class Echo(LeafResource):
     render_POST = render_GET
 
 
+class Echo2(LeafResource):
+    def render_GET(self, request):
+        req = json.loads(request.content.read())
+
+        request.setResponseCode(req.get("status", 200))
+        for k, v in req.get("headers").items():
+            request.setHeader(bytes(k, encoding="utf8"), bytes(v, encoding="utf8"))
+        return bytes(req.get("body", "<html></html>"), encoding="utf8")
+
+    render_POST = render_GET
+
+
 class RedirectTo(LeafResource):
     def render(self, request):
         goto = getarg(request, b"goto", b"/")
@@ -249,6 +261,7 @@ class Root(resource.Resource):
         self.putChild(b"drop", Drop())
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
+        self.putChild(b"echo2", Echo2())
         self.putChild(b"payload", PayloadResource())
         self.putChild(
             b"xpayload",
