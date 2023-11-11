@@ -19,8 +19,10 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
+    Type,
+    TypeVar,
     Union,
-    cast,
+    overload,
 )
 from urllib.parse import urljoin
 
@@ -33,7 +35,13 @@ from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
     from scrapy.selector import SelectorList
+
+
+ResponseTypeVar = TypeVar("ResponseTypeVar", bound="Response")
 
 
 class Response(object_ref):
@@ -132,16 +140,29 @@ class Response(object_ref):
     def __repr__(self) -> str:
         return f"<{self.status} {self.url}>"
 
-    def copy(self) -> Response:
+    def copy(self) -> Self:
         """Return a copy of this Response"""
         return self.replace()
 
-    def replace(self, *args: Any, **kwargs: Any) -> Response:
+    @overload
+    def replace(
+        self, *args: Any, cls: Type[ResponseTypeVar], **kwargs: Any
+    ) -> ResponseTypeVar:
+        ...
+
+    @overload
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
+        ...
+
+    def replace(
+        self, *args: Any, cls: Optional[Type[Response]] = None, **kwargs: Any
+    ) -> Response:
         """Create a new Response with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop("cls", self.__class__)
-        return cast(Response, cls(*args, **kwargs))
+        if cls is None:
+            cls = self.__class__
+        return cls(*args, **kwargs)
 
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an

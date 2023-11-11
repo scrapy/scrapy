@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import zlib
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from scrapy import Request, Spider
 from scrapy.crawler import Crawler
@@ -74,12 +74,12 @@ class HttpCompressionMiddleware:
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
-                kwargs = dict(cls=respcls, body=decoded_body)
+                kwargs: Dict[str, Any] = dict(body=decoded_body)
                 if issubclass(respcls, TextResponse):
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
                     kwargs["encoding"] = None
-                response = response.replace(**kwargs)
+                response = response.replace(cls=respcls, **kwargs)
                 if not content_encoding:
                     del response.headers["Content-Encoding"]
 

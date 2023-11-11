@@ -5,12 +5,18 @@ This module implements the JsonRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
+from __future__ import annotations
+
 import copy
 import json
 import warnings
-from typing import Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, overload
 
-from scrapy.http.request import Request
+from scrapy.http.request import Request, RequestTypeVar
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class JsonRequest(Request):
@@ -44,7 +50,19 @@ class JsonRequest(Request):
     def dumps_kwargs(self) -> dict:
         return self._dumps_kwargs
 
-    def replace(self, *args: Any, **kwargs: Any) -> Request:
+    @overload
+    def replace(
+        self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
+    ) -> RequestTypeVar:
+        ...
+
+    @overload
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
+        ...
+
+    def replace(
+        self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
+    ) -> Request:
         body_passed = kwargs.get("body", None) is not None
         data = kwargs.pop("data", None)
         data_passed = data is not None
@@ -54,7 +72,7 @@ class JsonRequest(Request):
         elif not body_passed and data_passed:
             kwargs["body"] = self._dumps(data)
 
-        return super().replace(*args, **kwargs)
+        return super().replace(*args, cls=cls, **kwargs)
 
     def _dumps(self, data: dict) -> str:
         """Convert to JSON"""

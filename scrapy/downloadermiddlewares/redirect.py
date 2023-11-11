@@ -27,6 +27,7 @@ def _build_redirect_request(
     redirect_request = source_request.replace(
         url=url,
         **kwargs,
+        cls=None,
         cookies=None,
     )
     if "Cookie" in redirect_request.headers:
