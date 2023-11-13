@@ -9,7 +9,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -101,6 +101,21 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(
             request.headers.get("Accept-Encoding"), b", ".join(ACCEPTED_ENCODINGS)
         )
+
+    def test_process_request_checks_encodings(self):
+        initial_encodings = ACCEPTED_ENCODINGS.copy()
+
+        ACCEPTED_ENCODINGS.append(b"bro")
+        request = Request("http://scrapytest.org", headers={"Accept-Encoding": b"bro"})
+        self.mw.process_request(request, self.spider)
+        """Expecting no Exception raised here as `bro` encoding is forced to be allowed."""
+        self.assertTrue(True)
+
+        ACCEPTED_ENCODINGS.pop()
+        self.assertRaises(NotSupported, self.mw.process_request, request, self.spider)
+
+        """Checking that valid encondings are back"""
+        self.assertListEqual(ACCEPTED_ENCODINGS, initial_encodings)
 
     def test_process_response_gzip(self):
         response = self._getresponse("gzip")

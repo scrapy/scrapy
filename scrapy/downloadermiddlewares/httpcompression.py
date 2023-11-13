@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import io
+import logging
 import zlib
 from typing import TYPE_CHECKING, List, Optional, Union
 
 from scrapy import Request, Spider
 from scrapy.crawler import Crawler
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.statscollectors import StatsCollector
@@ -17,6 +18,9 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
+logger = logging.getLogger(__name__)
+
+ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
 
 try:
     import brotli
@@ -49,6 +53,8 @@ class HttpCompressionMiddleware:
     def process_request(
         self, request: Request, spider: Spider
     ) -> Union[Request, Response, None]:
+        self._raise_unsupported_compressors(request)
+
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
@@ -85,6 +91,20 @@ class HttpCompressionMiddleware:
 
         return response
 
+    def _raise_unsupported_compressors(self, request):
+        if isinstance(request, Request):
+            encodings = request.headers.getlist("Accept-Encoding")
+            unsupported = [key for key in encodings if key not in ACCEPTED_ENCODINGS]
+            if len(unsupported):
+                unsupported = [
+                    unsupp for unsupp in unsupported if isinstance(unsupp, bytes)
+                ]
+                unsupported_msg = b", ".join(unsupported) if len(unsupported) else "-"
+                raise NotSupported(
+                    "Request is configured with Accept-Encoding header "
+                    "with unsupported encoding(s): %s" % unsupported_msg
+                )
+
     def _decode(self, body: bytes, encoding: bytes) -> bytes:
         if encoding == b"gzip" or encoding == b"x-gzip":
             body = gunzip(body)
@@ -99,8 +119,15 @@ class HttpCompressionMiddleware:
                 # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
-        if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
-            body = brotli.decompress(body)
+        if encoding == b"br":
+            if b"br" in ACCEPTED_ENCODINGS:
+                body = brotli.decompress(body)
+            else:
+                body = ""
+                logger.warning(
+                    "Brotli encoding received. "
+                    "Cannot decompress the body as Brotli is not installed."
+                )
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame
