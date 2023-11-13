@@ -123,7 +123,7 @@ class HttpCompressionMiddleware:
             if b"br" in ACCEPTED_ENCODINGS:
                 body = brotli.decompress(body)
             else:
-                body = ""
+                body = bytes()
                 logger.warning(
                     "Brotli encoding received. "
                     "Cannot decompress the body as Brotli is not installed."
