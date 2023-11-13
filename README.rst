@@ -17,9 +17,10 @@ Scrapy
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu
    :alt: Ubuntu
 
-.. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
-   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
-   :alt: macOS
+.. .. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
+   .. :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
+   .. :alt: macOS
+
 
 .. image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows
@@ -95,7 +96,7 @@ Contributing
 See https://docs.scrapy.org/en/master/contributing.html for details.
 
 Code of Conduct
----------------
+===============
 
 Please note that this project is released with a Contributor `Code of Conduct <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_.
 
@@ -111,3 +112,10 @@ Commercial Support
 ==================
 
 See https://scrapy.org/support/ for details.
+
+License
+=======
+
+Scrapy is `BSD-3-Clause licensed`_.
+
+.. _BSD-3-Clause licensed: https://github.com/scrapy/scrapy/blob/master/LICENSE
