@@ -109,7 +109,6 @@ class HttpCompressionTest(TestCase):
         request = Request("http://scrapytest.org", headers={"Accept-Encoding": b"bro"})
         self.mw.process_request(request, self.spider)
         """Expecting no Exception raised here as `bro` encoding is forced to be allowed."""
-        self.assertTrue(True)
 
         ACCEPTED_ENCODINGS.pop()
         self.assertRaises(NotSupported, self.mw.process_request, request, self.spider)

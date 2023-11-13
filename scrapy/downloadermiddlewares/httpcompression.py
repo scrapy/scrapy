@@ -91,19 +91,18 @@ class HttpCompressionMiddleware:
 
         return response
 
-    def _raise_unsupported_compressors(self, request):
-        if isinstance(request, Request):
-            encodings = request.headers.getlist("Accept-Encoding")
-            unsupported = [key for key in encodings if key not in ACCEPTED_ENCODINGS]
-            if len(unsupported):
-                unsupported = [
-                    unsupp for unsupp in unsupported if isinstance(unsupp, bytes)
-                ]
-                unsupported_msg = b", ".join(unsupported) if len(unsupported) else "-"
-                raise NotSupported(
-                    "Request is configured with Accept-Encoding header "
-                    "with unsupported encoding(s): %s" % unsupported_msg
-                )
+    def _raise_unsupported_compressors(self, request: Request):
+        encodings = request.headers.getlist("Accept-Encoding")
+        unsupported = [key for key in encodings if key not in ACCEPTED_ENCODINGS]
+        if len(unsupported):
+            unsupported = [
+                unsupp for unsupp in unsupported if isinstance(unsupp, bytes)
+            ]
+            unsupported_msg = b", ".join(unsupported) if len(unsupported) else "-"
+            raise NotSupported(
+                f"Request is configured with Accept-Encoding header with unsupported encoding(s): "
+                f"{unsupported_msg}"
+            )
 
     def _decode(self, body: bytes, encoding: bytes) -> bytes:
         if encoding == b"gzip" or encoding == b"x-gzip":
