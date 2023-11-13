@@ -42,7 +42,7 @@ Scrapy
 Overview
 ========
 
-Scrapy is a fast high-level web crawling and web scraping framework, used to
+Scrapy is a BSD-licensed fast high-level web crawling and web scraping framework, used to
 crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
@@ -96,7 +96,7 @@ Contributing
 See https://docs.scrapy.org/en/master/contributing.html for details.
 
 Code of Conduct
-===============
+---------------
 
 Please note that this project is released with a Contributor `Code of Conduct <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_.
 
@@ -112,10 +112,3 @@ Commercial Support
 ==================
 
 See https://scrapy.org/support/ for details.
-
-License
-=======
-
-Scrapy is `BSD-3-Clause licensed`_.
-
-.. _BSD-3-Clause licensed: https://github.com/scrapy/scrapy/blob/master/LICENSE
