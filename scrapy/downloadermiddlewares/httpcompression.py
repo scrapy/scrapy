@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import logging
 import zlib
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from scrapy import Request, Spider
 from scrapy.crawler import Crawler
@@ -18,9 +18,10 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
+ENCODINGS_DELIMETER: bytes = b", "
+
 logger = logging.getLogger(__name__)
 
-ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
 
 try:
     import brotli
@@ -39,7 +40,7 @@ except ImportError:
 
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
-    sent/received from web sites"""
+    sent/received from websites"""
 
     def __init__(self, stats: Optional[StatsCollector] = None):
         self.stats = stats
@@ -54,8 +55,9 @@ class HttpCompressionMiddleware:
         self, request: Request, spider: Spider
     ) -> Union[Request, Response, None]:
         self._raise_unsupported_compressors(request)
-
-        request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
+        request.headers.setdefault(
+            "Accept-Encoding", ENCODINGS_DELIMETER.join(ACCEPTED_ENCODINGS)
+        )
         return None
 
     def process_response(
@@ -91,18 +93,20 @@ class HttpCompressionMiddleware:
 
         return response
 
+    @property
+    def _raise_unsupported(self) -> Tuple[bytes]:
+        return (b"br",)
+
     def _raise_unsupported_compressors(self, request: Request):
         encodings = request.headers.getlist("Accept-Encoding")
-        unsupported = [key for key in encodings if key not in ACCEPTED_ENCODINGS]
-        if len(unsupported):
-            unsupported = [
-                unsupp for unsupp in unsupported if isinstance(unsupp, bytes)
-            ]
-            unsupported_msg = b", ".join(unsupported) if len(unsupported) else "-"
-            raise NotSupported(
-                f"Request is configured with Accept-Encoding header with unsupported encoding(s): "
-                f"{unsupported_msg}"
-            )
+        if encodings and len(encodings):
+            encodings = encodings.pop().split(ENCODINGS_DELIMETER)
+            unsupported = [key for key in encodings if key not in ACCEPTED_ENCODINGS]
+            for unsupp in unsupported:
+                if unsupp in self._raise_unsupported:
+                    raise NotSupported(
+                        f"Request is configured with Accept-Encoding header with unsupported encoding(s): {unsupp}"
+                    )
 
     def _decode(self, body: bytes, encoding: bytes) -> bytes:
         if encoding == b"gzip" or encoding == b"x-gzip":
@@ -122,10 +126,8 @@ class HttpCompressionMiddleware:
             if b"br" in ACCEPTED_ENCODINGS:
                 body = brotli.decompress(body)
             else:
-                body = bytes()
                 logger.warning(
-                    "Brotli encoding received. "
-                    "Cannot decompress the body as Brotli is not installed."
+                    "Brotli encoding received. Cannot decompress the body as Brotli is not installed."
                 )
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
