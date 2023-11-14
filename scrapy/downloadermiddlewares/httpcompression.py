@@ -105,7 +105,8 @@ class HttpCompressionMiddleware:
             for unsupp in unsupported:
                 if unsupp in self._raise_unsupported:
                     raise NotSupported(
-                        f"Request is configured with Accept-Encoding header with unsupported encoding(s): {unsupp}"
+                        f"Request is configured with Accept-Encoding header with unsupported encoding(s): "
+                        f"{unsupp.decode()}"
                     )
 
     def _decode(self, body: bytes, encoding: bytes) -> bytes:
