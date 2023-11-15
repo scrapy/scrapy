@@ -6,6 +6,19 @@ Release notes
 .. note:: Scrapy 1.x is the last series supporting Python 2. Scrapy 2.x
           supports **Python 3 only**.
 
+.. _release-1.8.4:
+
+Scrapy 1.8.4 (unreleased)
+-------------------------
+
+**Security bug fix:**
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    domain. Please, see the `cw9j-q3vf-hrrv security advisory`_ for more
+    information.
+
+    .. _cw9j-q3vf-hrrv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cw9j-q3vf-hrrv
+
 .. _release-1.8.3:
 
 Scrapy 1.8.3 (2022-07-25)
