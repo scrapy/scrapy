@@ -142,8 +142,14 @@ scrapy.Spider
            method, which is handy if you want to modify them based on
            arguments. As a consequence, these settings aren't the final values
            as they can be modified later by e.g. :ref:`add-ons
-           <topics-addons>`. The final settings are available in the
-           :meth:`start_requests` method and later.
+           <topics-addons>`. For the same reason, most of the
+           :class:`~scrapy.crawler.Crawler` attributes aren't initialized at
+           this point.
+
+           The final settings and the initialized
+           :class:`~scrapy.crawler.Crawler` attributes are available in the
+           :meth:`start_requests` method, handlers of the
+           :signal:`engine_started` signal and later.
 
        :param crawler: crawler to which the spider will be bound
        :type crawler: :class:`~scrapy.crawler.Crawler` instance
