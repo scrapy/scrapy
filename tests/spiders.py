@@ -3,12 +3,13 @@ Some spiders used for testing and benchmarking
 """
 import asyncio
 import time
+from typing import Iterable
 from urllib.parse import urlencode
 
 from twisted.internet import defer
 
 from scrapy import signals
-from scrapy.exceptions import StopDownload
+from scrapy.exceptions import CloseSpider, StopDownload
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.linkextractors import LinkExtractor
@@ -274,6 +275,30 @@ class ErrorSpider(FollowAllSpider):
         for request in super().parse(response):
             yield request
             self.raise_exception()
+
+
+class CloseExceptionSpider(FollowAllSpider):
+    _expected_message: str = None
+
+    def __init__(self, *args, **kwargs):
+        self._expected_message = (
+            kwargs["expected_message"] if "expected_message" in kwargs else "Error"
+        )
+        super().__init__(*args, **kwargs)
+
+
+class CloseExceptionStartSpider(CloseExceptionSpider):
+    def start_requests(self) -> Iterable[Request]:
+        raise CloseSpider(reason=self._expected_message)
+
+
+class CloseExceptionParseSpider(CloseExceptionSpider):
+    def start_requests(self) -> Iterable[Request]:
+        url = self.mockserver.url("/close_spider")
+        yield Request(url, callback=self.parse)
+
+    def parse(self, response):
+        raise CloseSpider(reason=self._expected_message)
 
 
 class BrokenStartRequestsSpider(FollowAllSpider):

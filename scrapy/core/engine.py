@@ -141,7 +141,7 @@ class ExecutionEngine:
         )
         return dfd.addBoth(_finish_stopping_engine)
 
-    def close(self) -> Deferred:
+    def close(self, close_spider_reason: str = None) -> Deferred:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
@@ -150,7 +150,7 @@ class ExecutionEngine:
             return self.stop()  # will also close spider and downloader
         if self.spider is not None:
             return self.close_spider(
-                self.spider, reason="shutdown"
+                self.spider, reason=close_spider_reason or "shutdown"
             )  # will also close downloader
         self.downloader.close()
         return succeed(None)
@@ -399,6 +399,17 @@ class ExecutionEngine:
             ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
             assert isinstance(ex, CloseSpider)  # typing
             self.close_spider(self.spider, reason=ex.reason)
+
+    def close_spider_on_start(self, spider: Spider, reason: str = "cancelled"):
+        if self.slot is not None:
+            raise RuntimeError("Engine slot is already assigned. Use self.close_spider")
+
+        nextcall_none = CallLaterOnce(lambda: None)
+        scheduler = create_instance(
+            self.scheduler_cls, settings=None, crawler=self.crawler
+        )
+        self.slot = Slot((), True, nextcall_none, scheduler)
+        self.close_spider(spider, reason)
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
