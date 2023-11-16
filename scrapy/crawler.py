@@ -155,17 +155,18 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
-            yield maybeDeferred(self.engine.start)
-        except Exception as e:
-            self.crawling = False
-            if isinstance(e, CloseSpider):
+            try:
+                start_requests = iter(self.spider.start_requests())
+                yield self.engine.open_spider(self.spider, start_requests)
+                yield maybeDeferred(self.engine.start)
+            except CloseSpider as e:
                 self.engine.close_spider_on_start(self.spider, reason=e.reason)
                 return None
+        except Exception:
+            self.crawling = False
             if self.engine is not None:
                 yield self.engine.close()
-            raise e
+            raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)

@@ -141,7 +141,7 @@ class ExecutionEngine:
         )
         return dfd.addBoth(_finish_stopping_engine)
 
-    def close(self, close_spider_reason: str = None) -> Deferred:
+    def close(self) -> Deferred:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
@@ -150,7 +150,7 @@ class ExecutionEngine:
             return self.stop()  # will also close spider and downloader
         if self.spider is not None:
             return self.close_spider(
-                self.spider, reason=close_spider_reason or "shutdown"
+                self.spider, reason="shutdown"
             )  # will also close downloader
         self.downloader.close()
         return succeed(None)

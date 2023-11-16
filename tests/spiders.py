@@ -278,12 +278,11 @@ class ErrorSpider(FollowAllSpider):
 
 
 class CloseExceptionSpider(FollowAllSpider):
-    _expected_message: str = None
+    _expected_message: str = "Error"
 
     def __init__(self, *args, **kwargs):
-        self._expected_message = (
-            kwargs["expected_message"] if "expected_message" in kwargs else "Error"
-        )
+        if "expected_message" in kwargs:
+            self._expected_message = kwargs["expected_message"]
         super().__init__(*args, **kwargs)
 
 
