@@ -160,7 +160,7 @@ class Crawler:
                 yield self.engine.open_spider(self.spider, start_requests)
                 yield maybeDeferred(self.engine.start)
             except CloseSpider as e:
-                self.engine.close_spider_on_start(self.spider, reason=e.reason)
+                self.engine.close_spider_before_start(self.spider, reason=e.reason)
                 return None
         except Exception:
             self.crawling = False
