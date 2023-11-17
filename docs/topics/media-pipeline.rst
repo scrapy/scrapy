@@ -77,6 +77,8 @@ PIL.
 .. _Pillow: https://github.com/python-pillow/Pillow
 .. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
+.. warning:: Pillow 10.0.0 and higher break compatibility with Scrapy 1.8.x.
+
 
 .. _topics-media-pipeline-enabling:
 

@@ -10,27 +10,23 @@ jobs:
         include:
         - python-version: 2.7
           env:
-            TOXENV: py27
+            TOXENV: py27-pinned
         - python-version: 2.7
           env:
-            TOXENV: py27-pinned
+            TOXENV: py27
         - python-version: 2.7
           env:
             TOXENV: py27-extra-deps
         - python-version: pypy3
           env:
-            TOXENV: pypy
+            TOXENV: pypy2
             PYPY_VERSION: '2.7-v7.3.5'
-        - python-version: pypy3
-          env:
-            TOXENV: pypy3
-            PYPY_VERSION: '3.7-v7.3.5'
-        - python-version: 3.5
-          env:
-            TOXENV: py35
         - python-version: 3.5
           env:
             TOXENV: py35-pinned
+        - python-version: 3.5
+          env:
+            TOXENV: py35
         - python-version: 3.6
           env:
             TOXENV: py36
@@ -43,6 +39,10 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: py38-extra-deps
+        - python-version: pypy3
+          env:
+            TOXENV: pypy3
+            PYPY_VERSION: '3.7-v7.3.5'
 
     steps:
     - uses: actions/checkout@v2

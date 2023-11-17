@@ -67,16 +67,16 @@ setup(
     install_requires=[
         'Twisted>=16.0.0;python_version=="2.7"',
         'Twisted>=17.9.0;python_version>="3.5"',
-        'cryptography>=2.0',
+        'cryptography>=2.0,<39.0.0',  # https://stackoverflow.com/a/75053968
         'cssselect>=0.9.1',
         'lxml>=3.5.0',
-        'parsel>=1.5.0',
+        'parsel>=1.5.0,<1.8.0',  # https://github.com/scrapy/scrapy/issues/4961
         'PyDispatcher>=2.0.5',
-        'pyOpenSSL>=16.2.0',
+        'pyOpenSSL>=16.2.0,<22.1.0',  # https://github.com/scrapy/scrapy/issues/5635
         'queuelib>=1.4.2',
         'service_identity>=16.0.0',
         'six>=1.10.0',
-        'w3lib>=1.17.0',
+        'w3lib>=1.17.0,<2.0.0',  # w3lib.form, used by scrapy/utils/multipart.py, was removed
         'zope.interface>=4.1.3',
         'protego>=0.1.15',
         'tldextract',
