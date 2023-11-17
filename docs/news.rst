@@ -35,12 +35,12 @@ Documentation
 -   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
     :issue:`6077`)
 
--   Added a missing note about backwards-incompatible changes in
+-   Added a missing note about backward-incompatible changes in
     :class:`~scrapy.exporters.PythonItemExporter` to the 2.11.0 release notes.
     (:issue:`6060`, :issue:`6081`)
 
--   Added a missing note about removing deprecated
-    ``scrapy.utils.boto.is_botocore()`` to the 2.8.0 release notes.
+-   Added a missing note about removing the deprecated
+    ``scrapy.utils.boto.is_botocore()`` function to the 2.8.0 release notes.
     (:issue:`6056`, :issue:`6061`)
 
 -   Other documentation improvements. (:issue:`6128`, :issue:`6144`)
