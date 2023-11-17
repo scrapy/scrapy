@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Iterable, Optional, Tuple, cast
+from typing import Iterable, List, Optional, Tuple, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ProcessTerminated
@@ -26,14 +26,15 @@ class ProcessTest:
         env = os.environ.copy()
         if settings is not None:
             env["SCRAPY_SETTINGS_MODULE"] = settings
+        assert self.command
         cmd = self.prefix + [self.command] + list(args)
         pp = TestProcessProtocol()
-        pp.deferred.addBoth(self._process_finished, cmd, check_code)
+        pp.deferred.addCallback(self._process_finished, cmd, check_code)
         reactor.spawnProcess(pp, cmd[0], cmd, env=env, path=self.cwd)
         return pp.deferred
 
     def _process_finished(
-        self, pp: TestProcessProtocol, cmd: str, check_code: bool
+        self, pp: TestProcessProtocol, cmd: List[str], check_code: bool
     ) -> Tuple[int, bytes, bytes]:
         if pp.exitcode and check_code:
             msg = f"process {cmd} exit with code {pp.exitcode}"
