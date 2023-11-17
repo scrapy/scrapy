@@ -410,7 +410,7 @@ class ExecutionEngine:
             self.scheduler_cls, settings=None, crawler=self.crawler
         )
         self.slot = Slot((), True, nextcall_none, scheduler)
-        self.close_spider(spider, reason)
+        return self.close_spider(spider, reason)
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
