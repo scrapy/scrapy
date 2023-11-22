@@ -509,6 +509,7 @@ class SitemapSpiderTest(SpiderTest):
             url="http://www.example.com/sitemap",
             body=self.GZBODY,
             headers={"content-type": "application/gzip"},
+            request=Request("http://www.example.com/sitemap"),
         )
         self.assertSitemapBody(r, self.BODY)
 
@@ -517,7 +518,11 @@ class SitemapSpiderTest(SpiderTest):
         self.assertSitemapBody(r, self.BODY)
 
     def test_get_sitemap_body_xml_url_compressed(self):
-        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
+        r = Response(
+            url="http://www.example.com/sitemap.xml.gz",
+            body=self.GZBODY,
+            request=Request("http://www.example.com/sitemap"),
+        )
         self.assertSitemapBody(r, self.BODY)
 
         # .xml.gz but body decoded by HttpCompression middleware already
@@ -694,13 +699,37 @@ Sitemap: /sitemap-relative-url.xml
             ["http://www.example.com/sitemap2.xml"],
         )
 
-    def test_compression_bomb(self):
+    def test_compression_bomb_setting(self):
         settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
         crawler = get_crawler(settings_dict=settings)
         spider = self.spider_class.from_crawler(crawler, "example.com")
         body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
         body = body_path.read_bytes()
-        response = Response(url="https://example.com", body=body)
+        request = Request(url="https://example.com")
+        response = Response(url="https://example.com", body=body, request=request)
+        self.assertIsNone(spider._get_sitemap_body(response))
+
+    def test_compression_bomb_spider_attr(self):
+        class DownloadMaxSizeSpider(self.spider_class):
+            download_maxsize = 10_000_000
+
+        crawler = get_crawler()
+        spider = DownloadMaxSizeSpider.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        request = Request(url="https://example.com")
+        response = Response(url="https://example.com", body=body, request=request)
+        self.assertIsNone(spider._get_sitemap_body(response))
+
+    def test_compression_bomb_request_meta(self):
+        crawler = get_crawler()
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        request = Request(
+            url="https://example.com", meta={"download_maxsize": 10_000_000}
+        )
+        response = Response(url="https://example.com", body=body, request=request)
         self.assertIsNone(spider._get_sitemap_body(response))
 
 

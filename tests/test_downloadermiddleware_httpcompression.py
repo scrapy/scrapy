@@ -49,10 +49,7 @@ FORMAT = {
 
 class HttpCompressionTest(TestCase):
     def setUp(self):
-        settings = {
-            "DOWNLOAD_MAXSIZE": 10_000_000,  # For compression bomb tests.
-        }
-        self.crawler = get_crawler(Spider, settings_dict=settings)
+        self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
         self.crawler.stats.open_spider(self.spider)
@@ -373,31 +370,103 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
-    def _test_compression_bomb(self, compression_id):
+    def _test_compression_bomb_setting(self, compression_id):
+        settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
+        crawler = get_crawler(Spider, settings_dict=settings)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+
         response = self._getresponse(f"bomb-{compression_id}")
         self.assertRaises(
             IgnoreRequest,
-            self.mw.process_response,
+            mw.process_response,
             response.request,
             response,
-            self.spider,
+            spider,
         )
 
-    def test_compression_bomb_br(self):
+    def test_compression_bomb_setting_br(self):
         try:
             import brotli  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
-        self._test_compression_bomb("br")
+        self._test_compression_bomb_setting("br")
 
-    def test_compression_bomb_deflate(self):
-        self._test_compression_bomb("deflate")
+    def test_compression_bomb_setting_deflate(self):
+        self._test_compression_bomb_setting("deflate")
 
-    def test_compression_bomb_gzip(self):
-        self._test_compression_bomb("gzip")
+    def test_compression_bomb_setting_gzip(self):
+        self._test_compression_bomb_setting("gzip")
 
-    def test_compression_bomb_zstd(self):
-        self._test_compression_bomb("zstd")
+    def test_compression_bomb_setting_zstd(self):
+        self._test_compression_bomb_setting("zstd")
+
+    def _test_compression_bomb_spider_attr(self, compression_id):
+        class DownloadMaxSizeSpider(Spider):
+            download_maxsize = 10_000_000
+
+        crawler = get_crawler(DownloadMaxSizeSpider)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+
+        response = self._getresponse(f"bomb-{compression_id}")
+        self.assertRaises(
+            IgnoreRequest,
+            mw.process_response,
+            response.request,
+            response,
+            spider,
+        )
+
+    def test_compression_bomb_spider_attr_br(self):
+        try:
+            import brotli  # noqa: F401
+        except ImportError:
+            raise SkipTest("no brotli")
+        self._test_compression_bomb_spider_attr("br")
+
+    def test_compression_bomb_spider_attr_deflate(self):
+        self._test_compression_bomb_spider_attr("deflate")
+
+    def test_compression_bomb_spider_attr_gzip(self):
+        self._test_compression_bomb_spider_attr("gzip")
+
+    def test_compression_bomb_spider_attr_zstd(self):
+        self._test_compression_bomb_spider_attr("zstd")
+
+    def _test_compression_bomb_request_meta(self, compression_id):
+        crawler = get_crawler(Spider)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+
+        response = self._getresponse(f"bomb-{compression_id}")
+        response.meta["download_maxsize"] = 10_000_000
+        self.assertRaises(
+            IgnoreRequest,
+            mw.process_response,
+            response.request,
+            response,
+            spider,
+        )
+
+    def test_compression_bomb_request_meta_br(self):
+        try:
+            import brotli  # noqa: F401
+        except ImportError:
+            raise SkipTest("no brotli")
+        self._test_compression_bomb_request_meta("br")
+
+    def test_compression_bomb_request_meta_deflate(self):
+        self._test_compression_bomb_request_meta("deflate")
+
+    def test_compression_bomb_request_meta_gzip(self):
+        self._test_compression_bomb_request_meta("gzip")
+
+    def test_compression_bomb_request_meta_zstd(self):
+        self._test_compression_bomb_request_meta("zstd")
 
 
 class HttpCompressionSubclassTest(TestCase):

@@ -72,10 +72,14 @@ class SitemapSpider(Spider):
         if isinstance(response, XmlResponse):
             return response.body
         if gzip_magic_number(response):
+            max_size = response.meta.get(
+                "download_maxsize",
+                getattr(
+                    self, "download_maxsize", self.settings.getint("DOWNLOAD_MAXSIZE")
+                ),
+            )
             try:
-                return gunzip(
-                    response.body, max_size=self.settings.getint("DOWNLOAD_MAXSIZE")
-                )
+                return gunzip(response.body, max_size=max_size)
             except _DecompressionMaxSizeExceeded:
                 return None
         # actual gzipped sitemap files are decompressed above ;
