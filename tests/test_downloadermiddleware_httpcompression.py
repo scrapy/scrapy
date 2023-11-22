@@ -127,18 +127,6 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
-    def test_process_response_gzip_no_stats(self):
-        mw = HttpCompressionMiddleware()
-        response = self._getresponse("gzip")
-        request = response.request
-
-        self.assertEqual(response.headers["Content-Encoding"], b"gzip")
-        newresponse = mw.process_response(request, response, self.spider)
-        self.assertEqual(mw.stats, None)
-        assert newresponse is not response
-        assert newresponse.body.startswith(b"<!DOCTYPE")
-        assert "Content-Encoding" not in newresponse.headers
-
     def test_process_response_br(self):
         try:
             import brotli  # noqa: F401
@@ -418,8 +406,8 @@ class HttpCompressionSubclassTest(TestCase):
             (
                 (
                     "HttpCompressionMiddleware subclasses must either modify "
-                    "their '__init__' method to support a 'stats' parameter "
-                    "or reimplement the 'from_crawler' method."
+                    "their '__init__' method to support a 'crawler' parameter "
+                    "or reimplement their 'from_crawler' method."
                 ),
             ),
         )
