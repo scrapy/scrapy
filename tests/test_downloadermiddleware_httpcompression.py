@@ -41,7 +41,7 @@ FORMAT = {
             "br",  # 34 → 11 511 612
             "deflate",  # 27 968 → 11 511 612
             "gzip",  # 27 988 → 11 511 612
-            # "zstd",
+            "zstd",  # 1 096 → 11 511 612
         )
     },
 }
@@ -395,6 +395,9 @@ class HttpCompressionTest(TestCase):
 
     def test_compression_bomb_gzip(self):
         self._test_compression_bomb("gzip")
+
+    def test_compression_bomb_zstd(self):
+        self._test_compression_bomb("zstd")
 
 
 class HttpCompressionSubclassTest(TestCase):

@@ -1,10 +1,14 @@
-import io
 import warnings
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.utils._compression import _DecompressionMaxSizeExceeded, _inflate, _unbrotli
+from scrapy.utils._compression import (
+    _DecompressionMaxSizeExceeded,
+    _inflate,
+    _unbrotli,
+    _unzstd,
+)
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
 
@@ -18,7 +22,7 @@ else:
     ACCEPTED_ENCODINGS.append(b"br")
 
 try:
-    import zstandard
+    import zstandard  # noqa: F401
 except ImportError:
     pass
 else:
@@ -102,8 +106,5 @@ class HttpCompressionMiddleware:
         if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
             return _unbrotli(body, max_size=self._max_size)
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
-            # Using its streaming API since its simple API could handle only cases
-            # where there is content size data embedded in the frame
-            reader = zstandard.ZstdDecompressor().stream_reader(io.BytesIO(body))
-            return reader.read()
+            return _unzstd(body, max_size=self._max_size)
         return body

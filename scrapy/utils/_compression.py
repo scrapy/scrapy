@@ -7,6 +7,11 @@ try:
 except ImportError:
     pass
 
+try:
+    import zstandard
+except ImportError:
+    pass
+
 
 class _DecompressionMaxSizeExceeded(ValueError):
     pass
@@ -56,6 +61,26 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     while output_chunk:
         input_chunk = input_stream.read(CHUNK_SIZE)
         output_chunk = decompressor.process(input_chunk)
+        decompressed_size += len(output_chunk)
+        if max_size and decompressed_size > max_size:
+            raise _DecompressionMaxSizeExceeded(
+                f"The number of bytes decompressed so far "
+                f"({decompressed_size}B) exceed the specified maximum "
+                f"({max_size}B)."
+            )
+        output_list.append(output_chunk)
+    return b"".join(output_list)
+
+
+def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
+    decompressor = zstandard.ZstdDecompressor()
+    stream_reader = decompressor.stream_reader(BytesIO(data))
+    output_list: List[bytes] = []
+    output_chunk = b"."
+    decompressed_size = 0
+    CHUNK_SIZE = 8196
+    while output_chunk:
+        output_chunk = stream_reader.read(CHUNK_SIZE)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
