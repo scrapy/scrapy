@@ -2,6 +2,7 @@ import gzip
 import inspect
 import warnings
 from io import BytesIO
+from pathlib import Path
 from typing import Any
 from unittest import mock
 
@@ -25,7 +26,7 @@ from scrapy.spiders import (
 )
 from scrapy.spiders.init import InitSpider
 from scrapy.utils.test import get_crawler
-from tests import get_testdata
+from tests import get_testdata, tests_datadir
 
 
 class SpiderTest(unittest.TestCase):
@@ -489,7 +490,8 @@ class SitemapSpiderTest(SpiderTest):
     GZBODY = f.getvalue()
 
     def assertSitemapBody(self, response, body):
-        spider = self.spider_class("example.com")
+        crawler = get_crawler()
+        spider = self.spider_class.from_crawler(crawler, "example.com")
         self.assertEqual(spider._get_sitemap_body(response), body)
 
     def test_get_sitemap_body(self):
@@ -691,6 +693,15 @@ Sitemap: /sitemap-relative-url.xml
             [req.url for req in spider._parse_sitemap(r)],
             ["http://www.example.com/sitemap2.xml"],
         )
+
+    def test_compression_bomb(self):
+        settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
+        crawler = get_crawler(settings_dict=settings)
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        response = Response(url="https://example.com", body=body)
+        self.assertIsNone(spider._get_sitemap_body(response))
 
 
 class DeprecationTest(unittest.TestCase):

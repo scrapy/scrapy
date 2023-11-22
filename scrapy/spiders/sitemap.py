@@ -3,6 +3,7 @@ import re
 
 from scrapy.http import Request, XmlResponse
 from scrapy.spiders import Spider
+from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
@@ -71,7 +72,12 @@ class SitemapSpider(Spider):
         if isinstance(response, XmlResponse):
             return response.body
         if gzip_magic_number(response):
-            return gunzip(response.body)
+            try:
+                return gunzip(
+                    response.body, max_size=self.settings.getint("DOWNLOAD_MAXSIZE")
+                )
+            except _DecompressionMaxSizeExceeded:
+                return None
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
         # and have a response for .xml.gz,
