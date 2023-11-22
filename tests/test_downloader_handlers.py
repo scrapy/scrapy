@@ -37,7 +37,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from scrapy.utils.python import to_bytes
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 from tests.mockserver import MockServer, ssl_context_factory, Echo
 from tests.spiders import SingleRequestSpider
@@ -637,11 +637,10 @@ class Http11MockServerTestCase(unittest.TestCase):
             request.headers.setdefault(b'Accept-Encoding', b'gzip,deflate')
             request = request.replace(url=self.mockserver.url('/xpayload'))
             yield crawler.crawl(seed=request)
-            # download_maxsize = 50 is enough for the gzipped response
+            # The gzipped response passes the download_maxsize = 50 during
+            # download, but fails during decompression.
             failure = crawler.spider.meta.get('failure')
-            self.assertTrue(failure == None)
-            reason = crawler.spider.meta['close_reason']
-            self.assertTrue(reason, 'finished')
+            self.assertIsInstance(failure.value, IgnoreRequest)
         else:
             # See issue https://twistedmatrix.com/trac/ticket/8175
             raise unittest.SkipTest("xpayload only enabled for PY2")

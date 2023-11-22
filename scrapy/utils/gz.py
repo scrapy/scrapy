@@ -4,13 +4,15 @@ try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
+
+import re
 from gzip import GzipFile
 
 import six
-import re
 
 from scrapy.utils.decorators import deprecated
 
+from ._compression import _DecompressionMaxSizeExceeded
 
 # - Python>=3.5 GzipFile's read() has issues returning leftover
 #   uncompressed data when input is corrupted
@@ -27,18 +29,18 @@ else:
         return gzf.read1(size)
 
 
-def gunzip(data):
+def gunzip(data, max_size=0):
     """Gunzip the given data and return as much data as possible.
 
     This is resilient to CRC checksum errors.
     """
     f = GzipFile(fileobj=BytesIO(data))
     output_list = []
-    chunk = b'.'
+    chunk = b"."
+    decompressed_size = 0
     while chunk:
         try:
             chunk = read1(f, 8196)
-            output_list.append(chunk)
         except (IOError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
@@ -51,7 +53,18 @@ def gunzip(data):
                     break
             else:
                 raise
-    return b''.join(output_list)
+        decompressed_size += len(chunk)
+        if max_size and decompressed_size > max_size:
+            raise _DecompressionMaxSizeExceeded(
+                "The number of bytes decompressed so far "
+                "({decompressed_size} B) exceed the specified maximum "
+                "({max_size} B).".format(
+                    decompressed_size=decompressed_size,
+                    max_size=max_size,
+                )
+            )
+        output_list.append(chunk)
+    return b"".join(output_list)
 
 _is_gzipped = re.compile(br'^application/(x-)?gzip\b', re.I).search
 _is_octetstream = re.compile(br'^(application|binary)/octet-stream\b', re.I).search
