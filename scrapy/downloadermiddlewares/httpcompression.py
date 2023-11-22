@@ -2,9 +2,10 @@ import io
 import warnings
 import zlib
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
+from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
 
@@ -29,24 +30,26 @@ class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __init__(self, stats=None):
-        self.stats = stats
+    def __init__(self, crawler=None):
+        self.stats = crawler.stats
+        self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
 
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
         try:
-            return cls(stats=crawler.stats)
+            return cls(crawler=crawler)
         except TypeError:
             warnings.warn(
                 "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'stats' parameter or "
-                "reimplement the 'from_crawler' method.",
+                "their '__init__' method to support a 'crawler' parameter or "
+                "reimplement their 'from_crawler' method.",
                 ScrapyDeprecationWarning,
             )
             result = cls()
             result.stats = crawler.stats
+            result._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
             return result
 
     def process_request(self, request, spider):
@@ -59,7 +62,14 @@ class HttpCompressionMiddleware:
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
                 encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                try:
+                    decoded_body = self._decode(response.body, encoding.lower())
+                except _DecompressionMaxSizeExceeded:
+                    raise IgnoreRequest(
+                        f"Ignored response {response} because its body "
+                        f"({len(response.body)}B) exceeded DOWNLOAD_MAXSIZE "
+                        f"({self._max_size}B) during decompression."
+                    )
                 if self.stats:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
@@ -85,7 +95,7 @@ class HttpCompressionMiddleware:
 
     def _decode(self, body, encoding):
         if encoding == b"gzip" or encoding == b"x-gzip":
-            body = gunzip(body)
+            body = gunzip(body, max_size=self._max_size)
 
         if encoding == b"deflate":
             try:

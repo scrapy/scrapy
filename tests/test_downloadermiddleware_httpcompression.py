@@ -10,7 +10,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -35,12 +35,24 @@ FORMAT = {
         "html-zstd-streaming-no-content-size.bin",
         "zstd",
     ),
+    **{
+        f"bomb-{format_id}": (f"bomb-{format_id}.bin", format_id)
+        for format_id in (
+            # "br",
+            "gzip",  # 27 988 → 11 511 612
+            # "deflate",
+            # "zstd",
+        )
+    },
 }
 
 
 class HttpCompressionTest(TestCase):
     def setUp(self):
-        self.crawler = get_crawler(Spider)
+        settings = {
+            "DOWNLOAD_MAXSIZE": 10_000_000,  # For compression bomb tests.
+        }
+        self.crawler = get_crawler(Spider, settings_dict=settings)
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
         self.crawler.stats.open_spider(self.spider)
@@ -372,6 +384,19 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(response.body, b"")
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
+
+    def _test_compression_bomb(self, compression_id):
+        response = self._getresponse(f"bomb-{compression_id}")
+        self.assertRaises(
+            IgnoreRequest,
+            self.mw.process_response,
+            response.request,
+            response,
+            self.spider,
+        )
+
+    def test_compression_bomb_gzip(self):
+        self._test_compression_bomb("gzip")
 
 
 class HttpCompressionSubclassTest(TestCase):
