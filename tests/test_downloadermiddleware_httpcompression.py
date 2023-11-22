@@ -39,8 +39,8 @@ FORMAT = {
         f"bomb-{format_id}": (f"bomb-{format_id}.bin", format_id)
         for format_id in (
             # "br",
+            "deflate",  # 27 968 → 11 511 612
             "gzip",  # 27 988 → 11 511 612
-            # "deflate",
             # "zstd",
         )
     },
@@ -382,6 +382,9 @@ class HttpCompressionTest(TestCase):
             response,
             self.spider,
         )
+
+    def test_compression_bomb_deflate(self):
+        self._test_compression_bomb("deflate")
 
     def test_compression_bomb_gzip(self):
         self._test_compression_bomb("gzip")
