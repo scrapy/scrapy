@@ -4,25 +4,25 @@ import warnings
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.utils._compression import _DecompressionMaxSizeExceeded, _inflate
+from scrapy.utils._compression import _DecompressionMaxSizeExceeded, _inflate, _unbrotli
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
 
 ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
 
 try:
-    import brotli
-
-    ACCEPTED_ENCODINGS.append(b"br")
+    import brotli  # noqa: F401
 except ImportError:
     pass
+else:
+    ACCEPTED_ENCODINGS.append(b"br")
 
 try:
     import zstandard
-
-    ACCEPTED_ENCODINGS.append(b"zstd")
 except ImportError:
     pass
+else:
+    ACCEPTED_ENCODINGS.append(b"zstd")
 
 
 class HttpCompressionMiddleware:
@@ -100,7 +100,7 @@ class HttpCompressionMiddleware:
         if encoding == b"deflate":
             return _inflate(body, max_size=self._max_size)
         if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
-            return brotli.decompress(body)
+            return _unbrotli(body, max_size=self._max_size)
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame

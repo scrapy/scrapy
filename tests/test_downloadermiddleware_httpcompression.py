@@ -38,7 +38,7 @@ FORMAT = {
     **{
         f"bomb-{format_id}": (f"bomb-{format_id}.bin", format_id)
         for format_id in (
-            # "br",
+            "br",  # 34 → 11 511 612
             "deflate",  # 27 968 → 11 511 612
             "gzip",  # 27 988 → 11 511 612
             # "zstd",
@@ -382,6 +382,13 @@ class HttpCompressionTest(TestCase):
             response,
             self.spider,
         )
+
+    def test_compression_bomb_br(self):
+        try:
+            import brotli  # noqa: F401
+        except ImportError:
+            raise SkipTest("no brotli")
+        self._test_compression_bomb("br")
 
     def test_compression_bomb_deflate(self):
         self._test_compression_bomb("deflate")

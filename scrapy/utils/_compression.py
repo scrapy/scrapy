@@ -2,6 +2,11 @@ import zlib
 from io import BytesIO
 from typing import List
 
+try:
+    import brotli
+except ImportError:
+    pass
+
 
 class _DecompressionMaxSizeExceeded(ValueError):
     pass
@@ -30,6 +35,27 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
                 output_chunk = decompressor.decompress(input_chunk)
             else:
                 raise
+        decompressed_size += len(output_chunk)
+        if max_size and decompressed_size > max_size:
+            raise _DecompressionMaxSizeExceeded(
+                f"The number of bytes decompressed so far "
+                f"({decompressed_size}B) exceed the specified maximum "
+                f"({max_size}B)."
+            )
+        output_list.append(output_chunk)
+    return b"".join(output_list)
+
+
+def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
+    decompressor = brotli.Decompressor()
+    input_stream = BytesIO(data)
+    output_list: List[bytes] = []
+    output_chunk = b"."
+    decompressed_size = 0
+    CHUNK_SIZE = 8196
+    while output_chunk:
+        input_chunk = input_stream.read(CHUNK_SIZE)
+        output_chunk = decompressor.process(input_chunk)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
