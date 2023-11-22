@@ -29,6 +29,7 @@ class TestOffsiteMiddleware(TestCase):
             Request("http://scrapy.org/1"),
             Request("http://sub.scrapy.org/1"),
             Request("http://offsite.tld/letmepass", dont_filter=True),
+            Request("http://offsite-2.tld/allow", meta={"allow_offsite": True}),
             Request("http://scrapy.test.org/"),
             Request("http://scrapy.test.org:8000/"),
         ]
