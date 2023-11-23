@@ -22,6 +22,8 @@ class SitemapSpider(Spider):
     sitemap_rules = [("", "parse")]
     sitemap_follow = [""]
     sitemap_alternate_links = False
+    _max_size: int
+    _warn_size: int
 
     @classmethod
     def from_crawler(cls, crawler: "Crawler", *args: Any, **kwargs: Any) -> "Self":
@@ -97,7 +99,7 @@ class SitemapSpider(Spider):
                 body = gunzip(response.body, max_size=max_size)
             except _DecompressionMaxSizeExceeded:
                 return None
-            if uncompressed_size < warn_size and len(body) >= warn_size:
+            if uncompressed_size < warn_size <= len(body):
                 logger.warning(
                     f"{response} body size after decompression ({len(body)} B) "
                     f"is larger than the download warning size ({warn_size} B)."

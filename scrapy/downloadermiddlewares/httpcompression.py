@@ -93,7 +93,7 @@ class HttpCompressionMiddleware:
                         f"({len(response.body)} B) exceeded DOWNLOAD_MAXSIZE "
                         f"({self._max_size} B) during decompression."
                     )
-                if len(response.body) < warn_size and len(decoded_body) >= warn_size:
+                if len(response.body) < warn_size <= len(decoded_body):
                     logger.warning(
                         f"{response} body size after decompression "
                         f"({len(decoded_body)} B) is larger than the "
