@@ -91,7 +91,7 @@ class HttpCompressionMiddleware:
                     raise IgnoreRequest(
                         f"Ignored response {response} because its body "
                         f"({len(response.body)} B) exceeded DOWNLOAD_MAXSIZE "
-                        f"({self._max_size} B) during decompression."
+                        f"({max_size} B) during decompression."
                     )
                 if len(response.body) < warn_size <= len(decoded_body):
                     logger.warning(
