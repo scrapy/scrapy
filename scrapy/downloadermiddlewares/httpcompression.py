@@ -1,4 +1,5 @@
 import warnings
+from logging import getLogger
 
 from scrapy import signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -12,6 +13,8 @@ from scrapy.utils._compression import (
 )
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
+
+logger = getLogger(__name__)
 
 ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
 
@@ -39,6 +42,7 @@ class HttpCompressionMiddleware:
             return
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
+        self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
         crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
@@ -57,12 +61,15 @@ class HttpCompressionMiddleware:
             spider = cls()
             spider.stats = crawler.stats
             spider._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
+            spider._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
             crawler.signals.connect(spider.open_spider, signals.spider_opened)
             return spider
 
     def open_spider(self, spider):
         if hasattr(spider, "download_maxsize"):
             self._max_size = spider.download_maxsize
+        if hasattr(spider, "download_warnsize"):
+            self._warn_size = spider.download_warnsize
 
     def process_request(self, request, spider):
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
@@ -75,6 +82,7 @@ class HttpCompressionMiddleware:
             if content_encoding:
                 encoding = content_encoding.pop()
                 max_size = request.meta.get("download_maxsize", self._max_size)
+                warn_size = request.meta.get("download_warnsize", self._warn_size)
                 try:
                     decoded_body = self._decode(
                         response.body, encoding.lower(), max_size
@@ -82,8 +90,14 @@ class HttpCompressionMiddleware:
                 except _DecompressionMaxSizeExceeded:
                     raise IgnoreRequest(
                         f"Ignored response {response} because its body "
-                        f"({len(response.body)}B) exceeded DOWNLOAD_MAXSIZE "
-                        f"({self._max_size}B) during decompression."
+                        f"({len(response.body)} B) exceeded DOWNLOAD_MAXSIZE "
+                        f"({self._max_size} B) during decompression."
+                    )
+                if len(response.body) < warn_size and len(decoded_body) >= warn_size:
+                    logger.warning(
+                        f"{response} body size after decompression "
+                        f"({len(decoded_body)} B) is larger than the "
+                        f"download warning size ({warn_size} B)."
                     )
                 if self.stats:
                     self.stats.inc_value(

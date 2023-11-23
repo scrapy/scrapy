@@ -44,8 +44,8 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
                 f"The number of bytes decompressed so far "
-                f"({decompressed_size}B) exceed the specified maximum "
-                f"({max_size}B)."
+                f"({decompressed_size} B) exceed the specified maximum "
+                f"({max_size} B)."
             )
         output_list.append(output_chunk)
     return b"".join(output_list)
@@ -65,8 +65,8 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
                 f"The number of bytes decompressed so far "
-                f"({decompressed_size}B) exceed the specified maximum "
-                f"({max_size}B)."
+                f"({decompressed_size} B) exceed the specified maximum "
+                f"({max_size} B)."
             )
         output_list.append(output_chunk)
     return b"".join(output_list)
@@ -85,8 +85,8 @@ def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
                 f"The number of bytes decompressed so far "
-                f"({decompressed_size}B) exceed the specified maximum "
-                f"({max_size}B)."
+                f"({decompressed_size} B) exceed the specified maximum "
+                f"({max_size} B)."
             )
         output_list.append(output_chunk)
     return b"".join(output_list)

@@ -2,6 +2,7 @@ import gzip
 import inspect
 import warnings
 from io import BytesIO
+from logging import WARNING
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -731,6 +732,83 @@ Sitemap: /sitemap-relative-url.xml
         )
         response = Response(url="https://example.com", body=body, request=request)
         self.assertIsNone(spider._get_sitemap_body(response))
+
+    def test_download_warnsize_setting(self):
+        settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
+        crawler = get_crawler(settings_dict=settings)
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        request = Request(url="https://example.com")
+        response = Response(url="https://example.com", body=body, request=request)
+        with LogCapture(
+            "scrapy.spiders.sitemap", propagate=False, level=WARNING
+        ) as log:
+            spider._get_sitemap_body(response)
+        log.check(
+            (
+                "scrapy.spiders.sitemap",
+                "WARNING",
+                (
+                    "<200 https://example.com> body size after decompression "
+                    "(11511612 B) is larger than the download warning size "
+                    "(10000000 B)."
+                ),
+            ),
+        )
+
+    def test_download_warnsize_spider_attr(self):
+        class DownloadWarnSizeSpider(self.spider_class):
+            download_warnsize = 10_000_000
+
+        crawler = get_crawler()
+        spider = DownloadWarnSizeSpider.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        request = Request(
+            url="https://example.com", meta={"download_warnsize": 10_000_000}
+        )
+        response = Response(url="https://example.com", body=body, request=request)
+        with LogCapture(
+            "scrapy.spiders.sitemap", propagate=False, level=WARNING
+        ) as log:
+            spider._get_sitemap_body(response)
+        log.check(
+            (
+                "scrapy.spiders.sitemap",
+                "WARNING",
+                (
+                    "<200 https://example.com> body size after decompression "
+                    "(11511612 B) is larger than the download warning size "
+                    "(10000000 B)."
+                ),
+            ),
+        )
+
+    def test_download_warnsize_request_meta(self):
+        crawler = get_crawler()
+        spider = self.spider_class.from_crawler(crawler, "example.com")
+        body_path = Path(tests_datadir, "compressed", "bomb-gzip.bin")
+        body = body_path.read_bytes()
+        request = Request(
+            url="https://example.com", meta={"download_warnsize": 10_000_000}
+        )
+        response = Response(url="https://example.com", body=body, request=request)
+        with LogCapture(
+            "scrapy.spiders.sitemap", propagate=False, level=WARNING
+        ) as log:
+            spider._get_sitemap_body(response)
+        log.check(
+            (
+                "scrapy.spiders.sitemap",
+                "WARNING",
+                (
+                    "<200 https://example.com> body size after decompression "
+                    "(11511612 B) is larger than the download warning size "
+                    "(10000000 B)."
+                ),
+            ),
+        )
 
 
 class DeprecationTest(unittest.TestCase):
