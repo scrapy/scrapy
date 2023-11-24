@@ -1,6 +1,5 @@
 import zlib
 from io import BytesIO
-from typing import List
 
 try:
     import brotli
@@ -21,7 +20,7 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = zlib.decompressobj()
     raw_decompressor = zlib.decompressobj(wbits=-15)
     input_stream = BytesIO(data)
-    output_list: List[bytes] = []
+    output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
     CHUNK_SIZE = 8196
@@ -47,14 +46,15 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
                 f"({decompressed_size} B) exceed the specified maximum "
                 f"({max_size} B)."
             )
-        output_list.append(output_chunk)
-    return b"".join(output_list)
+        output_stream.write(output_chunk)
+    output_stream.seek(0)
+    return output_stream.read()
 
 
 def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = brotli.Decompressor()
     input_stream = BytesIO(data)
-    output_list: List[bytes] = []
+    output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
     CHUNK_SIZE = 8196
@@ -68,14 +68,15 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
                 f"({decompressed_size} B) exceed the specified maximum "
                 f"({max_size} B)."
             )
-        output_list.append(output_chunk)
-    return b"".join(output_list)
+        output_stream.write(output_chunk)
+    output_stream.seek(0)
+    return output_stream.read()
 
 
 def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = zstandard.ZstdDecompressor()
     stream_reader = decompressor.stream_reader(BytesIO(data))
-    output_list: List[bytes] = []
+    output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
     CHUNK_SIZE = 8196
@@ -88,5 +89,6 @@ def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
                 f"({decompressed_size} B) exceed the specified maximum "
                 f"({max_size} B)."
             )
-        output_list.append(output_chunk)
-    return b"".join(output_list)
+        output_stream.write(output_chunk)
+    output_stream.seek(0)
+    return output_stream.read()

@@ -1,7 +1,6 @@
 import struct
 from gzip import GzipFile
 from io import BytesIO
-from typing import List
 
 from scrapy.http import Response
 
@@ -14,7 +13,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
     This is resilient to CRC checksum errors.
     """
     f = GzipFile(fileobj=BytesIO(data))
-    output_list: List[bytes] = []
+    output_stream = BytesIO()
     chunk = b"."
     decompressed_size = 0
     while chunk:
@@ -23,8 +22,8 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
         except (OSError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
-            # some pages are quite small so output_list is empty
-            if output_list:
+            # some pages are quite small so output_stream is empty
+            if output_stream:
                 break
             raise
         decompressed_size += len(chunk)
@@ -34,8 +33,9 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
                 f"({decompressed_size} B) exceed the specified maximum "
                 f"({max_size} B)."
             )
-        output_list.append(chunk)
-    return b"".join(output_list)
+        output_stream.write(chunk)
+    output_stream.seek(0)
+    return output_stream.read()
 
 
 def gzip_magic_number(response: Response) -> bool:
