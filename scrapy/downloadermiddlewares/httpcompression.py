@@ -37,8 +37,10 @@ class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __init__(self, *, crawler=None):
+    def __init__(self, stats=None, *, crawler=None):
         if not crawler:
+            if stats:
+                self.stats = stats
             return
         self.stats = crawler.stats
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
