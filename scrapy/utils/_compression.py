@@ -12,6 +12,9 @@ except ImportError:
     pass
 
 
+_CHUNK_SIZE = 65536  # 64 KiB
+
+
 class _DecompressionMaxSizeExceeded(ValueError):
     pass
 
@@ -20,12 +23,11 @@ def _inflate(data, max_size=0):
     decompressor = zlib.decompressobj()
     raw_decompressor = zlib.decompressobj(-15)
     input_stream = BytesIO(data)
-    output_list = []
+    output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
-    CHUNK_SIZE = 8196
     while output_chunk:
-        input_chunk = input_stream.read(CHUNK_SIZE)
+        input_chunk = input_stream.read(_CHUNK_SIZE)
         try:
             output_chunk = decompressor.decompress(input_chunk)
         except zlib.error:
@@ -49,19 +51,19 @@ def _inflate(data, max_size=0):
                     max_size=max_size,
                 )
             )
-        output_list.append(output_chunk)
-    return b"".join(output_list)
+        output_stream.write(output_chunk)
+    output_stream.seek(0)
+    return output_stream.read()
 
 
 def _unbrotli(data, max_size=0):
     decompressor = brotli.Decompressor()
     input_stream = BytesIO(data)
-    output_list = []
+    output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
-    CHUNK_SIZE = 8196
     while output_chunk:
-        input_chunk = input_stream.read(CHUNK_SIZE)
+        input_chunk = input_stream.read(_CHUNK_SIZE)
         output_chunk = decompressor.decompress(input_chunk)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
@@ -73,19 +75,19 @@ def _unbrotli(data, max_size=0):
                     max_size=max_size,
                 )
             )
-        output_list.append(output_chunk)
-    return b"".join(output_list)
+        output_stream.write(output_chunk)
+    output_stream.seek(0)
+    return output_stream.read()
 
 
 def _unzstd(data, max_size=0):
     decompressor = zstandard.ZstdDecompressor()
     stream_reader = decompressor.stream_reader(BytesIO(data))
-    output_list = []
+    output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
-    CHUNK_SIZE = 8196
     while output_chunk:
-        output_chunk = stream_reader.read(CHUNK_SIZE)
+        output_chunk = stream_reader.read(_CHUNK_SIZE)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
@@ -96,5 +98,6 @@ def _unzstd(data, max_size=0):
                     max_size=max_size,
                 )
             )
-        output_list.append(output_chunk)
-    return b"".join(output_list)
+        output_stream.write(output_chunk)
+    output_stream.seek(0)
+    return output_stream.read()

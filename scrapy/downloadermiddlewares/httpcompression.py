@@ -39,6 +39,8 @@ class HttpCompressionMiddleware(object):
 
     def __init__(self, crawler=None):
         if not crawler:
+            self._max_size = 1073741824
+            self._warn_size = 33554432
             return
         self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
         self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
