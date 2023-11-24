@@ -4,7 +4,7 @@ from io import BytesIO
 
 from scrapy.http import Response
 
-from ._compression import _DecompressionMaxSizeExceeded
+from ._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
 
 
 def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
@@ -18,7 +18,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
     decompressed_size = 0
     while chunk:
         try:
-            chunk = f.read1(8196)
+            chunk = f.read1(_CHUNK_SIZE)
         except (OSError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error

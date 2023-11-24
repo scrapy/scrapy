@@ -12,6 +12,9 @@ except ImportError:
     pass
 
 
+_CHUNK_SIZE = 65536  # 64 KiB
+
+
 class _DecompressionMaxSizeExceeded(ValueError):
     pass
 
@@ -23,9 +26,8 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
-    CHUNK_SIZE = 8196
     while output_chunk:
-        input_chunk = input_stream.read(CHUNK_SIZE)
+        input_chunk = input_stream.read(_CHUNK_SIZE)
         try:
             output_chunk = decompressor.decompress(input_chunk)
         except zlib.error:
@@ -57,9 +59,8 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
-    CHUNK_SIZE = 8196
     while output_chunk:
-        input_chunk = input_stream.read(CHUNK_SIZE)
+        input_chunk = input_stream.read(_CHUNK_SIZE)
         output_chunk = decompressor.process(input_chunk)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
@@ -79,9 +80,8 @@ def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
-    CHUNK_SIZE = 8196
     while output_chunk:
-        output_chunk = stream_reader.read(CHUNK_SIZE)
+        output_chunk = stream_reader.read(_CHUNK_SIZE)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
