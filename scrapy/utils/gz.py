@@ -23,7 +23,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
             # some pages are quite small so output_stream is empty
-            if output_stream:
+            if output_stream.getbuffer().nbytes > 0:
                 break
             raise
         decompressed_size += len(chunk)
