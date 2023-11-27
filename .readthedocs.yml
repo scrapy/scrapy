@@ -1,0 +1,17 @@
+version: 2
+formats: all
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: true
+
+build:
+  os: ubuntu-20.04
+  tools:
+    # For available versions, see:
+    # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-tools-python
+    python: "3.11"  # Keep in sync with .github/workflows/checks.yml
+
+python:
+  install:
+    - requirements: docs/requirements.txt
+    - path: .

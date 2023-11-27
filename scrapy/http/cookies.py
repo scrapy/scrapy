@@ -1,12 +1,21 @@
+import re
 import time
-from six.moves.http_cookiejar import (
-    CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
-)
+from http.cookiejar import Cookie
+from http.cookiejar import CookieJar as _CookieJar
+from http.cookiejar import DefaultCookiePolicy
+from typing import Sequence
+
+from scrapy import Request
+from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.python import to_native_str
+from scrapy.utils.python import to_unicode
+
+# Defined in the http.cookiejar module, but undocumented:
+# https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
+IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
 
-class CookieJar(object):
+class CookieJar:
     def __init__(self, policy=None, check_expired_frequency=10000):
         self.policy = policy or DefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
@@ -19,7 +28,7 @@ class CookieJar(object):
         wrsp = WrappedResponse(response)
         return self.jar.extract_cookies(wrsp, wreq)
 
-    def add_cookie_header(self, request):
+    def add_cookie_header(self, request: Request) -> None:
         wreq = WrappedRequest(request)
         self.policy._now = self.jar._now = int(time.time())
 
@@ -31,7 +40,7 @@ class CookieJar(object):
 
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
-            if '.' not in req_host:
+            if "." not in req_host:
                 hosts += [req_host + ".local"]
         else:
             hosts = [req_host]
@@ -70,7 +79,7 @@ class CookieJar(object):
     def set_policy(self, pol):
         return self.jar.set_policy(pol)
 
-    def make_cookies(self, response, request):
+    def make_cookies(self, response: Response, request: Request) -> Sequence[Cookie]:
         wreq = WrappedRequest(request)
         wrsp = WrappedResponse(response)
         return self.jar.make_cookies(wrsp, wreq)
@@ -78,7 +87,7 @@ class CookieJar(object):
     def set_cookie(self, cookie):
         self.jar.set_cookie(cookie)
 
-    def set_cookie_if_ok(self, cookie, request):
+    def set_cookie_if_ok(self, cookie: Cookie, request: Request) -> None:
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))
 
 
@@ -91,17 +100,17 @@ def potential_domain_matches(domain):
     """
     matches = [domain]
     try:
-        start = domain.index('.') + 1
-        end = domain.rindex('.')
+        start = domain.index(".") + 1
+        end = domain.rindex(".")
         while start < end:
             matches.append(domain[start:])
-            start = domain.index('.', start) + 1
+            start = domain.index(".", start) + 1
     except ValueError:
         pass
-    return matches + ['.' + d for d in matches]
+    return matches + ["." + d for d in matches]
 
 
-class _DummyLock(object):
+class _DummyLock:
     def acquire(self):
         pass
 
@@ -109,7 +118,7 @@ class _DummyLock(object):
         pass
 
 
-class WrappedRequest(object):
+class WrappedRequest:
     """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
 
     see http://docs.python.org/library/urllib2.html#urllib2.Request
@@ -135,12 +144,8 @@ class WrappedRequest(object):
         HTML document, and the user had no option to approve the automatic
         fetching of the image, this should be true.
         """
-        return self.request.meta.get('is_unverifiable', False)
+        return self.request.meta.get("is_unverifiable", False)
 
-    def get_origin_req_host(self):
-        return urlparse_cached(self.request).hostname
-
-    # python3 uses attributes instead of methods
     @property
     def full_url(self):
         return self.get_full_url()
@@ -159,19 +164,20 @@ class WrappedRequest(object):
 
     @property
     def origin_req_host(self):
-        return self.get_origin_req_host()
+        return urlparse_cached(self.request).hostname
 
     def has_header(self, name):
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_native_str(self.request.headers.get(name, default),
-                             errors='replace')
+        return to_unicode(self.request.headers.get(name, default), errors="replace")
 
     def header_items(self):
         return [
-            (to_native_str(k, errors='replace'),
-             [to_native_str(x, errors='replace') for x in v])
+            (
+                to_unicode(k, errors="replace"),
+                [to_unicode(x, errors="replace") for x in v],
+            )
             for k, v in self.request.headers.items()
         ]
 
@@ -179,17 +185,14 @@ class WrappedRequest(object):
         self.request.headers.appendlist(name, value)
 
 
-class WrappedResponse(object):
-
+class WrappedResponse:
     def __init__(self, response):
         self.response = response
 
     def info(self):
         return self
 
-    # python3 cookiejars calls get_all
     def get_all(self, name, default=None):
-        return [to_native_str(v, errors='replace')
-                for v in self.response.headers.getlist(name)]
-    # python2 cookiejars calls getheaders
-    getheaders = get_all
+        return [
+            to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
+        ]

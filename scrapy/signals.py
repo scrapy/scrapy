@@ -14,11 +14,16 @@ spider_error = object()
 request_scheduled = object()
 request_dropped = object()
 request_reached_downloader = object()
+request_left_downloader = object()
 response_received = object()
 response_downloaded = object()
+headers_received = object()
+bytes_received = object()
 item_scraped = object()
 item_dropped = object()
 item_error = object()
+feed_slot_closed = object()
+feed_exporter_closed = object()
 
 # for backward compatibility
 stats_spider_opened = spider_opened

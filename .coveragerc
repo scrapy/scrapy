@@ -3,4 +3,4 @@ branch = true
 include = scrapy/*
 omit =
   tests/*
-  scrapy/xlib/*
+disable_warnings = include-ignored
