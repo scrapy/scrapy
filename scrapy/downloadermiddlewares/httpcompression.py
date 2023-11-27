@@ -34,23 +34,29 @@ except ImportError:
     pass
 
 
+def _get_init_settings_kwargs(settings: Settings):
+    keep_encoding_header = (
+        settings.getbool("COMPRESSION_KEEP_ENCODING_HEADERS") if settings else False
+    )
+    return dict(keep_encoding_header=keep_encoding_header)
+
+
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
     def __init__(
-        self, stats: Optional[StatsCollector] = None, settings: Settings = None
+        self, stats: Optional[StatsCollector] = None, keep_encoding_header: bool = False
     ):
         self.stats = stats
-        self.keep_encoding_header = (
-            settings.getbool("COMPRESSION_KEEP_ENCODING_HEADERS") if settings else False
-        )
+        self.keep_encoding_header = keep_encoding_header
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
-        return cls(stats=crawler.stats, settings=crawler.settings)
+        settings_kwargs = _get_init_settings_kwargs(crawler.settings)
+        return cls(stats=crawler.stats, **settings_kwargs)
 
     def process_request(
         self, request: Request, spider: Spider
