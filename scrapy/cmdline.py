@@ -63,20 +63,18 @@ def _get_commands_from_entry_points(inproject, group="scrapy.commands"):
 
 def _get_commands_dict(settings, inproject):
     cmds = _get_commands_from_module("scrapy.commands", inproject)
-    cmds.update(_get_commands_from_entry_points(inproject))
+    cmds |= _get_commands_from_entry_points(inproject)
     cmds_module = settings["COMMANDS_MODULE"]
     if cmds_module:
-        cmds.update(_get_commands_from_module(cmds_module, inproject))
+        cmds |= _get_commands_from_module(cmds_module, inproject)
     return cmds
 
 
 def _pop_command_name(argv):
-    i = 0
-    for arg in argv[1:]:
-        if not arg.startswith("-"):
-            del argv[i]
-            return arg
-        i += 1
+    for i, v in enumerate(argv):
+        if v.startswith('-'):
+            continue
+        return argv.pop(i)
 
 
 def _print_header(settings, inproject):
@@ -88,12 +86,11 @@ def _print_header(settings, inproject):
         print(f"Scrapy {version} - no active project\n")
 
 
-def _print_commands(settings, inproject):
+def _print_commands(settings, inproject, cmds):
     _print_header(settings, inproject)
     print("Usage:")
     print("  scrapy <command> [options] [args]\n")
     print("Available commands:")
-    cmds = _get_commands_dict(settings, inproject)
     for cmdname, cmdclass in sorted(cmds.items()):
         print(f"  {cmdname:<13} {cmdclass.short_desc()}")
     if not inproject:
@@ -109,6 +106,7 @@ def _print_unknown_command(settings, cmdname, inproject):
     print('Use "scrapy" to see available commands')
 
 
+# TODO: Confusion, can be improve.
 def _run_print_help(parser, func, *a, **kw):
     try:
         func(*a, **kw)
@@ -136,9 +134,9 @@ def execute(argv=None, settings=None):
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
-    cmdname = _pop_command_name(argv)
+    cmdname = _pop_command_name(argv[1:])
     if not cmdname:
-        _print_commands(settings, inproject)
+        _print_commands(settings, inproject, cmds)
         sys.exit(0)
     elif cmdname not in cmds:
         _print_unknown_command(settings, cmdname, inproject)
@@ -154,7 +152,7 @@ def execute(argv=None, settings=None):
     settings.setdict(cmd.default_settings, priority="command")
     cmd.settings = settings
     cmd.add_options(parser)
-    opts, args = parser.parse_known_args(args=argv[1:])
+    opts, args = parser.parse_known_args(argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
     cmd.crawler_process = CrawlerProcess(settings)
