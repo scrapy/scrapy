@@ -349,6 +349,11 @@ OffsiteMiddleware
    offsite middleware will allow the request even if its domain is not listed
    in allowed domains.
 
+   .. caution:: Setting :attr:`~scrapy.Request.dont_filter` to ``True`` also
+                causes the offsite middleware to allow the request. However,
+                this is deprecated. Use ``allow_offsite`` instead in
+                :attr:`Request.meta`.
+
 
 RefererMiddleware
 -----------------
