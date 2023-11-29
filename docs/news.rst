@@ -2893,9 +2893,8 @@ Scrapy 1.8.4 (unreleased)
 **Security bug fix:**
 
 -   Fixed regular expressions susceptible to a `ReDoS attack`_ affecting the
-    ``iternodes`` node iterator of :class:`~scrapy.spiders.XMLFeedSpider` and
-    the :func:`~scrapy.utils.response.open_in_browser` function. Please, see
-    the `cc65-xxvf-f7r9 security advisory`_ for more information.
+    ``iternodes`` node iterator of :class:`~scrapy.spiders.XMLFeedSpider`.
+    Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
 
 
 .. _release-1.8.3:
