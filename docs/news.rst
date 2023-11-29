@@ -6,6 +6,20 @@ Release notes
 .. note:: Scrapy 1.x is the last series supporting Python 2. Scrapy 2.x
           supports **Python 3 only**.
 
+.. _release-1.8.4:
+
+Scrapy 1.8.4 (unreleased)
+-------------------------
+
+**Security bug fix:**
+
+-   Fixed regular expressions susceptible to a `ReDoS attack`_ affecting the
+    ``iternodes`` node iterator of :class:`~scrapy.spiders.XMLFeedSpider`.
+    Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
+
+    .. _ReDoS attack: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    .. _cc65-xxvf-f7r9 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9
+
 .. _release-1.8.3:
 
 Scrapy 1.8.3 (2022-07-25)
