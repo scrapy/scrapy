@@ -3,6 +3,22 @@
 Release notes
 =============
 
+.. _release-2.11.1:
+
+Scrapy 2.11.1 (unreleased)
+--------------------------
+
+**Security bug fix:**
+
+-   The regular expressions of the ``iternodes`` node iterator of
+    :class:`~scrapy.spiders.XMLFeedSpider` are no longer susceptible to a
+    `ReDoS attack`_. Please, see the `cc65-xxvf-f7r9 security
+    advisory`_ for more information.
+
+    .. _ReDoS attack: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    .. _cc65-xxvf-f7r9 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9
+
+
 .. _release-2.11.0:
 
 Scrapy 2.11.0 (2023-09-18)
@@ -2868,6 +2884,18 @@ affect subclasses:
     :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
 
 (:issue:`3884`)
+
+.. _release-1.8.4:
+
+Scrapy 1.8.4 (unreleased)
+-------------------------
+
+**Security bug fix:**
+
+-   The regular expressions of the ``iternodes`` node iterator of
+    :class:`~scrapy.spiders.XMLFeedSpider` are no longer susceptible to a
+    `ReDoS attack`_. Please, see the `cc65-xxvf-f7r9 security
+    advisory`_ for more information.
 
 
 .. _release-1.8.3:
