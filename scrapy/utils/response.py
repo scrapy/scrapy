@@ -81,8 +81,21 @@ def open_in_browser(
     ],
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
-    """Open the given response in a local web browser, populating the <base>
-    tag for external links to work
+    """Open *response* in a local web browser, adjusting the `base tag`_ for
+    external links to work, e.g. so that images and styles are displayed.
+
+    .. _base tag: https://www.w3schools.com/tags/tag_base.asp
+
+    For example:
+
+    .. code-block:: python
+
+        from scrapy.utils.response import open_in_browser
+
+
+        def parse_details(self, response):
+            if "item name" not in response.body:
+                open_in_browser(response)
     """
     from scrapy.http import HtmlResponse, TextResponse
 
