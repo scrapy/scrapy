@@ -2,45 +2,52 @@ import json
 import os
 import re
 import sys
-from subprocess import Popen, PIPE
+from pathlib import Path
+from subprocess import PIPE, Popen
 from urllib.parse import urlsplit, urlunsplit
+
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
 
 
 class MitmProxy:
-    auth_user = 'scrapy'
-    auth_pass = 'scrapy'
+    auth_user = "scrapy"
+    auth_pass = "scrapy"
 
     def start(self):
-        from scrapy.utils.test import get_testenv
         script = """
 import sys
 from mitmproxy.tools.main import mitmdump
 sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
-        cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                 'keys', 'mitmproxy-ca.pem')
-        self.proc = Popen([sys.executable,
-                           '-c', script,
-                           '--listen-host', '127.0.0.1',
-                           '--listen-port', '0',
-                           '--proxyauth', f'{self.auth_user}:{self.auth_pass}',
-                           '--certs', cert_path,
-                           '--ssl-insecure',
-                           ],
-                          stdout=PIPE, env=get_testenv())
-        line = self.proc.stdout.readline().decode('utf-8')
-        host_port = re.search(r'listening at http://([^:]+:\d+)', line).group(1)
-        address = f'http://{self.auth_user}:{self.auth_pass}@{host_port}'
+        cert_path = Path(__file__).parent.resolve() / "keys" / "mitmproxy-ca.pem"
+        self.proc = Popen(
+            [
+                sys.executable,
+                "-c",
+                script,
+                "--listen-host",
+                "127.0.0.1",
+                "--listen-port",
+                "0",
+                "--proxyauth",
+                f"{self.auth_user}:{self.auth_pass}",
+                "--certs",
+                str(cert_path),
+                "--ssl-insecure",
+            ],
+            stdout=PIPE,
+        )
+        line = self.proc.stdout.readline().decode("utf-8")
+        host_port = re.search(r"listening at http://([^:]+:\d+)", line).group(1)
+        address = f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
         return address
 
     def stop(self):
@@ -50,17 +57,16 @@ sys.exit(mitmdump())
 
 def _wrong_credentials(proxy_url):
     bad_auth_proxy = list(urlsplit(proxy_url))
-    bad_auth_proxy[1] = bad_auth_proxy[1].replace('scrapy:scrapy@', 'wrong:wronger@')
+    bad_auth_proxy[1] = bad_auth_proxy[1].replace("scrapy:scrapy@", "wrong:wronger@")
     return urlunsplit(bad_auth_proxy)
 
 
 class ProxyConnectTestCase(TestCase):
-
     def setUp(self):
         try:
             import mitmproxy  # noqa: F401
         except ImportError:
-            self.skipTest('mitmproxy is not installed')
+            self.skipTest("mitmproxy is not installed")
 
         self.mockserver = MockServer()
         self.mockserver.__enter__()
@@ -68,8 +74,8 @@ class ProxyConnectTestCase(TestCase):
 
         self._proxy = MitmProxy()
         proxy_url = self._proxy.start()
-        os.environ['https_proxy'] = proxy_url
-        os.environ['http_proxy'] = proxy_url
+        os.environ["https_proxy"] = proxy_url
+        os.environ["http_proxy"] = proxy_url
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
@@ -85,7 +91,7 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
-        os.environ['https_proxy'] = _wrong_credentials(os.environ['https_proxy'])
+        os.environ["https_proxy"] = _wrong_credentials(os.environ["https_proxy"])
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
@@ -100,13 +106,13 @@ class ProxyConnectTestCase(TestCase):
         with LogCapture() as log:
             yield crawler.crawl(seed=request)
         self._assert_got_response_code(200, log)
-        echo = json.loads(crawler.spider.meta['responses'][0].text)
-        self.assertTrue('Proxy-Authorization' not in echo['headers'])
+        echo = json.loads(crawler.spider.meta["responses"][0].text)
+        self.assertTrue("Proxy-Authorization" not in echo["headers"])
 
     def _assert_got_response_code(self, code, log):
         print(log)
-        self.assertEqual(str(log).count(f'Crawled ({code})'), 1)
+        self.assertEqual(str(log).count(f"Crawled ({code})"), 1)
 
     def _assert_got_tunnel_error(self, log):
         print(log)
-        self.assertIn('TunnelError', str(log))
+        self.assertIn("TunnelError", str(log))

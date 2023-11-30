@@ -3,22 +3,21 @@ import unittest
 from scrapy import Spider
 from scrapy.http import Request
 from scrapy.item import Item
-from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
+from scrapy.utils.spider import iter_spider_classes, iterate_spider_output
 
 
 class MySpider1(Spider):
-    name = 'myspider1'
+    name = "myspider1"
 
 
 class MySpider2(Spider):
-    name = 'myspider2'
+    name = "myspider2"
 
 
 class UtilsSpidersTestCase(unittest.TestCase):
-
     def test_iterate_spider_output(self):
         i = Item()
-        r = Request('http://scrapytest.org')
+        r = Request("http://scrapytest.org")
         o = object()
 
         self.assertEqual(list(iterate_spider_output(i)), [i])
@@ -28,6 +27,7 @@ class UtilsSpidersTestCase(unittest.TestCase):
 
     def test_iter_spider_classes(self):
         import tests.test_utils_spider
+
         it = iter_spider_classes(tests.test_utils_spider)
         self.assertEqual(set(it), {MySpider1, MySpider2})
 

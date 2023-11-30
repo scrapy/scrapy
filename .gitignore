@@ -23,3 +23,6 @@ test-output.*
 
 # Windows
 Thumbs.db
+
+# OSX miscellaneous
+.DS_Store
