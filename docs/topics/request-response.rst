@@ -203,10 +203,9 @@ Request objects
         :attr:`~scrapy.http.Response.meta` attribute of a response.
 
         To pass data from one spider callback to another, consider using
-        :attr:`cb_kwargs` instead.
-
-        To keep some data across 3 or more spider callbacks, however, request
-        metadata may be the right choice.
+        :attr:`cb_kwargs` instead. However, request metadata may be the right
+        choice in certain scenarios, such as to maintain some debugging data
+        across all follow-up requests (e.g. the source URL).
 
         A common use of request metadata is to define request-specific
         parameters for Scrapy components (extensions, middlewares, etc.). For
