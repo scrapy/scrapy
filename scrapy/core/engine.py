@@ -430,6 +430,9 @@ class ExecutionEngine:
 
         -   ``memusage_exceeded``: See
             :class:`~scrapy.extensions.memusage.MemoryUsage`.
+
+        -   ``robotstxt_denied``: See
+            :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`.
         """
         if self.slot is None:
             raise RuntimeError("Engine slot not assigned")

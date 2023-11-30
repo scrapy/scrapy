@@ -1019,31 +1019,7 @@ RobotsTxtMiddleware
 .. module:: scrapy.downloadermiddlewares.robotstxt
    :synopsis: robots.txt middleware
 
-.. class:: RobotsTxtMiddleware
-
-    This middleware filters out requests forbidden by the robots.txt exclusion
-    standard.
-
-    To make sure Scrapy respects robots.txt make sure the middleware is enabled
-    and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
-
-    The :setting:`ROBOTSTXT_USER_AGENT` setting can be used to specify the
-    user agent string to use for matching in the robots.txt_ file. If it
-    is ``None``, the User-Agent header you are sending with the request or the
-    :setting:`USER_AGENT` setting (in that order) will be used for determining
-    the user agent to use in the robots.txt_ file.
-
-    This middleware has to be combined with a robots.txt_ parser.
-
-    Scrapy ships with support for the following robots.txt_ parsers:
-
-    * :ref:`Protego <protego-parser>` (default)
-    * :ref:`RobotFileParser <python-robotfileparser>`
-    * :ref:`Robotexclusionrulesparser <rerp-parser>`
-    * :ref:`Reppy <reppy-parser>` (deprecated)
-
-    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
-    setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
+.. autoclass:: RobotsTxtMiddleware
 
 .. reqmeta:: dont_obey_robotstxt
 

@@ -18,6 +18,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.robotstxt import RobotParser
+from scrapy.spidermiddlewares.robotstxt import _start_requests_processed
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import load_object
@@ -31,9 +32,44 @@ logger = logging.getLogger(__name__)
 
 
 class RobotsTxtMiddleware:
+    """This middleware filters out requests forbidden by the robots.txt
+    exclusion standard.
+
+    To make sure Scrapy respects robots.txt make sure the middleware is enabled
+    and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
+
+    The :setting:`ROBOTSTXT_USER_AGENT` setting can be used to specify the
+    user agent string to use for matching in the robots.txt_ file. If it
+    is ``None``, the User-Agent header you are sending with the request or the
+    :setting:`USER_AGENT` setting (in that order) will be used for determining
+    the user agent to use in the robots.txt_ file.
+
+    This middleware has to be combined with a robots.txt_ parser.
+
+    Scrapy ships with support for the following robots.txt_ parsers:
+
+    * :ref:`Protego <protego-parser>` (default)
+    * :ref:`RobotFileParser <python-robotfileparser>`
+    * :ref:`Robotexclusionrulesparser <rerp-parser>`
+    * :ref:`Reppy <reppy-parser>` (deprecated)
+
+    You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
+    setting. Or you can also :ref:`implement support for a new parser
+    <support-for-new-robots-parser>`.
+
+    If all start requests from a spider are ignored due to robots.txt rules,
+    the spider close reason becomes ``robotstxt_denied``.
+    """
+
     DOWNLOAD_PRIORITY: int = 1000
 
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        return cls(crawler)
+
     def __init__(self, crawler: Crawler):
+        self._forbidden_start_request_count = 0
+        self._total_start_request_count = 0
         if not crawler.settings.getbool("ROBOTSTXT_OBEY"):
             raise NotConfigured
         self._default_useragent: str = crawler.settings.get("USER_AGENT", "Scrapy")
@@ -49,9 +85,13 @@ class RobotsTxtMiddleware:
         # check if parser dependencies are met, this should throw an error otherwise.
         self._parserimpl.from_crawler(self.crawler, b"")
 
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler)
+        crawler.signals.connect(
+            self._start_requests_processed, signal=_start_requests_processed
+        )
+
+    def _start_requests_processed(self, count):
+        self._total_start_request_count = count
+        self._maybe_close()
 
     def process_request(self, request: Request, spider: Spider) -> Optional[Deferred]:
         if request.meta.get("dont_obey_robotstxt"):
@@ -80,6 +120,11 @@ class RobotsTxtMiddleware:
             )
             assert self.crawler.stats
             self.crawler.stats.inc_value("robotstxt/forbidden")
+
+            if request.meta.get("is_start_request", False):
+                self._forbidden_start_request_count += 1
+                self._maybe_close()
+
             raise IgnoreRequest("Forbidden by robots.txt")
 
     def robot_parser(
@@ -148,3 +193,15 @@ class RobotsTxtMiddleware:
         assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = None
         rp_dfd.callback(None)
+
+    def _maybe_close(self):
+        if not self._total_start_request_count:
+            return
+        if self._forbidden_start_request_count < self._total_start_request_count:
+            return
+        logger.error(
+            "Stopping the spider, all start requests failed because they "
+            "were rejected based on robots.txt rules. See "
+            "https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#topics-dlmw-robots"
+        )
+        self.crawler.engine.close_spider(self.crawler.spider, "robotstxt_denied")

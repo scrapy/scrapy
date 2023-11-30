@@ -1,17 +1,36 @@
 from unittest import mock
 
 from twisted.internet import error, reactor
-from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    inlineCallbacks,
+    maybeDeferred,
+)
 from twisted.python import failure
 from twisted.trial import unittest
+from twisted.web.resource import Resource
 
+from scrapy import Spider
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
 from scrapy.downloadermiddlewares.robotstxt import logger as mw_module_logger
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
+from scrapy.utils.test import get_crawler
+from tests.mockserver import MockServer
 from tests.test_robotstxt_interface import reppy_available, rerp_available
+
+
+class RobotsTxtResource(Resource):
+    def getChild(self, name, request):
+        return self
+
+    def render_GET(self, request):
+        if request.path == b"/robots.txt":
+            return b"User-agent: *\n" b"Disallow: /deny/\n"
+        return b"foo"
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -245,6 +264,102 @@ Disallow: /some/randome/page.html
         request = calls[0][0][0]
         self.assertEqual(request.url, f"{base_url}/robots.txt")
         self.assertEqual(request.callback, NO_CALLBACK)
+
+    @inlineCallbacks
+    def test_forbidden_start_url(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            def parse(self, response):
+                TestSpider.response = response.text
+
+        settings = {"ROBOTSTXT_OBEY": True}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+
+        with MockServer(RobotsTxtResource) as server:
+            TestSpider.start_urls = [server.url("/deny/")]
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.stats.get_value("finish_reason"), "robotstxt_denied")
+
+    @inlineCallbacks
+    def test_forbidden_start_urls(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            def parse(self, response):
+                TestSpider.response = response.text
+
+        settings = {"ROBOTSTXT_OBEY": True}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+
+        with MockServer(RobotsTxtResource) as server:
+            TestSpider.start_urls = [
+                server.url("/deny/foo"),
+                server.url("/deny/bar"),
+                server.url("/deny/baz"),
+            ]
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.stats.get_value("finish_reason"), "robotstxt_denied")
+
+    @inlineCallbacks
+    def test_some_forbidden_start_url(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            def parse(self, response):
+                TestSpider.response = response.text
+
+        settings = {"ROBOTSTXT_OBEY": True}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+
+        with MockServer(RobotsTxtResource) as server:
+            TestSpider.start_urls = [server.url("/deny"), server.url("/allow")]
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.stats.get_value("finish_reason"), "finished")
+
+    @inlineCallbacks
+    def test_follow_up_forbidden_url(self):
+        settings = {"ROBOTSTXT_OBEY": True}
+        with MockServer(RobotsTxtResource) as server:
+
+            class TestSpider(Spider):
+                name = "test"
+                start_urls = [server.url("/allow/")]
+
+                def parse(self, response):
+                    yield response.follow(server.url("/deny/"))
+
+            crawler = get_crawler(TestSpider, settings_dict=settings)
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.stats.get_value("finish_reason"), "finished")
+
+    @inlineCallbacks
+    def test_forbidden_with_partial_start_request_consumption(self):
+        """With concurrency lower than the number of start requests + 1, the
+        code path followed changes, because ``_total_start_request_count`` is
+        not set in the downloader middleware until *after* some start requests
+        have been processed."""
+        settings = {
+            "CONCURRENT_REQUESTS": 1,
+            "ROBOTSTXT_OBEY": True,
+        }
+        with MockServer(RobotsTxtResource) as server:
+
+            class TestSpider(Spider):
+                name = "test"
+                start_urls = [server.url("/deny/")]
+
+                def parse(self, response):
+                    yield response.follow(server.url("/deny/"))
+
+            crawler = get_crawler(TestSpider, settings_dict=settings)
+            yield crawler.crawl()
+
+        self.assertEqual(crawler.stats.get_value("finish_reason"), "robotstxt_denied")
 
 
 class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
