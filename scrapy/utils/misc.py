@@ -160,6 +160,50 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     return instance
 
 
+def build_from_crawler(objcls, crawler, /, *args, **kwargs):
+    """Construct a class instance using its ``from_crawler`` constructor, if
+    available.
+
+    The arguments ``*args`` and ``**kwargs`` are forwarded to the constructors.
+
+    Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
+    extension has not been implemented correctly.)
+    """
+    if crawler and hasattr(objcls, "from_crawler"):
+        instance = objcls.from_crawler(crawler, *args, **kwargs)
+        method_name = "from_crawler"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
+
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+
+    return instance
+
+
+def build_from_settings(objcls, settings, /, *args, **kwargs):
+    """Construct a class instance using its ``from_settings`` constructor, if
+    available.
+
+    The arguments ``*args`` and ``**kwargs`` are forwarded to the constructors.
+
+    Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
+    extension has not been implemented correctly.)
+    """
+    if settings and hasattr(objcls, "from_settings"):
+        instance = objcls.from_settings(settings, *args, **kwargs)
+        method_name = "from_settings"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
+
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+
+    return instance
+
+
 @contextmanager
 def set_environ(**kwargs: str) -> Generator[None, Any, None]:
     """Temporarily set environment variables inside the context manager and
