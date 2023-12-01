@@ -124,7 +124,9 @@ def rel_has_nofollow(rel: Optional[str]) -> bool:
     """Return True if link rel attribute has nofollow type"""
     return rel is not None and "nofollow" in rel.replace(",", " ").split()
 
-
+"""
+The new create_instance function provides default value (None) for both crawler and settings, to simplify the caller - only one of the two parameters will need a value at call.
+"""
 def create_instance(objcls, /, *args, crawler=None, settings=None, **kwargs): 
     """Construct a class instance using its ``from_crawler`` or
     ``from_settings`` constructors, if available.
