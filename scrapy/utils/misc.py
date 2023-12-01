@@ -159,6 +159,12 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
 
+def build_from_crawler(objcls, crawler, /, *args, **kwargs):
+    return
+    
+def build_from_settings(objcls, settings, /, *args, **kwargs):
+    return
+
 
 @contextmanager
 def set_environ(**kwargs: str) -> Generator[None, Any, None]:
