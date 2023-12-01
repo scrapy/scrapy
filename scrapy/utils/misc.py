@@ -125,7 +125,7 @@ def rel_has_nofollow(rel: Optional[str]) -> bool:
     return rel is not None and "nofollow" in rel.replace(",", " ").split()
 
 
-def create_instance(objcls, settings, crawler, *args, **kwargs):
+def create_instance(objcls, /, *args, crawler=None, settings=None, **kwargs): 
     """Construct a class instance using its ``from_crawler`` or
     ``from_settings`` constructors, if available.
 
@@ -158,12 +158,6 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
-
-def build_from_crawler(objcls, crawler, /, *args, **kwargs):
-    return
-    
-def build_from_settings(objcls, settings, /, *args, **kwargs):
-    return
 
 
 @contextmanager
