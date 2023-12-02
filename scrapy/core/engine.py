@@ -5,6 +5,7 @@ For more information see docs/topics/architecture.rst
 
 """
 import logging
+import asyncio
 from time import time
 from typing import (
     TYPE_CHECKING,
@@ -59,6 +60,7 @@ class Slot:
         self.nextcall: CallLaterOnce = nextcall
         self.scheduler: "BaseScheduler" = scheduler
         self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
+        self.start_requests = start_requests  # This could be an async iterator now
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -162,6 +164,13 @@ class ExecutionEngine:
         self.paused = False
 
     def _next_request(self) -> None:
+        if self.slot is None or self.paused:
+            return
+
+        # Handle asynchronous start_requests
+        if self.slot.start_requests is not None:
+            asyncio.create_task(self._process_start_requests())
+
         if self.slot is None:
             return
 
@@ -193,6 +202,17 @@ class ExecutionEngine:
 
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
+
+    async def _process_start_requests(self):
+        try:
+            # Fetch next request from asynchronous start_requests
+            request = await self.slot.start_requests.__anext__()
+            self.crawl(request)
+        except StopAsyncIteration:
+            self.slot.start_requests = None
+        except Exception as e:
+            self.slot.start_requests = None
+            logger.error(f"Error while obtaining start requests: {e}", exc_info=True)
 
     def _needs_backout(self) -> bool:
         assert self.slot is not None  # typing

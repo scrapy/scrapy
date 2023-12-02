@@ -6,6 +6,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
+import asyncio
 from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Union, cast
 
 from twisted.internet.defer import Deferred
@@ -100,6 +101,16 @@ class Spider(object_ref):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
+    
+    async def start_requests(self) -> Iterable[Request]:
+        if not self.start_urls and hasattr(self, "start_url"):
+            raise AttributeError(
+                "Crawling could not start: 'start_urls' not found "
+                "or empty (but found 'start_url' attribute instead, "
+                "did you miss an 's'?)"
+            )
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
 
 
 # Top-level imports
