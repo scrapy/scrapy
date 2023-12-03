@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import asyncio
 from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, cast
@@ -215,7 +216,7 @@ class Scheduler(BaseScheduler):
     def has_pending_requests(self) -> bool:
         return len(self) > 0
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    async def open(self, spider: Spider) -> Optional[Deferred]:
         """
         (1) initialize the memory queue
         (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
@@ -223,21 +224,21 @@ class Scheduler(BaseScheduler):
         """
         self.spider = spider
         self.mqs = self._mq()
-        self.dqs = self._dq() if self.dqdir else None
-        return self.df.open()
+        self.dqs = await self._dq() if self.dqdir else None
+        return await self.df.open()
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    async def close(self, reason: str) -> Optional[Deferred]:
         """
         (1) dump pending requests to disk if there is a disk queue
         (2) return the result of the dupefilter's ``close`` method
         """
         if self.dqs is not None:
-            state = self.dqs.close()
+            state = await self.dqs.close()
             assert isinstance(self.dqdir, str)
-            self._write_dqs_state(self.dqdir, state)
-        return self.df.close(reason)
+            await self._write_dqs_state(self.dqdir, state)
+        return await self.df.close(reason)
 
-    def enqueue_request(self, request: Request) -> bool:
+    async def enqueue_request(self, request: Request) -> bool:
         """
         Unless the received request is filtered out by the Dupefilter, attempt to push
         it into the disk queue, falling back to pushing it into the memory queue.
@@ -247,20 +248,20 @@ class Scheduler(BaseScheduler):
 
         Return ``True`` if the request was stored successfully, ``False`` otherwise.
         """
-        if not request.dont_filter and self.df.request_seen(request):
-            self.df.log(request, self.spider)
+        if not request.dont_filter and await self.df.request_seen(request):
+            await self.df.log(request, self.spider)
             return False
-        dqok = self._dqpush(request)
+        dqok = await self._dqpush(request)
         assert self.stats is not None
         if dqok:
-            self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
+            await self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
         else:
-            self._mqpush(request)
-            self.stats.inc_value("scheduler/enqueued/memory", spider=self.spider)
-        self.stats.inc_value("scheduler/enqueued", spider=self.spider)
+            await self._mqpush(request)
+            await self.stats.inc_value("scheduler/enqueued/memory", spider=self.spider)
+        await self.stats.inc_value("scheduler/enqueued", spider=self.spider)
         return True
 
-    def next_request(self) -> Optional[Request]:
+    async def next_request(self) -> Optional[Request]:
         """
         Return a :class:`~scrapy.http.Request` object from the memory queue,
         falling back to the disk queue if the memory queue is empty.
@@ -269,16 +270,16 @@ class Scheduler(BaseScheduler):
         Increment the appropriate stats, such as: ``scheduler/dequeued``,
         ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
         """
-        request: Optional[Request] = self.mqs.pop()
+        request: Optional[Request] = await self.mqs.pop()
         assert self.stats is not None
         if request is not None:
-            self.stats.inc_value("scheduler/dequeued/memory", spider=self.spider)
+            await self.stats.inc_value("scheduler/dequeued/memory", spider=self.spider)
         else:
-            request = self._dqpop()
+            request = await self._dqpop()
             if request is not None:
-                self.stats.inc_value("scheduler/dequeued/disk", spider=self.spider)
+                await self.stats.inc_value("scheduler/dequeued/disk", spider=self.spider)
         if request is not None:
-            self.stats.inc_value("scheduler/dequeued", spider=self.spider)
+            await self.stats.inc_value("scheduler/dequeued", spider=self.spider)
         return request
 
     def __len__(self) -> int:
@@ -287,11 +288,12 @@ class Scheduler(BaseScheduler):
         """
         return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
 
-    def _dqpush(self, request: Request) -> bool:
+
+    async def _dqpush(self, request: Request) -> bool:
         if self.dqs is None:
             return False
         try:
-            self.dqs.push(request)
+            await self.dqs.push(request)
         except ValueError as e:  # non serializable request
             if self.logunser:
                 msg = (
@@ -307,20 +309,20 @@ class Scheduler(BaseScheduler):
                 )
                 self.logunser = False
             assert self.stats is not None
-            self.stats.inc_value("scheduler/unserializable", spider=self.spider)
+            await self.stats.inc_value("scheduler/unserializable", spider=self.spider)
             return False
         else:
             return True
 
-    def _mqpush(self, request: Request) -> None:
-        self.mqs.push(request)
+    async def _mqpush(self, request: Request) -> None:
+        await self.mqs.push(request)
 
-    def _dqpop(self) -> Optional[Request]:
+    async def _dqpop(self) -> Optional[Request]:
         if self.dqs is not None:
-            return self.dqs.pop()
+            return await self.dqs.pop()
         return None
 
-    def _mq(self):
+    async def _mq(self):
         """Create a new priority queue instance, with in-memory storage"""
         return create_instance(
             self.pqclass,
@@ -330,10 +332,10 @@ class Scheduler(BaseScheduler):
             key="",
         )
 
-    def _dq(self):
+    async def _dq(self):
         """Create a new priority queue instance, with disk storage"""
         assert self.dqdir
-        state = self._read_dqs_state(self.dqdir)
+        state = await self._read_dqs_state(self.dqdir)
         q = create_instance(
             self.pqclass,
             settings=None,
@@ -350,7 +352,7 @@ class Scheduler(BaseScheduler):
             )
         return q
 
-    def _dqdir(self, jobdir: Optional[str]) -> Optional[str]:
+    async def _dqdir(self, jobdir: Optional[str]) -> Optional[str]:
         """Return a folder name to keep disk queue state at"""
         if jobdir:
             dqdir = Path(jobdir, "requests.queue")
@@ -359,13 +361,14 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list:
+    async def _read_dqs_state(self, dqdir: str) -> list:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
             return cast(list, json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: list) -> None:
+    async def _write_dqs_state(self, dqdir: str, state: list) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)
+            
