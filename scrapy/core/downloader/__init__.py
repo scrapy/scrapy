@@ -2,11 +2,11 @@ import random
 from collections import deque
 from datetime import datetime
 from time import time
+import asyncio
 from typing import TYPE_CHECKING, Any, Deque, Dict, Set, Tuple, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
-
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
@@ -28,7 +28,6 @@ class Slot:
         self.concurrency: int = concurrency
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
-
         self.active: Set[Request] = set()
         self.queue: Deque[Tuple[Request, Deferred]] = deque()
         self.transferring: Set[Request] = set()
@@ -38,7 +37,7 @@ class Slot:
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
 
-    def download_delay(self) -> float:
+    async def download_delay(self) -> float:
         if self.randomize_delay:
             return random.uniform(0.5 * self.delay, 1.5 * self.delay)
         return self.delay
@@ -102,19 +101,19 @@ class Downloader:
             "DOWNLOAD_SLOTS", {}
         )
 
-    def fetch(self, request: Request, spider: Spider) -> Deferred:
-        def _deactivate(response: Response) -> Response:
+    async def fetch(self, request: Request, spider: Spider) -> Deferred:
+        async def _deactivate(response: Response) -> Response:
             self.active.remove(request)
             return response
 
         self.active.add(request)
-        dfd = self.middleware.download(self._enqueue_request, request, spider)
+        dfd = await self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
-    def needs_backout(self) -> bool:
+    async def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
+    async def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
         key = self._get_slot_key(request, spider)
         if key not in self.slots:
             slot_settings = self.per_slot_settings.get(key, {})
@@ -132,7 +131,7 @@ class Downloader:
 
         return key, self.slots[key]
 
-    def _get_slot_key(self, request: Request, spider: Spider) -> str:
+    async def _get_slot_key(self, request: Request, spider: Spider) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
             return cast(str, request.meta[self.DOWNLOAD_SLOT])
 
@@ -142,11 +141,11 @@ class Downloader:
 
         return key
 
-    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred:
-        key, slot = self._get_slot(request, spider)
+    async def _enqueue_request(self, request: Request, spider: Spider) -> Deferred:
+        key, slot = await self._get_slot(request, spider)
         request.meta[self.DOWNLOAD_SLOT] = key
 
-        def _deactivate(response: Response) -> Response:
+        async def _deactivate(response: Response) -> Response:
             slot.active.remove(request)
             return response
 
@@ -156,10 +155,10 @@ class Downloader:
         )
         deferred: Deferred = Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
-        self._process_queue(spider, slot)
+        await self._process_queue(spider, slot)
         return deferred
 
-    def _process_queue(self, spider: Spider, slot: Slot) -> None:
+    async def _process_queue(self, spider: Spider, slot: Slot) -> None:
         from twisted.internet import reactor
 
         if slot.latercall and slot.latercall.active():
@@ -167,7 +166,7 @@ class Downloader:
 
         # Delay queue processing if a download_delay is configured
         now = time()
-        delay = slot.download_delay()
+        delay = await slot.download_delay()
         if delay:
             penalty = delay - now + slot.lastseen
             if penalty > 0:
@@ -187,15 +186,15 @@ class Downloader:
                 self._process_queue(spider, slot)
                 break
 
-    def _download(self, slot: Slot, request: Request, spider: Spider) -> Deferred:
+        async def _download(self, slot: Slot, request: Request, spider: Spider) -> Deferred:
         # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
-        dfd = mustbe_deferred(self.handlers.download_request, request, spider)
+        dfd = await mustbe_deferred(self.handlers.download_request, request, spider)
 
         # 2. Notify response_downloaded listeners about the recent download
-        # before querying queue for next request
-        def _downloaded(response: Response) -> Response:
+        # before querying queue for the next request
+        async def _downloaded(response: Response) -> Response:
             self.signals.send_catch_log(
                 signal=signals.response_downloaded,
                 response=response,
@@ -206,15 +205,15 @@ class Downloader:
 
         dfd.addCallback(_downloaded)
 
-        # 3. After response arrives, remove the request from transferring
+        # 3. After the response arrives, remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)
         slot.transferring.add(request)
 
-        def finish_transferring(_: Any) -> Any:
+        async def finish_transferring(_: Any) -> Any:
             slot.transferring.remove(request)
-            self._process_queue(spider, slot)
+            await self._process_queue(spider, slot)
             self.signals.send_catch_log(
                 signal=signals.request_left_downloader, request=request, spider=spider
             )
@@ -222,12 +221,12 @@ class Downloader:
 
         return dfd.addBoth(finish_transferring)
 
-    def close(self) -> None:
+    async def close(self) -> None:
         self._slot_gc_loop.stop()
         for slot in self.slots.values():
             slot.close()
 
-    def _slot_gc(self, age: float = 60) -> None:
+    async def _slot_gc(self, age: float = 60) -> None:
         mintime = time() - age
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
