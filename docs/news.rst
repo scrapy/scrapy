@@ -5676,7 +5676,7 @@ Scrapy 0.16.1 (released 2012-10-26)
 
 - fixed LogStats extension, which got broken after a wrong merge before the 0.16 release (:commit:`8c780fd`)
 - better backward compatibility for scrapy.conf.settings (:commit:`3403089`)
-- extended documentation on how to access crawler stats from extensions (:commit:`c4da0b5`)
+- extended documentation on how to access crawler.stats from extensions (:commit:`c4da0b5`)
 - removed .hgtags (no longer needed now that Scrapy uses git) (:commit:`d52c188`)
 - fix dashes under rst headers (:commit:`fa4f7f9`)
 - set release date for 0.16.0 in news (:commit:`e292246`)
@@ -5693,7 +5693,7 @@ Scrapy changes:
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.
-- dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
+- dropped Stats Collector singleton. Stats can now be accessed through the crawler.stats attribute. See the stats collection documentation for more info.
 - documented :ref:`topics-api`
 - ``lxml`` is now the default selectors backend instead of ``libxml2``
 - ported FormRequest.from_response() to use `lxml`_ instead of `ClientForm`_

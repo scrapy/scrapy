@@ -80,12 +80,12 @@ class RetryTest(unittest.TestCase):
         # discard it
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
-        assert self.crawler.stats.get_value("retry/max_reached") == 1
+        assert self.crawler.retrieve_stats().get_value("retry/max_reached") == 1
         assert (
-            self.crawler.stats.get_value("retry/reason_count/503 Service Unavailable")
+            self.crawler.retrieve_stats().get_value("retry/reason_count/503 Service Unavailable")
             == 2
         )
-        assert self.crawler.stats.get_value("retry/count") == 2
+        assert self.crawler.retrieve_stats().get_value("retry/count") == 2
 
     def test_twistederrors(self):
         exceptions = [
@@ -104,7 +104,7 @@ class RetryTest(unittest.TestCase):
             req = Request(f"http://www.scrapytest.org/{exc.__name__}")
             self._test_retry_exception(req, exc("foo"))
 
-        stats = self.crawler.stats
+        stats = self.crawler.retrieve_stats()
         assert stats.get_value("retry/max_reached") == len(exceptions)
         assert stats.get_value("retry/count") == len(exceptions) * 2
         assert (
@@ -327,7 +327,7 @@ class GetRetryRequestTest(unittest.TestCase):
         self.assertEqual(new_request.priority, -1)
         expected_reason = "unspecified"
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
+            self.assertEqual(spider.crawler.retrieve_stats().get_value(stat), 1)
         log.check_present(
             (
                 "scrapy.downloadermiddlewares.retry",
@@ -348,7 +348,7 @@ class GetRetryRequestTest(unittest.TestCase):
                 max_retry_times=max_retry_times,
             )
         self.assertEqual(new_request, None)
-        self.assertEqual(spider.crawler.stats.get_value("retry/max_reached"), 1)
+        self.assertEqual(spider.crawler.retrieve_stats().get_value("retry/max_reached"), 1)
         failure_count = max_retry_times + 1
         expected_reason = "unspecified"
         log.check_present(
@@ -377,7 +377,7 @@ class GetRetryRequestTest(unittest.TestCase):
         self.assertEqual(new_request.priority, -1)
         expected_reason = "unspecified"
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
+            self.assertEqual(spider.crawler.retrieve_stats().get_value(stat), 1)
         log.check_present(
             (
                 "scrapy.downloadermiddlewares.retry",
@@ -407,7 +407,7 @@ class GetRetryRequestTest(unittest.TestCase):
             self.assertEqual(new_request.priority, -expected_retry_times)
             expected_reason = "unspecified"
             for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-                value = spider.crawler.stats.get_value(stat)
+                value = spider.crawler.retrieve_stats().get_value(stat)
                 self.assertEqual(value, expected_retry_times)
             log.check_present(
                 (
@@ -425,7 +425,7 @@ class GetRetryRequestTest(unittest.TestCase):
                 max_retry_times=max_retry_times,
             )
         self.assertEqual(new_request, None)
-        self.assertEqual(spider.crawler.stats.get_value("retry/max_reached"), 1)
+        self.assertEqual(spider.crawler.retrieve_stats().get_value("retry/max_reached"), 1)
         failure_count = max_retry_times + 1
         expected_reason = "unspecified"
         log.check_present(
@@ -529,7 +529,7 @@ class GetRetryRequestTest(unittest.TestCase):
             )
         expected_retry_times = 1
         for stat in ("retry/count", f"retry/reason_count/{expected_reason}"):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
+            self.assertEqual(spider.crawler.retrieve_stats().get_value(stat), 1)
         log.check_present(
             (
                 "scrapy.downloadermiddlewares.retry",
@@ -551,7 +551,7 @@ class GetRetryRequestTest(unittest.TestCase):
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        stat = spider.crawler.stats.get_value(
+        stat = spider.crawler.retrieve_stats().get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
         self.assertEqual(stat, 1)
@@ -576,7 +576,7 @@ class GetRetryRequestTest(unittest.TestCase):
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        stat = spider.crawler.stats.get_value(
+        stat = spider.crawler.retrieve_stats().get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
         self.assertEqual(stat, 1)
@@ -601,7 +601,7 @@ class GetRetryRequestTest(unittest.TestCase):
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        stat = spider.crawler.stats.get_value(
+        stat = spider.crawler.retrieve_stats().get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
         self.assertEqual(stat, 1)
@@ -626,7 +626,7 @@ class GetRetryRequestTest(unittest.TestCase):
                 reason=expected_reason,
             )
         expected_retry_times = 1
-        stat = spider.crawler.stats.get_value(
+        stat = spider.crawler.retrieve_stats().get_value(
             f"retry/reason_count/{expected_reason_string}"
         )
         self.assertEqual(stat, 1)
@@ -674,7 +674,7 @@ class GetRetryRequestTest(unittest.TestCase):
             f"{stats_key}/count",
             f"{stats_key}/reason_count/{expected_reason}",
         ):
-            self.assertEqual(spider.crawler.stats.get_value(stat), 1)
+            self.assertEqual(spider.crawler.retrieve_stats().get_value(stat), 1)
 
 
 if __name__ == "__main__":

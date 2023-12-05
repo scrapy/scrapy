@@ -42,7 +42,7 @@ class HttpCompressionTest(TestCase):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.retrieve_stats().open_spider(self.spider)
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
@@ -68,9 +68,9 @@ class HttpCompressionTest(TestCase):
 
     def assertStatsEqual(self, key, value):
         self.assertEqual(
-            self.crawler.stats.get_value(key, spider=self.spider),
+            self.crawler.retrieve_stats().get_value(key, spider=self.spider),
             value,
-            str(self.crawler.stats.get_stats(self.spider)),
+            str(self.crawler.retrieve_stats().get_stats(self.spider)),
         )
 
     def test_setting_false_compression_enabled(self):

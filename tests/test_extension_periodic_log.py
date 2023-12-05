@@ -145,9 +145,9 @@ class TestPeriodicLog(unittest.TestCase):
             ext = extension(settings)
             ext.spider_opened(spider)
             ext.set_a()
-            a = ext.log_crawler_stats()
+            a = ext.log_crawler.retrieve_stats()()
             ext.set_a()
-            b = ext.log_crawler_stats()
+            b = ext.log_crawler.retrieve_stats()()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 

@@ -104,8 +104,7 @@ def get_retry_request(
     retry-related job stats
     """
     settings = spider.crawler.settings
-    assert spider.crawler.stats
-    stats = spider.crawler.stats
+    stats = spider.crawler.retrieve_stats()
     retry_times = request.meta.get("retry_times", 0) + 1
     if max_retry_times is None:
         max_retry_times = request.meta.get("max_retry_times")

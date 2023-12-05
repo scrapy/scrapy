@@ -62,8 +62,7 @@ class HttpErrorMiddleware:
         self, response: Response, exception: Exception, spider: Spider
     ) -> Optional[Iterable[Any]]:
         if isinstance(exception, HttpError):
-            assert spider.crawler.stats
-            spider.crawler.stats.inc_value("httperror/response_ignored_count")
+            spider.crawler.retrieve_stats().inc_value("httperror/response_ignored_count")
             spider.crawler.stats.inc_value(
                 f"httperror/response_ignored_status_count/{response.status}"
             )

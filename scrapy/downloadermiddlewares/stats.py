@@ -39,8 +39,7 @@ class DownloaderStats:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("DOWNLOADER_STATS"):
             raise NotConfigured
-        assert crawler.stats
-        return cls(crawler.stats)
+        return cls(crawler.retrieve_stats())
 
     def process_request(
         self, request: Request, spider: Spider

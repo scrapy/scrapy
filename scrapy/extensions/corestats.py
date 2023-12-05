@@ -13,7 +13,7 @@ class CoreStats:
 
     @classmethod
     def from_crawler(cls, crawler):
-        o = cls(crawler.stats)
+        o = cls(crawler.retrieve_stats())
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signal=signals.item_scraped)

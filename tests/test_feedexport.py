@@ -912,10 +912,10 @@ class FeedExportTest(FeedExportTestBase):
         with MockServer() as mockserver:
             yield crawler.crawl(mockserver=mockserver)
         self.assertIn(
-            "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
+            "feedexport/success_count/FileFeedStorage", crawler.retrieve_stats().get_stats()
         )
         self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
+            crawler.retrieve_stats().get_value("feedexport/success_count/FileFeedStorage"), 1
         )
 
     @defer.inlineCallbacks
@@ -938,10 +938,10 @@ class FeedExportTest(FeedExportTestBase):
             )
             yield crawler.crawl(mockserver=mockserver)
         self.assertIn(
-            "feedexport/failed_count/FileFeedStorage", crawler.stats.get_stats()
+            "feedexport/failed_count/FileFeedStorage", crawler.retrieve_stats().get_stats()
         )
         self.assertEqual(
-            crawler.stats.get_value("feedexport/failed_count/FileFeedStorage"), 1
+            crawler.retrieve_stats().get_value("feedexport/failed_count/FileFeedStorage"), 1
         )
 
     @defer.inlineCallbacks
@@ -960,16 +960,16 @@ class FeedExportTest(FeedExportTestBase):
         with MockServer() as mockserver, mock.patch.object(S3FeedStorage, "store"):
             yield crawler.crawl(mockserver=mockserver)
         self.assertIn(
-            "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
+            "feedexport/success_count/FileFeedStorage", crawler.retrieve_stats().get_stats()
         )
         self.assertIn(
-            "feedexport/success_count/StdoutFeedStorage", crawler.stats.get_stats()
+            "feedexport/success_count/StdoutFeedStorage", crawler.retrieve_stats().get_stats()
         )
         self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
+            crawler.retrieve_stats().get_value("feedexport/success_count/FileFeedStorage"), 1
         )
         self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage"), 1
+            crawler.retrieve_stats().get_value("feedexport/success_count/StdoutFeedStorage"), 1
         )
 
     @defer.inlineCallbacks
@@ -2636,10 +2636,10 @@ class BatchDeliveriesTest(FeedExportTestBase):
         with MockServer() as mockserver:
             yield crawler.crawl(total=2, mockserver=mockserver)
         self.assertIn(
-            "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
+            "feedexport/success_count/FileFeedStorage", crawler.retrieve_stats().get_stats()
         )
         self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12
+            crawler.retrieve_stats().get_value("feedexport/success_count/FileFeedStorage"), 12
         )
 
     @defer.inlineCallbacks

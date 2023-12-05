@@ -21,7 +21,7 @@ class TestCloseSpider(TestCase):
         yield crawler.crawl(mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
         self.assertEqual(reason, "closespider_itemcount")
-        itemcount = crawler.stats.get_value("item_scraped_count")
+        itemcount = crawler.retrieve_stats().get_value("item_scraped_count")
         self.assertTrue(itemcount >= close_on)
 
     @defer.inlineCallbacks
@@ -31,7 +31,7 @@ class TestCloseSpider(TestCase):
         yield crawler.crawl(mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
         self.assertEqual(reason, "closespider_pagecount")
-        pagecount = crawler.stats.get_value("response_received_count")
+        pagecount = crawler.retrieve_stats().get_value("response_received_count")
         self.assertTrue(pagecount >= close_on)
 
     @defer.inlineCallbacks
@@ -42,7 +42,7 @@ class TestCloseSpider(TestCase):
         reason = crawler.spider.meta["close_reason"]
         self.assertEqual(reason, "closespider_errorcount")
         key = f"spider_exceptions/{crawler.spider.exception_cls.__name__}"
-        errorcount = crawler.stats.get_value(key)
+        errorcount = crawler.retrieve_stats().get_value(key)
         self.assertTrue(errorcount >= close_on)
 
     @defer.inlineCallbacks
@@ -52,7 +52,7 @@ class TestCloseSpider(TestCase):
         yield crawler.crawl(total=1000000, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
         self.assertEqual(reason, "closespider_timeout")
-        total_seconds = crawler.stats.get_value("elapsed_time_seconds")
+        total_seconds = crawler.retrieve_stats().get_value("elapsed_time_seconds")
         self.assertTrue(total_seconds >= close_on)
 
     @defer.inlineCallbacks
@@ -62,5 +62,5 @@ class TestCloseSpider(TestCase):
         yield crawler.crawl(n=3, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
         self.assertEqual(reason, "closespider_timeout_no_item")
-        total_seconds = crawler.stats.get_value("elapsed_time_seconds")
+        total_seconds = crawler.retrieve_stats().get_value("elapsed_time_seconds")
         self.assertTrue(total_seconds >= timeout)

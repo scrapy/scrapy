@@ -78,8 +78,7 @@ class RobotsTxtMiddleware:
                 {"request": request},
                 extra={"spider": spider},
             )
-            assert self.crawler.stats
-            self.crawler.stats.inc_value("robotstxt/forbidden")
+            self.crawler.retrieve_stats().inc_value("robotstxt/forbidden")
             raise IgnoreRequest("Forbidden by robots.txt")
 
     def robot_parser(
@@ -98,12 +97,11 @@ class RobotsTxtMiddleware:
                 callback=NO_CALLBACK,
             )
             assert self.crawler.engine
-            assert self.crawler.stats
             dfd = self.crawler.engine.download(robotsreq)
             dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
-            self.crawler.stats.inc_value("robotstxt/request_count")
+            self.crawler.retrieve_stats().inc_value("robotstxt/request_count")
 
         parser = self._parsers[netloc]
         if isinstance(parser, Deferred):
@@ -128,8 +126,7 @@ class RobotsTxtMiddleware:
         return failure
 
     def _parse_robots(self, response: Response, netloc: str, spider: Spider) -> None:
-        assert self.crawler.stats
-        self.crawler.stats.inc_value("robotstxt/response_count")
+        self.crawler.retrieve_stats().inc_value("robotstxt/response_count")
         self.crawler.stats.inc_value(
             f"robotstxt/response_status_count/{response.status}"
         )
@@ -142,8 +139,7 @@ class RobotsTxtMiddleware:
     def _robots_error(self, failure: Failure, netloc: str) -> None:
         if failure.type is not IgnoreRequest:
             key = f"robotstxt/exception_count/{failure.type}"
-            assert self.crawler.stats
-            self.crawler.stats.inc_value(key)
+            self.crawler.retrieve_stats().inc_value(key)
         rp_dfd = self._parsers[netloc]
         assert isinstance(rp_dfd, Deferred)
         self._parsers[netloc] = None

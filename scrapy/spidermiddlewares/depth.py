@@ -40,8 +40,8 @@ class DepthMiddleware:
         maxdepth = settings.getint("DEPTH_LIMIT")
         verbose = settings.getbool("DEPTH_STATS_VERBOSE")
         prio = settings.getint("DEPTH_PRIORITY")
-        assert crawler.stats
-        return cls(maxdepth, crawler.stats, verbose, prio)
+        assert crawler.retrieve_stats()
+        return cls(maxdepth, crawler.retrieve_stats(), verbose, prio)
 
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider

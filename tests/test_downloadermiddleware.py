@@ -23,11 +23,11 @@ class ManagerTestCase(TestCase):
         self.spider = self.crawler._create_spider("foo")
         self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
         # some mw depends on stats collector
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.retrieve_stats().open_spider(self.spider)
         return self.mwman.open_spider(self.spider)
 
     def tearDown(self):
-        self.crawler.stats.close_spider(self.spider, "")
+        self.crawler.retrieve_stats().close_spider(self.spider, "")
         return self.mwman.close_spider(self.spider)
 
     def _download(self, request, response=None):

@@ -369,8 +369,7 @@ class ExecutionEngine:
         if hasattr(scheduler, "open"):
             yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)
-        assert self.crawler.stats
-        self.crawler.stats.open_spider(spider)
+        self.crawler.retrieve_stats().open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         self.slot.nextcall.schedule()
         self.slot.heartbeat.start(5)
@@ -442,8 +441,7 @@ class ExecutionEngine:
         dfd.addErrback(log_failure("Error while sending spider_close signal"))
 
         def close_stats(_: Any) -> None:
-            assert self.crawler.stats
-            self.crawler.stats.close_spider(spider, reason=reason)
+            self.crawler.retrieve_stats().close_spider(spider, reason=reason)
 
         dfd.addBoth(close_stats)
         dfd.addErrback(log_failure("Stats close failure"))

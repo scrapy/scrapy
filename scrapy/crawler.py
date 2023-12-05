@@ -87,6 +87,11 @@ class Crawler:
         self.spider: Optional[Spider] = None
         self.engine: Optional[ExecutionEngine] = None
 
+    def retrieve_stats(self):
+        assert self.stats is not None, "Stats not initialized"
+        return self.stats
+    
+    
     def _update_root_log_handler(self) -> None:
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings

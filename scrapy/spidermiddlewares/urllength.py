@@ -51,8 +51,7 @@ class UrlLengthMiddleware:
                 {"maxlength": self.maxlength, "url": request.url},
                 extra={"spider": spider},
             )
-            assert spider.crawler.stats
-            spider.crawler.stats.inc_value(
+            spider.crawler.retrieve_stats().inc_value(
                 "urllength/request_ignored_count", spider=spider
             )
             return False

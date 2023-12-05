@@ -246,8 +246,7 @@ class Scraper:
             response=response,
             spider=spider,
         )
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(
+        self.crawler.retrieve_stats().inc_value(
             f"spider_exceptions/{_failure.value.__class__.__name__}", spider=spider
         )
 

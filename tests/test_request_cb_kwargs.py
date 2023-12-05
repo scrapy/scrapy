@@ -89,7 +89,7 @@ class KeywordArgumentsSpider(MockServerSpider):
     def parse_first(self, response, key, number):
         self.checks.append(key == "value")
         self.checks.append(number == 123)
-        self.crawler.stats.inc_value("boolean_checks", 2)
+        self.crawler.retrieve_stats().inc_value("boolean_checks", 2)
         yield response.follow(
             self.mockserver.url("/two"),
             self.parse_second,
@@ -98,30 +98,30 @@ class KeywordArgumentsSpider(MockServerSpider):
 
     def parse_second(self, response, new_key):
         self.checks.append(new_key == "new_value")
-        self.crawler.stats.inc_value("boolean_checks")
+        self.crawler.retrieve_stats().inc_value("boolean_checks")
 
     def parse_general(self, response, **kwargs):
         if response.url.endswith("/general_with"):
             self.checks.append(kwargs["key"] == "value")
             self.checks.append(kwargs["number"] == 123)
             self.checks.append(kwargs["callback"] == "some_callback")
-            self.crawler.stats.inc_value("boolean_checks", 3)
+            self.crawler.retrieve_stats().inc_value("boolean_checks", 3)
         elif response.url.endswith("/general_without"):
             self.checks.append(
                 kwargs == {}  # pylint: disable=use-implicit-booleaness-not-comparison
             )
-            self.crawler.stats.inc_value("boolean_checks")
+            self.crawler.retrieve_stats().inc_value("boolean_checks")
 
     def parse_no_kwargs(self, response):
         self.checks.append(response.url.endswith("/no_kwargs"))
-        self.crawler.stats.inc_value("boolean_checks")
+        self.crawler.retrieve_stats().inc_value("boolean_checks")
 
     def parse_default(self, response, key, number=None, default=99):
         self.checks.append(response.url.endswith("/default"))
         self.checks.append(key == "value")
         self.checks.append(number == 123)
         self.checks.append(default == 99)
-        self.crawler.stats.inc_value("boolean_checks", 4)
+        self.crawler.retrieve_stats().inc_value("boolean_checks", 4)
 
     def parse_takes_less(self, response, key, callback):
         """
@@ -140,19 +140,19 @@ class KeywordArgumentsSpider(MockServerSpider):
     ):
         self.checks.append(bool(from_process_request))
         self.checks.append(bool(from_process_response))
-        self.crawler.stats.inc_value("boolean_checks", 2)
+        self.crawler.retrieve_stats().inc_value("boolean_checks", 2)
 
     def parse_spider_mw(
         self, response, from_process_spider_input, from_process_start_requests
     ):
         self.checks.append(bool(from_process_spider_input))
         self.checks.append(bool(from_process_start_requests))
-        self.crawler.stats.inc_value("boolean_checks", 2)
+        self.crawler.retrieve_stats().inc_value("boolean_checks", 2)
         return Request(self.mockserver.url("/spider_mw_2"), self.parse_spider_mw_2)
 
     def parse_spider_mw_2(self, response, from_process_spider_output):
         self.checks.append(bool(from_process_spider_output))
-        self.crawler.stats.inc_value("boolean_checks", 1)
+        self.crawler.retrieve_stats().inc_value("boolean_checks", 1)
 
 
 class CallbackKeywordArgumentsTestCase(TestCase):
@@ -172,7 +172,7 @@ class CallbackKeywordArgumentsTestCase(TestCase):
             yield crawler.crawl(mockserver=self.mockserver)
         self.assertTrue(all(crawler.spider.checks))
         self.assertEqual(
-            len(crawler.spider.checks), crawler.stats.get_value("boolean_checks")
+            len(crawler.spider.checks), crawler.retrieve_stats().get_value("boolean_checks")
         )
         # check exceptions for argument mismatch
         exceptions = {}

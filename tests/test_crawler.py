@@ -123,7 +123,7 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertEqual(get_scrapy_root_handler().level, logging.DEBUG)
         crawler = get_crawler(MySpider)
         self.assertEqual(get_scrapy_root_handler().level, logging.INFO)
-        info_count = crawler.stats.get_value("log_count/INFO")
+        info_count = crawler.retrieve_stats().get_value("log_count/INFO")
         logging.debug("debug message")
         logging.info("info message")
         logging.warning("warning message")
@@ -136,10 +136,10 @@ class CrawlerLoggingTestCase(unittest.TestCase):
         self.assertIn("info message", logged)
         self.assertIn("warning message", logged)
         self.assertIn("error message", logged)
-        self.assertEqual(crawler.stats.get_value("log_count/ERROR"), 1)
-        self.assertEqual(crawler.stats.get_value("log_count/WARNING"), 1)
-        self.assertEqual(crawler.stats.get_value("log_count/INFO") - info_count, 1)
-        self.assertEqual(crawler.stats.get_value("log_count/DEBUG", 0), 0)
+        self.assertEqual(crawler.retrieve_stats().get_value("log_count/ERROR"), 1)
+        self.assertEqual(crawler.retrieve_stats().get_value("log_count/WARNING"), 1)
+        self.assertEqual(crawler.retrieve_stats().get_value("log_count/INFO") - info_count, 1)
+        self.assertEqual(crawler.retrieve_stats().get_value("log_count/DEBUG", 0), 0)
 
     def test_spider_custom_settings_log_append(self):
         log_file = Path(self.mktemp())

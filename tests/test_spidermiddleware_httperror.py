@@ -188,7 +188,7 @@ class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
         self.assertEqual(crawler.spider.parsed, {"200"})
         self.assertEqual(crawler.spider.failed, {"404", "402", "500"})
 
-        get_value = crawler.stats.get_value
+        get_value = crawler.retrieve_stats().get_value
         self.assertEqual(get_value("httperror/response_ignored_count"), 3)
         self.assertEqual(get_value("httperror/response_ignored_status_count/404"), 1)
         self.assertEqual(get_value("httperror/response_ignored_status_count/402"), 1)

@@ -212,7 +212,7 @@ class StreamLogger:
 
 
 class LogCounterHandler(logging.Handler):
-    """Record log levels count into a crawler stats"""
+    """Record log levels count into a crawler.stats"""
 
     def __init__(self, crawler: Crawler, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -220,8 +220,7 @@ class LogCounterHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         sname = f"log_count/{record.levelname}"
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(sname)
+        self.crawler.retrieve_stats().inc_value(sname)
 
 
 def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:

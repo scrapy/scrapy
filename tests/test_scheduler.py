@@ -331,7 +331,7 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
             self.assertEqual(
-                self.crawler.stats.get_value("downloader/response_count"),
+                self.crawler.retrieve_stats().get_value("downloader/response_count"),
                 len(start_urls),
             )
 

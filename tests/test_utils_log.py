@@ -77,19 +77,19 @@ class LogCounterHandlerTest(unittest.TestCase):
         self.logger.removeHandler(self.handler)
 
     def test_init(self):
-        self.assertIsNone(self.crawler.stats.get_value("log_count/DEBUG"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/INFO"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/WARNING"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/ERROR"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/CRITICAL"))
+        self.assertIsNone(self.crawler.retrieve_stats().get_value("log_count/DEBUG"))
+        self.assertIsNone(self.crawler.retrieve_stats().get_value("log_count/INFO"))
+        self.assertIsNone(self.crawler.retrieve_stats().get_value("log_count/WARNING"))
+        self.assertIsNone(self.crawler.retrieve_stats().get_value("log_count/ERROR"))
+        self.assertIsNone(self.crawler.retrieve_stats().get_value("log_count/CRITICAL"))
 
     def test_accepted_level(self):
         self.logger.error("test log msg")
-        self.assertEqual(self.crawler.stats.get_value("log_count/ERROR"), 1)
+        self.assertEqual(self.crawler.retrieve_stats().get_value("log_count/ERROR"), 1)
 
     def test_filtered_out_level(self):
         self.logger.debug("test log msg")
-        self.assertIsNone(self.crawler.stats.get_value("log_count/INFO"))
+        self.assertIsNone(self.crawler.retrieve_stats().get_value("log_count/INFO"))
 
 
 class StreamLoggerTest(unittest.TestCase):

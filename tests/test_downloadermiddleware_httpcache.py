@@ -31,10 +31,10 @@ class _BaseTest(unittest.TestCase):
             body=b"test body",
             status=202,
         )
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.retrieve_stats().open_spider(self.spider)
 
     def tearDown(self):
-        self.crawler.stats.close_spider(self.spider, "")
+        self.crawler.retrieve_stats().close_spider(self.spider, "")
         shutil.rmtree(self.tmpdir)
 
     def _get_settings(self, **new_settings):
@@ -62,7 +62,7 @@ class _BaseTest(unittest.TestCase):
     @contextmanager
     def _middleware(self, **new_settings):
         settings = self._get_settings(**new_settings)
-        mw = HttpCacheMiddleware(settings, self.crawler.stats)
+        mw = HttpCacheMiddleware(settings, self.crawler.retrieve_stats())
         mw.spider_opened(self.spider)
         try:
             yield mw

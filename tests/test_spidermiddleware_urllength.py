@@ -16,7 +16,7 @@ class TestUrlLengthMiddleware(TestCase):
 
         crawler = get_crawler(Spider)
         self.spider = crawler._create_spider("foo")
-        self.stats = crawler.stats
+        self.stats = crawler.retrieve_stats()
         self.mw = UrlLengthMiddleware.from_settings(settings)
 
         self.response = Response("http://scrapytest.org")

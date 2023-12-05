@@ -54,8 +54,7 @@ class HttpCacheMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        assert crawler.stats
-        o = cls(crawler.settings, crawler.stats)
+        o = cls(crawler.settings, crawler.retrieve_stats())
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o

@@ -14,18 +14,18 @@ class TestDownloaderStats(TestCase):
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
-        self.mw = DownloaderStats(self.crawler.stats)
+        self.mw = DownloaderStats(self.crawler.retrieve_stats())
 
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.retrieve_stats().open_spider(self.spider)
 
         self.req = Request("http://scrapytest.org")
         self.res = Response("scrapytest.org", status=400)
 
     def assertStatsEqual(self, key, value):
         self.assertEqual(
-            self.crawler.stats.get_value(key, spider=self.spider),
+            self.crawler.retrieve_stats().get_value(key, spider=self.spider),
             value,
-            str(self.crawler.stats.get_stats(self.spider)),
+            str(self.crawler.retrieve_stats().get_stats(self.spider)),
         )
 
     def test_process_request(self):
@@ -45,4 +45,4 @@ class TestDownloaderStats(TestCase):
         )
 
     def tearDown(self):
-        self.crawler.stats.close_spider(self.spider, "")
+        self.crawler.retrieve_stats().close_spider(self.spider, "")

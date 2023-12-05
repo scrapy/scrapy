@@ -113,5 +113,4 @@ class RFPDupeFilter(BaseDupeFilter):
             self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False
 
-        assert spider.crawler.stats
-        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
+        spider.crawler.retrieve_stats().inc_value("dupefilter/filtered", spider=spider)

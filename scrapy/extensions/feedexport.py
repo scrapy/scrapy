@@ -516,11 +516,11 @@ class FeedExporter:
             exc_info=failure_to_exc_info(f),
             extra={"spider": spider},
         )
-        self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
+        self.crawler.retrieve_stats().inc_value(f"feedexport/failed_count/{slot_type}")
 
     def _handle_store_success(self, f, logmsg, spider, slot_type):
         logger.info("Stored %s", logmsg, extra={"spider": spider})
-        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
+        self.crawler.retrieve_stats().inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
         """

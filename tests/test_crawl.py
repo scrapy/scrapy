@@ -432,7 +432,7 @@ class CrawlSpiderTestCase(TestCase):
             yield crawler.crawl(
                 self.mockserver.url("/status?n=200"), mockserver=self.mockserver
             )
-        return log, items, crawler.stats
+        return log, items, crawler.retrieve_stats()
 
     @defer.inlineCallbacks
     def test_crawlspider_with_parse(self):

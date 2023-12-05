@@ -81,7 +81,7 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | ``extensions`` | the Extension Manager (Crawler.extensions attribute)              |
 +----------------+-------------------------------------------------------------------+
-| ``stats``      | the Stats Collector (Crawler.stats attribute)                     |
+| ``stats``      | the Stats Collector (crawler.stats attribute)                     |
 +----------------+-------------------------------------------------------------------+
 | ``settings``   | the Scrapy settings object (Crawler.settings attribute)           |
 +----------------+-------------------------------------------------------------------+
