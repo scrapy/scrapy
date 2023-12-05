@@ -1,0 +1,86 @@
+Return-Path: <twisted-commits-admin@twistedmatrix.com>
+Delivered-To: exarkun@meson.dyndns.org
+Received: from localhost [127.0.0.1]
+	by localhost with POP3 (fetchmail-6.2.1)
+	for exarkun@localhost (single-drop); Thu, 20 Mar 2003 14:50:20 -0500 (EST)
+Received: from pyramid.twistedmatrix.com (adsl-64-123-27-105.dsl.austtx.swbell.net [64.123.27.105])
+	by intarweb.us (Postfix) with ESMTP id 4A4A513EA4
+	for <exarkun@meson.dyndns.org>; Thu, 20 Mar 2003 14:49:27 -0500 (EST)
+Received: from localhost ([127.0.0.1] helo=pyramid.twistedmatrix.com)
+	by pyramid.twistedmatrix.com with esmtp (Exim 3.35 #1 (Debian))
+	id 18w648-0007Vl-00; Thu, 20 Mar 2003 13:51:04 -0600
+Received: from acapnotic by pyramid.twistedmatrix.com with local (Exim 3.35 #1 (Debian))
+	id 18w63j-0007VK-00
+	for <twisted-commits@twistedmatrix.com>; Thu, 20 Mar 2003 13:50:39 -0600
+To: twisted-commits@twistedmatrix.com
+From: etrepum CVS <etrepum@twistedmatrix.com>
+Reply-To: twisted-python@twistedmatrix.com
+X-Mailer: CVSToys
+Message-Id: <E18w63j-0007VK-00@pyramid.twistedmatrix.com>
+Subject: [Twisted-commits] rebuild now works on python versions from 2.2.0 and up.
+Sender: twisted-commits-admin@twistedmatrix.com
+Errors-To: twisted-commits-admin@twistedmatrix.com
+X-BeenThere: twisted-commits@twistedmatrix.com
+X-Mailman-Version: 2.0.11
+Precedence: bulk
+List-Help: <mailto:twisted-commits-request@twistedmatrix.com?subject=help>
+List-Post: <mailto:twisted-commits@twistedmatrix.com>
+List-Subscribe: <http://twistedmatrix.com/cgi-bin/mailman/listinfo/twisted-commits>,
+	<mailto:twisted-commits-request@twistedmatrix.com?subject=subscribe>
+List-Id: <twisted-commits.twistedmatrix.com>
+List-Unsubscribe: <http://twistedmatrix.com/cgi-bin/mailman/listinfo/twisted-commits>,
+	<mailto:twisted-commits-request@twistedmatrix.com?subject=unsubscribe>
+List-Archive: <http://twistedmatrix.com/pipermail/twisted-commits/>
+Date: Thu, 20 Mar 2003 13:50:39 -0600
+
+Modified files:
+Twisted/twisted/python/rebuild.py 1.19 1.20
+
+Log message:
+rebuild now works on python versions from 2.2.0 and up.
+
+
+ViewCVS links:
+http://twistedmatrix.com/users/jh.twistd/viewcvs/cgi/viewcvs.cgi/twisted/python/rebuild.py.diff?r1=text&tr1=1.19&r2=text&tr2=1.20&cvsroot=Twisted
+
+Index: Twisted/twisted/python/rebuild.py
+diff -u Twisted/twisted/python/rebuild.py:1.19 Twisted/twisted/python/rebuild.py:1.20
+--- Twisted/twisted/python/rebuild.py:1.19	Fri Jan 17 13:50:49 2003
++++ Twisted/twisted/python/rebuild.py	Thu Mar 20 11:50:08 2003
+@@ -206,15 +206,27 @@
+             clazz.__dict__.clear()
+             clazz.__getattr__ = __getattr__
+             clazz.__module__ = module.__name__
++    if newclasses:
++        import gc
++        if (2, 2, 0) <= sys.version_info[:3] < (2, 2, 2):
++            hasBrokenRebuild = 1
++            gc_objects = gc.get_objects()
++        else:
++            hasBrokenRebuild = 0
+     for nclass in newclasses:
+         ga = getattr(module, nclass.__name__)
+         if ga is nclass:
+             log.msg("WARNING: new-class %s not replaced by reload!" % reflect.qual(nclass))
+         else:
+-            import gc
+-            for r in gc.get_referrers(nclass):
+-                if isinstance(r, nclass):
++            if hasBrokenRebuild:
++                for r in gc_objects:
++                    if not getattr(r, '__class__', None) is nclass:
++                        continue
+                     r.__class__ = ga
++            else:
++                for r in gc.get_referrers(nclass):
++                    if getattr(r, '__class__', None) is nclass:
++                        r.__class__ = ga
+     if doLog:
+         log.msg('')
+         log.msg('  (fixing   %s): ' % str(module.__name__))
+
+
+_______________________________________________
+Twisted-commits mailing list
+Twisted-commits@twistedmatrix.com
+http://twistedmatrix.com/cgi-bin/mailman/listinfo/twisted-commits

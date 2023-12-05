@@ -1,0 +1,10 @@
+[console_scripts]
+cftp = twisted.conch.scripts.cftp:run
+ckeygen = twisted.conch.scripts.ckeygen:run
+conch = twisted.conch.scripts.conch:run
+mailmail = twisted.mail.scripts.mailmail:run
+pyhtmlizer = twisted.scripts.htmlizer:run
+tkconch = twisted.conch.scripts.tkconch:run
+trial = twisted.scripts.trial:run
+twist = twisted.application.twist._twist:Twist.main
+twistd = twisted.scripts.twistd:run

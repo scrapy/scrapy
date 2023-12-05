@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: pyxdg
+Version: 0.28
+Summary: PyXDG contains implementations of freedesktop.org standards in python.
+Home-page: http://freedesktop.org/wiki/Software/pyxdg
+Maintainer: Freedesktop.org
+Maintainer-email: xdg@lists.freedesktop.org
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Desktop Environment
+License-File: COPYING
+License-File: AUTHORS
+
+UNKNOWN
+

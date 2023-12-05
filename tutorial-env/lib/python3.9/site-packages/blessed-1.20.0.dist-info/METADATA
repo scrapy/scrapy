@@ -1,0 +1,268 @@
+Metadata-Version: 2.1
+Name: blessed
+Version: 1.20.0
+Summary: Easy, practical library for making terminal apps, by providing an elegant, well-documented interface to Colors, Keyboard input, and screen Positioning capabilities.
+Home-page: https://github.com/jquast/blessed
+Author: Jeff Quast, Erik Rose, Avram Lubkin
+Author-email: contact@jeffquast.com
+License: MIT
+Project-URL: Documentation, https://blessed.readthedocs.io
+Keywords: terminal,sequences,tty,curses,ncurses,formatting,style,color,console,keyboard,ansi,xterm
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Environment :: Console :: Curses
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Software Development :: Libraries
+Classifier: Topic :: Software Development :: User Interfaces
+Classifier: Topic :: Terminals
+Classifier: Typing :: Typed
+Requires-Python: >=2.7
+License-File: LICENSE
+Requires-Dist: wcwidth (>=0.1.4)
+Requires-Dist: six (>=1.9.0)
+Requires-Dist: jinxed (>=1.1.0) ; platform_system == "Windows"
+Requires-Dist: ordereddict (==1.1) ; python_version < "2.7"
+Requires-Dist: backports.functools-lru-cache (>=1.2.1) ; python_version < "3.2"
+
+| |pypi_downloads| |codecov| |windows| |linux| |mac| |bsd|
+
+Introduction
+============
+
+Blessed is an easy, practical *library* for making *terminal* apps, by providing an elegant,
+well-documented interface to Colors_, Keyboard_ input, and screen position and Location_
+capabilities.
+
+.. code-block:: python
+
+    from blessed import Terminal
+
+    term = Terminal()
+
+    print(term.home + term.clear + term.move_y(term.height // 2))
+    print(term.black_on_darkkhaki(term.center('press any key to continue.')))
+
+    with term.cbreak(), term.hidden_cursor():
+        inp = term.inkey()
+
+    print(term.move_down(2) + 'You pressed ' + term.bold(repr(inp)))
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/demo_basic_intro.gif
+   :alt: Animation of running the code example
+
+It's meant to be *fun* and *easy*, to do basic terminal graphics and styling with Python using
+*blessed*. Terminal_ is the only class you need to import and the only object you should need for
+Terminal capabilities.
+
+Whether you want to improve CLI apps with colors, or make fullscreen applications or games,
+*blessed* should help get you started quickly. Your users will love it because it works on Windows,
+Mac, and Linux, and you will love it because it has plenty of documentation and examples!
+
+Full documentation at https://blessed.readthedocs.io/en/latest/
+
+Examples
+--------
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/blessed_demo_intro.gif
+   :alt: Animations of x11-colorpicker.py, bounce.py, worms.py, and plasma.py
+
+   x11-colorpicker.py_, bounce.py_, worms.py_, and plasma.py_, from our repository.
+
+Exemplary 3rd-party examples which use *blessed*,
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/demo_3rdparty_voltron.png
+   :alt: Screenshot of 'Voltron' (By the author of Voltron, from their README).
+
+   Voltron_ is an extensible debugger UI toolkit written in Python
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/demo_3rdparty_cursewords.gif
+   :alt: Animation of 'cursewords' (By the author of cursewords, from their README).
+
+   cursewords_ is "graphical" command line program for solving crossword puzzles in the terminal.
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/demo_3rdparty_githeat.gif
+   :alt: Animation of 'githeat.interactive', using blessed repository at the time of capture.
+
+   GitHeat_ builds an interactive heatmap of git history.
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/demo_3rdparty_dashing.gif
+   :alt: Animations from 'Dashing' (By the author of Dashing, from their README)
+
+   Dashing_ is a library to quickly create terminal-based dashboards.
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/demo_3rdparty_enlighten.gif
+   :alt: Animations from 'Enlighten' (By the author of Enlighten, from their README)
+
+   Enlighten_ is a console progress bar library that allows simultaneous output without redirection.
+
+.. figure:: https://dxtz6bzwq9sxx.cloudfront.net/blessed_3rdparty_macht.gif
+   :alt: Demonstration of 'macht', a 2048 clone
+
+   macht_ is a clone of the (briefly popular) puzzle game, 2048.
+
+Requirements
+------------
+
+*Blessed* works with Windows, Mac, Linux, and BSD's, on Python 2.7, 3.4, 3.5, 3.6, 3.7, and 3.8.
+
+Brief Overview
+--------------
+
+*Blessed* is more than just a Python wrapper around curses_:
+
+* Styles_, Colors_, and maybe a little positioning without necessarily clearing the whole screen
+  first.
+* Works great with Python's new f-strings_ or any other kind of string formatting.
+* Provides up-to-the-moment Location_ and terminal height and width, so you can respond to terminal
+  size changes.
+* Avoids making a mess if the output gets piped to a non-terminal, you can output sequences to any
+  file-like object such as *StringIO*, files, pipes or sockets.
+* Uses `terminfo(5)`_ so it works with any terminal type and capability: No more C-like calls to
+  tigetstr_ and tparm_.
+* Non-obtrusive calls to only the capabilities database ensures that you are free to mix and match
+  with calls to any other curses application code or library you like.
+* Provides context managers `Terminal.fullscreen()`_ and `Terminal.hidden_cursor()`_ to safely
+  express terminal modes, curses development will no longer fudge up your shell.
+* Act intelligently when somebody redirects your output to a file, omitting all of the special
+  sequences colors, but still containing all of the text.
+
+*Blessed* is a fork of `blessings <https://github.com/erikrose/blessings>`_, which does all of
+the same above with the same API, as well as following **enhancements**:
+
+* Windows support, new since Dec. 2019!
+* Dead-simple keyboard handling: safely decoding unicode input in your system's preferred locale and
+  supports application/arrow keys.
+* 24-bit color support, using `Terminal.color_rgb()`_ and `Terminal.on_color_rgb()`_ and all X11
+  Colors_ by name, and not by number.
+* Determine cursor location using `Terminal.get_location()`_, enter key-at-a-time input mode using
+  `Terminal.cbreak()`_ or `Terminal.raw()`_ context managers, and read timed key presses using
+  `Terminal.inkey()`_.
+* Allows the *printable length* of strings that contain sequences to be determined by
+  `Terminal.length()`_, supporting additional methods `Terminal.wrap()`_ and `Terminal.center()`_,
+  terminal-aware variants of the built-in function `textwrap.wrap()`_ and method `str.center()`_,
+  respectively.
+* Allows sequences to be removed from strings that contain them, using `Terminal.strip_seqs()`_ or
+  sequences and whitespace using `Terminal.strip()`_.
+
+Before And After
+----------------
+
+With the built-in curses_ module, this is how you would typically
+print some underlined text at the bottom of the screen:
+
+.. code-block:: python
+
+    from curses import tigetstr, setupterm, tparm
+    from fcntl import ioctl
+    from os import isatty
+    import struct
+    import sys
+    from termios import TIOCGWINSZ
+
+    # If we want to tolerate having our output piped to other commands or
+    # files without crashing, we need to do all this branching:
+    if hasattr(sys.stdout, 'fileno') and isatty(sys.stdout.fileno()):
+        setupterm()
+        sc = tigetstr('sc')
+        cup = tigetstr('cup')
+        rc = tigetstr('rc')
+        underline = tigetstr('smul')
+        normal = tigetstr('sgr0')
+    else:
+        sc = cup = rc = underline = normal = ''
+
+    # Save cursor position.
+    print(sc)
+
+    if cup:
+        # tigetnum('lines') doesn't always update promptly, hence this:
+        height = struct.unpack('hhhh', ioctl(0, TIOCGWINSZ, '\000' * 8))[0]
+
+        # Move cursor to bottom.
+        print(tparm(cup, height - 1, 0))
+
+    print('This is {under}underlined{normal}!'
+          .format(under=underline, normal=normal))
+
+    # Restore cursor position.
+    print(rc)
+
+The same program with *Blessed* is simply:
+
+.. code-block:: python
+
+    from blessed import Terminal
+
+    term = Terminal()
+    with term.location(0, term.height - 1):
+        print('This is ' + term.underline('underlined') + '!', end='')
+
+.. _curses: https://docs.python.org/3/library/curses.html
+.. _tigetstr: http://man.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man3/tigetstr.3
+.. _tparm: http://man.openbsd.org/cgi-bin/man.cgi/OpenBSD-current/man3/tparm.3
+.. _`terminfo(5)`: https://invisible-island.net/ncurses/man/terminfo.5.html
+.. _str.center(): https://docs.python.org/3/library/stdtypes.html#str.center
+.. _textwrap.wrap(): https://docs.python.org/3/library/textwrap.html#textwrap.wrap
+.. _Terminal: https://blessed.readthedocs.io/en/stable/terminal.html
+.. _`Terminal.fullscreen()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.fullscreen
+.. _`Terminal.get_location()`: https://blessed.readthedocs.io/en/latest/location.html#finding-the-cursor
+.. _`Terminal.color_rgb()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.color_rgb
+.. _`Terminal.hidden_cursor()`: https://blessed.readthedocs.io/en/latest/api/terminal.html#blessed.terminal.Terminal.hidden_cursor
+.. _`Terminal.on_color_rgb()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.on_color_rgb
+.. _`Terminal.length()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.length
+.. _`Terminal.strip()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.strip
+.. _`Terminal.rstrip()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.rstrip
+.. _`Terminal.lstrip()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.lstrip
+.. _`Terminal.strip_seqs()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.strip_seqs
+.. _`Terminal.wrap()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.wrap
+.. _`Terminal.center()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.center
+.. _`Terminal.rjust()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.rjust
+.. _`Terminal.ljust()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.ljust
+.. _`Terminal.cbreak()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.cbreak
+.. _`Terminal.raw()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.raw
+.. _`Terminal.inkey()`: https://blessed.readthedocs.io/en/stable/api/terminal.html#blessed.terminal.Terminal.inkey
+.. _Colors: https://blessed.readthedocs.io/en/stable/colors.html
+.. _Styles: https://blessed.readthedocs.io/en/stable/terminal.html#styles
+.. _Location: https://blessed.readthedocs.io/en/stable/location.html
+.. _Keyboard: https://blessed.readthedocs.io/en/stable/keyboard.html
+.. _Examples: https://blessed.readthedocs.io/en/stable/examples.html
+.. _x11-colorpicker.py: https://blessed.readthedocs.io/en/stable/examples.html#x11-colorpicker-py
+.. _bounce.py: https://blessed.readthedocs.io/en/stable/examples.html#bounce-py
+.. _worms.py: https://blessed.readthedocs.io/en/stable/examples.html#worms-py
+.. _plasma.py: https://blessed.readthedocs.io/en/stable/examples.html#plasma-py
+.. _Voltron: https://github.com/snare/voltron
+.. _cursewords: https://github.com/thisisparker/cursewords
+.. _GitHeat: https://github.com/AmmsA/Githeat
+.. _Dashing: https://github.com/FedericoCeratto/dashing
+.. _Enlighten: https://github.com/Rockhopper-Technologies/enlighten
+.. _macht: https://github.com/rolfmorel/macht
+.. _f-strings: https://docs.python.org/3/reference/lexical_analysis.html#f-strings
+.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/blessed.svg?logo=pypi
+    :alt: Downloads
+    :target: https://pypi.org/project/blessed/
+.. |codecov| image:: https://codecov.io/gh/jquast/blessed/branch/master/graph/badge.svg
+    :alt: codecov.io Code Coverage
+    :target: https://codecov.io/gh/jquast/blessed/
+.. |linux| image:: https://img.shields.io/badge/Linux-yes-success?logo=linux
+    :alt: Linux supported
+.. |windows| image:: https://img.shields.io/badge/Windows-NEW-success?logo=windows
+    :alt: Windows supported
+.. |mac| image:: https://img.shields.io/badge/MacOS-yes-success?logo=apple
+    :alt: MacOS supported
+.. |bsd| image:: https://img.shields.io/badge/BSD-yes-success?logo=freebsd
+    :alt: BSD supported

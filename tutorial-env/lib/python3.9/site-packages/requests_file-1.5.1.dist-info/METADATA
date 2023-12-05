@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: requests-file
+Version: 1.5.1
+Summary: File transport adapter for Requests
+Home-page: http://github.com/dashea/requests-file
+Author: David Shea
+Author-email: reallylongword@gmail.com
+License: Apache 2.0
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Environment :: Plugins
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Requires-Dist: requests (>=1.0.0)
+Requires-Dist: six
+
+UNKNOWN
+
+

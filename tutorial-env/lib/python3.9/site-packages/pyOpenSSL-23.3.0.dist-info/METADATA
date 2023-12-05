@@ -1,0 +1,345 @@
+Metadata-Version: 2.1
+Name: pyOpenSSL
+Version: 23.3.0
+Summary: Python wrapper module around the OpenSSL library
+Home-page: https://pyopenssl.org/
+Author: The pyOpenSSL developers
+Author-email: cryptography-dev@python.org
+License: Apache License, Version 2.0
+Project-URL: Source, https://github.com/pyca/pyopenssl
+Classifier: Development Status :: 6 - Mature
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Security :: Cryptography
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: System :: Networking
+Requires-Python: >=3.7
+License-File: LICENSE
+Requires-Dist: cryptography <42,>=41.0.5
+Provides-Extra: docs
+Requires-Dist: sphinx !=5.2.0,!=5.2.0.post0,!=7.2.5 ; extra == 'docs'
+Requires-Dist: sphinx-rtd-theme ; extra == 'docs'
+Provides-Extra: test
+Requires-Dist: flaky ; extra == 'test'
+Requires-Dist: pretend ; extra == 'test'
+Requires-Dist: pytest >=3.0.1 ; extra == 'test'
+
+========================================================
+pyOpenSSL -- A Python wrapper around the OpenSSL library
+========================================================
+
+.. image:: https://readthedocs.org/projects/pyopenssl/badge/?version=stable
+   :target: https://pyopenssl.org/en/stable/
+   :alt: Stable Docs
+
+.. image:: https://github.com/pyca/pyopenssl/workflows/CI/badge.svg?branch=main
+   :target: https://github.com/pyca/pyopenssl/actions?query=workflow%3ACI+branch%3Amain
+
+.. image:: https://codecov.io/github/pyca/pyopenssl/branch/main/graph/badge.svg
+   :target: https://codecov.io/github/pyca/pyopenssl
+   :alt: Test coverage
+
+**Note:** The Python Cryptographic Authority **strongly suggests** the use of `pyca/cryptography`_
+where possible. If you are using pyOpenSSL for anything other than making a TLS connection
+**you should move to cryptography and drop your pyOpenSSL dependency**.
+
+High-level wrapper around a subset of the OpenSSL library. Includes
+
+* ``SSL.Connection`` objects, wrapping the methods of Python's portable sockets
+* Callbacks written in Python
+* Extensive error-handling mechanism, mirroring OpenSSL's error codes
+
+... and much more.
+
+You can find more information in the documentation_.
+Development takes place on GitHub_.
+
+
+Discussion
+==========
+
+If you run into bugs, you can file them in our `issue tracker`_.
+
+We maintain a cryptography-dev_ mailing list for both user and development discussions.
+
+You can also join ``#pyca`` on ``irc.libera.chat`` to ask questions or get involved.
+
+
+.. _documentation: https://pyopenssl.org/
+.. _`issue tracker`: https://github.com/pyca/pyopenssl/issues
+.. _cryptography-dev: https://mail.python.org/mailman/listinfo/cryptography-dev
+.. _GitHub: https://github.com/pyca/pyopenssl
+.. _`pyca/cryptography`: https://github.com/pyca/cryptography
+
+
+Release Information
+===================
+
+23.3.0 (2023-10-25)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Dropped support for Python 3.6.
+- The minimum ``cryptography`` version is now 41.0.5.
+- Removed ``OpenSSL.crypto.loads_pkcs7`` and ``OpenSSL.crypto.loads_pkcs12`` which had been deprecated for 3 years.
+- Added ``OpenSSL.SSL.OP_LEGACY_SERVER_CONNECT`` to allow legacy insecure renegotiation between OpenSSL and unpatched servers.
+  `#1234 <https://github.com/pyca/pyopenssl/pull/1234>`_.
+
+Deprecations:
+^^^^^^^^^^^^^
+
+- Deprecated ``OpenSSL.crypto.PKCS12`` (which was intended to have been deprecated at the same time as ``OpenSSL.crypto.load_pkcs12``).
+- Deprecated ``OpenSSL.crypto.NetscapeSPKI``.
+- Deprecated ``OpenSSL.crypto.CRL``
+- Deprecated ``OpenSSL.crypto.Revoked``
+- Deprecated ``OpenSSL.crypto.load_crl`` and ``OpenSSL.crypto.dump_crl``
+- Deprecated ``OpenSSL.crypto.sign`` and ``OpenSSL.crypto.verify``
+- Deprecated ``OpenSSL.crypto.X509Extension``
+
+Changes:
+^^^^^^^^
+
+- Changed ``OpenSSL.crypto.X509Store.add_crl`` to also accept
+  ``cryptography``'s ``x509.CertificateRevocationList`` arguments in addition
+  to the now deprecated ``OpenSSL.crypto.CRL`` arguments.
+- Fixed ``test_set_default_verify_paths`` test so that it is skipped if no
+  network connection is available.
+
+23.2.0 (2023-05-30)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Removed ``X509StoreFlags.NOTIFY_POLICY``.
+  `#1213 <https://github.com/pyca/pyopenssl/pull/1213>`_.
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- ``cryptography`` maximum version has been increased to 41.0.x.
+- Invalid versions are now rejected in ``OpenSSL.crypto.X509Req.set_version``.
+- Added ``X509VerificationCodes`` to ``OpenSSL.SSL``.
+  `#1202 <https://github.com/pyca/pyopenssl/pull/1202>`_.
+
+23.1.1 (2023-03-28)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- Worked around an issue in OpenSSL 3.1.0 which caused `X509Extension.get_short_name` to raise an exception when no short name was known to OpenSSL.
+  `#1204 <https://github.com/pyca/pyopenssl/pull/1204>`_.
+
+23.1.0 (2023-03-24)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- ``cryptography`` maximum version has been increased to 40.0.x.
+- Add ``OpenSSL.SSL.Connection.DTLSv1_get_timeout`` and ``OpenSSL.SSL.Connection.DTLSv1_handle_timeout``
+  to support DTLS timeouts `#1180 <https://github.com/pyca/pyopenssl/pull/1180>`_.
+
+23.0.0 (2023-01-01)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- Add ``OpenSSL.SSL.X509StoreFlags.PARTIAL_CHAIN`` constant to allow for users
+  to perform certificate verification on partial certificate chains.
+  `#1166 <https://github.com/pyca/pyopenssl/pull/1166>`_
+- ``cryptography`` maximum version has been increased to 39.0.x.
+
+22.1.0 (2022-09-25)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Remove support for SSLv2 and SSLv3.
+- The minimum ``cryptography`` version is now 38.0.x (and we now pin releases
+  against ``cryptography`` major versions to prevent future breakage)
+- The ``OpenSSL.crypto.X509StoreContextError`` exception has been refactored,
+  changing its internal attributes.
+  `#1133 <https://github.com/pyca/pyopenssl/pull/1133>`_
+
+Deprecations:
+^^^^^^^^^^^^^
+
+- ``OpenSSL.SSL.SSLeay_version`` is deprecated in favor of
+  ``OpenSSL.SSL.OpenSSL_version``. The constants ``OpenSSL.SSL.SSLEAY_*`` are
+  deprecated in favor of ``OpenSSL.SSL.OPENSSL_*``.
+
+Changes:
+^^^^^^^^
+
+- Add ``OpenSSL.SSL.Connection.set_verify`` and ``OpenSSL.SSL.Connection.get_verify_mode``
+  to override the context object's verification flags.
+  `#1073 <https://github.com/pyca/pyopenssl/pull/1073>`_
+- Add ``OpenSSL.SSL.Connection.use_certificate`` and ``OpenSSL.SSL.Connection.use_privatekey``
+  to set a certificate per connection (and not just per context) `#1121 <https://github.com/pyca/pyopenssl/pull/1121>`_.
+
+22.0.0 (2022-01-29)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Drop support for Python 2.7.
+  `#1047 <https://github.com/pyca/pyopenssl/pull/1047>`_
+- The minimum ``cryptography`` version is now 35.0.
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- Expose wrappers for some `DTLS
+  <https://en.wikipedia.org/wiki/Datagram_Transport_Layer_Security>`_
+  primitives. `#1026 <https://github.com/pyca/pyopenssl/pull/1026>`_
+
+21.0.0 (2021-09-28)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The minimum ``cryptography`` version is now 3.3.
+- Drop support for Python 3.5
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- Raise an error when an invalid ALPN value is set.
+  `#993 <https://github.com/pyca/pyopenssl/pull/993>`_
+- Added ``OpenSSL.SSL.Context.set_min_proto_version`` and ``OpenSSL.SSL.Context.set_max_proto_version``
+  to set the minimum and maximum supported TLS version `#985 <https://github.com/pyca/pyopenssl/pull/985>`_.
+- Updated ``to_cryptography`` and ``from_cryptography`` methods to support an upcoming release of ``cryptography`` without raising deprecation warnings.
+  `#1030 <https://github.com/pyca/pyopenssl/pull/1030>`_
+
+20.0.1 (2020-12-15)
+-------------------
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Deprecations:
+^^^^^^^^^^^^^
+
+Changes:
+^^^^^^^^
+
+- Fixed compatibility with OpenSSL 1.1.0.
+
+20.0.0 (2020-11-27)
+-------------------
+
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The minimum ``cryptography`` version is now 3.2.
+- Remove deprecated ``OpenSSL.tsafe`` module.
+- Removed deprecated ``OpenSSL.SSL.Context.set_npn_advertise_callback``, ``OpenSSL.SSL.Context.set_npn_select_callback``, and ``OpenSSL.SSL.Connection.get_next_proto_negotiated``.
+- Drop support for Python 3.4
+- Drop support for OpenSSL 1.0.1 and 1.0.2
+
+Deprecations:
+^^^^^^^^^^^^^
+
+- Deprecated ``OpenSSL.crypto.loads_pkcs7`` and ``OpenSSL.crypto.loads_pkcs12``.
+
+Changes:
+^^^^^^^^
+
+- Added a new optional ``chain`` parameter to ``OpenSSL.crypto.X509StoreContext()``
+  where additional untrusted certificates can be specified to help chain building.
+  `#948 <https://github.com/pyca/pyopenssl/pull/948>`_
+- Added ``OpenSSL.crypto.X509Store.load_locations`` to set trusted
+  certificate file bundles and/or directories for verification.
+  `#943 <https://github.com/pyca/pyopenssl/pull/943>`_
+- Added ``Context.set_keylog_callback`` to log key material.
+  `#910 <https://github.com/pyca/pyopenssl/pull/910>`_
+- Added ``OpenSSL.SSL.Connection.get_verified_chain`` to retrieve the
+  verified certificate chain of the peer.
+  `#894 <https://github.com/pyca/pyopenssl/pull/894>`_.
+- Make verification callback optional in ``Context.set_verify``.
+  If omitted, OpenSSL's default verification is used.
+  `#933 <https://github.com/pyca/pyopenssl/pull/933>`_
+- Fixed a bug that could truncate or cause a zero-length key error due to a
+  null byte in private key passphrase in ``OpenSSL.crypto.load_privatekey``
+  and ``OpenSSL.crypto.dump_privatekey``.
+  `#947 <https://github.com/pyca/pyopenssl/pull/947>`_
+
+19.1.0 (2019-11-18)
+-------------------
+
+
+Backward-incompatible changes:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Removed deprecated ``ContextType``, ``ConnectionType``, ``PKeyType``, ``X509NameType``, ``X509ReqType``, ``X509Type``, ``X509StoreType``, ``CRLType``, ``PKCS7Type``, ``PKCS12Type``, and ``NetscapeSPKIType`` aliases.
+  Use the classes without the ``Type`` suffix instead.
+  `#814 <https://github.com/pyca/pyopenssl/pull/814>`_
+- The minimum ``cryptography`` version is now 2.8 due to issues on macOS with a transitive dependency.
+  `#875 <https://github.com/pyca/pyopenssl/pull/875>`_
+
+Deprecations:
+^^^^^^^^^^^^^
+
+- Deprecated ``OpenSSL.SSL.Context.set_npn_advertise_callback``, ``OpenSSL.SSL.Context.set_npn_select_callback``, and ``OpenSSL.SSL.Connection.get_next_proto_negotiated``.
+  ALPN should be used instead.
+  `#820 <https://github.com/pyca/pyopenssl/pull/820>`_
+
+
+Changes:
+^^^^^^^^
+
+- Support ``bytearray`` in ``SSL.Connection.send()`` by using cffi's from_buffer.
+  `#852 <https://github.com/pyca/pyopenssl/pull/852>`_
+- The ``OpenSSL.SSL.Context.set_alpn_select_callback`` can return a new ``NO_OVERLAPPING_PROTOCOLS`` sentinel value
+  to allow a TLS handshake to complete without an application protocol.
+
+`Full changelog <https://pyopenssl.org/en/stable/changelog.html>`_.
+

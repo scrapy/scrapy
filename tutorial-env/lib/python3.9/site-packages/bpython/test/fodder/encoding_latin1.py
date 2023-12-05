@@ -1,0 +1,6 @@
+# -*- coding: latin1 -*-
+
+
+def foo():
+    """Test הצü"""
+    pass

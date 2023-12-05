@@ -1,0 +1,77 @@
+{%- if meta is defined and meta is not none %}
+   {%- set check_meta = True %}
+{%- else %}
+   {%- set check_meta = False %}
+{%- endif %}
+
+{%- if check_meta and 'github_url' in meta %}
+   {%- set display_github = True %}
+{%- endif %}
+
+{%- if check_meta and 'bitbucket_url' in meta %}
+   {%- set display_bitbucket = True %}
+{%- endif %}
+
+{%- if check_meta and 'gitlab_url' in meta %}
+   {%- set display_gitlab = True %}
+{%- endif %}
+
+{%- set display_vcs_links = display_vcs_links if display_vcs_links is defined else True %}
+
+{#- Translators: This is an ARIA section label for page links, including previous/next page link and links to GitHub/GitLab/etc. -#}
+<div role="navigation" aria-label="{{ _('Page navigation') }}">
+  <ul class="wy-breadcrumbs">
+    {%- block breadcrumbs %}
+      <li><a href="{{ pathto(master_doc) }}" class="icon icon-home"></a> &raquo;</li>
+        {%- for doc in parents %}
+          <li><a href="{{ doc.link|e }}">{{ doc.title }}</a> &raquo;</li>
+        {%- endfor %}
+      <li>{{ title }}</li>
+    {%- endblock %}
+    {%- block breadcrumbs_aside %}
+      <li class="wy-breadcrumbs-aside">
+        {%- if hasdoc(pagename) and display_vcs_links %}
+          {%- if display_github %}
+            {%- if check_meta and 'github_url' in meta %}
+              <!-- User defined GitHub URL -->
+              <a href="{{ meta['github_url'] }}" class="fa fa-github"> {{ _('Edit on GitHub') }}</a>
+            {%- else %}
+              <a href="https://{{ github_host|default("github.com") }}/{{ github_user }}/{{ github_repo }}/{{ theme_vcs_pageview_mode or "blob" }}/{{ github_version }}{{ conf_py_path }}{{ pagename }}{{ page_source_suffix }}" class="fa fa-github"> {{ _('Edit on GitHub') }}</a>
+            {%- endif %}
+          {%- elif display_bitbucket %}
+            {%- if check_meta and 'bitbucket_url' in meta %}
+              <!-- User defined Bitbucket URL -->
+              <a href="{{ meta['bitbucket_url'] }}" class="fa fa-bitbucket"> {{ _('Edit on Bitbucket') }}</a>
+            {%- else %}
+              <a href="https://bitbucket.org/{{ bitbucket_user }}/{{ bitbucket_repo }}/src/{{ bitbucket_version}}{{ conf_py_path }}{{ pagename }}{{ page_source_suffix }}?mode={{ theme_vcs_pageview_mode or "view" }}" class="fa fa-bitbucket"> {{ _('Edit on Bitbucket') }}</a>
+            {%- endif %}
+          {%- elif display_gitlab %}
+            {%- if check_meta and 'gitlab_url' in meta %}
+              <!-- User defined GitLab URL -->
+              <a href="{{ meta['gitlab_url'] }}" class="fa fa-gitlab"> {{ _('Edit on GitLab') }}</a>
+            {%- else %}
+              <a href="https://{{ gitlab_host|default("gitlab.com") }}/{{ gitlab_user }}/{{ gitlab_repo }}/{{ theme_vcs_pageview_mode or "blob" }}/{{ gitlab_version }}{{ conf_py_path }}{{ pagename }}{{ page_source_suffix }}" class="fa fa-gitlab"> {{ _('Edit on GitLab') }}</a>
+            {%- endif %}
+          {%- elif show_source and source_url_prefix %}
+            <a href="{{ source_url_prefix }}{{ pagename }}{{ page_source_suffix }}">{{ _('View page source') }}</a>
+          {%- elif show_source and has_source and sourcename %}
+            <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow"> {{ _('View page source') }}</a>
+          {%- endif %}
+        {%- endif %}
+      </li>
+    {%- endblock %}
+  </ul>
+
+  {%- if (theme_prev_next_buttons_location == 'top' or theme_prev_next_buttons_location == 'both') and (next or prev) %}
+  {#- Translators: This is an ARIA section label for sequential page links, such as previous and next page links. -#}
+  <div class="rst-breadcrumbs-buttons" role="navigation" aria-label="{{ _('Sequential page navigation') }}">
+      {%- if prev %}
+        <a href="{{ prev.link|e }}" class="btn btn-neutral float-left" title="{{ prev.title|striptags|e }}" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> {{ _('Previous') }}</a>
+      {%- endif %}
+      {%- if next %}
+        <a href="{{ next.link|e }}" class="btn btn-neutral float-right" title="{{ next.title|striptags|e }}" accesskey="n">{{ _('Next') }} <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+      {%- endif %}
+  </div>
+  {%- endif %}
+  <hr/>
+</div>

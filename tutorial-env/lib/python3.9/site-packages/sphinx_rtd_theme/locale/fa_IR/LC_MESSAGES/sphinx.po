@@ -1,0 +1,160 @@
+# English translations for sphinx_rtd_theme.
+# Copyright (C) 2019 ORGANIZATION
+# This file is distributed under the same license as the sphinx_rtd_theme
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2019.
+# 
+# Translators:
+# Anthony <aj@ohess.org>, 2021
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: sphinx_rtd_theme 0.4.3.dev0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2021-09-13 13:35-0600\n"
+"PO-Revision-Date: 2019-07-16 21:44+0000\n"
+"Last-Translator: Anthony <aj@ohess.org>, 2021\n"
+"Language-Team: Persian (Iran) (https://www.transifex.com/readthedocs/teams/101354/fa_IR/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+"Language: fa_IR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: sphinx_rtd_theme/breadcrumbs.html:37 sphinx_rtd_theme/breadcrumbs.html:39
+msgid "Edit on GitHub"
+msgstr "ویرایش در GitHub"
+
+#: sphinx_rtd_theme/breadcrumbs.html:44 sphinx_rtd_theme/breadcrumbs.html:46
+msgid "Edit on Bitbucket"
+msgstr "ویرایش در Bitbucket"
+
+#: sphinx_rtd_theme/breadcrumbs.html:51 sphinx_rtd_theme/breadcrumbs.html:53
+msgid "Edit on GitLab"
+msgstr "ویرایش در GitLab"
+
+#: sphinx_rtd_theme/breadcrumbs.html:56 sphinx_rtd_theme/breadcrumbs.html:58
+msgid "View page source"
+msgstr "نمایش متن منبع صفحه"
+
+#: sphinx_rtd_theme/breadcrumbs.html:69 sphinx_rtd_theme/footer.html:6
+msgid "Previous"
+msgstr "پیشین"
+
+#: sphinx_rtd_theme/breadcrumbs.html:72 sphinx_rtd_theme/footer.html:9
+msgid "Next"
+msgstr "بعدی"
+
+#: sphinx_rtd_theme/footer.html:21
+#, python-format
+msgid "&#169; <a href=\"%(path)s\">Copyright</a> %(copyright)s."
+msgstr "&#169; <a href=\"%(path)s\">حق انتشار</a> %(copyright)s."
+
+#: sphinx_rtd_theme/footer.html:23
+#, python-format
+msgid "&#169; Copyright %(copyright)s."
+msgstr "&#169; حق انتشار%(copyright)s."
+
+#. Build is a noun, not a verb
+#: sphinx_rtd_theme/footer.html:30
+msgid "Build"
+msgstr "ساخت"
+
+#. the phrase "revision" comes from Git, referring to a commit
+#: sphinx_rtd_theme/footer.html:36
+msgid "Revision"
+msgstr "بازبینی"
+
+#: sphinx_rtd_theme/footer.html:41
+#, python-format
+msgid "Last updated on %(last_updated)s."
+msgstr "آخرین بروز رسانی در %(last_updated)s ."
+
+#. the variable "sphinx_web" is a link to the Sphinx project documentation
+#. with
+#. the text "Sphinx"
+#: sphinx_rtd_theme/footer.html:53
+#, python-format
+msgid "Built with %(sphinx_web)s using a"
+msgstr "ساخته شده با %(sphinx_web)s"
+
+#. "theme" refers to a theme for Sphinx, which alters the appearance of the
+#. generated documenation
+#: sphinx_rtd_theme/footer.html:55
+msgid "theme"
+msgstr "پوسته"
+
+#. this is always used as "provided by Read the Docs", and should not imply
+#. Read the Docs is an author of the generated documentation.
+#: sphinx_rtd_theme/footer.html:57
+#, python-format
+msgid "provided by %(readthedocs_web)s"
+msgstr "تهیّه شده با %(readthedocs_web)s"
+
+#: sphinx_rtd_theme/layout.html:97
+#, python-format
+msgid "Search within %(docstitle)s"
+msgstr "جستجو در %(docstitle)s"
+
+#: sphinx_rtd_theme/layout.html:105
+msgid "About these documents"
+msgstr "درباره این مستندات"
+
+#: sphinx_rtd_theme/layout.html:108
+msgid "Index"
+msgstr "فهرست"
+
+#: sphinx_rtd_theme/layout.html:111 sphinx_rtd_theme/search.html:11
+msgid "Search"
+msgstr "جستجوی"
+
+#: sphinx_rtd_theme/layout.html:114
+msgid "Copyright"
+msgstr "کپی رایت"
+
+#: sphinx_rtd_theme/layout.html:147 sphinx_rtd_theme/layout.html:149
+msgid "Logo"
+msgstr "آرم"
+
+#: sphinx_rtd_theme/search.html:31
+msgid "Please activate JavaScript to enable the search functionality."
+msgstr "لطفاً جاوا اسکریپت را فعّال کنید تا قابلیّت جستجو فعّال شود."
+
+#. Search is a noun, not a verb
+#: sphinx_rtd_theme/search.html:39
+msgid "Search Results"
+msgstr "نتایج جستجو"
+
+#: sphinx_rtd_theme/search.html:41
+msgid ""
+"Your search did not match any documents. Please make sure that all words are"
+" spelled correctly and that you've selected enough categories."
+msgstr ""
+"جستجوی شما با هیچ سندی مطابقت نداشت. لطفاً از درستی املای واژگان مطمئن شوید."
+" هم‌چنین بررسی کنید آیا به اندازه کافی دسته بندی انتخاب کرده‌اید."
+
+#: sphinx_rtd_theme/searchbox.html:4
+msgid "Search docs"
+msgstr "جستجوی مستندات"
+
+#: sphinx_rtd_theme/versions.html:3 sphinx_rtd_theme/versions.html:11
+msgid "Versions"
+msgstr "نگارش‌ها"
+
+#: sphinx_rtd_theme/versions.html:17
+msgid "Downloads"
+msgstr "بارگیری‌ها"
+
+#. The phrase "Read the Docs" is not translated
+#: sphinx_rtd_theme/versions.html:24
+msgid "On Read the Docs"
+msgstr "درباره‌ی خواندن مستندات"
+
+#: sphinx_rtd_theme/versions.html:26
+msgid "Project Home"
+msgstr "صفحه خانگی پروژه"
+
+#: sphinx_rtd_theme/versions.html:29
+msgid "Builds"
+msgstr "ساخت‌ها"

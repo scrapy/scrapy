@@ -1,0 +1,64 @@
+Metadata-Version: 2.1
+Name: PyDispatcher
+Version: 2.0.7
+Summary: Multi-producer multi-consumer in-memory signal dispatch system
+Home-page: https://github.com/mcfletch/pydispatcher
+Download-URL: https://pypi.org/project/pydispatcher/
+Author: Patrick K. O'Brien
+Maintainer: Mike C. Fletcher
+Maintainer-email: "Mike C. Fletcher" <mcfletch@vrplumber.com>
+License: BSD
+Keywords: dispatcher,dispatch,pydispatch,event,signal,sender,receiver,propagate,multi-consumer,multi-producer,saferef,robustapply,apply
+Platform: Any
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Intended Audience :: Developers
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Requires-Dist: tox ; extra == 'dev'
+
+# PyDispatcher Multi-producer Multi-consumer Observables
+
+PyDispatcher provides the Python programmer with a multiple-producer-multiple-consumer signal-registration and
+routing infrastructure for use in multiple contexts. The mechanism
+of PyDispatcher started life as a highly rated [recipe](http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/87056)
+in the [Python Cookbook](http://aspn.activestate.com/ASPN/Python/Cookbook/). The [project](https://github.com/mcfletch/pydispatcher) aims
+to include various enhancements to the recipe developed during use in
+various applications. It is primarily maintained by [Mike Fletcher](http://www.vrplumber.com). A derivative
+of the project provides the Django web framework's "signal" system.
+
+## Installation
+
+PyDispatcher is available on PyPI via standard PIP:
+```
+pip install PyDispatcher
+```
+[![Latest PyPI Version](https://img.shields.io/pypi/v/pydispatcher.svg)](https://pypi.python.org/pypi/pydispatcher)
+[![Latest PyPI Version](https://img.shields.io/pypi/dm/pydispatcher.svg)](https://pypi.python.org/pypi/pydispatcher)
+
+
+## Usage
+
+[Documentation](https://mcfletch.github.io/pydispatcher/) is available
+for detailed usage, but the basic idea is:
+
+```
+from pydispatch import dispatcher
+
+metaKey = "moo"
+MyNode = object()
+event = {"sample": "event"}
+
+
+def callback(event=None):
+    """Handle signal being sent"""
+    print("Signal received", event)
+
+
+dispatcher.connect(callback, sender=MyNode, signal=metaKey)
+dispatcher.send(metaKey, MyNode, event=event)
+```
+

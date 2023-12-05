@@ -199,6 +199,28 @@ class RFPDupeFilterTest(unittest.TestCase):
             )
 
             dupefilter.close("finished")
+    
+    def test_log_initialized(self):
+        # Test when scrapy.stats not intialized
+        with LogCapture() as log:
+            settings = {
+                "DUPEFILTER_DEBUG": False,
+                "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
+                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
+            }
+            crawler = get_crawler(SimpleSpider, settings_dict=settings)
+            spider = SimpleSpider.from_crawler(crawler)
+            dupefilter = _get_dupefilter(crawler=crawler)
+
+            r1 = Request("http://scrapytest.org/index.html")
+            r2 = Request("http://scrapytest.org/index.html")
+
+            dupefilter.log(r1, spider)
+            dupefilter.log(r2, spider)
+
+            assert crawler.stats.get_value("dupefilter/filtered") == 2
+
+            dupefilter.close("finished")
 
     def test_log_debug(self):
         with LogCapture() as log:
@@ -276,3 +298,4 @@ class RFPDupeFilterTest(unittest.TestCase):
             )
 
             dupefilter.close("finished")
+

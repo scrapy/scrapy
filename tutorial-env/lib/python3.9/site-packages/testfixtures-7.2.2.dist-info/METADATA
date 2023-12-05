@@ -1,0 +1,98 @@
+Metadata-Version: 2.1
+Name: testfixtures
+Version: 7.2.2
+Summary: A collection of helpers and mock objects for unit tests and doc tests.
+Home-page: https://github.com/Simplistix/testfixtures
+Author: Chris Withers
+Author-email: chris@simplistix.co.uk
+License: MIT
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.6
+License-File: LICENSE.txt
+Provides-Extra: build
+Requires-Dist: setuptools-git ; extra == 'build'
+Requires-Dist: wheel ; extra == 'build'
+Requires-Dist: twine ; extra == 'build'
+Provides-Extra: docs
+Requires-Dist: sphinx ; extra == 'docs'
+Requires-Dist: furo ; extra == 'docs'
+Requires-Dist: zope.component ; extra == 'docs'
+Requires-Dist: django ; extra == 'docs'
+Requires-Dist: sybil >=3 ; extra == 'docs'
+Requires-Dist: twisted ; extra == 'docs'
+Provides-Extra: test
+Requires-Dist: mypy ; extra == 'test'
+Requires-Dist: pytest >=3.6 ; extra == 'test'
+Requires-Dist: pytest-cov ; extra == 'test'
+Requires-Dist: pytest-django ; extra == 'test'
+Requires-Dist: zope.component ; extra == 'test'
+Requires-Dist: django ; extra == 'test'
+Requires-Dist: sybil >=3 ; extra == 'test'
+Requires-Dist: twisted ; extra == 'test'
+
+Testfixtures
+============
+
+|CircleCI|_ |Docs|_
+
+.. |CircleCI| image:: https://circleci.com/gh/simplistix/testfixtures/tree/master.svg?style=shield
+.. _CircleCI: https://circleci.com/gh/simplistix/testfixtures/tree/master
+
+.. |Docs| image:: https://readthedocs.org/projects/testfixtures/badge/?version=latest
+.. _Docs: http://testfixtures.readthedocs.org/en/latest/
+
+Testfixtures is a collection of helpers and mock objects that are useful when
+writing automated tests in Python.
+
+The areas of testing this package can help with are listed below:
+
+**Comparing objects and sequences**
+
+Better feedback when the results aren't as you expected along with
+support for comparison of objects that don't normally support
+comparison and comparison of deeply nested datastructures.
+
+**Mocking out objects and methods**
+
+Easy to use ways of stubbing out objects, classes or individual
+methods. Specialised helpers and mock objects are provided, including sub-processes,
+dates and times.
+
+**Testing logging**
+
+Helpers for capturing logging and checking what has been logged is what was expected.
+
+**Testing stream output**
+
+Helpers for capturing stream output, such as that from print function calls or even
+stuff written directly to file descriptors, and making assertions about it.
+
+**Testing with files and directories**
+
+Support for creating and checking both files and directories in sandboxes
+including support for other common path libraries.
+
+**Testing exceptions and warnings**
+
+Easy to use ways of checking that a certain exception is raised,
+or a warning is issued, even down the to the parameters provided.
+
+**Testing when using django**
+
+Helpers for comparing instances of django models.
+
+**Testing when using Twisted**
+
+Helpers for making assertions about logging when using Twisted.
+
+**Testing when using zope.component**
+
+An easy to use sterile component registry.

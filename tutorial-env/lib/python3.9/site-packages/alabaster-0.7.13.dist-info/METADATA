@@ -1,0 +1,69 @@
+Metadata-Version: 2.1
+Name: alabaster
+Version: 0.7.13
+Summary: A configurable sidebar-enabled Sphinx theme
+Home-page: https://alabaster.readthedocs.io
+Author: Jeff Forcier
+Author-email: jeff@bitprophet.org
+License: UNKNOWN
+Project-URL: Source, https://github.com/bitprophet/alabaster
+Project-URL: Changelog, https://github.com/bitprophet/alabaster/blob/main/docs/changelog.rst
+Project-URL: CI, https://app.circleci.com/pipelines/github/bitprophet/alabaster
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Documentation
+Classifier: Topic :: Software Development :: Documentation
+Requires-Python: >=3.6
+
+|version| |python| |license| |ci|
+
+.. |version| image:: https://img.shields.io/pypi/v/alabaster
+    :target: https://pypi.org/project/alabaster/
+    :alt: PyPI - Package Version
+.. |python| image:: https://img.shields.io/pypi/pyversions/alabaster
+    :target: https://pypi.org/project/alabaster/
+    :alt: PyPI - Python Version
+.. |license| image:: https://img.shields.io/pypi/l/alabaster
+    :target: https://github.com/bitprophet/alabaster/blob/main/LICENSE
+    :alt: PyPI - License
+.. |ci| image:: https://img.shields.io/circleci/build/github/bitprophet/alabaster/main
+    :target: https://app.circleci.com/pipelines/github/bitprophet/alabaster
+    :alt: CircleCI
+
+What is Alabaster?
+==================
+
+Alabaster is a visually (c)lean, responsive, configurable theme for the `Sphinx
+<http://sphinx-doc.org>`_ documentation system. It is Python 3.6+ compatible.
+
+It began as a third-party theme, and is still maintained separately, but as of
+Sphinx 1.3, Alabaster is an install-time dependency of Sphinx and is selected
+as the default theme.
+
+Live examples of this theme can be seen on `this project's own website
+<http://alabaster.readthedocs.io>`_, `paramiko.org <http://paramiko.org>`_,
+`fabfile.org <http://fabfile.org>`_ and `pyinvoke.org <http://pyinvoke.org>`_.
+
+For more documentation, please see http://alabaster.readthedocs.io. For a
+roadmap, see the maintainer's `roadmap page
+<http://bitprophet.org/projects#roadmap>`_.
+
+.. note::
+    You can install the development version via ``pip install -e
+    git+https://github.com/bitprophet/alabaster/#egg=alabaster``.
+
+

@@ -1,0 +1,5 @@
+RUNNNING TESTS
+==============
+
+In order to run these tests cd into project root directory then run
+"make test" (this is also valid for Windows).

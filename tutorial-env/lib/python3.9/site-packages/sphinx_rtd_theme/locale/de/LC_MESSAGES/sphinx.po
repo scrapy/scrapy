@@ -1,0 +1,136 @@
+# English translations for sphinx_rtd_theme.
+# Copyright (C) 2019 ORGANIZATION
+# This file is distributed under the same license as the sphinx_rtd_theme
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2019.
+# 
+# Translators:
+# Tom Kunze <transifex.com@tomabrafix.de>, 2019
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: sphinx_rtd_theme 0.4.3.dev0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2021-09-13 13:35-0600\n"
+"PO-Revision-Date: 2019-07-16 21:44+0000\n"
+"Last-Translator: Tom Kunze <transifex.com@tomabrafix.de>, 2019\n"
+"Language-Team: German (https://www.transifex.com/readthedocs/teams/101354/de/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: sphinx_rtd_theme/breadcrumbs.html:37 sphinx_rtd_theme/breadcrumbs.html:39
+msgid "Edit on GitHub"
+msgstr "Auf GitHub bearbeiten"
+
+#: sphinx_rtd_theme/breadcrumbs.html:44 sphinx_rtd_theme/breadcrumbs.html:46
+msgid "Edit on Bitbucket"
+msgstr "Auf Bitbucket bearbeiten"
+
+#: sphinx_rtd_theme/breadcrumbs.html:51 sphinx_rtd_theme/breadcrumbs.html:53
+msgid "Edit on GitLab"
+msgstr "Auf GitLab bearbeiten"
+
+#: sphinx_rtd_theme/breadcrumbs.html:56 sphinx_rtd_theme/breadcrumbs.html:58
+msgid "View page source"
+msgstr "Quelltext anzeigen"
+
+#: sphinx_rtd_theme/breadcrumbs.html:69 sphinx_rtd_theme/footer.html:6
+msgid "Previous"
+msgstr "Zurück"
+
+#: sphinx_rtd_theme/breadcrumbs.html:72 sphinx_rtd_theme/footer.html:9
+msgid "Next"
+msgstr "Weiter"
+
+#. Build is a noun, not a verb
+#: sphinx_rtd_theme/footer.html:30
+msgid "Build"
+msgstr "Build"
+
+#: sphinx_rtd_theme/footer.html:41
+#, python-format
+msgid "Last updated on %(last_updated)s."
+msgstr "Zuletzt aktualisiert am %(last_updated)s."
+
+#. the variable "sphinx_web" is a link to the Sphinx project documentation
+#. with
+#. the text "Sphinx"
+#: sphinx_rtd_theme/footer.html:53
+#, python-format
+msgid "Built with %(sphinx_web)s using a"
+msgstr "Erstellt mit %(sphinx_web)s mit einem"
+
+#. this is always used as "provided by Read the Docs", and should not imply
+#. Read the Docs is an author of the generated documentation.
+#: sphinx_rtd_theme/footer.html:57
+#, python-format
+msgid "provided by %(readthedocs_web)s"
+msgstr "bereitgestellt von %(readthedocs_web)s"
+
+#: sphinx_rtd_theme/layout.html:97
+#, python-format
+msgid "Search within %(docstitle)s"
+msgstr "%(docstitle)s durchsuchen"
+
+#: sphinx_rtd_theme/layout.html:105
+msgid "About these documents"
+msgstr "Über diese Dokumentation"
+
+#: sphinx_rtd_theme/layout.html:108
+msgid "Index"
+msgstr "Index"
+
+#: sphinx_rtd_theme/layout.html:111 sphinx_rtd_theme/search.html:11
+msgid "Search"
+msgstr "Suche"
+
+#: sphinx_rtd_theme/layout.html:114
+msgid "Copyright"
+msgstr "Copyright"
+
+#: sphinx_rtd_theme/layout.html:147 sphinx_rtd_theme/layout.html:149
+msgid "Logo"
+msgstr "Logo"
+
+#: sphinx_rtd_theme/search.html:31
+msgid "Please activate JavaScript to enable the search functionality."
+msgstr "Bitte aktiviere JavaScript, um die Suchfunktion zu nutzen."
+
+#. Search is a noun, not a verb
+#: sphinx_rtd_theme/search.html:39
+msgid "Search Results"
+msgstr "Suchergebnisse"
+
+#: sphinx_rtd_theme/search.html:41
+msgid ""
+"Your search did not match any documents. Please make sure that all words are"
+" spelled correctly and that you've selected enough categories."
+msgstr ""
+"Es wurden keine mit deiner Suchanfrage übereinstimmenden Dokumente gefunden."
+" Achte darauf, dass alle Wörter richtig geschrieben sind und dass genug "
+"Kategorien ausgewählt sind."
+
+#: sphinx_rtd_theme/searchbox.html:4
+msgid "Search docs"
+msgstr "Dokumentation durchsuchen"
+
+#: sphinx_rtd_theme/versions.html:3 sphinx_rtd_theme/versions.html:11
+msgid "Versions"
+msgstr "Versionen"
+
+#. The phrase "Read the Docs" is not translated
+#: sphinx_rtd_theme/versions.html:24
+msgid "On Read the Docs"
+msgstr "Auf Read the Docs"
+
+#: sphinx_rtd_theme/versions.html:26
+msgid "Project Home"
+msgstr "Projektübersicht"
+
+#: sphinx_rtd_theme/versions.html:29
+msgid "Builds"
+msgstr "Builds"

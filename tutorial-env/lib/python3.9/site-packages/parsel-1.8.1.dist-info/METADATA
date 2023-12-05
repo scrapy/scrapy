@@ -1,0 +1,349 @@
+Metadata-Version: 2.1
+Name: parsel
+Version: 1.8.1
+Summary: Parsel is a library to extract data from HTML and XML using XPath and CSS selectors
+Home-page: https://github.com/scrapy/parsel
+Author: Scrapy project
+Author-email: info@scrapy.org
+License: BSD
+Keywords: parsel
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Natural Language :: English
+Classifier: Topic :: Text Processing :: Markup
+Classifier: Topic :: Text Processing :: Markup :: HTML
+Classifier: Topic :: Text Processing :: Markup :: XML
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Requires-Python: >=3.7
+License-File: LICENSE
+Requires-Dist: cssselect (>=0.9)
+Requires-Dist: jmespath
+Requires-Dist: lxml
+Requires-Dist: packaging
+Requires-Dist: w3lib (>=1.19.0)
+Requires-Dist: typing-extensions ; python_version < "3.8"
+
+======
+Parsel
+======
+
+.. image:: https://github.com/scrapy/parsel/actions/workflows/tests.yml/badge.svg
+   :target: https://github.com/scrapy/parsel/actions/workflows/tests.yml
+   :alt: Tests
+
+.. image:: https://img.shields.io/pypi/pyversions/parsel.svg
+   :target: https://github.com/scrapy/parsel/actions/workflows/tests.yml
+   :alt: Supported Python versions
+
+.. image:: https://img.shields.io/pypi/v/parsel.svg
+   :target: https://pypi.python.org/pypi/parsel
+   :alt: PyPI Version
+
+.. image:: https://img.shields.io/codecov/c/github/scrapy/parsel/master.svg
+   :target: https://codecov.io/github/scrapy/parsel?branch=master
+   :alt: Coverage report
+
+
+Parsel is a BSD-licensed Python_ library to extract data from HTML_, JSON_, and
+XML_ documents.
+
+It supports:
+
+-   CSS_ and XPath_ expressions for HTML and XML documents
+
+-   JMESPath_ expressions for JSON documents
+
+-   `Regular expressions`_
+
+Find the Parsel online documentation at https://parsel.readthedocs.org.
+
+Example (`open online demo`_):
+
+.. code-block:: python
+
+    >>> from parsel import Selector
+    >>> text = """
+            <html>
+                <body>
+                    <h1>Hello, Parsel!</h1>
+                    <ul>
+                        <li><a href="http://example.com">Link 1</a></li>
+                        <li><a href="http://scrapy.org">Link 2</a></li>
+                    </ul>
+                    <script type="application/json">{"a": ["b", "c"]}</script>
+                </body>
+            </html>"""
+    >>> selector = Selector(text=text)
+    >>> selector.css('h1::text').get()
+    'Hello, Parsel!'
+    >>> selector.xpath('//h1/text()').re(r'\w+')
+    ['Hello', 'Parsel']
+    >>> for li in selector.css('ul > li'):
+    ...     print(li.xpath('.//@href').get())
+    http://example.com
+    http://scrapy.org
+    >>> selector.css('script::text').jmespath("a").get()
+    'b'
+    >>> selector.css('script::text').jmespath("a").getall()
+    ['b', 'c']
+
+.. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
+.. _HTML: https://en.wikipedia.org/wiki/HTML
+.. _JMESPath: https://jmespath.org/
+.. _JSON: https://en.wikipedia.org/wiki/JSON
+.. _open online demo: https://colab.research.google.com/drive/149VFa6Px3wg7S3SEnUqk--TyBrKplxCN#forceEdit=true&sandboxMode=true
+.. _Python: https://www.python.org/
+.. _regular expressions: https://docs.python.org/library/re.html
+.. _XML: https://en.wikipedia.org/wiki/XML
+.. _XPath: https://en.wikipedia.org/wiki/XPath
+
+
+
+
+
+History
+-------
+
+1.8.1 (2023-04-18)
+~~~~~~~~~~~~~~~~~~
+
+* Remove a Sphinx reference from NEWS to fix the PyPI description
+* Add a ``twine check`` CI check to detect such problems
+
+1.8.0 (2023-04-18)
+~~~~~~~~~~~~~~~~~~
+
+* Add support for JMESPath: you can now create a selector for a JSON document
+  and call ``Selector.jmespath()``. See `the documentation`_ for more
+  information and examples.
+* Selectors can now be constructed from ``bytes`` (using the ``body`` and
+  ``encoding`` arguments) instead of ``str`` (using the ``text`` argument), so
+  that there is no internal conversion from ``str`` to ``bytes`` and the memory
+  usage is lower.
+* Typing improvements
+* The ``pkg_resources`` module (which was absent from the requirements) is no
+  longer used
+* Documentation build fixes
+* New requirements:
+
+  * ``jmespath``
+  * ``typing_extensions`` (on Python 3.7)
+
+ .. _the documentation: https://parsel.readthedocs.io/en/latest/usage.html
+
+1.7.0 (2022-11-01)
+~~~~~~~~~~~~~~~~~~
+
+* Add PEP 561-style type information
+* Support for Python 2.7, 3.5 and 3.6 is removed
+* Support for Python 3.9-3.11 is added
+* Very large documents (with deep nesting or long tag content) can now be
+  parsed, and ``Selector`` now takes a new argument ``huge_tree`` to disable
+  this
+* Support for new features of cssselect 1.2.0 is added
+* The ``Selector.remove()`` and ``SelectorList.remove()`` methods are
+  deprecated and replaced with the new ``Selector.drop()`` and
+  ``SelectorList.drop()`` methods which don't delete text after the dropped
+  elements when used in the HTML mode.
+
+
+1.6.0 (2020-05-07)
+~~~~~~~~~~~~~~~~~~
+
+* Python 3.4 is no longer supported
+* New ``Selector.remove()`` and ``SelectorList.remove()`` methods to remove
+  selected elements from the parsed document tree
+* Improvements to error reporting, test coverage and documentation, and code
+  cleanup
+
+
+1.5.2 (2019-08-09)
+~~~~~~~~~~~~~~~~~~
+
+* ``Selector.remove_namespaces`` received a significant performance improvement
+* The value of ``data`` within the printable representation of a selector
+  (``repr(selector)``) now ends in ``...`` when truncated, to make the
+  truncation obvious.
+* Minor documentation improvements.
+
+
+1.5.1 (2018-10-25)
+~~~~~~~~~~~~~~~~~~
+
+* ``has-class`` XPath function handles newlines and other separators
+  in class names properly;
+* fixed parsing of HTML documents with null bytes;
+* documentation improvements;
+* Python 3.7 tests are run on CI; other test improvements.
+
+
+1.5.0 (2018-07-04)
+~~~~~~~~~~~~~~~~~~
+
+* New ``Selector.attrib`` and ``SelectorList.attrib`` properties which make
+  it easier to get attributes of HTML elements.
+* CSS selectors became faster: compilation results are cached
+  (LRU cache is used for ``css2xpath``), so there is
+  less overhead when the same CSS expression is used several times.
+* ``.get()`` and ``.getall()`` selector methods are documented and recommended
+  over ``.extract_first()`` and ``.extract()``.
+* Various documentation tweaks and improvements.
+
+One more change is that ``.extract()`` and  ``.extract_first()`` methods
+are now implemented using ``.get()`` and ``.getall()``, not the other
+way around, and instead of calling ``Selector.extract`` all other methods
+now call ``Selector.get`` internally. It can be **backwards incompatible**
+in case of custom Selector subclasses which override ``Selector.extract``
+without doing the same for ``Selector.get``. If you have such Selector
+subclass, make sure ``get`` method is also overridden. For example, this::
+
+    class MySelector(parsel.Selector):
+        def extract(self):
+            return super().extract() + " foo"
+
+should be changed to this::
+
+    class MySelector(parsel.Selector):
+        def get(self):
+            return super().get() + " foo"
+        extract = get
+
+
+1.4.0 (2018-02-08)
+~~~~~~~~~~~~~~~~~~
+
+* ``Selector`` and ``SelectorList`` can't be pickled because
+  pickling/unpickling doesn't work for ``lxml.html.HtmlElement``;
+  parsel now raises TypeError explicitly instead of allowing pickle to
+  silently produce wrong output. This is technically backwards-incompatible
+  if you're using Python < 3.6.
+
+
+1.3.1 (2017-12-28)
+~~~~~~~~~~~~~~~~~~
+
+* Fix artifact uploads to pypi.
+
+
+1.3.0 (2017-12-28)
+~~~~~~~~~~~~~~~~~~
+
+* ``has-class`` XPath extension function;
+* ``parsel.xpathfuncs.set_xpathfunc`` is a simplified way to register
+  XPath extensions;
+* ``Selector.remove_namespaces`` now removes namespace declarations;
+* Python 3.3 support is dropped;
+* ``make htmlview`` command for easier Parsel docs development.
+* CI: PyPy installation is fixed; parsel now runs tests for PyPy3 as well.
+
+
+1.2.0 (2017-05-17)
+~~~~~~~~~~~~~~~~~~
+
+* Add ``SelectorList.get`` and ``SelectorList.getall``
+  methods as aliases for ``SelectorList.extract_first``
+  and ``SelectorList.extract`` respectively
+* Add default value parameter to ``SelectorList.re_first`` method
+* Add ``Selector.re_first`` method
+* Add ``replace_entities`` argument on ``.re()`` and ``.re_first()``
+  to turn off replacing of character entity references
+* Bug fix: detect ``None`` result from lxml parsing and fallback with an empty document
+* Rearrange XML/HTML examples in the selectors usage docs
+* Travis CI:
+
+  * Test against Python 3.6
+  * Test against PyPy using "Portable PyPy for Linux" distribution
+
+
+1.1.0 (2016-11-22)
+~~~~~~~~~~~~~~~~~~
+
+* Change default HTML parser to `lxml.html.HTMLParser <https://lxml.de/api/lxml.html.HTMLParser-class.html>`_,
+  which makes easier to use some HTML specific features
+* Add css2xpath function to translate CSS to XPath
+* Add support for ad-hoc namespaces declarations
+* Add support for XPath variables
+* Documentation improvements and updates
+
+
+1.0.3 (2016-07-29)
+~~~~~~~~~~~~~~~~~~
+
+* Add BSD-3-Clause license file
+* Re-enable PyPy tests
+* Integrate py.test runs with setuptools (needed for Debian packaging)
+* Changelog is now called ``NEWS``
+
+
+1.0.2 (2016-04-26)
+~~~~~~~~~~~~~~~~~~
+
+* Fix bug in exception handling causing original traceback to be lost
+* Added docstrings and other doc fixes
+
+
+1.0.1 (2015-08-24)
+~~~~~~~~~~~~~~~~~~
+
+* Updated PyPI classifiers
+* Added docstrings for csstranslator module and other doc fixes
+
+
+1.0.0 (2015-08-22)
+~~~~~~~~~~~~~~~~~~
+
+* Documentation fixes
+
+
+0.9.6 (2015-08-14)
+~~~~~~~~~~~~~~~~~~
+
+* Updated documentation
+* Extended test coverage
+
+
+0.9.5 (2015-08-11)
+~~~~~~~~~~~~~~~~~~
+
+* Support for extending SelectorList
+
+
+0.9.4 (2015-08-10)
+~~~~~~~~~~~~~~~~~~
+
+* Try workaround for travis-ci/dpl#253
+
+
+0.9.3 (2015-08-07)
+~~~~~~~~~~~~~~~~~~
+
+* Add base_url argument
+
+
+0.9.2 (2015-08-07)
+~~~~~~~~~~~~~~~~~~
+
+* Rename module unified -> selector and promoted root attribute
+* Add create_root_node function
+
+
+0.9.1 (2015-08-04)
+~~~~~~~~~~~~~~~~~~
+
+* Setup Sphinx build and docs structure
+* Build universal wheels
+* Rename some leftovers from package extraction
+
+
+0.9.0 (2015-07-30)
+~~~~~~~~~~~~~~~~~~
+
+* First release on PyPI.

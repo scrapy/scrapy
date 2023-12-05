@@ -60,6 +60,7 @@ class RFPDupeFilter(BaseDupeFilter):
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)
+        self.stats: staticmethod # explicit initialization
         if path:
             self.file = Path(path, "requests.seen").open("a+", encoding="utf-8")
             self.file.seek(0)
@@ -76,7 +77,8 @@ class RFPDupeFilter(BaseDupeFilter):
         return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
+    def from_crawler(cls, crawler: Crawler, spider: Spider) -> Self:
+        assert isinstance(spider.crawler.stats) # check instance
         assert crawler.request_fingerprinter
         return cls.from_settings(
             crawler.settings,
@@ -113,5 +115,7 @@ class RFPDupeFilter(BaseDupeFilter):
             self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False
 
-        assert spider.crawler.stats
-        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
+        if TYPE_CHECKING:
+            assert spider.crawler.stats
+            spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
+

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2014-2018 bpython authors -->
+<component type="desktop-application">
+  <id>org.bpython-interpreter.bpython</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>bpython interpreter</name>
+  <summary>Fancy interface for the Python interpreter</summary>
+  <description>
+    <p>
+      bpython is a fancy interface to the Python interpreter. It has the
+      following features:
+    </p>
+    <ul>
+      <li>In-line syntax highlighting.</li>
+      <li>Readline-like autocomplete with suggestion displayed as you type.</li>
+      <li>Expected parameter list for any Python function.</li>
+      <li>"Rewind" function to pop the last line of code from memory and re-evaluate.</li>
+      <li>Send the code you've entered off to a pastebin.</li>
+      <li>Save the code you've entered to a file.</li>
+      <li>Auto-indentation.</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">org.bpython-interpreter.bpython.desktop</launchable>
+  <url type="homepage">https://www.bpython-interpreter.org/</url>
+  <url type="bugtracker">https://github.com/bpython/bpython/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://bpython-interpreter.org/images/8.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/1.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/2.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/3.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/4.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/5.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/6.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://bpython-interpreter.org/images/7.png</image>
+    </screenshot>
+  </screenshots>
+  <update_contact>bpython@googlegroups.com</update_contact>
+</component>

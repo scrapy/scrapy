@@ -1,0 +1,117 @@
+Metadata-Version: 2.1
+Name: service-identity
+Version: 23.1.0
+Summary: Service identity verification for pyOpenSSL & cryptography.
+Project-URL: Documentation, https://service-identity.readthedocs.io/
+Project-URL: Bug Tracker, https://github.com/pyca/service-identity/issues
+Project-URL: Source Code, https://github.com/pyca/service-identity
+Project-URL: Funding, https://github.com/sponsors/hynek
+Project-URL: Tidelift, https://tidelift.com/subscription/pkg/pypi-service-identity?utm_source=pypi-service-identity&utm_medium=pypi
+Author-email: Hynek Schlawack <hs@ox.cx>
+License-Expression: MIT
+License-File: LICENSE
+Keywords: cryptography,openssl,pyopenssl
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Security :: Cryptography
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Typing :: Typed
+Requires-Python: >=3.8
+Requires-Dist: attrs>=19.1.0
+Requires-Dist: cryptography
+Requires-Dist: pyasn1
+Requires-Dist: pyasn1-modules
+Provides-Extra: dev
+Requires-Dist: pyopenssl; extra == 'dev'
+Requires-Dist: service-identity[docs,idna,mypy,tests]; extra == 'dev'
+Provides-Extra: docs
+Requires-Dist: furo; extra == 'docs'
+Requires-Dist: myst-parser; extra == 'docs'
+Requires-Dist: pyopenssl; extra == 'docs'
+Requires-Dist: sphinx; extra == 'docs'
+Requires-Dist: sphinx-notfound-page; extra == 'docs'
+Provides-Extra: idna
+Requires-Dist: idna; extra == 'idna'
+Provides-Extra: mypy
+Requires-Dist: idna; extra == 'mypy'
+Requires-Dist: mypy; extra == 'mypy'
+Requires-Dist: types-pyopenssl; extra == 'mypy'
+Provides-Extra: tests
+Requires-Dist: coverage[toml]>=5.0.2; extra == 'tests'
+Requires-Dist: pytest; extra == 'tests'
+Description-Content-Type: text/markdown
+
+# Service Identity Verification for pyOpenSSL & *cryptography*
+
+Use this package if:
+
+- you want to **verify** that a [PyCA *cryptography*](https://cryptography.io/) certificate is valid for a certain hostname or IP address,
+- or if you use [pyOpenSSL](https://pypi.org/project/pyOpenSSL/) and don’t want to be [**MITM**](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)ed,
+- or if you want to **inspect** certificates from either for service IDs.
+
+*service-identity* aspires to give you all the tools you need for verifying whether a certificate is valid for the intended purposes.
+In the simplest case, this means *host name verification*.
+However, *service-identity* implements [RFC 6125](https://datatracker.ietf.org/doc/html/rfc6125.html) fully.
+
+
+## Project Information
+
+*service-identity* is released under the [MIT](https://github.com/pyca/service-identity/blob/main/LICENSE) license, its documentation lives at [Read the Docs](https://service-identity.readthedocs.io/), the code on [GitHub](https://github.com/pyca/service-identity), and the latest release on [PyPI](https://pypi.org/project/service-identity/).
+
+
+### Credits
+
+*service-identity* is written and maintained by [Hynek Schlawack](https://hynek.me/).
+
+The development is kindly supported by my employer [Variomedia AG](https://www.variomedia.de/), *service-identity*'s [Tidelift subscribers][Tidelift], and all my amazing [GitHub Sponsors](https://github.com/sponsors/hynek).
+
+
+### *service-identity* for Enterprise
+
+Available as part of the Tidelift Subscription.
+
+The maintainers of *service-identity* and thousands of other packages are working with Tidelift to deliver commercial support and maintenance for the open-source packages you use to build your applications.
+Save time, reduce risk, and improve code health, while paying the maintainers of the exact packages you use.
+[Learn more.][Tidelift]
+
+[Tidelift]: https://tidelift.com/subscription/pkg/pypi-service-identity?utm_source=pypi-service-identity&utm_medium=readme
+
+
+## Release Information
+
+### Removed
+
+- All Python versions up to and including 3.7 have been dropped.
+- Support for `commonName` in certificates has been dropped.
+  It has been deprecated since 2017 and isn't supported by any major browser.
+- The oldest supported pyOpenSSL version (when using the `pyopenssl` backend) is now 17.0.0.
+  When using such an old pyOpenSSL version, you have to pin *cryptography* yourself to ensure compatibility between them.
+  Please check out [`contraints/oldest-pyopenssl.txt`](https://github.com/pyca/service-identity/blob/main/tests/constraints/oldest-pyopenssl.txt) to verify what we are testing against.
+
+
+### Deprecated
+
+- If you've used `service_identity.(cryptography|pyopenssl).extract_ids()`, please switch to the new names `extract_patterns()`.
+  [#56](https://github.com/pyca/service-identity/pull/56)
+
+
+### Added
+
+- `service_identity.(cryptography|pyopenssl).extract_patterns()` are now public APIs (FKA `extract_ids()`).
+  You can use them to extract the patterns from a certificate without verifying anything.
+  [#55](https://github.com/pyca/service-identity/pull/55)
+- *service-identity* is now fully typed.
+  [#57](https://github.com/pyca/service-identity/pull/57)
+
+
+----
+
+[→ Complete Changelog](https://service-identity.readthedocs.io/en/stable/changelog.html)

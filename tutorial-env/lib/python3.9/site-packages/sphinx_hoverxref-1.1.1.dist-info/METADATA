@@ -1,0 +1,105 @@
+Metadata-Version: 2.1
+Name: sphinx-hoverxref
+Version: 1.1.1
+Summary: Sphinx extension to show tooltips with content embedded when hover a reference.
+Keywords: tooltip,modal,hover,hoverxref,sphinx,documentation
+Author-email: Manuel Kaufmann <humitos@gmail.com>
+Description-Content-Type: text/x-rst
+Classifier: Development Status :: 4 - Beta
+Classifier: Framework :: Sphinx
+Classifier: Framework :: Sphinx :: Extension
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Documentation :: Sphinx
+Classifier: Topic :: Software Development :: Documentation
+Requires-Dist: sphinx >=1.8
+Requires-Dist: sphinx ; extra == "doc"
+Requires-Dist: sphinx-autoapi ; extra == "doc"
+Requires-Dist: sphinx-rtd-theme ; extra == "doc"
+Requires-Dist: sphinx-tabs ; extra == "doc"
+Requires-Dist: sphinx-prompt ; extra == "doc"
+Requires-Dist: sphinx-version-warning ; extra == "doc"
+Requires-Dist: sphinx-notfound-page ; extra == "doc"
+Requires-Dist: sphinx-autobuild ; extra == "doc"
+Requires-Dist: sphinxcontrib-bibtex ; extra == "doc"
+Requires-Dist: tox ; extra == "test"
+Project-URL: Documentation, https://sphinx-hoverxref.readthedocs.io/
+Project-URL: Source, https://github.com/readthedocs/sphinx-hoverxref
+Project-URL: Tracker, https://github.com/readthedocs/sphinx-hoverxref/issues
+Provides-Extra: doc
+Provides-Extra: test
+
+|Build| |PyPI version| |Docs badge| |License|
+
+sphinx-hoverxref
+================
+
+``sphinx-hoverxref`` is a Sphinx_ extension to add tooltips on the cross references of the documentation with the content of the linked section.
+
+.. warning::
+
+    This extension is currently in Beta state.
+    This means that there may be some things not well supported or unexpected behavior.
+    If you find any issue, please `report it in the issue tracker <https://github.com/readthedocs/sphinx-hoverxref/issues>`_.
+
+
+Example
+-------
+
+.. image:: docs/sphinx-hoverxref-example.png
+
+
+Installation
+------------
+
+You can install sphinx-hoverxref from PyPI:
+
+::
+
+   pip install sphinx-hoverxref
+
+Or, alternatively, install it from GitHub directly (requires git):
+
+::
+
+   pip install git+https://github.com/readthedocs/sphinx-hoverxref
+
+
+Configuration
+-------------
+
+Add this extension in your ``conf.py`` file as:
+
+.. code-block:: python
+
+   extensions = [
+    # ... other extensions here
+
+    'hoverxref.extension',
+   ]
+
+
+Documentation
+-------------
+
+Check out the full documentation at https://sphinx-hoverxref.readthedocs.io/
+
+
+.. _Sphinx: https://www.sphinx-doc.org/
+
+
+.. |Build| image:: https://travis-ci.org/readthedocs/sphinx-hoverxref.svg?branch=master
+   :target: https://travis-ci.org/readthedocs/sphinx-hoverxref
+   :alt: Build status
+.. |PyPI version| image:: https://img.shields.io/pypi/v/sphinx-hoverxref.svg
+   :target: https://pypi.org/project/sphinx-hoverxref
+   :alt: Current PyPI version
+.. |Docs badge| image:: https://readthedocs.org/projects/sphinx-hoverxref/badge/?version=latest
+   :target: https://sphinx-hoverxref.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation status
+.. |License| image:: https://img.shields.io/github/license/readthedocs/sphinx-hoverxref.svg
+   :target: LICENSE
+   :alt: Repository license
+

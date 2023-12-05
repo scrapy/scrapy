@@ -1,0 +1,166 @@
+Metadata-Version: 2.1
+Name: Scrapy
+Version: 2.11.0
+Summary: A high-level Web Crawling and Web Scraping framework
+Home-page: https://scrapy.org
+Author: Scrapy developers
+Author-email: pablo@pablohoffman.com
+Maintainer: Pablo Hoffman
+Maintainer-email: pablo@pablohoffman.com
+License: BSD
+Project-URL: Documentation, https://docs.scrapy.org/
+Project-URL: Source, https://github.com/scrapy/scrapy
+Project-URL: Tracker, https://github.com/scrapy/scrapy/issues
+Classifier: Framework :: Scrapy
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Topic :: Internet :: WWW/HTTP
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+License-File: LICENSE
+License-File: AUTHORS
+Requires-Dist: Twisted <23.8.0,>=18.9.0
+Requires-Dist: cryptography >=36.0.0
+Requires-Dist: cssselect >=0.9.1
+Requires-Dist: itemloaders >=1.0.1
+Requires-Dist: parsel >=1.5.0
+Requires-Dist: pyOpenSSL >=21.0.0
+Requires-Dist: queuelib >=1.4.2
+Requires-Dist: service-identity >=18.1.0
+Requires-Dist: w3lib >=1.17.0
+Requires-Dist: zope.interface >=5.1.0
+Requires-Dist: protego >=0.1.15
+Requires-Dist: itemadapter >=0.1.0
+Requires-Dist: setuptools
+Requires-Dist: packaging
+Requires-Dist: tldextract
+Requires-Dist: lxml >=4.4.1
+Requires-Dist: PyDispatcher >=2.0.5 ; platform_python_implementation == "CPython"
+Requires-Dist: PyPyDispatcher >=2.1.0 ; platform_python_implementation == "PyPy"
+
+.. image:: https://scrapy.org/img/scrapylogo.png
+   :target: https://scrapy.org/
+   
+======
+Scrapy
+======
+
+.. image:: https://img.shields.io/pypi/v/Scrapy.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: PyPI Version
+
+.. image:: https://img.shields.io/pypi/pyversions/Scrapy.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: Supported Python Versions
+
+.. image:: https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu
+   :alt: Ubuntu
+
+.. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
+   :alt: macOS
+
+.. image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows
+   :alt: Windows
+
+.. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
+   :target: https://pypi.python.org/pypi/Scrapy
+   :alt: Wheel Status
+
+.. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
+   :target: https://codecov.io/github/scrapy/scrapy?branch=master
+   :alt: Coverage report
+
+.. image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg
+   :target: https://anaconda.org/conda-forge/scrapy
+   :alt: Conda Version
+
+
+Overview
+========
+
+Scrapy is a fast high-level web crawling and web scraping framework, used to
+crawl websites and extract structured data from their pages. It can be used for
+a wide range of purposes, from data mining to monitoring and automated testing.
+
+Scrapy is maintained by Zyte_ (formerly Scrapinghub) and `many other
+contributors`_.
+
+.. _many other contributors: https://github.com/scrapy/scrapy/graphs/contributors
+.. _Zyte: https://www.zyte.com/
+
+Check the Scrapy homepage at https://scrapy.org for more information,
+including a list of features.
+
+
+Requirements
+============
+
+* Python 3.8+
+* Works on Linux, Windows, macOS, BSD
+
+Install
+=======
+
+The quick way:
+
+.. code:: bash
+
+    pip install scrapy
+
+See the install section in the documentation at
+https://docs.scrapy.org/en/latest/intro/install.html for more details.
+
+Documentation
+=============
+
+Documentation is available online at https://docs.scrapy.org/ and in the ``docs``
+directory.
+
+Releases
+========
+
+You can check https://docs.scrapy.org/en/latest/news.html for the release notes.
+
+Community (blog, twitter, mail list, IRC)
+=========================================
+
+See https://scrapy.org/community/ for details.
+
+Contributing
+============
+
+See https://docs.scrapy.org/en/master/contributing.html for details.
+
+Code of Conduct
+---------------
+
+Please note that this project is released with a Contributor `Code of Conduct <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_.
+
+By participating in this project you agree to abide by its terms.
+Please report unacceptable behavior to opensource@zyte.com.
+
+Companies using Scrapy
+======================
+
+See https://scrapy.org/companies/ for a list.
+
+Commercial Support
+==================
+
+See https://scrapy.org/support/ for details.

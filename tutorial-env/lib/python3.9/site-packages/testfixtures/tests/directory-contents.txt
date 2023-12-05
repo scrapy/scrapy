@@ -1,0 +1,32 @@
+Here's an example piece of code that creates some files and
+directories: 
+
+.. code-block:: python
+
+  import os
+
+  def spew(path):
+    with open(os.path.join(path, 'root.txt'), 'wb') as f:
+        f.write(b'root output')
+    os.mkdir(os.path.join(path, 'subdir'))
+    with open(os.path.join(path, 'subdir', 'file.txt'), 'wb') as f:
+        f.write(b'subdir output')
+    os.mkdir(os.path.join(path, 'subdir', 'logs'))
+
+This function is used as follows:
+
+>>> spew(tempdir.path)
+
+This will create the following files and directories::
+
+  root.txt
+  subdir/
+  subdir/file.txt
+  subdir/logs/
+ 
+.. -> expected_listing
+
+.. invisible-code-block: python
+
+  # check the listing was as expected
+  tempdir.compare(expected_listing.strip().split('\n'))

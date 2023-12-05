@@ -1,0 +1,105 @@
+# This is a standard Python config file.
+# Valid values can be True, False, integer numbers, and strings.
+# Lines starting with # are treated as comments.
+#
+# By default bpython will look for $XDG_CONFIG_HOME/bpython/config
+# ($XDG_CONFIG_HOME defaults to ~/.config) or you can specify a file with the
+# --config option on the command line.
+#
+# See http://docs.bpython-interpreter.org/configuration.html for all
+# configurable options.
+
+# General section tag
+[general]
+
+# Display the autocomplete list as you type (default: True).
+# When this is off, you can hit tab to see the suggestions.
+# auto_display_list = True
+
+# Syntax highlighting as you type (default: True).
+# syntax = True
+
+# Display the arg spec (list of arguments) for callables,
+# when possible (default: True).
+# arg_spec = True
+
+# History file (default: ~/.pythonhist):
+# hist_file = ~/.pythonhist
+
+# Number of lines to store in history (set to 0 to disable) (default: 100):
+# hist_length = 100
+
+# Soft tab size (default: 4, see pep-8):
+# tab_length = 4
+
+# Color schemes should be put in $XDG_CONFIG_HOME/bpython/ e.g. to use the theme
+# $XDG_CONFIG_HOME/bpython/foo.theme set color_scheme = foo. Leave blank or set
+# to "default" to use the default theme
+# color_scheme = default
+
+# External editor to use for editing the current line, block, or full history
+# Examples: vi (vim)
+#          code --wait (VS Code) - in VS Code use the command palette to:
+#                Shell Command: Install 'code' command in PATH
+#          atom -nw (Atom)
+# Default is to try $EDITOR and $VISUAL, then vi - but if you uncomment
+# the line below that will take precedence
+# editor = vi
+
+# Whether to append .py to the filename while saving session to a file.
+# (default: False)
+# save_append_py = False
+
+# The name of a helper executable that should perform pastebin upload on
+# bpython's behalf. If unset, bpython uploads pastes to bpaste.net. (default: )
+#pastebin_helper = gist.py
+
+# How long an undo must be expected to take before prompting for how
+# many lines should be undone. Set to -1 to never prompt, or 0 to
+# always prompt.
+# single_undo_time = 1.0
+
+# Enable autoreload feature by default (default: False).
+# default_autoreload = False
+# Enable autocompletion of brackets and quotes (default: False)
+# brackets_completion = False
+
+[keyboard]
+
+# All key bindings are shown commented out with their default binding
+
+# pastebin = F8
+# last_output = F9
+# reimport = F6
+# help = F1
+# toggle_file_watch = F5
+# save = C-s
+# undo = C-r
+# redo = C-g
+# up_one_line = C-p
+# down_one_line = C-n
+# cut_to_buffer = C-k
+# search = C-o
+# yank_from_buffer = C-y
+# backspace = C-h
+# clear_word = C-w
+# clear_line = C-u
+# clear_screen = C-l
+# show_source = F2
+# exit = C-d
+# external_editor = F7
+# edit_config = F3
+# reverse_incremental_search = M-r
+# incremental_search = M-s
+
+[curtsies]
+
+# Allow the the completion and docstring box above the current line
+# (default: False)
+# list_above = False
+
+# Enables two fish (the shell) style features:
+# Previous line key will search for the current line (like reverse incremental
+# search) and right arrow will complete the current line with the first match
+# from history. (default: True)
+# right_arrow_completion = True

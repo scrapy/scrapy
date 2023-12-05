@@ -1,0 +1,24 @@
+test specifically:
+failed accept error message -- similar to test_tcp_internals
+immediate success on accept/connect/recv, including Event.ignore
+parametrize iocpsupport somehow -- via reactor?
+
+do:
+break handling -- WaitForSingleObject on the IOCP handle?
+iovecs for write buffer
+do not wait for a mainloop iteration if resumeProducing (in _handleWrite) does startWriting
+don't addActiveHandle in every call to startWriting/startReading
+iocpified process support
+  win32er-in-a-thread (or run GQCS in a thread -- it can't receive SIGBREAK)
+blocking in sendto() -- I think Windows can do that, especially with local UDP
+
+buildbot:
+run in vmware
+start from a persistent snapshot
+
+use a stub inside the vm to svnup/run tests/collect stdio
+lift logs through SMB? or ship them via tcp beams to the VM host
+
+have a timeout on the test run
+if we time out, take a screenshot, save it, kill the VM
+

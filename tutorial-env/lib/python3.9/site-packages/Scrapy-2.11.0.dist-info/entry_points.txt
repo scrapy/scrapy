@@ -1,0 +1,2 @@
+[console_scripts]
+scrapy = scrapy.cmdline:execute

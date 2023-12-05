@@ -1,0 +1,5 @@
+[console_scripts]
+bpdb = bpdb:main
+bpython = bpython.curtsies:main
+bpython-curses = bpython.cli:main
+bpython-urwid = bpython.urwid:main [urwid]

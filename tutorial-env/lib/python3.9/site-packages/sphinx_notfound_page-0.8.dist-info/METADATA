@@ -1,0 +1,80 @@
+Metadata-Version: 2.1
+Name: sphinx-notfound-page
+Version: 0.8
+Summary: Sphinx extension to build a 404 page with absolute URLs
+Home-page: https://github.com/readthedocs/sphinx-notfound-page
+Author: Manuel Kaufmann
+Author-email: humitos@gmail.com
+License: MIT
+Project-URL: Documentation, https://sphinx-notfound-page.readthedocs.io/
+Project-URL: Source, https://github.com/readthedocs/sphinx-notfound-page
+Project-URL: Tracker, https://github.com/readthedocs/sphinx-notfound-page/issues
+Keywords: notfound 404 page sphinx
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Framework :: Sphinx
+Classifier: Framework :: Sphinx :: Extension
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Documentation :: Sphinx
+Classifier: Topic :: Software Development :: Documentation
+Description-Content-Type: text/x-rst
+License-File: LICENSE
+
+|Build| |PyPI version| |Docs badge| |License|
+
+sphinx-notfound-page
+====================
+
+Create a custom 404 page with absolute URLs hardcoded.
+
+
+Installation
+------------
+
+.. code-block:: bash
+
+   pip install sphinx-notfound-page
+
+
+Configuration
+-------------
+
+Add this extension in your ``conf.py`` file as:
+
+.. code-block:: python
+
+   extensions = [
+    # ... other extensions here
+
+    'notfound.extension',
+   ]
+
+
+Documentation
+-------------
+
+Check out the full documentation at https://sphinx-notfound-page.readthedocs.io/
+
+
+Thanks
+------
+
+**Strongly** based on @ericholscher's solution from https://github.com/readthedocs/readthedocs.org/issues/353
+
+.. |Build| image:: https://circleci.com/gh/readthedocs/sphinx-notfound-page.svg?style=svg
+   :target: https://circleci.com/gh/readthedocs/sphinx-notfound-page
+   :alt: Build status
+.. |PyPI version| image:: https://img.shields.io/pypi/v/sphinx-notfound-page.svg
+   :target: https://pypi.org/project/sphinx-notfound-page
+   :alt: Current PyPI version
+.. |Docs badge| image:: https://readthedocs.org/projects/sphinx-notfound-page/badge/?version=latest
+   :target: https://sphinx-notfound-page.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation status
+.. |License| image:: https://img.shields.io/github/license/readthedocs/sphinx-notfound-page.svg
+   :target: LICENSE
+   :alt: Repository license
+
+
