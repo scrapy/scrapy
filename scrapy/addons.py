@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, List
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_settings, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -32,8 +32,9 @@ class AddonManager:
         for clspath in build_component_list(settings["ADDONS"]):
             try:
                 addoncls = load_object(clspath)
-                addon = create_instance(
-                    addoncls, settings=settings, crawler=self.crawler
+                # changes create_instance call to build_from_settings
+                addon = build_from_settings(
+                    addoncls, settings=settings
                 )
                 addon.update_settings(settings)
                 self.addons.append(addon)
