@@ -28,7 +28,7 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_settings, build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
@@ -371,7 +371,10 @@ class FeedSlot:
             self._exporting = True
 
     def _get_instance(self, objcls, *args, **kwargs):
-        return create_instance(objcls, self.settings, self.crawler, *args, **kwargs)
+        if self.settings is None:
+            return build_from_crawler(objcls, self.crawler, *args, **kwargs)
+        else:
+            return build_from_settings(objcls, self.settings, *args, **kwargs)
 
     def _get_exporter(self, file, format, *args, **kwargs):
         return self._get_instance(self.exporters[format], file, *args, **kwargs)
