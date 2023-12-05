@@ -89,7 +89,27 @@ class AddonManagerTest(unittest.TestCase):
             self.assertEqual([a.number for a in manager.addons], expected_order)
             self.assertEqual(crawler.settings.getint("KEY1"), expected_order[-1])
 
-    def test_create_instance(self):
+    # def test_create_instance(self):
+    #     settings_dict = {
+    #         "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
+    #         "MYADDON": {"MYADDON_KEY": "val"},
+    #     }
+    #     crawler = get_crawler(settings_dict=settings_dict)
+    #     manager = crawler.addons
+    #     self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
+    #     self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
+
+    def test_build_from_settings(self):
+        settings_dict = {
+            "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
+            "MYADDON": {"MYADDON_KEY": "val"},
+        }
+        crawler = get_crawler(settings_dict=settings_dict)
+        manager = crawler.addons
+        self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
+        self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
+
+     def test_build_from_crawler(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
             "MYADDON": {"MYADDON_KEY": "val"},
