@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# from twisted.python import log
 import logging
 import pprint
 import signal
@@ -263,6 +264,11 @@ class CrawlerRunner:
             return result
 
         return d.addBoth(_done)
+
+    # Errback handling
+    def handle_error(failure):
+        logger.error(failure)
+        logger.warning("An error occured during crawling: {failure}")
 
     def create_crawler(
         self, crawler_or_spidercls: Union[Type[Spider], str, Crawler]

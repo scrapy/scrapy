@@ -1,0 +1,2 @@
+[console_scripts]
+tox = tox.run:run
