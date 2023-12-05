@@ -7,7 +7,8 @@ from unittest import mock
 from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
-    create_instance,
+    build_from_crawler,
+    build_from_settings,
     load_object,
     rel_has_nofollow,
     set_environ,
@@ -94,25 +95,13 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(
             list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")]
         )
-
-    def test_create_instance(self):
-        settings = mock.MagicMock()
+    def test_build_from_crawler(self):
         crawler = mock.MagicMock(spec_set=["settings"])
         args = (True, 100.0)
         kwargs = {"key": "val"}
 
-        def _test_with_settings(mock, settings):
-            create_instance(mock, settings, None, *args, **kwargs)
-            if hasattr(mock, "from_crawler"):
-                self.assertEqual(mock.from_crawler.call_count, 0)
-            if hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
-                self.assertEqual(mock.call_count, 0)
-            else:
-                mock.assert_called_once_with(*args, **kwargs)
-
         def _test_with_crawler(mock, settings, crawler):
-            create_instance(mock, settings, crawler, *args, **kwargs)
+            build_from_crawler(mock, crawler, *args, **kwargs)
             if hasattr(mock, "from_crawler"):
                 mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
                 if hasattr(mock, "from_settings"):
@@ -124,34 +113,56 @@ class UtilsMiscTestCase(unittest.TestCase):
             else:
                 mock.assert_called_once_with(*args, **kwargs)
 
-        # Check usage of correct constructor using four mocks:
+        # Check usage of correct constructor using two mocks:
+        #   1. with no alternative constructors
+        #   2. with from_crawler() constructor
+        spec_sets = (
+            ["__qualname__"],
+            ["__qualname__", "from_crawler"],
+        )
+        for specs in spec_sets:
+            m = mock.MagicMock(spec_set=specs)
+            _test_with_crawler(m, settings, crawler)
+            m.reset_mock()
+
+        # Check adoption of crawler
+        m = mock.MagicMock(spec_set=["__qualname__", "from_crawler"])
+        m.from_crawler.return_value = None
+        with self.assertRaises(TypeError):
+            build_from_crawler(m, crawler, *args, **kwargs)
+    
+    def test_build_from_settings(self):
+        settings = mock.MagicMock()
+        args = (True, 100.0)
+        kwargs = {"key": "val"}
+
+        def _test_with_settings(mock, settings):
+            build_from_settings(mock, settings, *args, **kwargs)
+            if hasattr(mock, "from_crawler"):
+                self.assertEqual(mock.from_crawler.call_count, 0)
+            if hasattr(mock, "from_settings"):
+                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
+                self.assertEqual(mock.call_count, 0)
+            else:
+                mock.assert_called_once_with(*args, **kwargs)
+
+        # Check usage of correct constructor using two mocks:
         #   1. with no alternative constructors
         #   2. with from_settings() constructor
-        #   3. with from_crawler() constructor
-        #   4. with from_settings() and from_crawler() constructor
         spec_sets = (
             ["__qualname__"],
             ["__qualname__", "from_settings"],
-            ["__qualname__", "from_crawler"],
-            ["__qualname__", "from_settings", "from_crawler"],
         )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
             _test_with_settings(m, settings)
             m.reset_mock()
-            _test_with_crawler(m, settings, crawler)
 
         # Check adoption of crawler settings
         m = mock.MagicMock(spec_set=["__qualname__", "from_settings"])
-        create_instance(m, None, crawler, *args, **kwargs)
-        m.from_settings.assert_called_once_with(crawler.settings, *args, **kwargs)
-
-        with self.assertRaises(ValueError):
-            create_instance(m, None, None)
-
         m.from_settings.return_value = None
         with self.assertRaises(TypeError):
-            create_instance(m, settings, None)
+            build_from_settings(m, settings, *args, **kwargs)
 
     def test_set_environ(self):
         assert os.environ.get("some_test_environ") is None
