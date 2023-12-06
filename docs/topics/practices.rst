@@ -288,8 +288,9 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
   services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
-* use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
-  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__
+* use a highly distributed downloader that circumvents bans internally, so you
+  can just focus on parsing clean pages. One example of such downloaders is
+  `Zyte Smart Proxy Manager`_
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
@@ -300,4 +301,4 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
 .. _scrapoxy: https://scrapoxy.io/
-.. _Zyte API: https://docs.zyte.com/zyte-api/get-started.html
+.. _Zyte Smart Proxy Manager: https://www.zyte.com/smart-proxy-manager/
