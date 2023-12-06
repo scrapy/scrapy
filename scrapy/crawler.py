@@ -138,6 +138,32 @@ class Crawler:
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
 
+    # @inlineCallbacks
+    # def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
+    #     if self.crawling:
+    #         raise RuntimeError("Crawling already taking place")
+    #     if self._started:
+    #         warnings.warn(
+    #             "Running Crawler.crawl() more than once is deprecated.",
+    #             ScrapyDeprecationWarning,
+    #             stacklevel=2,
+    #         )
+    #     self.crawling = self._started = True
+
+    #     try:
+    #         self.spider = self._create_spider(*args, **kwargs)
+    #         self._apply_settings()
+    #         self._update_root_log_handler()
+    #         self.engine = self._create_engine()
+    #         start_requests = iter(self.spider.start_requests())
+    #         yield self.engine.open_spider(self.spider, start_requests)
+    #         yield maybeDeferred(self.engine.start)
+    #     except Exception:
+    #         self.crawling = False
+    #         if self.engine is not None:
+    #             yield self.engine.close()
+    #         raise
+
     @inlineCallbacks
     def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
         if self.crawling:
@@ -150,19 +176,24 @@ class Crawler:
             )
         self.crawling = self._started = True
 
-        try:
-            self.spider = self._create_spider(*args, **kwargs)
-            self._apply_settings()
-            self._update_root_log_handler()
-            self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
-            yield maybeDeferred(self.engine.start)
-        except Exception:
-            self.crawling = False
-            if self.engine is not None:
-                yield self.engine.close()
-            raise
+    def errorHandler(failure, self):
+        failure.trap(Exception)
+        self.crawling = False
+        if self.engine is not None:
+            yield self.engine.close()
+        raise
+    
+    def crawlHelper(self, *args: Any, **kwargs: Any):
+        self.spider = self._create_spider(*args, **kwargs)
+        self._apply_settings()
+        self._update_root_log_handler()
+        self.engine = self._create_engine()
+        start_requests = iter(self.spider.start_requests())
+        yield self.engine.open_spider(self.spider, start_requests)
+        yield maybeDeferred(self.engine.start)
+
+    crawl.addCallback(crawlHelper)
+    crawl.addErrback(errorHandler)
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
