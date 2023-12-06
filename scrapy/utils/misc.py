@@ -47,18 +47,20 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
         return cast(Iterable[Any], arg)
     return [arg]
 
+
 # def build_from_crawler(objcls, crawler, none, *args, **kwargs):
-#     if crawler 
+#     if crawler
 #         if hasattr(objcls, "from_crawler"):
 #             instance = objcls.from_crawler(crawler, *args, **kwargs)
 #             method_name = "from_crawler"
-#         if instance is None: 
+#         if instance is None:
 #             raise TypeError(f"{objcls.__qualname__}.{method_name} returned None)
-#     else: 
+#     else:
 #         instance = objcls(*args, **kwargs)
 #         method_name = "__new__"
 
 #     return instance
+
 
 def load_object(path: Union[str, Callable]) -> Any:
     """Load an object given its absolute object path, and return it.
@@ -176,8 +178,8 @@ def rel_has_nofollow(rel: Optional[str]) -> bool:
 # Raises ``ValueError`` if``crawler`` is``None``.
 #  Raises typeError is instance is None
 # Creates a class instance using 'from_crawler' constructor
-def build_from_crawler(objcls, crawler, /, *args, **kwargs):
-    if crawler is None: 
+def build_from_crawler(objcls, crawler, *args, **kwargs):
+    if crawler is None:
         raise ValueError("Specify crawler.")
     if crawler and hasattr(objcls, "from_crawler"):
         instance = objcls.from_crawler(crawler, *args, **kwargs)
@@ -188,14 +190,14 @@ def build_from_crawler(objcls, crawler, /, *args, **kwargs):
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
-            
 
-#``*args`` and ``**kwargs`` are forwarded to the constructors.
+
+# ``*args`` and ``**kwargs`` are forwarded to the constructors.
 # Raises ``ValueError`` if``settings`` is``None``.
 #  Raises typeError is instance is None
 # Creates a class instance using 'from_settings' constructor
-def build_from_settings(objcls, settings, /, *args, **kwargs):
-    if settings is None: 
+def build_from_settings(objcls, settings, *args, **kwargs):
+    if settings is None:
         raise ValueError("Specify settings.")
     if settings and hasattr(objcls, "from_settings"):
         instance = objcls.from_settings(settings, *args, **kwargs)
@@ -206,8 +208,6 @@ def build_from_settings(objcls, settings, /, *args, **kwargs):
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
     return instance
-
-
 
 
 @contextmanager

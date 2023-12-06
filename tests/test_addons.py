@@ -109,7 +109,7 @@ class AddonManagerTest(unittest.TestCase):
         self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
         self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
 
-     def test_build_from_crawler(self):
+    def test_build_from_crawler(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
             "MYADDON": {"MYADDON_KEY": "val"},

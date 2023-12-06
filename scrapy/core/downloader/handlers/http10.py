@@ -1,6 +1,6 @@
 """Download handlers for http and https schemes
 """
-from scrapy.utils.misc import build_from_settings, build_from_crawler, load_object
+from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
 from scrapy.utils.python import to_unicode
 
 

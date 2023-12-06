@@ -95,6 +95,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(
             list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")]
         )
+
     def test_build_from_crawler(self):
         crawler = mock.MagicMock(spec_set=["settings"])
         args = (True, 100.0)
@@ -122,7 +123,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
-            _test_with_crawler(m, settings, crawler)
+            _test_with_crawler(m, crawler)
             m.reset_mock()
 
         # Check adoption of crawler
@@ -130,7 +131,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         m.from_crawler.return_value = None
         with self.assertRaises(TypeError):
             build_from_crawler(m, crawler, *args, **kwargs)
-    
+
     def test_build_from_settings(self):
         settings = mock.MagicMock()
         args = (True, 100.0)

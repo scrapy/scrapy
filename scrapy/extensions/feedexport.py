@@ -28,7 +28,7 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import build_from_settings, build_from_crawler, load_object
+from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
 from scrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)

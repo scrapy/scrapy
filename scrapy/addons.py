@@ -33,9 +33,7 @@ class AddonManager:
             try:
                 addoncls = load_object(clspath)
                 # changes create_instance call to build_from_settings
-                addon = build_from_settings(
-                    addoncls, settings=settings
-                )
+                addon = build_from_settings(addoncls, settings=settings)
                 addon.update_settings(settings)
                 self.addons.append(addon)
             except NotConfigured as e:

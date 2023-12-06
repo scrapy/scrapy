@@ -24,7 +24,7 @@ from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Headers, Request
 from scrapy.settings import Settings
-from scrapy.utils.misc import create_instance
+from scrapy.utils.misc import build_from_settings
 from scrapy.utils.python import to_bytes, to_unicode
 from tests.mockserver import (
     BrokenDownloadResource,
@@ -470,8 +470,8 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
     def testPayload(self):
         s = "0123456789" * 10
         settings = Settings({"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers})
-        client_context_factory = create_instance(
-            ScrapyClientContextFactory, settings=settings, crawler=None
+        client_context_factory = build_from_settings(
+            ScrapyClientContextFactory, settings=settings
         )
         return getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
@@ -482,8 +482,8 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         settings = Settings(
             {"DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"}
         )
-        client_context_factory = create_instance(
-            ScrapyClientContextFactory, settings=settings, crawler=None
+        client_context_factory = build_from_settings(
+            ScrapyClientContextFactory, settings=settings
         )
         d = getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory

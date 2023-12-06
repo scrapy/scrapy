@@ -669,9 +669,7 @@ class Https11CustomCiphers(unittest.TestCase):
         crawler = get_crawler(
             settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": "CAMELLIA256-SHA"}
         )
-        self.download_handler = build_from_crawler(
-            self.download_handler_cls, crawler
-        )
+        self.download_handler = build_from_crawler(self.download_handler_cls, crawler)
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -1036,9 +1034,7 @@ class BaseFTPTestCase(unittest.TestCase):
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(
-            FTPDownloadHandler, crawler
-        )
+        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1182,9 +1178,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(
-            FTPDownloadHandler, crawler
-        )
+        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1194,9 +1188,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 class DataURITestCase(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(
-            DataURIDownloadHandler, crawler
-        )
+        self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
         self.download_request = self.download_handler.download_request
         self.spider = Spider("foo")
 

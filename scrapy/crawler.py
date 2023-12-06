@@ -111,7 +111,8 @@ class Crawler:
 
         # changes create_instance call to build_from_settings
         self.request_fingerprinter = build_from_settings(
-            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]), settings=self.settings
+            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            settings=self.settings,
         )
 
         # self.request_fingerprinter = create_instance(
