@@ -9,7 +9,7 @@ class Command(ScrapyCommand):
     
     def print_commands_help(self):
         print("=====도움말 명령어 목록=====")
-        print("<startproject, genspider, crawl, list, fetch, generator, trans>")
+        print("<startproject, genspider, crawl, list, fetch, generator>")
         print("다음 명령어 중 하나를 입력하여 도움말을 확인하세요.")
         
     def startproject_commands_help(self):
@@ -34,15 +34,12 @@ class Command(ScrapyCommand):
         print("프로젝트 생성을 돕기 위한 명령어 입니다.")
         print("<scrapy generator start> 명령어를 입력하여 손쉽게 프로젝트 구성을 시작하세요.")   
     
-    def trans_commands_help(self):
-        print("<scrapy trans> 를 실행하여 번역할 언어를 설정하세요.")
 
     
         
     #명령어별로 도움말을 저장할 딕셔너리
     helpCommandDict = {'startproject' : startproject_commands_help, 'genspider' : genspider_commands_help, 'crawl' : crawl_commands_help,
-                       'list' : list_commands_help,  'fetch' : fetch_commands_help, 
-                       'trans' : trans_commands_help, 'generator': generator_commands_help}
+                       'list' : list_commands_help,  'fetch' : fetch_commands_help, 'generator': generator_commands_help}
     
     def syntax(self):
         return "[command]"
