@@ -1330,7 +1330,7 @@ XmlResponse objects
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
 
 JsonResponse objects
--------------------
+--------------------
 
 .. class:: JsonResponse(url[, ...])
 
