@@ -39,7 +39,7 @@ from scrapy.utils.log import (
     log_reactor_info,
     log_scrapy_info,
 )
-from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     install_reactor,
@@ -109,17 +109,11 @@ class Crawler:
         lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
-        # changes create_instance call to build_from_crawler/settings
-        if self is not None:
-            self.request_fingerprinter = build_from_crawler(
-                load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-                crawler=self,
-            )
-        else:
-            self.request_fingerprinter = build_from_settings(
-                load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-                settings=self.settings,
-            )
+        # changes create_instance call to build_from_crawler
+        self.request_fingerprinter = build_from_crawler(
+            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            crawler=self,
+        )
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]
         event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
@@ -411,12 +405,7 @@ class CrawlerProcess(CrawlerRunner):
 
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
         # changes create_instance call to build_from_crawler/settings
-        if self is not None:
-            resolver = build_from_crawler(resolver_class, self, reactor=reactor)
-        else:
-            resolver = build_from_settings(
-                resolver_class, self.settings, reactor=reactor
-            )
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
