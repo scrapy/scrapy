@@ -29,7 +29,7 @@ from scrapy.http import Headers, HtmlResponse, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
-from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.misc import build_from_crawler, build_from_settings
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from tests import NON_EXISTING_RESOLVABLE
@@ -1034,7 +1034,12 @@ class BaseFTPTestCase(unittest.TestCase):
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
+        if crawler is not None:
+            self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
+        else:
+            self.download_handler = build_from_settings(
+                FTPDownloadHandler, crawler.settings
+            )
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1178,7 +1183,12 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
+        if crawler is not None:
+            self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
+        else:
+            self.download_handler = build_from_settings(
+                FTPDownloadHandler, crawler.settings
+            )
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1188,7 +1198,12 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 class DataURITestCase(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
+        if crawler is not None:
+            self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
+        else:
+            self.download_handler = build_from_settings(
+                DataURIDownloadHandler, crawler.settings
+            )
         self.download_request = self.download_handler.download_request
         self.spider = Spider("foo")
 

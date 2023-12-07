@@ -101,18 +101,13 @@ class UtilsMiscTestCase(unittest.TestCase):
         args = (True, 100.0)
         kwargs = {"key": "val"}
 
-        def _test_with_crawler(mock, settings, crawler):
-            build_from_crawler(mock, crawler, *args, **kwargs)
-            if hasattr(mock, "from_crawler"):
-                mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
-                if hasattr(mock, "from_settings"):
-                    self.assertEqual(mock.from_settings.call_count, 0)
-                self.assertEqual(mock.call_count, 0)
-            elif hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
-                self.assertEqual(mock.call_count, 0)
+        def _test_with_crawler(m, crawler):
+            build_from_crawler(m, crawler, *args, **kwargs)
+            if hasattr(m, "from_crawler"):
+                m.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
+                self.assertEqual(m.call_count, 0)
             else:
-                mock.assert_called_once_with(*args, **kwargs)
+                m.assert_called_once_with(*args, **kwargs)
 
         # Check usage of correct constructor using two mocks:
         #   1. with no alternative constructors

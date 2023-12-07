@@ -89,26 +89,6 @@ class AddonManagerTest(unittest.TestCase):
             self.assertEqual([a.number for a in manager.addons], expected_order)
             self.assertEqual(crawler.settings.getint("KEY1"), expected_order[-1])
 
-    # def test_create_instance(self):
-    #     settings_dict = {
-    #         "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
-    #         "MYADDON": {"MYADDON_KEY": "val"},
-    #     }
-    #     crawler = get_crawler(settings_dict=settings_dict)
-    #     manager = crawler.addons
-    #     self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
-    #     self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
-
-    def test_build_from_settings(self):
-        settings_dict = {
-            "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
-            "MYADDON": {"MYADDON_KEY": "val"},
-        }
-        crawler = get_crawler(settings_dict=settings_dict)
-        manager = crawler.addons
-        self.assertIsInstance(manager.addons[0], CreateInstanceAddon)
-        self.assertEqual(crawler.settings.get("MYADDON_KEY"), "val")
-
     def test_build_from_crawler(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.CreateInstanceAddon": 0},
@@ -187,12 +167,12 @@ class AddonManagerTest(unittest.TestCase):
                 pass
 
         with patch("scrapy.addons.logger") as logger_mock:
-            with patch("scrapy.addons.create_instance") as create_instance_mock:
+            with patch("scrapy.addons.build_from_crawler") as build_from_crawler_mock:
                 settings_dict = {
                     "ADDONS": {LoggedAddon: 1},
                 }
                 addon = LoggedAddon()
-                create_instance_mock.return_value = addon
+                build_from_crawler_mock.return_value = addon
                 crawler = get_crawler(settings_dict=settings_dict)
                 logger_mock.info.assert_called_once_with(
                     "Enabled addons:\n%(addons)s",

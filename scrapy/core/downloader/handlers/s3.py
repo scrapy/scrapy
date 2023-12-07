@@ -50,7 +50,7 @@ class S3DownloadHandler:
                 )
             )
 
-        if settings is None:
+        if crawler is not None:
             _http_handler = build_from_crawler(
                 objcls=httpdownloadhandler,
                 crawler=crawler,

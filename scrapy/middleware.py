@@ -23,7 +23,7 @@ from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
 from scrapy.utils.defer import process_chain, process_parallel
-from scrapy.utils.misc import build_from_settings, load_object
+from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -64,7 +64,10 @@ class MiddlewareManager:
         for clspath in mwlist:
             try:
                 mwcls = load_object(clspath)
-                mw = build_from_settings(mwcls, settings)
+                if crawler is not None:
+                    mw = build_from_crawler(mwcls, crawler)
+                else:
+                    mw = build_from_settings(mwcls, settings)
                 middlewares.append(mw)
                 enabled.append(clspath)
             except NotConfigured as e:

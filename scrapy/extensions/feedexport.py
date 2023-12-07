@@ -371,7 +371,7 @@ class FeedSlot:
             self._exporting = True
 
     def _get_instance(self, objcls, *args, **kwargs):
-        if self.settings is None:
+        if self.crawler is not None:
             return build_from_crawler(objcls, self.crawler, *args, **kwargs)
         else:
             return build_from_settings(objcls, self.settings, *args, **kwargs)

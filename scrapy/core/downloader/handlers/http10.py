@@ -30,7 +30,7 @@ class HTTP10DownloadHandler:
 
         host, port = to_unicode(factory.host), factory.port
         if factory.scheme == b"https":
-            if self._settings is None:
+            if self._crawler is not None:
                 client_context_factory = build_from_crawler(
                     objcls=self.ClientContextFactory,
                     crawler=self._crawler,
