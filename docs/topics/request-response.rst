@@ -1328,3 +1328,12 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
+
+JsonResponse objects
+-------------------
+
+.. class:: JsonResponse(url[, ...])
+
+    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` which
+    adds encoding auto-discovering support by looking into the JSON declaration
+    line.  See :attr:`TextResponse.encoding`.
