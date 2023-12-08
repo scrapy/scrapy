@@ -195,6 +195,7 @@ class Crawler:
     crawl.addCallback(crawlHelper)
     crawl.addErrback(errorHandler)
 
+    
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
