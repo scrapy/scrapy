@@ -55,7 +55,6 @@ class DownloadHandlers:
             dhcls = load_object(path)
             if skip_lazy and getattr(dhcls, "lazy", True):
                 return None
-            # change create_instance call to build_from_settings
             dh = build_from_crawler(
                 objcls=dhcls,
                 crawler=self._crawler,

@@ -109,7 +109,6 @@ class Crawler:
         lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
-        # changes create_instance call to build_from_crawler
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
             crawler=self,
@@ -404,7 +403,6 @@ class CrawlerProcess(CrawlerRunner):
             d.addBoth(self._stop_reactor)
 
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
-        # changes create_instance call to build_from_crawler/settings
         resolver = build_from_crawler(resolver_class, self, reactor=reactor)
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()

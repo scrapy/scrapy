@@ -2,7 +2,7 @@ from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import build_from_crawler, build_from_settings
+from scrapy.utils.misc import build_from_crawler
 
 
 class S3DownloadHandler:
@@ -50,16 +50,10 @@ class S3DownloadHandler:
                 )
             )
 
-        if crawler is not None:
-            _http_handler = build_from_crawler(
-                objcls=httpdownloadhandler,
-                crawler=crawler,
-            )
-        else:
-            _http_handler = build_from_settings(
-                objcls=httpdownloadhandler,
-                settings=settings,
-            )
+        _http_handler = build_from_crawler(
+            objcls=httpdownloadhandler,
+            crawler=crawler,
+        )
         self._download_http = _http_handler.download_request
 
     @classmethod

@@ -20,7 +20,7 @@ from scrapy.core.downloader.tls import (
     openssl_methods,
 )
 from scrapy.settings import BaseSettings
-from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
@@ -165,29 +165,16 @@ def load_context_factory_from_settings(settings, crawler):
     context_factory_cls = load_object(settings["DOWNLOADER_CLIENTCONTEXTFACTORY"])
     # try method-aware context factory
     try:
-        if crawler is not None:
-            context_factory = build_from_crawler(
-                objcls=context_factory_cls,
-                crawler=crawler,
-                method=ssl_method,
-            )
-        else:
-            context_factory = build_from_settings(
-                objcls=context_factory_cls,
-                settings=settings,
-                method=ssl_method,
-            )
+        context_factory = build_from_crawler(
+            objcls=context_factory_cls,
+            crawler=crawler,
+            method=ssl_method,
+        )
     except TypeError:
-        if crawler is not None:
-            context_factory = build_from_crawler(
-                objcls=context_factory_cls,
-                crawler=crawler,
-            )
-        else:
-            context_factory = build_from_settings(
-                objcls=context_factory_cls,
-                settings=settings,
-            )
+        context_factory = build_from_crawler(
+            objcls=context_factory_cls,
+            crawler=crawler,
+        )
         msg = (
             f"{settings['DOWNLOADER_CLIENTCONTEXTFACTORY']} does not accept "
             "a `method` argument (type OpenSSL.SSL method, e.g. "
