@@ -471,7 +471,7 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         s = "0123456789" * 10
         settings = Settings({"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers})
         client_context_factory = build_from_settings(
-            ScrapyClientContextFactory, settings=settings
+            ScrapyClientContextFactory, settings
         )
         return getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
@@ -483,7 +483,7 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
             {"DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"}
         )
         client_context_factory = build_from_settings(
-            ScrapyClientContextFactory, settings=settings
+            ScrapyClientContextFactory, settings
         )
         d = getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory

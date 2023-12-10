@@ -358,7 +358,7 @@ class ExecutionEngine:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
         nextcall = CallLaterOnce(self._next_request)
-        scheduler = build_from_crawler(self.scheduler_cls, crawler=self.crawler)
+        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         start_requests = yield self.scraper.spidermw.process_start_requests(
             start_requests, spider
         )

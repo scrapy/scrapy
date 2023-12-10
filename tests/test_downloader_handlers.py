@@ -829,8 +829,8 @@ class S3AnonTestCase(unittest.TestCase):
         skip_if_no_boto()
         crawler = get_crawler()
         self.s3reqh = build_from_crawler(
-            objcls=S3DownloadHandler,
-            crawler=crawler,
+            S3DownloadHandler,
+            crawler,
             httpdownloadhandler=HttpDownloadHandlerMock,
             # anon=True, # implicit
         )
@@ -859,8 +859,8 @@ class S3TestCase(unittest.TestCase):
         skip_if_no_boto()
         crawler = get_crawler()
         s3reqh = build_from_crawler(
-            objcls=S3DownloadHandler,
-            crawler=crawler,
+            S3DownloadHandler,
+            crawler,
             aws_access_key_id=self.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
             httpdownloadhandler=HttpDownloadHandlerMock,
@@ -886,8 +886,8 @@ class S3TestCase(unittest.TestCase):
         try:
             crawler = get_crawler()
             build_from_crawler(
-                objcls=S3DownloadHandler,
-                crawler=crawler,
+                S3DownloadHandler,
+                crawler,
                 extra_kw=True,
             )
         except Exception as e:

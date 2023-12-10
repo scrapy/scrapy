@@ -111,7 +111,7 @@ class Crawler:
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-            crawler=self,
+            self,
         )
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]

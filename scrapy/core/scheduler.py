@@ -324,7 +324,7 @@ class Scheduler(BaseScheduler):
         """Create a new priority queue instance, with in-memory storage"""
         return build_from_crawler(
             self.pqclass,
-            crawler=self.crawler,
+            self.crawler,
             downstream_queue_cls=self.mqclass,
             key="",
         )
@@ -335,7 +335,7 @@ class Scheduler(BaseScheduler):
         state = self._read_dqs_state(self.dqdir)
         q = build_from_crawler(
             self.pqclass,
-            crawler=self.crawler,
+            self.crawler,
             downstream_queue_cls=self.dqclass,
             key=self.dqdir,
             startprios=state,

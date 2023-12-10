@@ -166,14 +166,14 @@ def load_context_factory_from_settings(settings, crawler):
     # try method-aware context factory
     try:
         context_factory = build_from_crawler(
-            objcls=context_factory_cls,
-            crawler=crawler,
+            context_factory_cls,
+            crawler,
             method=ssl_method,
         )
     except TypeError:
         context_factory = build_from_crawler(
-            objcls=context_factory_cls,
-            crawler=crawler,
+            context_factory_cls,
+            crawler,
         )
         msg = (
             f"{settings['DOWNLOADER_CLIENTCONTEXTFACTORY']} does not accept "
