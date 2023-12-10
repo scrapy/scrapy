@@ -160,7 +160,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     return instance
 
 
-def build_from_crawler(objcls, crawler, *args, **kwargs):
+def build_from_crawler(objcls, crawler, /, *args, **kwargs):
     """
     Constructs a class instance using ``from_crawler`` constructor
 
