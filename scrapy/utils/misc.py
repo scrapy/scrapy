@@ -184,7 +184,7 @@ def build_from_crawler(objcls, crawler, /, *args, **kwargs):
     return instance
 
 
-def build_from_settings(objcls, settings, *args, **kwargs):
+def build_from_settings(objcls, settings, /, *args, **kwargs):
     """
     Constructs a class instance using ``from_settings`` constructor
 
