@@ -275,13 +275,44 @@ class CrawlerRunner:
 
         :param kwargs: keyword arguments to initialize the spider
         """
+        # if isinstance(crawler_or_spidercls, Spider):
+        #     raise ValueError(
+        #         "The crawler_or_spidercls argument cannot be a spider object, "
+        #         "it must be a spider class (or a Crawler object)"
+        #     )
+        # crawler = self.create_crawler(crawler_or_spidercls)
+        # return self._crawl(crawler, *args, **kwargs)
+        
+        # # one method
+        # def createInstance():
+        #     if isinstance(crawler_or_spidercls, Spider):
+        #         raise ValueError(
+        #             "The crawler_or_spidercls argument cannot be a spider object, "
+        #             "it must be a spider class (or a Crawler object)"
+        #         )
+        # def errorHandler(failure):
+        #     failure.trap(ValueError)
+        
+        # self.addCallBack(createInstance)
+        # self.addErrback(errorHandler)
+        
+        # crawler = self.create_crawler(crawler_or_spidercls)
+        
         if isinstance(crawler_or_spidercls, Spider):
             raise ValueError(
                 "The crawler_or_spidercls argument cannot be a spider object, "
                 "it must be a spider class (or a Crawler object)"
             )
-        crawler = self.create_crawler(crawler_or_spidercls)
-        return self._crawl(crawler, *args, **kwargs)
+        def errorHandler(failure):
+            failure.trap(ValueError)
+            
+        def crawlHelper(self, crawler_or_spidercls: Union[Type[Spider], str, Crawler], *args: Any, **kwargs: Any):
+            crawler = self.create_crawler(crawler_or_spidercls)
+            return self._crawl(crawler, *args, **kwargs)
+
+        crawl.addCallback(crawlHelper)
+        crawl.addErrback(errorHandler)
+        
 
     def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred:
         self.crawlers.add(crawler)
