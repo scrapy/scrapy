@@ -163,10 +163,9 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
 def build_from_crawler(objcls, crawler, /, *args, **kwargs):
     """Construct a class instance using its ``from_crawler`` constructor.
 
-    ``*args`` and ``**kwargs`` are forwarded to the constructors.
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
 
-    Raises ``ValueError`` if``crawler`` is``None``.
-    Raises typeError is instance is None
+    Raises ``TypeError`` if the resulting instance is ``None``.
     """
     settings = crawler.settings
     if crawler and hasattr(objcls, "from_crawler"):
@@ -184,13 +183,11 @@ def build_from_crawler(objcls, crawler, /, *args, **kwargs):
 
 
 def build_from_settings(objcls, settings, /, *args, **kwargs):
-    """
-    Constructs a class instance using ``from_settings`` constructor
+    """Constructs a class instance using its ``from_settings`` constructor
 
     ``*args`` and ``**kwargs`` are forwarded to the constructors.
 
-    Raises ``ValueError`` if``settings`` is``None``.
-    Raises typeError is instance is None
+    Raises ``TypeError`` if the resulting instance is ``None``.
     """
     if settings and hasattr(objcls, "from_settings"):
         instance = objcls.from_settings(settings, *args, **kwargs)
