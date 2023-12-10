@@ -182,7 +182,7 @@ def build_from_crawler(objcls, crawler, /, *args, **kwargs):
 
 
 def build_from_settings(objcls, settings, /, *args, **kwargs):
-    """Constructs a class instance using its ``from_settings`` constructor.
+    """Construct a class instance using its ``from_settings`` constructor.
 
     ``*args`` and ``**kwargs`` are forwarded to the constructor.
 
