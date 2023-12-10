@@ -171,6 +171,7 @@ def load_context_factory_from_settings(settings, crawler):
             method=ssl_method,
         )
     except TypeError:
+        # use context factory defaults
         context_factory = build_from_crawler(
             context_factory_cls,
             crawler,
