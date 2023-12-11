@@ -61,12 +61,12 @@ class HttpCompressionMiddleware:
                 "reimplement their 'from_crawler' method.",
                 ScrapyDeprecationWarning,
             )
-            spider = cls()
-            spider.stats = crawler.stats
-            spider._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
-            spider._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
-            crawler.signals.connect(spider.open_spider, signals.spider_opened)
-            return spider
+            mw = cls()
+            mw.stats = crawler.stats
+            mw._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
+            mw._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+            crawler.signals.connect(mw.open_spider, signals.spider_opened)
+            return mw
 
     def open_spider(self, spider):
         if hasattr(spider, "download_maxsize"):
