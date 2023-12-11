@@ -228,8 +228,8 @@ class Stream:
 
         content_length_name = self._request.headers.normkey(b"Content-Length")
         for name, values in self._request.headers.items():
-            for value in values:
-                value = str(value, "utf-8")
+            for value_bytes in values:
+                value = str(value_bytes, "utf-8")
                 if name == content_length_name:
                     if value != content_length:
                         logger.warning(

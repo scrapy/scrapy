@@ -4,14 +4,18 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: 3.12
       - run: | 
           pip install --upgrade build twine
           python -m build

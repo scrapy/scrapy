@@ -58,7 +58,7 @@ class JsonEncoderTestCase(unittest.TestCase):
         self.assertIn(r.url, rs)
         self.assertIn(str(r.status), rs)
 
-    def test_encode_dataclass_item(self):
+    def test_encode_dataclass_item(self) -> None:
         @dataclasses.dataclass
         class TestDataClass:
             name: str

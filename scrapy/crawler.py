@@ -12,7 +12,6 @@ from twisted.internet.defer import (
     inlineCallbacks,
     maybeDeferred,
 )
-from zope.interface.exceptions import DoesNotImplement
 
 try:
     # zope >= 5.0 only supports MultipleInvalid
@@ -205,19 +204,7 @@ class CrawlerRunner:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
-        excs = (
-            (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
-        )
-        try:
-            verifyClass(ISpiderLoader, loader_cls)
-        except excs:
-            warnings.warn(
-                "SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does "
-                "not fully implement scrapy.interfaces.ISpiderLoader interface. "
-                "Please add all missing methods to avoid unexpected runtime errors.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        verifyClass(ISpiderLoader, loader_cls)
         return loader_cls.from_settings(settings.frozencopy())
 
     def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
@@ -404,8 +391,8 @@ class CrawlerProcess(CrawlerRunner):
         :param bool stop_after_crawl: stop or not the reactor when all
             crawlers have finished
 
-        :param bool install_signal_handlers: whether to install the shutdown
-            handlers (default: True)
+        :param bool install_signal_handlers: whether to install the OS signal
+            handlers from Twisted and Scrapy (default: True)
         """
         from twisted.internet import reactor
 
@@ -416,15 +403,17 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        if install_signal_handlers:
-            install_shutdown_handlers(self._signal_shutdown)
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
         resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
         reactor.addSystemEventTrigger("before", "shutdown", self.stop)
-        reactor.run(installSignalHandlers=False)  # blocking call
+        if install_signal_handlers:
+            reactor.addSystemEventTrigger(
+                "after", "startup", install_shutdown_handlers, self._signal_shutdown
+            )
+        reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
     def _graceful_stop_reactor(self) -> Deferred:
         d = self.stop()

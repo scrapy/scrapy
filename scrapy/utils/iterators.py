@@ -217,10 +217,10 @@ def _body_or_str(
         )
     if isinstance(obj, Response):
         if not unicode:
-            return cast(bytes, obj.body)
+            return obj.body
         if isinstance(obj, TextResponse):
             return obj.text
-        return cast(bytes, obj.body).decode("utf-8")
+        return obj.body.decode("utf-8")
     if isinstance(obj, str):
         return obj if unicode else obj.encode("utf-8")
     return obj.decode("utf-8") if unicode else obj

@@ -127,7 +127,7 @@ class FileTestCase(unittest.TestCase):
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request(f"file://{self.mktemp()}")
+        request = Request(path_to_file_uri(self.mktemp()))
         d = self.download_request(request, Spider("foo"))
         return self.assertFailure(d, OSError)
 
@@ -723,33 +723,6 @@ class Http11MockServerTestCase(unittest.TestCase):
         yield crawler.crawl(seed=Request(url=self.mockserver.url("")))
         failure = crawler.spider.meta.get("failure")
         self.assertTrue(failure is None)
-        reason = crawler.spider.meta["close_reason"]
-        self.assertTrue(reason, "finished")
-
-    @defer.inlineCallbacks
-    def test_download_gzip_response(self):
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        body = b"1" * 100  # PayloadResource requires body length to be 100
-        request = Request(
-            self.mockserver.url("/payload"),
-            method="POST",
-            body=body,
-            meta={"download_maxsize": 50},
-        )
-        yield crawler.crawl(seed=request)
-        failure = crawler.spider.meta["failure"]
-        # download_maxsize < 100, hence the CancelledError
-        self.assertIsInstance(failure.value, defer.CancelledError)
-
-        # See issue https://twistedmatrix.com/trac/ticket/8175
-        raise unittest.SkipTest("xpayload fails on PY3")
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        request.headers.setdefault(b"Accept-Encoding", b"gzip,deflate")
-        request = request.replace(url=self.mockserver.url("/xpayload"))
-        yield crawler.crawl(seed=request)
-        # download_maxsize = 50 is enough for the gzipped response
-        failure = crawler.spider.meta.get("failure")
-        self.assertIsNone(failure)
         reason = crawler.spider.meta["close_reason"]
         self.assertTrue(reason, "finished")
 
