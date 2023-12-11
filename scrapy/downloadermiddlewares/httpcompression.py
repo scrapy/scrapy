@@ -58,7 +58,10 @@ class HttpCompressionMiddleware:
         if isinstance(response, Response):
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
-                decoded_body = self._handle_encoding(response.body, content_encoding)
+                decoded_body, content_encoding = self._handle_encoding(
+                    response.body, content_encoding
+                )
+                response.headers["Content-Encoding"] = content_encoding
 
                 if self.stats:
                     self.stats.inc_value(
@@ -85,12 +88,9 @@ class HttpCompressionMiddleware:
 
     def _handle_encoding(self, body, content_encoding):
         to_decode, to_keep = self._split_encodings(content_encoding)
-
         for encoding in to_decode:
             body = self._decode(body, encoding)
-        content_encoding[:] = to_keep
-
-        return body
+        return body, to_keep
 
     def _split_encodings(self, content_encoding):
         to_keep = content_encoding[:]
