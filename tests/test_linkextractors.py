@@ -1,6 +1,7 @@
 import pickle
 import re
 import unittest
+from typing import Optional
 
 from packaging.version import Version
 from pytest import mark
@@ -15,7 +16,7 @@ from tests import get_testdata
 # a hack to skip base class tests in pytest
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
-        extractor_cls = None
+        extractor_cls: Optional[type] = None
 
         def setUp(self):
             body = get_testdata("link_extractor", "linkextractor.html")
@@ -235,20 +236,20 @@ class Base:
             url2 = "http://evenmorestuff.com/uglystuff/index"
 
             lx = self.extractor_cls(allow=(r"stuff1",))
-            self.assertEqual(lx.matches(url1), True)
-            self.assertEqual(lx.matches(url2), False)
+            self.assertTrue(lx.matches(url1))
+            self.assertFalse(lx.matches(url2))
 
             lx = self.extractor_cls(deny=(r"uglystuff",))
-            self.assertEqual(lx.matches(url1), True)
-            self.assertEqual(lx.matches(url2), False)
+            self.assertTrue(lx.matches(url1))
+            self.assertFalse(lx.matches(url2))
 
             lx = self.extractor_cls(allow_domains=("evenmorestuff.com",))
-            self.assertEqual(lx.matches(url1), False)
-            self.assertEqual(lx.matches(url2), True)
+            self.assertFalse(lx.matches(url1))
+            self.assertTrue(lx.matches(url2))
 
             lx = self.extractor_cls(deny_domains=("lotsofstuff.com",))
-            self.assertEqual(lx.matches(url1), False)
-            self.assertEqual(lx.matches(url2), True)
+            self.assertFalse(lx.matches(url1))
+            self.assertTrue(lx.matches(url2))
 
             lx = self.extractor_cls(
                 allow=["blah1"],
@@ -256,10 +257,10 @@ class Base:
                 allow_domains=["blah1.com"],
                 deny_domains=["blah2.com"],
             )
-            self.assertEqual(lx.matches("http://blah1.com/blah1"), True)
-            self.assertEqual(lx.matches("http://blah1.com/blah2"), False)
-            self.assertEqual(lx.matches("http://blah2.com/blah1"), False)
-            self.assertEqual(lx.matches("http://blah2.com/blah2"), False)
+            self.assertTrue(lx.matches("http://blah1.com/blah1"))
+            self.assertFalse(lx.matches("http://blah1.com/blah2"))
+            self.assertFalse(lx.matches("http://blah2.com/blah1"))
+            self.assertFalse(lx.matches("http://blah2.com/blah2"))
 
         def test_restrict_xpaths(self):
             lx = self.extractor_cls(restrict_xpaths=('//div[@id="subwrapper"]',))

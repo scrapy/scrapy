@@ -5,7 +5,9 @@ This module implements the FormRequest class which is a more convenient class
 See documentation in docs/topics/request-response.rst
 """
 
-from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Tuple, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from lxml.html import (
@@ -24,7 +26,10 @@ from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import is_listlike, to_bytes
 from scrapy.utils.response import get_base_url
 
-FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 FormdataKVType = Tuple[str, Union[str, Iterable[str]]]
 FormdataType = Optional[Union[dict, List[FormdataKVType]]]
@@ -33,7 +38,9 @@ FormdataType = Optional[Union[dict, List[FormdataKVType]]]
 class FormRequest(Request):
     valid_form_methods = ["GET", "POST"]
 
-    def __init__(self, *args, formdata: FormdataType = None, **kwargs) -> None:
+    def __init__(
+        self, *args: Any, formdata: FormdataType = None, **kwargs: Any
+    ) -> None:
         if formdata and kwargs.get("method") is None:
             kwargs["method"] = "POST"
 
@@ -54,7 +61,7 @@ class FormRequest(Request):
 
     @classmethod
     def from_response(
-        cls: Type[FormRequestTypeVar],
+        cls,
         response: TextResponse,
         formname: Optional[str] = None,
         formid: Optional[str] = None,
@@ -64,8 +71,8 @@ class FormRequest(Request):
         dont_click: bool = False,
         formxpath: Optional[str] = None,
         formcss: Optional[str] = None,
-        **kwargs,
-    ) -> FormRequestTypeVar:
+        **kwargs: Any,
+    ) -> Self:
         kwargs.setdefault("encoding", response.encoding)
 
         if formcss is not None:
@@ -121,12 +128,12 @@ def _get_form(
     if formname is not None:
         f = root.xpath(f'//form[@name="{formname}"]')
         if f:
-            return f[0]
+            return cast(FormElement, f[0])
 
     if formid is not None:
         f = root.xpath(f'//form[@id="{formid}"]')
         if f:
-            return f[0]
+            return cast(FormElement, f[0])
 
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
@@ -135,7 +142,7 @@ def _get_form(
             el = nodes[0]
             while True:
                 if el.tag == "form":
-                    return el
+                    return cast(FormElement, el)
                 el = el.getparent()
                 if el is None:
                     break
@@ -147,7 +154,7 @@ def _get_form(
     except IndexError:
         raise IndexError(f"Form number {formnumber} not found in {response}")
     else:
-        return form
+        return cast(FormElement, form)
 
 
 def _get_inputs(

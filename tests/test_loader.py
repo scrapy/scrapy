@@ -1,5 +1,6 @@
 import dataclasses
 import unittest
+from typing import Optional
 
 import attr
 from itemadapter import ItemAdapter
@@ -87,7 +88,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
 
 class InitializationTestMixin:
-    item_class = None
+    item_class: Optional[type] = None
 
     def test_keep_single_value(self):
         """Loaded item should contain values from the initial item"""

@@ -2,6 +2,7 @@ import collections
 import shutil
 import tempfile
 import unittest
+from typing import Optional
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -59,7 +60,7 @@ class MockCrawler(Crawler):
 
 
 class SchedulerHandler:
-    priority_queue_cls = None
+    priority_queue_cls: Optional[str] = None
     jobdir = None
 
     def create_scheduler(self):
@@ -253,7 +254,7 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
 
 
 class DownloaderAwareSchedulerTestMixin:
-    priority_queue_cls = "scrapy.pqueues.DownloaderAwarePriorityQueue"
+    priority_queue_cls: Optional[str] = "scrapy.pqueues.DownloaderAwarePriorityQueue"
     reopen = False
 
     def test_logic(self):

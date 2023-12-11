@@ -1,17 +1,21 @@
 import logging
 import os
 import platform
+import signal
 import subprocess
 import sys
 import warnings
 from pathlib import Path
+from typing import List
 
 import pytest
 from packaging.version import parse as parse_version
+from pexpect.popen_spawn import PopenSpawn
 from pytest import mark, raises
 from twisted.internet import defer
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
+from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
@@ -176,11 +180,7 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
                 "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
             }
         )
-        with warnings.catch_warnings(record=True) as w:
-            self.assertRaises(AttributeError, CrawlerRunner, settings)
-            self.assertEqual(len(w), 1)
-            self.assertIn("SPIDER_LOADER_CLASS", str(w[0].message))
-            self.assertIn("scrapy.interfaces.ISpiderLoader", str(w[0].message))
+        self.assertRaises(MultipleInvalid, CrawlerRunner, settings)
 
     def test_crawler_runner_accepts_dict(self):
         runner = CrawlerRunner({"foo": "bar"})
@@ -289,9 +289,12 @@ class ScriptRunnerMixin:
     script_dir: Path
     cwd = os.getcwd()
 
-    def run_script(self, script_name: str, *script_args):
+    def get_script_args(self, script_name: str, *script_args: str) -> List[str]:
         script_path = self.script_dir / script_name
-        args = [sys.executable, str(script_path)] + list(script_args)
+        return [sys.executable, str(script_path)] + list(script_args)
+
+    def run_script(self, script_name: str, *script_args: str) -> str:
+        args = self.get_script_args(script_name, *script_args)
         p = subprocess.Popen(
             args,
             env=get_mockserver_env(),
@@ -516,6 +519,36 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         log = self.run_script("args_settings.py")
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("The value of FOO is 42", log)
+
+    def test_shutdown_graceful(self):
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
+        args = self.get_script_args("sleeping.py", "-a", "sleep=3")
+        p = PopenSpawn(args, timeout=5)
+        p.expect_exact("Spider opened")
+        p.expect_exact("Crawled (200)")
+        p.kill(sig)
+        p.expect_exact("shutting down gracefully")
+        p.expect_exact("Spider closed (shutdown)")
+        p.wait()
+
+    @defer.inlineCallbacks
+    def test_shutdown_forced(self):
+        from twisted.internet import reactor
+
+        sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
+        args = self.get_script_args("sleeping.py", "-a", "sleep=10")
+        p = PopenSpawn(args, timeout=5)
+        p.expect_exact("Spider opened")
+        p.expect_exact("Crawled (200)")
+        p.kill(sig)
+        p.expect_exact("shutting down gracefully")
+        # sending the second signal too fast often causes problems
+        d = defer.Deferred()
+        reactor.callLater(0.1, d.callback, None)
+        yield d
+        p.kill(sig)
+        p.expect_exact("forcing unclean shutdown")
+        p.wait()
 
 
 class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
