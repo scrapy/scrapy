@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import time
 
 from scrapy.utils.misc import create_instance
 
@@ -126,6 +127,28 @@ class ScrapyPriorityQueue:
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
 
 
+class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
+    """This priority queue has the similar implementation as default ScrapyPriorityQueue
+    but it uses timestamps as priority. It allows to easily add per request delays and
+    doesn't touch the default queue.
+    If this priority queue doesn't contain any requests to process or the current time is less than
+    the next time when request should be processed it returns None and request from the main priority queue
+    will be taken.
+    """
+
+    def priority(self, request):
+        now = int(time.time())
+        per_request_delay = request.meta.get("request_delay", 0)
+        return now + per_request_delay
+
+    def pop(self):
+        if self.curprio is None:
+            return
+        if time.time() < self.curprio:
+            return
+        return super().pop()
+
+
 class DownloaderInterface:
     def __init__(self, crawler):
         self.downloader = crawler.engine.downloader
@@ -147,6 +170,12 @@ class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
+
+    It works better than :class:`~scrapy.pqueues.ScrapyPriorityQueue` when you
+    crawl many different domains in parallel.
+
+    It does not work together with the :setting:`CONCURRENT_REQUESTS_PER_IP`
+    setting.
     """
 
     @classmethod

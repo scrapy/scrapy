@@ -1,5 +1,6 @@
 # Tests requirements
 attrs
+freezegun
 pexpect >= 4.8.0
 pyftpdlib >= 1.5.8
 pytest
