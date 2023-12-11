@@ -223,7 +223,7 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         assert newresponse is not response
         self.assertEqual(
-            newresponse.headers.getlist("Content-Encoding"), [b"gzip, foo"]
+            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
         )
 
     def test_multi_compression_multiple_header(self):
