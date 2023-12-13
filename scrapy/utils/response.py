@@ -103,9 +103,9 @@ def open_in_browser(
     body = response.body
     if isinstance(response, HtmlResponse):
         if b"<base" not in body:
-            repl = rf'\1<base href="{response.url}">'
-            body = re.sub(b"<!--.{,1024}?-->", b"", body, flags=re.DOTALL)
-            body = re.sub(rb"(<head(?:>|\s.{,1024}?>))", to_bytes(repl), body)
+            repl = rf'\0<base href="{response.url}">'
+            body = re.sub(b"(?s)<!--.*?(?:-->|$)", b"", body)
+            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"

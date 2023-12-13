@@ -1,10 +1,12 @@
 import unittest
 import warnings
 from pathlib import Path
+from time import process_time
 from urllib.parse import urlparse
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response, TextResponse
+from scrapy.settings.default_settings import DOWNLOAD_MAXSIZE
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
     get_base_url,
@@ -198,3 +200,37 @@ class ResponseUtilsTest(unittest.TestCase):
         assert open_in_browser(
             r5, _openfunc=check_base_url
         ), "Inject unique base url with conditional comment"
+
+    def test_open_in_browser_redos_comment(self):
+        MAX_CPU_TIME = 30
+
+        # Exploit input from
+        # https://makenowjust-labs.github.io/recheck/playground/
+        # for /<!--.*?-->/ (old pattern to remove comments).
+        body = b"-><!--\x00" * (int(DOWNLOAD_MAXSIZE / 7) - 10) + b"->\n<!---->"
+
+        response = HtmlResponse("https://example.com", body=body)
+
+        start_time = process_time()
+
+        open_in_browser(response, lambda url: True)
+
+        end_time = process_time()
+        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+
+    def test_open_in_browser_redos_head(self):
+        MAX_CPU_TIME = 15
+
+        # Exploit input from
+        # https://makenowjust-labs.github.io/recheck/playground/
+        # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
+        body = b"<head\t" * int(DOWNLOAD_MAXSIZE / 6)
+
+        response = HtmlResponse("https://example.com", body=body)
+
+        start_time = process_time()
+
+        open_in_browser(response, lambda url: True)
+
+        end_time = process_time()
+        self.assertLess(end_time - start_time, MAX_CPU_TIME)
