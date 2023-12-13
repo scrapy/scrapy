@@ -269,6 +269,7 @@ class GCSFeedStorage(BlockingFeedStorage):
         bucket = client.get_bucket(self.bucket_name)
         blob = bucket.blob(self.blob_name)
         blob.upload_from_file(file, predefined_acl=self.acl)
+        self.file.close()
 
 
 class FTPFeedStorage(BlockingFeedStorage):
@@ -310,6 +311,7 @@ class FTPFeedStorage(BlockingFeedStorage):
             use_active_mode=self.use_active_mode,
             overwrite=self.overwrite,
         )
+        self.file.close()
 
 
 class FeedSlot:
