@@ -8,6 +8,7 @@ import zipfile
 import tarfile
 import logging
 from tempfile import mktemp
+from warnings import warn
 
 import six
 
@@ -16,7 +17,17 @@ try:
 except ImportError:
     from io import BytesIO
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.responsetypes import responsetypes
+
+warn(
+    "Use of the scrapy.downloadermiddlewares.decompression module is "
+    "discouraged, as it is susceptible to decompression bomb attacks. For "
+    "details, see "
+    "https://github.com/scrapy/scrapy/security/advisories/GHSA-7j7m-v7m3-jqm7",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 
