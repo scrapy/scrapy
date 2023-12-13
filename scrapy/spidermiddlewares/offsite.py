@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable, Set
 
 from scrapy import Spider, signals
 from scrapy.crawler import Crawler
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.httpobj import urlparse_cached
@@ -51,15 +50,11 @@ class OffsiteMiddleware:
     def _filter(self, request: Any, spider: Spider) -> bool:
         if not isinstance(request, Request):
             return True
-        if request.dont_filter:
-            warnings.warn(
-                "The dont_filter filter flag is deprecated in OffsiteMiddleware. "
-                "Set 'allow_offsite' to True in Request.meta instead.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            return True
-        if request.meta.get("allow_offsite") or self.should_follow(request, spider):
+        if (
+            request.dont_filter
+            or request.meta.get("allow_offsite")
+            or self.should_follow(request, spider)
+        ):
             return True
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:

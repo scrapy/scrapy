@@ -345,14 +345,10 @@ OffsiteMiddleware
    :attr:`~scrapy.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
-   If ``allow_offsite`` is set to ``True`` in :attr:`Request.meta`, then the
-   offsite middleware will allow the request even if its domain is not listed
+   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
+   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
+   the OffsiteMiddleware will allow the request even if its domain is not listed
    in allowed domains.
-
-   .. caution:: Setting :attr:`~scrapy.Request.dont_filter` to ``True`` also
-                causes the offsite middleware to allow the request. However,
-                this is deprecated. Use ``allow_offsite`` instead in
-                :attr:`Request.meta`.
 
 
 RefererMiddleware
