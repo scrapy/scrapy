@@ -16,6 +16,10 @@ Scrapy 2.11.1 (unreleased)
 
     .. _7j7m-v7m3-jqm7 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-7j7m-v7m3-jqm7
 
+-   Also in relation with the `7j7m-v7m3-jqm7 security advisory`_, the
+    deprecated ``scrapy.downloadermiddlewares.decompression`` module has been
+    removed.
+
 
 .. _release-2.11.0:
 
@@ -2895,6 +2899,10 @@ Scrapy 1.8.4 (unreleased)
 -   :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` now also apply
     to the decompressed response body. Please, see the `7j7m-v7m3-jqm7 security
     advisory`_ for more information.
+
+-   Also in relation with the `7j7m-v7m3-jqm7 security advisory`_, use of the
+    ``scrapy.downloadermiddlewares.decompression`` module is discouraged and
+    will trigger a warning.
 
 
 .. _release-1.8.3:
