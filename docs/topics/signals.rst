@@ -466,6 +466,45 @@ headers_received
     :param spider: the spider associated with the response
     :type spider: :class:`~scrapy.Spider` object
 
+start_request_returned
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: start_request_returned
+.. function:: start_request_returned(request)
+
+    .. versionadded:: VERSION
+
+    Sent after a :class:`~scrapy.http.Request` is returned by the
+    :meth:`spider.start_requests <scrapy.Spider.start_requests>` iterator and
+    processed by the
+    :meth:`process_start_requests <scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests>`
+    method of :ref:`spider middlewares <topics-spider-middleware>`, and before
+    that request reaches the :ref:`scheduler <topics-scheduler>`
+    (:signal:`request_scheduled` signal).
+
+    This signal does not support returning deferreds from its handlers.
+
+    :param request: Returned request.
+    :type request: scrapy.http.Request
+
+start_requests_exhausted
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: start_requests_exhausted
+.. function:: start_requests_exhausted()
+
+    .. versionadded:: VERSION
+
+    Sent after the :meth:`spider.start_requests <scrapy.Spider.start_requests>`
+    iterator (including the :meth:`process_start_requests <scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests>`
+    method of :ref:`spider middlewares <topics-spider-middleware>`) is
+    exhausted, either normally or due to an exception.
+
+    The :signal:`start_request_returned` signal will have been called for all
+    start requests by the time this signal is sent.
+
+    This signal does not support returning deferreds from its handlers.
+
 Response signals
 ----------------
 

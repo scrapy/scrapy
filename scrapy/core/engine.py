@@ -190,6 +190,7 @@ class ExecutionEngine:
                 request = next(self.slot.start_requests)
             except StopIteration:
                 self.slot.start_requests = None
+                self.signals.send_catch_log(signal=signals.start_requests_exhausted)
             except Exception:
                 self.slot.start_requests = None
                 logger.error(
@@ -197,7 +198,11 @@ class ExecutionEngine:
                     exc_info=True,
                     extra={"spider": self.spider},
                 )
+                self.signals.send_catch_log(signal=signals.start_requests_exhausted)
             else:
+                self.signals.send_catch_log(
+                    signal=signals.start_request_returned, request=request
+                )
                 self.crawl(request)
 
         if self.spider_is_idle() and self.slot.close_if_idle:
