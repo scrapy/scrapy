@@ -43,10 +43,10 @@ def xmliter(
     """
     nodename_patt = re.escape(nodename)
 
-    DOCUMENT_HEADER_RE = re.compile(r"<\?xml[^>]{1,1024}>\s*", re.S)
+    DOCUMENT_HEADER_RE = re.compile(r"<\?xml[^>]+>\s*", re.S)
     HEADER_END_RE = re.compile(rf"<\s*/{nodename_patt}\s*>", re.S)
-    END_TAG_RE = re.compile(r"<\s*/([^\s>]{1,1024})\s*>", re.S)
-    NAMESPACE_RE = re.compile(r"((xmlns[:A-Za-z]{,1024})=[^>\s]+)", re.S)
+    END_TAG_RE = re.compile(r"<\s*/([^\s>]+)\s*>", re.S)
+    NAMESPACE_RE = re.compile(r"((xmlns[:A-Za-z]*)=[^>\s]+)", re.S)
     text = _body_or_str(obj)
 
     document_header_match = re.search(DOCUMENT_HEADER_RE, text)
@@ -60,15 +60,13 @@ def xmliter(
         for tagname in reversed(re.findall(END_TAG_RE, header_end)):
             assert header_end_idx
             tag = re.search(
-                rf"<\s*{tagname}.{{,1024}}?xmlns[:=][^>]{{,1024}}>",
-                text[: header_end_idx[1]],
-                re.S,
+                rf"<\s*{tagname}.*?xmlns[:=][^>]*>", text[: header_end_idx[1]], re.S
             )
             if tag:
                 for x in re.findall(NAMESPACE_RE, tag.group()):
                     namespaces[x[1]] = x[0]
 
-    r = re.compile(rf"<{nodename_patt}[\s>].{{,1024}}?</{nodename_patt}>", re.DOTALL)
+    r = re.compile(rf"<{nodename_patt}[\s>].*?</{nodename_patt}>", re.DOTALL)
     for match in r.finditer(text):
         nodetext = (
             document_header
