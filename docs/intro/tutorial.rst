@@ -493,7 +493,15 @@ in the callback, as you can see below:
                     "tags": quote.css("div.tags a.tag::text").getall(),
                 }
 
-If you run this spider, it will output the extracted data with the log::
+To run this spider, exit the scrapy shell by entering::
+
+    quit()
+
+Then, run::
+
+   scrapy crawl quotes
+
+Now, it should output the extracted data with the log::
 
     2016-09-19 18:57:19 [scrapy.core.scraper] DEBUG: Scraped from <200 https://quotes.toscrape.com/page/1/>
     {'tags': ['life', 'love'], 'author': 'André Gide', 'text': '“It is better to be hated for what you are than to be loved for what you are not.”'}
