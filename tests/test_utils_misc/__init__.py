@@ -9,6 +9,7 @@ from scrapy.utils.misc import (
     arg_to_iter,
     build_from_crawler,
     build_from_settings,
+    create_instance,
     load_object,
     rel_has_nofollow,
     set_environ,
@@ -96,29 +97,95 @@ class UtilsMiscTestCase(unittest.TestCase):
             list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")]
         )
 
-    def test_build_from_crawler(self):
+    def test_create_instance(self):
+        settings = mock.MagicMock()
         crawler = mock.MagicMock(spec_set=["settings"])
         args = (True, 100.0)
         kwargs = {"key": "val"}
 
-        def _test_with_crawler(m, crawler):
-            build_from_crawler(m, crawler, *args, **kwargs)
-            if hasattr(m, "from_crawler"):
-                m.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
-                self.assertEqual(m.call_count, 0)
+        def _test_with_settings(mock, settings):
+            create_instance(mock, settings, None, *args, **kwargs)
+            if hasattr(mock, "from_crawler"):
+                self.assertEqual(mock.from_crawler.call_count, 0)
+            if hasattr(mock, "from_settings"):
+                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
+                self.assertEqual(mock.call_count, 0)
             else:
-                m.assert_called_once_with(*args, **kwargs)
+                mock.assert_called_once_with(*args, **kwargs)
 
-        # Check usage of correct constructor using two mocks:
+        def _test_with_crawler(mock, settings, crawler):
+            create_instance(mock, settings, crawler, *args, **kwargs)
+            if hasattr(mock, "from_crawler"):
+                mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
+                if hasattr(mock, "from_settings"):
+                    self.assertEqual(mock.from_settings.call_count, 0)
+                self.assertEqual(mock.call_count, 0)
+            elif hasattr(mock, "from_settings"):
+                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
+                self.assertEqual(mock.call_count, 0)
+            else:
+                mock.assert_called_once_with(*args, **kwargs)
+
+        # Check usage of correct constructor using four mocks:
         #   1. with no alternative constructors
-        #   2. with from_crawler() constructor
+        #   2. with from_settings() constructor
+        #   3. with from_crawler() constructor
+        #   4. with from_settings() and from_crawler() constructor
         spec_sets = (
             ["__qualname__"],
+            ["__qualname__", "from_settings"],
             ["__qualname__", "from_crawler"],
+            ["__qualname__", "from_settings", "from_crawler"],
         )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
-            _test_with_crawler(m, crawler)
+            _test_with_settings(m, settings)
+            m.reset_mock()
+            _test_with_crawler(m, settings, crawler)
+
+        # Check adoption of crawler settings
+        m = mock.MagicMock(spec_set=["__qualname__", "from_settings"])
+        create_instance(m, None, crawler, *args, **kwargs)
+        m.from_settings.assert_called_once_with(crawler.settings, *args, **kwargs)
+
+        with self.assertRaises(ValueError):
+            create_instance(m, None, None)
+
+        m.from_settings.return_value = None
+        with self.assertRaises(TypeError):
+            create_instance(m, settings, None)
+
+    def test_build_from_crawler(self):
+        settings = mock.MagicMock()
+        crawler = mock.MagicMock(spec_set=["settings"])
+        args = (True, 100.0)
+        kwargs = {"key": "val"}
+
+        def _test_with_crawler(mock, settings, crawler):
+            build_from_crawler(mock, crawler, *args, **kwargs)
+            if hasattr(mock, "from_crawler"):
+                mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
+                if hasattr(mock, "from_settings"):
+                    self.assertEqual(mock.from_settings.call_count, 0)
+                self.assertEqual(mock.call_count, 0)
+            elif hasattr(mock, "from_settings"):
+                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
+                self.assertEqual(mock.call_count, 0)
+            else:
+                mock.assert_called_once_with(*args, **kwargs)
+
+        # Check usage of correct constructor using three mocks:
+        #   1. with no alternative constructors
+        #   2. with from_crawler() constructor
+        #   3. with from_settings() and from_crawler() constructor
+        spec_sets = (
+            ["__qualname__"],
+            ["__qualname__", "from_crawler"],
+            ["__qualname__", "from_settings", "from_crawler"],
+        )
+        for specs in spec_sets:
+            m = mock.MagicMock(spec_set=specs)
+            _test_with_crawler(m, settings, crawler)
             m.reset_mock()
 
         # Check adoption of crawler
@@ -134,20 +201,20 @@ class UtilsMiscTestCase(unittest.TestCase):
 
         def _test_with_settings(mock, settings):
             build_from_settings(mock, settings, *args, **kwargs)
-            if hasattr(mock, "from_crawler"):
-                self.assertEqual(mock.from_crawler.call_count, 0)
             if hasattr(mock, "from_settings"):
                 mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
                 self.assertEqual(mock.call_count, 0)
             else:
                 mock.assert_called_once_with(*args, **kwargs)
 
-        # Check usage of correct constructor using two mocks:
+        # Check usage of correct constructor using three mocks:
         #   1. with no alternative constructors
         #   2. with from_settings() constructor
+        #   3. with from_settings() and from_crawler() constructor
         spec_sets = (
             ["__qualname__"],
             ["__qualname__", "from_settings"],
+            ["__qualname__", "from_settings", "from_crawler"],
         )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
