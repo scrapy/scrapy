@@ -2912,7 +2912,7 @@ Scrapy 1.8.4 (unreleased)
     To minimize the impact of this change on existing code,
     :func:`~scrapy.utils.iterators.xmliter_lxml` now supports indicating
     the node namespace as a prefix in the node name, and big files with highly
-    nested trees when using lxml 4.2 or later.
+    nested trees when using libxml2 2.7+.
 
     Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
 
