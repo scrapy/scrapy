@@ -12,10 +12,13 @@ from typing import (
     List,
     Literal,
     Optional,
+    Tuple,
     Union,
     cast,
     overload,
 )
+
+from lxml import etree
 
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
@@ -77,15 +80,31 @@ def xmliter(
         yield Selector(text=nodetext, type="xml")
 
 
+def _resolve_xml_namespace(element_name: str, data: bytes) -> Tuple[str, str]:
+    if ":" not in element_name:
+        return element_name, None, None
+    reader: "SupportsReadClose[bytes]" = _StreamReader(data)
+    node_prefix, element_name = element_name.split(":", maxsplit=1)
+    ns_iterator = etree.iterparse(
+        reader, encoding=reader.encoding, events=("start-ns",)
+    )
+    for event, (_prefix, _namespace) in ns_iterator:
+        if _prefix != node_prefix:
+            continue
+        return element_name, _prefix, _namespace
+    return f"{node_prefix}:{element_name}", None, None
+
+
 def xmliter_lxml(
     obj: Union[Response, str, bytes],
     nodename: str,
     namespace: Optional[str] = None,
     prefix: str = "x",
 ) -> Generator[Selector, Any, None]:
-    from lxml import etree
+    if not namespace:
+        nodename, prefix, namespace = _resolve_xml_namespace(nodename, obj)
 
-    reader = _StreamReader(obj)
+    reader: "SupportsReadClose[bytes]" = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
         cast("SupportsReadClose[bytes]", reader), tag=tag, encoding=reader.encoding

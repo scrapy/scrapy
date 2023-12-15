@@ -1,4 +1,3 @@
-from pytest import mark
 from twisted.trial import unittest
 
 from scrapy.http import Response, TextResponse, XmlResponse
@@ -246,10 +245,6 @@ class XmliterTestCase(unittest.TestCase):
 
 class LxmlXmliterTestCase(XmliterTestCase):
     xmliter = staticmethod(xmliter_lxml)
-
-    @mark.xfail(reason="known bug of the current implementation")
-    def test_xmliter_namespaced_nodename(self):
-        super().test_xmliter_namespaced_nodename()
 
     def test_xmliter_iterate_namespace(self):
         body = b"""
