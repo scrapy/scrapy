@@ -101,18 +101,18 @@ def _resolve_xml_namespace(element_name: str, data: bytes) -> Tuple[str, str]:
     if ":" not in element_name:
         return element_name, None, None
     reader: "SupportsReadClose[bytes]" = _StreamReader(data)
-    node_prefix, element_name = element_name.split(":", maxsplit=1)
+    input_prefix, element_name = element_name.split(":", maxsplit=1)
     ns_iterator = etree.iterparse(
         reader,
         encoding=reader.encoding,
         events=("start-ns",),
         **_ITERPARSE_KWARGS,
     )
-    for event, (_prefix, _namespace) in ns_iterator:
-        if _prefix != node_prefix:
+    for event, (prefix, namespace) in ns_iterator:
+        if prefix != input_prefix:
             continue
-        return element_name, _prefix, _namespace
-    return f"{node_prefix}:{element_name}", None, None
+        return element_name, prefix, namespace
+    return f"{input_prefix}:{element_name}", None, None
 
 
 def xmliter_lxml(
