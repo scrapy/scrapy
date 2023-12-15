@@ -1,8 +1,6 @@
 import functools
 import logging
 from collections import defaultdict
-from inspect import signature
-from warnings import warn
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
@@ -11,7 +9,6 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import defer_result, mustbe_deferred
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 
@@ -43,9 +40,6 @@ class MediaPipeline:
         )
         self.allow_redirects = settings.getbool(resolve("MEDIA_ALLOW_REDIRECTS"), False)
         self._handle_statuses(self.allow_redirects)
-
-        # Check if deprecated methods are being used and make them compatible
-        self._make_compatible()
 
     def _handle_statuses(self, allow_redirects):
         self.handle_httpstatus_list = None
@@ -125,52 +119,6 @@ class MediaPipeline:
             )
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
-
-    def _make_compatible(self):
-        """Make overridable methods of MediaPipeline and subclasses backwards compatible"""
-        methods = [
-            "file_path",
-            "thumb_path",
-            "media_to_download",
-            "media_downloaded",
-            "file_downloaded",
-            "image_downloaded",
-            "get_images",
-        ]
-
-        for method_name in methods:
-            method = getattr(self, method_name, None)
-            if callable(method):
-                setattr(self, method_name, self._compatible(method))
-
-    def _compatible(self, func):
-        """Wrapper for overridable methods to allow backwards compatibility"""
-        self._check_signature(func)
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            if self._expects_item[func.__name__]:
-                return func(*args, **kwargs)
-
-            kwargs.pop("item", None)
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    def _check_signature(self, func):
-        sig = signature(func)
-        self._expects_item[func.__name__] = True
-
-        if "item" not in sig.parameters:
-            old_params = str(sig)[1:-1]
-            new_params = old_params + ", *, item=None"
-            warn(
-                f"{func.__name__}(self, {old_params}) is deprecated, "
-                f"please use {func.__name__}(self, {new_params})",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            self._expects_item[func.__name__] = False
 
     def _modify_media_request(self, request):
         if self.handle_httpstatus_list:

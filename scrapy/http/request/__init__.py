@@ -5,12 +5,26 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 import inspect
-from typing import Callable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    AnyStr,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from w3lib.url import safe_url_string
 
 import scrapy
-from scrapy.http.common import obsolete_setter
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
@@ -20,7 +34,7 @@ from scrapy.utils.url import escape_ajax
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 
-def NO_CALLBACK(*args, **kwargs):
+def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
     """When assigned to the ``callback`` parameter of
     :class:`~scrapy.http.Request`, it indicates that the request is not meant
     to have a spider callback at all.
@@ -77,24 +91,24 @@ class Request(object_ref):
         url: str,
         callback: Optional[Callable] = None,
         method: str = "GET",
-        headers: Optional[dict] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[Union[dict, List[dict]]] = None,
-        meta: Optional[dict] = None,
+        meta: Optional[Dict[str, Any]] = None,
         encoding: str = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable] = None,
         flags: Optional[List[str]] = None,
-        cb_kwargs: Optional[dict] = None,
+        cb_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._encoding = encoding  # this one has to be set first
-        self.method = str(method).upper()
+        self._encoding: str = encoding  # this one has to be set first
+        self.method: str = str(method).upper()
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
             raise TypeError(f"Request priority not an integer: {priority!r}")
-        self.priority = priority
+        self.priority: int = priority
 
         if not (callable(callback) or callback is None):
             raise TypeError(
@@ -102,30 +116,33 @@ class Request(object_ref):
             )
         if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
-        self.callback = callback
-        self.errback = errback
+        self.callback: Optional[Callable] = callback
+        self.errback: Optional[Callable] = errback
 
-        self.cookies = cookies or {}
-        self.headers = Headers(headers or {}, encoding=encoding)
-        self.dont_filter = dont_filter
+        self.cookies: Union[dict, List[dict]] = cookies or {}
+        self.headers: Headers = Headers(headers or {}, encoding=encoding)
+        self.dont_filter: bool = dont_filter
 
-        self._meta = dict(meta) if meta else None
-        self._cb_kwargs = dict(cb_kwargs) if cb_kwargs else None
-        self.flags = [] if flags is None else list(flags)
+        self._meta: Optional[Dict[str, Any]] = dict(meta) if meta else None
+        self._cb_kwargs: Optional[Dict[str, Any]] = (
+            dict(cb_kwargs) if cb_kwargs else None
+        )
+        self.flags: List[str] = [] if flags is None else list(flags)
 
     @property
-    def cb_kwargs(self) -> dict:
+    def cb_kwargs(self) -> Dict[str, Any]:
         if self._cb_kwargs is None:
             self._cb_kwargs = {}
         return self._cb_kwargs
 
     @property
-    def meta(self) -> dict:
+    def meta(self) -> Dict[str, Any]:
         if self._meta is None:
             self._meta = {}
         return self._meta
 
-    def _get_url(self) -> str:
+    @property
+    def url(self) -> str:
         return self._url
 
     def _set_url(self, url: str) -> None:
@@ -142,15 +159,12 @@ class Request(object_ref):
         ):
             raise ValueError(f"Missing scheme in request url: {self._url}")
 
-    url = property(_get_url, obsolete_setter(_set_url, "url"))
-
-    def _get_body(self) -> bytes:
+    @property
+    def body(self) -> bytes:
         return self._body
 
     def _set_body(self, body: Optional[Union[str, bytes]]) -> None:
         self._body = b"" if body is None else to_bytes(body, self.encoding)
-
-    body = property(_get_body, obsolete_setter(_set_body, "body"))
 
     @property
     def encoding(self) -> str:
@@ -162,19 +176,19 @@ class Request(object_ref):
     def copy(self) -> "Request":
         return self.replace()
 
-    def replace(self, *args, **kwargs) -> "Request":
+    def replace(self, *args: Any, **kwargs: Any) -> "Request":
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop("cls", self.__class__)
-        return cls(*args, **kwargs)
+        return cast(Request, cls(*args, **kwargs))
 
     @classmethod
     def from_curl(
         cls: Type[RequestTypeVar],
         curl_command: str,
         ignore_unknown_options: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> RequestTypeVar:
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
@@ -188,7 +202,7 @@ class Request(object_ref):
         ``ignore_unknown_options=False``.
 
         .. caution:: Using :meth:`from_curl` from :class:`~scrapy.http.Request`
-                     subclasses, such as :class:`~scrapy.http.JSONRequest`, or
+                     subclasses, such as :class:`~scrapy.http.JsonRequest`, or
                      :class:`~scrapy.http.XmlRpcRequest`, as well as having
                      :ref:`downloader middlewares <topics-downloader-middleware>`
                      and
@@ -207,7 +221,7 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> dict:
+    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> Dict[str, Any]:
         """Return a dictionary containing the Request's data.
 
         Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.
@@ -232,7 +246,7 @@ class Request(object_ref):
         return d
 
 
-def _find_method(obj, func):
+def _find_method(obj: Any, func: Callable) -> str:
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
     if obj and hasattr(func, "__func__"):

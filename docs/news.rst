@@ -3,6 +3,307 @@
 Release notes
 =============
 
+.. _release-2.11.0:
+
+Scrapy 2.11.0 (2023-09-18)
+--------------------------
+
+Highlights:
+
+-   Spiders can now modify :ref:`settings <topics-settings>` in their
+    :meth:`~scrapy.Spider.from_crawler` methods, e.g. based on :ref:`spider
+    arguments <spiderargs>`.
+
+-   Periodic logging of stats.
+
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   Most of the initialization of :class:`scrapy.crawler.Crawler` instances is
+    now done in :meth:`~scrapy.crawler.Crawler.crawl`, so the state of
+    instances before that method is called is now different compared to older
+    Scrapy versions. We do not recommend using the
+    :class:`~scrapy.crawler.Crawler` instances before
+    :meth:`~scrapy.crawler.Crawler.crawl` is called. (:issue:`6038`)
+
+-   :meth:`scrapy.Spider.from_crawler` is now called before the initialization
+    of various components previously initialized in
+    :meth:`scrapy.crawler.Crawler.__init__` and before the settings are
+    finalized and frozen. This change was needed to allow changing the settings
+    in :meth:`scrapy.Spider.from_crawler`. If you want to access the final
+    setting values and the initialized :class:`~scrapy.crawler.Crawler`
+    attributes in the spider code as early as possible you can do this in
+    :meth:`~scrapy.Spider.start_requests` or in a handler of the
+    :signal:`engine_started` signal. (:issue:`6038`)
+
+-   The :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method now
+    requires the response to be in a valid JSON encoding (UTF-8, UTF-16, or
+    UTF-32). If you need to deal with JSON documents in an invalid encoding,
+    use ``json.loads(response.text)`` instead. (:issue:`6016`)
+
+-   :class:`~scrapy.exporters.PythonItemExporter` used the binary output by
+    default but it no longer does. (:issue:`6006`, :issue:`6007`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed the binary export mode of
+    :class:`~scrapy.exporters.PythonItemExporter`, deprecated in Scrapy 1.1.0.
+    (:issue:`6006`, :issue:`6007`)
+
+    .. note:: If you are using this Scrapy version on Scrapy Cloud with a stack
+              that includes an older Scrapy version and get a "TypeError:
+              Unexpected options: binary" error, you may need to add
+              ``scrapinghub-entrypoint-scrapy >= 0.14.1`` to your project
+              requirements or switch to a stack that includes Scrapy 2.11.
+
+-   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
+    1.0.0, use :attr:`CrawlerRunner.spider_loader
+    <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   Running :meth:`~scrapy.crawler.Crawler.crawl` more than once on the same
+    :class:`scrapy.crawler.Crawler` instance is now deprecated. (:issue:`1587`,
+    :issue:`6040`)
+
+New features
+~~~~~~~~~~~~
+
+-   Spiders can now modify settings in their
+    :meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
+    arguments <spiderargs>`. (:issue:`1305`, :issue:`1580`, :issue:`2392`,
+    :issue:`3663`, :issue:`6038`)
+
+-   Added the :class:`~scrapy.extensions.periodic_log.PeriodicLog` extension
+    which can be enabled to log stats and/or their differences periodically.
+    (:issue:`5926`)
+
+-   Optimized the memory usage in :meth:`TextResponse.json
+    <scrapy.http.TextResponse.json>` by removing unnecessary body decoding.
+    (:issue:`5968`, :issue:`6016`)
+
+-   Links to ``.webp`` files are now ignored by :ref:`link extractors
+    <topics-link-extractors>`. (:issue:`6021`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed logging enabled add-ons. (:issue:`6036`)
+
+-   Fixed :class:`~scrapy.mail.MailSender` producing invalid message bodies
+    when the ``charset`` argument is passed to
+    :meth:`~scrapy.mail.MailSender.send`. (:issue:`5096`, :issue:`5118`)
+
+-   Fixed an exception when accessing ``self.EXCEPTIONS_TO_RETRY`` from a
+    subclass of :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`.
+    (:issue:`6049`, :issue:`6050`)
+
+-   :meth:`scrapy.settings.BaseSettings.getdictorlist`, used to parse
+    :setting:`FEED_EXPORT_FIELDS`, now handles tuple values. (:issue:`6011`,
+    :issue:`6013`)
+
+-   Calls to ``datetime.utcnow()``, no longer recommended to be used, have been
+    replaced with calls to ``datetime.now()`` with a timezone. (:issue:`6014`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Updated a deprecated function call in a pipeline example. (:issue:`6008`,
+    :issue:`6009`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Extended typing hints. (:issue:`6003`, :issue:`6005`, :issue:`6031`,
+    :issue:`6034`)
+
+-   Pinned brotli_ to 1.0.9 for the PyPy tests as 1.1.0 breaks them.
+    (:issue:`6044`, :issue:`6045`)
+
+-   Other CI and pre-commit improvements. (:issue:`6002`, :issue:`6013`,
+    :issue:`6046`)
+
+.. _release-2.10.1:
+
+Scrapy 2.10.1 (2023-08-30)
+--------------------------
+
+Marked ``Twisted >= 23.8.0`` as unsupported. (:issue:`6024`, :issue:`6026`)
+
+.. _release-2.10.0:
+
+Scrapy 2.10.0 (2023-08-04)
+--------------------------
+
+Highlights:
+
+-   Added Python 3.12 support, dropped Python 3.7 support.
+
+-   The new add-ons framework simplifies configuring 3rd-party components that
+    support it.
+
+-   Exceptions to retry can now be configured.
+
+-   Many fixes and improvements for feed exports.
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for Python 3.7. (:issue:`5953`)
+
+-   Added support for the upcoming Python 3.12. (:issue:`5984`)
+
+-   Minimum versions increased for these dependencies:
+
+    -   lxml_: 4.3.0 → 4.4.1
+
+    -   cryptography_: 3.4.6 → 36.0.0
+
+-   ``pkg_resources`` is no longer used. (:issue:`5956`, :issue:`5958`)
+
+-   boto3_ is now recommended instead of botocore_ for exporting to S3.
+    (:issue:`5833`).
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The value of the :setting:`FEED_STORE_EMPTY` setting is now ``True`` 
+    instead of ``False``. In earlier Scrapy versions empty files were created 
+    even when this setting was ``False`` (which was a bug that is now fixed), 
+    so the new default should keep the old behavior. (:issue:`872`, 
+    :issue:`5847`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   When a function is assigned to the :setting:`FEED_URI_PARAMS` setting,
+    returning ``None`` or modifying the ``params`` input parameter, deprecated
+    in Scrapy 2.6, is no longer supported. (:issue:`5994`, :issue:`5996`)
+
+-   The ``scrapy.utils.reqser`` module, deprecated in Scrapy 2.6, is removed.
+    (:issue:`5994`, :issue:`5996`)
+
+-   The ``scrapy.squeues`` classes ``PickleFifoDiskQueueNonRequest``,
+    ``PickleLifoDiskQueueNonRequest``, ``MarshalFifoDiskQueueNonRequest``,
+    and ``MarshalLifoDiskQueueNonRequest``, deprecated in
+    Scrapy 2.6, are removed. (:issue:`5994`, :issue:`5996`)
+
+-   The property ``open_spiders`` and the methods ``has_capacity`` and
+    ``schedule`` of :class:`scrapy.core.engine.ExecutionEngine`,
+    deprecated in Scrapy 2.6, are removed. (:issue:`5994`, :issue:`5998`)
+
+-   Passing a ``spider`` argument to the
+    :meth:`~scrapy.core.engine.ExecutionEngine.spider_is_idle`,
+    :meth:`~scrapy.core.engine.ExecutionEngine.crawl` and
+    :meth:`~scrapy.core.engine.ExecutionEngine.download` methods of
+    :class:`scrapy.core.engine.ExecutionEngine`, deprecated in Scrapy 2.6, is
+    no longer supported. (:issue:`5994`, :issue:`5998`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :class:`scrapy.utils.datatypes.CaselessDict` is deprecated, use
+    :class:`scrapy.utils.datatypes.CaseInsensitiveDict` instead.
+    (:issue:`5146`)
+
+-   Passing the ``custom`` argument to
+    :func:`scrapy.utils.conf.build_component_list` is deprecated, it was used
+    in the past to merge ``FOO`` and ``FOO_BASE`` setting values but now Scrapy
+    uses :func:`scrapy.settings.BaseSettings.getwithbase` to do the same.
+    Code that uses this argument and cannot be switched to ``getwithbase()``
+    can be switched to merging the values explicitly. (:issue:`5726`,
+    :issue:`5923`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added support for :ref:`Scrapy add-ons <topics-addons>`. (:issue:`5950`)
+
+-   Added the :setting:`RETRY_EXCEPTIONS` setting that configures which
+    exceptions will be retried by
+    :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`.
+    (:issue:`2701`, :issue:`5929`)
+
+-   Added the possiiblity to close the spider if no items were produced in the
+    specified time, configured by :setting:`CLOSESPIDER_TIMEOUT_NO_ITEM`.
+    (:issue:`5979`)
+
+-   Added support for the :setting:`AWS_REGION_NAME` setting to feed exports.
+    (:issue:`5980`)
+
+-   Added support for using :class:`pathlib.Path` objects that refer to
+    absolute Windows paths in the :setting:`FEEDS` setting. (:issue:`5939`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed creating empty feeds even with ``FEED_STORE_EMPTY=False``.
+    (:issue:`872`, :issue:`5847`)
+
+-   Fixed using absolute Windows paths when specifying output files.
+    (:issue:`5969`, :issue:`5971`)
+
+-   Fixed problems with uploading large files to S3 by switching to multipart
+    uploads (requires boto3_). (:issue:`960`, :issue:`5735`, :issue:`5833`)
+
+-   Fixed the JSON exporter writing extra commas when some exceptions occur.
+    (:issue:`3090`, :issue:`5952`)
+
+-   Fixed the "read of closed file" error in the CSV exporter. (:issue:`5043`,
+    :issue:`5705`)
+
+-   Fixed an error when a component added by the class object throws
+    :exc:`~scrapy.exceptions.NotConfigured` with a message. (:issue:`5950`,
+    :issue:`5992`)
+
+-   Added the missing :meth:`scrapy.settings.BaseSettings.pop` method.
+    (:issue:`5959`, :issue:`5960`, :issue:`5963`)
+
+-   Added :class:`~scrapy.utils.datatypes.CaseInsensitiveDict` as a replacement
+    for :class:`~scrapy.utils.datatypes.CaselessDict` that fixes some API
+    inconsistencies. (:issue:`5146`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Documented :meth:`scrapy.Spider.update_settings`. (:issue:`5745`,
+    :issue:`5846`)
+
+-   Documented possible problems with early Twisted reactor installation and
+    their solutions. (:issue:`5981`, :issue:`6000`)
+
+-   Added examples of making additional requests in callbacks. (:issue:`5927`)
+
+-   Improved the feed export docs. (:issue:`5579`, :issue:`5931`)
+
+-   Clarified the docs about request objects on redirection. (:issue:`5707`,
+    :issue:`5937`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added support for running tests against the installed Scrapy version.
+    (:issue:`4914`, :issue:`5949`)
+
+-   Extended typing hints. (:issue:`5925`, :issue:`5977`)
+
+-   Fixed the ``test_utils_asyncio.AsyncioTest.test_set_asyncio_event_loop``
+    test. (:issue:`5951`)
+
+-   Fixed the ``test_feedexport.BatchDeliveriesTest.test_batch_path_differ``
+    test on Windows. (:issue:`5847`)
+
+-   Enabled CI runs for Python 3.11 on Windows. (:issue:`5999`)
+
+-   Simplified skipping tests that depend on ``uvloop``. (:issue:`5984`)
+
+-   Fixed the ``extra-deps-pinned`` tox env. (:issue:`5948`)
+
+-   Implemented cleanups. (:issue:`5965`, :issue:`5986`)
+
 .. _release-2.9.0:
 
 Scrapy 2.9.0 (2023-05-08)
@@ -25,7 +326,7 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   Settings correponding to :setting:`DOWNLOAD_DELAY`,
+-   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
@@ -170,6 +471,10 @@ Deprecation removals
     (:issue:`5719`)
 
 -   The ``scrapy.utils.python.WeakKeyCache`` class, deprecated in Scrapy 2.4,
+    has now been removed.
+    (:issue:`5719`)
+
+-   The ``scrapy.utils.boto.is_botocore()`` function, deprecated in Scrapy 2.4,
     has now been removed.
     (:issue:`5719`)
 
@@ -5748,6 +6053,7 @@ First release of Scrapy.
 
 
 .. _AJAX crawlable urls: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started?csw=1
+.. _boto3: https://github.com/boto/boto3
 .. _botocore: https://github.com/boto/botocore
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/

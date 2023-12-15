@@ -12,8 +12,13 @@ alias to object in that case).
 from collections import defaultdict
 from operator import itemgetter
 from time import time
-from typing import DefaultDict
+from typing import TYPE_CHECKING, Any, DefaultDict, Iterable
 from weakref import WeakKeyDictionary
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 NoneType = type(None)
 live_refs: DefaultDict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
@@ -24,13 +29,14 @@ class object_ref:
 
     __slots__ = ()
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> "Self":
         obj = object.__new__(cls)
         live_refs[cls][obj] = time()
         return obj
 
 
-def format_live_refs(ignore=NoneType):
+# using Any as it's hard to type type(None)
+def format_live_refs(ignore: Any = NoneType) -> str:
     """Return a tabular representation of tracked objects"""
     s = "Live References\n\n"
     now = time()
@@ -44,12 +50,12 @@ def format_live_refs(ignore=NoneType):
     return s
 
 
-def print_live_refs(*a, **kw):
+def print_live_refs(*a: Any, **kw: Any) -> None:
     """Print tracked objects"""
     print(format_live_refs(*a, **kw))
 
 
-def get_oldest(class_name):
+def get_oldest(class_name: str) -> Any:
     """Get the oldest object for a specific class name"""
     for cls, wdict in live_refs.items():
         if cls.__name__ == class_name:
@@ -58,8 +64,9 @@ def get_oldest(class_name):
             return min(wdict.items(), key=itemgetter(1))[0]
 
 
-def iter_all(class_name):
+def iter_all(class_name: str) -> Iterable[Any]:
     """Iterate over all objects of the same class by its class name"""
     for cls, wdict in live_refs.items():
         if cls.__name__ == class_name:
             return wdict.keys()
+    return []

@@ -8,10 +8,10 @@ import logging
 import re
 import sys
 import warnings
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
+from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Callable, List, Optional, Tuple, Union
+from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -29,23 +29,20 @@ from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import create_instance, load_object
-from scrapy.utils.python import get_func_args, without_none_values
+from scrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
 
+try:
+    import boto3  # noqa: F401
+
+    IS_BOTO3_AVAILABLE = True
+except ImportError:
+    IS_BOTO3_AVAILABLE = False
+
 
 def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
-    argument_names = get_func_args(builder)
-    if "feed_options" in argument_names:
-        kwargs["feed_options"] = feed_options
-    else:
-        warnings.warn(
-            f"{builder.__qualname__} does not support the 'feed_options' keyword argument. Add a "
-            "'feed_options' parameter to its signature to remove this "
-            "warning. This parameter will become mandatory in a future "
-            "version of Scrapy.",
-            category=ScrapyDeprecationWarning,
-        )
+    kwargs["feed_options"] = feed_options
     return builder(*preargs, uri, *args, **kwargs)
 
 
@@ -165,6 +162,7 @@ class S3FeedStorage(BlockingFeedStorage):
         *,
         feed_options=None,
         session_token=None,
+        region_name=None,
     ):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
@@ -176,16 +174,41 @@ class S3FeedStorage(BlockingFeedStorage):
         self.keyname = u.path[1:]  # remove first "/"
         self.acl = acl
         self.endpoint_url = endpoint_url
-        import botocore.session
+        self.region_name = region_name
 
-        session = botocore.session.get_session()
-        self.s3_client = session.create_client(
-            "s3",
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            aws_session_token=self.session_token,
-            endpoint_url=self.endpoint_url,
-        )
+        if IS_BOTO3_AVAILABLE:
+            import boto3.session
+
+            session = boto3.session.Session()
+
+            self.s3_client = session.client(
+                "s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                aws_session_token=self.session_token,
+                endpoint_url=self.endpoint_url,
+                region_name=self.region_name,
+            )
+        else:
+            warnings.warn(
+                "`botocore` usage has been deprecated for S3 feed "
+                "export, please use `boto3` to avoid problems",
+                category=ScrapyDeprecationWarning,
+            )
+
+            import botocore.session
+
+            session = botocore.session.get_session()
+
+            self.s3_client = session.create_client(
+                "s3",
+                aws_access_key_id=self.access_key,
+                aws_secret_access_key=self.secret_key,
+                aws_session_token=self.session_token,
+                endpoint_url=self.endpoint_url,
+                region_name=self.region_name,
+            )
+
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
                 "S3 does not support appending to files. To "
@@ -203,15 +226,22 @@ class S3FeedStorage(BlockingFeedStorage):
             session_token=crawler.settings["AWS_SESSION_TOKEN"],
             acl=crawler.settings["FEED_STORAGE_S3_ACL"] or None,
             endpoint_url=crawler.settings["AWS_ENDPOINT_URL"] or None,
+            region_name=crawler.settings["AWS_REGION_NAME"] or None,
             feed_options=feed_options,
         )
 
     def _store_in_thread(self, file):
         file.seek(0)
-        kwargs = {"ACL": self.acl} if self.acl else {}
-        self.s3_client.put_object(
-            Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
-        )
+        if IS_BOTO3_AVAILABLE:
+            kwargs = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
+            )
+        else:
+            kwargs = {"ACL": self.acl} if self.acl else {}
+            self.s3_client.put_object(
+                Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
+            )
         file.close()
 
 
@@ -242,15 +272,23 @@ class GCSFeedStorage(BlockingFeedStorage):
 
 
 class FTPFeedStorage(BlockingFeedStorage):
-    def __init__(self, uri, use_active_mode=False, *, feed_options=None):
+    def __init__(
+        self,
+        uri: str,
+        use_active_mode: bool = False,
+        *,
+        feed_options: Optional[Dict[str, Any]] = None,
+    ):
         u = urlparse(uri)
-        self.host = u.hostname
-        self.port = int(u.port or "21")
-        self.username = u.username
-        self.password = unquote(u.password or "")
-        self.path = u.path
-        self.use_active_mode = use_active_mode
-        self.overwrite = not feed_options or feed_options.get("overwrite", True)
+        if not u.hostname:
+            raise ValueError(f"Got a storage URI without a hostname: {uri}")
+        self.host: str = u.hostname
+        self.port: int = int(u.port or "21")
+        self.username: str = u.username or ""
+        self.password: str = unquote(u.password or "")
+        self.path: str = u.path
+        self.use_active_mode: bool = use_active_mode
+        self.overwrite: bool = not feed_options or feed_options.get("overwrite", True)
 
     @classmethod
     def from_crawler(cls, crawler, uri, *, feed_options=None):
@@ -277,8 +315,6 @@ class FTPFeedStorage(BlockingFeedStorage):
 class FeedSlot:
     def __init__(
         self,
-        file,
-        exporter,
         storage,
         uri,
         format,
@@ -286,9 +322,14 @@ class FeedSlot:
         batch_id,
         uri_template,
         filter,
+        feed_options,
+        spider,
+        exporters,
+        settings,
+        crawler,
     ):
-        self.file = file
-        self.exporter = exporter
+        self.file = None
+        self.exporter = None
         self.storage = storage
         # feed params
         self.batch_id = batch_id
@@ -297,14 +338,43 @@ class FeedSlot:
         self.uri_template = uri_template
         self.uri = uri
         self.filter = filter
+        # exporter params
+        self.feed_options = feed_options
+        self.spider = spider
+        self.exporters = exporters
+        self.settings = settings
+        self.crawler = crawler
         # flags
         self.itemcount = 0
         self._exporting = False
+        self._fileloaded = False
 
     def start_exporting(self):
+        if not self._fileloaded:
+            self.file = self.storage.open(self.spider)
+            if "postprocessing" in self.feed_options:
+                self.file = PostProcessingManager(
+                    self.feed_options["postprocessing"], self.file, self.feed_options
+                )
+            self.exporter = self._get_exporter(
+                file=self.file,
+                format=self.feed_options["format"],
+                fields_to_export=self.feed_options["fields"],
+                encoding=self.feed_options["encoding"],
+                indent=self.feed_options["indent"],
+                **self.feed_options["item_export_kwargs"],
+            )
+            self._fileloaded = True
+
         if not self._exporting:
             self.exporter.start_exporting()
             self._exporting = True
+
+    def _get_instance(self, objcls, *args, **kwargs):
+        return create_instance(objcls, self.settings, self.crawler, *args, **kwargs)
+
+    def _get_exporter(self, file, format, *args, **kwargs):
+        return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
     def finish_exporting(self):
         if self._exporting:
@@ -347,7 +417,9 @@ class FeedExporter:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            uri = str(self.settings["FEED_URI"])  # handle pathlib.Path objects
+            uri = self.settings["FEED_URI"]
+            # handle pathlib.Path objects
+            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
             feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
@@ -357,7 +429,8 @@ class FeedExporter:
 
         # 'FEEDS' setting takes precedence over 'FEED_URI'
         for uri, feed_options in self.settings.getdict("FEEDS").items():
-            uri = str(uri)  # handle pathlib.Path objects
+            # handle pathlib.Path objects
+            uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
@@ -406,11 +479,16 @@ class FeedExporter:
                 return slot_.file.file
             return slot_.file
 
-        slot.finish_exporting()
-        if not slot.itemcount and not slot.store_empty:
-            # We need to call slot.storage.store nonetheless to get the file
-            # properly closed.
-            return defer.maybeDeferred(slot.storage.store, get_file(slot))
+        if slot.itemcount:
+            # Normal case
+            slot.finish_exporting()
+        elif slot.store_empty and slot.batch_id == 1:
+            # Need to store the empty file
+            slot.start_exporting()
+            slot.finish_exporting()
+        else:
+            # In this case, the file is not stored, so no processing is required.
+            return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
         d = defer.maybeDeferred(slot.storage.store, get_file(slot))
@@ -455,23 +533,7 @@ class FeedExporter:
         :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri, feed_options)
-        file = storage.open(spider)
-        if "postprocessing" in feed_options:
-            file = PostProcessingManager(
-                feed_options["postprocessing"], file, feed_options
-            )
-
-        exporter = self._get_exporter(
-            file=file,
-            format=feed_options["format"],
-            fields_to_export=feed_options["fields"],
-            encoding=feed_options["encoding"],
-            indent=feed_options["indent"],
-            **feed_options["item_export_kwargs"],
-        )
         slot = FeedSlot(
-            file=file,
-            exporter=exporter,
             storage=storage,
             uri=uri,
             format=feed_options["format"],
@@ -479,9 +541,12 @@ class FeedExporter:
             batch_id=batch_id,
             uri_template=uri_template,
             filter=self.filters[uri_template],
+            feed_options=feed_options,
+            spider=spider,
+            exporters=self.exporters,
+            settings=self.settings,
+            crawler=getattr(self, "crawler", None),
         )
-        if slot.store_empty:
-            slot.start_exporting()
         return slot
 
     def item_scraped(self, item, spider):
@@ -553,7 +618,7 @@ class FeedExporter:
 
     def _storage_supported(self, uri, feed_options):
         scheme = urlparse(uri).scheme
-        if scheme in self.storages:
+        if scheme in self.storages or PureWindowsPath(uri).drive:
             try:
                 self._get_storage(uri, feed_options)
                 return True
@@ -565,21 +630,13 @@ class FeedExporter:
         else:
             logger.error("Unknown feed storage scheme: %(scheme)s", {"scheme": scheme})
 
-    def _get_instance(self, objcls, *args, **kwargs):
-        return create_instance(
-            objcls, self.settings, getattr(self, "crawler", None), *args, **kwargs
-        )
-
-    def _get_exporter(self, file, format, *args, **kwargs):
-        return self._get_instance(self.exporters[format], file, *args, **kwargs)
-
     def _get_storage(self, uri, feed_options):
         """Fork of create_instance specific to feed storage classes
 
         It supports not passing the *feed_options* parameters to classes that
         do not support it, and issuing a deprecation warning instead.
         """
-        feedcls = self.storages[urlparse(uri).scheme]
+        feedcls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
         crawler = getattr(self, "crawler", None)
 
         def build_instance(builder, *preargs):
@@ -609,25 +666,16 @@ class FeedExporter:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        utc_now = datetime.utcnow()
+        utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
         params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
-        original_params = params.copy()
         uripar_function = (
             load_object(uri_params_function)
             if uri_params_function
             else lambda params, _: params
         )
         new_params = uripar_function(params, spider)
-        if new_params is None or original_params != params:
-            warnings.warn(
-                "Modifying the params dictionary in-place in the function defined in "
-                "the FEED_URI_PARAMS setting or in the uri_params key of the FEEDS "
-                "setting is deprecated. The function must return a new dictionary "
-                "instead.",
-                category=ScrapyDeprecationWarning,
-            )
         return new_params if new_params is not None else params
 
     def _load_filter(self, feed_options):

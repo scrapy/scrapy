@@ -4,7 +4,6 @@ Once we remove the references from scrapy, we can remove these tests.
 """
 
 import unittest
-import warnings
 from functools import partial
 
 from itemloaders.processors import (
@@ -18,9 +17,6 @@ from itemloaders.processors import (
 
 from scrapy.item import Field, Item
 from scrapy.loader import ItemLoader
-from scrapy.loader.common import wrap_loader_context
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
-from scrapy.utils.misc import extract_regex
 
 
 # test items
@@ -720,25 +716,6 @@ class FunctionProcessorTestCase(unittest.TestCase):
         lo.add_value("foo", "  bar  ")
         lo.add_value("foo", ["  asdf  ", "  qwerty  "])
         self.assertEqual(dict(lo.load_item()), {"foo": ["BAR", "ASDF", "QWERTY"]})
-
-
-class DeprecatedUtilityFunctionsTestCase(unittest.TestCase):
-    def test_deprecated_wrap_loader_context(self):
-        def function(*args):
-            return None
-
-        with warnings.catch_warnings(record=True) as w:
-            wrap_loader_context(function, context={})
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, ScrapyDeprecationWarning)
-
-    def test_deprecated_extract_regex(self):
-        with warnings.catch_warnings(record=True) as w:
-            extract_regex(r"\w+", "this is a test")
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, ScrapyDeprecationWarning)
 
 
 if __name__ == "__main__":

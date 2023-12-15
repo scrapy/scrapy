@@ -2,7 +2,6 @@ from gzip import GzipFile
 from io import BytesIO
 from pathlib import Path
 from unittest import SkipTest, TestCase
-from warnings import catch_warnings
 
 from w3lib.encoding import resolve_encoding
 
@@ -10,7 +9,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.settings import Settings
@@ -241,10 +240,10 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding("gb2312"))
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 104)
         self.assertIn('Content-Encoding', newresponse.headers)
         self.assertEqual(b'gzip', newresponse.headers['Content-Encoding'])
         self.assertIn(b'decoded', newresponse.flags)
+        self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
     def test_process_response_force_recalculate_encoding(self):
         headers = {
@@ -271,8 +270,8 @@ class HttpCompressionTest(TestCase):
         self.assertIn('Content-Encoding', newresponse.headers)
         self.assertEqual(b'gzip', newresponse.headers['Content-Encoding'])
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 104)
         self.assertIn(b'decoded', newresponse.flags)
+        self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
     def test_process_response_no_content_type_header(self):
         headers = {
@@ -297,8 +296,8 @@ class HttpCompressionTest(TestCase):
         self.assertIn('Content-Encoding', newresponse.headers)
         self.assertEqual(b'identity', newresponse.headers['Content-Encoding'])
         self.assertStatsEqual("httpcompression/response_count", 1)
-        self.assertStatsEqual("httpcompression/response_bytes", 104)
         self.assertIn(b'decode', newresponse.flags)
+        self.assertStatsEqual("httpcompression/response_bytes", len(plainbody))
 
     def test_process_response_gzipped_contenttype(self):
         response = self._getresponse("gzip")

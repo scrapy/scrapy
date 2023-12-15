@@ -39,7 +39,7 @@ class MOff:
         pass
 
     def __init__(self):
-        raise NotConfigured
+        raise NotConfigured("foo")
 
 
 class TestMiddlewareManager(MiddlewareManager):

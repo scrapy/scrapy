@@ -1,6 +1,7 @@
 # Tests requirements
 attrs
-pyftpdlib
+pexpect >= 4.8.0
+pyftpdlib >= 1.5.8
 pytest
 pytest-cov==4.0.0
 pytest-xdist
@@ -8,9 +9,10 @@ sybil >= 1.3.0  # https://github.com/cjw296/sybil/issues/20#issuecomment-6054334
 testfixtures
 uvloop; platform_system != "Windows"
 
-# optional for shell wrapper tests
-bpython
-brotli  # optional for HTTP compress downloader middleware tests
+bpython  # optional for shell wrapper tests
+brotli; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
+# 1.1.0 is broken on PyPy: https://github.com/google/brotli/issues/1072
+brotli==1.0.9; implementation_name == 'pypy'  # optional for HTTP compress downloader middleware tests
 zstandard; implementation_name != 'pypy'  # optional for HTTP compress downloader middleware tests
 ipython
 pywin32; sys_platform == "win32"

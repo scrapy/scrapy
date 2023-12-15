@@ -28,7 +28,7 @@ class GunzipTest(unittest.TestCase):
 
     def test_gunzip_no_gzip_file_raises(self):
         self.assertRaises(
-            IOError, gunzip, (SAMPLEDIR / "feed-sample1.xml").read_bytes()
+            OSError, gunzip, (SAMPLEDIR / "feed-sample1.xml").read_bytes()
         )
 
     def test_gunzip_truncated_short(self):

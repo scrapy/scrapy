@@ -63,6 +63,13 @@ class TestSpider(Spider):
         """
         return Request("http://scrapy.org", callback=self.returns_item)
 
+    async def returns_request_async(self, response):
+        """async method which returns request
+        @url http://scrapy.org
+        @returns requests 1
+        """
+        return Request("http://scrapy.org", callback=self.returns_item)
+
     def returns_item(self, response):
         """method which returns item
         @url http://scrapy.org
@@ -336,6 +343,14 @@ class ContractsManagerTest(unittest.TestCase):
         request = self.conman.from_method(spider.returns_dict_fail, self.results)
         request.callback(response)
         self.should_fail()
+
+    def test_returns_async(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        request = self.conman.from_method(spider.returns_request_async, self.results)
+        request.callback(response)
+        self.should_error()
 
     def test_scrapes(self):
         spider = TestSpider()

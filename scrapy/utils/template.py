@@ -4,10 +4,10 @@ import re
 import string
 from os import PathLike
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 
-def render_templatefile(path: Union[str, PathLike], **kwargs):
+def render_templatefile(path: Union[str, PathLike], **kwargs: Any) -> None:
     path_obj = Path(path)
     raw = path_obj.read_text("utf8")
 
@@ -24,7 +24,7 @@ def render_templatefile(path: Union[str, PathLike], **kwargs):
 CAMELCASE_INVALID_CHARS = re.compile(r"[^a-zA-Z\d]")
 
 
-def string_camelcase(string):
+def string_camelcase(string: str) -> str:
     """Convert a word  to its CamelCase version and remove invalid chars
 
     >>> string_camelcase('lost-pound')

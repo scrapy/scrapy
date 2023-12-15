@@ -18,8 +18,6 @@ from typing import Dict, Generator, Optional, Union
 from unittest import skipIf
 
 from pytest import mark
-from twisted import version as twisted_version
-from twisted.python.versions import Version
 from twisted.trial import unittest
 
 import scrapy
@@ -802,17 +800,7 @@ class MySpider(scrapy.Spider):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log
         )
 
-    @mark.skipif(
-        sys.implementation.name == "pypy",
-        reason="uvloop does not support pypy properly",
-    )
-    @mark.skipif(
-        platform.system() == "Windows", reason="uvloop does not support Windows"
-    )
-    @mark.skipif(
-        twisted_version == Version("twisted", 21, 2, 0),
-        reason="https://twistedmatrix.com/trac/ticket/10106",
-    )
+    @mark.requires_uvloop
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(
             self.debug_log_spider,
@@ -918,6 +906,86 @@ class MySpider(scrapy.Spider):
         args = ["-o", "-:json"]
         log = self.get_log(spider_code, args=args)
         self.assertIn("[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}", log)
+
+    @skipIf(platform.system() == "Windows", reason="Linux only")
+    def test_absolute_path_linux(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    start_urls = ["data:,"]
+
+    def parse(self, response):
+        yield {"hello": "world"}
+        """
+        temp_dir = mkdtemp()
+
+        args = ["-o", f"{temp_dir}/output1.json:json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output1.json",
+            log,
+        )
+
+        args = ["-o", f"{temp_dir}/output2.json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output2.json",
+            log,
+        )
+
+    @skipIf(platform.system() != "Windows", reason="Windows only")
+    def test_absolute_path_windows(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    start_urls = ["data:,"]
+
+    def parse(self, response):
+        yield {"hello": "world"}
+        """
+        temp_dir = mkdtemp()
+
+        args = ["-o", f"{temp_dir}\\output1.json:json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output1.json",
+            log,
+        )
+
+        args = ["-o", f"{temp_dir}\\output2.json"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn(
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output2.json",
+            log,
+        )
+
+    def test_args_change_settings(self):
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        spider.settings.set("FOO", kwargs.get("foo"))
+        return spider
+
+    def start_requests(self):
+        self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
+        return []
+"""
+        args = ["-a", "foo=42"]
+        log = self.get_log(spider_code, args=args)
+        self.assertIn("Spider closed (finished)", log)
+        self.assertIn("The value of FOO is 42", log)
 
 
 @skipIf(platform.system() != "Windows", "Windows required for .pyw files")

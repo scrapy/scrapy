@@ -5,6 +5,7 @@ import random
 import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import Dict, List, Optional
 from unittest.mock import patch
 
 import attr
@@ -18,6 +19,7 @@ from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
+skip_pillow: Optional[str]
 try:
     from PIL import Image
 except ImportError:
@@ -26,7 +28,7 @@ except ImportError:
     )
 else:
     encoders = {"jpeg_encoder", "jpeg_decoder"}
-    if not encoders.issubset(set(Image.core.__dict__)):
+    if not encoders.issubset(set(Image.core.__dict__)):  # type: ignore[attr-defined]
         skip_pillow = "Missing JPEG encoders"
     else:
         skip_pillow = None
@@ -404,11 +406,11 @@ class ImagesPipelineTestCaseFieldsDataClass(
 class ImagesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    image_urls = attr.ib(default=lambda: [])
-    images = attr.ib(default=lambda: [])
+    image_urls: List[str] = attr.ib(default=lambda: [])
+    images: List[Dict[str, str]] = attr.ib(default=lambda: [])
     # overridden fields
-    custom_image_urls = attr.ib(default=lambda: [])
-    custom_images = attr.ib(default=lambda: [])
+    custom_image_urls: List[str] = attr.ib(default=lambda: [])
+    custom_images: List[Dict[str, str]] = attr.ib(default=lambda: [])
 
 
 class ImagesPipelineTestCaseFieldsAttrsItem(
@@ -598,8 +600,14 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline = UserDefinedImagePipeline.from_settings(
             Settings({"IMAGES_STORE": self.tempdir})
         )
-        self.assertEqual(pipeline.images_result_field, "something_else")
-        self.assertEqual(pipeline.images_urls_field, "something")
+        self.assertEqual(
+            pipeline.images_result_field,
+            UserDefinedImagePipeline.DEFAULT_IMAGES_RESULT_FIELD,
+        )
+        self.assertEqual(
+            pipeline.images_urls_field,
+            UserDefinedImagePipeline.DEFAULT_IMAGES_URLS_FIELD,
+        )
 
     def test_user_defined_subclass_default_key_names(self):
         """Test situation when user defines subclass of ImagePipeline,
@@ -640,7 +648,3 @@ def _create_image(format, *a, **kw):
     Image.new(*a, **kw).save(buf, format)
     buf.seek(0)
     return Image.open(buf), buf
-
-
-if __name__ == "__main__":
-    unittest.main()

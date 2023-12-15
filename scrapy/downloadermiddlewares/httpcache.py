@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from email.utils import formatdate
-from typing import Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional, Union
 
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -23,7 +25,9 @@ from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.misc import load_object
 
-HttpCacheMiddlewareTV = TypeVar("HttpCacheMiddlewareTV", bound="HttpCacheMiddleware")
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class HttpCacheMiddleware:
@@ -37,7 +41,7 @@ class HttpCacheMiddleware:
         ConnectionLost,
         TCPTimedOutError,
         ResponseFailed,
-        IOError,
+        OSError,
     )
 
     def __init__(self, settings: Settings, stats: StatsCollector) -> None:
@@ -49,9 +53,8 @@ class HttpCacheMiddleware:
         self.stats = stats
 
     @classmethod
-    def from_crawler(
-        cls: Type[HttpCacheMiddlewareTV], crawler: Crawler
-    ) -> HttpCacheMiddlewareTV:
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        assert crawler.stats
         o = cls(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
@@ -63,7 +66,9 @@ class HttpCacheMiddleware:
     def spider_closed(self, spider: Spider) -> None:
         self.storage.close_spider(spider)
 
-    def process_request(self, request: Request, spider: Spider) -> Optional[Response]:
+    def process_request(
+        self, request: Request, spider: Spider
+    ) -> Union[Request, Response, None]:
         if request.meta.get("dont_cache", False):
             return None
 
@@ -73,7 +78,9 @@ class HttpCacheMiddleware:
             return None
 
         # Look for cached response and check if expired
-        cachedresponse = self.storage.retrieve_response(spider, request)
+        cachedresponse: Optional[Response] = self.storage.retrieve_response(
+            spider, request
+        )
         if cachedresponse is None:
             self.stats.inc_value("httpcache/miss", spider=spider)
             if self.ignore_missing:
@@ -95,7 +102,7 @@ class HttpCacheMiddleware:
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Response:
+    ) -> Union[Request, Response]:
         if request.meta.get("dont_cache", False):
             return response
 
@@ -110,7 +117,7 @@ class HttpCacheMiddleware:
             response.headers["Date"] = formatdate(usegmt=True)
 
         # Do not validate first-hand responses
-        cachedresponse = request.meta.pop("cached_response", None)
+        cachedresponse: Optional[Response] = request.meta.pop("cached_response", None)
         if cachedresponse is None:
             self.stats.inc_value("httpcache/firsthand", spider=spider)
             self._cache_response(spider, response, request, cachedresponse)
@@ -126,8 +133,8 @@ class HttpCacheMiddleware:
 
     def process_exception(
         self, request: Request, exception: Exception, spider: Spider
-    ) -> Optional[Response]:
-        cachedresponse = request.meta.pop("cached_response", None)
+    ) -> Union[Request, Response, None]:
+        cachedresponse: Optional[Response] = request.meta.pop("cached_response", None)
         if cachedresponse is not None and isinstance(
             exception, self.DOWNLOAD_EXCEPTIONS
         ):

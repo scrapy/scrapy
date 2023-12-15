@@ -6,6 +6,7 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 import re
+from typing import TYPE_CHECKING, Iterable, Optional, Type, Union, cast
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
@@ -15,8 +16,14 @@ from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
 
 from scrapy.utils.python import to_unicode
 
+if TYPE_CHECKING:
+    from scrapy import Spider
 
-def url_is_from_any_domain(url, domains):
+
+UrlT = Union[str, bytes, ParseResult]
+
+
+def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     """Return True if the url belongs to any of the given domains"""
     host = parse_url(url).netloc.lower()
     if not host:
@@ -25,29 +32,29 @@ def url_is_from_any_domain(url, domains):
     return any((host == d) or (host.endswith(f".{d}")) for d in domains)
 
 
-def url_is_from_spider(url, spider):
+def url_is_from_spider(url: UrlT, spider: Type["Spider"]) -> bool:
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(
         url, [spider.name] + list(getattr(spider, "allowed_domains", []))
     )
 
 
-def url_has_any_extension(url, extensions):
+def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
     lowercase_path = parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
 
-def parse_url(url, encoding=None):
+def parse_url(url: UrlT, encoding: Optional[str] = None) -> ParseResult:
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
     """
     if isinstance(url, ParseResult):
         return url
-    return urlparse(to_unicode(url, encoding))
+    return cast(ParseResult, urlparse(to_unicode(url, encoding)))
 
 
-def escape_ajax(url):
+def escape_ajax(url: str) -> str:
     """
     Return the crawlable url according to:
     https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
@@ -76,7 +83,7 @@ def escape_ajax(url):
     return add_or_replace_parameter(defrag, "_escaped_fragment_", frag[1:])
 
 
-def add_http_if_no_scheme(url):
+def add_http_if_no_scheme(url: str) -> str:
     """Add http as the default scheme if it is missing from the url."""
     match = re.match(r"^\w+://", url, flags=re.I)
     if not match:
@@ -87,7 +94,7 @@ def add_http_if_no_scheme(url):
     return url
 
 
-def _is_posix_path(string):
+def _is_posix_path(string: str) -> bool:
     return bool(
         re.match(
             r"""
@@ -109,7 +116,7 @@ def _is_posix_path(string):
     )
 
 
-def _is_windows_path(string):
+def _is_windows_path(string: str) -> bool:
     return bool(
         re.match(
             r"""
@@ -125,11 +132,11 @@ def _is_windows_path(string):
     )
 
 
-def _is_filesystem_path(string):
+def _is_filesystem_path(string: str) -> bool:
     return _is_posix_path(string) or _is_windows_path(string)
 
 
-def guess_scheme(url):
+def guess_scheme(url: str) -> str:
     """Add an URL scheme if missing: file:// for filepath-like input or
     http:// otherwise."""
     if _is_filesystem_path(url):
@@ -138,12 +145,12 @@ def guess_scheme(url):
 
 
 def strip_url(
-    url,
-    strip_credentials=True,
-    strip_default_port=True,
-    origin_only=False,
-    strip_fragment=True,
-):
+    url: str,
+    strip_credentials: bool = True,
+    strip_default_port: bool = True,
+    origin_only: bool = False,
+    strip_fragment: bool = True,
+) -> str:
     """Strip URL string from some of its components:
 
     - ``strip_credentials`` removes "user:password@"

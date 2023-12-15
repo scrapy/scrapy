@@ -7,12 +7,11 @@ import tempfile
 import unittest
 from datetime import datetime
 from io import BytesIO
-from warnings import catch_warnings, filterwarnings
+from typing import Any
 
 import lxml.etree
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.exporters import (
     BaseItemExporter,
     CsvItemExporter,
@@ -55,8 +54,8 @@ class CustomFieldDataclass:
 
 
 class BaseItemExporterTest(unittest.TestCase):
-    item_class = TestItem
-    custom_field_item_class = CustomFieldItem
+    item_class: type = TestItem
+    custom_field_item_class: type = CustomFieldItem
 
     def setUp(self):
         self.i = self.item_class(name="John\xa3", age="22")
@@ -90,6 +89,10 @@ class BaseItemExporterTest(unittest.TestCase):
             if self.ie.__class__ is not BaseItemExporter:
                 raise
         self.ie.finish_exporting()
+        # Delete the item exporter object, so that if it causes the output
+        # file handle to be closed, which should not be the case, follow-up
+        # interactions with the output file handle will surface the issue.
+        del self.ie
         self._check_output()
 
     def test_export_item(self):
@@ -139,7 +142,7 @@ class BaseItemExporterDataclassTest(BaseItemExporterTest):
 
 class PythonItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
-        return PythonItemExporter(binary=False, **kwargs)
+        return PythonItemExporter(**kwargs)
 
     def test_invalid_option(self):
         with self.assertRaisesRegex(TypeError, "Unexpected options: invalid_option"):
@@ -194,14 +197,6 @@ class PythonItemExporterTest(BaseItemExporterTest):
         self.assertEqual(type(exported["age"][0]), dict)
         self.assertEqual(type(exported["age"][0]["age"][0]), dict)
 
-    def test_export_binary(self):
-        with catch_warnings():
-            filterwarnings("ignore", category=ScrapyDeprecationWarning)
-            exporter = PythonItemExporter(binary=True)
-            value = self.item_class(name="John\xa3", age="22")
-            expected = {b"name": b"John\xc2\xa3", b"age": b"22"}
-            self.assertEqual(expected, exporter.export_item(value))
-
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
         ie = self._get_exporter()
@@ -243,6 +238,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
         ie.export_item(i1)
         ie.export_item(i2)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         f.seek(0)
         self.assertEqual(self.item_class(**pickle.load(f)), i1)
         self.assertEqual(self.item_class(**pickle.load(f)), i2)
@@ -254,6 +250,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         self.assertEqual(pickle.loads(fp.getvalue()), item)
 
 
@@ -279,6 +276,7 @@ class MarshalItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         fp.seek(0)
         self.assertEqual(marshal.load(fp), item)
 
@@ -314,6 +312,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         self.assertCsvEqual(fp.getvalue(), expected)
 
     def test_header_export_all(self):
@@ -345,6 +344,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
             ie.export_item(item)
             ie.export_item(item)
             ie.finish_exporting()
+            del ie  # See the first “del self.ie” in this file for context.
             self.assertCsvEqual(
                 output.getvalue(), b"age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n"
             )
@@ -429,6 +429,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(item)
         ie.finish_exporting()
+        del ie  # See the first “del self.ie” in this file for context.
         self.assertXmlEquivalent(fp.getvalue(), expected_value)
 
     def _check_output(self):
@@ -517,7 +518,7 @@ class XmlItemExporterDataclassTest(XmlItemExporterTest):
 
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
-    _expected_nested = {
+    _expected_nested: Any = {
         "name": "Jesus",
         "age": {"name": "Maria", "age": {"name": "Joseph", "age": "22"}},
     }
@@ -536,6 +537,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         self.assertEqual(exported, self._expected_nested)
 
@@ -550,6 +552,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(item)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         item["time"] = str(item["time"])
         self.assertEqual(exported, item)
@@ -575,6 +578,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.export_item(item)
         self.ie.export_item(item)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         self.assertEqual(
             exported, [ItemAdapter(item).asdict(), ItemAdapter(item).asdict()]
@@ -586,6 +590,20 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
     def test_two_dict_items(self):
         self.assertTwoItemsExported(ItemAdapter(self.i).asdict())
 
+    def test_two_items_with_failure_between(self):
+        i1 = TestItem(name="Joseph\xa3", age="22")
+        i2 = TestItem(
+            name="Maria", age=1j
+        )  # Invalid datetimes didn't consistently fail between Python versions
+        i3 = TestItem(name="Jesus", age="44")
+        self.ie.start_exporting()
+        self.ie.export_item(i1)
+        self.assertRaises(TypeError, self.ie.export_item, i2)
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue()))
+        self.assertEqual(exported, [dict(i1), dict(i3)])
+
     def test_nested_item(self):
         i1 = self.item_class(name="Joseph\xa3", age="22")
         i2 = self.item_class(name="Maria", age=i1)
@@ -593,6 +611,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         expected = {
             "name": "Jesus",
@@ -607,6 +626,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         expected = {"name": "Jesus", "age": {"name": "Maria", "age": i1}}
         self.assertEqual(exported, [expected])
@@ -616,9 +636,28 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.start_exporting()
         self.ie.export_item(item)
         self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
         exported = json.loads(to_unicode(self.output.getvalue()))
         item["time"] = str(item["time"])
         self.assertEqual(exported, [item])
+
+
+class JsonItemExporterToBytesTest(BaseItemExporterTest):
+    def _get_exporter(self, **kwargs):
+        kwargs["encoding"] = "latin"
+        return JsonItemExporter(self.output, **kwargs)
+
+    def test_two_items_with_failure_between(self):
+        i1 = TestItem(name="Joseph", age="22")
+        i2 = TestItem(name="\u263a", age="11")
+        i3 = TestItem(name="Jesus", age="44")
+        self.ie.start_exporting()
+        self.ie.export_item(i1)
+        self.assertRaises(UnicodeEncodeError, self.ie.export_item, i2)
+        self.ie.export_item(i3)
+        self.ie.finish_exporting()
+        exported = json.loads(to_unicode(self.output.getvalue(), encoding="latin"))
+        self.assertEqual(exported, [dict(i1), dict(i3)])
 
 
 class JsonItemExporterDataclassTest(JsonItemExporterTest):
@@ -627,7 +666,7 @@ class JsonItemExporterDataclassTest(JsonItemExporterTest):
 
 
 class CustomExporterItemTest(unittest.TestCase):
-    item_class = TestItem
+    item_class: type = TestItem
 
     def setUp(self):
         if self.item_class is None:

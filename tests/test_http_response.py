@@ -844,7 +844,7 @@ class TextResponseTest(BaseResponseTest):
             with mock.patch("json.loads") as mock_json:
                 for _ in range(2):
                     json_response.json()
-                mock_json.assert_called_once_with(json_body.decode())
+                mock_json.assert_called_once_with(json_body)
 
 
 class HtmlResponseTest(TextResponseTest):

@@ -115,20 +115,9 @@ Request objects
         cookies for that domain and will be sent again in future requests.
         That's the typical behaviour of any regular web browser.
 
-        To create a request that does not send stored cookies and does not
-        store received cookies, set the ``dont_merge_cookies`` key to ``True``
-        in :attr:`request.meta <scrapy.Request.meta>`.
-
-        Example of a request that sends manually-defined cookies and ignores
-        cookie storage:
-
-        .. code-block:: python
-
-            Request(
-                url="http://www.example.com",
-                cookies={"currency": "USD", "country": "UY"},
-                meta={"dont_merge_cookies": True},
-            )
+        Note that setting the :reqmeta:`dont_merge_cookies` key to ``True`` in
+        :attr:`request.meta <scrapy.Request.meta>` causes custom cookies to be
+        ignored.
 
         For more info see :ref:`cookies-mw`.
 
@@ -204,18 +193,47 @@ Request objects
         :meth:`replace`.
 
     .. attribute:: Request.meta
+       :value: {}
 
-        A dict that contains arbitrary metadata for this request. This dict is
-        empty for new Requests, and is usually  populated by different Scrapy
-        components (extensions, middlewares, etc). So the data contained in this
-        dict depends on the extensions you have enabled.
+        A dictionary of arbitrary metadata for the request.
 
-        See :ref:`topics-request-meta` for a list of special meta keys
-        recognized by Scrapy.
+        You may extend request metadata as you see fit.
 
-        This dict is :doc:`shallow copied <library/copy>` when the request is
-        cloned using the ``copy()`` or ``replace()`` methods, and can also be
-        accessed, in your spider, from the ``response.meta`` attribute.
+        Request metadata can also be accessed through the
+        :attr:`~scrapy.http.Response.meta` attribute of a response.
+
+        To pass data from one spider callback to another, consider using
+        :attr:`cb_kwargs` instead. However, request metadata may be the right
+        choice in certain scenarios, such as to maintain some debugging data
+        across all follow-up requests (e.g. the source URL).
+
+        A common use of request metadata is to define request-specific
+        parameters for Scrapy components (extensions, middlewares, etc.). For
+        example, if you set ``dont_retry`` to ``True``,
+        :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` will never
+        retry that request, even if it fails. See :ref:`topics-request-meta`.
+
+        You may also use request metadata in your custom Scrapy components, for
+        example, to keep request state information relevant to your component.
+        For example,
+        :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` uses the
+        ``retry_times`` metadata key to keep track of how many times a request
+        has been retried so far.
+
+        Copying all the metadata of a previous request into a new, follow-up
+        request in a spider callback is a bad practice, because request
+        metadata may include metadata set by Scrapy components that is not
+        meant to be copied into other requests. For example, copying the
+        ``retry_times`` metadata key into follow-up requests can lower the
+        amount of retries allowed for those follow-up requests.
+
+        You should only copy all request metadata from one request to another
+        if the new request is meant to replace the old request, as is often the
+        case when returning a request from a :ref:`downloader middleware
+        <topics-downloader-middleware>` method.
+
+        Also mind that the :meth:`copy` and :meth:`replace` request methods
+        :doc:`shallow-copy <library/copy>` request metadata.
 
     .. attribute:: Request.cb_kwargs
 
@@ -1103,9 +1121,10 @@ Response objects
         through all :ref:`Downloader Middlewares <topics-downloader-middleware>`.
         In particular, this means that:
 
-        - HTTP redirections will cause the original request (to the URL before
-          redirection) to be assigned to the redirected response (with the final
-          URL after redirection).
+        - HTTP redirections will create a new request from the request before
+          redirection. It has the majority of the same metadata and original
+          request attributes and gets assigned to the redirected response
+          instead of the propagation of the original request.
 
         - Response.request.url doesn't always equal Response.url
 

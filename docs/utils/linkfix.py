@@ -30,7 +30,7 @@ def main():
     try:
         with Path("build/linkcheck/output.txt").open(encoding="utf-8") as out:
             output_lines = out.readlines()
-    except IOError:
+    except OSError:
         print("linkcheck output not found; please run linkcheck first.")
         sys.exit(1)
 

@@ -101,12 +101,12 @@ The storages backends supported out of the box are:
 
 -   :ref:`topics-feed-storage-fs`
 -   :ref:`topics-feed-storage-ftp`
--   :ref:`topics-feed-storage-s3` (requires botocore_)
+-   :ref:`topics-feed-storage-s3` (requires boto3_)
 -   :ref:`topics-feed-storage-gcs` (requires `google-cloud-storage`_)
 -   :ref:`topics-feed-storage-stdout`
 
 Some storage backends may be unavailable if the required external libraries are
-not available. For example, the S3 backend is only available if the botocore_
+not available. For example, the S3 backend is only available if the boto3_
 library is installed.
 
 
@@ -156,8 +156,8 @@ The feeds are stored in the local filesystem.
 -   Required external libraries: none
 
 Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv``. This only works on Unix
-systems though.
+you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
+Alternatively you can also use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
 
@@ -199,7 +199,7 @@ The feeds are stored on `Amazon S3`_.
 
     -   ``s3://aws_key:aws_secret@mybucket/path/to/export.csv``
 
--   Required external libraries: `botocore`_ >= 1.4.87
+-   Required external libraries: `boto3`_ >= 1.20.0
 
 The AWS credentials can be passed as user/password in the URI, or they can be
 passed through the following settings:
@@ -210,10 +210,12 @@ passed through the following settings:
 
 .. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
 
-You can also define a custom ACL and custom endpoint for exported feeds using this setting:
+You can also define a custom ACL, custom endpoint, and region name for exported
+feeds using these settings:
 
 -   :setting:`FEED_STORAGE_S3_ACL`
 -   :setting:`AWS_ENDPOINT_URL`
+-   :setting:`AWS_REGION_NAME`
 
 The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
 storage backend is: ``True``.
@@ -572,9 +574,12 @@ to ``.json`` or ``.xml``.
 FEED_STORE_EMPTY
 ----------------
 
-Default: ``False``
+Default: ``True``
 
 Whether to export empty feeds (i.e. feeds with no items).
+If ``False``, and there are no items to export, no new files are created and 
+existing files are not modified, even if the :ref:`overwrite feed option 
+<feed-options>` is enabled.
 
 .. setting:: FEED_STORAGES
 
@@ -799,6 +804,6 @@ source spider in the feed URI:
 
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
-.. _botocore: https://github.com/boto/botocore
+.. _boto3: https://github.com/boto/boto3
 .. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/

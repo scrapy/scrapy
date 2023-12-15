@@ -27,54 +27,43 @@ reactor manually. You can do that using
     install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
 
 
-.. _using-custom-loops:
+.. _asyncio-preinstalled-reactor:
 
-Using custom asyncio loops
-==========================    
+Handling a pre-installed reactor
+================================
 
-You can also use custom asyncio event loops with the asyncio reactor. Set the
-:setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event loop class to
-use it instead of the default asyncio event loop.
+``twisted.internet.reactor`` and some other Twisted imports install the default
+Twisted reactor as a side effect. Once a Twisted reactor is installed, it is
+not possible to switch to a different reactor at run time.
+
+If you :ref:`configure the asyncio Twisted reactor <install-asyncio>` and, at
+run time, Scrapy complains that a different reactor is already installed,
+chances are you have some such imports in your code.
+
+You can usually fix the issue by moving those offending module-level Twisted
+imports to the method or function definitions where they are used. For example,
+if you have something like:
+
+.. code-block:: python
+
+    from twisted.internet import reactor
 
 
-.. _asyncio-windows:
+    def my_function():
+        reactor.callLater(...)
 
-Windows-specific notes
-======================
+Switch to something like:
 
-The Windows implementation of :mod:`asyncio` can use two event loop
-implementations:
+.. code-block:: python
 
--   :class:`~asyncio.SelectorEventLoop`, default before Python 3.8, required
-    when using Twisted.
+    def my_function():
+        from twisted.internet import reactor
 
--   :class:`~asyncio.ProactorEventLoop`, default since Python 3.8, cannot work
-    with Twisted.
+        reactor.callLater(...)
 
-So on Python 3.8+ the event loop class needs to be changed.
-
-.. versionchanged:: 2.6.0
-   The event loop class is changed automatically when you change the
-   :setting:`TWISTED_REACTOR` setting or call
-   :func:`~scrapy.utils.reactor.install_reactor`.
-
-To change the event loop class manually, call the following code before
-installing the reactor::
-
-    import asyncio
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-You can put this in the same function that installs the reactor, if you do that
-yourself, or in some code that runs before the reactor is installed, e.g.
-``settings.py``.
-
-.. note:: Other libraries you use may require
-          :class:`~asyncio.ProactorEventLoop`, e.g. because it supports
-          subprocesses (this is the case with `playwright`_), so you cannot use
-          them together with Scrapy on Windows (but you should be able to use
-          them on WSL or native Linux).
-
-.. _playwright: https://github.com/microsoft/playwright-python
+Alternatively, you can try to :ref:`manually install the asyncio reactor
+<install-asyncio>`, with :func:`~scrapy.utils.reactor.install_reactor`, before
+those imports happen.
 
 
 .. _asyncio-await-dfd:
@@ -122,3 +111,36 @@ example:
                     f"TWISTED_REACTOR setting. See the asyncio documentation "
                     f"of Scrapy for more information."
                 )
+
+
+.. _asyncio-windows:
+
+Windows-specific notes
+======================
+
+The Windows implementation of :mod:`asyncio` can use two event loop
+implementations, :class:`~asyncio.ProactorEventLoop` (default) and
+:class:`~asyncio.SelectorEventLoop`. However, only
+:class:`~asyncio.SelectorEventLoop` works with Twisted.
+
+Scrapy changes the event loop class to :class:`~asyncio.SelectorEventLoop`
+automatically when you change the :setting:`TWISTED_REACTOR` setting or call
+:func:`~scrapy.utils.reactor.install_reactor`.
+
+.. note:: Other libraries you use may require
+          :class:`~asyncio.ProactorEventLoop`, e.g. because it supports
+          subprocesses (this is the case with `playwright`_), so you cannot use
+          them together with Scrapy on Windows (but you should be able to use
+          them on WSL or native Linux).
+
+.. _playwright: https://github.com/microsoft/playwright-python
+
+
+.. _using-custom-loops:
+
+Using custom asyncio loops
+==========================
+
+You can also use custom asyncio event loops with the asyncio reactor. Set the
+:setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event
+loop class to use it instead of the default asyncio event loop.

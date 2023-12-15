@@ -21,8 +21,6 @@ class MitmProxy:
     auth_pass = "scrapy"
 
     def start(self):
-        from scrapy.utils.test import get_testenv
-
         script = """
 import sys
 from mitmproxy.tools.main import mitmdump
@@ -46,7 +44,6 @@ sys.exit(mitmdump())
                 "--ssl-insecure",
             ],
             stdout=PIPE,
-            env=get_testenv(),
         )
         line = self.proc.stdout.readline().decode("utf-8")
         host_port = re.search(r"listening at http://([^:]+:\d+)", line).group(1)

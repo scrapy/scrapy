@@ -36,6 +36,7 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
+    IS_BOTO3_AVAILABLE,
     BlockingFeedStorage,
     FeedExporter,
     FeedSlot,
@@ -236,8 +237,10 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 
 class S3FeedStorageTest(unittest.TestCase):
-    def test_parse_credentials(self):
+    def setUp(self):
         skip_if_no_boto()
+
+    def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
             "AWS_SECRET_ACCESS_KEY": "settings_secret",
@@ -273,8 +276,6 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        skip_if_no_boto()
-
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
             "AWS_SECRET_ACCESS_KEY": "secret_key",
@@ -286,30 +287,39 @@ class S3FeedStorageTest(unittest.TestCase):
         verifyObject(IFeedStorage, storage)
 
         file = mock.MagicMock()
-        from botocore.stub import Stubber
 
-        with Stubber(storage.s3_client) as stub:
-            stub.add_response(
-                "put_object",
-                expected_params={
-                    "Body": file,
-                    "Bucket": bucket,
-                    "Key": key,
-                },
-                service_response={},
-            )
-
+        if IS_BOTO3_AVAILABLE:
+            storage.s3_client = mock.MagicMock()
             yield storage.store(file)
-
-            stub.assert_no_pending_responses()
             self.assertEqual(
-                file.method_calls,
-                [
-                    mock.call.seek(0),
-                    # The call to read does not happen with Stubber
-                    mock.call.close(),
-                ],
+                storage.s3_client.upload_fileobj.call_args,
+                mock.call(Bucket=bucket, Key=key, Fileobj=file),
             )
+        else:
+            from botocore.stub import Stubber
+
+            with Stubber(storage.s3_client) as stub:
+                stub.add_response(
+                    "put_object",
+                    expected_params={
+                        "Body": file,
+                        "Bucket": bucket,
+                        "Key": key,
+                    },
+                    service_response={},
+                )
+
+                yield storage.store(file)
+
+                stub.assert_no_pending_responses()
+                self.assertEqual(
+                    file.method_calls,
+                    [
+                        mock.call.seek(0),
+                        # The call to read does not happen with Stubber
+                        mock.call.close(),
+                    ],
+                )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
@@ -335,6 +345,19 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.access_key, "access_key")
         self.assertEqual(storage.secret_key, "secret_key")
         self.assertEqual(storage.endpoint_url, "https://example.com")
+
+    def test_init_with_region_name(self):
+        region_name = "ap-east-1"
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv",
+            "access_key",
+            "secret_key",
+            region_name=region_name,
+        )
+        self.assertEqual(storage.access_key, "access_key")
+        self.assertEqual(storage.secret_key, "secret_key")
+        self.assertEqual(storage.region_name, region_name)
+        self.assertEqual(storage.s3_client._client_config.region_name, region_name)
 
     def test_from_crawler_without_acl(self):
         settings = {
@@ -364,6 +387,20 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, "secret_key")
         self.assertEqual(storage.endpoint_url, None)
 
+    def test_without_region_name(self):
+        settings = {
+            "AWS_ACCESS_KEY_ID": "access_key",
+            "AWS_SECRET_ACCESS_KEY": "secret_key",
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(
+            crawler,
+            "s3://mybucket/export.csv",
+        )
+        self.assertEqual(storage.access_key, "access_key")
+        self.assertEqual(storage.secret_key, "secret_key")
+        self.assertEqual(storage.s3_client._client_config.region_name, "us-east-1")
+
     def test_from_crawler_with_acl(self):
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
@@ -391,9 +428,22 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertEqual(storage.secret_key, "secret_key")
         self.assertEqual(storage.endpoint_url, "https://example.com")
 
+    def test_from_crawler_with_region_name(self):
+        region_name = "ap-east-1"
+        settings = {
+            "AWS_ACCESS_KEY_ID": "access_key",
+            "AWS_SECRET_ACCESS_KEY": "secret_key",
+            "AWS_REGION_NAME": region_name,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
+        self.assertEqual(storage.access_key, "access_key")
+        self.assertEqual(storage.secret_key, "secret_key")
+        self.assertEqual(storage.region_name, region_name)
+        self.assertEqual(storage.s3_client._client_config.region_name, region_name)
+
     @defer.inlineCallbacks
-    def test_store_botocore_without_acl(self):
-        skip_if_no_boto()
+    def test_store_without_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
             "access_key",
@@ -405,11 +455,18 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        self.assertNotIn("ACL", storage.s3_client.put_object.call_args[1])
+        if IS_BOTO3_AVAILABLE:
+            acl = (
+                storage.s3_client.upload_fileobj.call_args[1]
+                .get("ExtraArgs", {})
+                .get("ACL")
+            )
+        else:
+            acl = storage.s3_client.put_object.call_args[1].get("ACL")
+        self.assertIsNone(acl)
 
     @defer.inlineCallbacks
-    def test_store_botocore_with_acl(self):
-        skip_if_no_boto()
+    def test_store_with_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
@@ -419,9 +476,11 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        self.assertEqual(
-            storage.s3_client.put_object.call_args[1].get("ACL"), "custom-acl"
-        )
+        if IS_BOTO3_AVAILABLE:
+            acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
+        else:
+            acl = storage.s3_client.put_object.call_args[1]["ACL"]
+        self.assertEqual(acl, "custom-acl")
 
     def test_overwrite_default(self):
         with LogCapture() as log:
@@ -726,10 +785,9 @@ class FeedExportTest(FeedExportTestBase):
                 yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
-                if not Path(file_path).exists():
-                    continue
-
-                content[feed_options["format"]] = Path(file_path).read_bytes()
+                content[feed_options["format"]] = (
+                    Path(file_path).read_bytes() if Path(file_path).exists() else None
+                )
 
         finally:
             for file_path in FEEDS.keys():
@@ -889,14 +947,9 @@ class FeedExportTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_stats_multiple_file(self):
         settings = {
-            "AWS_ACCESS_KEY_ID": "access_key",
-            "AWS_SECRET_ACCESS_KEY": "secret_key",
             "FEEDS": {
                 printf_escape(path_to_url(str(self._random_temp_filename()))): {
                     "format": "json",
-                },
-                "s3://bucket/key/foo.csv": {
-                    "format": "csv",
                 },
                 "stdout:": {
                     "format": "xml",
@@ -910,16 +963,10 @@ class FeedExportTest(FeedExportTestBase):
             "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
         )
         self.assertIn(
-            "feedexport/success_count/S3FeedStorage", crawler.stats.get_stats()
-        )
-        self.assertIn(
             "feedexport/success_count/StdoutFeedStorage", crawler.stats.get_stats()
         )
         self.assertEqual(
             crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/S3FeedStorage"), 1
         )
         self.assertEqual(
             crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage"), 1
@@ -946,9 +993,10 @@ class FeedExportTest(FeedExportTestBase):
                 "FEEDS": {
                     self._random_temp_filename(): {"format": fmt},
                 },
+                "FEED_STORE_EMPTY": False,
             }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(b"", data[fmt])
+            self.assertEqual(None, data[fmt])
 
     @defer.inlineCallbacks
     def test_start_finish_exporting_items(self):
@@ -1064,8 +1112,7 @@ class FeedExportTest(FeedExportTestBase):
         with LogCapture() as log:
             yield self.exported_no_data(settings)
 
-        print(log)
-        self.assertEqual(str(log).count("Storage.store is called"), 3)
+        self.assertEqual(str(log).count("Storage.store is called"), 0)
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
@@ -1270,6 +1317,17 @@ class FeedExportTest(FeedExportTestBase):
         rows_jl = items
         yield self.assertExportedCsv(items, ["foo", "egg"], rows_csv)
         yield self.assertExportedJsonLines(items, rows_jl)
+
+    @defer.inlineCallbacks
+    def test_export_tuple(self):
+        items = [
+            {"foo": "bar1", "egg": "spam1"},
+            {"foo": "bar2", "egg": "spam2", "baz": "quux"},
+        ]
+
+        settings = {"FEED_EXPORT_FIELDS": ("foo", "baz")}
+        rows = [{"foo": "bar1", "baz": ""}, {"foo": "bar2", "baz": "quux"}]
+        yield self.assertExported(items, ["foo", "baz"], rows, settings=settings)
 
     @defer.inlineCallbacks
     def test_export_feed_export_fields(self):
@@ -1732,10 +1790,9 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
-                if not Path(file_path).exists():
-                    continue
-
-                content[str(file_path)] = Path(file_path).read_bytes()
+                content[str(file_path)] = (
+                    Path(file_path).read_bytes() if Path(file_path).exists() else None
+                )
 
         finally:
             for file_path in FEEDS.keys():
@@ -2236,6 +2293,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
             for path, feed in FEEDS.items():
                 dir_name = Path(path).parent
+                if not dir_name.exists():
+                    content[feed["format"]] = []
+                    continue
                 for file in sorted(dir_name.iterdir()):
                     content[feed["format"]].append(file.read_bytes())
         finally:
@@ -2419,10 +2479,11 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     / self._file_mark: {"format": fmt},
                 },
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+                "FEED_STORE_EMPTY": False,
             }
             data = yield self.exported_no_data(settings)
             data = dict(data)
-            self.assertEqual(b"", data[fmt][0])
+            self.assertEqual(0, len(data[fmt]))
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -2536,9 +2597,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
             for expected_batch, got_batch in zip(expected, data[fmt]):
                 self.assertEqual(expected_batch, got_batch)
 
-    @pytest.mark.skipif(
-        sys.platform == "win32", reason="Odd behaviour on file creation/output"
-    )
     @defer.inlineCallbacks
     def test_batch_path_differ(self):
         """
@@ -2560,7 +2618,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         data = yield self.exported_data(items, settings)
-        self.assertEqual(len(items), len([_ for _ in data["json"] if _]))
+        self.assertEqual(len(items), len(data["json"]))
 
     @defer.inlineCallbacks
     def test_stats_batch_file_success(self):
@@ -2587,7 +2645,6 @@ class BatchDeliveriesTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_s3_export(self):
         skip_if_no_boto()
-
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2647,7 +2704,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             crawler = get_crawler(TestSpider, settings)
             yield crawler.crawl()
 
-        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items) + 1)
+        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items))
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
 
@@ -2752,196 +2809,30 @@ class FeedExportInitTest(unittest.TestCase):
         with self.assertRaises(NotConfigured):
             FeedExporter.from_crawler(crawler)
 
-
-class StdoutFeedStorageWithoutFeedOptions(StdoutFeedStorage):
-    def __init__(self, uri):
-        super().__init__(uri)
-
-
-class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    def test_init(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": StdoutFeedStorageWithoutFeedOptions},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="StdoutFeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-
-class FileFeedStorageWithoutFeedOptions(FileFeedStorage):
-    def __init__(self, uri):
-        super().__init__(uri)
-
-
-class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    maxDiff = None
-
-    def test_init(self):
-        with tempfile.NamedTemporaryFile() as temp:
-            settings_dict = {
-                "FEED_URI": f"file:///{temp.name}",
-                "FEED_STORAGES": {"file": FileFeedStorageWithoutFeedOptions},
+    def test_absolute_pathlib_as_uri(self):
+        with tempfile.NamedTemporaryFile(suffix="json") as tmp:
+            settings = {
+                "FEEDS": {
+                    Path(tmp.name).resolve(): {
+                        "format": "json",
+                    },
+                },
             }
-            with pytest.warns(
-                ScrapyDeprecationWarning,
-                match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-            ):
-                crawler = get_crawler(settings_dict=settings_dict)
-                feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
+            crawler = get_crawler(settings_dict=settings)
+            exporter = FeedExporter.from_crawler(crawler)
+            self.assertIsInstance(exporter, FeedExporter)
 
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="FileFeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-
-class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
-    def __init__(self, uri, access_key, secret_key, acl, endpoint_url, **kwargs):
-        super().__init__(uri, access_key, secret_key, acl, endpoint_url, **kwargs)
-
-
-class S3FeedStorageWithoutFeedOptionsWithFromCrawler(S3FeedStorage):
-    @classmethod
-    def from_crawler(cls, crawler, uri):
-        return super().from_crawler(crawler, uri)
-
-
-class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    maxDiff = None
-
-    def test_init(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": S3FeedStorageWithoutFeedOptions},
+    def test_relative_pathlib_as_uri(self):
+        settings = {
+            "FEEDS": {
+                Path("./items.json"): {
+                    "format": "json",
+                },
+            },
         }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="S3FeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-    def test_from_crawler(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": S3FeedStorageWithoutFeedOptionsWithFromCrawler},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-
-class FTPFeedStorageWithoutFeedOptions(FTPFeedStorage):
-    def __init__(self, uri, use_active_mode=False):
-        super().__init__(uri)
-
-
-class FTPFeedStorageWithoutFeedOptionsWithFromCrawler(FTPFeedStorage):
-    @classmethod
-    def from_crawler(cls, crawler, uri):
-        return super().from_crawler(crawler, uri)
-
-
-class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    maxDiff = None
-
-    def test_init(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": FTPFeedStorageWithoutFeedOptions},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="FTPFeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-    def test_from_crawler(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": FTPFeedStorageWithoutFeedOptionsWithFromCrawler},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter.from_crawler(crawler)
+        self.assertIsInstance(exporter, FeedExporter)
 
 
 class URIParamsTest:
@@ -2990,10 +2881,7 @@ class URIParamsTest:
         spider = scrapy.Spider(self.spider_name)
         spider.crawler = crawler
 
-        with pytest.warns(
-            ScrapyDeprecationWarning, match="Modifying the params dictionary in-place"
-        ):
-            feed_exporter.open_spider(spider)
+        feed_exporter.open_spider(spider)
 
         self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
 

@@ -77,6 +77,22 @@ class DelaySpider(MetaSpider):
         self.t2_err = time.time()
 
 
+class SlowSpider(DelaySpider):
+    name = "slow"
+
+    def start_requests(self):
+        # 1st response is fast
+        url = self.mockserver.url("/delay?n=0&b=0")
+        yield Request(url, callback=self.parse, errback=self.errback)
+
+        # 2nd response is slow
+        url = self.mockserver.url(f"/delay?n={self.n}&b={self.b}")
+        yield Request(url, callback=self.parse, errback=self.errback)
+
+    def parse(self, response):
+        yield Item()
+
+
 class SimpleSpider(MetaSpider):
     name = "simple"
 

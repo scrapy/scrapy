@@ -1,41 +1,73 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AnyStr,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 from w3lib.http import headers_dict_to_raw
 
-from scrapy.utils.datatypes import CaselessDict
+from scrapy.utils.datatypes import CaseInsensitiveDict, CaselessDict
 from scrapy.utils.python import to_unicode
 
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
+
+_RawValueT = Union[bytes, str, int]
+
+
+# isn't fully compatible typing-wise with either dict or CaselessDict,
+# but it needs refactoring anyway, see also https://github.com/scrapy/scrapy/pull/5146
 class Headers(CaselessDict):
     """Case insensitive http headers dictionary"""
 
-    def __init__(self, seq=None, encoding="utf-8"):
-        self.encoding = encoding
+    def __init__(
+        self,
+        seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        encoding: str = "utf-8",
+    ):
+        self.encoding: str = encoding
         super().__init__(seq)
 
-    def update(self, seq):
+    def update(  # type: ignore[override]
+        self, seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]]]
+    ) -> None:
         seq = seq.items() if isinstance(seq, Mapping) else seq
-        iseq = {}
+        iseq: Dict[bytes, List[bytes]] = {}
         for k, v in seq:
             iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
         super().update(iseq)
 
-    def normkey(self, key):
+    def normkey(self, key: AnyStr) -> bytes:  # type: ignore[override]
         """Normalize key to bytes"""
         return self._tobytes(key.title())
 
-    def normvalue(self, value):
+    def normvalue(self, value: Union[_RawValueT, Iterable[_RawValueT]]) -> List[bytes]:
         """Normalize values to bytes"""
+        _value: Iterable[_RawValueT]
         if value is None:
-            value = []
+            _value = []
         elif isinstance(value, (str, bytes)):
-            value = [value]
-        elif not hasattr(value, "__iter__"):
-            value = [value]
+            _value = [value]
+        elif hasattr(value, "__iter__"):
+            _value = value
+        else:
+            _value = [value]
 
-        return [self._tobytes(x) for x in value]
+        return [self._tobytes(x) for x in _value]
 
-    def _tobytes(self, x):
+    def _tobytes(self, x: _RawValueT) -> bytes:
         if isinstance(x, bytes):
             return x
         if isinstance(x, str):
@@ -44,51 +76,54 @@ class Headers(CaselessDict):
             return str(x).encode(self.encoding)
         raise TypeError(f"Unsupported value type: {type(x)}")
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: AnyStr) -> Optional[bytes]:
         try:
-            return super().__getitem__(key)[-1]
+            return cast(List[bytes], super().__getitem__(key))[-1]
         except IndexError:
             return None
 
-    def get(self, key, def_val=None):
+    def get(self, key: AnyStr, def_val: Any = None) -> Optional[bytes]:
         try:
-            return super().get(key, def_val)[-1]
+            return cast(List[bytes], super().get(key, def_val))[-1]
         except IndexError:
             return None
 
-    def getlist(self, key, def_val=None):
+    def getlist(self, key: AnyStr, def_val: Any = None) -> List[bytes]:
         try:
-            return super().__getitem__(key)
+            return cast(List[bytes], super().__getitem__(key))
         except KeyError:
             if def_val is not None:
                 return self.normvalue(def_val)
             return []
 
-    def setlist(self, key, list_):
+    def setlist(self, key: AnyStr, list_: Iterable[_RawValueT]) -> None:
         self[key] = list_
 
-    def setlistdefault(self, key, default_list=()):
+    def setlistdefault(
+        self, key: AnyStr, default_list: Iterable[_RawValueT] = ()
+    ) -> Any:
         return self.setdefault(key, default_list)
 
-    def appendlist(self, key, value):
+    def appendlist(self, key: AnyStr, value: Iterable[_RawValueT]) -> None:
         lst = self.getlist(key)
         lst.extend(self.normvalue(value))
         self[key] = lst
 
-    def items(self):
+    def items(self) -> Iterable[Tuple[bytes, List[bytes]]]:  # type: ignore[override]
         return ((k, self.getlist(k)) for k in self.keys())
 
-    def values(self):
+    def values(self) -> List[Optional[bytes]]:  # type: ignore[override]
         return [self[k] for k in self.keys()]
 
-    def to_string(self):
-        return headers_dict_to_raw(self)
+    def to_string(self) -> bytes:
+        # cast() can be removed if the headers_dict_to_raw() hint is improved
+        return cast(bytes, headers_dict_to_raw(self))
 
-    def to_unicode_dict(self):
-        """Return headers as a CaselessDict with unicode keys
-        and unicode values. Multiple values are joined with ','.
+    def to_unicode_dict(self) -> CaseInsensitiveDict:
+        """Return headers as a CaseInsensitiveDict with str keys
+        and str values. Multiple values are joined with ','.
         """
-        return CaselessDict(
+        return CaseInsensitiveDict(
             (
                 to_unicode(key, encoding=self.encoding),
                 to_unicode(b",".join(value), encoding=self.encoding),
@@ -96,7 +131,7 @@ class Headers(CaselessDict):
             for key, value in self.items()
         )
 
-    def __copy__(self):
+    def __copy__(self) -> Self:
         return self.__class__(self)
 
     copy = __copy__
