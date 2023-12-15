@@ -25,6 +25,7 @@ from typing import (
     cast,
 )
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 
@@ -142,6 +143,13 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
        Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
        extension has not been implemented correctly).
     """
+    warnings.warn(
+        "The create_instance() function is deprecated. "
+        "Please use build_from_crawler() or build_from_settings() instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     if settings is None:
         if crawler is None:
             raise ValueError("Specify at least one of settings and crawler.")
