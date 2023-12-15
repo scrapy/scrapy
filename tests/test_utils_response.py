@@ -4,6 +4,8 @@ from pathlib import Path
 from time import process_time
 from urllib.parse import urlparse
 
+import pytest
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response, TextResponse
 from scrapy.settings.default_settings import DOWNLOAD_MAXSIZE
@@ -201,36 +203,40 @@ class ResponseUtilsTest(unittest.TestCase):
             r5, _openfunc=check_base_url
         ), "Inject unique base url with conditional comment"
 
-    def test_open_in_browser_redos_comment(self):
-        MAX_CPU_TIME = 30
 
-        # Exploit input from
-        # https://makenowjust-labs.github.io/recheck/playground/
-        # for /<!--.*?-->/ (old pattern to remove comments).
-        body = b"-><!--\x00" * (int(DOWNLOAD_MAXSIZE / 7) - 10) + b"->\n<!---->"
+@pytest.mark.slow
+def test_open_in_browser_redos_comment():
+    MAX_CPU_TIME = 30
 
-        response = HtmlResponse("https://example.com", body=body)
+    # Exploit input from
+    # https://makenowjust-labs.github.io/recheck/playground/
+    # for /<!--.*?-->/ (old pattern to remove comments).
+    body = b"-><!--\x00" * (int(DOWNLOAD_MAXSIZE / 7) - 10) + b"->\n<!---->"
 
-        start_time = process_time()
+    response = HtmlResponse("https://example.com", body=body)
 
-        open_in_browser(response, lambda url: True)
+    start_time = process_time()
 
-        end_time = process_time()
-        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+    open_in_browser(response, lambda url: True)
 
-    def test_open_in_browser_redos_head(self):
-        MAX_CPU_TIME = 15
+    end_time = process_time()
+    assert (end_time - start_time) < MAX_CPU_TIME
 
-        # Exploit input from
-        # https://makenowjust-labs.github.io/recheck/playground/
-        # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
-        body = b"<head\t" * int(DOWNLOAD_MAXSIZE / 6)
 
-        response = HtmlResponse("https://example.com", body=body)
+@pytest.mark.slow
+def test_open_in_browser_redos_head():
+    MAX_CPU_TIME = 15
 
-        start_time = process_time()
+    # Exploit input from
+    # https://makenowjust-labs.github.io/recheck/playground/
+    # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
+    body = b"<head\t" * int(DOWNLOAD_MAXSIZE / 6)
 
-        open_in_browser(response, lambda url: True)
+    response = HtmlResponse("https://example.com", body=body)
 
-        end_time = process_time()
-        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+    start_time = process_time()
+
+    open_in_browser(response, lambda url: True)
+
+    end_time = process_time()
+    assert (end_time - start_time) < MAX_CPU_TIME
