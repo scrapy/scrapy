@@ -12,7 +12,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Tuple,
     Union,
     cast,
     overload,
@@ -97,43 +96,38 @@ def xmliter(
         yield Selector(text=nodetext, type="xml")
 
 
-def _resolve_xml_namespace(element_name: str, data: bytes) -> Tuple[str, str]:
-    if ":" not in element_name:
-        return element_name, None, None
-    reader: "SupportsReadClose[bytes]" = _StreamReader(data)
-    input_prefix, element_name = element_name.split(":", maxsplit=1)
-    ns_iterator = etree.iterparse(
-        reader,
-        encoding=reader.encoding,
-        events=("start-ns",),
-        **_ITERPARSE_KWARGS,
-    )
-    for event, (prefix, namespace) in ns_iterator:
-        if prefix != input_prefix:
-            continue
-        return element_name, prefix, namespace
-    return f"{input_prefix}:{element_name}", None, None
-
-
 def xmliter_lxml(
     obj: Union[Response, str, bytes],
     nodename: str,
     namespace: Optional[str] = None,
     prefix: str = "x",
 ) -> Generator[Selector, Any, None]:
-    if not namespace:
-        nodename, prefix, namespace = _resolve_xml_namespace(nodename, obj)
-
     reader: "SupportsReadClose[bytes]" = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
         reader,
-        tag=tag,
         encoding=reader.encoding,
+        events=("end", "start-ns"),
         **_ITERPARSE_KWARGS,
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
-    for _, node in iterable:
+    needs_namespace_resolution = not namespace and ":" in nodename
+    if needs_namespace_resolution:
+        prefix, nodename = nodename.split(":", maxsplit=1)
+    for event, data in iterable:
+        if event == "start-ns":
+            if needs_namespace_resolution:
+                _prefix, _namespace = data
+                if _prefix != prefix:
+                    continue
+                namespace = _namespace
+                needs_namespace_resolution = False
+                selxpath = f"//{prefix}:{nodename}"
+                tag = f"{{{namespace}}}{nodename}"
+            continue
+        node = data
+        if node.tag != tag:
+            continue
         nodetext = etree.tostring(node, encoding="unicode")
         node.clear()
         xs = Selector(text=nodetext, type="xml")
