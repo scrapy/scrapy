@@ -95,10 +95,10 @@ def xmliter_lxml(
     namespace: Optional[str] = None,
     prefix: str = "x",
 ) -> Generator[Selector, Any, None]:
-    reader: "SupportsReadClose[bytes]" = _StreamReader(obj)
+    reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
-        reader,
+        cast("SupportsReadClose[bytes]", reader),
         encoding=reader.encoding,
         events=("end", "start-ns"),
         huge_tree=True,
@@ -109,6 +109,7 @@ def xmliter_lxml(
         prefix, nodename = nodename.split(":", maxsplit=1)
     for event, data in iterable:
         if event == "start-ns":
+            assert isinstance(data, tuple)
             if needs_namespace_resolution:
                 _prefix, _namespace = data
                 if _prefix != prefix:
@@ -118,6 +119,7 @@ def xmliter_lxml(
                 selxpath = f"//{prefix}:{nodename}"
                 tag = f"{{{namespace}}}{nodename}"
             continue
+        assert isinstance(data, etree._Element)
         node = data
         if node.tag != tag:
             continue
