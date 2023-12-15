@@ -19,7 +19,7 @@ Scrapy 2.11.1 (unreleased)
         To minimize the impact of this change on existing code,
         :func:`~scrapy.utils.iterators.xmliter_lxml` now supports indicating
         the node namespace with a prefix in the node name, and big files with
-        highly nested trees.
+        highly nested trees when using libxml2 2.7+.
 
     -   Fixed regular expressions in the implementation of the
         :func:`~scrapy.utils.response.open_in_browser` function.

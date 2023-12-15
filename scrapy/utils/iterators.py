@@ -19,7 +19,6 @@ from typing import (
 from warnings import warn
 
 from lxml import etree
-from packaging.version import Version
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
@@ -30,12 +29,6 @@ if TYPE_CHECKING:
     from lxml._types import SupportsReadClose
 
 logger = logging.getLogger(__name__)
-
-_LXML_VERSION = Version(etree.__version__)
-_LXML_HUGE_TREE_VERSION = Version("4.2")
-_ITERPARSE_KWARGS = {}
-if _LXML_VERSION >= _LXML_HUGE_TREE_VERSION:
-    _ITERPARSE_KWARGS["huge_tree"] = True
 
 
 def xmliter(
@@ -108,7 +101,7 @@ def xmliter_lxml(
         reader,
         encoding=reader.encoding,
         events=("end", "start-ns"),
-        **_ITERPARSE_KWARGS,
+        huge_tree=True,
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
     needs_namespace_resolution = not namespace and ":" in nodename
