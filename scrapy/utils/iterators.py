@@ -86,7 +86,10 @@ def _resolve_xml_namespace(element_name: str, data: bytes) -> Tuple[str, str]:
     reader: "SupportsReadClose[bytes]" = _StreamReader(data)
     node_prefix, element_name = element_name.split(":", maxsplit=1)
     ns_iterator = etree.iterparse(
-        reader, encoding=reader.encoding, events=("start-ns",)
+        reader,
+        encoding=reader.encoding,
+        events=("start-ns",),
+        huge_tree=True,
     )
     for event, (_prefix, _namespace) in ns_iterator:
         if _prefix != node_prefix:
@@ -107,7 +110,10 @@ def xmliter_lxml(
     reader: "SupportsReadClose[bytes]" = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
-        cast("SupportsReadClose[bytes]", reader), tag=tag, encoding=reader.encoding
+        reader,
+        tag=tag,
+        encoding=reader.encoding,
+        huge_tree=True,
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
     for _, node in iterable:
