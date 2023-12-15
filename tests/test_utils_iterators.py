@@ -1,13 +1,14 @@
+import pytest
 from twisted.trial import unittest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse, XmlResponse
 from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
 from tests import get_testdata
 
 
-class XmliterTestCase(unittest.TestCase):
-    xmliter = staticmethod(xmliter)
-
+class XmliterBaseTestCase:
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -39,6 +40,7 @@ class XmliterTestCase(unittest.TestCase):
             attrs, [("001", ["Name 1"], ["Type 1"]), ("002", ["Name 2"], ["Type 2"])]
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unusual_node(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
             <root>
@@ -52,6 +54,7 @@ class XmliterTestCase(unittest.TestCase):
         ]
         self.assertEqual(nodenames, [["matchme..."]])
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unicode(self):
         # example taken from https://github.com/scrapy/scrapy/issues/1665
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -111,6 +114,7 @@ class XmliterTestCase(unittest.TestCase):
                 [("26", ["-"], ["80"]), ("21", ["Ab"], ["76"]), ("27", ["A"], ["27"])],
             )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_text(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -122,6 +126,7 @@ class XmliterTestCase(unittest.TestCase):
             [["one"], ["two"]],
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaces(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -161,6 +166,7 @@ class XmliterTestCase(unittest.TestCase):
         self.assertEqual(node.xpath("id/text()").getall(), [])
         self.assertEqual(node.xpath("price/text()").getall(), [])
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -189,6 +195,7 @@ class XmliterTestCase(unittest.TestCase):
             ["http://www.mydummycompany.com/images/item1.jpg"],
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename_missing(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -213,6 +220,7 @@ class XmliterTestCase(unittest.TestCase):
         with self.assertRaises(StopIteration):
             next(my_iter)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_exception(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -225,10 +233,12 @@ class XmliterTestCase(unittest.TestCase):
 
         self.assertRaises(StopIteration, next, iter)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, "product")
         self.assertRaises(TypeError, next, i)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_encoding(self):
         body = (
             b'<?xml version="1.0" encoding="ISO-8859-9"?>\n'
@@ -243,7 +253,24 @@ class XmliterTestCase(unittest.TestCase):
         )
 
 
-class LxmlXmliterTestCase(XmliterTestCase):
+class XmliterTestCase(XmliterBaseTestCase, unittest.TestCase):
+    xmliter = staticmethod(xmliter)
+
+    def test_deprecation(self):
+        body = b"""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <products>
+              <product></product>
+            </products>
+        """
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="xmliter",
+        ):
+            next(self.xmliter(body, "product"))
+
+
+class LxmlXmliterTestCase(XmliterBaseTestCase, unittest.TestCase):
     xmliter = staticmethod(xmliter_lxml)
 
     def test_xmliter_iterate_namespace(self):

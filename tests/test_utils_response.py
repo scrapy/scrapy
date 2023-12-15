@@ -203,40 +203,38 @@ class ResponseUtilsTest(unittest.TestCase):
             r5, _openfunc=check_base_url
         ), "Inject unique base url with conditional comment"
 
+    @pytest.mark.slow
+    def test_open_in_browser_redos_comment(self):
+        MAX_CPU_TIME = 30
 
-@pytest.mark.slow
-def test_open_in_browser_redos_comment():
-    MAX_CPU_TIME = 30
+        # Exploit input from
+        # https://makenowjust-labs.github.io/recheck/playground/
+        # for /<!--.*?-->/ (old pattern to remove comments).
+        body = b"-><!--\x00" * (int(DOWNLOAD_MAXSIZE / 7) - 10) + b"->\n<!---->"
 
-    # Exploit input from
-    # https://makenowjust-labs.github.io/recheck/playground/
-    # for /<!--.*?-->/ (old pattern to remove comments).
-    body = b"-><!--\x00" * (int(DOWNLOAD_MAXSIZE / 7) - 10) + b"->\n<!---->"
+        response = HtmlResponse("https://example.com", body=body)
 
-    response = HtmlResponse("https://example.com", body=body)
+        start_time = process_time()
 
-    start_time = process_time()
+        open_in_browser(response, lambda url: True)
 
-    open_in_browser(response, lambda url: True)
+        end_time = process_time()
+        self.assertLess(end_time - start_time, MAX_CPU_TIME)
 
-    end_time = process_time()
-    assert (end_time - start_time) < MAX_CPU_TIME
+    @pytest.mark.slow
+    def test_open_in_browser_redos_head(self):
+        MAX_CPU_TIME = 15
 
+        # Exploit input from
+        # https://makenowjust-labs.github.io/recheck/playground/
+        # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
+        body = b"<head\t" * int(DOWNLOAD_MAXSIZE / 6)
 
-@pytest.mark.slow
-def test_open_in_browser_redos_head():
-    MAX_CPU_TIME = 15
+        response = HtmlResponse("https://example.com", body=body)
 
-    # Exploit input from
-    # https://makenowjust-labs.github.io/recheck/playground/
-    # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
-    body = b"<head\t" * int(DOWNLOAD_MAXSIZE / 6)
+        start_time = process_time()
 
-    response = HtmlResponse("https://example.com", body=body)
+        open_in_browser(response, lambda url: True)
 
-    start_time = process_time()
-
-    open_in_browser(response, lambda url: True)
-
-    end_time = process_time()
-    assert (end_time - start_time) < MAX_CPU_TIME
+        end_time = process_time()
+        self.assertLess(end_time - start_time, MAX_CPU_TIME)

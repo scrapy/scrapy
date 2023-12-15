@@ -17,9 +17,12 @@ from typing import (
     cast,
     overload,
 )
+from warnings import warn
 
 from lxml import etree
+from packaging.version import Version
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
@@ -28,6 +31,12 @@ if TYPE_CHECKING:
     from lxml._types import SupportsReadClose
 
 logger = logging.getLogger(__name__)
+
+_LXML_VERSION = Version(etree.__version__)
+_LXML_HUGE_TREE_VERSION = Version("4.2")
+_ITERPARSE_KWARGS = {}
+if _LXML_VERSION >= _LXML_HUGE_TREE_VERSION:
+    _ITERPARSE_KWARGS["huge_tree"] = True
 
 
 def xmliter(
@@ -41,6 +50,16 @@ def xmliter(
     - a unicode string
     - a string encoded as utf-8
     """
+    warn(
+        (
+            "xmliter is deprecated and its use strongly discouraged because "
+            "it is vulnerable to ReDoS attacks. Use xmliter_lxml instead. See "
+            "https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9"
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     nodename_patt = re.escape(nodename)
 
     DOCUMENT_HEADER_RE = re.compile(r"<\?xml[^>]+>\s*", re.S)
@@ -87,7 +106,7 @@ def _resolve_xml_namespace(element_name: str, data: bytes) -> Tuple[str, str]:
         reader,
         encoding=reader.encoding,
         events=("start-ns",),
-        huge_tree=True,
+        **_ITERPARSE_KWARGS,
     )
     for event, (_prefix, _namespace) in ns_iterator:
         if _prefix != node_prefix:
@@ -111,7 +130,7 @@ def xmliter_lxml(
         reader,
         tag=tag,
         encoding=reader.encoding,
-        huge_tree=True,
+        **_ITERPARSE_KWARGS,
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
     for _, node in iterable:
