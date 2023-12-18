@@ -1334,6 +1334,7 @@ JsonResponse objects
 
 .. class:: JsonResponse(url[, ...])
 
-    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` which
-    adds encoding auto-discovering support by looking for a MIME type in the
-    `Content-Type` header that represent to a JSON object.  See :attr:`TextResponse.encoding`.
+    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` 
+    that is used when the response has a `JSON MIME type 
+    <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type` 
+    header.
