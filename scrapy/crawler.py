@@ -39,7 +39,7 @@ from scrapy.utils.log import (
     log_reactor_info,
     log_scrapy_info,
 )
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     install_reactor,
@@ -109,10 +109,9 @@ class Crawler:
         lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
-        self.request_fingerprinter = create_instance(
+        self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-            settings=self.settings,
-            crawler=self,
+            self,
         )
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]
@@ -404,7 +403,7 @@ class CrawlerProcess(CrawlerRunner):
             d.addBoth(self._stop_reactor)
 
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
-        resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
