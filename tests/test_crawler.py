@@ -91,7 +91,10 @@ class CrawlerTestCase(BaseCrawlerTest):
             yield crawler.crawl()
 
     def test_get_addon(self):
-        class TrackingAddon:
+        class ParentAddon:
+            pass
+
+        class TrackingAddon(ParentAddon):
             instances = []
 
             def __init__(self):
@@ -114,9 +117,21 @@ class CrawlerTestCase(BaseCrawlerTest):
         addon = crawler.get_addon(DefaultSpider)
         self.assertIsNone(addon)
 
+        addon = crawler.get_addon(ParentAddon)
+        self.assertIsNone(addon)
+
+        class ChildAddon(TrackingAddon):
+            pass
+
+        addon = crawler.get_addon(ChildAddon)
+        self.assertIsNone(addon)
+
     @inlineCallbacks
     def test_get_downloader_middleware(self):
-        class TrackingDownloaderMiddleware:
+        class ParentDownloaderMiddleware:
+            pass
+
+        class TrackingDownloaderMiddleware(ParentDownloaderMiddleware):
             instances = []
 
             def __init__(self):
@@ -158,6 +173,21 @@ class CrawlerTestCase(BaseCrawlerTest):
         downloader_middleware = MySpider.result
         self.assertIsNone(downloader_middleware)
 
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = ParentDownloaderMiddleware
+        yield crawler.crawl()
+        downloader_middleware = MySpider.result
+        self.assertIsNone(downloader_middleware)
+
+        class ChildDownloaderMiddleware(TrackingDownloaderMiddleware):
+            pass
+
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = ChildDownloaderMiddleware
+        yield crawler.crawl()
+        downloader_middleware = MySpider.result
+        self.assertIsNone(downloader_middleware)
+
     def test_get_downloader_middleware_not_crawling(self):
         crawler = get_raw_crawler()
         self.assertRaises(
@@ -183,7 +213,10 @@ class CrawlerTestCase(BaseCrawlerTest):
 
     @inlineCallbacks
     def test_get_extension(self):
-        class TrackingExtension:
+        class ParentExtension:
+            pass
+
+        class TrackingExtension(ParentExtension):
             instances = []
 
             def __init__(self):
@@ -223,6 +256,21 @@ class CrawlerTestCase(BaseCrawlerTest):
         extension = MySpider.result
         self.assertIsNone(extension)
 
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = ParentExtension
+        yield crawler.crawl()
+        extension = MySpider.result
+        self.assertIsNone(extension)
+
+        class ChildExtension(TrackingExtension):
+            pass
+
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = ChildExtension
+        yield crawler.crawl()
+        extension = MySpider.result
+        self.assertIsNone(extension)
+
     def test_get_extension_not_crawling(self):
         crawler = get_raw_crawler()
         self.assertRaises(RuntimeError, crawler.get_extension, DefaultSpider)
@@ -236,6 +284,87 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 try:
                     crawler.get_extension(DefaultSpider)
+                except Exception as e:
+                    MySpider.result = e
+                    raise
+
+        crawler = get_raw_crawler(MySpider)
+        with raises(RuntimeError):
+            yield crawler.crawl()
+
+    @inlineCallbacks
+    def test_get_item_pipeline(self):
+        class ParentItemPipeline:
+            pass
+
+        class TrackingItemPipeline(ParentItemPipeline):
+            instances = []
+
+            def __init__(self):
+                TrackingItemPipeline.instances.append(self)
+
+        class MySpider(Spider):
+            name = "myspider"
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler=crawler)
+
+            def __init__(self, crawler):
+                self.crawler = crawler
+
+            def start_requests(self):
+                MySpider.result = crawler.get_item_pipeline(MySpider.cls)
+                return
+                yield
+
+        settings = {
+            "ITEM_PIPELINES": {
+                TrackingItemPipeline: 0,
+            },
+        }
+
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = TrackingItemPipeline
+        yield crawler.crawl()
+        item_pipeline = MySpider.result
+        self.assertEqual(len(TrackingItemPipeline.instances), 1)
+        self.assertEqual(item_pipeline, TrackingItemPipeline.instances[0])
+
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = DefaultSpider
+        yield crawler.crawl()
+        item_pipeline = MySpider.result
+        self.assertIsNone(item_pipeline)
+
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = ParentItemPipeline
+        yield crawler.crawl()
+        item_pipeline = MySpider.result
+        self.assertIsNone(item_pipeline)
+
+        class ChildItemPipeline(TrackingItemPipeline):
+            pass
+
+        crawler = get_raw_crawler(MySpider, settings)
+        MySpider.cls = ChildItemPipeline
+        yield crawler.crawl()
+        item_pipeline = MySpider.result
+        self.assertIsNone(item_pipeline)
+
+    def test_get_item_pipeline_not_crawling(self):
+        crawler = get_raw_crawler()
+        self.assertRaises(RuntimeError, crawler.get_item_pipeline, DefaultSpider)
+
+    @inlineCallbacks
+    def test_get_item_pipeline_no_engine(self):
+        class MySpider(Spider):
+            name = "myspider"
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                try:
+                    crawler.get_item_pipeline(DefaultSpider)
                 except Exception as e:
                     MySpider.result = e
                     raise
