@@ -81,6 +81,30 @@ class CrawlerTestCase(BaseCrawlerTest):
         ):
             yield crawler.crawl()
 
+    def test_get_addon(self):
+        class TrackingAddon:
+            instances = []
+
+            def __init__(self):
+                TrackingAddon.instances.append(self)
+
+            def update_settings(self, settings):
+                pass
+
+        settings = {
+            "ADDONS": {
+                TrackingAddon: 0,
+            },
+        }
+        crawler = get_crawler(settings_dict=settings)
+
+        addon = crawler.get_addon(TrackingAddon)
+        self.assertEqual(len(TrackingAddon.instances), 1)
+        self.assertEqual(addon, TrackingAddon.instances[0])
+
+        addon = crawler.get_addon(DefaultSpider)
+        self.assertIsNone(addon)
+
 
 class SpiderSettingsTestCase(unittest.TestCase):
     def test_spider_custom_settings(self):
