@@ -188,6 +188,14 @@ class Crawler:
     def get_addon(self, cls):
         return self._get_component(cls, self.addons.addons)
 
+    def get_downloader_middleware(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_downloader_middleware() can only be called after "
+                "the crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.downloader.middleware.middlewares)
+
 
 class CrawlerRunner:
     """

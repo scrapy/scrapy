@@ -12,12 +12,13 @@ import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from pytest import mark, raises
-from twisted.internet import defer
+from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
 from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
+from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions import telnet
@@ -71,7 +72,7 @@ class CrawlerTestCase(BaseCrawlerTest):
         with raises(ValueError):
             Crawler(DefaultSpider())
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler_crawl_twice_deprecated(self):
         crawler = Crawler(NoRequestsSpider)
         yield crawler.crawl()
@@ -104,6 +105,73 @@ class CrawlerTestCase(BaseCrawlerTest):
 
         addon = crawler.get_addon(DefaultSpider)
         self.assertIsNone(addon)
+
+    @inlineCallbacks
+    def test_get_downloader_middleware(self):
+        class TrackingDownloaderMiddleware:
+            instances = []
+
+            def __init__(self):
+                TrackingDownloaderMiddleware.instances.append(self)
+
+        class MySpider(Spider):
+            name = "myspider"
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler=crawler)
+
+            def __init__(self, crawler):
+                self.crawler = crawler
+
+            def start_requests(self):
+                MySpider.result = crawler.get_downloader_middleware(MySpider.cls)
+                return
+                yield
+
+        settings = {
+            "DOWNLOADER_MIDDLEWARES": {
+                TrackingDownloaderMiddleware: 0,
+            },
+        }
+
+        crawler = get_crawler(MySpider, settings)
+        MySpider.cls = TrackingDownloaderMiddleware
+        yield crawler.crawl()
+        downloader_middleware = MySpider.result
+        self.assertEqual(len(TrackingDownloaderMiddleware.instances), 1)
+        self.assertEqual(
+            downloader_middleware, TrackingDownloaderMiddleware.instances[0]
+        )
+
+        crawler = get_crawler(MySpider, settings)
+        MySpider.cls = DefaultSpider
+        yield crawler.crawl()
+        downloader_middleware = MySpider.result
+        self.assertIsNone(downloader_middleware)
+
+    def test_get_downloader_middleware_not_crawling(self):
+        crawler = get_crawler()
+        self.assertRaises(
+            RuntimeError, crawler.get_downloader_middleware, DefaultSpider
+        )
+
+    @inlineCallbacks
+    def test_get_downloader_middleware_no_engine(self):
+        class MySpider(Spider):
+            name = "myspider"
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                try:
+                    crawler.get_downloader_middleware(DefaultSpider)
+                except Exception as e:
+                    MySpider.result = e
+                    raise
+
+        crawler = get_crawler(MySpider)
+        with raises(RuntimeError):
+            yield crawler.crawl()
 
 
 class SpiderSettingsTestCase(unittest.TestCase):
@@ -247,20 +315,20 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
     def _runner(self):
         return CrawlerRunner({"REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7"})
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
         runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
         self.assertFalse(runner.bootstrap_failed)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler_runner_bootstrap_successful_for_several(self):
         runner = self._runner()
         yield runner.crawl(NoRequestsSpider)
         yield runner.crawl(NoRequestsSpider)
         self.assertFalse(runner.bootstrap_failed)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler_runner_bootstrap_failed(self):
         runner = self._runner()
 
@@ -273,7 +341,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         self.assertTrue(runner.bootstrap_failed)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler_runner_bootstrap_failed_for_several(self):
         runner = self._runner()
 
@@ -288,7 +356,7 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
         self.assertTrue(runner.bootstrap_failed)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
         if self.reactor_pytest == "asyncio":
             CrawlerRunner(
@@ -555,7 +623,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("Spider closed (shutdown)")
         p.wait()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_shutdown_forced(self):
         from twisted.internet import reactor
 
@@ -567,7 +635,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.kill(sig)
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
-        d = defer.Deferred()
+        d = Deferred()
         reactor.callLater(0.1, d.callback, None)
         yield d
         p.kill(sig)
