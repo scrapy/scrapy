@@ -196,6 +196,14 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.downloader.middleware.middlewares)
 
+    def get_extension(self, cls):
+        if not self.extensions:
+            raise RuntimeError(
+                "Crawler.get_extension() can only be called after the "
+                "extension manager has been created."
+            )
+        return self._get_component(cls, self.extensions.middlewares)
+
 
 class CrawlerRunner:
     """
