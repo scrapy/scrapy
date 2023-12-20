@@ -13,6 +13,11 @@ Scrapy provides this functionality out of the box with the Feed Exports, which
 allows you to generate feeds with the scraped items, using multiple
 serialization formats and storage backends.
 
+This page provides detailed documentation for all feed export features. If you
+are looking for a step-by-step guide, check out `Zyte’s export guides`_.
+
+.. _Zyte’s export guides: https://docs.zyte.com/web-scraping/guides/export/index.html#exporting-scraped-data
+
 .. _topics-feed-format:
 
 Serialization formats
