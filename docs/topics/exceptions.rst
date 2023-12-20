@@ -26,11 +26,13 @@ CloseSpider
     :param reason: the reason for closing
     :type reason: str
 
-For example::
+For example:
+
+.. code-block:: python
 
     def parse_page(self, response):
-        if 'Bandwidth exceeded' in response.body:
-            raise CloseSpider('bandwidth_exceeded')
+        if "Bandwidth exceeded" in response.body:
+            raise CloseSpider("bandwidth_exceeded")
 
 DontCloseSpider
 ---------------
@@ -64,10 +66,10 @@ NotConfigured
 This exception can be raised by some components to indicate that they will
 remain disabled. Those components include:
 
- * Extensions
- * Item pipelines
- * Downloader middlewares
- * Spider middlewares
+-   Extensions
+-   Item pipelines
+-   Downloader middlewares
+-   Spider middlewares
 
 The exception must be raised in the component's ``__init__`` method.
 

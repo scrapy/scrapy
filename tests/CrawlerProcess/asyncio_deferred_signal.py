@@ -1,10 +1,10 @@
 import asyncio
 import sys
+from typing import Optional
 
 from scrapy import Spider
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.defer import deferred_from_coro
-from twisted.internet.defer import Deferred
 
 
 class UppercasePipeline:
@@ -31,14 +31,17 @@ class UrlSpider(Spider):
 
 
 if __name__ == "__main__":
+    ASYNCIO_EVENT_LOOP: Optional[str]
     try:
         ASYNCIO_EVENT_LOOP = sys.argv[1]
     except IndexError:
         ASYNCIO_EVENT_LOOP = None
 
-    process = CrawlerProcess(settings={
-        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-        "ASYNCIO_EVENT_LOOP": ASYNCIO_EVENT_LOOP,
-    })
+    process = CrawlerProcess(
+        settings={
+            "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            "ASYNCIO_EVENT_LOOP": ASYNCIO_EVENT_LOOP,
+        }
+    )
     process.crawl(UrlSpider)
     process.start()

@@ -5,24 +5,23 @@ import random
 import sys
 from pathlib import Path
 from shutil import rmtree
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from tempfile import mkdtemp
+from typing import Dict
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
 from twisted.internet import defer, reactor, ssl
+from twisted.internet.protocol import ServerFactory
 from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
-from twisted.web.resource import EncodingResourceWrapper, Resource
-from twisted.web.server import GzipEncoderFactory, NOT_DONE_YET, Site
+from twisted.web import resource, server
+from twisted.web.server import NOT_DONE_YET, GzipEncoderFactory, Site
 from twisted.web.static import File
-from twisted.web.test.test_webclient import PayloadResource
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.ssl import SSL_OP_NO_TLSv1_3
-from scrapy.utils.test import get_testenv
 
 
 def getarg(request, name, default=None, type=None):
@@ -31,12 +30,83 @@ def getarg(request, name, default=None, type=None):
         if type is not None:
             value = type(value)
         return value
-    else:
-        return default
+    return default
 
 
-class LeafResource(Resource):
+def get_mockserver_env() -> Dict[str, str]:
+    """Return a OS environment dict suitable to run mockserver processes."""
 
+    tests_path = Path(__file__).parent.parent
+    pythonpath = str(tests_path) + os.pathsep + os.environ.get("PYTHONPATH", "")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = pythonpath
+    return env
+
+
+# most of the following resources are copied from twisted.web.test.test_webclient
+class ForeverTakingResource(resource.Resource):
+    """
+    L{ForeverTakingResource} is a resource which never finishes responding
+    to requests.
+    """
+
+    def __init__(self, write=False):
+        resource.Resource.__init__(self)
+        self._write = write
+
+    def render(self, request):
+        if self._write:
+            request.write(b"some bytes")
+        return server.NOT_DONE_YET
+
+
+class ErrorResource(resource.Resource):
+    def render(self, request):
+        request.setResponseCode(401)
+        if request.args.get(b"showlength"):
+            request.setHeader(b"content-length", b"0")
+        return b""
+
+
+class NoLengthResource(resource.Resource):
+    def render(self, request):
+        return b"nolength"
+
+
+class HostHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of the host header
+    from the request.
+    """
+
+    def render(self, request):
+        return request.requestHeaders.getRawHeaders(b"host")[0]
+
+
+class PayloadResource(resource.Resource):
+    """
+    A testing resource which renders itself as the contents of the request body
+    as long as the request body is 100 bytes long, otherwise which renders
+    itself as C{"ERROR"}.
+    """
+
+    def render(self, request):
+        data = request.content.read()
+        contentLength = request.requestHeaders.getRawHeaders(b"content-length")[0]
+        if len(data) != 100 or int(contentLength) != 100:
+            return b"ERROR"
+        return data
+
+
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        # only sends 3 bytes even though it claims to send 5
+        request.setHeader(b"content-length", b"5")
+        request.write(b"abc")
+        return b""
+
+
+class LeafResource(resource.Resource):
     isLeaf = True
 
     def deferRequest(self, request, delay, f, *a, **kw):
@@ -51,7 +121,6 @@ class LeafResource(Resource):
 
 
 class Follow(LeafResource):
-
     def render(self, request):
         total = getarg(request, b"total", 100, type=int)
         show = getarg(request, b"show", 1, type=int)
@@ -80,13 +149,12 @@ class Follow(LeafResource):
 
 
 class Delay(LeafResource):
-
     def render_GET(self, request):
         n = getarg(request, b"n", 1, type=float)
         b = getarg(request, b"b", 1, type=int)
         if b:
             # send headers now and delay body
-            request.write('')
+            request.write("")
         self.deferRequest(request, n, self._delayedRender, request, n)
         return NOT_DONE_YET
 
@@ -96,7 +164,6 @@ class Delay(LeafResource):
 
 
 class Status(LeafResource):
-
     def render_GET(self, request):
         n = getarg(request, b"n", 200, type=int)
         request.setResponseCode(n)
@@ -104,15 +171,15 @@ class Status(LeafResource):
 
 
 class Raw(LeafResource):
-
     def render_GET(self, request):
         request.startedWriting = 1
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
+
     render_POST = render_GET
 
     def _delayedRender(self, request):
-        raw = getarg(request, b'raw', b'HTTP 1.1 200 OK\n')
+        raw = getarg(request, b"raw", b"HTTP 1.1 200 OK\n")
         request.startedWriting = 1
         request.write(raw)
         request.channel.transport.loseConnection()
@@ -120,30 +187,29 @@ class Raw(LeafResource):
 
 
 class Echo(LeafResource):
-
     def render_GET(self, request):
         output = {
-            'headers': dict(
+            "headers": dict(
                 (to_unicode(k), [to_unicode(v) for v in vs])
-                for k, vs in request.requestHeaders.getAllRawHeaders()),
-            'body': to_unicode(request.content.read()),
+                for k, vs in request.requestHeaders.getAllRawHeaders()
+            ),
+            "body": to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))
+
     render_POST = render_GET
 
 
 class RedirectTo(LeafResource):
-
     def render(self, request):
-        goto = getarg(request, b'goto', b'/')
+        goto = getarg(request, b"goto", b"/")
         # we force the body content, otherwise Twisted redirectTo()
         # returns HTML with <meta http-equiv="refresh"
         redirectTo(goto, request)
-        return b'redirecting...'
+        return b"redirecting..."
 
 
 class Partial(LeafResource):
-
     def render_GET(self, request):
         request.setHeader(b"Content-Length", b"1024")
         self.deferRequest(request, 0, self._delayedRender, request)
@@ -155,13 +221,12 @@ class Partial(LeafResource):
 
 
 class Drop(Partial):
-
     def _delayedRender(self, request):
         abort = getarg(request, b"abort", 0, type=int)
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
-            if abort and hasattr(tr, 'abortConnection'):
+            if abort and hasattr(tr, "abortConnection"):
                 tr.abortConnection()
             else:
                 tr.loseConnection()
@@ -170,15 +235,13 @@ class Drop(Partial):
 
 
 class ArbitraryLengthPayloadResource(LeafResource):
-
     def render(self, request):
         return request.content.read()
 
 
-class Root(Resource):
-
+class Root(resource.Resource):
     def __init__(self):
-        Resource.__init__(self)
+        resource.Resource.__init__(self)
         self.putChild(b"status", Status())
         self.putChild(b"follow", Follow())
         self.putChild(b"delay", Delay())
@@ -187,11 +250,15 @@ class Root(Resource):
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
-        self.putChild(b"xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
+        self.putChild(
+            b"xpayload",
+            resource.EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]),
+        )
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
         try:
             from tests import tests_datadir
-            self.putChild(b"files", File(os.path.join(tests_datadir, 'test_site/files/')))
+
+            self.putChild(b"files", File(str(Path(tests_datadir, "test_site/files/"))))
         except Exception:
             pass
         self.putChild(b"redirect-to", RedirectTo())
@@ -200,16 +267,18 @@ class Root(Resource):
         return self
 
     def render(self, request):
-        return b'Scrapy mock HTTP server\n'
+        return b"Scrapy mock HTTP server\n"
 
 
 class MockServer:
-
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'http'],
-                          stdout=PIPE, env=get_testenv())
-        http_address = self.proc.stdout.readline().strip().decode('ascii')
-        https_address = self.proc.stdout.readline().strip().decode('ascii')
+        self.proc = Popen(
+            [sys.executable, "-u", "-m", "tests.mockserver", "-t", "http"],
+            stdout=PIPE,
+            env=get_mockserver_env(),
+        )
+        http_address = self.proc.stdout.readline().strip().decode("ascii")
+        https_address = self.proc.stdout.readline().strip().decode("ascii")
 
         self.http_address = http_address
         self.https_address = https_address
@@ -222,7 +291,7 @@ class MockServer:
 
     def url(self, path, is_secure=False):
         host = self.https_address if is_secure else self.http_address
-        host = host.replace('0.0.0.0', '127.0.0.1')
+        host = host.replace("0.0.0.0", "127.0.0.1")
         return host + path
 
 
@@ -246,12 +315,16 @@ class MockDNSResolver:
 
 
 class MockDNSServer:
-
     def __enter__(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver', '-t', 'dns'],
-                          stdout=PIPE, env=get_testenv())
-        self.host = '127.0.0.1'
-        self.port = int(self.proc.stdout.readline().strip().decode('ascii').split(":")[1])
+        self.proc = Popen(
+            [sys.executable, "-u", "-m", "tests.mockserver", "-t", "dns"],
+            stdout=PIPE,
+            env=get_mockserver_env(),
+        )
+        self.host = "127.0.0.1"
+        self.port = int(
+            self.proc.stdout.readline().strip().decode("ascii").split(":")[1]
+        )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -266,10 +339,13 @@ class MockFTPServer:
 
     def __enter__(self):
         self.path = Path(mkdtemp())
-        self.proc = Popen([sys.executable, '-u', '-m', 'tests.ftpserver', '-d', str(self.path)],
-                          stderr=PIPE, env=get_testenv())
+        self.proc = Popen(
+            [sys.executable, "-u", "-m", "tests.ftpserver", "-d", str(self.path)],
+            stderr=PIPE,
+            env=get_mockserver_env(),
+        )
         for line in self.proc.stderr:
-            if b'starting FTP server' in line:
+            if b"starting FTP server" in line:
                 break
         return self
 
@@ -279,26 +355,32 @@ class MockFTPServer:
         self.proc.communicate()
 
     def url(self, path):
-        return 'ftp://127.0.0.1:2121/' + path
+        return "ftp://127.0.0.1:2121/" + path
 
 
-def ssl_context_factory(keyfile='keys/localhost.key', certfile='keys/localhost.crt', cipher_string=None):
+def ssl_context_factory(
+    keyfile="keys/localhost.key", certfile="keys/localhost.crt", cipher_string=None
+):
     factory = ssl.DefaultOpenSSLContextFactory(
-        os.path.join(os.path.dirname(__file__), keyfile),
-        os.path.join(os.path.dirname(__file__), certfile),
+        str(Path(__file__).parent / keyfile),
+        str(Path(__file__).parent / certfile),
     )
     if cipher_string:
         ctx = factory.getContext()
         # disabling TLS1.3 because it unconditionally enables some strong ciphers
-        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_TLSv1_3)
+        ctx.set_options(SSL.OP_CIPHER_SERVER_PREFERENCE | SSL.OP_NO_TLSv1_3)
         ctx.set_cipher_list(to_bytes(cipher_string))
     return factory
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--type", type=str, choices=("http", "dns"), default="http")
+    parser.add_argument(
+        "-t", "--type", type=str, choices=("http", "dns"), default="http"
+    )
     args = parser.parse_args()
+
+    factory: ServerFactory
 
     if args.type == "http":
         root = Root()
@@ -310,8 +392,8 @@ if __name__ == "__main__":
         def print_listening():
             httpHost = httpPort.getHost()
             httpsHost = httpsPort.getHost()
-            httpAddress = f'http://{httpHost.host}:{httpHost.port}'
-            httpsAddress = f'https://{httpsHost.host}:{httpsHost.port}'
+            httpAddress = f"http://{httpHost.host}:{httpHost.port}"
+            httpsAddress = f"https://{httpsHost.host}:{httpsHost.port}"
             print(httpAddress)
             print(httpsAddress)
 

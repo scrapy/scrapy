@@ -11,10 +11,6 @@ Contributing to Scrapy
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
-* Blog about Scrapy. Tell the world how you're using Scrapy. This will help
-  newcomers with more examples and will help the Scrapy project to increase its
-  visibility.
-
 * Report bugs and request features in the `issue tracker`_, trying to follow
   the guidelines detailed in `Reporting bugs`_ below.
 
@@ -22,12 +18,15 @@ There are many ways to contribute to Scrapy. Here are some of them:
   :ref:`writing-patches` and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
+* Blog about Scrapy. Tell the world how you're using Scrapy. This will help
+  newcomers with more examples and will help the Scrapy project to increase its
+  visibility.
+
 * Join the `Scrapy subreddit`_ and share your ideas on how to
   improve Scrapy. We're always open to suggestions.
 
 * Answer Scrapy questions at
   `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`__.
-
 
 Reporting bugs
 ==============
@@ -49,7 +48,7 @@ guidelines when you're going to report a new bug.
   (use "scrapy" tag).
 
 * check the `open issues`_ to see if the issue has already been reported. If it
-  has, don't dismiss the report, but check the ticket history and comments. If 
+  has, don't dismiss the report, but check the ticket history and comments. If
   you have additional useful information, please leave a comment, or consider
   :ref:`sending a pull request <writing-patches>` with a fix.
 
@@ -79,6 +78,13 @@ guidelines when you're going to report a new bug.
 
 Writing patches
 ===============
+
+Scrapy has a list of `good first issues`_ and `help wanted issues`_ that you
+can work on. These issues are a great way to get started with contributing to
+Scrapy. If you're new to the codebase, you may want to focus on documentation
+or testing-related issues, as they are always useful and can help you get
+more familiar with the project. You can also check Scrapy's `test coverage`_
+to see which areas may benefit from more tests.
 
 The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
@@ -169,15 +175,42 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* Unless otherwise specified, follow :pep:`8`.
-
-* It's OK to use lines longer than 79 chars if it improves the code
-  readability.
+* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
+  There is a hook in the pre-commit config
+  that will automatically format your code before every commit. You can also
+  run black manually with ``tox -e black``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
   See https://help.github.com/en/github/using-git/setting-your-username-in-git for
   setup instructions.
+
+.. _scrapy-pre-commit:
+
+Pre-commit
+==========
+
+We use `pre-commit`_ to automatically address simple code issues before every
+commit.
+
+.. _pre-commit: https://pre-commit.com/
+
+After your create a local clone of your fork of the Scrapy repository:
+
+#.  `Install pre-commit <https://pre-commit.com/#installation>`_.
+
+#.  On the root of your local clone of the Scrapy repository, run the following
+    command:
+
+    .. code-block:: bash
+
+       pre-commit install
+
+Now pre-commit will check your changes every time you create a Git commit. Upon
+finding issues, pre-commit aborts your commit, and either fixes those issues
+automatically, or only reports them to you. If it fixes those issues
+automatically, creating your commit again should succeed. Otherwise, you may
+need to address the corresponding issues manually first.
 
 .. _documentation-policies:
 
@@ -214,7 +247,7 @@ Tests
 =====
 
 Tests are implemented using the :doc:`Twisted unit-testing framework
-<twisted:core/development/policy/test-standard>`. Running tests requires
+<twisted:development/test-standard>`. Running tests requires
 :doc:`tox <tox:index>`.
 
 .. _running-tests:
@@ -232,15 +265,15 @@ To run a specific test (say ``tests/test_loader.py``) use:
 
 To run the tests on a specific :doc:`tox <tox:index>` environment, use
 ``-e <name>`` with an environment name from ``tox.ini``. For example, to run
-the tests with Python 3.6 use::
+the tests with Python 3.10 use::
 
-    tox -e py36
+    tox -e py310
 
 You can also specify a comma-separated list of environments, and use :ref:`tox’s
 parallel mode <tox:parallel_mode>` to run the tests on multiple environments in
 parallel::
 
-    tox -e py36,py38 -p auto
+    tox -e py39,py310 -p auto
 
 To pass command-line options to :doc:`pytest <pytest:index>`, add them after
 ``--`` in your call to :doc:`tox <tox:index>`. Using ``--`` overrides the
@@ -250,9 +283,9 @@ default positional arguments (``scrapy tests``) after ``--`` as well::
     tox -- scrapy tests -x  # stop after first failure
 
 You can also use the `pytest-xdist`_ plugin. For example, to run all tests on
-the Python 3.6 :doc:`tox <tox:index>` environment using all your CPU cores::
+the Python 3.10 :doc:`tox <tox:index>` environment using all your CPU cores::
 
-    tox -e py36 -- scrapy tests -n auto
+    tox -e py310 -- scrapy tests -n auto
 
 To see coverage report install :doc:`coverage <coverage:index>`
 (``pip install coverage``) and run:
@@ -287,3 +320,6 @@ And their unit-tests are in::
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257/
 .. _pull request: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist
+.. _good first issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
+.. _help wanted issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
+.. _test coverage: https://app.codecov.io/gh/scrapy/scrapy
