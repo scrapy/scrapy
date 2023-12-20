@@ -32,8 +32,14 @@ Documentation
 -   Improved documentation for :class:`~scrapy.crawler.Crawler` initialization
     changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6147`)
 
+-   Extended documentation for :attr:`Request.meta <scrapy.http.Request.meta>`.
+    (:issue:`5565`)
+
 -   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
     :issue:`6077`)
+
+-   Added a link to Zyte's export guides to the :ref:`feed exports
+    <topics-feed-exports>` documentation. (:issue:`6183`)
 
 -   Added a missing note about backward-incompatible changes in
     :class:`~scrapy.exporters.PythonItemExporter` to the 2.11.0 release notes.
@@ -43,7 +49,8 @@ Documentation
     ``scrapy.utils.boto.is_botocore()`` function to the 2.8.0 release notes.
     (:issue:`6056`, :issue:`6061`)
 
--   Other documentation improvements. (:issue:`6128`, :issue:`6144`)
+-   Other documentation improvements. (:issue:`6128`, :issue:`6144`,
+    :issue:`6163`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
