@@ -1,6 +1,6 @@
 """
-This module implements the JsonResponse class which adds encoding
-discovering through JSON encoding declarations to the TextResponse class.
+This module implements the JsonResponse class that is used when the response
+has a JSON MIME type in its Content-Type header.
 
 See documentation in docs/topics/request-response.rst
 """
