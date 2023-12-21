@@ -115,16 +115,17 @@ class CrawlerTestCase(BaseCrawlerTest):
             },
         }
         crawler = get_crawler(settings_dict=settings)
+        self.assertEqual(len(TrackingAddon.instances), 1)
+        expected = TrackingAddon.instances[-1]
 
         addon = crawler.get_addon(TrackingAddon)
-        self.assertEqual(len(TrackingAddon.instances), 1)
-        self.assertEqual(addon, TrackingAddon.instances[0])
+        self.assertEqual(addon, expected)
 
         addon = crawler.get_addon(DefaultSpider)
         self.assertIsNone(addon)
 
         addon = crawler.get_addon(ParentAddon)
-        self.assertIsNone(addon)
+        self.assertEqual(addon, expected)
 
         class ChildAddon(TrackingAddon):
             pass
@@ -168,23 +169,18 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingDownloaderMiddleware
         yield crawler.crawl()
-        downloader_middleware = MySpider.result
         self.assertEqual(len(TrackingDownloaderMiddleware.instances), 1)
-        self.assertEqual(
-            downloader_middleware, TrackingDownloaderMiddleware.instances[0]
-        )
+        self.assertEqual(MySpider.result, TrackingDownloaderMiddleware.instances[-1])
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
         yield crawler.crawl()
-        downloader_middleware = MySpider.result
-        self.assertIsNone(downloader_middleware)
+        self.assertIsNone(MySpider.result)
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentDownloaderMiddleware
         yield crawler.crawl()
-        downloader_middleware = MySpider.result
-        self.assertIsNone(downloader_middleware)
+        self.assertEqual(MySpider.result, TrackingDownloaderMiddleware.instances[-1])
 
         class ChildDownloaderMiddleware(TrackingDownloaderMiddleware):
             pass
@@ -192,8 +188,7 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildDownloaderMiddleware
         yield crawler.crawl()
-        downloader_middleware = MySpider.result
-        self.assertIsNone(downloader_middleware)
+        self.assertIsNone(MySpider.result)
 
     def test_get_downloader_middleware_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
@@ -254,21 +249,18 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingExtension
         yield crawler.crawl()
-        extension = MySpider.result
         self.assertEqual(len(TrackingExtension.instances), 1)
-        self.assertEqual(extension, TrackingExtension.instances[0])
+        self.assertEqual(MySpider.result, TrackingExtension.instances[-1])
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
         yield crawler.crawl()
-        extension = MySpider.result
-        self.assertIsNone(extension)
+        self.assertIsNone(MySpider.result)
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentExtension
         yield crawler.crawl()
-        extension = MySpider.result
-        self.assertIsNone(extension)
+        self.assertEqual(MySpider.result, TrackingExtension.instances[-1])
 
         class ChildExtension(TrackingExtension):
             pass
@@ -276,8 +268,7 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildExtension
         yield crawler.crawl()
-        extension = MySpider.result
-        self.assertIsNone(extension)
+        self.assertIsNone(MySpider.result)
 
     def test_get_extension_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
@@ -336,21 +327,18 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingItemPipeline
         yield crawler.crawl()
-        item_pipeline = MySpider.result
         self.assertEqual(len(TrackingItemPipeline.instances), 1)
-        self.assertEqual(item_pipeline, TrackingItemPipeline.instances[0])
+        self.assertEqual(MySpider.result, TrackingItemPipeline.instances[-1])
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
         yield crawler.crawl()
-        item_pipeline = MySpider.result
-        self.assertIsNone(item_pipeline)
+        self.assertIsNone(MySpider.result)
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentItemPipeline
         yield crawler.crawl()
-        item_pipeline = MySpider.result
-        self.assertIsNone(item_pipeline)
+        self.assertEqual(MySpider.result, TrackingItemPipeline.instances[-1])
 
         class ChildItemPipeline(TrackingItemPipeline):
             pass
@@ -358,8 +346,7 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildItemPipeline
         yield crawler.crawl()
-        item_pipeline = MySpider.result
-        self.assertIsNone(item_pipeline)
+        self.assertIsNone(MySpider.result)
 
     def test_get_item_pipeline_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
@@ -418,21 +405,18 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = TrackingSpiderMiddleware
         yield crawler.crawl()
-        spider_middleware = MySpider.result
         self.assertEqual(len(TrackingSpiderMiddleware.instances), 1)
-        self.assertEqual(spider_middleware, TrackingSpiderMiddleware.instances[0])
+        self.assertEqual(MySpider.result, TrackingSpiderMiddleware.instances[-1])
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = DefaultSpider
         yield crawler.crawl()
-        spider_middleware = MySpider.result
-        self.assertIsNone(spider_middleware)
+        self.assertIsNone(MySpider.result)
 
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ParentSpiderMiddleware
         yield crawler.crawl()
-        spider_middleware = MySpider.result
-        self.assertIsNone(spider_middleware)
+        self.assertEqual(MySpider.result, TrackingSpiderMiddleware.instances[-1])
 
         class ChildSpiderMiddleware(TrackingSpiderMiddleware):
             pass
@@ -440,8 +424,7 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(MySpider, settings)
         MySpider.cls = ChildSpiderMiddleware
         yield crawler.crawl()
-        spider_middleware = MySpider.result
-        self.assertIsNone(spider_middleware)
+        self.assertIsNone(MySpider.result)
 
     def test_get_spider_middleware_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)

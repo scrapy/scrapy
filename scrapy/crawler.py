@@ -181,10 +181,7 @@ class Crawler:
     @staticmethod
     def _get_component(component_class, components):
         for component in components:
-            if (
-                type(component)  # pylint: disable=unidiomatic-typecheck
-                is component_class
-            ):
+            if isinstance(component, component_class):
                 return component
         return None
 
