@@ -9,7 +9,7 @@ from w3lib.url import add_or_replace_parameter
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.pipelines.files import FilesPipeline
+from scrapy.utils.misc import load_object
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
 
@@ -196,13 +196,15 @@ class FileDownloadCrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_download_media_file_path_error(self):
-        class ExceptionRaisingFilesPipeline(FilesPipeline):
+        cls = load_object(self.pipeline_class)
+
+        class ExceptionRaisingMediaPipeline(cls):
             def file_path(self, request, response=None, info=None, *, item=None):
                 return 1 / 0
 
         settings = {
             **self.settings,
-            "ITEM_PIPELINES": {ExceptionRaisingFilesPipeline: 1},
+            "ITEM_PIPELINES": {ExceptionRaisingMediaPipeline: 1},
         }
         runner = CrawlerRunner(settings)
         crawler = self._create_crawler(MediaDownloadSpider, runner=runner)
