@@ -1357,3 +1357,13 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
+
+JsonResponse objects
+--------------------
+
+.. class:: JsonResponse(url[, ...])
+
+    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` 
+    that is used when the response has a `JSON MIME type 
+    <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type` 
+    header.
