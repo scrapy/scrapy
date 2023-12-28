@@ -29,6 +29,7 @@ from scrapy.spidermiddlewares.referer import (
     UnsafeUrlPolicy,
 )
 from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
 
 
 class TestRefererMiddleware(TestCase):
@@ -961,7 +962,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
         self.spider = Spider("foo")
         settings = Settings(self.settings)
         self.referrermw = RefererMiddleware(settings)
-        self.redirectmw = RedirectMiddleware(settings)
+        self.redirectmw = RedirectMiddleware.from_crawler(get_crawler(Spider))
 
     def test(self):
         for (
