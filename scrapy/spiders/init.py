@@ -1,4 +1,4 @@
-from scrapy.spiders import ignore_spider, Spider
+from scrapy.spiders import Spider, ignore_spider
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -14,7 +14,7 @@ class InitSpider(Spider):
         """This method must be set as the callback of your last initialization
         request. See self.init_request() docstring for more info.
         """
-        return self.__dict__.pop('_postinit_reqs')
+        return self.__dict__.pop("_postinit_reqs")
 
     def init_request(self):
         """This function should return one initialization request, with the

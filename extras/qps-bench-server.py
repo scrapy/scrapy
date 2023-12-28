@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-from time import time
 from collections import deque
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
+from time import time
+
 from twisted.internet import reactor
+from twisted.web.resource import Resource
+from twisted.web.server import NOT_DONE_YET, Site
 
 
 class Root(Resource):
-
     def __init__(self):
         Resource.__init__(self)
         self.concurrent = 0
@@ -26,9 +26,9 @@ class Root(Resource):
         delta = now - self.lasttime
 
         # reset stats on high iter-request times caused by client restarts
-        if delta > 3: # seconds
+        if delta > 3:  # seconds
             self._reset_stats()
-            return ''
+            return ""
 
         self.tail.appendleft(delta)
         self.lasttime = now
@@ -37,15 +37,17 @@ class Root(Resource):
         if now - self.lastmark >= 3:
             self.lastmark = now
             qps = len(self.tail) / sum(self.tail)
-            print(f'samplesize={len(self.tail)} concurrent={self.concurrent} qps={qps:0.2f}')
+            print(
+                f"samplesize={len(self.tail)} concurrent={self.concurrent} qps={qps:0.2f}"
+            )
 
-        if 'latency' in request.args:
-            latency = float(request.args['latency'][0])
+        if "latency" in request.args:
+            latency = float(request.args["latency"][0])
             reactor.callLater(latency, self._finish, request)
             return NOT_DONE_YET
 
         self.concurrent -= 1
-        return ''
+        return ""
 
     def _finish(self, request):
         self.concurrent -= 1

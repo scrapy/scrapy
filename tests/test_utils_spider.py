@@ -2,9 +2,9 @@ import unittest
 
 from scrapy import Spider
 from scrapy.http import Request
-from scrapy.spiders import ignore_spider
 from scrapy.item import Item
-from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
+from scrapy.spiders import ignore_spider
+from scrapy.utils.spider import iter_spider_classes, iterate_spider_output
 
 
 class SpiderA(Spider):
@@ -18,11 +18,11 @@ class SpiderB(Spider):
 
 @ignore_spider
 class SpiderC(Spider):
-    name = 'c'
+    name = "c"
 
 
 class SpiderA1(SpiderA):
-    name = 'a1'
+    name = "a1"
 
 
 class SpiderA2(SpiderA):
@@ -30,7 +30,7 @@ class SpiderA2(SpiderA):
 
 
 class SpiderB1(SpiderB):
-    name = 'b1'
+    name = "b1"
 
 
 class SpiderB2(SpiderB):
@@ -38,7 +38,7 @@ class SpiderB2(SpiderB):
 
 
 class SpiderC1(SpiderC):
-    name = 'c1'
+    name = "c1"
 
 
 class SpiderC2(SpiderC):
@@ -46,10 +46,9 @@ class SpiderC2(SpiderC):
 
 
 class UtilsSpidersTestCase(unittest.TestCase):
-
     def test_iterate_spider_output(self):
         i = Item()
-        r = Request('http://scrapytest.org')
+        r = Request("http://scrapytest.org")
         o = object()
 
         self.assertEqual(list(iterate_spider_output(i)), [i])
@@ -59,14 +58,18 @@ class UtilsSpidersTestCase(unittest.TestCase):
 
     def test_iter_spider_classes_require_name(self):
         import tests.test_utils_spider
+
         it = iter_spider_classes(tests.test_utils_spider, require_name=True)
         self.assertEqual(set(it), {SpiderA1, SpiderB1, SpiderC1, SpiderC2})
 
     def test_iter_spider_classes_dont_require_name(self):
         import tests.test_utils_spider
+
         it = iter_spider_classes(tests.test_utils_spider, require_name=False)
-        self.assertEqual(set(it), {SpiderA, SpiderA1, SpiderA2, SpiderB1,
-                                   SpiderB2, SpiderC1, SpiderC2})
+        self.assertEqual(
+            set(it),
+            {SpiderA, SpiderA1, SpiderA2, SpiderB1, SpiderB2, SpiderC1, SpiderC2},
+        )
 
 
 if __name__ == "__main__":

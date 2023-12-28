@@ -3,15 +3,24 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+from __future__ import annotations
+
 import logging
-import warnings
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Union, cast
+
+from twisted.internet.defer import Deferred
 
 from scrapy import signals
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.deprecate import method_is_overridden
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 def ignore_spider(decorated_cls):
@@ -37,26 +46,26 @@ class Spider(object_ref):
     class.
     """
 
-    name: Optional[str] = None
+    name: str
     custom_settings: Optional[dict] = None
 
-    def __init__(self, name=None, **kwargs):
+    def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
             self.name = name
         self.__dict__.update(kwargs)
-        if not hasattr(self, 'start_urls'):
-            self.start_urls = []
+        if not hasattr(self, "start_urls"):
+            self.start_urls: List[str] = []
 
     @classmethod
     def _is_ignored(cls):
         return cls is Spider
 
     @property
-    def logger(self):
+    def logger(self) -> logging.LoggerAdapter:
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {'spider': self})
+        return logging.LoggerAdapter(logger, {"spider": self})
 
-    def log(self, message, level=logging.DEBUG, **kw):
+    def log(self, message: Any, level: int = logging.DEBUG, **kw: Any) -> None:
         """Log the given message at the given log level
 
         This helper wraps a log call to the logger within the spider, but you
@@ -66,73 +75,54 @@ class Spider(object_ref):
         self.logger.log(level, message, **kw)
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = cls(*args, **kwargs)
         spider._set_crawler(crawler)
         return spider
 
-    def _set_crawler(self, crawler):
+    def _set_crawler(self, crawler: Crawler) -> None:
         self.crawler = crawler
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    def start_requests(self):
-        cls = self.__class__
-        if not self.start_urls and hasattr(self, 'start_url'):
+    def start_requests(self) -> Iterable[Request]:
+        if not self.start_urls and hasattr(self, "start_url"):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "
                 "or empty (but found 'start_url' attribute instead, "
-                "did you miss an 's'?)")
-        if method_is_overridden(cls, Spider, 'make_requests_from_url'):
-            warnings.warn(
-                "Spider.make_requests_from_url method is deprecated; it "
-                "won't be called in future Scrapy releases. Please "
-                "override Spider.start_requests method instead "
-                f"(see {cls.__module__}.{cls.__name__}).",
+                "did you miss an 's'?)"
             )
-            for url in self.start_urls:
-                yield self.make_requests_from_url(url)
-        else:
-            for url in self.start_urls:
-                yield Request(url, dont_filter=True)
+        for url in self.start_urls:
+            yield Request(url, dont_filter=True)
 
-    def make_requests_from_url(self, url):
-        """ This method is deprecated. """
-        warnings.warn(
-            "Spider.make_requests_from_url method is deprecated: "
-            "it will be removed and not be called by the default "
-            "Spider.start_requests method in future Scrapy releases. "
-            "Please override Spider.start_requests method instead."
-        )
-        return Request(url, dont_filter=True)
-
-    def _parse(self, response, **kwargs):
+    def _parse(self, response: Response, **kwargs: Any) -> Any:
         return self.parse(response, **kwargs)
 
-    def parse(self, response, **kwargs):
-        raise NotImplementedError(f'{self.__class__.__name__}.parse callback is not defined')
+    def parse(self, response: Response, **kwargs: Any) -> Any:
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.parse callback is not defined"
+        )
 
     @classmethod
-    def update_settings(cls, settings):
-        settings.setdict(cls.custom_settings or {}, priority='spider')
+    def update_settings(cls, settings: BaseSettings) -> None:
+        settings.setdict(cls.custom_settings or {}, priority="spider")
 
     @classmethod
-    def handles_request(cls, request):
+    def handles_request(cls, request: Request) -> bool:
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider, reason):
-        closed = getattr(spider, 'closed', None)
+    def close(spider: Spider, reason: str) -> Union[Deferred, None]:
+        closed = getattr(spider, "closed", None)
         if callable(closed):
-            return closed(reason)
+            return cast(Union[Deferred, None], closed(reason))
+        return None
 
-    def __str__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.name!r} at 0x{id(self):0x}>"
-
-    __repr__ = __str__
 
 
 # Top-level imports
 from scrapy.spiders.crawl import CrawlSpider, Rule
-from scrapy.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.spiders.feed import CSVFeedSpider, XMLFeedSpider
 from scrapy.spiders.sitemap import SitemapSpider

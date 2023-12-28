@@ -1,0 +1,82 @@
+name: Ubuntu
+on: [push, pull_request]
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - python-version: 3.9
+          env:
+            TOXENV: py
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.11"
+          env:
+            TOXENV: py
+        - python-version: "3.12"
+          env:
+            TOXENV: py
+        - python-version: "3.12"
+          env:
+            TOXENV: asyncio
+        - python-version: pypy3.9
+          env:
+            TOXENV: pypy3
+        - python-version: pypy3.10
+          env:
+            TOXENV: pypy3
+
+        # pinned deps
+        - python-version: 3.8.17
+          env:
+            TOXENV: pinned
+        - python-version: 3.8.17
+          env:
+            TOXENV: asyncio-pinned
+        - python-version: pypy3.8
+          env:
+            TOXENV: pypy3-pinned
+        - python-version: 3.8.17
+          env:
+            TOXENV: extra-deps-pinned
+        - python-version: 3.8.17
+          env:
+            TOXENV: botocore-pinned
+
+        - python-version: "3.12"
+          env:
+            TOXENV: extra-deps
+        - python-version: "3.12"
+          env:
+            TOXENV: botocore
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system libraries
+      if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'pinned')
+      run: |
+        sudo apt-get update
+        sudo apt-get install libxml2-dev libxslt-dev
+
+    - name: Run tests
+      env: ${{ matrix.env }}
+      run: |
+        pip install -U tox
+        tox
+
+    - name: Upload coverage report
+      run: bash <(curl -s https://codecov.io/bash)
