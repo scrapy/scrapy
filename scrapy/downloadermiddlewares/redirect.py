@@ -39,6 +39,7 @@ def _build_redirect_request(
 
 class BaseRedirectMiddleware:
     enabled_setting: str = "REDIRECT_ENABLED"
+    crawler: Crawler
 
     def __init__(self, settings: BaseSettings):
         if not settings.getbool(self.enabled_setting):
@@ -67,6 +68,7 @@ class BaseRedirectMiddleware:
             redirect_reasons = request.meta.get("redirect_reasons", []) + [reason]
             redirected.meta["redirect_reasons"] = redirect_reasons
             fingerprints = request.meta.get("redirect_fingerprints", set())
+            assert self.crawler.request_fingerprinter is not None
             fingerprint = self.crawler.request_fingerprinter.fingerprint(request)
             redirected.meta["redirect_fingerprints"] = fingerprints | {fingerprint}
             redirected.dont_filter = request.dont_filter
