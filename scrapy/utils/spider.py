@@ -1,31 +1,64 @@
+from __future__ import annotations
+
 import inspect
 import logging
+from types import CoroutineType, ModuleType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Generator,
+    Iterable,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
+from twisted.internet.defer import Deferred
+
+from scrapy import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
-try:
-    from scrapy.utils.py36 import collect_asyncgen
-except SyntaxError:
-    collect_asyncgen = None
 
+if TYPE_CHECKING:
+    from scrapy.spiderloader import SpiderLoader
 
 logger = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
 
-def iterate_spider_output(result):
-    if collect_asyncgen and hasattr(inspect, 'isasyncgen') and inspect.isasyncgen(result):
-        d = deferred_from_coro(collect_asyncgen(result))
-        d.addCallback(iterate_spider_output)
-        return d
-    elif inspect.iscoroutine(result):
+
+# https://stackoverflow.com/questions/60222982
+@overload
+def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator:  # type: ignore[misc]
+    ...
+
+
+@overload
+def iterate_spider_output(result: CoroutineType) -> Deferred:
+    ...
+
+
+@overload
+def iterate_spider_output(result: _T) -> Iterable:
+    ...
+
+
+def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferred]:
+    if inspect.isasyncgen(result):
+        return result
+    if inspect.iscoroutine(result):
         d = deferred_from_coro(result)
         d.addCallback(iterate_spider_output)
         return d
-    return arg_to_iter(result)
+    return arg_to_iter(deferred_from_coro(result))
 
 
-def iter_spider_classes(module):
+def iter_spider_classes(module: ModuleType) -> Generator[Type[Spider], Any, None]:
     """Return an iterator over all spider classes defined in the given module
     that can be instantiated (i.e. which have name)
     """
@@ -38,13 +71,51 @@ def iter_spider_classes(module):
             inspect.isclass(obj)
             and issubclass(obj, Spider)
             and obj.__module__ == module.__name__
-            and getattr(obj, 'name', None)
+            and getattr(obj, "name", None)
         ):
             yield obj
 
 
-def spidercls_for_request(spider_loader, request, default_spidercls=None,
-                          log_none=False, log_multiple=False):
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    default_spidercls: Type[Spider],
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> Type[Spider]:
+    ...
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    default_spidercls: Literal[None],
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> Optional[Type[Spider]]:
+    ...
+
+
+@overload
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    *,
+    log_none: bool = ...,
+    log_multiple: bool = ...,
+) -> Optional[Type[Spider]]:
+    ...
+
+
+def spidercls_for_request(
+    spider_loader: SpiderLoader,
+    request: Request,
+    default_spidercls: Optional[Type[Spider]] = None,
+    log_none: bool = False,
+    log_multiple: bool = False,
+) -> Optional[Type[Spider]]:
     """Return a spider class that handles the given Request.
 
     This will look for the spiders that can handle the given request (using
@@ -60,15 +131,18 @@ def spidercls_for_request(spider_loader, request, default_spidercls=None,
         return spider_loader.load(snames[0])
 
     if len(snames) > 1 and log_multiple:
-        logger.error('More than one spider can handle: %(request)s - %(snames)s',
-                     {'request': request, 'snames': ', '.join(snames)})
+        logger.error(
+            "More than one spider can handle: %(request)s - %(snames)s",
+            {"request": request, "snames": ", ".join(snames)},
+        )
 
     if len(snames) == 0 and log_none:
-        logger.error('Unable to find spider that handles: %(request)s',
-                     {'request': request})
+        logger.error(
+            "Unable to find spider that handles: %(request)s", {"request": request}
+        )
 
     return default_spidercls
 
 
 class DefaultSpider(Spider):
-    name = 'default'
+    name = "default"
