@@ -87,7 +87,7 @@ class RFPDupeFilter(BaseDupeFilter):
         fp = self.request_fingerprint(request)
         if fp in self.fingerprints:
             redirect_fps = request.meta.get("redirect_fingerprints", set())
-            return fp not in redirect_fps
+            return fp not in {_fp.hex() for _fp in redirect_fps}
         self.fingerprints.add(fp)
         if self.file:
             self.file.write(fp + "\n")
