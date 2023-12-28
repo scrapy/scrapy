@@ -12,7 +12,6 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
 from scrapy.settings import BaseSettings
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.request import request_fingerprint
 from scrapy.utils.response import get_meta_refresh
 
 if TYPE_CHECKING:
@@ -50,7 +49,9 @@ class BaseRedirectMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings)
+        mw = cls(crawler.settings)
+        mw.crawler = crawler
+        return mw
 
     def _redirect(
         self, redirected: Request, request: Request, spider: Spider, reason: Any
@@ -66,7 +67,7 @@ class BaseRedirectMiddleware:
             redirect_reasons = request.meta.get("redirect_reasons", []) + [reason]
             redirected.meta["redirect_reasons"] = redirect_reasons
             fingerprints = request.meta.get("redirect_fingerprints", set())
-            fingerprint = request_fingerprint(request)
+            fingerprint = self.crawler.request_fingerprinter.fingerprint(request)
             redirected.meta["redirect_fingerprints"] = fingerprints | {fingerprint}
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
