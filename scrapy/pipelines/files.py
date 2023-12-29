@@ -340,7 +340,9 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_URLS_FIELD = "file_urls"
     DEFAULT_FILES_RESULT_FIELD = "files"
 
-    def __init__(self, store_uri, download_func=None, settings=None):
+    def __init__(
+        self, store_uri: Union[str, PathLike], download_func=None, settings=None
+    ):
         store_uri = _to_string(store_uri)
         if not store_uri:
             raise NotConfigured
