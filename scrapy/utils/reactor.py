@@ -1,21 +1,26 @@
 import asyncio
 import sys
+from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
 from contextlib import suppress
-from warnings import catch_warnings, filterwarnings
+from typing import Any, Callable, Dict, Optional, Sequence, Type
+from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
+from twisted.internet.base import DelayedCall
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 
 
 def listen_tcp(portrange, host, factory):
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
+
     if len(portrange) > 2:
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
-    if not hasattr(portrange, '__iter__'):
+    if not hasattr(portrange, "__iter__"):
         return reactor.listenTCP(portrange, factory, interface=host)
     if len(portrange) == 1:
         return reactor.listenTCP(portrange[0], factory, interface=host)
@@ -32,27 +37,52 @@ class CallLaterOnce:
     it hasn't been already scheduled since the last time it ran.
     """
 
-    def __init__(self, func, *a, **kw):
-        self._func = func
-        self._a = a
-        self._kw = kw
-        self._call = None
+    def __init__(self, func: Callable, *a: Any, **kw: Any):
+        self._func: Callable = func
+        self._a: Sequence[Any] = a
+        self._kw: Dict[str, Any] = kw
+        self._call: Optional[DelayedCall] = None
 
-    def schedule(self, delay=0):
+    def schedule(self, delay: float = 0) -> None:
         from twisted.internet import reactor
+
         if self._call is None:
             self._call = reactor.callLater(delay, self)
 
-    def cancel(self):
+    def cancel(self) -> None:
         if self._call:
             self._call.cancel()
 
-    def __call__(self):
+    def __call__(self) -> Any:
         self._call = None
         return self._func(*self._a, **self._kw)
 
 
-def get_asyncio_event_loop_policy():
+def set_asyncio_event_loop_policy() -> None:
+    """The policy functions from asyncio often behave unexpectedly,
+    so we restrict their use to the absolutely essential case.
+    This should only be used to install the reactor.
+    """
+    _get_asyncio_event_loop_policy()
+
+
+def get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
+    warn(
+        "Call to deprecated function "
+        "scrapy.utils.reactor.get_asyncio_event_loop_policy().\n"
+        "\n"
+        "Please use get_event_loop, new_event_loop and set_event_loop"
+        " from asyncio instead, as the corresponding policy methods may lead"
+        " to unexpected behaviour.\n"
+        "This function is replaced by set_asyncio_event_loop_policy and"
+        " is meant to be used only when the reactor is being installed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    return _get_asyncio_event_loop_policy()
+
+
+def _get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
     policy = asyncio.get_event_loop_policy()
     if (
         sys.version_info >= (3, 8)
@@ -61,16 +91,16 @@ def get_asyncio_event_loop_policy():
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
-
     return policy
 
 
-def install_reactor(reactor_path, event_loop_path=None):
+def install_reactor(reactor_path: str, event_loop_path: Optional[str] = None) -> None:
     """Installs the :mod:`~twisted.internet.reactor` with the specified
     import path. Also installs the asyncio event loop with the specified import
     path if the asyncio reactor is enabled"""
     reactor_class = load_object(reactor_path)
     if reactor_class is asyncioreactor.AsyncioSelectorReactor:
+        set_asyncio_event_loop_policy()
         with suppress(error.ReactorAlreadyInstalledError):
             event_loop = set_asyncio_event_loop(event_loop_path)
             asyncioreactor.install(eventloop=event_loop)
@@ -82,15 +112,14 @@ def install_reactor(reactor_path, event_loop_path=None):
             installer()
 
 
-def _get_asyncio_event_loop():
+def _get_asyncio_event_loop() -> AbstractEventLoop:
     return set_asyncio_event_loop(None)
 
 
-def set_asyncio_event_loop(event_loop_path):
+def set_asyncio_event_loop(event_loop_path: Optional[str]) -> AbstractEventLoop:
     """Sets and returns the event loop with specified import path."""
-    policy = get_asyncio_event_loop_policy()
     if event_loop_path is not None:
-        event_loop_class = load_object(event_loop_path)
+        event_loop_class: Type[AbstractEventLoop] = load_object(event_loop_path)
         event_loop = event_loop_class()
         asyncio.set_event_loop(event_loop)
     else:
@@ -107,34 +136,36 @@ def set_asyncio_event_loop(event_loop_path):
                     message="There is no current event loop",
                     category=DeprecationWarning,
                 )
-                event_loop = policy.get_event_loop()
+                event_loop = asyncio.get_event_loop()
         except RuntimeError:
             # `get_event_loop` raises RuntimeError when called with no asyncio
             # event loop yet installed in the following scenarios:
-            # - From a thread other than the main thread. For example, when
-            #   using ``scrapy shell``.
             # - Previsibly on Python 3.14 and later.
             #   https://github.com/python/cpython/issues/100160#issuecomment-1345581902
-            event_loop = policy.new_event_loop()
+            event_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(event_loop)
     return event_loop
 
 
-def verify_installed_reactor(reactor_path):
+def verify_installed_reactor(reactor_path: str) -> None:
     """Raises :exc:`Exception` if the installed
     :mod:`~twisted.internet.reactor` does not match the specified import
     path."""
     from twisted.internet import reactor
+
     reactor_class = load_object(reactor_path)
     if not reactor.__class__ == reactor_class:
-        msg = ("The installed reactor "
-               f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
-               f"match the requested one ({reactor_path})")
+        msg = (
+            "The installed reactor "
+            f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
+            f"match the requested one ({reactor_path})"
+        )
         raise Exception(msg)
 
 
-def verify_installed_asyncio_event_loop(loop_path):
+def verify_installed_asyncio_event_loop(loop_path: str) -> None:
     from twisted.internet import reactor
+
     loop_class = load_object(loop_path)
     if isinstance(reactor._asyncioEventloop, loop_class):
         return
@@ -151,6 +182,7 @@ def verify_installed_asyncio_event_loop(loop_path):
     )
 
 
-def is_asyncio_reactor_installed():
+def is_asyncio_reactor_installed() -> bool:
     from twisted.internet import reactor
+
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)

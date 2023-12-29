@@ -2,7 +2,8 @@ import re
 import sys
 from functools import wraps
 from inspect import getmembers
-from typing import Dict
+from types import CoroutineType
+from typing import AsyncGenerator, Dict, Optional, Type
 from unittest import TestCase
 
 from scrapy.http import Request
@@ -11,16 +12,17 @@ from scrapy.utils.spider import iterate_spider_output
 
 
 class Contract:
-    """ Abstract class for contracts """
-    request_cls = None
+    """Abstract class for contracts"""
+
+    request_cls: Optional[Type[Request]] = None
 
     def __init__(self, method, *args):
-        self.testcase_pre = _create_testcase(method, f'@{self.name} pre-hook')
-        self.testcase_post = _create_testcase(method, f'@{self.name} post-hook')
+        self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
+        self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
         self.args = args
 
     def add_pre_hook(self, request, results):
-        if hasattr(self, 'pre_process'):
+        if hasattr(self, "pre_process"):
             cb = request.callback
 
             @wraps(cb)
@@ -36,19 +38,27 @@ class Contract:
                 else:
                     results.addSuccess(self.testcase_pre)
                 finally:
-                    return list(iterate_spider_output(cb(response, **cb_kwargs)))
+                    cb_result = cb(response, **cb_kwargs)
+                    if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                        raise TypeError("Contracts don't support async callbacks")
+                    return list(  # pylint: disable=return-in-finally
+                        iterate_spider_output(cb_result)
+                    )
 
             request.callback = wrapper
 
         return request
 
     def add_post_hook(self, request, results):
-        if hasattr(self, 'post_process'):
+        if hasattr(self, "post_process"):
             cb = request.callback
 
             @wraps(cb)
             def wrapper(response, **cb_kwargs):
-                output = list(iterate_spider_output(cb(response, **cb_kwargs)))
+                cb_result = cb(response, **cb_kwargs)
+                if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                    raise TypeError("Contracts don't support async callbacks")
+                output = list(iterate_spider_output(cb_result))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)
@@ -60,7 +70,7 @@ class Contract:
                 else:
                     results.addSuccess(self.testcase_post)
                 finally:
-                    return output
+                    return output  # pylint: disable=return-in-finally
 
             request.callback = wrapper
 
@@ -88,12 +98,12 @@ class ContractsManager:
 
     def extract_contracts(self, method):
         contracts = []
-        for line in method.__doc__.split('\n'):
+        for line in method.__doc__.split("\n"):
             line = line.strip()
 
-            if line.startswith('@'):
-                name, args = re.match(r'@(\w+)\s*(.*)', line).groups()
-                args = re.split(r'\s+', args)
+            if line.startswith("@"):
+                name, args = re.match(r"@(\w+)\s*(.*)", line).groups()
+                args = re.split(r"\s+", args)
 
                 contracts.append(self.contracts[name](method, *args))
 
@@ -106,7 +116,7 @@ class ContractsManager:
             try:
                 requests.append(self.from_method(bound_method, results))
             except Exception:
-                case = _create_testcase(bound_method, 'contract')
+                case = _create_testcase(bound_method, "contract")
                 results.addError(case, sys.exc_info())
 
         return requests
@@ -124,13 +134,13 @@ class ContractsManager:
 
             # Don't filter requests to allow
             # testing different callbacks on the same URL.
-            kwargs['dont_filter'] = True
-            kwargs['callback'] = method
+            kwargs["dont_filter"] = True
+            kwargs["callback"] = method
 
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
 
-            args.remove('self')
+            args.remove("self")
 
             # check if all positional arguments are defined in kwargs
             if set(args).issubset(set(kwargs)):
@@ -146,7 +156,7 @@ class ContractsManager:
                 return request
 
     def _clean_req(self, request, method, results):
-        """ stop the request from returning objects and records any errors """
+        """stop the request from returning objects and records any errors"""
 
         cb = request.callback
 
@@ -156,11 +166,11 @@ class ContractsManager:
                 output = cb(response, **cb_kwargs)
                 output = list(iterate_spider_output(output))
             except Exception:
-                case = _create_testcase(method, 'callback')
+                case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
 
         def eb_wrapper(failure):
-            case = _create_testcase(method, 'errback')
+            case = _create_testcase(method, "errback")
             exc_info = failure.type, failure.value, failure.getTracebackObject()
             results.addError(case, exc_info)
 
@@ -175,6 +185,6 @@ def _create_testcase(method, desc):
         def __str__(_self):
             return f"[{spider}] {method.__name__} ({desc})"
 
-    name = f'{spider}_{method.__name__}'
+    name = f"{spider}_{method.__name__}"
     setattr(ContractTestCase, name, lambda x: x)
     return ContractTestCase(name)

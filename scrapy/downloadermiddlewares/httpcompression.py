@@ -1,24 +1,34 @@
-import io
-import warnings
-import zlib
+from __future__ import annotations
 
+import io
+import zlib
+from typing import TYPE_CHECKING, List, Optional, Union
+
+from scrapy import Request, Spider
+from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
+from scrapy.statscollectors import StatsCollector
 from scrapy.utils.gz import gunzip
 from scrapy.utils.response import get_response_class
 
-ACCEPTED_ENCODINGS = [b'gzip', b'deflate']
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
 
 try:
     import brotli
-    ACCEPTED_ENCODINGS.append(b'br')
+
+    ACCEPTED_ENCODINGS.append(b"br")
 except ImportError:
     pass
 
 try:
     import zstandard
-    ACCEPTED_ENCODINGS.append(b'zstd')
+
+    ACCEPTED_ENCODINGS.append(b"zstd")
 except ImportError:
     pass
 
@@ -26,51 +36,42 @@ except ImportError:
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
-    def __init__(self, stats=None):
+
+    def __init__(self, stats: Optional[StatsCollector] = None):
         self.stats = stats
 
     @classmethod
-    def from_crawler(cls, crawler):
-        if not crawler.settings.getbool('COMPRESSION_ENABLED'):
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
-        try:
-            return cls(stats=crawler.stats)
-        except TypeError:
-            warnings.warn(
-                "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'stats' parameter or "
-                "reimplement the 'from_crawler' method.",
-                ScrapyDeprecationWarning,
-            )
-            result = cls()
-            result.stats = crawler.stats
-            return result
+        return cls(stats=crawler.stats)
 
-    def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Encoding',
-                                   b", ".join(ACCEPTED_ENCODINGS))
+    def process_request(
+        self, request: Request, spider: Spider
+    ) -> Union[Request, Response, None]:
+        request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
+        return None
 
-    def process_response(self, request, response, spider):
-
+    def process_response(
+        self, request: Request, response: Response, spider: Spider
+    ) -> Union[Request, Response]:
         if (
-            request.method == 'HEAD'
+            request.method == "HEAD"
             or not isinstance(response, Response)
-            or 'Content-Encoding' not in response.headers
+            or "Content-Encoding" not in response.headers
         ):
             return response
-        header_list = response.headers.getlist('Content-Encoding')
-        encodings = [
-            item.strip() for item in b",".join(header_list).split(b",")
-        ]
+        header_list = response.headers.getlist("Content-Encoding")
+        encodings = [item.strip() for item in b",".join(header_list).split(b",")]
         if not encodings:
             return response
         while encodings:
             encoding = encodings.pop()
             decoded_body = self._decode(response.body, encoding.lower())
             if encodings:
-                response.headers['Content-Encoding'] = b",".join(encodings)
+                response.headers["Content-Encoding"] = b",".join(encodings)
             else:
-                del response.headers['Content-Encoding']
+                del response.headers["Content-Encoding"]
             respcls = get_response_class(
                 http_headers=response.headers,
                 url=response.url,
@@ -80,18 +81,20 @@ class HttpCompressionMiddleware:
             if issubclass(respcls, TextResponse):
                 # Force recalculating the encoding based on the new,
                 # decoded (uncompressed) body.
-                kwargs['encoding'] = None
+                kwargs["encoding"] = None
             response = response.replace(**kwargs)
         if self.stats:
-            self.stats.inc_value('httpcompression/response_bytes', len(decoded_body), spider=spider)
-            self.stats.inc_value('httpcompression/response_count', spider=spider)
+            self.stats.inc_value(
+                "httpcompression/response_bytes", len(decoded_body), spider=spider
+            )
+            self.stats.inc_value("httpcompression/response_count", spider=spider)
         return response
 
-    def _decode(self, body, encoding):
-        if encoding == b'gzip' or encoding == b'x-gzip':
+    def _decode(self, body: bytes, encoding: bytes) -> bytes:
+        if encoding == b"gzip" or encoding == b"x-gzip":
             body = gunzip(body)
 
-        if encoding == b'deflate':
+        if encoding == b"deflate":
             try:
                 body = zlib.decompress(body)
             except zlib.error:
@@ -101,9 +104,9 @@ class HttpCompressionMiddleware:
                 # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
-        if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
+        if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
             body = brotli.decompress(body)
-        if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
+        if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
             # Using its streaming API since its simple API could handle only cases
             # where there is content size data embedded in the frame
             reader = zstandard.ZstdDecompressor().stream_reader(io.BytesIO(body))

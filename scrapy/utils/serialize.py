@@ -1,19 +1,19 @@
-import json
 import datetime
 import decimal
+import json
+from typing import Any
 
-from itemadapter import is_item, ItemAdapter
+from itemadapter import ItemAdapter, is_item
 from twisted.internet import defer
 
 from scrapy.http import Request, Response
 
 
 class ScrapyJSONEncoder(json.JSONEncoder):
-
     DATE_FORMAT = "%Y-%m-%d"
     TIME_FORMAT = "%H:%M:%S"
 
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         if isinstance(o, set):
             return list(o)
         if isinstance(o, datetime.datetime):
