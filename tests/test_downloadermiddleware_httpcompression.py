@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from unittest import SkipTest, TestCase
 from warnings import catch_warnings
+import logging
 
 from w3lib.encoding import resolve_encoding
 
@@ -102,6 +103,22 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(
             request.headers.get("Accept-Encoding"), b", ".join(ACCEPTED_ENCODINGS)
         )
+
+    def test_process_request_import_brotli(self):
+        request = Request("http://scrapytest.org", headers={"Accept-Encoding": "gzip, deflate, br"})
+        self.mw._can_decode_br=False
+        self.mw.process_request(request, self.spider)
+        ae = request.headers.get("Accept-Encoding")
+        self.assertEqual(
+            b'br' in ae.split(b', '), not self.mw._can_decode_br
+        )
+        self.assertTrue(
+            ae, not self.mw._can_decode_br
+        )
+        self.assertTrue(
+            ae, b'br' in ae.split(b', ')
+        )
+        
 
     def test_process_response_gzip(self):
         response = self._getresponse("gzip")
