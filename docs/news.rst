@@ -50,7 +50,7 @@ Documentation
     (:issue:`6056`, :issue:`6061`)
 
 -   Other documentation improvements. (:issue:`6128`, :issue:`6144`,
-    :issue:`6163`)
+    :issue:`6163`, :issue:`6190`, :issue:`6192`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
