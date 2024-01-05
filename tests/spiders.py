@@ -301,8 +301,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get("seed"))
-        for req in super().parse(response):
-            yield req
+        yield from super().parse(response)
 
 
 class SingleRequestSpider(MetaSpider):

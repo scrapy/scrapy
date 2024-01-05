@@ -44,8 +44,7 @@ def _serialize_headers(
     for header in headers:
         if header in request.headers:
             yield header
-            for value in request.headers.getlist(header):
-                yield value
+            yield from request.headers.getlist(header)
 
 
 def request_fingerprint(
