@@ -265,10 +265,12 @@ class FTPFilesStore:
     FTP_PASSWORD = None
     USE_ACTIVE_MODE = None
 
-    def __init__(self, uri):
-        if not uri.startswith("ftp://"):
-            raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
+    def __init__(self, uri: str):
         u = urlparse(uri)
+        if u.scheme != "ftp":
+            raise ValueError(f"Incorrect URI scheme in {uri}, expected 'ftp'")
+        if not uri.startswith("ftp://"):
+            u = urlparse(uri.replace("ftp:/", "ftp://"))
         self.port = u.port
         self.host = u.hostname
         self.port = int(u.port or 21)
