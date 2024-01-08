@@ -502,6 +502,18 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         request = Request("http://example.com/image01.jpg")
         self.assertEqual(pipeline.file_path(request), Path("subdir/image01.jpg"))
 
+    def test_ftp_pipeline_using_pathlike_objects(self):
+        pipeline = FilesPipeline.from_settings(
+            Settings({"FILES_STORE": Path("ftp://username:password@address:21/path")})
+        )
+        fs = pipeline.store
+        assert isinstance(fs, FTPFilesStore)
+        assert fs.host == "address"
+        assert fs.port == 21
+        assert fs.username == "username"
+        assert fs.password == "password"
+        assert fs.basedir == "/path"
+
     def test_files_store_constructor_with_pathlike_object(self):
         path = Path("./FileDir")
         fs_store = FSFilesStore(path)
