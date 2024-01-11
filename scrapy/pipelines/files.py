@@ -8,7 +8,6 @@ import functools
 import hashlib
 import logging
 import mimetypes
-import os
 import time
 from collections import defaultdict
 from contextlib import suppress
@@ -66,7 +65,7 @@ class FSFilesStore:
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = absolute_path.stat().st_mtime
-        except os.error:
+        except OSError:
             return {}
 
         with absolute_path.open("rb") as f:
