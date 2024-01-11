@@ -107,8 +107,7 @@ class DeferUtilsTest(unittest.TestCase):
 class IterErrbackTest(unittest.TestCase):
     def test_iter_errback_good(self):
         def itergood():
-            for x in range(10):
-                yield x
+            yield from range(10)
 
         errors = []
         out = list(iter_errback(itergood(), errors.append))

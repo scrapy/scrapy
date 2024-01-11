@@ -58,8 +58,7 @@ class XMLFeedSpider(Spider):
 
         for selector in nodes:
             ret = iterate_spider_output(self.parse_node(response, selector))
-            for result_item in self.process_results(response, ret):
-                yield result_item
+            yield from self.process_results(response, ret)
 
     def _parse(self, response, **kwargs):
         if not hasattr(self, "parse_node"):
@@ -133,8 +132,7 @@ class CSVFeedSpider(Spider):
             response, self.delimiter, self.headers, quotechar=self.quotechar
         ):
             ret = iterate_spider_output(self.parse_row(response, row))
-            for result_item in self.process_results(response, ret):
-                yield result_item
+            yield from self.process_results(response, ret)
 
     def _parse(self, response, **kwargs):
         if not hasattr(self, "parse_row"):

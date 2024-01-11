@@ -103,8 +103,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     ) -> Union[Generator, AsyncGenerator]:
         def process_sync(iterable: Iterable) -> Generator:
             try:
-                for r in iterable:
-                    yield r
+                yield from iterable
             except Exception as ex:
                 exception_result = self._process_spider_exception(
                     response, spider, Failure(ex), exception_processor_index
