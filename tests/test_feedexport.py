@@ -2300,7 +2300,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     content[feed["format"]].append(file.read_bytes())
         finally:
             self.tearDown()
-        defer.returnValue(content)
+        return content
 
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
