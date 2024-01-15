@@ -59,6 +59,8 @@ Quality assurance
     disabled when the pre-release support was added. (:issue:`5985`,
     :issue:`6083`, :issue:`6098`)
 
+-   Fixed a test issue on PyPy 7.3.14. (:issue:`6204`, :issue:`6205`)
+
 .. _release-2.11.0:
 
 Scrapy 2.11.0 (2023-09-18)
