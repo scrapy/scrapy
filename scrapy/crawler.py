@@ -178,6 +178,48 @@ class Crawler:
             assert self.engine
             yield maybeDeferred(self.engine.stop)
 
+    @staticmethod
+    def _get_component(component_class, components):
+        for component in components:
+            if isinstance(component, component_class):
+                return component
+        return None
+
+    def get_addon(self, cls):
+        return self._get_component(cls, self.addons.addons)
+
+    def get_downloader_middleware(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_downloader_middleware() can only be called after "
+                "the crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.downloader.middleware.middlewares)
+
+    def get_extension(self, cls):
+        if not self.extensions:
+            raise RuntimeError(
+                "Crawler.get_extension() can only be called after the "
+                "extension manager has been created."
+            )
+        return self._get_component(cls, self.extensions.middlewares)
+
+    def get_item_pipeline(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_item_pipeline() can only be called after the "
+                "crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
+
+    def get_spider_middleware(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_spider_middleware() can only be called after the "
+                "crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
+
 
 class CrawlerRunner:
     """
