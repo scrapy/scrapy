@@ -59,22 +59,22 @@ scrapy.Spider
 
    .. attribute:: name
 
-        A string which defines the name for this spider.
+       A string which defines the name for this spider.
 
-        If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` and you use the
-        default Scrapy spider loader (see :setting:`SPIDER_LOADER_CLASS`), a
-        non-empty name is required for the spider to be discoverable by the
-        Scrapy commands :command:`crawl`, :command:`list`, and
-        :command:`runspider`.
+       If :setting:`SPIDER_LOADER_REQUIRE_NAME` is ``True`` and you use the
+       default Scrapy spider loader (see :setting:`SPIDER_LOADER_CLASS`), a
+       non-empty name is required for the spider to be discoverable by the
+       Scrapy commands :command:`crawl`, :command:`list`, and
+       :command:`runspider`.
 
-        The spider name must be unique to one spider class. If two or more
-        spiders have the same name, Scrapy commands :command:`crawl` and
-        :command:`runspider` will only be able to run one of the spiders.
+       The spider name must be unique to one spider class. If two or more
+       spiders have the same name, Scrapy commands :command:`crawl` and
+       :command:`runspider` will only be able to run one of the spiders.
 
-        If the spider scrapes a single domain, a common practice is to name the
-        spider after the domain, with or without the `TLD`_. So, for example, a
-        spider that crawls ``mywebsite.com`` would often be called
-        ``mywebsite``.
+       If the spider scrapes a single domain, a common practice is to name the
+       spider after the domain, with or without the `TLD`_. So, for example, a
+       spider that crawls ``mywebsite.com`` would often be called
+       ``mywebsite``.
 
    .. attribute:: allowed_domains
 
