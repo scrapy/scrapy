@@ -414,10 +414,11 @@ How can I make a blank request?
     
     from scrapy import Request
 
-    yield Request(
-        url="data:,",
-        callback=self.your_call_back,
-    )
+    def make_blank_request(your_call_back):
+        yield Request(
+            url="data:,",
+            callback=your_call_back,
+        )
 
 In this case, the URL is set to a data URI scheme. Data URLs allow you to include data 
 in-line in web pages as if they were external resources. The "data:" scheme with an empty 
