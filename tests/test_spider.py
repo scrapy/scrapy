@@ -24,6 +24,7 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
+from scrapy.utils.python import global_object_name
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
 
@@ -54,8 +55,9 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(spider.foo, "bar")
 
     def test_spider_without_name(self):
+        self.assertFalse(hasattr(self.spider_class, "name"))
         spider = self.spider_class()
-        self.assertFalse(hasattr(spider, "name"))
+        self.assertEqual(spider.name, global_object_name(self.spider_class))
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()

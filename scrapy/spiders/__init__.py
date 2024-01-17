@@ -12,6 +12,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy import signals
 from scrapy.http import Request, Response
+from scrapy.utils.python import global_object_name
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
@@ -52,6 +53,8 @@ class Spider(object_ref):
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
             self.name = name
+        elif not getattr(self, "name", None):
+            self.name = global_object_name(self.__class__)
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
             self.start_urls: List[str] = []
