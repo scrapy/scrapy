@@ -65,4 +65,9 @@ class CrawlTestCase(TestCase):
         crawler = CrawlerRunner().create_crawler(CookiesSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         cookies_stats = crawler.stats._stats.get("cookies_values")
-        self.assertTrue(cookies_stats)  # WIP
+        expected_cookies = {
+            200: {"status": "200"},
+            302: {"status": "302"},
+            503: {"status": "503"},
+        }
+        self.assertEqual(cookies_stats, expected_cookies)
