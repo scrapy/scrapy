@@ -12,6 +12,7 @@ from scrapy import Request, Spider
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import BaseSettings
 from scrapy.utils.misc import walk_modules
+from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -56,7 +57,7 @@ class SpiderLoader:
     def _load_spiders(self, module: ModuleType) -> None:
         classes = iter_spider_classes(module, require_name=self.require_name)
         for spcls in classes:
-            qualname = ".".join((module.__name__, spcls.__name__))
+            qualname = global_object_name(spcls)
             name = getattr(spcls, "name", None) or qualname
             self._found[name].append((module.__name__, spcls.__name__))
             self._spiders[name] = spcls
