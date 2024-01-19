@@ -51,7 +51,7 @@ class CookiesSpider(MetaSpider):
         self.crawler.stats._stats["cookies_values"] = jars_data
 
 
-class CrawlTestCase(TestCase):
+class CookiesTestCase(TestCase):
     def setUp(self):
         self.mockserver = MockServer()
         self.mockserver.__enter__()
@@ -61,7 +61,7 @@ class CrawlTestCase(TestCase):
         self.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
-    def test_delay(self):
+    def test_cookies(self):
         crawler = CrawlerRunner().create_crawler(CookiesSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         cookies_stats = crawler.stats._stats.get("cookies_values")
