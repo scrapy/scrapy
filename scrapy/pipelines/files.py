@@ -525,6 +525,7 @@ class FilesPipeline(MediaPipeline):
     # Overridable Interface
     def get_media_requests(self, item, info):
         urls = ItemAdapter(item).get(self.files_urls_field, [])
+        urls = urls if isinstance(urls, list) else [urls]
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def file_downloaded(self, response, request, info, *, item=None):
