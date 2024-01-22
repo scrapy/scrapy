@@ -219,6 +219,7 @@ class ImagesPipeline(FilesPipeline):
 
     def get_media_requests(self, item, info):
         urls = ItemAdapter(item).get(self.images_urls_field, [])
+        urls = urls if isinstance(urls, list) else [urls]
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def item_completed(self, results, item, info):
