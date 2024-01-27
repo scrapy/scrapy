@@ -1,6 +1,7 @@
 from gzip import GzipFile
 from io import BytesIO
 from pathlib import Path
+from typing import Tuple
 from unittest import SkipTest, TestCase
 
 from w3lib.encoding import resolve_encoding
@@ -9,7 +10,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -35,6 +36,12 @@ FORMAT = {
         "zstd",
     ),
 }
+
+
+class BroHttpCompressionMiddleware(HttpCompressionMiddleware):
+    @property
+    def _raise_unsupported(self) -> Tuple[bytes]:
+        return (b"bro",)
 
 
 class HttpCompressionTest(TestCase):
@@ -101,6 +108,31 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(
             request.headers.get("Accept-Encoding"), b", ".join(ACCEPTED_ENCODINGS)
         )
+
+    def test_process_request_checks_encodings(self):
+        initial_encodings = ACCEPTED_ENCODINGS.copy()
+
+        mw = BroHttpCompressionMiddleware.from_crawler(self.crawler)
+
+        ACCEPTED_ENCODINGS.append(b"bro")
+
+        request = Request(
+            "http://scrapytest.org",
+            headers={"Accept-Encoding": b", ".join((b"bro", b"gzip"))},
+        )
+        mw.process_request(request, self.spider)
+        """Expecting no Exception raised here as `bro` encoding is forced to be allowed."""
+
+        request = Request(
+            "http://scrapytest.org",
+            headers={"Accept-Encoding": b", ".join((b"bro", b"gzip"))},
+        )
+        ACCEPTED_ENCODINGS.pop()
+        mw = BroHttpCompressionMiddleware.from_crawler(self.crawler)
+        self.assertRaises(NotSupported, mw.process_request, request, self.spider)
+
+        """Checking that valid encondings are back"""
+        self.assertListEqual(ACCEPTED_ENCODINGS, initial_encodings)
 
     def test_process_response_gzip(self):
         response = self._getresponse("gzip")
