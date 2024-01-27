@@ -9,6 +9,7 @@ from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
+from scrapy.settings import Settings
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.gz import gunzip
 
@@ -33,18 +34,29 @@ except ImportError:
     pass
 
 
+def _get_init_settings_kwargs(settings: Settings):
+    keep_encoding_header = (
+        settings.getbool("COMPRESSION_KEEP_ENCODING_HEADERS") if settings else False
+    )
+    return dict(keep_encoding_header=keep_encoding_header)
+
+
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __init__(self, stats: Optional[StatsCollector] = None):
+    def __init__(
+        self, stats: Optional[StatsCollector] = None, keep_encoding_header: bool = False
+    ):
         self.stats = stats
+        self.keep_encoding_header = keep_encoding_header
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
-        return cls(stats=crawler.stats)
+        settings_kwargs = _get_init_settings_kwargs(crawler.settings)
+        return cls(stats=crawler.stats, **settings_kwargs)
 
     def process_request(
         self, request: Request, spider: Spider
@@ -79,10 +91,11 @@ class HttpCompressionMiddleware:
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
                     kwargs["encoding"] = None
+                if self.keep_encoding_header:
+                    kwargs["flags"] = response.flags + ["decoded"]
                 response = response.replace(**kwargs)
-                if not content_encoding:
+                if not self.keep_encoding_header and not content_encoding:
                     del response.headers["Content-Encoding"]
-
         return response
 
     def _decode(self, body: bytes, encoding: bytes) -> bytes:

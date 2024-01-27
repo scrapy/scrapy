@@ -38,6 +38,17 @@ FORMAT = {
 
 
 class HttpCompressionTest(TestCase):
+    @staticmethod
+    def create_spider_mw(compression_enabled=True, compression_header=False):
+        settings = {
+            "COMPRESSION_ENABLED": compression_enabled,
+            "COMPRESSION_KEEP_ENCODING_HEADERS": compression_header,
+        }
+        crawler = get_crawler(Spider, settings)
+        spider = crawler._create_spider("foo")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        return spider, mw
+
     def setUp(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
@@ -371,3 +382,31 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(response.body, b"")
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
+
+    def test_process_response_gzip_keep_headers(self):
+        test_spider, test_mw = self.create_spider_mw(
+            compression_enabled=True, compression_header=True
+        )
+        response = self._getresponse("gzip")
+        request = response.request
+
+        self.assertEqual(response.headers["Content-Encoding"], b"gzip")
+        newresponse = test_mw.process_response(request, response, test_spider)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" in newresponse.headers
+        assert "decoded" in newresponse.flags
+
+    def test_process_response_gzip_binary_octetstream_contenttype_kept(self):
+        test_spider, test_mw = self.create_spider_mw(
+            compression_enabled=True, compression_header=True
+        )
+        response = self._getresponse("x-gzip")
+        response.headers["Content-Type"] = "binary/octet-stream"
+        request = response.request
+
+        newresponse = test_mw.process_response(request, response, test_spider)
+        self.assertIsNot(newresponse, response)
+        self.assertTrue(newresponse.body.startswith(b"<!DOCTYPE"))
+        self.assertIn("Content-Encoding", newresponse.headers)
+        self.assertIn("decoded", newresponse.flags)
