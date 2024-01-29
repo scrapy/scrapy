@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import warnings
 from contextlib import contextmanager
 from itertools import chain
 from pathlib import Path
@@ -665,6 +666,24 @@ class MySpider(scrapy.Spider):
         return []
 """
 
+    debug_log_multiple_spiders = """
+import scrapy
+
+class FirstSpider(scrapy.Spider):
+    name = 'spider1'
+
+    def start_requests(self):
+        self.logger.debug("spider1 Works!")
+        return []
+
+class SecondSpider(scrapy.Spider):
+    name = 'spider2'
+
+    def start_requests(self):
+        self.logger.debug("spider2 Works!")
+        return []
+"""
+
     badspider = """
 import scrapy
 
@@ -1026,6 +1045,14 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
 
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
+
+    def test_runspider_multiple_spiders(self):
+        log = self.get_log(self.debug_log_multiple_spiders)
+        self.assertIn("multiple spiders in this file", log)
+        self.assertIn("DEBUG: spider2 Works!", log)
+        self.assertIn("INFO: Spider opened", log)
+        self.assertIn("INFO: Closing spider (finished)", log)
+        self.assertIn("INFO: Spider closed (finished)", log)
 
 
 class BenchCommandTest(CommandTest):

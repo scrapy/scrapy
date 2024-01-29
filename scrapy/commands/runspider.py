@@ -1,4 +1,5 @@
 import sys
+import warnings
 from importlib import import_module
 from os import PathLike
 from pathlib import Path
@@ -49,6 +50,9 @@ class Command(BaseRunSpiderCommand):
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")
+
+        self._check_multiple_spiders(spclasses)
+
         spidercls = spclasses.pop()
 
         self.crawler_process.crawl(spidercls, **opts.spargs)
@@ -56,3 +60,9 @@ class Command(BaseRunSpiderCommand):
 
         if self.crawler_process.bootstrap_failed:
             self.exitcode = 1
+
+    def _check_multiple_spiders(self, spclasses):
+        if len(spclasses) > 1:
+            msg = ("\n\nThere are multiple spiders in this file: "
+                   "Only the last-defined spider '{}' will be run.\n".format(spclasses[-1].name))
+            warnings.warn(msg, UserWarning)
