@@ -477,20 +477,12 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION
 
 .. versionadded:: 2.7
 
-Default: ``'2.6'``
+Default: ``'2.7'``
 
 Determines which request fingerprinting algorithm is used by the default
 request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
 
-Possible values are:
-
--   ``'2.6'`` (default)
-
-    This implementation uses the same request fingerprinting algorithm as
-    Scrapy 2.6 and earlier versions.
-
-    Even though this is the default value for backward compatibility reasons,
-    it is a deprecated value.
+Possible value is:
 
 -   ``'2.7'``
 
@@ -500,29 +492,13 @@ Possible values are:
     New projects should use this value. The :command:`startproject` command
     sets this value in the generated ``settings.py`` file.
 
-If you are using the default value (``'2.6'``) for this setting, and you are
-using Scrapy components where changing the request fingerprinting algorithm
-would cause undesired results, you need to carefully decide when to change the
-value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
-setting to a custom request fingerprinter class that implements the 2.6 request
-fingerprinting algorithm and does not log this warning (
-:ref:`2.6-request-fingerprinter` includes an example implementation of such a
-class).
-
 Scenarios where changing the request fingerprinting algorithm may cause
 undesired results include, for example, using the HTTP cache middleware (see
 :class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
 Changing the request fingerprinting algorithm would invalidate the current
 cache, requiring you to redownload all requests again.
 
-Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'2.7'`` in
-your settings to switch already to the request fingerprinting implementation
-that will be the only request fingerprinting implementation available in a
-future version of Scrapy, and remove the deprecation warning triggered by using
-the default value (``'2.6'``).
 
-
-.. _2.6-request-fingerprinter:
 .. _custom-request-fingerprinter:
 
 Writing your own request fingerprinter
