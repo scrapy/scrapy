@@ -143,21 +143,13 @@ class RequestFingerprinter:
         else:
             implementation = "SENTINEL"
 
-        if implementation == "SENTINEL":
-            self._fingerprint = fingerprint
-        elif implementation == "2.7":
+        if implementation != "SENTINEL":
             message = (
                 "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
                 "And it will be removed in future version of Scrapy."
             )
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
-            self._fingerprint = fingerprint
-        else:
-            raise ValueError(
-                f"Got an invalid value on setting "
-                f"'REQUEST_FINGERPRINTER_IMPLEMENTATION': "
-                f"{implementation!r}. Valid values are '2.7' and 'SENTINEL'."
-            )
+        self._fingerprint = fingerprint
 
     def fingerprint(self, request: Request) -> bytes:
         return self._fingerprint(request)

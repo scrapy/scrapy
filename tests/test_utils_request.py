@@ -277,13 +277,6 @@ class RequestFingerprinterTestCase(unittest.TestCase):
         )
         self.assertTrue(logged_warnings)
 
-    def test_unknown_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.5",
-        }
-        with self.assertRaises(ValueError):
-            get_crawler(settings_dict=settings)
-
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):
     def test_include_headers(self):
