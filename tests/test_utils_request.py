@@ -256,10 +256,7 @@ REQUEST_OBJECTS_TO_TEST = (
 
 class RequestFingerprinterTestCase(unittest.TestCase):
     def test_default_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-        }
-        crawler = get_crawler(settings_dict=settings)
+        crawler = get_crawler()
         request = Request("https://example.com")
         self.assertEqual(
             crawler.request_fingerprinter.fingerprint(request),
