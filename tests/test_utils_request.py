@@ -1,5 +1,6 @@
 import json
 import unittest
+import warnings
 from hashlib import sha1
 from typing import Dict, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
@@ -262,6 +263,19 @@ class RequestFingerprinterTestCase(unittest.TestCase):
             crawler.request_fingerprinter.fingerprint(request),
             fingerprint(request),
         )
+
+    def test_deprecated_implementation(self):
+        settings = {
+            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
+        }
+        with warnings.catch_warnings(record=True) as logged_warnings:
+            crawler = get_crawler(settings_dict=settings)
+        request = Request("https://example.com")
+        self.assertEqual(
+            crawler.request_fingerprinter.fingerprint(request),
+            fingerprint(request),
+        )
+        self.assertTrue(logged_warnings)
 
     def test_unknown_implementation(self):
         settings = {

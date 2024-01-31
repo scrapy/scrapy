@@ -5,6 +5,7 @@ scrapy.http.Request objects
 
 import hashlib
 import json
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,6 +26,7 @@ from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
 from scrapy import Request, Spider
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
@@ -139,14 +141,22 @@ class RequestFingerprinter:
                 "REQUEST_FINGERPRINTER_IMPLEMENTATION"
             )
         else:
-            implementation = "2.7"
-        if implementation == "2.7":
+            implementation = "SENTINEL"
+
+        if implementation == "SENTINEL":
+            self._fingerprint = fingerprint
+        elif implementation == "2.7":
+            message = (
+                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
+                "And it will be removed in future version of Scrapy."
+            )
+            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
             self._fingerprint = fingerprint
         else:
             raise ValueError(
                 f"Got an invalid value on setting "
                 f"'REQUEST_FINGERPRINTER_IMPLEMENTATION': "
-                f"{implementation!r}. Valid value is '2.7'."
+                f"{implementation!r}. Valid values are '2.7' and 'SENTINEL'."
             )
 
     def fingerprint(self, request: Request) -> bytes:

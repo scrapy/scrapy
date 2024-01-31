@@ -469,36 +469,6 @@ import path.
 
 .. autoclass:: scrapy.utils.request.RequestFingerprinter
 
-
-.. setting:: REQUEST_FINGERPRINTER_IMPLEMENTATION
-
-REQUEST_FINGERPRINTER_IMPLEMENTATION
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 2.7
-
-Default: ``'2.7'``
-
-Determines which request fingerprinting algorithm is used by the default
-request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
-
-Possible value is:
-
--   ``'2.7'``
-
-    This implementation was introduced in Scrapy 2.7 to fix an issue of the
-    previous implementation.
-
-    New projects should use this value. The :command:`startproject` command
-    sets this value in the generated ``settings.py`` file.
-
-Scenarios where changing the request fingerprinting algorithm may cause
-undesired results include, for example, using the HTTP cache middleware (see
-:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
-Changing the request fingerprinting algorithm would invalidate the current
-cache, requiring you to redownload all requests again.
-
-
 .. _custom-request-fingerprinter:
 
 Writing your own request fingerprinter
