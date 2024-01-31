@@ -86,8 +86,6 @@ def get_crawler(
 
     # Set by default settings that prevent deprecation warnings.
     settings: Dict[str, Any] = {}
-    if prevent_warnings:
-        pass
     settings.update(settings_dict or {})
     runner = CrawlerRunner(settings)
     crawler = runner.create_crawler(spidercls or TestSpider)
