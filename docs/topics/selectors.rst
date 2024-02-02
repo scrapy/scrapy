@@ -1034,7 +1034,7 @@ described with CSS selectors.
 
 Parsel also simplifies adding your own XPath extensions.
 
-.. autofunction:: parsel.xpathfuncs.set_xpathfunc
+
 
 
 .. _topics-selectors-ref:
