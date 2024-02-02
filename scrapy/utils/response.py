@@ -74,6 +74,18 @@ def response_httprepr(response: Response) -> bytes:
     return b"".join(values)
 
 
+def _remove_html_comments(body):
+    start = body.find(b"<!--")
+    while start != -1:
+        end = body.find(b"-->", start + 1)
+        if end == -1:
+            return body[:start]
+        else:
+            body = body[:start] + body[end + 3 :]
+            start = body.find(b"<!--")
+    return body
+
+
 def open_in_browser(
     response: Union[
         "scrapy.http.response.html.HtmlResponse",
@@ -103,8 +115,8 @@ def open_in_browser(
     body = response.body
     if isinstance(response, HtmlResponse):
         if b"<base" not in body:
+            _remove_html_comments(body)
             repl = rf'\0<base href="{response.url}">'
-            body = re.sub(b"(?s)<!--.*?(?:-->|$)", b"", body)
             body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):

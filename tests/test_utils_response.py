@@ -8,9 +8,9 @@ import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response, TextResponse
-from scrapy.settings.default_settings import DOWNLOAD_MAXSIZE
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
+    _remove_html_comments,
     get_base_url,
     get_meta_refresh,
     open_in_browser,
@@ -203,14 +203,13 @@ class ResponseUtilsTest(unittest.TestCase):
             r5, _openfunc=check_base_url
         ), "Inject unique base url with conditional comment"
 
-    @pytest.mark.slow
     def test_open_in_browser_redos_comment(self):
-        MAX_CPU_TIME = 30
+        MAX_CPU_TIME = 0.001
 
         # Exploit input from
         # https://makenowjust-labs.github.io/recheck/playground/
         # for /<!--.*?-->/ (old pattern to remove comments).
-        body = b"-><!--\x00" * (int(DOWNLOAD_MAXSIZE / 7) - 10) + b"->\n<!---->"
+        body = b"-><!--\x00" * 25_000 + b"->\n<!---->"
 
         response = HtmlResponse("https://example.com", body=body)
 
@@ -221,14 +220,13 @@ class ResponseUtilsTest(unittest.TestCase):
         end_time = process_time()
         self.assertLess(end_time - start_time, MAX_CPU_TIME)
 
-    @pytest.mark.slow
     def test_open_in_browser_redos_head(self):
-        MAX_CPU_TIME = 15
+        MAX_CPU_TIME = 0.001
 
         # Exploit input from
         # https://makenowjust-labs.github.io/recheck/playground/
         # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
-        body = b"<head\t" * int(DOWNLOAD_MAXSIZE / 6)
+        body = b"<head\t" * 8_000
 
         response = HtmlResponse("https://example.com", body=body)
 
@@ -238,3 +236,42 @@ class ResponseUtilsTest(unittest.TestCase):
 
         end_time = process_time()
         self.assertLess(end_time - start_time, MAX_CPU_TIME)
+
+
+@pytest.mark.parametrize(
+    "input_body,output_body",
+    (
+        (
+            b"a<!--",
+            b"a",
+        ),
+        (
+            b"a<!---->b",
+            b"ab",
+        ),
+        (
+            b"a<!--b-->c",
+            b"ac",
+        ),
+        (
+            b"a<!--b-->c<!--",
+            b"ac",
+        ),
+        (
+            b"a<!--b-->c<!--d",
+            b"ac",
+        ),
+        (
+            b"a<!--b-->c<!---->d",
+            b"acd",
+        ),
+        (
+            b"a<!--b--><!--c-->d",
+            b"ad",
+        ),
+    ),
+)
+def test_remove_html_comments(input_body, output_body):
+    assert (
+        _remove_html_comments(input_body) == output_body
+    ), f"{_remove_html_comments(input_body)=} == {output_body=}"
