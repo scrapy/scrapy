@@ -401,7 +401,7 @@ In code that receives an item, such as methods of :ref:`item pipelines
 :func:`~itemadapter.is_item` function to write code that works for
 any :ref:`supported item type <item-types>`:
 
-.. autoclass:: itemadapter.ItemAdapter
+
 
 .. autofunction:: itemadapter.is_item
 
