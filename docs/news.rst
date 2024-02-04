@@ -217,6 +217,9 @@ Deprecations
     can be switched to merging the values explicitly. (:issue:`5726`,
     :issue:`5923`)
 
+-   :func:`scrapy.utils.response.response_httprepr` is now deprecated.
+    (:issue:`4972`)
+
 New features
 ~~~~~~~~~~~~
 
