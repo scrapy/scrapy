@@ -62,6 +62,9 @@ Deprecation removals
     1.0.0, use :attr:`CrawlerRunner.spider_loader
     <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
 
+-   The :func:`scrapy.utils.response.response_httprepr` function, deprecated in
+    Scrapy 2.10, has now been removed. (:issue:`6111`)
+
 Deprecations
 ~~~~~~~~~~~~
 
