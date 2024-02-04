@@ -63,7 +63,7 @@ Deprecation removals
     <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
 
 -   The :func:`scrapy.utils.response.response_httprepr` function, deprecated in
-    Scrapy 2.10, has now been removed. (:issue:`6111`)
+    Scrapy 2.6.0, has now been removed. (:issue:`6111`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -219,9 +219,6 @@ Deprecations
     Code that uses this argument and cannot be switched to ``getwithbase()``
     can be switched to merging the values explicitly. (:issue:`5726`,
     :issue:`5923`)
-
--   :func:`scrapy.utils.response.response_httprepr` is now deprecated.
-    (:issue:`4972`)
 
 New features
 ~~~~~~~~~~~~
@@ -1162,6 +1159,9 @@ Deprecations
 
         Instead, call :meth:`~scrapy.core.engine.ExecutionEngine.open_spider`
         first to set the :class:`~scrapy.Spider` object.
+
+-   :func:`scrapy.utils.response.response_httprepr` is now deprecated.
+    (:issue:`4972`)
 
 
 New features
