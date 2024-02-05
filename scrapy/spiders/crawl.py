@@ -10,7 +10,7 @@ from typing import AsyncIterable, Awaitable, Sequence
 
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import Spider
+from scrapy.spiders import Spider, ignore_spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
 
@@ -59,6 +59,7 @@ class Rule:
         self.process_request = _get_method(self.process_request, spider)
 
 
+@ignore_spider
 class CrawlSpider(Spider):
     rules: Sequence[Rule] = ()
 

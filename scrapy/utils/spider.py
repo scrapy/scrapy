@@ -58,20 +58,32 @@ def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferr
     return arg_to_iter(deferred_from_coro(result))
 
 
-def iter_spider_classes(module: ModuleType) -> Generator[Type[Spider], Any, None]:
-    """Return an iterator over all spider classes defined in the given module
-    that can be instantiated (i.e. which have name)
-    """
-    # this needs to be imported here until get rid of the spider manager
-    # singleton in scrapy.spider.spiders
-    from scrapy.spiders import Spider
+def _is_ignored(spider_class: Type, *, require_name: bool):
+    return (
+        not inspect.isclass(spider_class)
+        or not issubclass(spider_class, Spider)
+        or spider_class._is_ignored()
+        or (require_name and not getattr(spider_class, "name", None))
+    )
 
+
+def iter_spider_classes(
+    module: ModuleType,
+    *,
+    require_name: bool = True,
+) -> Generator[Type[Spider], Any, None]:
+    """Return an iterator over all :class:`~scrapy.spiders.Spider` subclasses
+    defined in the given module, excluding those marked with
+    :func:`scrapy.spiders.ignore_spider`.
+
+    If `require_name` is ``True`` (default), any
+    :class:`~scrapy.spiders.Spider` subclass without a non-empty
+    :class:`~scrapy.spiders.Spider.name` is also excluded.
+    """
     for obj in vars(module).values():
         if (
-            inspect.isclass(obj)
-            and issubclass(obj, Spider)
+            not _is_ignored(obj, require_name=require_name)
             and obj.__module__ == module.__name__
-            and getattr(obj, "name", None)
         ):
             yield obj
 

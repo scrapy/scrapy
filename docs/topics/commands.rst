@@ -333,14 +333,17 @@ list
 * Syntax: ``scrapy list``
 * Requires project: *yes*
 
-List all available spiders in the current project. The output is one spider per
-line.
+List all :ref:`spiders <topics-spiders>` available in the current project. The
+output is one spider per line.
 
 Usage example::
 
     $ scrapy list
     spider1
     spider2
+
+Which spiders are listed depends on the configured
+:setting:`SPIDER_LOADER_CLASS`.
 
 .. command:: edit
 

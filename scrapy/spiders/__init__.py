@@ -12,6 +12,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy import signals
 from scrapy.http import Request, Response
+from scrapy.utils.python import global_object_name
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
@@ -21,6 +22,24 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
+
+def ignore_spider(decorated_cls):
+    """Mark a :class:`~scrapy.spiders.Spider` subclass to be ignored.
+
+    The default spider loader (see :setting:`SPIDER_LOADER_CLASS`) does not
+    make marked spider classes available for the :command:`crawl`,
+    :command:`list`, and :command:`runspider` commands.
+    """
+
+    @classmethod
+    def _is_ignored(cls):
+        if cls is decorated_cls:
+            return True
+        return super(decorated_cls, cls)._is_ignored()
+
+    decorated_cls._is_ignored = _is_ignored
+    return decorated_cls
 
 
 class Spider(object_ref):
@@ -35,10 +54,14 @@ class Spider(object_ref):
         if name is not None:
             self.name = name
         elif not getattr(self, "name", None):
-            raise ValueError(f"{type(self).__name__} must have a name")
+            self.name = global_object_name(self.__class__)
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
             self.start_urls: List[str] = []
+
+    @classmethod
+    def _is_ignored(cls):
+        return cls is Spider
 
     @property
     def logger(self) -> logging.LoggerAdapter:

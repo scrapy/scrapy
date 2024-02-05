@@ -12,6 +12,7 @@ from scrapy import Request, Spider
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import BaseSettings
 from scrapy.utils.misc import walk_modules
+from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -27,6 +28,7 @@ class SpiderLoader:
     """
 
     def __init__(self, settings: BaseSettings):
+        self.require_name: bool = settings.getbool("SPIDER_LOADER_REQUIRE_NAME")
         self.spider_modules: List[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders: Dict[str, Type[Spider]] = {}
@@ -53,9 +55,12 @@ class SpiderLoader:
             )
 
     def _load_spiders(self, module: ModuleType) -> None:
-        for spcls in iter_spider_classes(module):
-            self._found[spcls.name].append((module.__name__, spcls.__name__))
-            self._spiders[spcls.name] = spcls
+        classes = iter_spider_classes(module, require_name=self.require_name)
+        for spcls in classes:
+            qualname = global_object_name(spcls)
+            name = getattr(spcls, "name", None) or qualname
+            self._found[name].append((module.__name__, spcls.__name__))
+            self._spiders[name] = spcls
 
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:

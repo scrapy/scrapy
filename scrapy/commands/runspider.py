@@ -46,7 +46,8 @@ class Command(BaseRunSpiderCommand):
             module = _import_file(filename)
         except (ImportError, ValueError) as e:
             raise UsageError(f"Unable to load {str(filename)!r}: {e}\n")
-        spclasses = list(iter_spider_classes(module))
+        require_name = self.settings.getbool("SPIDER_LOADER_REQUIRE_NAME")
+        spclasses = list(iter_spider_classes(module, require_name=require_name))
         if not spclasses:
             raise UsageError(f"No spider found in file: {filename}\n")
         spidercls = spclasses.pop()

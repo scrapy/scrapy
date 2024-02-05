@@ -41,9 +41,7 @@ class Contract:
                     cb_result = cb(response, **cb_kwargs)
                     if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                         raise TypeError("Contracts don't support async callbacks")
-                    return list(  # pylint: disable=return-in-finally
-                        iterate_spider_output(cb_result)
-                    )
+                    return list(iterate_spider_output(cb_result))
 
             request.callback = wrapper
 
@@ -70,7 +68,7 @@ class Contract:
                 else:
                     results.addSuccess(self.testcase_post)
                 finally:
-                    return output  # pylint: disable=return-in-finally
+                    return output
 
             request.callback = wrapper
 
