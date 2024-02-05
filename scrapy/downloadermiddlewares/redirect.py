@@ -39,6 +39,7 @@ def _build_redirect_request(
 
 class BaseRedirectMiddleware:
     enabled_setting: str = "REDIRECT_ENABLED"
+    crawler: Crawler
 
     def __init__(self, settings: BaseSettings):
         if not settings.getbool(self.enabled_setting):
@@ -49,7 +50,9 @@ class BaseRedirectMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings)
+        mw = cls(crawler.settings)
+        mw.crawler = crawler
+        return mw
 
     def _redirect(
         self, redirected: Request, request: Request, spider: Spider, reason: Any
@@ -60,12 +63,14 @@ class BaseRedirectMiddleware:
         if ttl and redirects <= self.max_redirect_times:
             redirected.meta["redirect_times"] = redirects
             redirected.meta["redirect_ttl"] = ttl - 1
-            redirected.meta["redirect_urls"] = request.meta.get("redirect_urls", []) + [
-                request.url
-            ]
-            redirected.meta["redirect_reasons"] = request.meta.get(
-                "redirect_reasons", []
-            ) + [reason]
+            redirect_urls = request.meta.get("redirect_urls", []) + [request.url]
+            redirected.meta["redirect_urls"] = redirect_urls
+            redirect_reasons = request.meta.get("redirect_reasons", []) + [reason]
+            redirected.meta["redirect_reasons"] = redirect_reasons
+            fingerprints = request.meta.get("redirect_fingerprints", set())
+            assert self.crawler.request_fingerprinter is not None
+            fingerprint = self.crawler.request_fingerprinter.fingerprint(request)
+            redirected.meta["redirect_fingerprints"] = fingerprints | {fingerprint}
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             logger.debug(

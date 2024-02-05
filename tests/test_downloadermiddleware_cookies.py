@@ -9,7 +9,6 @@ from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
@@ -61,7 +60,7 @@ class CookiesMiddlewareTest(TestCase):
     def setUp(self):
         self.spider = Spider("foo")
         self.mw = CookiesMiddleware()
-        self.redirect_middleware = RedirectMiddleware(settings=Settings())
+        self.redirect_middleware = RedirectMiddleware.from_crawler(get_crawler(Spider))
 
     def tearDown(self):
         del self.mw

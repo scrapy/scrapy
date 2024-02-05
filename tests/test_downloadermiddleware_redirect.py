@@ -9,6 +9,8 @@ from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
+from .test_dupefilters import _get_dupefilter
+
 
 class RedirectMiddlewareTest(unittest.TestCase):
     def setUp(self):
@@ -246,6 +248,96 @@ class RedirectMiddlewareTest(unittest.TestCase):
         req_result = self.mw.process_response(req, resp, self.spider)
         perc_encoded_utf8_url = "http://scrapytest.org/a%C3%A7%C3%A3o"
         self.assertEqual(perc_encoded_utf8_url, req_result.url)
+
+    def test_self_redirect_direct(self):
+        dupefilter = _get_dupefilter(crawler=self.crawler)
+        request1 = Request("https://example.com/a")
+        self.assertFalse(dupefilter.request_seen(request1))
+
+        response1 = Response(
+            request1.url,
+            status=302,
+            headers={"Location": "/a"},
+        )
+        request2 = self.mw.process_response(request1, response1, self.spider)
+        self.assertIsInstance(request2, Request)
+        fingerprint1 = self.crawler.request_fingerprinter.fingerprint(request1)
+        fingerprint2 = self.crawler.request_fingerprinter.fingerprint(request2)
+        self.assertEqual(fingerprint1, fingerprint2)
+
+        self.assertFalse(dupefilter.request_seen(request2))
+
+    def test_self_redirect_indirect(self):
+        dupefilter = _get_dupefilter(crawler=self.crawler)
+        request1 = Request("https://example.com/a")
+        self.assertFalse(dupefilter.request_seen(request1))
+
+        response1 = Response(
+            request1.url,
+            status=302,
+            headers={"Location": "/b"},
+        )
+        request2 = self.mw.process_response(request1, response1, self.spider)
+        self.assertIsInstance(request2, Request)
+        fingerprint1 = self.crawler.request_fingerprinter.fingerprint(request1)
+        fingerprint2 = self.crawler.request_fingerprinter.fingerprint(request2)
+        self.assertNotEqual(fingerprint1, fingerprint2)
+
+        self.assertFalse(dupefilter.request_seen(request2))
+
+        response2 = Response(
+            request2.url,
+            status=302,
+            headers={"Location": "/a"},
+        )
+        request3 = self.mw.process_response(request2, response2, self.spider)
+        self.assertIsInstance(request3, Request)
+        fingerprint3 = self.crawler.request_fingerprinter.fingerprint(request3)
+        self.assertEqual(fingerprint1, fingerprint3)
+
+        self.assertFalse(dupefilter.request_seen(request3))
+
+    def test_self_redirect_zigzag(self):
+        dupefilter = _get_dupefilter(crawler=self.crawler)
+        request1 = Request("https://example.com/a")
+        self.assertFalse(dupefilter.request_seen(request1))
+
+        response1 = Response(
+            request1.url,
+            status=302,
+            headers={"Location": "/b"},
+        )
+        request2 = self.mw.process_response(request1, response1, self.spider)
+        self.assertIsInstance(request2, Request)
+        fingerprint1 = self.crawler.request_fingerprinter.fingerprint(request1)
+        fingerprint2 = self.crawler.request_fingerprinter.fingerprint(request2)
+        self.assertNotEqual(fingerprint1, fingerprint2)
+
+        self.assertFalse(dupefilter.request_seen(request2))
+
+        response2 = Response(
+            request2.url,
+            status=302,
+            headers={"Location": "/a"},
+        )
+        request3 = self.mw.process_response(request2, response2, self.spider)
+        self.assertIsInstance(request3, Request)
+        fingerprint3 = self.crawler.request_fingerprinter.fingerprint(request3)
+        self.assertEqual(fingerprint1, fingerprint3)
+
+        self.assertFalse(dupefilter.request_seen(request3))
+
+        response3 = Response(
+            request3.url,
+            status=302,
+            headers={"Location": "/b"},
+        )
+        request4 = self.mw.process_response(request3, response3, self.spider)
+        self.assertIsInstance(request4, Request)
+        fingerprint4 = self.crawler.request_fingerprinter.fingerprint(request4)
+        self.assertEqual(fingerprint2, fingerprint4)
+
+        self.assertFalse(dupefilter.request_seen(request4))
 
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
