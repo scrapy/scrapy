@@ -2,22 +2,15 @@ import json
 import unittest
 import warnings
 from hashlib import sha1
-from typing import Dict, Mapping, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
-import pytest
-from w3lib.url import canonicalize_url
-
 from scrapy.http import Request
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
-    _deprecated_fingerprint_cache,
     _fingerprint_cache,
-    _request_fingerprint_as_bytes,
     fingerprint,
     request_authenticate,
-    request_fingerprint,
     request_httprepr,
     request_to_curl,
 )
@@ -233,168 +226,6 @@ class FingerprintTest(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
-class RequestFingerprintTest(FingerprintTest):
-    function = staticmethod(request_fingerprint)
-    cache = _deprecated_fingerprint_cache
-    known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
-        (
-            Request("http://example.org"),
-            "b2e5245ef826fd9576c93bd6e392fce3133fab62",
-            {},
-        ),
-        (
-            Request("https://example.org"),
-            "bd10a0a89ea32cdee77917320f1309b0da87e892",
-            {},
-        ),
-        (
-            Request("https://example.org?a"),
-            "2fb7d48ae02f04b749f40caa969c0bc3c43204ce",
-            {},
-        ),
-        (
-            Request("https://example.org?a=b"),
-            "42e5fe149b147476e3f67ad0670c57b4cc57856a",
-            {},
-        ),
-        (
-            Request("https://example.org?a=b&a"),
-            "d23a9787cb56c6375c2cae4453c5a8c634526942",
-            {},
-        ),
-        (
-            Request("https://example.org?a=b&a=c"),
-            "9a18a7a8552a9182b7f1e05d33876409e421e5c5",
-            {},
-        ),
-        (
-            Request("https://example.org", method="POST"),
-            "ba20a80cb5c5ca460021ceefb3c2467b2bfd1bc6",
-            {},
-        ),
-        (
-            Request("https://example.org", body=b"a"),
-            "4bb136e54e715a4ea7a9dd1101831765d33f2d60",
-            {},
-        ),
-        (
-            Request("https://example.org", method="POST", body=b"a"),
-            "6c6595374a304b293be762f7b7be3f54e9947c65",
-            {},
-        ),
-        (
-            Request("https://example.org#a", headers={"A": b"B"}),
-            "bd10a0a89ea32cdee77917320f1309b0da87e892",
-            {},
-        ),
-        (
-            Request("https://example.org#a", headers={"A": b"B"}),
-            "515b633cb3ca502a33a9d8c890e889ec1e425e65",
-            {"include_headers": ["A"]},
-        ),
-        (
-            Request("https://example.org#a", headers={"A": b"B"}),
-            "505c96e7da675920dfef58725e8c957dfdb38f47",
-            {"keep_fragments": True},
-        ),
-        (
-            Request("https://example.org#a", headers={"A": b"B"}),
-            "d6f673cdcb661b7970c2b9a00ee63e87d1e2e5da",
-            {"include_headers": ["A"], "keep_fragments": True},
-        ),
-        (
-            Request("https://example.org/ab"),
-            "4e2870fee58582d6f81755e9b8fdefe3cba0c951",
-            {},
-        ),
-        (
-            Request("https://example.org/a", body=b"b"),
-            "4e2870fee58582d6f81755e9b8fdefe3cba0c951",
-            {},
-        ),
-    )
-
-    def setUp(self) -> None:
-        warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-
-    def tearDown(self) -> None:
-        warnings.simplefilter("default", ScrapyDeprecationWarning)
-
-    @pytest.mark.xfail(reason="known bug kept for backward compatibility", strict=True)
-    def test_part_separation(self):
-        super().test_part_separation()
-
-
-class RequestFingerprintDeprecationTest(unittest.TestCase):
-    def test_deprecation_default_parameters(self):
-        with pytest.warns(ScrapyDeprecationWarning) as warnings:
-            request_fingerprint(Request("http://www.example.com"))
-        messages = [str(warning.message) for warning in warnings]
-        self.assertTrue(
-            any("Call to deprecated function" in message for message in messages)
-        )
-        self.assertFalse(any("non-default" in message for message in messages))
-
-    def test_deprecation_non_default_parameters(self):
-        with pytest.warns(ScrapyDeprecationWarning) as warnings:
-            request_fingerprint(Request("http://www.example.com"), keep_fragments=True)
-        messages = [str(warning.message) for warning in warnings]
-        self.assertTrue(
-            any("Call to deprecated function" in message for message in messages)
-        )
-        self.assertTrue(any("non-default" in message for message in messages))
-
-
-class RequestFingerprintAsBytesTest(FingerprintTest):
-    function = staticmethod(_request_fingerprint_as_bytes)
-    cache = _deprecated_fingerprint_cache
-    known_hashes = RequestFingerprintTest.known_hashes
-
-    def test_caching(self):
-        r1 = Request("http://www.example.com/hnnoticiaj1.aspx?78160,199")
-        self.assertEqual(
-            self.function(r1), bytes.fromhex(self.cache[r1][self.default_cache_key])
-        )
-
-    @pytest.mark.xfail(reason="known bug kept for backward compatibility", strict=True)
-    def test_part_separation(self):
-        super().test_part_separation()
-
-    def test_hashes(self):
-        actual = [
-            self.function(request, **kwargs) for request, _, kwargs in self.known_hashes
-        ]
-        expected = [
-            bytes.fromhex(_fingerprint) for _, _fingerprint, _ in self.known_hashes
-        ]
-        self.assertEqual(actual, expected)
-
-
-_fingerprint_cache_2_6: Mapping[Request, Tuple[None, bool]] = WeakKeyDictionary()
-
-
-def request_fingerprint_2_6(request, include_headers=None, keep_fragments=False):
-    if include_headers:
-        include_headers = tuple(to_bytes(h.lower()) for h in sorted(include_headers))
-    cache = _fingerprint_cache_2_6.setdefault(request, {})
-    cache_key = (include_headers, keep_fragments)
-    if cache_key not in cache:
-        fp = sha1()
-        fp.update(to_bytes(request.method))
-        fp.update(
-            to_bytes(canonicalize_url(request.url, keep_fragments=keep_fragments))
-        )
-        fp.update(request.body or b"")
-        if include_headers:
-            for hdr in include_headers:
-                if hdr in request.headers:
-                    fp.update(hdr)
-                    for v in request.headers.getlist(hdr):
-                        fp.update(v)
-        cache[cache_key] = fp.hexdigest()
-    return cache[cache_key]
-
-
 REQUEST_OBJECTS_TO_TEST = (
     Request("http://www.example.com/"),
     Request("http://www.example.com/query?id=111&cat=222"),
@@ -424,94 +255,16 @@ REQUEST_OBJECTS_TO_TEST = (
 )
 
 
-class BackwardCompatibilityTestCase(unittest.TestCase):
-    def test_function_backward_compatibility(self):
-        include_headers_to_test = (
-            None,
-            ["Accept-Language"],
-            ["accept-language", "sessionid"],
-            ["SESSIONID", "Accept-Language"],
-        )
-        for request_object in REQUEST_OBJECTS_TO_TEST:
-            for include_headers in include_headers_to_test:
-                for keep_fragments in (False, True):
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        fp = request_fingerprint(
-                            request_object,
-                            include_headers=include_headers,
-                            keep_fragments=keep_fragments,
-                        )
-                    old_fp = request_fingerprint_2_6(
-                        request_object,
-                        include_headers=include_headers,
-                        keep_fragments=keep_fragments,
-                    )
-                    self.assertEqual(fp, old_fp)
-
-    def test_component_backward_compatibility(self):
-        for request_object in REQUEST_OBJECTS_TO_TEST:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                crawler = get_crawler(prevent_warnings=False)
-                fp = crawler.request_fingerprinter.fingerprint(request_object)
-            old_fp = request_fingerprint_2_6(request_object)
-            self.assertEqual(fp.hex(), old_fp)
-
-    def test_custom_component_backward_compatibility(self):
-        """Tests that the backward-compatible request fingerprinting class featured
-        in the documentation is indeed backward compatible and does not cause a
-        warning to be logged."""
-
-        class RequestFingerprinter:
-            cache = WeakKeyDictionary()
-
-            def fingerprint(self, request):
-                if request not in self.cache:
-                    fp = sha1()
-                    fp.update(to_bytes(request.method))
-                    fp.update(to_bytes(canonicalize_url(request.url)))
-                    fp.update(request.body or b"")
-                    self.cache[request] = fp.digest()
-                return self.cache[request]
-
-        for request_object in REQUEST_OBJECTS_TO_TEST:
-            with warnings.catch_warnings() as logged_warnings:
-                settings = {
-                    "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
-                }
-                crawler = get_crawler(settings_dict=settings)
-                fp = crawler.request_fingerprinter.fingerprint(request_object)
-            old_fp = request_fingerprint_2_6(request_object)
-            self.assertEqual(fp.hex(), old_fp)
-            self.assertFalse(logged_warnings)
-
-
 class RequestFingerprinterTestCase(unittest.TestCase):
     def test_default_implementation(self):
-        with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(prevent_warnings=False)
+        crawler = get_crawler()
         request = Request("https://example.com")
         self.assertEqual(
             crawler.request_fingerprinter.fingerprint(request),
-            _request_fingerprint_as_bytes(request),
+            fingerprint(request),
         )
-        self.assertTrue(logged_warnings)
 
     def test_deprecated_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.6",
-        }
-        with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(settings_dict=settings)
-        request = Request("https://example.com")
-        self.assertEqual(
-            crawler.request_fingerprinter.fingerprint(request),
-            _request_fingerprint_as_bytes(request),
-        )
-        self.assertTrue(logged_warnings)
-
-    def test_recommended_implementation(self):
         settings = {
             "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
@@ -522,14 +275,7 @@ class RequestFingerprinterTestCase(unittest.TestCase):
             crawler.request_fingerprinter.fingerprint(request),
             fingerprint(request),
         )
-        self.assertFalse(logged_warnings)
-
-    def test_unknown_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.5",
-        }
-        with self.assertRaises(ValueError):
-            get_crawler(settings_dict=settings)
+        self.assertTrue(logged_warnings)
 
 
 class CustomRequestFingerprinterTestCase(unittest.TestCase):

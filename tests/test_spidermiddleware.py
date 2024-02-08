@@ -170,8 +170,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
 
 class ProcessSpiderOutputSimpleMiddleware:
     def process_spider_output(self, response, result, spider):
-        for r in result:
-            yield r
+        yield from result
 
 
 class ProcessSpiderOutputAsyncGenMiddleware:
@@ -182,8 +181,7 @@ class ProcessSpiderOutputAsyncGenMiddleware:
 
 class ProcessSpiderOutputUniversalMiddleware:
     def process_spider_output(self, response, result, spider):
-        for r in result:
-            yield r
+        yield from result
 
     async def process_spider_output_async(self, response, result, spider):
         async for r in result:
@@ -324,8 +322,7 @@ class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
 
 class ProcessStartRequestsSimpleMiddleware:
     def process_start_requests(self, start_requests, spider):
-        for r in start_requests:
-            yield r
+        yield from start_requests
 
 
 class ProcessStartRequestsSimple(BaseAsyncSpiderMiddlewareTestCase):

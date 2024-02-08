@@ -673,8 +673,7 @@ class FeedExportTestBase(ABC, unittest.TestCase):
             name = "testspider"
 
             def parse(self, response):
-                for item in items:
-                    yield item
+                yield from items
 
         data = yield self.run_and_export(TestSpider, settings)
         return data
@@ -2300,7 +2299,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     content[feed["format"]].append(file.read_bytes())
         finally:
             self.tearDown()
-        defer.returnValue(content)
+        return content
 
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
@@ -2696,8 +2695,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             name = "testspider"
 
             def parse(self, response):
-                for item in items:
-                    yield item
+                yield from items
 
         with MockServer() as server:
             TestSpider.start_urls = [server.url("/")]

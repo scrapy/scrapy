@@ -78,8 +78,20 @@ class AsyncDefAsyncioGenExcSpider(scrapy.Spider):
             if i > 5:
                 raise ValueError("Stopping the processing")
 
+class CallbackSignatureDownloaderMiddleware:
+    def process_request(self, request, spider):
+        from inspect import signature
+        spider.logger.debug(f"request.callback signature: {{signature(request.callback)}}")
+
+
 class MySpider(scrapy.Spider):
     name = '{self.spider_name}'
+
+    custom_settings = {{
+        "DOWNLOADER_MIDDLEWARES": {{
+            CallbackSignatureDownloaderMiddleware: 0,
+        }}
+    }}
 
     def parse(self, response):
         if getattr(self, 'test_arg', None):
@@ -220,7 +232,11 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        log = _textmode(stderr)
+        self.assertIn("DEBUG: It Works!", log)
+        self.assertIn(
+            "DEBUG: request.callback signature: (response, foo=None, key=None)", log
+        )
 
     @defer.inlineCallbacks
     def test_request_without_meta(self):

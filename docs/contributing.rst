@@ -178,7 +178,7 @@ Scrapy:
 * We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
   There is a hook in the pre-commit config
   that will automatically format your code before every commit. You can also
-  run black manually with ``tox -e black``.
+  run black manually with ``tox -e pre-commit``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
