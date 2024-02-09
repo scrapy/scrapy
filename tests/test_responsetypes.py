@@ -45,7 +45,9 @@ def _unmark(item):
     ),
 )
 def test_from_args(kwargs, response_class):
-    assert responsetypes.from_args(**kwargs) == response_class
+    assert (
+        responsetypes.from_args(**kwargs) == response_class
+    ), f"{responsetypes.from_args(**kwargs)=} != {response_class=}"
 
 
 class ResponseTypesTest(unittest.TestCase):

@@ -89,7 +89,6 @@ PRE_XTRACTMIME_SCENARIOS = (
         # Make sure that MIME parameters do not break response class choice.
         for content_type_parameters in ("", "; foo=bar")
         for content_type, response_class in (
-            ("application/octet-stream", Response),
             ("text/plain", TextResponse),
             ("text/html", HtmlResponse),
             ("text/xml", XmlResponse),
@@ -140,10 +139,6 @@ PRE_XTRACTMIME_SCENARIOS = (
                     "application/x-json",
                 )
             ),
-            # Binary MIME types should trigger a Response.
-            #
-            # https://mimesniff.spec.whatwg.org/#json-mime-type
-            *((mime_type, Response) for mime_type in ("application/pdf",)),
         )
     ),
     # Content-Type triumphs body, except for:
@@ -172,6 +167,28 @@ PRE_XTRACTMIME_SCENARIOS = (
                     "text/plain; charset=windows-1252",
                 )
             ),
+        )
+    ),
+    # Content-Type triumphs Content-Disposition.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/a",
+                "headers": Headers(
+                    {
+                        "Content-Disposition": [
+                            f'attachment; filename="a.{file_extension}"',
+                        ],
+                        "Content-Type": [content_type],
+                    }
+                ),
+            },
+            response_class,
+        )
+        for protocol in ("http", "https")
+        for file_extension, content_type, response_class in (
+            ("html", "application/json", JsonResponse),
+            ("xml", "application/json", JsonResponse),
         )
     ),
     # Compressed content should be of type Response until uncompressed.
@@ -378,6 +395,36 @@ PRE_XTRACTMIME_SCENARIOS = (
             "*/*",
         )
     ),
+    # Content triumphs Content-Type when using HTTP or HTTPS and the
+    # Content-Type is unknown or binary while the content is plain text. This
+    # is a conscious divergence from the MIME Sniffing Standard for a better
+    # web scraping experience.
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/foo",
+                "headers": Headers({"Content-Type": content_type}),
+                "body": body,
+            },
+            TextResponse,
+        )
+        for protocol in ("http", "https")
+        for body in (
+            b"",
+            b"a",
+            b"var a = 'b';",
+            b'{"a": "b"}',
+            b'.a {b: "c"}',
+        )
+        for content_type in (
+            "application/octet-stream",
+            "application/pdf",
+            "application/custom",
+            "application/bad-custom-json",  # Should end in +json
+            "application/bad-custom-text",  # Should start with text/
+            "application/bad-custom-xml",  # Should end in +xml
+        )
+    ),
 )
 
 # Scenarios that work differently with the previously-used, deprecated
@@ -444,7 +491,6 @@ POST_XTRACTMIME_SCENARIOS = (
             response_class,
         )
         for body, content_type, response_class in (
-            (b"a", "application/octet-stream", Response),
             *(
                 (b"\x00\x01\xff", content_type, Response)
                 for content_type in (
@@ -473,20 +519,6 @@ POST_XTRACTMIME_SCENARIOS = (
                 )
             ),
         )
-    ),
-    # Content-Type also triumphs Content-Disposition.
-    (
-        {
-            "headers": Headers(
-                {
-                    "Content-Disposition": [
-                        'attachment; filename="a.html"',
-                    ],
-                    "Content-Type": ["application/octet-stream"],
-                }
-            )
-        },
-        Response,
     ),
     # Compressed content should be of type Response until uncompressed.
     (
@@ -541,27 +573,6 @@ POST_XTRACTMIME_SCENARIOS = (
         )
         for protocol, response_class in (
             *((protocol, TextResponse) for protocol in ("http", "https")),
-        )
-    ),
-    # Content-Type triumphes Content-Disposition.
-    *(
-        (
-            {
-                "url": f"{protocol}://example.com/a",
-                "headers": Headers(
-                    {
-                        "Content-Disposition": [
-                            f'attachment; filename="a.{file_extension}"',
-                        ],
-                        "Content-Type": [content_type],
-                    }
-                ),
-            },
-            response_class,
-        )
-        for protocol in ("http", "https")
-        for file_extension, content_type, response_class in (
-            ("xml", "application/octet-stream", Response),
         )
     ),
     # File extension triumphs body.
@@ -644,6 +655,48 @@ POST_XTRACTMIME_SCENARIOS = (
             (b"a<html>", TextResponse),
             (b"a<?xml", TextResponse),
         )
+    ),
+    # Content triumphs Content-Type when using HTTP or HTTPS and the
+    # Content-Type is known and binary while the content is plain text. This is
+    # a conscious divergence from the MIME Sniffing Standard for a better web
+    # scraping experience.
+    *(
+        (
+            {
+                "url": (
+                    f"{protocol}://example.com/foo"
+                    if use_header
+                    else f"{protocol}://example.com/foo.{file_extension}"
+                ),
+                "headers": (
+                    Headers({"Content-Type": content_type}) if use_header else Headers()
+                ),
+                "body": b"\x00",
+            },
+            Response,
+        )
+        for protocol, use_header in (
+            ("http", True),
+            ("https", True),
+            ("file", False),
+            ("ftp", False),
+        )
+        for content_type, file_extension in (
+            ("application/octet-stream", "bin"),
+            ("application/pdf", "pdf"),
+        )
+    ),
+    *(
+        (
+            {
+                "url": f"{protocol}://example.com/foo.{file_extension}",
+                "body": body,
+            },
+            Response,
+        )
+        for protocol in ("file", "ftp")
+        for body in (b"", b"a")
+        for file_extension in ("bin", "pdf")
     ),
 )
 

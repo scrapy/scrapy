@@ -203,6 +203,17 @@ def get_response_class(
         content_types=content_types,
         http_origin=http_origin,
     )
+    cls = _get_response_class_from_mime_type(mime_type)
+    if cls is not Response or not content_types or encoding or not http_origin:
+        return cls
+    # In scenarios where there was a declared Content-Type, no
+    # Content-Encoding, HTTP/HTTPS was used, and xtractmime determined the
+    # output to be binary, repeat MIME extraction ignoring the declared
+    # Content-Type, so that the body is taken into account.
+    mime_type = extract_mime(
+        body,
+        http_origin=http_origin,
+    )
     return _get_response_class_from_mime_type(mime_type)
 
 
