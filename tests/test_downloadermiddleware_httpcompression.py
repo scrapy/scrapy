@@ -11,9 +11,9 @@ from scrapy.downloadermiddlewares.httpcompression import (
 )
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
-from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.gz import gunzip
+from scrapy.utils.response import get_response_class
 from scrapy.utils.test import get_crawler
 from tests import tests_datadir
 
@@ -25,6 +25,7 @@ FORMAT = {
     "rawdeflate": ("html-rawdeflate.bin", "deflate"),
     "zlibdeflate": ("html-zlibdeflate.bin", "deflate"),
     "br": ("html-br.bin", "br"),
+    "br,gzip": ("html-br-gzip.bin", "br,gzip"),
     # $ zstd raw.html --content-size -o html-zstd-static-content-size.bin
     "zstd-static-content-size": ("html-zstd-static-content-size.bin", "zstd"),
     # $ zstd raw.html --no-content-size -o html-zstd-static-no-content-size.bin
@@ -141,6 +142,37 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
+    def test_process_response_br_gzip(self):
+        try:
+            import brotli  # noqa: F401
+        except ImportError:
+            raise SkipTest("no brotli")
+        response = self._getresponse("br,gzip")
+        request = response.request
+        self.assertEqual(response.headers["Content-Encoding"], b"br,gzip")
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
+        self.assertStatsEqual("httpcompression/response_count", 1)
+        self.assertStatsEqual("httpcompression/response_bytes", 74837)
+
+    def test_process_response_br_gzip_header_list(self):
+        try:
+            import brotli  # noqa: F401
+        except ImportError:
+            raise SkipTest("no brotli")
+        response = self._getresponse("br,gzip")
+        request = response.request
+        self.assertEqual(response.headers["Content-Encoding"], b"br,gzip")
+        response.headers.setlist("Content-Encoding", [b"br", b"gzip"])
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+        assert "Content-Encoding" not in newresponse.headers
+        self.assertStatsEqual("httpcompression/response_count", 1)
+        self.assertStatsEqual("httpcompression/response_bytes", 74837)
+
     def test_process_response_zstd(self):
         try:
             import zstandard  # noqa: F401
@@ -196,14 +228,6 @@ class HttpCompressionTest(TestCase):
         assert newresponse.body.startswith(b"<!DOCTYPE")
         self.assertStatsEqual("httpcompression/response_count", None)
         self.assertStatsEqual("httpcompression/response_bytes", None)
-
-    def test_multipleencodings(self):
-        response = self._getresponse("gzip")
-        response.headers["Content-Encoding"] = ["uuencode", "gzip"]
-        request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
-        assert newresponse is not response
-        self.assertEqual(newresponse.headers.getlist("Content-Encoding"), [b"uuencode"])
 
     def test_process_response_encoding_inside_body(self):
         headers = {
@@ -263,8 +287,10 @@ class HttpCompressionTest(TestCase):
             b"<html><head><title>Some page</title>"
             b'<meta http-equiv="Content-Type" content="text/html; charset=gb2312">'
         )
-        respcls = responsetypes.from_args(
-            url="http://www.example.com/index", headers=headers, body=plainbody
+        respcls = get_response_class(
+            url="http://www.example.com/index",
+            http_headers=headers,
+            body=plainbody,
         )
         response = respcls(
             "http://www.example.com/index", headers=headers, body=plainbody

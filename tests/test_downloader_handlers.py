@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import tempfile
+from base64 import b64encode
 from pathlib import Path
 from typing import Optional, Type
 from unittest import SkipTest, mock
@@ -25,9 +26,8 @@ from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Headers, HtmlResponse, Request
+from scrapy.http import Headers, HtmlResponse, Request, XmlResponse
 from scrapy.http.response.text import TextResponse
-from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
@@ -458,12 +458,12 @@ class Http11TestCase(HttpTestCase):
         """Tests choosing of correct response type
         in case of Content-Type is empty but body contains text.
         """
-        body = b"Some plain text\ndata with tabs\t and null bytes\0"
+        xml_body = b'<?xml version="1.0" encoding="utf-8"'
 
         def _test_type(response):
-            self.assertEqual(type(response), TextResponse)
+            self.assertEqual(type(response), XmlResponse)
 
-        request = Request(self.getURL("nocontenttype"), body=body)
+        request = Request(self.getURL("nocontenttype"), body=xml_body)
         d = self.download_request(request, Spider("foo"))
         d.addCallback(_test_type)
         return d
@@ -1205,7 +1205,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype_encoding(self):
         def _test(response):
             self.assertEqual(response.text, "A brief note")
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
+            self.assertIsInstance(response, TextResponse)
             self.assertEqual(response.encoding, "US-ASCII")
 
         request = Request("data:,A%20brief%20note")
@@ -1214,7 +1214,7 @@ class DataURITestCase(unittest.TestCase):
     def test_default_mediatype(self):
         def _test(response):
             self.assertEqual(response.text, "\u038e\u03a3\u038e")
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
+            self.assertIsInstance(response, TextResponse)
             self.assertEqual(response.encoding, "iso-8859-7")
 
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
@@ -1232,7 +1232,7 @@ class DataURITestCase(unittest.TestCase):
     def test_mediatype_parameters(self):
         def _test(response):
             self.assertEqual(response.text, "\u038e\u03a3\u038e")
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
+            self.assertIsInstance(response, TextResponse)
             self.assertEqual(response.encoding, "utf-8")
 
         request = Request(
@@ -1254,4 +1254,17 @@ class DataURITestCase(unittest.TestCase):
             self.assertIsNone(response.protocol)
 
         request = Request("data:,")
+        return self.download_request(request, self.spider).addCallback(_test)
+
+    def test_body_mime_type(self):
+        """Test that the body, and not only the declared MIME type, is taken
+        into account when choosing a response class."""
+
+        def _test(response):
+            self.assertIsInstance(response, HtmlResponse)
+
+        html = "<!DOCTYPE html>\n<title>.</title>"
+        base64_html = b64encode(html.encode()).decode()
+        data_uri = f"data:application/unknown;base64,{base64_html}"
+        request = Request(data_uri)
         return self.download_request(request, self.spider).addCallback(_test)

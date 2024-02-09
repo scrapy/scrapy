@@ -29,8 +29,8 @@ from scrapy.core.downloader.contextfactory import load_context_factory_from_sett
 from scrapy.core.downloader.webclient import _parse
 from scrapy.exceptions import StopDownload
 from scrapy.http import Headers
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.response import get_response_class
 
 logger = logging.getLogger(__name__)
 
@@ -497,7 +497,7 @@ class ScrapyAgent:
 
     def _cb_bodydone(self, result, request, url):
         headers = self._headers_from_twisted_response(result["txresponse"])
-        respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
+        respcls = get_response_class(http_headers=headers, url=url, body=result["body"])
         try:
             version = result["txresponse"].version
             protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"

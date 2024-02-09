@@ -631,7 +631,7 @@ class TextResponseTest(BaseResponseTest):
         )
 
     def test_urljoin_with_base_url(self):
-        """Test urljoin shortcut which also evaluates base-url through get_base_url()."""
+        """Test urljoin shortcut which also evaluates base-url."""
         body = b'<html><body><base href="https://example.net"></body></html>'
         joined = self.response_class("http://www.example.com", body=body).urljoin(
             "/test"
@@ -849,6 +849,24 @@ class TextResponseTest(BaseResponseTest):
 
 class HtmlResponseTest(TextResponseTest):
     response_class = HtmlResponse
+
+    def test_base_url(self):
+        resp = HtmlResponse(
+            "http://www.example.com",
+            body=b"""
+        <html>
+        <head><base href="http://www.example.com/img/" target="_blank"></head>
+        <body>blahablsdfsal&amp;</body>
+        </html>""",
+        )
+        self.assertEqual(resp.base_url, "http://www.example.com/img/")
+
+        resp2 = HtmlResponse(
+            "http://www.example.com",
+            body=b"""
+        <html><body>blahablsdfsal&amp;</body></html>""",
+        )
+        self.assertEqual(resp2.base_url, "http://www.example.com")
 
     def test_html_encoding(self):
         body = b"""<html><head><title>Some page</title>

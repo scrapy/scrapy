@@ -36,9 +36,9 @@ from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
 
 from scrapy.http import Response
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
+from scrapy.utils.response import get_response_class
 
 
 class ReceivedDataProtocol(Protocol):
@@ -109,7 +109,7 @@ class FTPDownloadHandler:
         protocol.close()
         headers = {"local filename": protocol.filename or "", "size": protocol.size}
         body = to_bytes(protocol.filename or protocol.body.read())
-        respcls = responsetypes.from_args(url=request.url, body=body)
+        respcls = get_response_class(url=request.url, body=body)
         return respcls(url=request.url, status=200, body=body, headers=headers)
 
     def _failed(self, result, request):

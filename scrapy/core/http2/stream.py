@@ -14,7 +14,7 @@ from twisted.web.client import ResponseFailed
 
 from scrapy.http import Request
 from scrapy.http.headers import Headers
-from scrapy.responsetypes import responsetypes
+from scrapy.utils.response import get_response_class
 
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
@@ -472,8 +472,8 @@ class Stream:
         generated response instance"""
 
         body = self._response["body"].getvalue()
-        response_cls = responsetypes.from_args(
-            headers=self._response["headers"],
+        response_cls = get_response_class(
+            http_headers=self._response["headers"],
             url=self._request.url,
             body=body,
         )

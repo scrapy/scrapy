@@ -27,7 +27,9 @@ from typing import (
     Union,
     overload,
 )
+from warnings import warn
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 
@@ -192,6 +194,14 @@ def binary_is_text(data: bytes) -> bool:
     """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
+    warn(
+        (
+            "scrapy.utils.python.binary_is_text is deprecated, use "
+            "xtractmime.is_binary_data instead."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if not isinstance(data, bytes):
         raise TypeError(f"data must be bytes, got '{type(data).__name__}'")
     return all(c not in _BINARYCHARS for c in data)

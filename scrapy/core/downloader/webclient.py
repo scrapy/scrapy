@@ -9,9 +9,9 @@ from twisted.web.http import HTTPClient
 
 from scrapy import Request
 from scrapy.http import Headers
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.response import get_response_class
 
 
 def _parsed_url_args(parsed: ParseResult) -> Tuple[bytes, bytes, bytes, int, bytes]:
@@ -116,7 +116,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         request.meta["download_latency"] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self._url, body=body)
+        respcls = get_response_class(http_headers=headers, url=self._url, body=body)
         return respcls(
             url=self._url,
             status=status,

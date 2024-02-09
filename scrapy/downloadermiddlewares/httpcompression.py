@@ -8,9 +8,9 @@ from scrapy import Request, Spider
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, TextResponse
-from scrapy.responsetypes import responsetypes
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.gz import gunzip
+from scrapy.utils.response import get_response_class
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -55,34 +55,39 @@ class HttpCompressionMiddleware:
     def process_response(
         self, request: Request, response: Response, spider: Spider
     ) -> Union[Request, Response]:
-        if request.method == "HEAD":
+        if (
+            request.method == "HEAD"
+            or not isinstance(response, Response)
+            or "Content-Encoding" not in response.headers
+        ):
             return response
-        if isinstance(response, Response):
-            content_encoding = response.headers.getlist("Content-Encoding")
-            if content_encoding:
-                encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
-                if self.stats:
-                    self.stats.inc_value(
-                        "httpcompression/response_bytes",
-                        len(decoded_body),
-                        spider=spider,
-                    )
-                    self.stats.inc_value(
-                        "httpcompression/response_count", spider=spider
-                    )
-                respcls = responsetypes.from_args(
-                    headers=response.headers, url=response.url, body=decoded_body
-                )
-                kwargs = dict(cls=respcls, body=decoded_body)
-                if issubclass(respcls, TextResponse):
-                    # force recalculating the encoding until we make sure the
-                    # responsetypes guessing is reliable
-                    kwargs["encoding"] = None
-                response = response.replace(**kwargs)
-                if not content_encoding:
-                    del response.headers["Content-Encoding"]
-
+        header_list = response.headers.getlist("Content-Encoding")
+        encodings = [item.strip() for item in b",".join(header_list).split(b",")]
+        if not encodings:
+            return response
+        while encodings:
+            encoding = encodings.pop()
+            decoded_body = self._decode(response.body, encoding.lower())
+            if encodings:
+                response.headers["Content-Encoding"] = b",".join(encodings)
+            else:
+                del response.headers["Content-Encoding"]
+            respcls = get_response_class(
+                http_headers=response.headers,
+                url=response.url,
+                body=decoded_body,
+            )
+            kwargs = dict(cls=respcls, body=decoded_body)
+            if issubclass(respcls, TextResponse):
+                # Force recalculating the encoding based on the new,
+                # decoded (uncompressed) body.
+                kwargs["encoding"] = None
+            response = response.replace(**kwargs)
+        if self.stats:
+            self.stats.inc_value(
+                "httpcompression/response_bytes", len(decoded_body), spider=spider
+            )
+            self.stats.inc_value("httpcompression/response_count", spider=spider)
         return response
 
     def _decode(self, body: bytes, encoding: bytes) -> bytes:

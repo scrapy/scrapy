@@ -4,8 +4,8 @@ from w3lib.url import parse_data_uri
 
 from scrapy import Request, Spider
 from scrapy.http import Response, TextResponse
-from scrapy.responsetypes import responsetypes
 from scrapy.utils.decorators import defers
+from scrapy.utils.response import get_response_class
 
 
 class DataURIDownloadHandler:
@@ -14,7 +14,10 @@ class DataURIDownloadHandler:
     @defers
     def download_request(self, request: Request, spider: Spider) -> Response:
         uri = parse_data_uri(request.url)
-        respcls = responsetypes.from_mimetype(uri.media_type)
+        respcls = get_response_class(
+            body=uri.data,
+            declared_mime_types=(uri.media_type.encode(),),
+        )
 
         resp_kwargs: Dict[str, Any] = {}
         if issubclass(respcls, TextResponse) and uri.media_type.split("/")[0] == "text":
