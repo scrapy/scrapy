@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.11.1:
 
-Scrapy 2.11.1 (unreleased)
+Scrapy 2.11.1 (2024-02-14)
 --------------------------
 
 Highlights:
@@ -2972,7 +2972,7 @@ affect subclasses:
 
 .. _release-1.8.4:
 
-Scrapy 1.8.4 (unreleased)
+Scrapy 1.8.4 (2024-02-14)
 -------------------------
 
 **Security bug fixes:**
