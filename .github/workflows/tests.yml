@@ -17,7 +17,7 @@ jobs:
         - python-version: 2.7
           env:
             TOXENV: py27-extra-deps
-        - python-version: pypy3
+        - python-version: 2.7
           env:
             TOXENV: pypy2
             PYPY_VERSION: '2.7-v7.3.5'
