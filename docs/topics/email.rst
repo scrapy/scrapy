@@ -7,7 +7,7 @@ Sending e-mail
 .. module:: scrapy.mail
    :synopsis: Email sending facility
 
-Although Python makes sending e-mails relatively easy via the `smtplib`_
+Although Python makes sending e-mails relatively easy via the :mod:`smtplib`
 library, Scrapy provides its own facility for sending e-mails which is very
 easy to use and it's implemented using :doc:`Twisted non-blocking IO
 <twisted:core/howto/defer-intro>`, to avoid interfering with the non-blocking
@@ -15,25 +15,37 @@ IO of the crawler. It also provides a simple API for sending attachments and
 it's very easy to configure, with a few :ref:`settings
 <topics-email-settings>`.
 
-.. _smtplib: https://docs.python.org/2/library/smtplib.html
-
 Quick example
 =============
 
 There are two ways to instantiate the mail sender. You can instantiate it using
-the standard ``__init__`` method::
+the standard ``__init__`` method:
+
+.. code-block:: python
 
     from scrapy.mail import MailSender
+
     mailer = MailSender()
 
 Or you can instantiate it passing a Scrapy settings object, which will respect
-the :ref:`settings <topics-email-settings>`::
+the :ref:`settings <topics-email-settings>`:
+
+.. skip: start
+.. code-block:: python
 
     mailer = MailSender.from_settings(settings)
 
-And here is how to use it to send an e-mail (without attachments)::
+And here is how to use it to send an e-mail (without attachments):
 
-    mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
+.. code-block:: python
+
+    mailer.send(
+        to=["someone@example.com"],
+        subject="Some subject",
+        body="Some body",
+        cc=["another@example.com"],
+    )
+.. skip: end
 
 MailSender class reference
 ==========================
@@ -64,10 +76,10 @@ rest of the framework.
     :type smtpport: int
 
     :param smtptls: enforce using SMTP STARTTLS
-    :type smtptls: boolean
+    :type smtptls: bool
 
     :param smtpssl: enforce using a secure SSL connection
-    :type smtpssl: boolean
+    :type smtpssl: bool
 
     .. classmethod:: from_settings(settings)
 
@@ -81,14 +93,14 @@ rest of the framework.
 
         Send email to the given recipients.
 
-        :param to: the e-mail recipients
-        :type to: str or list of str
+        :param to: the e-mail recipients as a string or as a list of strings
+        :type to: str or list
 
         :param subject: the subject of the e-mail
         :type subject: str
 
-        :param cc: the e-mails to CC
-        :type cc: str or list of str
+        :param cc: the e-mails to CC as a string or as a list of strings
+        :type cc: str or list
 
         :param body: the e-mail body
         :type body: str
@@ -98,7 +110,7 @@ rest of the framework.
           appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
           attachment and ``file_object`` is a readable file object with the
           contents of the attachment
-        :type attachs: iterable
+        :type attachs: collections.abc.Iterable
 
         :param mimetype: the MIME type of the e-mail
         :type mimetype: str

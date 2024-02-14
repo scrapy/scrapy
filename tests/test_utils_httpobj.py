@@ -6,7 +6,6 @@ from scrapy.utils.httpobj import urlparse_cached
 
 
 class HttpobjUtilsTest(unittest.TestCase):
-
     def test_urlparse_cached(self):
         url = "http://www.example.com/index.html"
         request1 = Request(url)

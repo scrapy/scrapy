@@ -39,6 +39,8 @@ a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
+.. _topics-keeping-persistent-state-between-batches:
+
 Keeping persistent state between batches
 ========================================
 
@@ -49,11 +51,13 @@ loading that attribute from the job directory, when the spider starts and
 stops.
 
 Here's an example of a callback that uses the spider state (other spider code
-is omitted for brevity)::
+is omitted for brevity):
+
+.. code-block:: python
 
     def parse_item(self, response):
         # parse item here
-        self.state['items_count'] = self.state.get('items_count', 0) + 1
+        self.state["items_count"] = self.state.get("items_count", 0) + 1
 
 Persistence gotchas
 ===================
@@ -65,7 +69,7 @@ Cookies expiration
 ------------------
 
 Cookies may expire. So, if you don't resume your spider quickly the requests
-scheduled may no longer work. This won't be an issue if you spider doesn't rely
+scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
 
 
@@ -74,10 +78,10 @@ on cookies.
 Request serialization
 ---------------------
 
-For persistence to work, :class:`~scrapy.http.Request` objects must be
+For persistence to work, :class:`~scrapy.Request` objects must be
 serializable with :mod:`pickle`, except for the ``callback`` and ``errback``
 values passed to their ``__init__`` method, which must be methods of the
-running :class:`~scrapy.spiders.Spider` class.
+running :class:`~scrapy.Spider` class.
 
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.

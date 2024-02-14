@@ -67,7 +67,7 @@ this:
    the :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
    to crawl.
 
-9. The process repeats (from step 1) until there are no more requests from the
+9. The process repeats (from step 3) until there are no more requests from the
    :ref:`Scheduler <component-scheduler>`.
 
 Components
@@ -87,8 +87,9 @@ of the system, and triggering events when certain actions occur. See the
 Scheduler
 ---------
 
-The Scheduler receives requests from the engine and enqueues them for feeding
-them later (also to the engine) when the engine requests them.
+The :ref:`scheduler <topics-scheduler>` receives requests from the engine and 
+enqueues them for feeding them later (also to the engine) when the engine 
+requests them.
 
 .. _component-downloader:
 
@@ -104,7 +105,7 @@ Spiders
 -------
 
 Spiders are custom classes written by Scrapy users to parse responses and
-extract items (aka scraped items) from them or additional requests to
+extract :ref:`items <topics-items>` from them or additional requests to
 follow. For more information see :ref:`topics-spiders`.
 
 .. _component-pipelines:

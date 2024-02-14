@@ -43,7 +43,7 @@ This command will fire up your default browser and open the main page of your
 Start over
 ----------
 
-To cleanup all generated documentation files and start from scratch run::
+To clean up all generated documentation files and start from scratch run::
 
     make clean
 
@@ -57,3 +57,12 @@ There is a way to recreate the doc automatically when you make changes, you
 need to install watchdog (``pip install watchdog``) and then use::
 
     make watch
+
+Alternative method using tox
+----------------------------
+
+To compile the documentation to HTML run the following command::
+
+    tox -e docs
+
+Documentation will be generated (in HTML format) inside the ``.tox/docs/tmp/html`` dir.

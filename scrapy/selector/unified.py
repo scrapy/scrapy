@@ -1,26 +1,28 @@
 """
 XPath selectors based on lxml
 """
+from typing import Any, Optional, Type, Union
 
 from parsel import Selector as _ParselSelector
-from scrapy.utils.trackref import object_ref
+
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.utils.python import to_bytes
-from scrapy.http import HtmlResponse, XmlResponse
+from scrapy.utils.trackref import object_ref
+
+__all__ = ["Selector", "SelectorList"]
+
+_NOT_SET = object()
 
 
-__all__ = ['Selector', 'SelectorList']
-
-
-def _st(response, st):
+def _st(response: Optional[TextResponse], st: Optional[str]) -> str:
     if st is None:
-        return 'xml' if isinstance(response, XmlResponse) else 'html'
+        return "xml" if isinstance(response, XmlResponse) else "html"
     return st
 
 
-def _response_from_text(text, st):
-    rt = XmlResponse if st == 'xml' else HtmlResponse
-    return rt(url='about:blank', encoding='utf-8',
-              body=to_bytes(text, 'utf-8'))
+def _response_from_text(text: Union[str, bytes], st: Optional[str]) -> TextResponse:
+    rt: Type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
+    return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
 
 class SelectorList(_ParselSelector.selectorlist_cls, object_ref):
@@ -61,22 +63,35 @@ class Selector(_ParselSelector, object_ref):
     detection will occur.
     """
 
-    __slots__ = ['response']
+    __slots__ = ["response"]
     selectorlist_cls = SelectorList
 
-    def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
-        if not(response is None or text is None):
-           raise ValueError('%s.__init__() received both response and text'
-                            % self.__class__.__name__)
+    def __init__(
+        self,
+        response: Optional[TextResponse] = None,
+        text: Optional[str] = None,
+        type: Optional[str] = None,
+        root: Optional[Any] = _NOT_SET,
+        **kwargs: Any,
+    ):
+        if response is not None and text is not None:
+            raise ValueError(
+                f"{self.__class__.__name__}.__init__() received "
+                "both response and text"
+            )
 
-        st = _st(response, type or self._default_type)
+        st = _st(response, type)
 
         if text is not None:
             response = _response_from_text(text, st)
 
         if response is not None:
             text = response.text
-            kwargs.setdefault('base_url', response.url)
+            kwargs.setdefault("base_url", response.url)
 
         self.response = response
-        super(Selector, self).__init__(text=text, type=st, root=root, **kwargs)
+
+        if root is not _NOT_SET:
+            kwargs["root"] = root
+
+        super().__init__(text=text, type=st, **kwargs)

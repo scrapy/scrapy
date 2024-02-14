@@ -1,52 +1,106 @@
 import unittest
 
-from scrapy.http import Request
+from w3lib.http import basic_auth_header
+
 from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
+from scrapy.http import Request
 from scrapy.spiders import Spider
 
 
+class TestSpiderLegacy(Spider):
+    http_user = "foo"
+    http_pass = "bar"
+
+
 class TestSpider(Spider):
-    http_user = 'foo'
-    http_pass = 'bar'
+    http_user = "foo"
+    http_pass = "bar"
+    http_auth_domain = "example.com"
+
+
+class TestSpiderAny(Spider):
+    http_user = "foo"
+    http_pass = "bar"
+    http_auth_domain = None
+
+
+class HttpAuthMiddlewareLegacyTest(unittest.TestCase):
+    def setUp(self):
+        self.spider = TestSpiderLegacy("foo")
+
+    def test_auth(self):
+        with self.assertRaises(AttributeError):
+            mw = HttpAuthMiddleware()
+            mw.spider_opened(self.spider)
 
 
 class HttpAuthMiddlewareTest(unittest.TestCase):
-
     def setUp(self):
         self.mw = HttpAuthMiddleware()
-        self.spider = TestSpider('foo')
+        self.spider = TestSpider("foo")
+        self.mw.spider_opened(self.spider)
+
+    def tearDown(self):
+        del self.mw
+
+    def test_no_auth(self):
+        req = Request("http://noauth.example/")
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertNotIn("Authorization", req.headers)
+
+    def test_auth_domain(self):
+        req = Request("http://example.com/")
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
+
+    def test_auth_subdomain(self):
+        req = Request("http://foo.example.com/")
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
+
+    def test_auth_already_set(self):
+        req = Request("http://example.com/", headers=dict(Authorization="Digest 123"))
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEqual(req.headers["Authorization"], b"Digest 123")
+
+
+class HttpAuthAnyMiddlewareTest(unittest.TestCase):
+    def setUp(self):
+        self.mw = HttpAuthMiddleware()
+        self.spider = TestSpiderAny("foo")
         self.mw.spider_opened(self.spider)
 
     def tearDown(self):
         del self.mw
 
     def test_auth(self):
-        req = Request('http://scrapytest.org/')
+        req = Request("http://example.com/")
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers['Authorization'], b'Basic Zm9vOmJhcg==')
+        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
 
     def test_auth_already_set(self):
-        req = Request('http://scrapytest.org/',
-                      headers=dict(Authorization='Digest 123'))
+        req = Request("http://example.com/", headers=dict(Authorization="Digest 123"))
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers['Authorization'], b'Digest 123')
+        self.assertEqual(req.headers["Authorization"], b"Digest 123")
 
     def test_auth_already_set_with_meta(self):
-        meta = {'http_user': 'bar', 'http_pass': 'foo'}
-        req = Request('http://scrapytest.org/',
-                      headers=dict(Authorization='Digest 123'),
-                      meta=meta)
+        meta = {"http_user": "bar", "http_pass": "foo"}
+        req = Request(
+            "http://scrapytest.org/",
+            headers=dict(Authorization="Digest 123"),
+            meta=meta,
+        )
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers['Authorization'], b'Digest 123')
+        self.assertEqual(req.headers["Authorization"], b"Digest 123")
 
     def test_auth_meta(self):
-        meta = {'http_user': 'bar', 'http_pass': 'foo'}
-        req = Request('http://scrapytest.org/', meta=meta)
-        assert self.mw.process_request(req, Spider('bar')) is None
-        self.assertEqual(req.headers['Authorization'], b'Basic YmFyOmZvbw==')
+        meta = {"http_user": "bar", "http_pass": "foo"}
+        req = Request("http://scrapytest.org/", meta=meta)
+        assert self.mw.process_request(req, Spider("bar")) is None
+        self.assertEqual(req.headers["Authorization"], b"Basic YmFyOmZvbw==")
 
     def test_auth_meta_override(self):
-        meta = {'http_user': 'bar', 'http_pass': 'foo'}
-        req = Request('http://scrapytest.org/', meta=meta)
+        meta = {"http_user": "bar", "http_pass": "foo"}
+        req = Request("http://scrapytest.org/", meta=meta)
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers['Authorization'], b'Basic YmFyOmZvbw==')
+        self.assertEqual(req.headers["Authorization"], b"Basic YmFyOmZvbw==")
