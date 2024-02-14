@@ -45,7 +45,7 @@ class HttpAuthMiddleware:
         self, request: Request, spider: Spider
     ) -> Union[Request, Response, None]:
         if b"Authorization" in request.headers:
-            return
+            return None
         usr = request.meta.get("http_user", "")
         pwd = request.meta.get("http_pass", "")
         if usr or pwd:
@@ -56,3 +56,4 @@ class HttpAuthMiddleware:
             auth = None
         if auth:
             request.headers[b"Authorization"] = auth
+        return None
