@@ -24,7 +24,7 @@ Scrapy 1.8.4 (2024-02-14)
 
     Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
 
-    .. _ReDoS vulnerability: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    .. _ReDoS vulnerabilities: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
     .. _cc65-xxvf-f7r9 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9
 
 -   :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` now also apply
