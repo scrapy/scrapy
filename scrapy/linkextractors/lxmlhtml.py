@@ -248,5 +248,5 @@ class LxmlLinkExtractor:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links))
         if self.link_extractor.unique:
-            return unique_list(all_links)
+            return unique_list(all_links, key=self.link_extractor.link_key)
         return all_links
