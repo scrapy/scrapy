@@ -8,7 +8,7 @@ Release notes
 
 .. _release-1.8.4:
 
-Scrapy 1.8.4 (unreleased)
+Scrapy 1.8.4 (2024-02-14)
 -------------------------
 
 **Security bug fix:**
