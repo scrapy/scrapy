@@ -5,14 +5,25 @@ Release notes
 
 .. _release-2.11.1:
 
-Scrapy 2.11.1 (YYYY-MM-DD)
+Scrapy 2.11.1 (unreleased)
 --------------------------
 
 Highlights:
 
+-   Security bug fixes.
+
 -   Support for Twisted >= 23.8.0.
 
 -   Documentation improvements.
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    domain. Please, see the `cw9j-q3vf-hrrv security advisory`_ for more
+    information.
+
+    .. _cw9j-q3vf-hrrv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cw9j-q3vf-hrrv
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -60,6 +71,7 @@ Quality assurance
     :issue:`6083`, :issue:`6098`)
 
 -   Fixed a test issue on PyPy 7.3.14. (:issue:`6204`, :issue:`6205`)
+
 
 .. _release-2.11.0:
 
@@ -2928,6 +2940,19 @@ affect subclasses:
     :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
 
 (:issue:`3884`)
+
+.. _release-1.8.4:
+
+Scrapy 1.8.4 (unreleased)
+-------------------------
+
+**Security bug fixes:**
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    domain. Please, see the `cw9j-q3vf-hrrv security advisory`_ for more
+    information.
+
+    .. _cw9j-q3vf-hrrv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cw9j-q3vf-hrrv
 
 
 .. _release-1.8.3:
