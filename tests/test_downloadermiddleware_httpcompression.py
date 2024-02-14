@@ -402,6 +402,10 @@ class HttpCompressionTest(TestCase):
         self._test_compression_bomb_setting("gzip")
 
     def test_compression_bomb_setting_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
         self._test_compression_bomb_setting("zstd")
 
     def _test_compression_bomb_spider_attr(self, compression_id):
@@ -436,6 +440,10 @@ class HttpCompressionTest(TestCase):
         self._test_compression_bomb_spider_attr("gzip")
 
     def test_compression_bomb_spider_attr_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
         self._test_compression_bomb_spider_attr("zstd")
 
     def _test_compression_bomb_request_meta(self, compression_id):
@@ -468,6 +476,10 @@ class HttpCompressionTest(TestCase):
         self._test_compression_bomb_request_meta("gzip")
 
     def test_compression_bomb_request_meta_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
         self._test_compression_bomb_request_meta("zstd")
 
     def _test_download_warnsize_setting(self, compression_id):
@@ -510,6 +522,10 @@ class HttpCompressionTest(TestCase):
         self._test_download_warnsize_setting("gzip")
 
     def test_download_warnsize_setting_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
         self._test_download_warnsize_setting("zstd")
 
     def _test_download_warnsize_spider_attr(self, compression_id):
@@ -554,6 +570,10 @@ class HttpCompressionTest(TestCase):
         self._test_download_warnsize_spider_attr("gzip")
 
     def test_download_warnsize_spider_attr_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
         self._test_download_warnsize_spider_attr("zstd")
 
     def _test_download_warnsize_request_meta(self, compression_id):
@@ -596,6 +616,10 @@ class HttpCompressionTest(TestCase):
         self._test_download_warnsize_request_meta("gzip")
 
     def test_download_warnsize_request_meta_zstd(self):
+        try:
+            import zstandard  # noqa: F401
+        except ImportError:
+            raise SkipTest("no zstd support (zstandard)")
         self._test_download_warnsize_request_meta("zstd")
 
 

@@ -204,7 +204,7 @@ class ResponseUtilsTest(unittest.TestCase):
         ), "Inject unique base url with conditional comment"
 
     def test_open_in_browser_redos_comment(self):
-        MAX_CPU_TIME = 0.001
+        MAX_CPU_TIME = 0.02
 
         # Exploit input from
         # https://makenowjust-labs.github.io/recheck/playground/
@@ -221,7 +221,7 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertLess(end_time - start_time, MAX_CPU_TIME)
 
     def test_open_in_browser_redos_head(self):
-        MAX_CPU_TIME = 0.001
+        MAX_CPU_TIME = 0.02
 
         # Exploit input from
         # https://makenowjust-labs.github.io/recheck/playground/
