@@ -8,20 +8,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        # https://github.com/actions/setup-python/issues/672
-        # - python-version: 2.7
-        #   env:
-        #     TOXENV: py27-pinned
-        # - python-version: 2.7
-        #   env:
-        #     TOXENV: py27
-        # - python-version: 2.7
-        #   env:
-        #     TOXENV: py27-extra-deps
-        # - python-version: pypy3
-        #   env:
-        #     TOXENV: pypy2
-        #     PYPY_VERSION: '2.7-v7.3.5'
+        - python-version: 2.7
+          env:
+            TOXENV: py27-pinned
+        - python-version: 2.7
+          env:
+            TOXENV: py27
+        - python-version: 2.7
+          env:
+            TOXENV: py27-extra-deps
+        - python-version: pypy3
+          env:
+            TOXENV: pypy2
+            PYPY_VERSION: '2.7-v7.3.5'
         - python-version: 3.5
           env:
             TOXENV: py35-pinned
@@ -50,7 +49,8 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      # https://github.com/actions/setup-python/issues/672#issuecomment-1894254135
+      uses: LizardByte/setup-python-action@master
       with:
         python-version: ${{ matrix.python-version }}
 
