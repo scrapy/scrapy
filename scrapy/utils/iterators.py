@@ -6,8 +6,12 @@ try:
 except ImportError:
     from io import BytesIO
 from io import StringIO
-import six
+from warnings import warn
 
+import six
+from lxml import etree
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
@@ -24,6 +28,15 @@ def xmliter(obj, nodename):
     - a unicode string
     - a string encoded as utf-8
     """
+    warn(
+        (
+            "xmliter is deprecated and its use strongly discouraged because "
+            "it is vulnerable to ReDoS attacks. Use xmliter_lxml instead. See "
+            "https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9"
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     nodename_patt = re.escape(nodename)
 
     HEADER_START_RE = re.compile(r'^(.{,1024}?)<\s*%s(?:\s|>)' % nodename_patt, re.S)
@@ -42,12 +55,34 @@ def xmliter(obj, nodename):
 
 
 def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
-    from lxml import etree
     reader = _StreamReader(obj)
     tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
-    iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
+    iterable = etree.iterparse(
+        reader,
+        encoding=reader.encoding,
+        events=("end", "start-ns"),
+        huge_tree=True,
+    )
     selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
-    for _, node in iterable:
+    needs_namespace_resolution = not namespace and ":" in nodename
+    if needs_namespace_resolution:
+        prefix, nodename = nodename.split(":", maxsplit=1)
+    for event, data in iterable:
+        if event == "start-ns":
+            assert isinstance(data, tuple)
+            if needs_namespace_resolution:
+                _prefix, _namespace = data
+                if _prefix != prefix:
+                    continue
+                namespace = _namespace
+                needs_namespace_resolution = False
+                selxpath = "//{prefix}:{nodename}".format(prefix=prefix, nodename=nodename)
+                tag = "{{{namespace}}}{nodename}".format(namespace=namespace, nodename=nodename)
+            continue
+        assert isinstance(data, etree._Element)
+        node = data
+        if node.tag != tag:
+            continue
         nodetext = etree.tostring(node, encoding='unicode')
         node.clear()
         xs = Selector(text=nodetext, type='xml')

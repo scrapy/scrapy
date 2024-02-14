@@ -13,11 +13,18 @@ Scrapy 1.8.4 (unreleased)
 
 **Security bug fix:**
 
--   Fixed regular expressions susceptible to a `ReDoS attack`_ affecting the
-    ``iternodes`` node iterator of :class:`~scrapy.spiders.XMLFeedSpider`.
+-   Due to its `ReDoS vulnerabilities`_, ``scrapy.utils.iterators.xmliter`` is
+    now deprecated in favor of :func:`~scrapy.utils.iterators.xmliter_lxml`,
+    which :class:`~scrapy.spiders.XMLFeedSpider` now uses.
+
+    To minimize the impact of this change on existing code,
+    :func:`~scrapy.utils.iterators.xmliter_lxml` now supports indicating
+    the node namespace as a prefix in the node name, and big files with highly
+    nested trees when using libxml2 2.7+.
+
     Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
 
-    .. _ReDoS attack: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    .. _ReDoS vulnerability: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
     .. _cc65-xxvf-f7r9 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9
 
 .. _release-1.8.3:
