@@ -39,7 +39,7 @@ def xmliter(obj, nodename):
     )
     nodename_patt = re.escape(nodename)
 
-    HEADER_START_RE = re.compile(r'^(.{,1024}?)<\s*%s(?:\s|>)' % nodename_patt, re.S)
+    HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename_patt, re.S)
     HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename_patt, re.S)
     text = _body_or_str(obj)
 
@@ -48,7 +48,7 @@ def xmliter(obj, nodename):
     header_end = re_rsearch(HEADER_END_RE, text)
     header_end = text[header_end[1]:].strip() if header_end else ''
 
-    r = re.compile(r'<%(np)s[\s>].{,1024}?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
+    r = re.compile(r'<%(np)s[\s>].*?</%(np)s>' % {'np': nodename_patt}, re.DOTALL)
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
         yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
