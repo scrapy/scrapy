@@ -15,11 +15,17 @@ def _build_redirect_request(source_request, url, **kwargs):
     kwargs['url'] = url
     kwargs['cookies'] = None
     redirect_request = source_request.replace(**kwargs)
-    if 'Cookie' in redirect_request.headers:
+    has_cookie_header = "Cookie" in redirect_request.headers
+    has_authorization_header = "Authorization" in redirect_request.headers
+    if has_cookie_header or has_authorization_header:
         source_request_netloc = urlparse_cached(source_request).netloc
         redirect_request_netloc = urlparse_cached(redirect_request).netloc
         if source_request_netloc != redirect_request_netloc:
-            del redirect_request.headers['Cookie']
+            if has_cookie_header:
+                del redirect_request.headers["Cookie"]
+            # https://fetch.spec.whatwg.org/#ref-for-cors-non-wildcard-request-header-name
+            if has_authorization_header:
+                del redirect_request.headers["Authorization"]
     return redirect_request
 
 

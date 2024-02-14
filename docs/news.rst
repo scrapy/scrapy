@@ -37,6 +37,12 @@ Scrapy 1.8.4 (unreleased)
     ``scrapy.downloadermiddlewares.decompression`` module is discouraged and
     will trigger a warning.
 
+-   The ``Authorization`` header is now dropped on redirects to a different
+    domain. Please, see the `cw9j-q3vf-hrrv security advisory`_ for more
+    information.
+
+    .. _cw9j-q3vf-hrrv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cw9j-q3vf-hrrv
+
 .. _release-1.8.3:
 
 Scrapy 1.8.3 (2022-07-25)
