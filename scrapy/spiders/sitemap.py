@@ -1,10 +1,18 @@
 import logging
 import re
+from typing import TYPE_CHECKING, Any
 
 from scrapy.http import Request, XmlResponse
 from scrapy.spiders import Spider
+from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +22,19 @@ class SitemapSpider(Spider):
     sitemap_rules = [("", "parse")]
     sitemap_follow = [""]
     sitemap_alternate_links = False
+    _max_size: int
+    _warn_size: int
+
+    @classmethod
+    def from_crawler(cls, crawler: "Crawler", *args: Any, **kwargs: Any) -> "Self":
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        spider._max_size = getattr(
+            spider, "download_maxsize", spider.settings.getint("DOWNLOAD_MAXSIZE")
+        )
+        spider._warn_size = getattr(
+            spider, "download_warnsize", spider.settings.getint("DOWNLOAD_WARNSIZE")
+        )
+        return spider
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -71,7 +92,19 @@ class SitemapSpider(Spider):
         if isinstance(response, XmlResponse):
             return response.body
         if gzip_magic_number(response):
-            return gunzip(response.body)
+            uncompressed_size = len(response.body)
+            max_size = response.meta.get("download_maxsize", self._max_size)
+            warn_size = response.meta.get("download_warnsize", self._warn_size)
+            try:
+                body = gunzip(response.body, max_size=max_size)
+            except _DecompressionMaxSizeExceeded:
+                return None
+            if uncompressed_size < warn_size <= len(body):
+                logger.warning(
+                    f"{response} body size after decompression ({len(body)} B) "
+                    f"is larger than the download warning size ({warn_size} B)."
+                )
+            return body
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
         # and have a response for .xml.gz,

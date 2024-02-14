@@ -1,53 +1,78 @@
-import io
 import warnings
-import zlib
+from logging import getLogger
 
-from scrapy.exceptions import NotConfigured
+from scrapy import signals
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
+from scrapy.utils._compression import (
+    _DecompressionMaxSizeExceeded,
+    _inflate,
+    _unbrotli,
+    _unzstd,
+)
 from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
+
+logger = getLogger(__name__)
 
 ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
 
 try:
-    import brotli
-
-    ACCEPTED_ENCODINGS.append(b"br")
+    import brotli  # noqa: F401
 except ImportError:
     pass
+else:
+    ACCEPTED_ENCODINGS.append(b"br")
 
 try:
-    import zstandard
-
-    ACCEPTED_ENCODINGS.append(b"zstd")
+    import zstandard  # noqa: F401
 except ImportError:
     pass
+else:
+    ACCEPTED_ENCODINGS.append(b"zstd")
 
 
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
-    def __init__(self, stats=None):
-        self.stats = stats
+    def __init__(self, stats=None, *, crawler=None):
+        if not crawler:
+            self.stats = stats
+            self._max_size = 1073741824
+            self._warn_size = 33554432
+            return
+        self.stats = crawler.stats
+        self._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
+        self._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+        crawler.signals.connect(self.open_spider, signals.spider_opened)
 
     @classmethod
     def from_crawler(cls, crawler):
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
         try:
-            return cls(stats=crawler.stats)
+            return cls(crawler=crawler)
         except TypeError:
             warnings.warn(
                 "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'stats' parameter or "
-                "reimplement the 'from_crawler' method.",
+                "their '__init__' method to support a 'crawler' parameter or "
+                "reimplement their 'from_crawler' method.",
                 ScrapyDeprecationWarning,
             )
-            result = cls()
-            result.stats = crawler.stats
-            return result
+            mw = cls()
+            mw.stats = crawler.stats
+            mw._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
+            mw._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
+            crawler.signals.connect(mw.open_spider, signals.spider_opened)
+            return mw
+
+    def open_spider(self, spider):
+        if hasattr(spider, "download_maxsize"):
+            self._max_size = spider.download_maxsize
+        if hasattr(spider, "download_warnsize"):
+            self._warn_size = spider.download_warnsize
 
     def process_request(self, request, spider):
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
@@ -59,7 +84,24 @@ class HttpCompressionMiddleware:
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
                 encoding = content_encoding.pop()
-                decoded_body = self._decode(response.body, encoding.lower())
+                max_size = request.meta.get("download_maxsize", self._max_size)
+                warn_size = request.meta.get("download_warnsize", self._warn_size)
+                try:
+                    decoded_body = self._decode(
+                        response.body, encoding.lower(), max_size
+                    )
+                except _DecompressionMaxSizeExceeded:
+                    raise IgnoreRequest(
+                        f"Ignored response {response} because its body "
+                        f"({len(response.body)} B) exceeded DOWNLOAD_MAXSIZE "
+                        f"({max_size} B) during decompression."
+                    )
+                if len(response.body) < warn_size <= len(decoded_body):
+                    logger.warning(
+                        f"{response} body size after decompression "
+                        f"({len(decoded_body)} B) is larger than the "
+                        f"download warning size ({warn_size} B)."
+                    )
                 if self.stats:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
@@ -83,25 +125,13 @@ class HttpCompressionMiddleware:
 
         return response
 
-    def _decode(self, body, encoding):
+    def _decode(self, body, encoding, max_size):
         if encoding == b"gzip" or encoding == b"x-gzip":
-            body = gunzip(body)
-
+            return gunzip(body, max_size=max_size)
         if encoding == b"deflate":
-            try:
-                body = zlib.decompress(body)
-            except zlib.error:
-                # ugly hack to work with raw deflate content that may
-                # be sent by microsoft servers. For more information, see:
-                # http://carsten.codimi.de/gzip.yaws/
-                # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
-                # http://www.gzip.org/zlib/zlib_faq.html#faq38
-                body = zlib.decompress(body, -15)
+            return _inflate(body, max_size=max_size)
         if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
-            body = brotli.decompress(body)
+            return _unbrotli(body, max_size=max_size)
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
-            # Using its streaming API since its simple API could handle only cases
-            # where there is content size data embedded in the frame
-            reader = zstandard.ZstdDecompressor().stream_reader(io.BytesIO(body))
-            body = reader.read()
+            return _unzstd(body, max_size=max_size)
         return body
