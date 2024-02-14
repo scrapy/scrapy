@@ -86,7 +86,7 @@ class HttpAuthAnyMiddlewareTest(unittest.TestCase):
     def test_auth_already_set_with_meta(self):
         meta = {"http_user": "bar", "http_pass": "foo"}
         req = Request(
-            "http://scrapytest.org/",
+            "http://example.com/",
             headers=dict(Authorization="Digest 123"),
             meta=meta,
         )
@@ -95,12 +95,12 @@ class HttpAuthAnyMiddlewareTest(unittest.TestCase):
 
     def test_auth_meta(self):
         meta = {"http_user": "bar", "http_pass": "foo"}
-        req = Request("http://scrapytest.org/", meta=meta)
+        req = Request("http://example.com/", meta=meta)
         assert self.mw.process_request(req, Spider("bar")) is None
         self.assertEqual(req.headers["Authorization"], b"Basic YmFyOmZvbw==")
 
     def test_auth_meta_override(self):
         meta = {"http_user": "bar", "http_pass": "foo"}
-        req = Request("http://scrapytest.org/", meta=meta)
+        req = Request("http://example.com/", meta=meta)
         assert self.mw.process_request(req, self.spider) is None
         self.assertEqual(req.headers["Authorization"], b"Basic YmFyOmZvbw==")
