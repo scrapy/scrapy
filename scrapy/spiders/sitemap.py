@@ -1,12 +1,13 @@
-import re
 import logging
+import re
+
 import six
 
-from scrapy.spiders import Spider
-from scrapy.http import Request, XmlResponse
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.http.response.xml import XmlResponse
+from scrapy.spiders import Request, Spider
+from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
-
+from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,17 @@ class SitemapSpider(Spider):
     sitemap_rules = [('', 'parse')]
     sitemap_follow = ['']
     sitemap_alternate_links = False
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super(SitemapSpider, cls).from_crawler(crawler, *args, **kwargs)
+        spider._max_size = getattr(
+            spider, "download_maxsize", spider.settings.getint("DOWNLOAD_MAXSIZE")
+        )
+        spider._warn_size = getattr(
+            spider, "download_warnsize", spider.settings.getint("DOWNLOAD_WARNSIZE")
+        )
+        return spider
 
     def __init__(self, *a, **kw):
         super(SitemapSpider, self).__init__(*a, **kw)
@@ -70,8 +82,25 @@ class SitemapSpider(Spider):
         """
         if isinstance(response, XmlResponse):
             return response.body
-        elif gzip_magic_number(response):
-            return gunzip(response.body)
+        if gzip_magic_number(response):
+            uncompressed_size = len(response.body)
+            max_size = response.meta.get("download_maxsize", self._max_size)
+            warn_size = response.meta.get("download_warnsize", self._warn_size)
+            try:
+                body = gunzip(response.body, max_size=max_size)
+            except _DecompressionMaxSizeExceeded:
+                return None
+            if uncompressed_size < warn_size <= len(body):
+                logger.warning(
+                    "%(response)s body size after decompression (%(body_length)s B) "
+                    "is larger than the download warning size (%(warn_size)s B).",
+                    {
+                        "response": response,
+                        "body_length": len(body),
+                        "warn_size": warn_size,
+                    },
+                )
+            return body
         # actual gzipped sitemap files are decompressed above ;
         # if we are here (response body is not gzipped)
         # and have a response for .xml.gz,
@@ -81,7 +110,7 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        elif response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
+        if response.url.endswith('.xml') or response.url.endswith('.xml.gz'):
             return response.body
 
 

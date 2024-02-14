@@ -27,6 +27,16 @@ Scrapy 1.8.4 (unreleased)
     .. _ReDoS vulnerability: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
     .. _cc65-xxvf-f7r9 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9
 
+-   :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` now also apply
+    to the decompressed response body. Please, see the `7j7m-v7m3-jqm7 security
+    advisory`_ for more information.
+
+    .. _7j7m-v7m3-jqm7 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-7j7m-v7m3-jqm7
+
+-   Also in relation with the `7j7m-v7m3-jqm7 security advisory`_, use of the
+    ``scrapy.downloadermiddlewares.decompression`` module is discouraged and
+    will trigger a warning.
+
 .. _release-1.8.3:
 
 Scrapy 1.8.3 (2022-07-25)
