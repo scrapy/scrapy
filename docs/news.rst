@@ -3,6 +3,64 @@
 Release notes
 =============
 
+.. _release-2.11.1:
+
+Scrapy 2.11.1 (YYYY-MM-DD)
+--------------------------
+
+Highlights:
+
+-   Support for Twisted >= 23.8.0.
+
+-   Documentation improvements.
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   The Twisted dependency is no longer restricted to < 23.8.0. (:issue:`6024`,
+    :issue:`6064`, :issue:`6142`)
+
+Bug fixes
+~~~~~~~~~
+
+-   The OS signal handling code was refactored to no longer use private Twisted
+    functions. (:issue:`6024`, :issue:`6064`, :issue:`6112`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Improved documentation for :class:`~scrapy.crawler.Crawler` initialization
+    changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6147`)
+
+-   Extended documentation for :attr:`Request.meta <scrapy.http.Request.meta>`.
+    (:issue:`5565`)
+
+-   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
+    :issue:`6077`)
+
+-   Added a link to Zyte's export guides to the :ref:`feed exports
+    <topics-feed-exports>` documentation. (:issue:`6183`)
+
+-   Added a missing note about backward-incompatible changes in
+    :class:`~scrapy.exporters.PythonItemExporter` to the 2.11.0 release notes.
+    (:issue:`6060`, :issue:`6081`)
+
+-   Added a missing note about removing the deprecated
+    ``scrapy.utils.boto.is_botocore()`` function to the 2.8.0 release notes.
+    (:issue:`6056`, :issue:`6061`)
+
+-   Other documentation improvements. (:issue:`6128`, :issue:`6144`,
+    :issue:`6163`, :issue:`6190`, :issue:`6192`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added Python 3.12 to the CI configuration, re-enabled tests that were
+    disabled when the pre-release support was added. (:issue:`5985`,
+    :issue:`6083`, :issue:`6098`)
+
+-   Fixed a test issue on PyPy 7.3.14. (:issue:`6204`, :issue:`6205`)
+
 .. _release-2.11.0:
 
 Scrapy 2.11.0 (2023-09-18)
