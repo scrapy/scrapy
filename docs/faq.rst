@@ -297,9 +297,13 @@ build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
 In order to avoid parsing all the entire feed at once in memory, you can use
-the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
-module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
-under the cover.
+the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+:func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
+:class:`~scrapy.spiders.XMLFeedSpider` uses.
+
+.. autofunction:: scrapy.utils.iterators.xmliter_lxml
+
+.. autofunction:: scrapy.utils.iterators.csviter
 
 Does Scrapy manage cookies automatically?
 -----------------------------------------
