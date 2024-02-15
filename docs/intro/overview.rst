@@ -20,22 +20,24 @@ In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
 Here's the code for a spider that scrapes famous quotes from website
-https://quotes.toscrape.com, following the pagination::
+https://quotes.toscrape.com, following the pagination:
+
+.. code-block:: python
 
     import scrapy
 
 
     class QuotesSpider(scrapy.Spider):
-        name = 'quotes'
+        name = "quotes"
         start_urls = [
-            'https://quotes.toscrape.com/tag/humor/',
+            "https://quotes.toscrape.com/tag/humor/",
         ]
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
+            for quote in response.css("div.quote"):
                 yield {
-                    'author': quote.xpath('span/small/text()').get(),
-                    'text': quote.css('span.text::text').get(),
+                    "author": quote.xpath("span/small/text()").get(),
+                    "text": quote.css("span.text::text").get(),
                 }
 
             next_page = response.css('li.next a::attr("href")').get()
@@ -45,9 +47,9 @@ https://quotes.toscrape.com, following the pagination::
 Put this in a text file, name it to something like ``quotes_spider.py``
 and run the spider using the :command:`runspider` command::
 
-    scrapy runspider quotes_spider.py -o quotes.jl
+    scrapy runspider quotes_spider.py -o quotes.jsonl
 
-When this finishes you will have in the ``quotes.jl`` file a list of the
+When this finishes you will have in the ``quotes.jsonl`` file a list of the
 quotes in JSON Lines format, containing text and author, looking like this::
 
     {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}

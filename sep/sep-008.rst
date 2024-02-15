@@ -87,10 +87,11 @@ Alternative Public API Proposal
 Usage example: declaring Item Parsers
 =====================================
 
-::
+.. code-block:: python
 
    #!python
    from scrapy.contrib.itemparser import XPathItemParser, parsers
+
 
    class ProductParser(XPathItemParser):
        name_in = parsers.MapConcat(removetags, filterx)
@@ -101,7 +102,7 @@ Usage example: declaring Item Parsers
 Usage example: declaring parsers in Fields
 ==========================================
 
-::
+.. code-block:: python
 
    #!python
    class Product(Item):

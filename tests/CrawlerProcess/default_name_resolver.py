@@ -7,6 +7,7 @@ class IPv6Spider(scrapy.Spider):
     Raises a twisted.internet.error.DNSLookupError:
     the default name resolver does not handle IPv6 addresses.
     """
+
     name = "ipv6_spider"
     start_urls = ["http://[::1]"]
 

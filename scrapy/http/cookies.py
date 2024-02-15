@@ -1,10 +1,14 @@
 import re
 import time
-from http.cookiejar import CookieJar as _CookieJar, DefaultCookiePolicy
+from http.cookiejar import Cookie
+from http.cookiejar import CookieJar as _CookieJar
+from http.cookiejar import DefaultCookiePolicy
+from typing import Sequence
 
+from scrapy import Request
+from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
-
 
 # Defined in the http.cookiejar module, but undocumented:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
@@ -24,7 +28,7 @@ class CookieJar:
         wrsp = WrappedResponse(response)
         return self.jar.extract_cookies(wrsp, wreq)
 
-    def add_cookie_header(self, request):
+    def add_cookie_header(self, request: Request) -> None:
         wreq = WrappedRequest(request)
         self.policy._now = self.jar._now = int(time.time())
 
@@ -36,7 +40,7 @@ class CookieJar:
 
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
-            if '.' not in req_host:
+            if "." not in req_host:
                 hosts += [req_host + ".local"]
         else:
             hosts = [req_host]
@@ -75,7 +79,7 @@ class CookieJar:
     def set_policy(self, pol):
         return self.jar.set_policy(pol)
 
-    def make_cookies(self, response, request):
+    def make_cookies(self, response: Response, request: Request) -> Sequence[Cookie]:
         wreq = WrappedRequest(request)
         wrsp = WrappedResponse(response)
         return self.jar.make_cookies(wrsp, wreq)
@@ -83,7 +87,7 @@ class CookieJar:
     def set_cookie(self, cookie):
         self.jar.set_cookie(cookie)
 
-    def set_cookie_if_ok(self, cookie, request):
+    def set_cookie_if_ok(self, cookie: Cookie, request: Request) -> None:
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))
 
 
@@ -96,14 +100,14 @@ def potential_domain_matches(domain):
     """
     matches = [domain]
     try:
-        start = domain.index('.') + 1
-        end = domain.rindex('.')
+        start = domain.index(".") + 1
+        end = domain.rindex(".")
         while start < end:
             matches.append(domain[start:])
-            start = domain.index('.', start) + 1
+            start = domain.index(".", start) + 1
     except ValueError:
         pass
-    return matches + ['.' + d for d in matches]
+    return matches + ["." + d for d in matches]
 
 
 class _DummyLock:
@@ -140,7 +144,7 @@ class WrappedRequest:
         HTML document, and the user had no option to approve the automatic
         fetching of the image, this should be true.
         """
-        return self.request.meta.get('is_unverifiable', False)
+        return self.request.meta.get("is_unverifiable", False)
 
     @property
     def full_url(self):
@@ -166,13 +170,14 @@ class WrappedRequest:
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_unicode(self.request.headers.get(name, default),
-                          errors='replace')
+        return to_unicode(self.request.headers.get(name, default), errors="replace")
 
     def header_items(self):
         return [
-            (to_unicode(k, errors='replace'),
-             [to_unicode(x, errors='replace') for x in v])
+            (
+                to_unicode(k, errors="replace"),
+                [to_unicode(x, errors="replace") for x in v],
+            )
             for k, v in self.request.headers.items()
         ]
 
@@ -181,7 +186,6 @@ class WrappedRequest:
 
 
 class WrappedResponse:
-
     def __init__(self, response):
         self.response = response
 
@@ -189,5 +193,6 @@ class WrappedResponse:
         return self
 
     def get_all(self, name, default=None):
-        return [to_unicode(v, errors='replace')
-                for v in self.response.headers.getlist(name)]
+        return [
+            to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
+        ]

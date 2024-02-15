@@ -2,22 +2,22 @@ from pytest import mark
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from scrapy import signals, Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-
 from tests.mockserver import MockServer
 
 
 class ItemSpider(Spider):
-    name = 'itemspider'
+    name = "itemspider"
 
     def start_requests(self):
         for index in range(10):
-            yield Request(self.mockserver.url(f'/status?n=200&id={index}'),
-                          meta={'index': index})
+            yield Request(
+                self.mockserver.url(f"/status?n=200&id={index}"), meta={"index": index}
+            )
 
     def parse(self, response):
-        return {'index': response.meta['index']}
+        return {"index": response.meta["index"]}
 
 
 class AsyncSignalTestCase(unittest.TestCase):
@@ -41,4 +41,4 @@ class AsyncSignalTestCase(unittest.TestCase):
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(self.items), 10)
         for index in range(10):
-            self.assertIn({'index': index}, self.items)
+            self.assertIn({"index": index}, self.items)
