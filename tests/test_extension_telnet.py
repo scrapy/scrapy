@@ -50,3 +50,27 @@ class TelnetExtensionTest(unittest.TestCase):
         d = portal.login(creds, None, ITelnetProtocol)
         yield d
         console.stop_listening()
+
+
+class TestWithStartListening(unittest.TestCase):
+    def test_with_start_Lintening(self):
+        """
+        Calls are made in the correct order so there should be no problems.
+        """
+        telnet_console = TelnetConsole(crawler=get_crawler())
+        telnet_console.start_listening()  # Called as expected.
+        telnet_console.stop_listening()
+
+
+class TestWithoutStartListening(unittest.TestCase):
+    def test_without_start_Lintening(self):
+        """
+        Calls are made in an incorrect order so `self.port` is never initialized.
+        Class variables should be initialized in the .__init__() method but .port
+        is not.  This raises a NameError as discussed in scrapy/scrapy#2702
+        """
+        telnet_console = TelnetConsole(crawler=get_crawler())
+        # The .start_listening() should be called but humans are imperfect.
+        # telnet_console.start_listening()
+        with assertRaises(NameError, msg=None):
+            telnet_console.stop_listening()
