@@ -72,5 +72,5 @@ class TestWithoutStartListening(unittest.TestCase):
         telnet_console = TelnetConsole(crawler=get_crawler())
         # The .start_listening() should be called but humans are imperfect.
         # telnet_console.start_listening()
-        with assertRaises(NameError, msg=None):
+        with self.assertRaises(NameError):
             telnet_console.stop_listening()
