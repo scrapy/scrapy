@@ -158,6 +158,7 @@ Use a fallback component:
 .. code-block:: python
 
     from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+    from scrapy.utils.misc import build_from_crawler
 
 
     FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
@@ -168,11 +169,7 @@ Use a fallback component:
 
         def __init__(self, settings, crawler):
             dhcls = load_object(settings.get(FALLBACK_SETTING))
-            self._fallback_handler = create_instance(
-                dhcls,
-                settings=None,
-                crawler=crawler,
-            )
+            self._fallback_handler = build_from_crawler(dhcls, crawler)
 
         def download_request(self, request, spider):
             if request.meta.get("my_params"):

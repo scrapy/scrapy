@@ -3,6 +3,196 @@
 Release notes
 =============
 
+.. _release-2.12.0:
+
+Scrapy 2.12.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   Added :class:`~scrapy.http.JsonResponse`
+
+-   Added component getters to :class:`scrapy.crawler.Crawler`
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed the ``scrapy.utils.request.request_fingerprint`` function,
+    deprecated in Scrapy 2.7.0.
+    (:issue:`6212`, :issue:`6213`)
+
+-   Removed support for value ``"2.6"`` of setting
+    ``REQUEST_FINGERPRINTER_IMPLEMENTATION``, deprecated in Scrapy 2.7.0.
+    (:issue:`6212`, :issue:`6213`)
+
+-   :class:`~scrapy.dupefilters.RFPDupeFilter` subclasses now require
+    supporting the ``fingerprinter`` parameter in their ``__init__`` method,
+    introduced in Scrapy 2.7.0.
+    (:issue:`6102`, :issue:`6113`)
+
+-   Removed the ``scrapy.downloadermiddlewares.decompression`` module,
+    deprecated in Scrapy 2.7.0.
+    (:issue:`6100`, :issue:`6113`)
+
+-   Removed the :func:`scrapy.utils.response.response_httprepr` function,
+    deprecated in Scrapy 2.6.0.
+    (:issue:`6111`, :issue:`6116`)
+
+-   Spiders with spider-level HTTP authentication, i.e. with the ``http_user``
+    or ``http_pass`` attributes, must now define ``http_auth_domain`` as well,
+    which was introduced in Scrapy 2.5.1.
+    (:issue:`6103`, :issue:`6113`)
+
+-   :ref:`Media pipelines <topics-media-pipeline>` methods ``file_path``,
+    ``file_downloaded``, ``get_images``, ``image_downloaded``,
+    ``media_downloaded``, ``media_to_download``, and ``thumb_path`` must now
+    support an ``item`` parameter, added in Scrapy 2.4.0.
+    (:issue:`6107`, :issue:`6113`)
+
+-   The ``__init__`` and ``from_crawler`` methods of :ref:`feed storage backend
+    classes <topics-feed-storage>` must now support the keyword-only
+    ``feed_options`` parameter, introduced in Scrapy 2.4.0.
+    (:issue:`6105`, :issue:`6113`)
+
+-   Removed the ``scrapy.loader.common`` and ``scrapy.loader.processors``
+    modules, deprecated in Scrapy 2.3.0.
+    (:issue:`6106`, :issue:`6113`)
+
+-   Removed the ``scrapy.utils.misc.extract_regex`` function, deprecated in
+    Scrapy 2.3.0.
+    (:issue:`6106`, :issue:`6113`)
+
+-   Removed the ``scrapy.http.JSONRequest`` class, replaced with
+    ``JsonRequest`` in Scrapy 1.8.0.
+    (:issue:`6110`, :issue:`6113`)
+
+-   ``scrapy.utils.log.logformatter_adapter`` no longer supports missing
+    ``args``, ``level``, or ``msg`` parameters, and no longer supports a
+    ``format`` parameter, all scenarios that were deprecated in Scrapy 1.0.0.
+    (:issue:`6109`, :issue:`6116`)
+
+-   A custom class assigned to the :setting:`SPIDER_LOADER_CLASS` setting that
+    does not implement the :class:`~scrapy.interfaces.ISpiderLoader` interface
+    will now raise a :exc:`zope.interface.verify.DoesNotImplement` exception at
+    run time. Non-compliant classes have been triggering a deprecation warning
+    since Scrapy 1.0.0.
+    (:issue:`6101`, :issue:`6113`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The ``REQUEST_FINGERPRINTER_IMPLEMENTATION`` setting is now deprecated.
+    (:issue:`6212`, :issue:`6213`)
+
+-   The :ref:`Reppy <reppy-parser>`-based ``robots.txt`` parser,
+    ``scrapy.robotstxt.ReppyRobotParser``, is now deprecated.
+    (:issue:`5230`, :issue:`6099`)
+
+-   The ``scrapy.utils.misc.create_instance`` function is now deprecated, it
+    should be replaced with one of its new replacements that provide a cleaner
+    signature: :func:`scrapy.utils.misc.build_from_crawler`,
+    :func:`scrapy.utils.misc.build_from_settings`.
+    (:issue:`5523`, :issue:`5884`, :issue:`6162`, :issue:`6169`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added a new :class:`~scrapy.http.Response` subclass,
+    :class:`~scrapy.http.JsonResponse`, for responses with a `JSON MIME type
+    <https://mimesniff.spec.whatwg.org/#json-mime-type>`_.
+    (:issue:`6069`, :issue:`6171`, :issue:`6174`)
+
+-   The :class:`~scrapy.extensions.logstats.LogStats` extension now adds
+    ``items_per_minute`` and ``responses_per_minute`` to the :ref:`stats
+    <topics-stats>` when the spider closes.
+    (:issue:`4110`, :issue:`4111`)
+
+-   Added component getters to :class:`~scrapy.crawler.Crawler`:
+    :meth:`~scrapy.crawler.Crawler.get_addon`,
+    :meth:`~scrapy.crawler.Crawler.get_downloader_middleware`,
+    :meth:`~scrapy.crawler.Crawler.get_extension`,
+    :meth:`~scrapy.crawler.Crawler.get_item_pipeline`,
+    :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
+    (:issue:`6181`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   Extended the list of file extensions that
+    :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    ignores by default.
+    (:issue:`6074`, :issue:`6125`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Assigning an empty string to the :setting:`JOBDIR` setting no longer
+    triggers the initialization of the disk queue.
+    (:issue:`6121`, :issue:`6124`)
+
+-   ``media_to_download`` errors in :ref:`media pipelines
+    <topics-media-pipeline>` are now logged.
+    (:issue:`5067`, :issue:`5068`)
+
+-   When using the :command:`parse` command, callbacks specified on the command
+    line no longer see their signature stripped.
+    (:issue:`6182`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   :ref:`Documented how to create a a blank request <faq-blank-request>`.
+    (:issue:`6203`, :issue:`6208`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`6094`,
+    :issue:`6177`,
+    :issue:`6200`,
+    :issue:`6207`,
+    :issue:`6216`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added ``py.typed``, in line with `PEP 561
+    <https://peps.python.org/pep-0561/>`_.
+    (:issue:`6058`, :issue:`6059`)
+
+-   Completed type hints for :class:`~scrapy.http.Request`,
+    :class:`~scrapy.http.Response`, :class:`~scrapy.http.headers.Headers`,
+    :ref:`spider middlewares <topics-spider-middleware>`, :ref:`downloader
+    middlewares <topics-downloader-middleware>`, and more.
+    (:issue:`5989`,
+    :issue:`6097`,
+    :issue:`6127`,
+    :issue:`6129`,
+    :issue:`6130`,
+    :issue:`6133`,
+    :issue:`6191`)
+
+-   CI and test improvements and fixes.
+    (:issue:`5454`,
+    :issue:`5997`,
+    :issue:`6078`,
+    :issue:`6084`,
+    :issue:`6087`,
+    :issue:`6132`,
+    :issue:`6153`,
+    :issue:`6154`,
+    :issue:`6201`)
+
+-   Code cleanups.
+    (:issue:`6196`,
+    :issue:`6197`,
+    :issue:`6198`,
+    :issue:`6199`)
+
+Other
+~~~~~
+
+-   Issue tracker improvements. (:issue:`6066`)
+
+
 .. _release-2.11.1:
 
 Scrapy 2.11.1 (2024-02-14)
@@ -60,17 +250,26 @@ Modified requirements
 -   The Twisted dependency is no longer restricted to < 23.8.0. (:issue:`6024`,
     :issue:`6064`, :issue:`6142`)
 
+Deprecations
+~~~~~~~~~~~~
+
+-   Subclasses of
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    must now support the ``crawler`` keyword-only parameter in their
+    ``__init__`` method.
+
 Bug fixes
 ~~~~~~~~~
 
 -   The OS signal handling code was refactored to no longer use private Twisted
-    functions. (:issue:`6024`, :issue:`6064`, :issue:`6112`)
+    functions. (:issue:`6024`, :issue:`6030`, :issue:`6064`, :issue:`6112`)
 
 Documentation
 ~~~~~~~~~~~~~
 
 -   Improved documentation for :class:`~scrapy.crawler.Crawler` initialization
-    changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6147`)
+    changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6076`,
+    :issue:`6080`, :issue:`6147`)
 
 -   Extended documentation for :attr:`Request.meta <scrapy.http.Request.meta>`.
     (:issue:`5565`)
@@ -83,7 +282,7 @@ Documentation
 
 -   Added a missing note about backward-incompatible changes in
     :class:`~scrapy.exporters.PythonItemExporter` to the 2.11.0 release notes.
-    (:issue:`6060`, :issue:`6081`)
+    (:issue:`6060`, :issue:`6062`, :issue:`6081`)
 
 -   Added a missing note about removing the deprecated
     ``scrapy.utils.boto.is_botocore()`` function to the 2.8.0 release notes.
@@ -160,9 +359,6 @@ Deprecation removals
 -   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
     1.0.0, use :attr:`CrawlerRunner.spider_loader
     <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
-
--   The :func:`scrapy.utils.response.response_httprepr` function, deprecated in
-    Scrapy 2.6.0, has now been removed. (:issue:`6111`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -2248,9 +2444,9 @@ New features
     from protocol 2 to protocol 4, improving serialization capabilities and
     performance (:issue:`4135`, :issue:`4541`)
 
-*   :func:`scrapy.utils.misc.create_instance` now raises a :exc:`TypeError`
-    exception if the resulting instance is ``None`` (:issue:`4528`,
-    :issue:`4532`)
+*   The ``scrapy.utils.misc.create_instance`` function now raises a
+    :exc:`TypeError` exception if the resulting instance is ``None``
+    (:issue:`4528`, :issue:`4532`)
 
 .. _itemadapter: https://github.com/scrapy/itemadapter
 
@@ -2773,8 +2969,8 @@ Bug fixes
     (:issue:`4123`)
 
 *   Fixed a typo in the message of the :exc:`ValueError` exception raised when
-    :func:`scrapy.utils.misc.create_instance` gets both ``settings`` and
-    ``crawler`` set to ``None`` (:issue:`4128`)
+    the ``scrapy.utils.misc.create_instance`` function gets both ``settings``
+    and ``crawler`` set to ``None`` (:issue:`4128`)
 
 
 Documentation

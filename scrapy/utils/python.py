@@ -308,14 +308,13 @@ def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Itera
 
 
 def global_object_name(obj: Any) -> str:
-    """
-    Return full name of a global object.
+    """Return the full import path of the given class.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
     """
-    return f"{obj.__module__}.{obj.__name__}"
+    return f"{obj.__module__}.{obj.__qualname__}"
 
 
 if hasattr(sys, "pypy_version_info"):
