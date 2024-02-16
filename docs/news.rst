@@ -12,6 +12,8 @@ Highlights:
 
 -   Added :class:`~scrapy.http.JsonResponse`
 
+-   Added ``items_per_minute`` and ``responses_per_minute`` stats
+
 -   Added component getters to :class:`scrapy.crawler.Crawler`
 
 Deprecation removals
