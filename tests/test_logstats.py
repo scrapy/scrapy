@@ -3,14 +3,13 @@ from datetime import datetime
 
 from scrapy.extensions.logstats import LogStats
 from scrapy.utils.test import get_crawler
-
 from tests.spiders import SimpleSpider
 
 
 class TestLogStats(unittest.TestCase):
     def setUp(self):
         self.crawler = get_crawler(SimpleSpider)
-        self.spider = self.crawler._create_spider('spidey')
+        self.spider = self.crawler._create_spider("spidey")
         self.stats = self.crawler.stats
 
         self.stats.set_value("response_received_count", 4802)
