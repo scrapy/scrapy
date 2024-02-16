@@ -153,7 +153,7 @@ class LxmlLinkExtractor:
             unique=unique,
             process=process_value,
             strip=strip,
-            canonicalized=canonicalize,
+            canonicalized=not canonicalize,
         )
         self.allow_res = [
             x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)
