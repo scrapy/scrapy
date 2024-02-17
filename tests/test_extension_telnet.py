@@ -72,5 +72,7 @@ class TestWithoutStartListening(unittest.TestCase):
         telnet_console = TelnetConsole(crawler=get_crawler())
         # The .start_listening() should be called but humans are imperfect.
         # telnet_console.start_listening()
-        with self.assertRaises(AttributeError, msg="'TelnetConsole' object has no attribute 'port'"):
+        with self.assertRaises(
+            AttributeError, msg="'TelnetConsole' object has no attribute 'port'"
+        ):
             telnet_console.stop_listening()
