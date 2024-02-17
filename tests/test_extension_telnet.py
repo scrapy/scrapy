@@ -67,10 +67,10 @@ class TestWithoutStartListening(unittest.TestCase):
         """
         Calls are made in an incorrect order so `self.port` is never initialized.
         Class variables should be initialized in the .__init__() method but .port
-        is not.  This raises a NameError as discussed in scrapy/scrapy#2702
+        is not.  This raises an AttributeError as discussed in scrapy/scrapy#2702
         """
         telnet_console = TelnetConsole(crawler=get_crawler())
-        # The .start_listening() should be called but humans are imperfect.
+        # .start_listening() method should be called but developers are imperfect
         # telnet_console.start_listening()
         with self.assertRaises(
             AttributeError, msg="'TelnetConsole' object has no attribute 'port'"
