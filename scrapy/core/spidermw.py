@@ -38,6 +38,8 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.python import MutableAsyncChain, MutableChain
 
+from scrapy.utils.logger import log_branch
+
 logger = logging.getLogger(__name__)
 
 
@@ -183,42 +185,40 @@ class SpiderMiddlewareManager(MiddlewareManager):
         result: Union[Iterable, AsyncIterable],
         start_index: int = 0,
     ) -> Generator[Deferred, Any, Union[MutableChain, MutableAsyncChain]]:
-        # items in this iterable do not need to go through the process_spider_output
-        # chain, they went through it already from the process_spider_exception method
         recovered: Union[MutableChain, MutableAsyncChain]
         last_result_is_async = isinstance(result, AsyncIterable)
         if last_result_is_async:
+            log_branch("ID-1")
             recovered = MutableAsyncChain()
         else:
+            log_branch("ID-2")
             recovered = MutableChain()
-
-        # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
-        # 1. def foo. Sync iterables are passed as is, async ones are downgraded.
-        # 2. async def foo. Sync iterables are upgraded, async ones are passed as is.
-        # 3. def foo + async def foo_async. Iterables are passed to the respective method.
-        # Storing methods and method tuples in the same list is weird but we should be able to roll this back
-        # when we drop this compatibility feature.
 
         method_list = islice(self.methods["process_spider_output"], start_index, None)
         for method_index, method_pair in enumerate(method_list, start=start_index):
             if method_pair is None:
+                log_branch("ID-3")
                 continue
             need_upgrade = need_downgrade = False
             if isinstance(method_pair, tuple):
-                # This tuple handling is only needed until _async compatibility methods are removed.
+                log_branch("ID-4")
                 method_sync, method_async = method_pair
                 method = method_async if last_result_is_async else method_sync
             else:
+                log_branch("ID-5")
                 method = method_pair
                 if not last_result_is_async and isasyncgenfunction(method):
+                    log_branch("ID-6")
                     need_upgrade = True
                 elif last_result_is_async and not isasyncgenfunction(method):
+                    log_branch("ID-7")
                     need_downgrade = True
             try:
                 if need_upgrade:
-                    # Iterable -> AsyncIterable
+                    log_branch("ID-8")
                     result = as_async_generator(result)
                 elif need_downgrade:
+                    log_branch("ID-9")
                     if not self.downgrade_warning_done:
                         logger.warning(
                             f"Async iterable passed to {method.__qualname__} "
@@ -226,34 +226,39 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         )
                         self.downgrade_warning_done = True
                     assert isinstance(result, AsyncIterable)
-                    # AsyncIterable -> Iterable
                     result = yield deferred_from_coro(collect_asyncgen(result))
                     if isinstance(recovered, AsyncIterable):
+                        log_branch("ID-10")
                         recovered_collected = yield deferred_from_coro(
                             collect_asyncgen(recovered)
                         )
                         recovered = MutableChain(recovered_collected)
-                # might fail directly if the output value is not a generator
                 result = method(response=response, result=result, spider=spider)
             except Exception as ex:
+                log_branch("ID-11")
                 exception_result = self._process_spider_exception(
                     response, spider, Failure(ex), method_index + 1
                 )
                 if isinstance(exception_result, Failure):
+                    log_branch("ID-12")
                     raise
                 return exception_result
             if _isiterable(result):
+                log_branch("ID-13")
                 result = self._evaluate_iterable(
                     response, spider, result, method_index + 1, recovered
                 )
             else:
+                log_branch("ID-14")
                 if iscoroutine(result):
+                    log_branch("ID-15")
                     result.close()  # Silence warning about not awaiting
                     msg = (
                         f"{method.__qualname__} must be an asynchronous "
                         f"generator (i.e. use yield)"
                     )
                 else:
+                    log_branch("ID-16")
                     msg = (
                         f"{method.__qualname__} must return an iterable, got "
                         f"{type(result)}"
@@ -262,8 +267,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             last_result_is_async = isinstance(result, AsyncIterable)
 
         if last_result_is_async:
+            log_branch("ID-17")
             return MutableAsyncChain(result, recovered)
-        return MutableChain(result, recovered)  # type: ignore[arg-type]
+        log_branch("ID-18")
+        return MutableChain(result, recovered)
 
     async def _process_callback_output(
         self, response: Response, spider: Spider, result: Union[Iterable, AsyncIterable]
