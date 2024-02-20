@@ -1,6 +1,7 @@
 import warnings
 from typing import Any, Dict, List, Optional, Tuple
 from unittest import TestCase
+from urllib.parse import urlparse
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Request, Response
@@ -28,7 +29,6 @@ from scrapy.spidermiddlewares.referer import (
     UnsafeUrlPolicy,
 )
 from scrapy.spiders import Spider
-from scrapy.utils.httpobj import urlparse_cached
 
 
 class TestRefererMiddleware(TestCase):
@@ -679,7 +679,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
     """
 
     def referrer(self, response, request):
-        scheme = urlparse_cached(request).scheme
+        scheme = urlparse(request).scheme
         if scheme == "https":
             return b"https://python.org/"
         if scheme == "http":
