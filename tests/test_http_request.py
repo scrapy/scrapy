@@ -5,7 +5,7 @@ import warnings
 import xmlrpc.client
 from typing import Any, Dict, List
 from unittest import mock
-from urllib.parse import parse_qs, unquote_to_bytes, urlparse
+from urllib.parse import parse_qs, unquote_to_bytes
 
 from scrapy.http import (
     FormRequest,
@@ -16,6 +16,7 @@ from scrapy.http import (
     XmlRpcRequest,
 )
 from scrapy.http.request import NO_CALLBACK
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -617,8 +618,8 @@ class FormRequestTest(RequestTest):
             method="GET",
             formdata=(("foo", "bar"), ("foo", "baz")),
         )
-        self.assertEqual(urlparse(req.url).hostname, "www.example.com")
-        self.assertEqual(urlparse(req.url).query, "foo=bar&foo=baz")
+        self.assertEqual(urlparse_cached(req).hostname, "www.example.com")
+        self.assertEqual(urlparse_cached(req).query, "foo=bar&foo=baz")
 
     def test_from_response_override_duplicate_form_key(self):
         response = _buildresponse(
@@ -666,8 +667,8 @@ class FormRequestTest(RequestTest):
             response, formdata={"one": ["two", "three"], "six": "seven"}
         )
         self.assertEqual(r1.method, "GET")
-        self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
-        self.assertEqual(urlparse(r1.url).path, "/this/get.php")
+        self.assertEqual(urlparse_cached(r1).hostname, "www.example.com")
+        self.assertEqual(urlparse_cached(r1).path, "/this/get.php")
         fs = _qs(r1)
         self.assertEqual(set(fs[b"test"]), {b"val1", b"val2"})
         self.assertEqual(set(fs[b"one"]), {b"two", b"three"})
