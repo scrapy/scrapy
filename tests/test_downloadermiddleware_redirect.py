@@ -1,5 +1,5 @@
 import unittest
-from itertools import product
+from itertools import chain, product
 
 import pytest
 
@@ -282,32 +282,45 @@ class RedirectMiddlewareTest(unittest.TestCase):
         )
 
 
-@pytest.mark.parametrize(
-    ("url", "location", "target"),
-    (
-        # http/https → http/https redirects
-        *(
-            (
-                f"{input_scheme}://example.com/a",
-                f"{output_scheme}://example.com/b",
-                f"{output_scheme}://example.com/b",
-            )
-            for input_scheme, output_scheme in product(("http", "https"), repeat=2)
-        ),
-        # http/https → data/file/ftp/s3/foo does not redirect
-        *(
-            (
-                f"{input_scheme}://example.com/a",
-                f"{output_scheme}://example.com/b",
-                None,
-            )
-            for input_scheme in ("http", "https")
-            for output_scheme in ("data", "file", "ftp", "s3", "foo")
-        ),
-        # Note: We do not test data/file/ftp/s3 schemes for the initial URL
-        # because their download handlers cannot return a status code of 3xx.
+SCHEME_PARAMS = ("url", "location", "target")
+HTTP_SCHEMES = ("http", "https")
+NON_HTTP_SCHEMES = ("data", "file", "ftp", "s3", "foo")
+REDIRECT_SCHEME_CASES = (
+    # http/https → http/https redirects
+    *(
+        (
+            f"{input_scheme}://example.com/a",
+            f"{output_scheme}://example.com/b",
+            f"{output_scheme}://example.com/b",
+        )
+        for input_scheme, output_scheme in product(HTTP_SCHEMES, repeat=2)
     ),
+    # http/https → data/file/ftp/s3/foo does not redirect
+    *(
+        (
+            f"{input_scheme}://example.com/a",
+            f"{output_scheme}://example.com/b",
+            None,
+        )
+        for input_scheme in HTTP_SCHEMES
+        for output_scheme in NON_HTTP_SCHEMES
+    ),
+    # http/https → relative redirects
+    *(
+        (
+            f"{scheme}://example.com/a",
+            location,
+            f"{scheme}://example.com/b",
+        )
+        for scheme in HTTP_SCHEMES
+        for location in ("//example.com/b", "/b")
+    ),
+    # Note: We do not test data/file/ftp/s3 schemes for the initial URL
+    # because their download handlers cannot return a status code of 3xx.
 )
+
+
+@pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
 def test_redirect_schemes(url, location, target):
     crawler = get_crawler(Spider)
     spider = crawler._create_spider("foo")
@@ -322,6 +335,11 @@ def test_redirect_schemes(url, location, target):
         assert redirect.url == target
 
 
+def meta_refresh_body(url, interval=5):
+    html = f"""<html><head><meta http-equiv="refresh" content="{interval};url={url}"/></head></html>"""
+    return html.encode("utf-8")
+
+
 class MetaRefreshMiddlewareTest(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler(Spider)
@@ -329,8 +347,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url="http://example.org/newpage"):
-        html = f"""<html><head><meta http-equiv="refresh" content="{interval};url={url}"/></head></html>"""
-        return html.encode("utf-8")
+        return meta_refresh_body(url, interval)
 
     def test_priority_adjust(self):
         req = Request("http://a.com")
@@ -455,6 +472,46 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         rsp = HtmlResponse(req.url, body=body.encode())
         response = mw.process_response(req, rsp, self.spider)
         assert isinstance(response, Response)
+
+
+@pytest.mark.parametrize(
+    SCHEME_PARAMS,
+    (
+        *REDIRECT_SCHEME_CASES,
+        # data/file/ftp/s3/foo → * does not redirect
+        *(
+            (
+                f"{input_scheme}://example.com/a",
+                f"{output_scheme}://example.com/b",
+                None,
+            )
+            for input_scheme in NON_HTTP_SCHEMES
+            for output_scheme in chain(HTTP_SCHEMES, NON_HTTP_SCHEMES)
+        ),
+        # data/file/ftp/s3/foo → relative does not redirect
+        *(
+            (
+                f"{scheme}://example.com/a",
+                location,
+                None,
+            )
+            for scheme in NON_HTTP_SCHEMES
+            for location in ("//example.com/b", "/b")
+        ),
+    ),
+)
+def test_meta_refresh_schemes(url, location, target):
+    crawler = get_crawler(Spider)
+    spider = crawler._create_spider("foo")
+    mw = MetaRefreshMiddleware.from_crawler(crawler)
+    request = Request(url)
+    response = HtmlResponse(url, body=meta_refresh_body(location))
+    redirect = mw.process_response(request, response, spider)
+    if target is None:
+        assert redirect == response
+    else:
+        assert isinstance(redirect, Request)
+        assert redirect.url == target
 
 
 if __name__ == "__main__":
