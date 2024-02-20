@@ -108,13 +108,14 @@ class LoadTestCase(unittest.TestCase):
 class FileTestCase(unittest.TestCase):
     def setUp(self):
         # add a special char to check that they are handled correctly
-        _, self.tmpname = mkstemp(suffix="^")
+        self.fd, self.tmpname = mkstemp(suffix="^")
         with open(self.tmpname, "w") as fp:
             fp.write("0123456789")
         self.download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
         self.download_request = self.download_handler.download_request
 
     def tearDown(self):
+        os.close(self.fd)
         os.remove(self.tmpname)
 
     @defer.inlineCallbacks
