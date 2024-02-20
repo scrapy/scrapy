@@ -1,6 +1,9 @@
 import collections.abc
+import logging
+import unittest
 from typing import Optional
 from unittest import mock
+from unittest.mock import Mock, patch
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -544,3 +547,63 @@ class ProcessSpiderExceptionTest(BaseAsyncSpiderMiddlewareTestCase):
     def test_exc_async_simple(self):
         """Async exc mw -> simple output mw; cannot work as downgrading is not supported"""
         return self._test_asyncgen_nodowngrade(self.MW_SIMPLE, self.MW_EXC_ASYNCGEN)
+
+
+class TestProcessSpiderOutput(unittest.TestCase):
+    @patch("scrapy.core.spidermw.MutableAsyncChain")
+    def test_process_spider_output_when_last_result_is_async(
+        self, MockMutableAsyncChainClass
+    ):
+        mock_result = mock.MagicMock(spec=collections.abc.AsyncIterable)
+        mock_recovered = Mock()
+        expected = Mock()
+
+        def side_effect(*args):
+            if len(args) == 0:
+                return mock_recovered
+            elif args == (mock_result, mock_recovered):
+                return expected
+
+        MockMutableAsyncChainClass.side_effect = side_effect
+
+        actual = (
+            SpiderMiddlewareManager()
+            ._process_spider_output(None, None, mock_result)
+            .result
+        )
+
+        self.assertEqual(expected, actual)
+
+    @patch("scrapy.core.spidermw.islice")
+    def test_process_spider_output_logger_not_called_when_downgrade_warning_done(
+        self, islice_mock
+    ):
+        logger = logging.getLogger("scrapy.core.spidermw")
+        with mock.patch.object(logger, "warning") as mock_warning:
+            mock_result = mock.MagicMock(spec=collections.abc.AsyncIterable)
+            mock_method = Mock()
+            mock_method.__qualname__ = "fakeName"
+            islice_mock.return_value = [mock_method]
+            spiderMwManager = SpiderMiddlewareManager()
+            spiderMwManager.downgrade_warning_done = True
+
+            spiderMwManager._process_spider_output(None, None, mock_result)
+
+            mock_warning.assert_not_called()
+
+    @patch("scrapy.core.spidermw.islice")
+    def test_process_spider_output_logger_called_when_downgrade_warning_not_done(
+        self, islice_mock
+    ):
+        logger = logging.getLogger("scrapy.core.spidermw")
+        with mock.patch.object(logger, "warning") as mock_warning:
+            mock_result = mock.MagicMock(spec=collections.abc.AsyncIterable)
+            mock_method = Mock()
+            mock_method.__qualname__ = "fakeName"
+            islice_mock.return_value = [mock_method]
+            spiderMwManager = SpiderMiddlewareManager()
+            spiderMwManager.downgrade_warning_done = False
+
+            spiderMwManager._process_spider_output(None, None, mock_result)
+
+            mock_warning.assert_called_once()
