@@ -7,7 +7,6 @@ from tempfile import mkdtemp, mkstemp
 from typing import Optional, Type
 from unittest import SkipTest, mock
 
-import pytest
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
 from twisted.internet import defer, error, reactor
@@ -109,16 +108,14 @@ class FileTestCase(unittest.TestCase):
     def setUp(self):
         # add a special char to check that they are handled correctly
         self.fd, self.tmpname = mkstemp(suffix="^")
-        with open(self.tmpname, "w") as fp:
-            fp.write("0123456789")
-        self.download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
-        self.download_request = self.download_handler.download_request
+        Path(self.tmpname).write_text("0123456789", encoding="utf-8")
+        handler = build_from_crawler(FileDownloadHandler, get_crawler())
+        self.download_request = handler.download_request
 
     def tearDown(self):
         os.close(self.fd)
         os.remove(self.tmpname)
 
-    @defer.inlineCallbacks
     def test_download(self):
         def _test(response):
             self.assertEqual(response.url, request.url)
@@ -128,13 +125,12 @@ class FileTestCase(unittest.TestCase):
 
         request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
-        yield self.download_request(request, Spider("foo")).addCallback(_test)
+        return self.download_request(request, Spider("foo")).addCallback(_test)
 
-    @defer.inlineCallbacks
     def test_non_existent(self):
         request = Request(path_to_file_uri(mkdtemp()))
-        with pytest.raises(OSError):
-            yield self.download_request(request, Spider("foo"))
+        d = self.download_request(request, Spider("foo"))
+        return self.assertFailure(d, OSError)
 
 
 class ContentLengthHeaderResource(resource.Resource):
