@@ -15,21 +15,21 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: windows-pinned
-        # - python-version: 3.9
-        #   env:
-        #     TOXENV: py
-        # - python-version: "3.10"
-        #   env:
-        #     TOXENV: py
-        # - python-version: "3.11"
-        #   env:
-        #     TOXENV: py
-        # - python-version: "3.12"
-        #   env:
-        #     TOXENV: py
-        # - python-version: "3.12"
-        #   env:
-        #     TOXENV: asyncio
+        - python-version: 3.9
+          env:
+            TOXENV: py
+        - python-version: "3.10"
+          env:
+            TOXENV: py
+        - python-version: "3.11"
+          env:
+            TOXENV: py
+        - python-version: "3.12"
+          env:
+            TOXENV: py
+        - python-version: "3.12"
+          env:
+            TOXENV: asyncio
 
     steps:
     - uses: actions/checkout@v4
@@ -43,4 +43,4 @@ jobs:
       env: ${{ matrix.env }}
       run: |
         pip install -U tox
-        tox -e py -- tests/test_downloader_handlers.py::FileTestCase
+        tox
