@@ -1426,6 +1426,33 @@ class FormRequestTest(RequestTest):
             r = self.request_class.from_response(response)
             self.assertEqual(r.method, expected)
 
+    def test_from_response_get_form_node_parents(self):
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>
+            <form action="post2.php" method="POST">
+            <input type="hidden" name="three" value="3">
+            <input type="hidden" name="four" value="4">
+            </form>
+            <select>
+              <option type="hidden" name="five" value="5">
+            </select>"""
+        )
+        self.assertRaises(ValueError, self.request_class.from_response, response, formxpath="//select/option[@name='five']")
+
+    def test_from_response_get_inputs_throws_valueError(self):
+        response = _buildresponse(
+            b"""<form action="post.php" method="POST">
+            <input type="hidden" name="test" value="val1">
+            <input type="hidden" name="test" value="val2">
+            <input type="hidden" name="test2" value="xxx">
+            </form>""",
+            url="http://www.example.com/this/list.html",
+        )
+        self.assertRaises(ValueError, self.request_class.from_response, response, formdata={()})
+
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault("body", body)
