@@ -3,6 +3,8 @@ from unittest import TestCase
 
 import pytest
 from testfixtures import LogCapture
+from urllib.parse import urlparse #TODO : remove
+from w3lib.url import safe_url_string #TODO : remove
 
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
@@ -83,8 +85,20 @@ class CookiesMiddlewareTest(TestCase):
         response = Response("dummy_response")
         self.assertEqual(response, self.redirect_middleware.process_response(request, response, self.spider))
 
+    def test_response_location_start_with_two_slash (self): #new test 4 
+        request1 = Request("https://scrapytest.org/")
+        response1 = Response("https://example.com", headers={"Location": "//example.com"}, status=302)
 
-    
+        request2 = self.redirect_middleware.process_response(request1, response1, self.spider)
+
+        response2 = Response("https://example.com", headers={"Location": "https://example.com"}, status=302)
+        request3 = self.redirect_middleware.process_response(request1, response2, self.spider)
+        self.assertIsInstance(request2, Request)
+        self.assertIsInstance(request3, Request)
+        self.assertEqual(request2.url, request3.url)
+        self.assertEqual(request2.callback, request3.callback)
+        self.assertEqual(request2.method, request3.method)
+        self.assertEqual(request2.headers, request3.headers)
 
 
     def test_basic(self):
