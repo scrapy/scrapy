@@ -1,47 +1,49 @@
 import re
 from time import time
-from urllib.parse import urlparse, urlunparse, urldefrag
+from typing import Optional, Tuple
+from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
-from twisted.web.http import HTTPClient
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
+from twisted.web.http import HTTPClient
 
+from scrapy import Request
 from scrapy.http import Headers
+from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.responsetypes import responsetypes
 
 
-def _parsed_url_args(parsed):
+def _parsed_url_args(parsed: ParseResult) -> Tuple[bytes, bytes, bytes, int, bytes]:
     # Assume parsed is urlparse-d from Request.url,
     # which was passed via safe_url_string and is ascii-only.
-    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    path = to_bytes(path, encoding="ascii")
+    path_str = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
+    path = to_bytes(path_str, encoding="ascii")
+    assert parsed.hostname is not None
     host = to_bytes(parsed.hostname, encoding="ascii")
     port = parsed.port
     scheme = to_bytes(parsed.scheme, encoding="ascii")
     netloc = to_bytes(parsed.netloc, encoding="ascii")
     if port is None:
-        port = 443 if scheme == b'https' else 80
+        port = 443 if scheme == b"https" else 80
     return scheme, netloc, host, port, path
 
 
-def _parse(url):
-    """ Return tuple of (scheme, netloc, host, port, path),
+def _parse(url: str) -> Tuple[bytes, bytes, bytes, int, bytes]:
+    """Return tuple of (scheme, netloc, host, port, path),
     all in bytes except for port which is int.
     Assume url is from Request.url, which was passed via safe_url_string
     and is ascii-only.
     """
     url = url.strip()
-    if not re.match(r'^\w+://', url):
-        url = '//' + url
+    if not re.match(r"^\w+://", url):
+        url = "//" + url
     parsed = urlparse(url)
     return _parsed_url_args(parsed)
 
 
 class ScrapyHTTPPageGetter(HTTPClient):
-
-    delimiter = b'\n'
+    delimiter = b"\n"
 
     def connectionMade(self):
         self.headers = Headers()  # bucket for response headers
@@ -75,8 +77,8 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.factory.noPage(reason)
 
     def handleResponse(self, response):
-        if self.factory.method.upper() == b'HEAD':
-            self.factory.page(b'')
+        if self.factory.method.upper() == b"HEAD":
+            self.factory.page(b"")
         elif self.length is not None and self.length > 0:
             self.factory.noPage(self._connection_lost_reason)
         else:
@@ -87,20 +89,22 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.transport.loseConnection()
 
         # transport cleanup needed for HTTPS connections
-        if self.factory.url.startswith(b'https'):
+        if self.factory.url.startswith(b"https"):
             self.transport.stopProducing()
 
         self.factory.noPage(
-            defer.TimeoutError(f"Getting {self.factory.url} took longer "
-                               f"than {self.factory.timeout} seconds."))
+            defer.TimeoutError(
+                f"Getting {self.factory.url} took longer "
+                f"than {self.factory.timeout} seconds."
+            )
+        )
 
 
 # This class used to inherit from Twisted’s
 # twisted.web.client.HTTPClientFactory. When that class was deprecated in
 # Twisted (https://github.com/twisted/twisted/pull/643), we merged its
-# non-overriden code into this class.
+# non-overridden code into this class.
 class ScrapyHTTPClientFactory(ClientFactory):
-
     protocol = ScrapyHTTPPageGetter
 
     waiting = 1
@@ -109,31 +113,41 @@ class ScrapyHTTPClientFactory(ClientFactory):
     afterFoundGet = False
 
     def _build_response(self, body, request):
-        request.meta['download_latency'] = self.headers_time - self.start_time
+        request.meta["download_latency"] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
-        respcls = responsetypes.from_args(headers=headers, url=self._url)
-        return respcls(url=self._url, status=status, headers=headers, body=body, protocol=to_unicode(self.version))
+        respcls = responsetypes.from_args(headers=headers, url=self._url, body=body)
+        return respcls(
+            url=self._url,
+            status=status,
+            headers=headers,
+            body=body,
+            protocol=to_unicode(self.version),
+        )
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
-        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(parsed)
-        proxy = request.meta.get('proxy')
+        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(
+            parsed
+        )
+        proxy = request.meta.get("proxy")
         if proxy:
             self.scheme, _, self.host, self.port, _ = _parse(proxy)
             self.path = self.url
 
-    def __init__(self, request, timeout=180):
-        self._url = urldefrag(request.url)[0]
+    def __init__(self, request: Request, timeout: float = 180):
+        self._url: str = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
-        self.url = to_bytes(self._url, encoding='ascii')
-        self.method = to_bytes(request.method, encoding='ascii')
-        self.body = request.body or None
-        self.headers = Headers(request.headers)
-        self.response_headers = None
-        self.timeout = request.meta.get('download_timeout') or timeout
-        self.start_time = time()
-        self.deferred = defer.Deferred().addCallback(self._build_response, request)
+        self.url: bytes = to_bytes(self._url, encoding="ascii")
+        self.method: bytes = to_bytes(request.method, encoding="ascii")
+        self.body: Optional[bytes] = request.body or None
+        self.headers: Headers = Headers(request.headers)
+        self.response_headers: Optional[Headers] = None
+        self.timeout: float = request.meta.get("download_timeout") or timeout
+        self.start_time: float = time()
+        self.deferred: defer.Deferred = defer.Deferred().addCallback(
+            self._build_response, request
+        )
 
         # Fixes Twisted 11.1.0+ support as HTTPClientFactory is expected
         # to have _disconnectedDeferred. See Twisted r32329.
@@ -141,24 +155,24 @@ class ScrapyHTTPClientFactory(ClientFactory):
         # needed to add the callback _waitForDisconnect.
         # Specifically this avoids the AttributeError exception when
         # clientConnectionFailed method is called.
-        self._disconnectedDeferred = defer.Deferred()
+        self._disconnectedDeferred: defer.Deferred = defer.Deferred()
 
         self._set_connection_attributes(request)
 
         # set Host header based on url
-        self.headers.setdefault('Host', self.netloc)
+        self.headers.setdefault("Host", self.netloc)
 
         # set Content-Length based len of body
         if self.body is not None:
-            self.headers['Content-Length'] = len(self.body)
+            self.headers["Content-Length"] = len(self.body)
             # just in case a broken http/1.1 decides to keep connection alive
             self.headers.setdefault("Connection", "close")
         # Content-Length must be specified in POST method even with no body
-        elif self.method == b'POST':
-            self.headers['Content-Length'] = 0
+        elif self.method == b"POST":
+            self.headers["Content-Length"] = 0
 
-    def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.url}>"
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {self._url}>"
 
     def _cancelTimeout(self, result, timeoutCall):
         if timeoutCall.active():
@@ -171,6 +185,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         p.afterFoundGet = self.afterFoundGet
         if self.timeout:
             from twisted.internet import reactor
+
             timeoutCall = reactor.callLater(self.timeout, p.timeout)
             self.deferred.addBoth(self._cancelTimeout, timeoutCall)
         return p
@@ -185,7 +200,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         @param version: The HTTP version.
         @type version: L{bytes}
         @param status: The HTTP status code, an integer represented as a
-            bytestring.
+        bytestring.
         @type status: L{bytes}
         @param message: The HTTP status message.
         @type message: L{bytes}

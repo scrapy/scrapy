@@ -1,0 +1,24 @@
+repos:
+- repo: https://github.com/PyCQA/bandit
+  rev: 1.7.5
+  hooks:
+  - id: bandit
+    args: [-r, -c, .bandit.yml]
+- repo: https://github.com/PyCQA/flake8
+  rev: 6.1.0
+  hooks:
+  - id: flake8
+- repo: https://github.com/psf/black.git
+  rev: 23.9.1
+  hooks:
+  - id: black
+- repo: https://github.com/pycqa/isort
+  rev: 5.12.0
+  hooks:
+  - id: isort
+- repo: https://github.com/adamchainz/blacken-docs
+  rev: 1.16.0
+  hooks:
+  - id: blacken-docs
+    additional_dependencies:
+    - black==23.9.1
