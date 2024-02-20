@@ -2,7 +2,6 @@ import logging
 from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
@@ -15,6 +14,7 @@ from twisted.web.client import ResponseFailed
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
@@ -185,7 +185,7 @@ class Stream:
 
     def check_request_url(self) -> bool:
         # Make sure that we are sending the request to the correct URL
-        url = urlparse(self._request.url)
+        url = urlparse_cached(self._request)
         return (
             url.netloc == str(self._protocol.metadata["uri"].host, "utf-8")
             or url.netloc == str(self._protocol.metadata["uri"].netloc, "utf-8")
@@ -194,7 +194,7 @@ class Stream:
         )
 
     def _get_request_headers(self) -> List[Tuple[str, str]]:
-        url = urlparse(self._request.url)
+        url = urlparse_cached(self._request)
 
         path = url.path
         if url.query:

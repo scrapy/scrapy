@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any, List, Union, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
@@ -125,7 +125,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         assert response.headers["Location"] is not None
         location = safe_url_string(response.headers["Location"])
         if response.headers["Location"].startswith(b"//"):
-            request_scheme = urlparse(request.url).scheme
+            request_scheme = urlparse_cached(request).scheme
             location = request_scheme + "://" + location.lstrip("/")
 
         redirected_url = urljoin(request.url, location)
