@@ -1,3 +1,8 @@
+import sys
+from io import StringIO
+from unittest.mock import Mock, PropertyMock, patch
+
+from scrapy.commands.check import Command
 from tests.test_commands import CommandTest
 
 
@@ -94,3 +99,53 @@ class CheckSpider(scrapy.Spider):
             raise Exception('SCRAPY_CHECK not set')
         """
         self._test_contract(parse_def=parse_def)
+
+    @patch("scrapy.commands.check.ContractsManager")
+    def test_run_with_opts_list_prints_spider(self, cm_cls_mock):
+        output = StringIO()
+        sys.stdout = output
+        cmd = Command()
+        cmd.settings = Mock(getwithbase=Mock(return_value={}))
+        cm_cls_mock.return_value = cm_mock = Mock()
+        spider_loader_mock = Mock()
+        cmd.crawler_process = Mock(spider_loader=spider_loader_mock)
+        spider_name = "FakeSpider"
+        spider_cls_mock = Mock()
+        type(spider_cls_mock).name = PropertyMock(return_value=spider_name)
+        spider_loader_mock.load.side_effect = lambda x: {spider_name: spider_cls_mock}[
+            x
+        ]
+        tested_methods = ["fakeMethod1", "fakeMethod2"]
+        cm_mock.tested_methods_from_spidercls.side_effect = lambda x: {
+            spider_cls_mock: tested_methods
+        }[x]
+
+        cmd.run([spider_name], Mock(list=True))
+
+        self.assertEqual(
+            "FakeSpider\n  * fakeMethod1\n  * fakeMethod2\n", output.getvalue()
+        )
+        sys.stdout = sys.__stdout__
+
+    @patch("scrapy.commands.check.ContractsManager")
+    def test_run_without_opts_list_does_not_crawl_spider_with_no_tested_methods(
+        self, cm_cls_mock
+    ):
+        cmd = Command()
+        cmd.settings = Mock(getwithbase=Mock(return_value={}))
+        cm_cls_mock.return_value = cm_mock = Mock()
+        spider_loader_mock = Mock()
+        cmd.crawler_process = Mock(spider_loader=spider_loader_mock)
+        spider_name = "FakeSpider"
+        spider_cls_mock = Mock()
+        spider_loader_mock.load.side_effect = lambda x: {spider_name: spider_cls_mock}[
+            x
+        ]
+        tested_methods = []
+        cm_mock.tested_methods_from_spidercls.side_effect = lambda x: {
+            spider_cls_mock: tested_methods
+        }[x]
+
+        cmd.run([spider_name], Mock(list=False))
+
+        cmd.crawler_process.crawl.assert_not_called()
