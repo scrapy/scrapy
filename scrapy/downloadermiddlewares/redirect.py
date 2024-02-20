@@ -110,6 +110,8 @@ class RedirectMiddleware(BaseRedirectMiddleware):
             location = request_scheme + "://" + location.lstrip("/")
 
         redirected_url = urljoin(request.url, location)
+        if urlparse(redirected_url).scheme not in {"http", "https"}:
+            return response
 
         if response.status in (301, 307, 308) or request.method == "HEAD":
             redirected = _build_redirect_request(request, url=redirected_url)

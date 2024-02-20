@@ -1,4 +1,7 @@
 import unittest
+from itertools import product
+
+import pytest
 
 from scrapy.downloadermiddlewares.redirect import (
     MetaRefreshMiddleware,
@@ -277,6 +280,46 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(
             safe_headers, external_redirect_request.headers.to_unicode_dict()
         )
+
+
+@pytest.mark.parametrize(
+    ("url", "location", "target"),
+    (
+        # http/https → http/https redirects
+        *(
+            (
+                f"{input_scheme}://example.com/a",
+                f"{output_scheme}://example.com/b",
+                f"{output_scheme}://example.com/b",
+            )
+            for input_scheme, output_scheme in product(("http", "https"), repeat=2)
+        ),
+        # http/https → data/file/ftp/s3/foo does not redirect
+        *(
+            (
+                f"{input_scheme}://example.com/a",
+                f"{output_scheme}://example.com/b",
+                None,
+            )
+            for input_scheme in ("http", "https")
+            for output_scheme in ("data", "file", "ftp", "s3", "foo")
+        ),
+        # Note: We do not test data/file/ftp/s3 schemes for the initial URL
+        # because their download handlers cannot return a status code of 3xx.
+    ),
+)
+def test_redirect_schemes(url, location, target):
+    crawler = get_crawler(Spider)
+    spider = crawler._create_spider("foo")
+    mw = RedirectMiddleware.from_crawler(crawler)
+    request = Request(url)
+    response = Response(url, headers={"Location": location}, status=301)
+    redirect = mw.process_response(request, response, spider)
+    if target is None:
+        assert redirect == response
+    else:
+        assert isinstance(redirect, Request)
+        assert redirect.url == target
 
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
