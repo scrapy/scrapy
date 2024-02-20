@@ -1,16 +1,17 @@
 import unittest
-import warnings
 from pathlib import Path
+from time import process_time
 from urllib.parse import urlparse
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+import pytest
+
 from scrapy.http import HtmlResponse, Response, TextResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
+    _remove_html_comments,
     get_base_url,
     get_meta_refresh,
     open_in_browser,
-    response_httprepr,
     response_status_message,
 )
 
@@ -19,35 +20,6 @@ __doctests__ = ["scrapy.utils.response"]
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")
-
-    def test_response_httprepr(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-
-            r1 = Response("http://www.example.com")
-            self.assertEqual(response_httprepr(r1), b"HTTP/1.1 200 OK\r\n\r\n")
-
-            r1 = Response(
-                "http://www.example.com",
-                status=404,
-                headers={"Content-type": "text/html"},
-                body=b"Some body",
-            )
-            self.assertEqual(
-                response_httprepr(r1),
-                b"HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body",
-            )
-
-            r1 = Response(
-                "http://www.example.com",
-                status=6666,
-                headers={"Content-type": "text/html"},
-                body=b"Some body",
-            )
-            self.assertEqual(
-                response_httprepr(r1),
-                b"HTTP/1.1 6666 \r\nContent-Type: text/html\r\n\r\nSome body",
-            )
 
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"
@@ -198,3 +170,76 @@ class ResponseUtilsTest(unittest.TestCase):
         assert open_in_browser(
             r5, _openfunc=check_base_url
         ), "Inject unique base url with conditional comment"
+
+    def test_open_in_browser_redos_comment(self):
+        MAX_CPU_TIME = 0.02
+
+        # Exploit input from
+        # https://makenowjust-labs.github.io/recheck/playground/
+        # for /<!--.*?-->/ (old pattern to remove comments).
+        body = b"-><!--\x00" * 25_000 + b"->\n<!---->"
+
+        response = HtmlResponse("https://example.com", body=body)
+
+        start_time = process_time()
+
+        open_in_browser(response, lambda url: True)
+
+        end_time = process_time()
+        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+
+    def test_open_in_browser_redos_head(self):
+        MAX_CPU_TIME = 0.02
+
+        # Exploit input from
+        # https://makenowjust-labs.github.io/recheck/playground/
+        # for /(<head(?:>|\s.*?>))/ (old pattern to find the head element).
+        body = b"<head\t" * 8_000
+
+        response = HtmlResponse("https://example.com", body=body)
+
+        start_time = process_time()
+
+        open_in_browser(response, lambda url: True)
+
+        end_time = process_time()
+        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+
+
+@pytest.mark.parametrize(
+    "input_body,output_body",
+    (
+        (
+            b"a<!--",
+            b"a",
+        ),
+        (
+            b"a<!---->b",
+            b"ab",
+        ),
+        (
+            b"a<!--b-->c",
+            b"ac",
+        ),
+        (
+            b"a<!--b-->c<!--",
+            b"ac",
+        ),
+        (
+            b"a<!--b-->c<!--d",
+            b"ac",
+        ),
+        (
+            b"a<!--b-->c<!---->d",
+            b"acd",
+        ),
+        (
+            b"a<!--b--><!--c-->d",
+            b"ad",
+        ),
+    ),
+)
+def test_remove_html_comments(input_body, output_body):
+    assert (
+        _remove_html_comments(input_body) == output_body
+    ), f"{_remove_html_comments(input_body)=} == {output_body=}"

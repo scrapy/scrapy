@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from typing import Optional, Set
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -8,6 +9,7 @@ from w3lib.url import add_or_replace_parameter
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.misc import load_object
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
 
@@ -54,7 +56,7 @@ class FileDownloadCrawlTestCase(TestCase):
     store_setting_key = "FILES_STORE"
     media_key = "files"
     media_urls_key = "file_urls"
-    expected_checksums = {
+    expected_checksums: Optional[Set[str]] = {
         "5547178b89448faf0015a13f904c936e",
         "c2281c83670e31d8aaab7cb642b824db",
         "ed3f6538dc15d4d9179dae57319edc5f",
@@ -192,7 +194,31 @@ class FileDownloadCrawlTestCase(TestCase):
             crawler.stats.get_value("downloader/response_status_count/302"), 3
         )
 
+    @defer.inlineCallbacks
+    def test_download_media_file_path_error(self):
+        cls = load_object(self.pipeline_class)
 
+        class ExceptionRaisingMediaPipeline(cls):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return 1 / 0
+
+        settings = {
+            **self.settings,
+            "ITEM_PIPELINES": {ExceptionRaisingMediaPipeline: 1},
+        }
+        runner = CrawlerRunner(settings)
+        crawler = self._create_crawler(MediaDownloadSpider, runner=runner)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+                mockserver=self.mockserver,
+            )
+        self.assertIn("ZeroDivisionError", str(log))
+
+
+skip_pillow: Optional[str]
 try:
     from PIL import Image  # noqa: imported just to check for the import error
 except ImportError:

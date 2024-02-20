@@ -21,17 +21,13 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Pattern,
     Union,
     cast,
 )
 
-from w3lib.html import replace_entities
-
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
-from scrapy.utils.python import flatten, to_unicode
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -108,39 +104,6 @@ def walk_modules(path: str) -> List[ModuleType]:
     return mods
 
 
-def extract_regex(
-    regex: Union[str, Pattern], text: str, encoding: str = "utf-8"
-) -> List[str]:
-    """Extract a list of unicode strings from the given text/encoding using the following policies:
-
-    * if the regex contains a named group called "extract" that will be returned
-    * if the regex contains multiple numbered groups, all those will be returned (flattened)
-    * if the regex doesn't contain any group the entire regex matching is returned
-    """
-    warnings.warn(
-        "scrapy.utils.misc.extract_regex has moved to parsel.utils.extract_regex.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-
-    if isinstance(regex, str):
-        regex = re.compile(regex, re.UNICODE)
-
-    try:
-        # named group
-        strings = [regex.search(text).group("extract")]  # type: ignore[union-attr]
-    except Exception:
-        # full regex or numbered groups
-        strings = regex.findall(text)
-    strings = flatten(strings)
-
-    if isinstance(text, str):
-        return [replace_entities(s, keep=["lt", "amp"]) for s in strings]
-    return [
-        replace_entities(to_unicode(s, encoding), keep=["lt", "amp"]) for s in strings
-    ]
-
-
 def md5sum(file: IO) -> str:
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
@@ -180,6 +143,13 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
        Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
        extension has not been implemented correctly).
     """
+    warnings.warn(
+        "The create_instance() function is deprecated. "
+        "Please use build_from_crawler() or build_from_settings() instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     if settings is None:
         if crawler is None:
             raise ValueError("Specify at least one of settings and crawler.")
@@ -188,6 +158,45 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         instance = objcls.from_crawler(crawler, *args, **kwargs)
         method_name = "from_crawler"
     elif hasattr(objcls, "from_settings"):
+        instance = objcls.from_settings(settings, *args, **kwargs)
+        method_name = "from_settings"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+    return instance
+
+
+def build_from_crawler(objcls, crawler, /, *args, **kwargs):
+    """Construct a class instance using its ``from_crawler`` constructor.
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
+
+    Raises ``TypeError`` if the resulting instance is ``None``.
+    """
+    if hasattr(objcls, "from_crawler"):
+        instance = objcls.from_crawler(crawler, *args, **kwargs)
+        method_name = "from_crawler"
+    elif hasattr(objcls, "from_settings"):
+        instance = objcls.from_settings(crawler.settings, *args, **kwargs)
+        method_name = "from_settings"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+    return instance
+
+
+def build_from_settings(objcls, settings, /, *args, **kwargs):
+    """Construct a class instance using its ``from_settings`` constructor.
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
+
+    Raises ``TypeError`` if the resulting instance is ``None``.
+    """
+    if hasattr(objcls, "from_settings"):
         instance = objcls.from_settings(settings, *args, **kwargs)
         method_name = "from_settings"
     else:

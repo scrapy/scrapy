@@ -29,7 +29,7 @@ from scrapy.http import Headers, HtmlResponse, Request
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
-from scrapy.utils.misc import create_instance
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, skip_if_no_boto
 from tests import NON_EXISTING_RESOLVABLE
@@ -109,7 +109,7 @@ class FileTestCase(unittest.TestCase):
         # add a special char to check that they are handled correctly
         self.tmpname = Path(self.mktemp() + "^")
         Path(self.tmpname).write_text("0123456789", encoding="utf-8")
-        handler = create_instance(FileDownloadHandler, None, get_crawler())
+        handler = build_from_crawler(FileDownloadHandler, get_crawler())
         self.download_request = handler.download_request
 
     def tearDown(self):
@@ -127,7 +127,7 @@ class FileTestCase(unittest.TestCase):
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request(f"file://{self.mktemp()}")
+        request = Request(path_to_file_uri(self.mktemp()))
         d = self.download_request(request, Spider("foo"))
         return self.assertFailure(d, OSError)
 
@@ -257,8 +257,8 @@ class HttpTestCase(unittest.TestCase):
         else:
             self.port = reactor.listenTCP(0, self.wrapper, interface=self.host)
         self.portno = self.port.getHost().port
-        self.download_handler = create_instance(
-            self.download_handler_cls, None, get_crawler()
+        self.download_handler = build_from_crawler(
+            self.download_handler_cls, get_crawler()
         )
         self.download_request = self.download_handler.download_request
 
@@ -557,7 +557,7 @@ class Http11TestCase(HttpTestCase):
 
     def test_download_broken_content_allow_data_loss_via_setting(self, url="broken"):
         crawler = get_crawler(settings_dict={"DOWNLOAD_FAIL_ON_DATALOSS": False})
-        download_handler = create_instance(self.download_handler_cls, None, crawler)
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
         request = Request(self.getURL(url))
         d = download_handler.download_request(request, Spider("foo"))
         d.addCallback(lambda r: r.flags)
@@ -590,7 +590,7 @@ class Https11TestCase(Http11TestCase):
         crawler = get_crawler(
             settings_dict={"DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING": True}
         )
-        download_handler = create_instance(self.download_handler_cls, None, crawler)
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
         try:
             with LogCapture() as log_capture:
                 request = Request(self.getURL("file"))
@@ -669,9 +669,7 @@ class Https11CustomCiphers(unittest.TestCase):
         crawler = get_crawler(
             settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": "CAMELLIA256-SHA"}
         )
-        self.download_handler = create_instance(
-            self.download_handler_cls, None, crawler
-        )
+        self.download_handler = build_from_crawler(self.download_handler_cls, crawler)
         self.download_request = self.download_handler.download_request
 
     @defer.inlineCallbacks
@@ -726,33 +724,6 @@ class Http11MockServerTestCase(unittest.TestCase):
         reason = crawler.spider.meta["close_reason"]
         self.assertTrue(reason, "finished")
 
-    @defer.inlineCallbacks
-    def test_download_gzip_response(self):
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        body = b"1" * 100  # PayloadResource requires body length to be 100
-        request = Request(
-            self.mockserver.url("/payload"),
-            method="POST",
-            body=body,
-            meta={"download_maxsize": 50},
-        )
-        yield crawler.crawl(seed=request)
-        failure = crawler.spider.meta["failure"]
-        # download_maxsize < 100, hence the CancelledError
-        self.assertIsInstance(failure.value, defer.CancelledError)
-
-        # See issue https://twistedmatrix.com/trac/ticket/8175
-        raise unittest.SkipTest("xpayload fails on PY3")
-        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        request.headers.setdefault(b"Accept-Encoding", b"gzip,deflate")
-        request = request.replace(url=self.mockserver.url("/xpayload"))
-        yield crawler.crawl(seed=request)
-        # download_maxsize = 50 is enough for the gzipped response
-        failure = crawler.spider.meta.get("failure")
-        self.assertIsNone(failure)
-        reason = crawler.spider.meta["close_reason"]
-        self.assertTrue(reason, "finished")
-
 
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
@@ -778,8 +749,8 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface="127.0.0.1")
         self.portno = self.port.getHost().port
-        self.download_handler = create_instance(
-            self.download_handler_cls, None, get_crawler()
+        self.download_handler = build_from_crawler(
+            self.download_handler_cls, get_crawler()
         )
         self.download_request = self.download_handler.download_request
 
@@ -857,10 +828,9 @@ class S3AnonTestCase(unittest.TestCase):
     def setUp(self):
         skip_if_no_boto()
         crawler = get_crawler()
-        self.s3reqh = create_instance(
-            objcls=S3DownloadHandler,
-            settings=None,
-            crawler=crawler,
+        self.s3reqh = build_from_crawler(
+            S3DownloadHandler,
+            crawler,
             httpdownloadhandler=HttpDownloadHandlerMock,
             # anon=True, # implicit
         )
@@ -888,10 +858,9 @@ class S3TestCase(unittest.TestCase):
     def setUp(self):
         skip_if_no_boto()
         crawler = get_crawler()
-        s3reqh = create_instance(
-            objcls=S3DownloadHandler,
-            settings=None,
-            crawler=crawler,
+        s3reqh = build_from_crawler(
+            S3DownloadHandler,
+            crawler,
             aws_access_key_id=self.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
             httpdownloadhandler=HttpDownloadHandlerMock,
@@ -916,10 +885,9 @@ class S3TestCase(unittest.TestCase):
     def test_extra_kw(self):
         try:
             crawler = get_crawler()
-            create_instance(
-                objcls=S3DownloadHandler,
-                settings=None,
-                crawler=crawler,
+            build_from_crawler(
+                S3DownloadHandler,
+                crawler,
                 extra_kw=True,
             )
         except Exception as e:
@@ -1066,9 +1034,7 @@ class BaseFTPTestCase(unittest.TestCase):
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
-        self.download_handler = create_instance(
-            FTPDownloadHandler, crawler.settings, crawler
-        )
+        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1212,9 +1178,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
-        self.download_handler = create_instance(
-            FTPDownloadHandler, crawler.settings, crawler
-        )
+        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
         self.addCleanup(self.port.stopListening)
 
     def tearDown(self):
@@ -1224,9 +1188,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
 class DataURITestCase(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler()
-        self.download_handler = create_instance(
-            DataURIDownloadHandler, crawler.settings, crawler
-        )
+        self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
         self.download_request = self.download_handler.download_request
         self.spider = Spider("foo")
 

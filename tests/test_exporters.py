@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import datetime
 from io import BytesIO
+from typing import Any
 
 import lxml.etree
 from itemadapter import ItemAdapter
@@ -53,8 +54,8 @@ class CustomFieldDataclass:
 
 
 class BaseItemExporterTest(unittest.TestCase):
-    item_class = TestItem
-    custom_field_item_class = CustomFieldItem
+    item_class: type = TestItem
+    custom_field_item_class: type = CustomFieldItem
 
     def setUp(self):
         self.i = self.item_class(name="John\xa3", age="22")
@@ -517,7 +518,7 @@ class XmlItemExporterDataclassTest(XmlItemExporterTest):
 
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
-    _expected_nested = {
+    _expected_nested: Any = {
         "name": "Jesus",
         "age": {"name": "Maria", "age": {"name": "Joseph", "age": "22"}},
     }
@@ -665,7 +666,7 @@ class JsonItemExporterDataclassTest(JsonItemExporterTest):
 
 
 class CustomExporterItemTest(unittest.TestCase):
-    item_class = TestItem
+    item_class: type = TestItem
 
     def setUp(self):
         if self.item_class is None:

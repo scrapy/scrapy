@@ -8,6 +8,8 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
+from os import PathLike
+from typing import Dict, Tuple, Union
 
 from itemadapter import ItemAdapter
 
@@ -48,11 +50,13 @@ class ImagesPipeline(FilesPipeline):
     MIN_WIDTH = 0
     MIN_HEIGHT = 0
     EXPIRES = 90
-    THUMBS = {}
+    THUMBS: Dict[str, Tuple[int, int]] = {}
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
-    def __init__(self, store_uri, download_func=None, settings=None):
+    def __init__(
+        self, store_uri: Union[str, PathLike], download_func=None, settings=None
+    ):
         try:
             from PIL import Image
 

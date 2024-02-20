@@ -3,6 +3,7 @@ import re
 import unittest
 import warnings
 import xmlrpc.client
+from typing import Any, Dict, List
 from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes, urlparse
 
@@ -21,8 +22,8 @@ from scrapy.utils.python import to_bytes, to_unicode
 class RequestTest(unittest.TestCase):
     request_class = Request
     default_method = "GET"
-    default_headers = {}
-    default_meta = {}
+    default_headers: Dict[bytes, List[bytes]] = {}
+    default_meta: Dict[str, Any] = {}
 
     def test_init(self):
         # Request requires url in the __init__ method

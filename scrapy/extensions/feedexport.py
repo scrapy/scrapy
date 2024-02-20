@@ -28,8 +28,8 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import create_instance, load_object
-from scrapy.utils.python import get_func_args, without_none_values
+from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import without_none_values
 
 logger = logging.getLogger(__name__)
 
@@ -42,17 +42,7 @@ except ImportError:
 
 
 def build_storage(builder, uri, *args, feed_options=None, preargs=(), **kwargs):
-    argument_names = get_func_args(builder)
-    if "feed_options" in argument_names:
-        kwargs["feed_options"] = feed_options
-    else:
-        warnings.warn(
-            f"{builder.__qualname__} does not support the 'feed_options' keyword argument. Add a "
-            "'feed_options' parameter to its signature to remove this "
-            "warning. This parameter will become mandatory in a future "
-            "version of Scrapy.",
-            category=ScrapyDeprecationWarning,
-        )
+    kwargs["feed_options"] = feed_options
     return builder(*preargs, uri, *args, **kwargs)
 
 
@@ -381,7 +371,7 @@ class FeedSlot:
             self._exporting = True
 
     def _get_instance(self, objcls, *args, **kwargs):
-        return create_instance(objcls, self.settings, self.crawler, *args, **kwargs)
+        return build_from_crawler(objcls, self.crawler, *args, **kwargs)
 
     def _get_exporter(self, file, format, *args, **kwargs):
         return self._get_instance(self.exporters[format], file, *args, **kwargs)

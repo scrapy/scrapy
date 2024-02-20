@@ -14,7 +14,6 @@ from w3lib import html
 
 import scrapy
 from scrapy.http.response import Response
-from scrapy.utils.decorators import deprecated
 from scrapy.utils.python import to_bytes, to_unicode
 
 _baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
@@ -55,23 +54,16 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     return f"{status_int} {to_unicode(message)}"
 
 
-@deprecated
-def response_httprepr(response: Response) -> bytes:
-    """Return raw HTTP representation (as bytes) of the given response. This
-    is provided only for reference, since it's not the exact stream of bytes
-    that was received (that's not exposed by Twisted).
-    """
-    values = [
-        b"HTTP/1.1 ",
-        to_bytes(str(response.status)),
-        b" ",
-        to_bytes(http.RESPONSES.get(response.status, b"")),
-        b"\r\n",
-    ]
-    if response.headers:
-        values.extend([response.headers.to_string(), b"\r\n"])
-    values.extend([b"\r\n", response.body])
-    return b"".join(values)
+def _remove_html_comments(body):
+    start = body.find(b"<!--")
+    while start != -1:
+        end = body.find(b"-->", start + 1)
+        if end == -1:
+            return body[:start]
+        else:
+            body = body[:start] + body[end + 3 :]
+            start = body.find(b"<!--")
+    return body
 
 
 def open_in_browser(
@@ -81,8 +73,21 @@ def open_in_browser(
     ],
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
-    """Open the given response in a local web browser, populating the <base>
-    tag for external links to work
+    """Open *response* in a local web browser, adjusting the `base tag`_ for
+    external links to work, e.g. so that images and styles are displayed.
+
+    .. _base tag: https://www.w3schools.com/tags/tag_base.asp
+
+    For example:
+
+    .. code-block:: python
+
+        from scrapy.utils.response import open_in_browser
+
+
+        def parse_details(self, response):
+            if "item name" not in response.body:
+                open_in_browser(response)
     """
     from scrapy.http import HtmlResponse, TextResponse
 
@@ -90,9 +95,9 @@ def open_in_browser(
     body = response.body
     if isinstance(response, HtmlResponse):
         if b"<base" not in body:
-            repl = rf'\1<base href="{response.url}">'
-            body = re.sub(b"<!--.*?-->", b"", body, flags=re.DOTALL)
-            body = re.sub(rb"(<head(?:>|\s.*?>))", to_bytes(repl), body)
+            _remove_html_comments(body)
+            repl = rf'\0<base href="{response.url}">'
+            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"

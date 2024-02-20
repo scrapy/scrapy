@@ -1,11 +1,16 @@
+import os
+import sys
+from io import BytesIO
 from pathlib import Path
 
+from pexpect.popen_spawn import PopenSpawn
 from twisted.internet import defer
 from twisted.trial import unittest
 
 from scrapy.utils.testproc import ProcessTest
 from scrapy.utils.testsite import SiteTest
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
+from tests.mockserver import MockServer
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
@@ -133,3 +138,27 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         args = ["-c", code, "--set", f"TWISTED_REACTOR={reactor_path}"]
         _, _, err = yield self.execute(args, check_code=True)
         self.assertNotIn(b"RuntimeError: There is no current event loop in thread", err)
+
+
+class InteractiveShellTest(unittest.TestCase):
+    def test_fetch(self):
+        args = (
+            sys.executable,
+            "-m",
+            "scrapy.cmdline",
+            "shell",
+        )
+        env = os.environ.copy()
+        env["SCRAPY_PYTHON_SHELL"] = "python"
+        logfile = BytesIO()
+        p = PopenSpawn(args, env=env, timeout=5)
+        p.logfile_read = logfile
+        p.expect_exact("Available Scrapy objects")
+        with MockServer() as mockserver:
+            p.sendline(f"fetch('{mockserver.url('/')}')")
+            p.sendline("type(response)")
+            p.expect_exact("HtmlResponse")
+        p.sendeof()
+        p.wait()
+        logfile.seek(0)
+        self.assertNotIn("Traceback", logfile.read().decode())

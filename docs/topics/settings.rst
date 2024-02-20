@@ -98,7 +98,7 @@ and settings set there should use the "spider" priority explicitly:
             super().update_settings(settings)
             settings.set("SOME_SETTING", "some value", priority="spider")
 
-.. versionadded:: VERSION
+.. versionadded:: 2.11
 
 It's also possible to modify the settings in the
 :meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
@@ -873,40 +873,42 @@ The amount of time (in secs) that the downloader will wait before timing out.
     Request.meta key.
 
 .. setting:: DOWNLOAD_MAXSIZE
+.. reqmeta:: download_maxsize
 
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: ``1073741824`` (1024MB)
+Default: ``1073741824`` (1 GiB)
 
-The maximum response size (in bytes) that downloader will download.
+The maximum response body size (in bytes) allowed. Bigger responses are
+aborted and ignored.
 
-If you want to disable it set to 0.
+This applies both before and after compression. If decompressing a response
+body would exceed this limit, decompression is aborted and the response is
+ignored.
 
-.. reqmeta:: download_maxsize
+Use ``0`` to disable this limit.
 
-.. note::
-
-    This size can be set per spider using :attr:`download_maxsize`
-    spider attribute and per-request using :reqmeta:`download_maxsize`
-    Request.meta key.
+This limit can be set per spider using the :attr:`download_maxsize` spider
+attribute and per request using the :reqmeta:`download_maxsize` Request.meta
+key.
 
 .. setting:: DOWNLOAD_WARNSIZE
+.. reqmeta:: download_warnsize
 
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: ``33554432`` (32MB)
+Default: ``33554432`` (32 MiB)
 
-The response size (in bytes) that downloader will start to warn.
+If the size of a response exceeds this value, before or after compression, a
+warning will be logged about it.
 
-If you want to disable it set to 0.
+Use ``0`` to disable this limit.
 
-.. note::
-
-    This size can be set per spider using :attr:`download_warnsize`
-    spider attribute and per-request using :reqmeta:`download_warnsize`
-    Request.meta key.
+This limit can be set per spider using the :attr:`download_warnsize` spider
+attribute and per request using the :reqmeta:`download_warnsize` Request.meta
+key.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -1120,7 +1122,7 @@ modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 JOBDIR
 ------
 
-Default: ``''``
+Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.

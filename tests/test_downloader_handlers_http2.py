@@ -11,7 +11,7 @@ from twisted.web.http import H2_ENABLED
 
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.misc import create_instance
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver import ssl_context_factory
 from tests.test_downloader_handlers import (
@@ -240,8 +240,8 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
             interface=self.host,
         )
         self.portno = self.port.getHost().port
-        self.download_handler = create_instance(
-            self.download_handler_cls, None, get_crawler()
+        self.download_handler = build_from_crawler(
+            self.download_handler_cls, get_crawler()
         )
         self.download_request = self.download_handler.download_request
 

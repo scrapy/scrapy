@@ -1,10 +1,20 @@
+from __future__ import annotations
+
 import logging
 import re
+from typing import TYPE_CHECKING, Union
 
 from w3lib import html
 
+from scrapy import Request, Spider
+from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import HtmlResponse
+from scrapy.http import HtmlResponse, Response
+from scrapy.settings import BaseSettings
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +25,7 @@ class AjaxCrawlMiddleware:
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings: BaseSettings):
         if not settings.getbool("AJAXCRAWL_ENABLED"):
             raise NotConfigured
 
@@ -23,13 +33,15 @@ class AjaxCrawlMiddleware:
         # middleware parses first 4k. 4k turns out to be insufficient
         # for this middleware, and parsing 100k could be slow.
         # We use something in between (32K) by default.
-        self.lookup_bytes = settings.getint("AJAXCRAWL_MAXSIZE", 32768)
+        self.lookup_bytes: int = settings.getint("AJAXCRAWL_MAXSIZE", 32768)
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings)
 
-    def process_response(self, request, response, spider):
+    def process_response(
+        self, request: Request, response: Response, spider: Spider
+    ) -> Union[Request, Response]:
         if not isinstance(response, HtmlResponse) or response.status != 200:
             return response
 
@@ -54,7 +66,7 @@ class AjaxCrawlMiddleware:
         ajax_crawl_request.meta["ajax_crawlable"] = True
         return ajax_crawl_request
 
-    def _has_ajax_crawlable_variant(self, response):
+    def _has_ajax_crawlable_variant(self, response: Response) -> bool:
         """
         Return True if a page without hash fragment could be "AJAX crawlable"
         according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
@@ -64,12 +76,12 @@ class AjaxCrawlMiddleware:
 
 
 # XXX: move it to w3lib?
-_ajax_crawlable_re = re.compile(
+_ajax_crawlable_re: re.Pattern[str] = re.compile(
     r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>'
 )
 
 
-def _has_ajaxcrawlable_meta(text):
+def _has_ajaxcrawlable_meta(text: str) -> bool:
     """
     >>> _has_ajaxcrawlable_meta('<html><head><meta name="fragment"  content="!"/></head><body></body></html>')
     True
