@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from typing import Dict
 from unittest import TextTestResult as _TextTestResult
 from unittest import TextTestRunner
 
@@ -66,6 +67,23 @@ class Command(ScrapyCommand):
             help="print contract tests for all spiders",
         )
 
+    def _print_result(self, opts, result: TextTestResult, contract_reqs: Dict):
+        if opts.list:
+            for spider, methods in sorted(contract_reqs.items()):
+                if not methods and not opts.verbose:
+                    continue
+                print(spider)
+                for method in sorted(methods):
+                    print(f"  * {method}")
+        else:
+            start = time.time()
+            self.crawler_process.start()
+            stop = time.time()
+
+            result.printErrors()
+            result.printSummary(start, stop)
+            self.exitcode = int(not result.wasSuccessful())
+
     def run(self, args, opts):
         # load contracts
         contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
@@ -90,19 +108,4 @@ class Command(ScrapyCommand):
                 elif tested_methods:
                     self.crawler_process.crawl(spidercls)
 
-            # start checks
-            if opts.list:
-                for spider, methods in sorted(contract_reqs.items()):
-                    if not methods and not opts.verbose:
-                        continue
-                    print(spider)
-                    for method in sorted(methods):
-                        print(f"  * {method}")
-            else:
-                start = time.time()
-                self.crawler_process.start()
-                stop = time.time()
-
-                result.printErrors()
-                result.printSummary(start, stop)
-                self.exitcode = int(not result.wasSuccessful())
+            self._print_result(opts, result, contract_reqs)
