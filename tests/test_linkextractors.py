@@ -2,6 +2,7 @@ import pickle
 import re
 import unittest
 from typing import Optional
+from unittest.mock import Mock
 
 from packaging.version import Version
 from pytest import mark
@@ -851,3 +852,36 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
                 ),
             ],
         )
+
+    def test_link_allowed_is_false_with_empty_url(self):
+        mock_link = Mock()
+        mock_link.url = ""
+        expected = False
+
+        actual = LxmlLinkExtractor()._link_allowed(mock_link)
+
+        self.assertEqual(expected, actual)
+
+    def test_link_allowed_is_false_with_bad_url_prefix(self):
+        mock_link = Mock()
+        mock_link.url = "htp://should_be_http.com"
+        expected = False
+
+        actual = LxmlLinkExtractor()._link_allowed(mock_link)
+
+        self.assertEqual(expected, actual)
+
+    def test_link_allowed_is_false_with_missing_url_prefix(self):
+        mock_link = Mock()
+        mock_link.url = "should_have_prefix.com"
+        expected = False
+
+        actual = LxmlLinkExtractor()._link_allowed(mock_link)
+
+        self.assertEqual(expected, actual)
+
+    def test_link_allowed_raises_with_none_url(self):
+        mock_link = Mock()
+        mock_link.url = None
+
+        self.assertRaises(AttributeError, LxmlLinkExtractor()._link_allowed, mock_link)
