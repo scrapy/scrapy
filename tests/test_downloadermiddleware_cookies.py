@@ -75,9 +75,16 @@ class CookiesMiddlewareTest(TestCase):
 
     def test_response_status_not_allowed (self): #new test 2
         request = Request("http://scrapytest.org/")
-        response = Response("dummy_response", status=404)
+        response = Response("dummy_response",  headers={"Location": "dummy_loc"}, status=404)
         self.assertEqual(response, self.redirect_middleware.process_response(request, response, self.spider))
 
+    def test_response_with_no_location (self): #new test 3
+        request = Request("http://scrapytest.org/")
+        response = Response("dummy_response")
+        self.assertEqual(response, self.redirect_middleware.process_response(request, response, self.spider))
+
+
+    
 
 
     def test_basic(self):
