@@ -110,10 +110,13 @@ class FileTestCase(unittest.TestCase):
         _, self.tmpname = mkstemp(suffix="^")
         self.tmpname = Path(self.tmpname)
         self.tmpname.write_text("0123456789", encoding="utf-8")
-        handler = build_from_crawler(FileDownloadHandler, get_crawler())
-        self.download_request = handler.download_request
+        self.download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
+        self.download_request = self.download_handler.download_request
 
+    @defer.inlineCallbacks
     def tearDown(self):
+        if hasattr(self.download_handler, "close"):
+            yield self.download_handler.close()
         self.tmpname.unlink()
 
     def test_download(self):
