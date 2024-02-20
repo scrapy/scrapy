@@ -109,14 +109,13 @@ class FileTestCase(unittest.TestCase):
     def setUp(self):
         # add a special char to check that they are handled correctly
         _, self.tmpname = mkstemp(suffix="^")
-        self.tmpname = Path(self.tmpname)
-        with self.tmpname.open("w") as fp:
+        with open(self.tmpname, "w") as fp:
             fp.write("0123456789")
         self.download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
         self.download_request = self.download_handler.download_request
 
     def tearDown(self):
-        self.tmpname.unlink()
+        os.remove(self.tmpname)
 
     @defer.inlineCallbacks
     def test_download(self):
@@ -126,7 +125,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.body, b"0123456789")
             self.assertEqual(response.protocol, None)
 
-        request = Request(path_to_file_uri(str(self.tmpname)))
+        request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
         yield self.download_request(request, Spider("foo")).addCallback(_test)
 
