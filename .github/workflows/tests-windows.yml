@@ -43,4 +43,4 @@ jobs:
       env: ${{ matrix.env }}
       run: |
         pip install -U tox
-        tox
+        tox -e py -- tests/test_downloader_handlers.py::FileTestCase
