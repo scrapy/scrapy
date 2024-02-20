@@ -3,8 +3,6 @@ from unittest import TestCase
 
 import pytest
 from testfixtures import LogCapture
-from urllib.parse import urlparse #TODO : remove
-from w3lib.url import safe_url_string #TODO : remove
 
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
