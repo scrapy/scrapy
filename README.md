@@ -24,7 +24,7 @@ As a recap here is our statement of contribution :
 ###### AIMING FOR P : 
 **Alexander** : worked on _get_form in scrapy/scrapy/http/request/form.py, ....
 
-**Rached** : ...
+**Rached** : worked on run in scrapy/scrapy/commands/check.py and 
 
 **Marcus** : ...
 
@@ -99,6 +99,16 @@ When it comes to exceptions the automated tool does take exceptions into account
 
 Lastly, there is not much documentation about the function I worked on. The function itself is probably not that hard to understand for someone who has worked a lot with similar functions but for someone like us in the group who are not as used to working with serialization of fields it can be hard and therefore more documentation could be good to have.
  
+
+#### run in scrapy/scrapy/commands/check.py by Rached
+
+With th lizard tool i got a CNN of 13 and an NLOC of 31
+Using the calculation method from the lecture we instead get 
+Number of Decisions = 11, Exit Points = 1, totalling 11-1+2=12.
+
+The run method in check.py serves as the command-line interface for checking spider contracts, dynamically modifying spider classes, and orchestrating the execution of contract tests, with options for listing contracts or displaying detailed results.
+
+
 ## Refactoring
 
 #### _get_form in scrapy/scrapy/http/request/form.py by Alexander
@@ -192,6 +202,11 @@ By running `coverage html`afterwards I found out that my function was poorly cov
 #### _get_serialized_fields in scrapy/scrapy/exporters.py by Iley
 I used Coverage.py to test the coverage for the function I was working on. I did this by checking the coverage for the tests relating to the exporters file which was where the function I was written. When doing this I noticed that the branch coverage for my function was 100%. 
 
+### strip_url in scrapy\utils\url.py by Rached
+
+(I changed function because the function run of check was already covered)
+I used coverage to see which branches are covered and there was two branch missing for this function (the one where strip_fragment is False and the one where origin_only is false)
+
 
 ### Your own coverage tool
 
@@ -231,6 +246,10 @@ Then in the tear_down part of the two tests files I added a print of my coevrage
 #### _get_serialized_fields in scrapy/scrapy/exporters.py by Iley
 The way my coverage tool works is by having an array and each time a part of the function I am measuring the coverage for is visited that part of the array is set to True instead of False. So for example if the second branch of the function is visited the second boolean in my array would be set to True. Each time a test is run the coverage is printed out to the console which means that the last time it is printed out the final coverage is shown. One part which may seem very easy but was the hardest about making the coverage tool was to actaully get any output at all when running the tests in the tox testing environment. To make this work I added a -s flag in the tox.ini file on the pytest row which allowed prints to be done to the console while the tox tests were run. 
 
+#### run in scrapy/scrapy/commands/check by Rached
+
+I used the same solution as Roxanne : i created a boolean array filed with False to check the fufilled branch
+
 
 ### Evaluation
 
@@ -262,6 +281,20 @@ When running the coverage tool without my own test cases I got this result:
 
 As you can see the results are the same and not 100% as the [Coverage.py](http://Coverage.py) tool said. However it is interesting that the two parts that are false and not covered are ones I tried doing tests for but got errors when trying them so there is likely some error with that part which is not due to my way of measuring the coverage.
 
+
+### strip_url in scrapy\utils\url.py by Rached
+
+(I changed function because the function run of check cannot be tested properly)
+There is two branch missing for this function (the one where strip_fragment is False and the one where origin_only is false)
+So if the coverage tool where implemented for strip_url it would have been :
+
+[True , True , True , False , False , False ,False]
+
+Then after adding the two missing test cases :
+
+[True , True , True, True, True, True, True ]
+
+
 ## Coverage improvement
 
 #### _get_form in scrapy/scrapy/http/request/form.py by Alexander
@@ -290,6 +323,13 @@ The reason why the whole array is not set to True is that there are many ways to
 
 #### _get_serialized_fields in scrapy/scrapy/exporters.py by Iley
 My function was already had 100% coverage as seen in the Coverage.py tool so I could not really ad more coverage. However there were still many parts that I felt could further improve the testing and path coverage, which means more paths in the code (ways of going through the function once) should be added. This I did by adding 4 test functions that are briefly and concisely described in the test file as a comment over the functions.
+
+
+## strip_url in scrapy\utils\url.py by Rached
+
+I added two test cases for strip_url because there was 2 branch missing 
+So after adding the tests test_no_strip_fragment and test_no_origin the coverage is 100%
+
 
 ## Self-assessment: Way of working
 
