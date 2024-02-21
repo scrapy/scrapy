@@ -183,13 +183,13 @@ turns into
 ```python 
 If (a or b) : 
     if(a) : 
-        coverage_matrix[x] = True
+        coverage_array[x] = True
     elif(b) : 
-        covergae_matrix[x + 1] = True
+        covergae_array[x + 1] = True
     do_something()
 ```
 
-Then in the tear_down part of the two tests files I added a print of my coevrage_matrix so that you can see how it evolves after each test has passed. 
+Then in the tear_down part of the two tests files I added a print of my coevrage_array so that you can see how it evolves after each test has passed. 
 
 
 ### Evaluation
@@ -205,7 +205,7 @@ tests. The results of this tool is the same as the proper coverage tool, i.e.
 I was able to locate the same clause that has not been run.
 
 #### process_response in scrapy/scrapy/downloadermiddlewares/redirect.py by Roxanne
-My coverage measurement is pretty detailed since as I've explained in `Your own coverage tool` section, if there are many ways to get into a branch (like an or in an if condition) it shows in my matrix. Getting in with the second part of the or condition will not set the array to True at the same place as it would have been set by getting in with the first part of the or condition. 
+My coverage measurement is pretty detailed since as I've explained in `Your own coverage tool` section, if there are many ways to get into a branch (like an or in an if condition) it shows into the coverage array. Getting in with the second part of the or condition will not set the array to True at the same place as it would have been set by getting in with the first part of the or condition. 
 
 The main limitation of my tool is that it clutters the code and impacts performance which are two major drawbacks. 
 
