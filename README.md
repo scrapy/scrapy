@@ -9,6 +9,28 @@ URL: https://github.com/roxannecvl/scrapy/tree/master
 We forked the Scrapy open source project which is a web scraper to perform
 assignment 3 on.
 
+## Structure 
+Our project is devided in 3 main branches. 
+1) The `master` branch which has the new tests we've created
+2) The `coverage`branch which has the five functions with their adhoc tool, this branch was useful to see what our adhoc tools outputed before adding new tests
+3) The `coverage and test` branch which has the adhoc tools and the new tests, this branch was useful to see what our adhoc tools outputed after adding new tests
+
+Moreover there are one additional branch per member who wanted to aim for P+, these branch contain the refactoring of their function. You can find more information about this in the refactoring section of this report. 
+
+## Statement of contribution 
+In this report you will see for each section 5 sub-sections, one for each group member and their repective function(s) they've worked on. 
+As a recap here is our statement of contribution : 
+
+###### AIMING FOR P : 
+**Alexander** : worked on _get_form in scrapy/scrapy/http/request/form.py, ....
+**Rached** : ...
+**Marcus** : ...
+
+##### AIMING FOR P+ : 
+**Roxanne** : I worked on process_response in scrapy/scrapy/downloadermiddlewares/redirect.py, I've created an adhoc tool for this function and 4 new tests to improve branch coverage. I also refactored this function in the `refactoring_process_response`branch. Moreover I've filled the **Structure**, **Statement of contribution** and **Self-assessment: Way of working** sections of this report and added my individual subsection for **Complexity**, **Refactoring**, **Coverage** and **Coverage improvement** sections. 
+
+**Iley** : ...
+
 ## Onboarding experience
 
 We started off with Pyspider which made use of a requirements.txt to
@@ -234,7 +256,7 @@ The coverage I got for the whole test files at first was 72%, and after running 
 ![before](./img/process_response_coverage_before.png)
 
 I added four test cases for process_response (since I'm aiming for P+) and now the file is covered at 78% and the state of the array after all tests have passed is of : [True, True, False, False, False, True, True, True, True, False, True]. Moreover you can see with coverage html that every branch is taken. 
-![before](./img/process_response_coverage_after.png)
+![after](./img/process_response_coverage_after.png)
 The reason why the whole array is not set to True is that there are many ways to get into a branch (because of ORs in if conditions) and not every one of them is taken. 
 
 ## Self-assessment: Way of working
