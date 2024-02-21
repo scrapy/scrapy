@@ -1643,7 +1643,7 @@ class JsonRequestTest(RequestTest):
             self.assertEqual(kwargs["allow_nan"], True)
 
     def test_replacement_both_body_and_data_warns(self):
-        """Test that we can get a warning if both body and data are passed for branch coverage"""
+        """Test that we get a warning if both body and data are passed"""
         body1 = None
         body2 = b"body"
         data1 = {
@@ -1654,12 +1654,11 @@ class JsonRequestTest(RequestTest):
         }
         r1 = self.request_class(url="http://www.example.com/", data=data1, body=body1)
 
-        with mock.patch("warnings.warn") as mock_warn:
+        with warnings.catch_warnings(record=True) as _warnings:
             r1.replace(data=data2, body=body2)
-            mock_warn.assert_called_once()
-            (warning_message,), _ = mock_warn.call_args
             self.assertIn(
-                "Both body and data passed. data will be ignored", warning_message
+                "Both body and data passed. data will be ignored",
+                str(_warnings[0].message),
             )
 
     def tearDown(self):
