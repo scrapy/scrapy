@@ -392,7 +392,7 @@ Each plugin is a class that must implement the following methods:
 
     Clean up the plugin.
 
-    For example, you might want to close and file wrapper that you might have
+    For example, you might want to close a file wrapper that you might have
     used to compress data written into the file received in the ``__init__``
     method.
 
