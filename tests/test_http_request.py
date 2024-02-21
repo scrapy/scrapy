@@ -1452,12 +1452,8 @@ class FormRequestTest(RequestTest):
             </body></html>"""
         )
 
-        class CustomFormdata:
-            def __iter__(self):
-                raise ValueError("Custom iteration error for testing")
-
         with self.assertRaises(ValueError) as context:
-            FormRequest.from_response(response, formdata=CustomFormdata())
+            FormRequest.from_response(response, formdata=("a",))
 
         self.assertIn(
             "formdata should be a dict or iterable of tuples", str(context.exception)
