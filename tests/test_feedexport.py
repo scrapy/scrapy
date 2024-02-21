@@ -1732,6 +1732,7 @@ class FeedExportTest(FeedExportTestBase):
 
             def store(self, file):
                 Storage.store_file = file
+                Storage.file_was_closed = file.closed
                 file.close()
 
         settings = {
@@ -1747,6 +1748,7 @@ class FeedExportTest(FeedExportTestBase):
         }
         yield self.exported_no_data(settings)
         self.assertIs(Storage.open_file, Storage.store_file)
+        self.assertFalse(Storage.file_was_closed)
 
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
