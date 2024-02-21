@@ -213,6 +213,8 @@ However, my tool's results are the same as the Coverage.py ones, the index in th
 
 ## Coverage improvement
 
+#### _get_form in scrapy/scrapy/http/request/form.py by Alexander
+
 The coverage for the class file I was working with was 96%, there
 were 2 clauses unaccounted for in 2 different functions.
 
@@ -225,6 +227,15 @@ of code where one kind of input wasn't taken into account.
 After adding these tests, the coverage report showed 99% and the
 expected result of the 2 missing clauses now actually being
 covered shows on the report as well as the manual instrumentation tool.
+
+#### process_response in scrapy/scrapy/downloadermiddlewares/redirect.py by Roxanne
+The coverage I got for the whole test files at first was 72%, and after running all tests the state of my own coverage array was : 
+[True, False, False, False, False, False, False, False, True, False, True] (3 True, 8 False). Moreover, you could see with coverage html that 3 branches were never taken. 
+![before](./img/process_response_coverage_before.png)
+
+I added four test cases for process_response (since I'm aiming for P+) and now the file is covered at 78% and the state of the array after all tests have passed is of : [True, True, False, False, False, True, True, True, True, False, True]. Moreover you can see with coverage html that every branch is taken. 
+![before](./img/process_response_coverage_after.png)
+The reason why the whole array is not set to True is that there are many ways to get into a branch (because of ORs in if conditions) and not every one of them is taken. 
 
 ## Self-assessment: Way of working
 
