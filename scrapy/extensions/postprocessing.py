@@ -42,7 +42,6 @@ class GzipPlugin:
 
     def close(self) -> None:
         self.gzipfile.close()
-        self.file.close()
 
 
 class Bz2Plugin:
@@ -69,7 +68,6 @@ class Bz2Plugin:
 
     def close(self) -> None:
         self.bz2file.close()
-        self.file.close()
 
 
 class LZMAPlugin:
@@ -111,7 +109,6 @@ class LZMAPlugin:
 
     def close(self) -> None:
         self.lzmafile.close()
-        self.file.close()
 
 
 # io.IOBase is subclassed here, so that exporters can use the PostProcessingManager

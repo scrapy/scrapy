@@ -390,7 +390,13 @@ Each plugin is a class that must implement the following methods:
 
 .. method:: close(self)
 
-    Close the target file object.
+    Clean up the plugin.
+
+    For example, you might want to close and file wrapper that you might have
+    used to compress data written into the file received in the ``__init__``
+    method.
+
+    .. warning:: Do not close the file from the ``__init__`` method.
 
 To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You
 can then access those parameters from the ``__init__`` method of your plugin.
