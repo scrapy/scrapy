@@ -121,6 +121,8 @@ The function then becomes easier to read, however if you want to understand well
 
 ### Tools
 
+#### _get_form in scrapy/scrapy/http/request/form.py by Alexander
+
 The coverage on the original Scrapy repo leads to this, and looking
 up my function, it is mostly covered with a small gap which
 we will address with an extra test case.
@@ -146,8 +148,17 @@ in. What I found is that most things is indeed covered at 96%. As for
 the function I am interested in, there is 1 decision path that is not
 covered.
 
+#### process_response in scrapy/scrapy/downloadermiddlewares/redirect.py by Roxanne
+
+First I used GitHub:s code indexiing and found out that my function was tested in two separated files : `tests/test_spidermiddleware_referer.py` and  `tests/test_downloadermiddleware_cookies.py`. 
+I ran this two tests with the following command `coverage run -m unittest tests/test_spidermiddleware_referer.py tests/test_downloadermiddleware_cookies.py` and found out that there were 71 tests ran but 3 failing ones. By inspecting them I saw that the
+three failing ones had the following comment : `@pytest.mark.xfail(reason="Cookie header is not currently being processed")` I therefore decided to comment them out since there weren't supposed to be run. I then had 68 passing test when running the command once again. 
+By running `coverage html`afterwards I found out that my function was poorly covered. 3 paths were never testes, moreover there were many ways to access two of these paths (because of or conditions). 
+
 
 ### Your own coverage tool
+
+#### _get_form in scrapy/scrapy/http/request/form.py by Alexander
 
 I took the simple approach to manual instrumentation of my function by
 creating an array and hardcoding in the function the different branches
@@ -161,7 +172,29 @@ that prints out this global array of what parts of the function have
 been run, and the results correspond with the Lizard results
 where one of the clauses did not get run.
 
+#### process_response in scrapy/scrapy/downloadermiddlewares/redirect.py by Roxanne
+Same as Alexander, I created a boolean array first filled in with False. Every time a branch is taken its spot in the array gets switched to True. Moreover if the condition leading to a new branch has mrore than one way of being fulfilled, I took that into account in my array. 
+Here is an example of how I filled it out : 
+```python 
+If (a or b) : 
+    do_something()
+```
+turns into 
+```python 
+If (a or b) : 
+    if(a) : 
+        coverage_matrix[x] = True
+    elif(b) : 
+        covergae_matrix[x + 1] = True
+    do_something()
+```
+
+Then in the tear_down part of the two tests files I added a print of my coevrage_matrix so that you can see how it evolves after each test has passed. 
+
+
 ### Evaluation
+
+#### _get_form in scrapy/scrapy/http/request/form.py by Alexander
 
 The coverage measurement is hard-coded and crude and you have to manually locate
 the corresponding line of code that has not been run from the terminal output.
@@ -170,6 +203,13 @@ use this function, another approach would be required to assimilate the multiple
 results since this approach relies on the class object staying persistent between
 tests. The results of this tool is the same as the proper coverage tool, i.e.
 I was able to locate the same clause that has not been run.
+
+#### process_response in scrapy/scrapy/downloadermiddlewares/redirect.py by Roxanne
+My coverage measurement is pretty detailed since as I've explained in `Your own coverage tool` section, if there are many ways to get into a branch (like an or in an if condition) it shows in my matrix. Getting in with the second part of the or condition will not set the array to True at the same place as it would have been set by getting in with the first part of the or condition. 
+
+The main limitation of my tool is that it clutters the code and impacts performance which are two major drawbacks. 
+
+However, my tool's results are the same as the Coverage.py ones, the index in the array conresponding to branch that weren't evaluated according to the coverage tool were still set to False after having run all the tests. The branches being tested according to the Coverage tool had their index in the array set to True after all the tests were run. 
 
 ## Coverage improvement
 
