@@ -57,6 +57,7 @@ class BaseItemExporterTest(unittest.TestCase):
     item_class: type = TestItem
     custom_field_item_class: type = CustomFieldItem
 
+
     def setUp(self):
         self.i = self.item_class(name="John\xa3", age="22")
         self.output = BytesIO()
@@ -123,6 +124,31 @@ class BaseItemExporterTest(unittest.TestCase):
         ie = self._get_exporter(fields_to_export={"name": "名稱"})
         self.assertEqual(list(ie._get_serialized_fields(self.i)), [("名稱", "John\xa3")])
 
+    #Test with specified fields to export to vertify that the function correctly includes only the specified fields
+    def test_specified_fields_to_export(self):
+        ie = self._get_exporter(fields_to_export=["name", "age"])
+        exported_fields = set(name for name, _ in ie._get_serialized_fields(self.i))
+        self.assertEqual(exported_fields, {"name", "age"})
+
+    #Test with specific fields to export but also including nonexistent fields
+    def test_specified_fields_to_export_some_nonexistent(self):
+        ie = self._get_exporter(fields_to_export=["name", "nonexistent_field"])
+        exported_fields = set(name for name, _ in ie._get_serialized_fields(self.i))
+        self.assertIn("name", exported_fields)
+        self.assertNotIn("nonexistent_field", exported_fields)
+
+    #Checks if the function correctly handles field mappings and exports the fields with the mapped names
+    def test_fields_to_export_as_mapping(self):
+        ie = self._get_exporter(fields_to_export={'name': 'full_name', 'age': 'years'})
+        expected = [('full_name', 'John\xa3'), ('years', '22')]
+        self.assertEqual(list(ie._get_serialized_fields(self.i)), expected)
+
+    #Test the case where the fields to export are specified as a list, including nonexistent fields
+    def test_fields_to_export_list_including_nonexistent_fields(self):
+        ie = self._get_exporter(fields_to_export=['name', 'nonexistent_field', 'age'])
+        expected = [('name', 'John\xa3'), ('age', '22')]  # Nonexistent field should be skipped
+        self.assertEqual(list(ie._get_serialized_fields(self.i)), expected)
+        
     def test_field_custom_serializer(self):
         i = self.custom_field_item_class(name="John\xa3", age="22")
         a = ItemAdapter(i)
