@@ -23,10 +23,12 @@ As a recap here is our statement of contribution :
 
 ###### AIMING FOR P : 
 **Alexander** : worked on _get_form in scrapy/scrapy/http/request/form.py, ....
+
 **Rached** : ...
+
 **Marcus** : ...
 
-##### AIMING FOR P+ : 
+###### AIMING FOR P+ : 
 **Roxanne** : I worked on process_response in scrapy/scrapy/downloadermiddlewares/redirect.py, I've created an adhoc tool for this function and 4 new tests to improve branch coverage. I also refactored this function in the `refactoring_process_response`branch. Moreover I've filled the **Structure**, **Statement of contribution** and **Self-assessment: Way of working** sections of this report and added my individual subsection for **Complexity**, **Refactoring**, **Coverage** and **Coverage improvement** sections. 
 
 **Iley** : ...
