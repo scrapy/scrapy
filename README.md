@@ -263,13 +263,9 @@ The reason why the whole array is not set to True is that there are many ways to
 
 ## Self-assessment: Way of working
 
-Current state according to the Essence standard: ...
-
-Was the self-assessment unanimous? Any doubts about certain items?
-
-How have you improved so far?
-
-Where is potential for improvement?
+Upon careful assessment of our team's activities, we have determined that the team is currently placed in between the "Formed" and the "Collaborating" state according to the Essence standard V1.2. In the last assignment we had placed ourselves in the "Collaborating" state, however we feel that this assignment has led to a regression in our team cohesion. Indeed, this assignment didn't call for a lot of collaboration, each team member could pick one function and progress at their own pace on their task. However, we tried setting up internal deadlines and Zoom meetings to stay on track. Unfortunately, these deadlines were not met by each group member and the zoom meetings were not always attended by everyone. This caused some of the trust in our team to break. Therefore we are still missing the condition "The team members know and trust each other" to fully be in "Collaborating". 
+We still have to learn to trust each other and to adapt to the way of working of one another, some like to be done in advance while some work better under pressure. However, we are always on time for the final deadline. 
+In other aspects our team works well, our communication is always open and honest and there is always one team member eager to help if another one needs it. We also improved our team cohesion by getting rid of some inconsistencies with our ways-of-working such as commit messages that weren't done in a unique way and now are. We believe that this small regression has taught us that progress is not always linear; we are now ready to do our best for the fourth and final assignment. 
 
 ## Overall experience
 
