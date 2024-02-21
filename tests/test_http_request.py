@@ -1643,7 +1643,7 @@ class JsonRequestTest(RequestTest):
             self.assertEqual(kwargs["allow_nan"], True)
 
     def test_form_response_with_invalid_formdata_type_error(self):
-        """Test that a form response with invalid form data throws a type error"""
+        """Test that a ValueError is raised for non-iterable and non-dict formdata input"""
         response = _buildresponse(
             """<html><body>
             <form action="/submit" method="post">
@@ -1659,7 +1659,7 @@ class JsonRequestTest(RequestTest):
         )
 
     def test_form_response_with_custom_invalid_formdata_value_error(self):
-        """Test that a form response with invalid form data throws a value error"""
+        """Test that a ValueError is raised for fault-inducing iterable formdata input"""
         response = _buildresponse(
             """<html><body>
                 <form action="/submit" method="post">
