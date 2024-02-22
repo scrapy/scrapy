@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.selector import Selector
 from scrapy.spiders import Spider
-from scrapy.utils.iterators import csviter, xmliter
+from scrapy.utils.iterators import csviter, xmliter_lxml
 from scrapy.utils.spider import iterate_spider_output
 
 
@@ -58,8 +58,7 @@ class XMLFeedSpider(Spider):
 
         for selector in nodes:
             ret = iterate_spider_output(self.parse_node(response, selector))
-            for result_item in self.process_results(response, ret):
-                yield result_item
+            yield from self.process_results(response, ret)
 
     def _parse(self, response, **kwargs):
         if not hasattr(self, "parse_node"):
@@ -84,7 +83,7 @@ class XMLFeedSpider(Spider):
         return self.parse_nodes(response, nodes)
 
     def _iternodes(self, response):
-        for node in xmliter(response, self.itertag):
+        for node in xmliter_lxml(response, self.itertag):
             self._register_namespaces(node)
             yield node
 
@@ -133,8 +132,7 @@ class CSVFeedSpider(Spider):
             response, self.delimiter, self.headers, quotechar=self.quotechar
         ):
             ret = iterate_spider_output(self.parse_row(response, row))
-            for result_item in self.process_results(response, ret):
-                yield result_item
+            yield from self.process_results(response, ret)
 
     def _parse(self, response, **kwargs):
         if not hasattr(self, "parse_row"):

@@ -131,8 +131,7 @@ class CrawlSpider(Spider):
     def _handle_failure(self, failure, errback):
         if errback:
             results = errback(failure) or ()
-            for request_or_item in iterate_spider_output(results):
-                yield request_or_item
+            yield from iterate_spider_output(results)
 
     def _compile_rules(self):
         self._rules = []

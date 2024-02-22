@@ -297,9 +297,13 @@ build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
 In order to avoid parsing all the entire feed at once in memory, you can use
-the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
-module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
-under the cover.
+the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+:func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
+:class:`~scrapy.spiders.XMLFeedSpider` uses.
+
+.. autofunction:: scrapy.utils.iterators.xmliter_lxml
+
+.. autofunction:: scrapy.utils.iterators.csviter
 
 Does Scrapy manage cookies automatically?
 -----------------------------------------
@@ -403,6 +407,23 @@ you could save resources by attaching a handler to the :class:`~scrapy.signals.b
 or :class:`~scrapy.signals.headers_received` signals and raising a
 :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to the
 :ref:`topics-stop-response-download` topic for additional information and examples.
+
+
+.. _faq-blank-request:
+
+How can I make a blank request?
+-------------------------------
+
+.. code-block:: python
+    
+    from scrapy import Request
+
+
+    blank_request = Request("data:,")
+
+In this case, the URL is set to a data URI scheme. Data URLs allow you to include data 
+in-line in web pages as if they were external resources. The "data:" scheme with an empty 
+content (",") essentially creates a request to a data URL without any specific content.
 
 
 Running ``runspider`` I get ``error: No spider found in file: <filename>``

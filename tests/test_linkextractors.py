@@ -851,3 +851,15 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
                 ),
             ],
         )
+
+    def test_link_allowed_is_false_with_empty_url(self):
+        bad_link = Link("")
+        self.assertFalse(LxmlLinkExtractor()._link_allowed(bad_link))
+
+    def test_link_allowed_is_false_with_bad_url_prefix(self):
+        bad_link = Link("htp://should_be_http.example")
+        self.assertFalse(LxmlLinkExtractor()._link_allowed(bad_link))
+
+    def test_link_allowed_is_false_with_missing_url_prefix(self):
+        bad_link = Link("should_have_prefix.example")
+        self.assertFalse(LxmlLinkExtractor()._link_allowed(bad_link))

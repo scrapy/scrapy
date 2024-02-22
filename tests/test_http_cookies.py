@@ -1,8 +1,8 @@
 from unittest import TestCase
-from urllib.parse import urlparse
 
 from scrapy.http import Request, Response
 from scrapy.http.cookies import WrappedRequest, WrappedResponse
+from scrapy.utils.httpobj import urlparse_cached
 
 
 class WrappedRequestTest(TestCase):
@@ -17,12 +17,12 @@ class WrappedRequestTest(TestCase):
         self.assertEqual(self.wrapped.full_url, self.request.url)
 
     def test_get_host(self):
-        self.assertEqual(self.wrapped.get_host(), urlparse(self.request.url).netloc)
-        self.assertEqual(self.wrapped.host, urlparse(self.request.url).netloc)
+        self.assertEqual(self.wrapped.get_host(), urlparse_cached(self.request).netloc)
+        self.assertEqual(self.wrapped.host, urlparse_cached(self.request).netloc)
 
     def test_get_type(self):
-        self.assertEqual(self.wrapped.get_type(), urlparse(self.request.url).scheme)
-        self.assertEqual(self.wrapped.type, urlparse(self.request.url).scheme)
+        self.assertEqual(self.wrapped.get_type(), urlparse_cached(self.request).scheme)
+        self.assertEqual(self.wrapped.type, urlparse_cached(self.request).scheme)
 
     def test_is_unverifiable(self):
         self.assertFalse(self.wrapped.is_unverifiable())
