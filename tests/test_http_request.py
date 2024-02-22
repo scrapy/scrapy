@@ -1643,6 +1643,25 @@ class JsonRequestTest(RequestTest):
             self.assertEqual(kwargs["ensure_ascii"], True)
             self.assertEqual(kwargs["allow_nan"], True)
 
+    def test_replacement_both_body_and_data_warns(self):
+        """Test that we get a warning if both body and data are passed"""
+        body1 = None
+        body2 = b"body"
+        data1 = {
+            "name1": "value1",
+        }
+        data2 = {
+            "name2": "value2",
+        }
+        r1 = self.request_class(url="http://www.example.com/", data=data1, body=body1)
+
+        with warnings.catch_warnings(record=True) as _warnings:
+            r1.replace(data=data2, body=body2)
+            self.assertIn(
+                "Both body and data passed. data will be ignored",
+                str(_warnings[0].message),
+            )
+
     def tearDown(self):
         warnings.resetwarnings()
         super().tearDown()
