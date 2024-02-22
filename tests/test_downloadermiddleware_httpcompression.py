@@ -27,6 +27,8 @@ FORMAT = {
     "x-gzip": ("html-gzip.bin", "gzip"),
     "rawdeflate": ("html-rawdeflate.bin", "deflate"),
     "zlibdeflate": ("html-zlibdeflate.bin", "deflate"),
+    "gzip-deflate": ("html-gzip-deflate.bin", "gzip, deflate"),
+    "gzip-deflate-gzip": ("html-gzip-deflate-gzip.bin", "gzip, deflate, gzip"),
     "br": ("html-br.bin", "br"),
     # $ zstd raw.html --content-size -o html-zstd-static-content-size.bin
     "zstd-static-content-size": ("html-zstd-static-content-size.bin", "zstd"),
@@ -204,6 +206,62 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         assert newresponse is not response
         self.assertEqual(newresponse.headers.getlist("Content-Encoding"), [b"uuencode"])
+
+    def test_multi_compression_single_header(self):
+        response = self._getresponse("gzip-deflate")
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+
+    def test_multi_compression_single_header_invalid_compression(self):
+        response = self._getresponse("gzip-deflate")
+        response.headers["Content-Encoding"] = [b"gzip, foo, deflate"]
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        self.assertEqual(
+            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
+        )
+
+    def test_multi_compression_multiple_header(self):
+        response = self._getresponse("gzip-deflate")
+        response.headers["Content-Encoding"] = ["gzip", "deflate"]
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+
+    def test_multi_compression_multiple_header_invalid_compression(self):
+        response = self._getresponse("gzip-deflate")
+        response.headers["Content-Encoding"] = ["gzip", "foo", "deflate"]
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        self.assertEqual(
+            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
+        )
+
+    def test_multi_compression_single_and_multiple_header(self):
+        response = self._getresponse("gzip-deflate-gzip")
+        response.headers["Content-Encoding"] = ["gzip", "deflate, gzip"]
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        assert "Content-Encoding" not in newresponse.headers
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+
+    def test_multi_compression_single_and_multiple_header_invalid_compression(self):
+        response = self._getresponse("gzip-deflate")
+        response.headers["Content-Encoding"] = ["gzip", "foo,deflate"]
+        request = response.request
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert newresponse is not response
+        self.assertEqual(
+            newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
+        )
 
     def test_process_response_encoding_inside_body(self):
         headers = {

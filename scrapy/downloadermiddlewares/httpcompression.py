@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, List, Optional, Union
 
@@ -102,18 +103,18 @@ class HttpCompressionMiddleware:
         if isinstance(response, Response):
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
-                encoding = content_encoding.pop()
                 max_size = request.meta.get("download_maxsize", self._max_size)
                 warn_size = request.meta.get("download_warnsize", self._warn_size)
                 try:
-                    decoded_body = self._decode(
-                        response.body, encoding.lower(), max_size
+                    decoded_body, content_encoding = self._handle_encoding(
+                        response.body, content_encoding, max_size
                     )
                 except _DecompressionMaxSizeExceeded:
                     raise IgnoreRequest(
                         f"Ignored response {response} because its body "
-                        f"({len(response.body)} B) exceeded DOWNLOAD_MAXSIZE "
-                        f"({max_size} B) during decompression."
+                        f"({len(response.body)} B compressed) exceeded "
+                        f"DOWNLOAD_MAXSIZE ({max_size} B) during "
+                        f"decompression."
                     )
                 if len(response.body) < warn_size <= len(decoded_body):
                     logger.warning(
@@ -121,6 +122,7 @@ class HttpCompressionMiddleware:
                         f"({len(decoded_body)} B) is larger than the "
                         f"download warning size ({warn_size} B)."
                     )
+                response.headers["Content-Encoding"] = content_encoding
                 if self.stats:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
@@ -143,6 +145,28 @@ class HttpCompressionMiddleware:
                     del response.headers["Content-Encoding"]
 
         return response
+
+    def _handle_encoding(self, body, content_encoding, max_size):
+        to_decode, to_keep = self._split_encodings(content_encoding)
+        for encoding in to_decode:
+            body = self._decode(body, encoding, max_size)
+        return body, to_keep
+
+    def _split_encodings(self, content_encoding):
+        to_keep = [
+            encoding.strip().lower()
+            for encoding in chain.from_iterable(
+                encodings.split(b",") for encodings in content_encoding
+            )
+        ]
+        to_decode = []
+        while to_keep:
+            encoding = to_keep.pop()
+            if encoding not in ACCEPTED_ENCODINGS:
+                to_keep.append(encoding)
+                return to_decode, to_keep
+            to_decode.append(encoding)
+        return to_decode, to_keep
 
     def _decode(self, body: bytes, encoding: bytes, max_size: int) -> bytes:
         if encoding == b"gzip" or encoding == b"x-gzip":
