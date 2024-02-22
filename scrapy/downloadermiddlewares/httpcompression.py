@@ -116,13 +116,12 @@ class HttpCompressionMiddleware:
                         f"DOWNLOAD_MAXSIZE ({max_size} B) during "
                         f"decompression."
                     )
-                else:
-                    if len(response.body) < warn_size <= len(decoded_body):
-                        logger.warning(
-                            f"{response} body size after decompression "
-                            f"({len(decoded_body)} B) is larger than the "
-                            f"download warning size ({warn_size} B)."
-                        )
+                if len(response.body) < warn_size <= len(decoded_body):
+                    logger.warning(
+                        f"{response} body size after decompression "
+                        f"({len(decoded_body)} B) is larger than the "
+                        f"download warning size ({warn_size} B)."
+                    )
                 response.headers["Content-Encoding"] = content_encoding
                 if self.stats:
                     self.stats.inc_value(
