@@ -1427,6 +1427,58 @@ class FormRequestTest(RequestTest):
             r = self.request_class.from_response(response)
             self.assertEqual(r.method, expected)
 
+    def test_form_response_with_invalid_formdata_type_error(self):
+        """Test that a ValueError is raised for non-iterable and non-dict formdata input"""
+        response = _buildresponse(
+            """<html><body>
+            <form action="/submit" method="post">
+                <input type="text" name="test" value="value">
+            </form>
+            </body></html>"""
+        )
+        with self.assertRaises(ValueError) as context:
+            FormRequest.from_response(response, formdata=123)
+
+        self.assertIn(
+            "formdata should be a dict or iterable of tuples", str(context.exception)
+        )
+
+    def test_form_response_with_custom_invalid_formdata_value_error(self):
+        """Test that a ValueError is raised for fault-inducing iterable formdata input"""
+        response = _buildresponse(
+            """<html><body>
+                <form action="/submit" method="post">
+                    <input type="text" name="test" value="value">
+                </form>
+            </body></html>"""
+        )
+
+        with self.assertRaises(ValueError) as context:
+            FormRequest.from_response(response, formdata=("a",))
+
+        self.assertIn(
+            "formdata should be a dict or iterable of tuples", str(context.exception)
+        )
+
+    def test_get_form_with_xpath_no_form_parent(self):
+        """Test that _get_from raised a ValueError when an XPath selects an element
+        not nested within a <form> and no <form> parent is found"""
+        response = _buildresponse(
+            """<html><body>
+                <div id="outside-form">
+                    <p>This paragraph is not inside a form.</p>
+                </div>
+                <form action="/submit" method="post">
+                    <input type="text" name="inside-form" value="">
+                </form>
+            </body></html>"""
+        )
+
+        with self.assertRaises(ValueError) as context:
+            FormRequest.from_response(response, formxpath='//div[@id="outside-form"]/p')
+
+        self.assertIn("No <form> element found with", str(context.exception))
+
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault("body", body)
