@@ -28,7 +28,7 @@ class Spider(object_ref):
     class.
     """
 
-    name: Optional[str] 
+    name: Optional [str]
     custom_settings: Optional[dict] = None
 
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
