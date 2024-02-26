@@ -306,6 +306,7 @@ def test_debug(caplog):
     slot.transferring = (None, None)
     crawler.engine.downloader.slots["foo"] = slot
 
+    caplog.clear()
     with caplog.at_level(INFO):
         at._response_downloaded(response, request, spider)
 
@@ -335,6 +336,7 @@ def test_debug_disabled(caplog):
     slot.transferring = (None, None)
     crawler.engine.downloader.slots["foo"] = slot
 
+    caplog.clear()
     with caplog.at_level(INFO):
         at._response_downloaded(response, request, spider)
 

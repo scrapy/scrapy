@@ -143,7 +143,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY
 Default: ``1.0``
 
 Average number of requests Scrapy should be sending in parallel to remote
-websites.
+websites. It must be higher than ``0.0``.
 
 By default, AutoThrottle adjusts the delay to send a single
 concurrent request to each of the remote websites. Set this option to
