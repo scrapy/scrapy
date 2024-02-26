@@ -3,8 +3,10 @@ import time
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
+from scrapy import Request
+from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
-from scrapy.http import Request
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import MetaSpider
 
@@ -20,6 +22,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
                 "concurrency": 1,
                 "delay": 2,
                 "randomize_delay": False,
+                "throttle": False,
             },
             "books.toscrape.com": {"delay": 3, "randomize_delay": False},
         },
@@ -70,3 +73,26 @@ class CrawlTestCase(TestCase):
         }
 
         self.assertTrue(max(list(error_delta.values())) < tolerance)
+
+
+def test_params():
+    params = {
+        "concurrency": 1,
+        "delay": 2,
+        "randomize_delay": False,
+        "throttle": False,
+    }
+    settings = {
+        "DOWNLOAD_SLOTS": {
+            "example.com": params,
+        },
+    }
+    crawler = get_crawler(settings_dict=settings)
+    downloader = Downloader(crawler)
+    request = Request("https://example.com")
+    _, actual = downloader._get_slot(request, spider=None)
+    expected = Slot(**params)
+    for param in params:
+        assert getattr(expected, param) == getattr(
+            actual, param
+        ), f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"

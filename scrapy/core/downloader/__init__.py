@@ -137,7 +137,8 @@ class Downloader:
                 slot_settings.get("delay", delay),
             )
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
-            new_slot = Slot(conc, delay, randomize_delay)
+            throttle = slot_settings.get("throttle", None)
+            new_slot = Slot(conc, delay, randomize_delay, throttle=throttle)
             self.slots[key] = new_slot
 
         return key, self.slots[key]
