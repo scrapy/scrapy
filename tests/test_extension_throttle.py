@@ -157,16 +157,17 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
 
 
 @pytest.mark.parametrize(
-    ("meta", "slot"),
+    ("meta", "slot", "throttle"),
     (
-        ({}, None),
-        ({"download_latency": 1.0}, None),
-        ({"download_slot": "foo"}, None),
-        ({"download_slot": "foo"}, "foo"),
-        ({"download_latency": 1.0, "download_slot": "foo"}, None),
+        ({}, None, None),
+        ({"download_latency": 1.0}, None, None),
+        ({"download_slot": "foo"}, None, None),
+        ({"download_slot": "foo"}, "foo", None),
+        ({"download_latency": 1.0, "download_slot": "foo"}, None, None),
+        ({"download_latency": 1.0, "download_slot": "foo"}, "foo", False),
     ),
 )
-def test_skipped(meta, slot):
+def test_skipped(meta, slot, throttle):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
     spider = TestSpider()
@@ -177,7 +178,9 @@ def test_skipped(meta, slot):
     crawler.engine.downloader = Mock()
     crawler.engine.downloader.slots = {}
     if slot is not None:
-        crawler.engine.downloader.slots[slot] = object()
+        _slot = Mock()
+        _slot.throttle = throttle
+        crawler.engine.downloader.slots[slot] = _slot
     at._adjust_delay = None  # Raise exception if called.
 
     at._response_downloaded(None, request, spider)

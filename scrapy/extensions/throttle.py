@@ -16,6 +16,11 @@ class AutoThrottle:
         self.target_concurrency = crawler.settings.getfloat(
             "AUTOTHROTTLE_TARGET_CONCURRENCY"
         )
+        if self.target_concurrency <= 0.0:
+            raise NotConfigured(
+                f"AUTOTHROTTLE_TARGET_CONCURRENCY "
+                f"({self.target_concurrency!r}) must be higher than 0."
+            )
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(
             self._response_downloaded, signal=signals.response_downloaded
@@ -45,7 +50,7 @@ class AutoThrottle:
     def _response_downloaded(self, response, request, spider):
         key, slot = self._get_slot(request, spider)
         latency = request.meta.get("download_latency")
-        if latency is None or slot is None:
+        if latency is None or slot is None or slot.throttle is False:
             return
 
         olddelay = slot.delay
