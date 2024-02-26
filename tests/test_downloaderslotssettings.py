@@ -89,6 +89,7 @@ def test_params():
     }
     crawler = get_crawler(settings_dict=settings)
     downloader = Downloader(crawler)
+    downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
     request = Request("https://example.com")
     _, actual = downloader._get_slot(request, spider=None)
     expected = Slot(**params)
