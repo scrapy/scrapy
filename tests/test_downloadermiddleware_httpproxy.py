@@ -251,7 +251,7 @@ class TestHttpProxyMiddleware(TestCase):
         self.assertEqual(request.meta["proxy"], "https://example.com")
         encoded_credentials = middleware._basic_auth_header(
             "user2",
-            "password2",
+            "passw2",
         )
         self.assertEqual(
             request.headers["Proxy-Authorization"],
