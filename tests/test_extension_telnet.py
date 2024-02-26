@@ -46,7 +46,7 @@ class TelnetExtensionTest(unittest.TestCase):
             "TELNETCONSOLE_PASSWORD": "pass",
         }
         console, portal = self._get_console_and_portal(settings=settings)
-        creds = credentials.UsernamePassword(b"user", b"pww")
+        creds = credentials.UsernamePassword(b"user", b"pww ")
         d = portal.login(creds, None, ITelnetProtocol)
         yield d
         console.stop_listening()
