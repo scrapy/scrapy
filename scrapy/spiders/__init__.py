@@ -3,6 +3,7 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+
 from __future__ import annotations
 
 import logging

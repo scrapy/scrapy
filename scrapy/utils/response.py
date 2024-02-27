@@ -2,6 +2,7 @@
 This module provides some useful functions for working with
 scrapy.http.Response objects
 """
+
 import os
 import re
 import tempfile
@@ -29,9 +30,9 @@ def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
     return _baseurl_cache[response]
 
 
-_metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]" = (
-    WeakKeyDictionary()
-)
+_metaref_cache: (
+    "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]"
+) = WeakKeyDictionary()
 
 
 def get_meta_refresh(

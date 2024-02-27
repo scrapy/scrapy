@@ -1,6 +1,7 @@
 """
 Base class for Scrapy commands
 """
+
 import argparse
 import os
 from pathlib import Path

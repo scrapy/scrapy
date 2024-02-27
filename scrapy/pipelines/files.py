@@ -3,6 +3,7 @@ Files Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
+
 import base64
 import functools
 import hashlib

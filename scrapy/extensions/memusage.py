@@ -3,6 +3,7 @@ MemoryUsage extension
 
 See documentation in docs/topics/extensions.rst
 """
+
 import logging
 import socket
 import sys

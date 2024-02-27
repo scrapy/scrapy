@@ -4,6 +4,7 @@ for scraping from an XML feed.
 
 See documentation in docs/topics/spiders.rst
 """
+
 from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.selector import Selector
 from scrapy.spiders import Spider

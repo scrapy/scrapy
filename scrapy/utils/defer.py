@@ -1,6 +1,7 @@
 """
 Helper functions for dealing with Twisted deferreds
 """
+
 import asyncio
 import inspect
 from asyncio import Future
@@ -304,13 +305,11 @@ _T = TypeVar("_T")
 
 
 @overload
-def deferred_from_coro(o: _CT) -> Deferred:
-    ...
+def deferred_from_coro(o: _CT) -> Deferred: ...
 
 
 @overload
-def deferred_from_coro(o: _T) -> _T:
-    ...
+def deferred_from_coro(o: _T) -> _T: ...
 
 
 def deferred_from_coro(o: _T) -> Union[Deferred, _T]:

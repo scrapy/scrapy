@@ -1,6 +1,7 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
+
 import collections.abc
 import gc
 import inspect
@@ -285,13 +286,11 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping) -> dict:
-    ...
+def without_none_values(iterable: Mapping) -> dict: ...
 
 
 @overload
-def without_none_values(iterable: Iterable) -> Iterable:
-    ...
+def without_none_values(iterable: Iterable) -> Iterable: ...
 
 
 def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:

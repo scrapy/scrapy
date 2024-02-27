@@ -1,6 +1,7 @@
 """
 Some spiders used for testing and benchmarking
 """
+
 import asyncio
 import time
 from urllib.parse import urlencode

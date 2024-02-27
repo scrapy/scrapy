@@ -4,6 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+
 from __future__ import annotations
 
 from ipaddress import IPv4Address, IPv6Address

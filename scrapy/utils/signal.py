@@ -1,4 +1,5 @@
 """Helper functions for working with signals"""
+
 import collections.abc
 import logging
 from typing import Any as TypingAny

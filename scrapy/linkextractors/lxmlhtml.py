@@ -1,6 +1,7 @@
 """
 Link extractor based on lxml.html
 """
+
 import logging
 import operator
 from functools import partial
