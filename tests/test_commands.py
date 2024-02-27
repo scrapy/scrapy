@@ -991,37 +991,10 @@ class MySpider(scrapy.Spider):
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = "myspider.pyw"
 
-    def setUp(self):
-        super().setUp()
-
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
-
-    def test_run_good_spider(self):
-        super().test_run_good_spider()
-
-    def test_runspider(self):
-        super().test_runspider()
-
-    def test_runspider_dnscache_disabled(self):
-        super().test_runspider_dnscache_disabled()
-
-    def test_runspider_log_level(self):
-        super().test_runspider_log_level()
-
-    def test_runspider_log_short_names(self):
-        super().test_runspider_log_short_names()
-
-    def test_runspider_no_spider_found(self):
-        super().test_runspider_no_spider_found()
-
-    def test_output(self):
-        super().test_output()
-
-    def test_overwrite_output(self):
-        super().test_overwrite_output()
 
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")

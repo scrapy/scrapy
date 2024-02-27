@@ -426,7 +426,7 @@ class SettingsTest(unittest.TestCase):
         mydict = settings.get("TEST_DICT")
         self.assertIsInstance(mydict, BaseSettings)
         self.assertIn("key", mydict)
-        self.assertEqual(mydict["key"], "val")
+        self.assertEqual(mydict["key"], "val")  # pylint: disable=unsubscriptable-object
         self.assertEqual(mydict.getpriority("key"), 0)
 
     @mock.patch("scrapy.settings.default_settings", default_settings)

@@ -98,7 +98,10 @@ def send_catch_log_deferred(
             robustApply, receiver, signal=signal, sender=sender, *arguments, **named
         )
         d.addErrback(logerror, receiver)
-        d.addBoth(lambda result: (receiver, result))
+        # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
+        d.addBoth(
+            lambda result: (receiver, result)  # pylint: disable=cell-var-from-loop
+        )
         dfds.append(d)
     d = DeferredList(dfds)
     d.addCallback(lambda out: [x[1] for x in out])

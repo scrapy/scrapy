@@ -169,7 +169,7 @@ class HttpCompressionMiddleware:
         return to_decode, to_keep
 
     def _decode(self, body: bytes, encoding: bytes, max_size: int) -> bytes:
-        if encoding == b"gzip" or encoding == b"x-gzip":
+        if encoding in {b"gzip", b"x-gzip"}:
             return gunzip(body, max_size=max_size)
         if encoding == b"deflate":
             return _inflate(body, max_size=max_size)

@@ -818,9 +818,6 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             ],
         )
 
-    def test_restrict_xpaths_with_html_entities(self):
-        super().test_restrict_xpaths_with_html_entities()
-
     @mark.skipif(
         Version(w3lib_version) < Version("2.0.0"),
         reason=(
