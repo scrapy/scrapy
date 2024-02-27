@@ -1,20 +1,19 @@
 skips:
-- B101
-- B113  # https://github.com/PyCQA/bandit/issues/1010
-- B105
-- B301
-- B303
-- B307
-- B311
-- B320
-- B321
-- B324
-- B402  # https://github.com/scrapy/scrapy/issues/4180
-- B403
-- B404
-- B406
-- B410
-- B503
-- B603
-- B605
+- B101  # assert_used
+- B105  # hardcoded_password_string
+- B301  # pickle
+- B307  # eval
+- B311  # random
+- B320  # xml_bad_etree
+- B321  # ftplib, https://github.com/scrapy/scrapy/issues/4180
+- B324  # hashlib "Use of weak SHA1 hash for security"
+- B402  # import_ftplib, https://github.com/scrapy/scrapy/issues/4180
+- B403  # import_pickle
+- B404  # import_subprocess
+- B406  # import_xml_sax
+- B410  # import_lxml
+- B411  # import_xmlrpclib, https://github.com/PyCQA/bandit/issues/1082
+- B503  # ssl_with_bad_defaults
+- B603  # subprocess_without_shell_equals_true
+- B605  # start_process_with_a_shell
 exclude_dirs: ['tests']
