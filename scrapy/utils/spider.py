@@ -34,8 +34,7 @@ _T = TypeVar("_T")
 
 # https://stackoverflow.com/questions/60222982
 @overload
-def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator:  # type: ignore[misc]
-    ...
+def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator: ...  # type: ignore[overload-overlap]
 
 
 @overload
