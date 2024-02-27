@@ -2,8 +2,8 @@ import contextlib
 import os
 import shutil
 import sys
-import tempfile
 from pathlib import Path
+from tempfile import mkdtemp, mkstemp
 from typing import Optional, Type
 from unittest import SkipTest, mock
 
@@ -107,13 +107,14 @@ class LoadTestCase(unittest.TestCase):
 class FileTestCase(unittest.TestCase):
     def setUp(self):
         # add a special char to check that they are handled correctly
-        self.tmpname = Path(self.mktemp() + "^")
+        self.fd, self.tmpname = mkstemp(suffix="^")
         Path(self.tmpname).write_text("0123456789", encoding="utf-8")
         handler = build_from_crawler(FileDownloadHandler, get_crawler())
         self.download_request = handler.download_request
 
     def tearDown(self):
-        self.tmpname.unlink()
+        os.close(self.fd)
+        os.remove(self.tmpname)
 
     def test_download(self):
         def _test(response):
@@ -122,12 +123,12 @@ class FileTestCase(unittest.TestCase):
             self.assertEqual(response.body, b"0123456789")
             self.assertEqual(response.protocol, None)
 
-        request = Request(path_to_file_uri(str(self.tmpname)))
+        request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
     def test_non_existent(self):
-        request = Request(path_to_file_uri(self.mktemp()))
+        request = Request(path_to_file_uri(mkdtemp()))
         d = self.download_request(request, Spider("foo"))
         return self.assertFailure(d, OSError)
 
@@ -224,8 +225,7 @@ class HttpTestCase(unittest.TestCase):
     certfile = "keys/localhost.crt"
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -651,8 +651,7 @@ class Https11CustomCiphers(unittest.TestCase):
     certfile = "keys/localhost.crt"
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         self.site = server.Site(r, timeout=None)
@@ -1015,8 +1014,7 @@ class BaseFTPTestCase(unittest.TestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dirs and test file
-        self.directory = Path(self.mktemp())
-        self.directory.mkdir()
+        self.directory = Path(mkdtemp())
         userdir = self.directory / self.username
         userdir.mkdir()
         for filename, content in self.test_files:
@@ -1092,7 +1090,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_local_filename(self):
-        f, local_fname = tempfile.mkstemp()
+        f, local_fname = mkstemp()
         fname_bytes = to_bytes(local_fname)
         local_fname = Path(local_fname)
         os.close(f)
@@ -1113,7 +1111,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def _test_response_class(self, filename, response_class):
-        f, local_fname = tempfile.mkstemp()
+        f, local_fname = mkstemp()
         local_fname = Path(local_fname)
         os.close(f)
         meta = {}
@@ -1163,9 +1161,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
         # setup dir and test file
-        self.directory = Path(self.mktemp())
-        self.directory.mkdir()
-
+        self.directory = Path(mkdtemp())
         for filename, content in self.test_files:
             (self.directory / filename).write_bytes(content)
 

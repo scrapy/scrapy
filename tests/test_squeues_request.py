@@ -25,7 +25,7 @@ class BaseQueueTestCase(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="scrapy-queue-tests-")
         self.qpath = self.tempfilename()
-        self.qdir = self.mkdtemp()
+        self.qdir = tempfile.mkdtemp()
         self.crawler = get_crawler(Spider)
 
     def tearDown(self):

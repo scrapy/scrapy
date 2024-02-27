@@ -4,6 +4,7 @@ Tests borrowed from the twisted.web.client tests.
 """
 import shutil
 from pathlib import Path
+from tempfile import mkdtemp
 
 import OpenSSL.SSL
 from twisted.internet import defer, reactor
@@ -274,8 +275,7 @@ class WebClientTestCase(unittest.TestCase):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -440,8 +440,7 @@ class WebClientSSLTestCase(unittest.TestCase):
         return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"payload", PayloadResource())

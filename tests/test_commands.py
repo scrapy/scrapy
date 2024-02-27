@@ -6,13 +6,12 @@ import platform
 import re
 import subprocess
 import sys
-import tempfile
 from contextlib import contextmanager
 from itertools import chain
 from pathlib import Path
 from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
-from tempfile import mkdtemp
+from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
 from typing import Dict, Generator, Optional, Union
 from unittest import skipIf
@@ -82,7 +81,7 @@ class ProjectTest(unittest.TestCase):
         rmtree(self.temp_path)
 
     def call(self, *new_args, **kwargs):
-        with tempfile.TemporaryFile() as out:
+        with TemporaryFile() as out:
             args = (sys.executable, "-m", "scrapy.cmdline") + new_args
             return subprocess.call(
                 args, stdout=out, stderr=out, cwd=self.cwd, env=self.env, **kwargs
