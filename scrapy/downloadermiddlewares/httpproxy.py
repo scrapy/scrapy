@@ -44,7 +44,7 @@ class HttpProxyMiddleware:
         return creds, proxy_url
 
     def process_request(self, request, spider):
-        creds, proxy_url = None, None
+        creds, proxy_url, scheme = None, None, None
         if "proxy" in request.meta:
             if request.meta["proxy"] is not None:
                 creds, proxy_url = self._get_proxy(request.meta["proxy"], "")
@@ -58,9 +58,11 @@ class HttpProxyMiddleware:
             ) and scheme in self.proxies:
                 creds, proxy_url = self.proxies[scheme]
 
-        self._set_proxy_and_creds(request, proxy_url, creds)
+        self._set_proxy_and_creds(request, proxy_url, creds, scheme)
 
-    def _set_proxy_and_creds(self, request, proxy_url, creds):
+    def _set_proxy_and_creds(self, request, proxy_url, creds, scheme):
+        if scheme:
+            request.meta["_scheme_proxy"] = True
         if proxy_url:
             request.meta["proxy"] = proxy_url
         elif request.meta.get("proxy") is not None:
