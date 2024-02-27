@@ -56,8 +56,8 @@ class HttpProxyMiddleware:
                 _scheme not in ("http", "https")
                 or not proxy_bypass(parsed.hostname)
             ) and _scheme in self.proxies:
-                creds, proxy_url = self.proxies[scheme]
                 scheme = _scheme
+                creds, proxy_url = self.proxies[scheme]
 
         self._set_proxy_and_creds(request, proxy_url, creds, scheme)
 
