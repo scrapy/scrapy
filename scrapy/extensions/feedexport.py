@@ -13,6 +13,7 @@ from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
+import importlib
 
 from twisted.internet import defer, threads
 from twisted.internet.defer import DeferredList
@@ -405,6 +406,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots = []
         self.filters = {}
+        self.item_processors = {}
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -431,10 +433,12 @@ class FeedExporter:
         for uri, feed_options in self.settings.getdict("FEEDS").items():
             # handle pathlib.Path objects
             uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
+            processor_paths = feed_options.get('item_processors', [])
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
             self.filters[uri] = self._load_filter(feed_options)
+            self.item_processors[uri] = [self._import_processor(path) for path in processor_paths]
 
         self.storages = self._load_components("FEED_STORAGES")
         self.exporters = self._load_components("FEED_EXPORTERS")
@@ -677,6 +681,16 @@ class FeedExporter:
         )
         new_params = uripar_function(params, spider)
         return new_params if new_params is not None else params
+    
+    def _import_processor(self, path):
+        try:
+            module_name, function_name = path.rsplit('.', 1)
+            module = importlib.import_module(module_name)
+            return getattr(module, function_name)
+        except ImportError as e:
+            raise NotConfigured(f"Error importing processor function {path}: {e}")
+        except AttributeError as e:
+            raise NotConfigured(f"Processor function {path} not found: {e}")
 
     def _load_filter(self, feed_options):
         # load the item filter if declared else load the default filter class

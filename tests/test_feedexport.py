@@ -1749,6 +1749,24 @@ class FeedExportTest(FeedExportTestBase):
         self.assertIs(Storage.open_file, Storage.store_file)
         self.assertFalse(Storage.file_was_closed)
 
+    @mock.patch('scrapy.extensions.feedexport.FeedExporter._import_processor')
+    def test_processor_functions_fetched_and_stored(self, mock_import_processor):
+        mock_import_processor.return_value = lambda x: x
+
+        feeds_setting = {
+            'file:///tmp/export.json': {
+                'format': 'json',
+                'item_processors': ['scrapy.processors.dummy_processor']
+            }
+        }
+
+        crawler = get_crawler(settings_dict={'FEEDS': feeds_setting})
+        feed_exporter = FeedExporter.from_crawler(crawler)
+
+        stored_processors = feed_exporter.item_processors['file:///tmp/export.json']
+        self.assertEqual(len(stored_processors), 1)
+        self.assertIs(stored_processors[0], mock_import_processor.return_value)
+
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
     __test__ = True
