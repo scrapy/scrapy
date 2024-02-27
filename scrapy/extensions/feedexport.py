@@ -682,3 +682,8 @@ class FeedExporter:
         # load the item filter if declared else load the default filter class
         item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
         return item_filter_class(feed_options)
+    
+    def _process_item(self, item, processor_functions):
+        for processor_function in processor_functions:
+            item = processor_function(item)
+        return item
