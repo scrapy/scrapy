@@ -7,8 +7,12 @@ See documentation in docs/topics/request-response.rst
 import xmlrpc.client as xmlrpclib
 from typing import Any, Optional
 
+from defusedxml import xmlrpc
+
 from scrapy.http.request import Request
 from scrapy.utils.python import get_func_args
+
+xmlrpc.monkey_patch()
 
 DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 
