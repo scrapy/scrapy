@@ -320,7 +320,7 @@ class CookiesMiddlewareTest(TestCase):
 
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_keep_cookie_from_default_request_headers_middleware(self):
-        DEFAULT_REQUEST_HEADERS = dict(Cookie="default=value; asdf=qwerty")
+        DEFAULT_REQUEST_HEADERS = {"Cookie": "default=value; asdf=qwerty"}
         mw_default_headers = DefaultHeadersMiddleware(DEFAULT_REQUEST_HEADERS.items())
         # overwrite with values from 'cookies' request argument
         req1 = Request("http://example.org", cookies={"default": "something"})
