@@ -9,6 +9,7 @@ RETRY_HTTP_CODES - which HTTP response codes to retry
 Failed pages are collected on the scraping process and rescheduled at the end,
 once the spider has finished crawling all regular (non failed) pages.
 """
+
 from __future__ import annotations
 
 import warnings

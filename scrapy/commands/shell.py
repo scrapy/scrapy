@@ -3,6 +3,7 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
+
 from argparse import Namespace
 from threading import Thread
 from typing import List, Type

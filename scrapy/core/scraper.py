@@ -1,5 +1,6 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
+
 from __future__ import annotations
 
 import logging

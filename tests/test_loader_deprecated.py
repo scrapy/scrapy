@@ -678,11 +678,11 @@ class SelectJmesTestCase(unittest.TestCase):
     }
 
     def test_output(self):
-        for tl in self.test_list_equals:
-            expr, test_list, expected = self.test_list_equals[tl]
+        for k, v in self.test_list_equals.items():
+            expr, test_list, expected = v
             test = SelectJmes(expr)(test_list)
             self.assertEqual(
-                test, expected, msg=f'test "{tl}" got {test} expected {expected}'
+                test, expected, msg=f'test "{k}" got {test} expected {expected}'
             )
 
 

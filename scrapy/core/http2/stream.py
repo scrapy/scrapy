@@ -111,17 +111,17 @@ class Stream:
         # Metadata of an HTTP/2 connection stream
         # initialized when stream is instantiated
         self.metadata: Dict = {
-            "request_content_length": 0
-            if self._request.body is None
-            else len(self._request.body),
+            "request_content_length": (
+                0 if self._request.body is None else len(self._request.body)
+            ),
             # Flag to keep track whether the stream has initiated the request
             "request_sent": False,
             # Flag to track whether we have logged about exceeding download warnsize
             "reached_warnsize": False,
             # Each time we send a data frame, we will decrease value by the amount send.
-            "remaining_content_length": 0
-            if self._request.body is None
-            else len(self._request.body),
+            "remaining_content_length": (
+                0 if self._request.body is None else len(self._request.body)
+            ),
             # Flag to keep track whether client (self) have closed this stream
             "stream_closed_local": False,
             # Flag to keep track whether the server has closed the stream

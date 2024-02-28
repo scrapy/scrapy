@@ -225,18 +225,17 @@ def csviter(
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes]) -> str:
-    ...
+def _body_or_str(obj: Union[Response, str, bytes]) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str:
-    ...
+def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[False]) -> bytes:
-    ...
+def _body_or_str(
+    obj: Union[Response, str, bytes], unicode: Literal[False]
+) -> bytes: ...
 
 
 def _body_or_str(

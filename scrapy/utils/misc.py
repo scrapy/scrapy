@@ -1,4 +1,5 @@
 """Helper functions which don't fit anywhere else"""
+
 import ast
 import hashlib
 import inspect

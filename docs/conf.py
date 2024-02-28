@@ -227,7 +227,7 @@ latex_documents = [
 # A list of regular expressions that match URIs that should not be checked when
 # doing a linkcheck build.
 linkcheck_ignore = [
-    "http://localhost:\d+",
+    r"http://localhost:\d+",
     "http://hg.scrapy.org",
     "http://directory.google.com/",
 ]

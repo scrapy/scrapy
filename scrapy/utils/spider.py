@@ -34,18 +34,15 @@ _T = TypeVar("_T")
 
 # https://stackoverflow.com/questions/60222982
 @overload
-def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator:  # type: ignore[misc]
-    ...
+def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator: ...  # type: ignore[overload-overlap]
 
 
 @overload
-def iterate_spider_output(result: CoroutineType) -> Deferred:
-    ...
+def iterate_spider_output(result: CoroutineType) -> Deferred: ...
 
 
 @overload
-def iterate_spider_output(result: _T) -> Iterable:
-    ...
+def iterate_spider_output(result: _T) -> Iterable: ...
 
 
 def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferred]:
@@ -83,8 +80,7 @@ def spidercls_for_request(
     default_spidercls: Type[Spider],
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Type[Spider]:
-    ...
+) -> Type[Spider]: ...
 
 
 @overload
@@ -94,8 +90,7 @@ def spidercls_for_request(
     default_spidercls: Literal[None],
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Optional[Type[Spider]]:
-    ...
+) -> Optional[Type[Spider]]: ...
 
 
 @overload
@@ -105,8 +100,7 @@ def spidercls_for_request(
     *,
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Optional[Type[Spider]]:
-    ...
+) -> Optional[Type[Spider]]: ...
 
 
 def spidercls_for_request(
