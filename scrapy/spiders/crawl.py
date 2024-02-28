@@ -85,7 +85,7 @@ class CrawlSpider(Spider):
             url=link.url,
             callback=self._callback,
             errback=self._errback,
-            meta=dict(rule=rule_index, link_text=link.text),
+            meta={"rule": rule_index, "link_text": link.text},
         )
 
     def _requests_to_follow(self, response):
