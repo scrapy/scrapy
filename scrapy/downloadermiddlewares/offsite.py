@@ -1,22 +1,10 @@
-"""
-Offsite Spider Middleware
-
-See documentation in docs/topics/spider-middleware.rst
-"""
 import logging
 import re
 import warnings
 
 from scrapy import signals
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.httpobj import urlparse_cached
-
-warnings.warn(
-    "The scrapy.spidermiddlewares.offsite module is deprecated, use "
-    "scrapy.downloadermiddlewares.offsite instead.",
-    ScrapyDeprecationWarning,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +19,9 @@ class OffsiteMiddleware:
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def process_spider_output(self, response, result, spider):
-        return (r for r in result or () if self._filter(r, spider))
-
-    async def process_spider_output_async(self, response, result, spider):
-        async for r in result or ():
-            if self._filter(r, spider):
-                yield r
-
-    def _filter(self, request, spider) -> bool:
-        if not isinstance(request, Request):
-            return True
+    def process_request(self, request, spider):
         if request.dont_filter or self.should_follow(request, spider):
-            return True
+            return None
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
             self.domains_seen.add(domain)
@@ -54,7 +32,7 @@ class OffsiteMiddleware:
             )
             self.stats.inc_value("offsite/domains", spider=spider)
         self.stats.inc_value("offsite/filtered", spider=spider)
-        return False
+        raise IgnoreRequest
 
     def should_follow(self, request, spider):
         regex = self.host_regex
@@ -78,13 +56,13 @@ class OffsiteMiddleware:
                     "allowed_domains accepts only domains, not URLs. "
                     f"Ignoring URL entry {domain} in allowed_domains."
                 )
-                warnings.warn(message, URLWarning)
+                warnings.warn(message)
             elif port_pattern.search(domain):
                 message = (
                     "allowed_domains accepts only domains without ports. "
                     f"Ignoring entry {domain} in allowed_domains."
                 )
-                warnings.warn(message, PortWarning)
+                warnings.warn(message)
             else:
                 domains.append(re.escape(domain))
         regex = rf'^(.*\.)?({"|".join(domains)})$'
@@ -93,11 +71,3 @@ class OffsiteMiddleware:
     def spider_opened(self, spider):
         self.host_regex = self.get_host_regex(spider)
         self.domains_seen = set()
-
-
-class URLWarning(Warning):
-    pass
-
-
-class PortWarning(Warning):
-    pass

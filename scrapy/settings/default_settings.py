@@ -101,6 +101,7 @@ DOWNLOADER_MIDDLEWARES = {}
 
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
+    "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
@@ -299,7 +300,6 @@ SPIDER_MIDDLEWARES = {}
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-    "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": 500,
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
