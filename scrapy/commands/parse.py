@@ -341,7 +341,7 @@ class Command(BaseRunSpiderCommand):
 
     def run(self, args, opts):
         # parse arguments
-        if not len(args) != 1 or not is_url(args[0]):
+        if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         else:
             url = args[0]
