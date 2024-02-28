@@ -10,14 +10,18 @@ logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware:
-    def __init__(self, stats):
-        self.stats = stats
-
     @classmethod
     def from_crawler(cls, crawler):
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
+
+    def __init__(self, stats):
+        self.stats = stats
+        self.domains_seen = set()
+
+    def spider_opened(self, spider):
+        self.host_regex = self.get_host_regex(spider)
 
     def process_request(self, request, spider):
         if request.dont_filter or self.should_follow(request, spider):
@@ -67,7 +71,3 @@ class OffsiteMiddleware:
                 domains.append(re.escape(domain))
         regex = rf'^(.*\.)?({"|".join(domains)})$'
         return re.compile(regex)
-
-    def spider_opened(self, spider):
-        self.host_regex = self.get_host_regex(spider)
-        self.domains_seen = set()
