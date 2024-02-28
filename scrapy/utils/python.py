@@ -316,7 +316,7 @@ def global_object_name(obj: Any) -> str:
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
     """
-    return f"{obj.__module__}.{obj.__name__}"
+    return f"{obj.__module__}.{obj.__qualname__}"
 
 
 if hasattr(sys, "pypy_version_info"):

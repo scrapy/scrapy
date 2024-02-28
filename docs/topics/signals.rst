@@ -343,10 +343,17 @@ request_scheduled
 .. signal:: request_scheduled
 .. function:: request_scheduled(request, spider)
 
-    Sent when the engine schedules a :class:`~scrapy.Request`, to be
-    downloaded later.
+    Sent when the engine is asked to schedule a :class:`~scrapy.Request`, to be
+    downloaded later, before the request reaches the :ref:`scheduler
+    <topics-scheduler>`.
+
+    Raise :exc:`~scrapy.exceptions.IgnoreRequest` to drop a request before it
+    reaches the scheduler.
 
     This signal does not support returning deferreds from its handlers.
+
+    .. versionadded:: VERSION
+        Allow dropping requests with :exc:`~scrapy.exceptions.IgnoreRequest`.
 
     :param request: the request that reached the scheduler
     :type request: :class:`~scrapy.Request` object

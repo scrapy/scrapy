@@ -14,6 +14,7 @@ class OffsiteMiddleware:
     def from_crawler(cls, crawler):
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.request_scheduled, signal=signals.request_scheduled)
         return o
 
     def __init__(self, stats):
@@ -22,6 +23,9 @@ class OffsiteMiddleware:
 
     def spider_opened(self, spider):
         self.host_regex = self.get_host_regex(spider)
+
+    def request_scheduled(self, request, spider):
+        self.process_request(request, spider)
 
     def process_request(self, request, spider):
         if request.dont_filter or self.should_follow(request, spider):
