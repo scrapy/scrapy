@@ -771,6 +771,8 @@ OffsiteMiddleware
 
 .. class:: OffsiteMiddleware
 
+   .. versionadded:: VERSION
+
    Filters out Requests for URLs outside the domains covered by the spider.
 
    This middleware filters out every request whose host names aren't in the

@@ -142,7 +142,7 @@ If you have a spider with a long list of :attr:`~scrapy.Spider.allowed_domains`
 (e.g. 50,000+), consider replacing the default
 :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` downloader
 middleware with a :ref:`custom downloader middleware
-<custom-downloader-middleware>` that requires less memory. For example:
+<topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
     instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
