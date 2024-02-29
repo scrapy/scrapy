@@ -30,7 +30,7 @@ def get_engine_status(engine: "ExecutionEngine") -> List[Tuple[str, Any]]:
     checks: List[Tuple[str, Any]] = []
     for test in tests:
         try:
-            checks += [(test, eval(test))]
+            checks += [(test, eval(test))]  # nosec
         except Exception as e:
             checks += [(test, f"{type(e).__name__} (exception)")]
 

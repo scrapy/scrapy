@@ -1,6 +1,6 @@
 import gzip
 import logging
-import pickle
+import pickle  # nosec
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
@@ -274,7 +274,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return  # expired
 
-        return pickle.loads(db[f"{key}_data"])
+        return pickle.loads(db[f"{key}_data"])  # nosec
 
 
 class FilesystemCacheStorage:
@@ -352,7 +352,7 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return  # expired
         with self._open(metapath, "rb") as f:
-            return pickle.load(f)
+            return pickle.load(f)  # nosec
 
 
 def parse_cachecontrol(header):

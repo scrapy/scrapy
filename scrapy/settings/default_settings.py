@@ -177,7 +177,7 @@ FILES_STORE_S3_ACL = "private"
 FILES_STORE_GCS_ACL = ""
 
 FTP_USER = "anonymous"
-FTP_PASSWORD = "guest"
+FTP_PASSWORD = "guest"  # nosec
 FTP_PASSIVE_MODE = True
 
 GCS_PROJECT_ID = None

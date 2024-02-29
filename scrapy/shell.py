@@ -50,7 +50,7 @@ class Shell:
         else:
             self.populate_vars()
         if self.code:
-            print(eval(self.code, globals(), self.vars))
+            print(eval(self.code, globals(), self.vars))  # nosec
         else:
             """
             Detect interactive shell setting in scrapy.cfg

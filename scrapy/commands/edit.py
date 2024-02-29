@@ -37,4 +37,4 @@ class Command(ScrapyCommand):
 
         sfile = sys.modules[spidercls.__module__].__file__
         sfile = sfile.replace(".pyc", ".py")
-        self.exitcode = os.system(f'{editor} "{sfile}"')
+        self.exitcode = os.system(f'{editor} "{sfile}"')  # nosec

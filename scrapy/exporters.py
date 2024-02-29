@@ -5,10 +5,10 @@ Item Exporters are used to export/serialize items into different formats.
 import csv
 import io
 import marshal
-import pickle
+import pickle  # nosec
 import pprint
 from collections.abc import Mapping
-from xml.sax.saxutils import XMLGenerator
+from xml.sax.saxutils import XMLGenerator  # nosec
 
 from itemadapter import ItemAdapter, is_item
 

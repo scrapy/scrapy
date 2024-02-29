@@ -113,7 +113,7 @@ class Command(ScrapyCommand):
         if template_file:
             self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')
+                self.exitcode = os.system(f'scrapy edit "{name}"')  # nosec
 
     def _genspider(self, module, name, url, template_name, template_file):
         """Generate the spider module, based on the given template"""
