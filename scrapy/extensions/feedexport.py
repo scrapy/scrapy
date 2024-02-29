@@ -698,6 +698,6 @@ class FeedExporter:
         return item_filter_class(feed_options)
     
     def _process_item(self, item, processor_functions):
-        for processor_function in processor_functions:
+        for processor_function in processor_functions.values():
             item = processor_function(item)
         return item
