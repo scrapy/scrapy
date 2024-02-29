@@ -91,7 +91,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(attach.get_payload(decode=True), b"content")
 
     def _catch_mail_sent(self, **kwargs):
-        self.catched_msg = dict(**kwargs)
+        self.catched_msg = {**kwargs}
 
     def test_send_utf8(self):
         subject = "sübjèçt"

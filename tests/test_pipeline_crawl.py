@@ -140,7 +140,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(logs.count(file_dl_failure), 3)
 
         # check that no files were written to the media store
-        self.assertEqual([x for x in self.tmpmediastore.iterdir()], [])
+        self.assertEqual(list(self.tmpmediastore.iterdir()), [])
 
     @defer.inlineCallbacks
     def test_download_media(self):

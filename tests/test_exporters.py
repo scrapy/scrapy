@@ -152,7 +152,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
 
     def test_nested_item(self):
         i1 = self.item_class(name="Joseph", age="22")
-        i2 = dict(name="Maria", age=i1)
+        i2 = {"name": "Maria", "age": i1}
         i3 = self.item_class(name="Jesus", age=i2)
         ie = self._get_exporter()
         exported = ie.export_item(i3)
@@ -185,7 +185,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
 
     def test_export_item_dict_list(self):
         i1 = self.item_class(name="Joseph", age="22")
-        i2 = dict(name="Maria", age=[i1])
+        i2 = {"name": "Maria", "age": [i1]}
         i3 = self.item_class(name="Jesus", age=[i2])
         ie = self._get_exporter()
         exported = ie.export_item(i3)
@@ -373,7 +373,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
 
     def test_join_multivalue_not_strings(self):
         self.assertExportResult(
-            item=dict(name="John", friends=[4, 8]),
+            item={"name": "John", "friends": [4, 8]},
             include_headers_line=False,
             expected='"[4, 8]",John\r\n',
         )
@@ -388,14 +388,14 @@ class CsvItemExporterTest(BaseItemExporterTest):
     def test_errors_default(self):
         with self.assertRaises(UnicodeEncodeError):
             self.assertExportResult(
-                item=dict(text="W\u0275\u200Brd"),
+                item={"text": "W\u0275\u200Brd"},
                 expected=None,
                 encoding="windows-1251",
             )
 
     def test_errors_xmlcharrefreplace(self):
         self.assertExportResult(
-            item=dict(text="W\u0275\u200Brd"),
+            item={"text": "W\u0275\u200Brd"},
             include_headers_line=False,
             expected="W&#629;&#8203;rd\r\n",
             encoding="windows-1251",
@@ -455,8 +455,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
         )
 
     def test_nested_item(self):
-        i1 = dict(name="foo\xa3hoo", age="22")
-        i2 = dict(name="bar", age=i1)
+        i1 = {"name": "foo\xa3hoo", "age": "22"}
+        i2 = {"name": "bar", "age": i1}
         i3 = self.item_class(name="buz", age=i2)
 
         self.assertExportResult(
@@ -478,8 +478,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
         )
 
     def test_nested_list_item(self):
-        i1 = dict(name="foo")
-        i2 = dict(name="bar", v2={"egg": ["spam"]})
+        i1 = {"name": "foo"}
+        i2 = {"name": "bar", "v2": {"egg": ["spam"]}}
         i3 = self.item_class(name="buz", age=[i1, i2])
 
         self.assertExportResult(
@@ -534,7 +534,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
 
     def test_nested_item(self):
         i1 = self.item_class(name="Joseph", age="22")
-        i2 = dict(name="Maria", age=i1)
+        i2 = {"name": "Maria", "age": i1}
         i3 = self.item_class(name="Jesus", age=i2)
         self.ie.start_exporting()
         self.ie.export_item(i3)
@@ -622,9 +622,9 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.assertEqual(exported, [expected])
 
     def test_nested_dict_item(self):
-        i1 = dict(name="Joseph\xa3", age="22")
+        i1 = {"name": "Joseph\xa3", "age": "22"}
         i2 = self.item_class(name="Maria", age=i1)
-        i3 = dict(name="Jesus", age=i2)
+        i3 = {"name": "Jesus", "age": i2}
         self.ie.start_exporting()
         self.ie.export_item(i3)
         self.ie.finish_exporting()

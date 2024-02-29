@@ -162,7 +162,7 @@ def re_rsearch(
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
-        matches = [match for match in pattern.finditer(chunk)]
+        matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()
             return offset + start, offset + end

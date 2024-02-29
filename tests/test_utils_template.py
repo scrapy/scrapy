@@ -16,7 +16,7 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
         rmtree(self.tmp_path)
 
     def test_simple_render(self):
-        context = dict(project_name="proj", name="spi", classname="TheSpider")
+        context = {"project_name": "proj", "name": "spi", "classname": "TheSpider"}
         template = "from ${project_name}.spiders.${name} import ${classname}"
         rendered = "from proj.spiders.spi import TheSpider"
 
