@@ -53,12 +53,10 @@ class JsonRequest(Request):
     @overload
     def replace(
         self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
-    ) -> RequestTypeVar:
-        ...
+    ) -> RequestTypeVar: ...
 
     @overload
-    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
-        ...
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
         self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
