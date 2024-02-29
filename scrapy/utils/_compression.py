@@ -61,7 +61,10 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     decompressed_size = 0
     while output_chunk:
         input_chunk = input_stream.read(_CHUNK_SIZE)
-        output_chunk = decompressor.process(input_chunk)
+        try:
+            output_chunk = decompressor.process(input_chunk)
+        except AttributeError:
+            output_chunk = decompressor.decompress(input_chunk)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(
