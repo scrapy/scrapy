@@ -27,7 +27,7 @@ from mitmproxy.tools.main import mitmdump
 sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
-        cert_path = Path(__file__).parent.resolve() / "keys" / "mitmproxy-ca.pem"
+        cert_path = Path(__file__).parent.resolve() / "keys"
         self.proc = Popen(
             [
                 sys.executable,
@@ -40,8 +40,8 @@ sys.exit(mitmdump())
                 "0",
                 "--proxyauth",
                 f"{self.auth_user}:{self.auth_pass}",
-                "--certs",
-                str(cert_path),
+                "--set",
+                f"confdir={cert_path}",
                 "--ssl-insecure",
             ],
             stdout=PIPE,
