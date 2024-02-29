@@ -19,8 +19,10 @@ logger = getLogger(__name__)
 ACCEPTED_ENCODINGS = [b"gzip", b"deflate"]
 
 try:
-    import brotli  # noqa: F401
-except ImportError:
+    import brotli
+
+    brotli.Decompressor.process  # Fails for brotlipy, works for brotli
+except (AttributeError, ImportError):
     pass
 else:
     ACCEPTED_ENCODINGS.append(b"br")

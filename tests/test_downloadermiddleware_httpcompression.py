@@ -127,9 +127,7 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
     def test_process_response_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         response = self._getresponse("br")
         request = response.request
@@ -389,9 +387,7 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_compression_bomb_setting_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         self._test_compression_bomb_setting("br")
 
@@ -427,9 +423,7 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_compression_bomb_spider_attr_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         self._test_compression_bomb_spider_attr("br")
 
@@ -463,9 +457,7 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_compression_bomb_request_meta_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         self._test_compression_bomb_request_meta("br")
 
@@ -509,9 +501,7 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_download_warnsize_setting_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         self._test_download_warnsize_setting("br")
 
@@ -557,9 +547,7 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_download_warnsize_spider_attr_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         self._test_download_warnsize_spider_attr("br")
 
@@ -603,9 +591,7 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_download_warnsize_request_meta_br(self):
-        try:
-            import brotli  # noqa: F401
-        except ImportError:
+        if b"br" not in ACCEPTED_ENCODINGS:
             raise SkipTest("no brotli")
         self._test_download_warnsize_request_meta("br")
 

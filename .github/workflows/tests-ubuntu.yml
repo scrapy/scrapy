@@ -50,6 +50,9 @@ jobs:
         - python-version: "3.12"
           env:
             TOXENV: botocore
+        - python-version: "3.12"
+          env:
+            TOXENV: brotlipy
 
     steps:
     - uses: actions/checkout@v3
