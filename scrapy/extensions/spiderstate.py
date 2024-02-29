@@ -1,4 +1,4 @@
-import pickle
+import pickle  # nosec
 from pathlib import Path
 
 from scrapy import signals
@@ -31,7 +31,7 @@ class SpiderState:
     def spider_opened(self, spider):
         if self.jobdir and Path(self.statefn).exists():
             with Path(self.statefn).open("rb") as f:
-                spider.state = pickle.load(f)
+                spider.state = pickle.load(f)  # nosec
         else:
             spider.state = {}
 

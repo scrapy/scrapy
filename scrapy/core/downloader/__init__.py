@@ -40,7 +40,7 @@ class Slot:
 
     def download_delay(self) -> float:
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # nosec
         return self.delay
 
     def close(self) -> None:

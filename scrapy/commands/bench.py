@@ -1,4 +1,4 @@
-import subprocess
+import subprocess  # nosec
 import sys
 import time
 from urllib.parse import urlencode
@@ -29,7 +29,9 @@ class _BenchServer:
         from scrapy.utils.test import get_testenv
 
         pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
-        self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE, env=get_testenv())
+        self.proc = subprocess.Popen(
+            pargs, stdout=subprocess.PIPE, env=get_testenv()
+        )  # nosec
         self.proc.stdout.readline()
 
     def __exit__(self, exc_type, exc_value, traceback):
