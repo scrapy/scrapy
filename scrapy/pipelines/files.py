@@ -3,12 +3,12 @@ Files Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
+
 import base64
 import functools
 import hashlib
 import logging
 import mimetypes
-import os
 import time
 from collections import defaultdict
 from contextlib import suppress
@@ -66,7 +66,7 @@ class FSFilesStore:
         absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = absolute_path.stat().st_mtime
-        except os.error:
+        except OSError:
             return {}
 
         with absolute_path.open("rb") as f:
@@ -340,7 +340,9 @@ class FilesPipeline(MediaPipeline):
     DEFAULT_FILES_URLS_FIELD = "file_urls"
     DEFAULT_FILES_RESULT_FIELD = "files"
 
-    def __init__(self, store_uri, download_func=None, settings=None):
+    def __init__(
+        self, store_uri: Union[str, PathLike], download_func=None, settings=None
+    ):
         store_uri = _to_string(store_uri)
         if not store_uri:
             raise NotConfigured

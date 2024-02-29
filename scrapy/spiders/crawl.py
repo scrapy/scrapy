@@ -85,7 +85,7 @@ class CrawlSpider(Spider):
             url=link.url,
             callback=self._callback,
             errback=self._errback,
-            meta=dict(rule=rule_index, link_text=link.text),
+            meta={"rule": rule_index, "link_text": link.text},
         )
 
     def _requests_to_follow(self, response):
@@ -131,8 +131,7 @@ class CrawlSpider(Spider):
     def _handle_failure(self, failure, errback):
         if errback:
             results = errback(failure) or ()
-            for request_or_item in iterate_spider_output(results):
-                yield request_or_item
+            yield from iterate_spider_output(results)
 
     def _compile_rules(self):
         self._rules = []

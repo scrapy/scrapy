@@ -4,6 +4,7 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+
 from __future__ import annotations
 
 import inspect
@@ -187,12 +188,10 @@ class Request(object_ref):
     @overload
     def replace(
         self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
-    ) -> RequestTypeVar:
-        ...
+    ) -> RequestTypeVar: ...
 
     @overload
-    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
-        ...
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
         self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
@@ -252,12 +251,16 @@ class Request(object_ref):
         """
         d = {
             "url": self.url,  # urls are safe (safe_string_url)
-            "callback": _find_method(spider, self.callback)
-            if callable(self.callback)
-            else self.callback,
-            "errback": _find_method(spider, self.errback)
-            if callable(self.errback)
-            else self.errback,
+            "callback": (
+                _find_method(spider, self.callback)
+                if callable(self.callback)
+                else self.callback
+            ),
+            "errback": (
+                _find_method(spider, self.errback)
+                if callable(self.errback)
+                else self.errback
+            ),
             "headers": dict(self.headers),
         }
         for attr in self.attributes:

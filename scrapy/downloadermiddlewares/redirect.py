@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any, List, Union, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
@@ -30,11 +30,17 @@ def _build_redirect_request(
         cls=None,
         cookies=None,
     )
-    if "Cookie" in redirect_request.headers:
+    has_cookie_header = "Cookie" in redirect_request.headers
+    has_authorization_header = "Authorization" in redirect_request.headers
+    if has_cookie_header or has_authorization_header:
         source_request_netloc = urlparse_cached(source_request).netloc
         redirect_request_netloc = urlparse_cached(redirect_request).netloc
         if source_request_netloc != redirect_request_netloc:
-            del redirect_request.headers["Cookie"]
+            if has_cookie_header:
+                del redirect_request.headers["Cookie"]
+            # https://fetch.spec.whatwg.org/#ref-for-cors-non-wildcard-request-header-name
+            if has_authorization_header:
+                del redirect_request.headers["Authorization"]
     return redirect_request
 
 
@@ -120,7 +126,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         assert response.headers["Location"] is not None
         location = safe_url_string(response.headers["Location"])
         if response.headers["Location"].startswith(b"//"):
-            request_scheme = urlparse(request.url).scheme
+            request_scheme = urlparse_cached(request).scheme
             location = request_scheme + "://" + location.lstrip("/")
 
         redirected_url = urljoin(request.url, location)

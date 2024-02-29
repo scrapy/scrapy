@@ -3,12 +3,14 @@ Images Pipeline
 
 See documentation in topics/media-pipeline.rst
 """
+
 import functools
 import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import Dict, Tuple
+from os import PathLike
+from typing import Dict, Tuple, Union
 
 from itemadapter import ItemAdapter
 
@@ -53,7 +55,9 @@ class ImagesPipeline(FilesPipeline):
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
-    def __init__(self, store_uri, download_func=None, settings=None):
+    def __init__(
+        self, store_uri: Union[str, PathLike], download_func=None, settings=None
+    ):
         try:
             from PIL import Image
 

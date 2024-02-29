@@ -4,6 +4,7 @@ discovering (through HTTP headers) to base Response class.
 
 See documentation in docs/topics/request-response.rst
 """
+
 from __future__ import annotations
 
 import json

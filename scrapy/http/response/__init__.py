@@ -4,6 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+
 from __future__ import annotations
 
 from ipaddress import IPv4Address, IPv6Address
@@ -147,12 +148,10 @@ class Response(object_ref):
     @overload
     def replace(
         self, *args: Any, cls: Type[ResponseTypeVar], **kwargs: Any
-    ) -> ResponseTypeVar:
-        ...
+    ) -> ResponseTypeVar: ...
 
     @overload
-    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
-        ...
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
         self, *args: Any, cls: Optional[Type[Response]] = None, **kwargs: Any

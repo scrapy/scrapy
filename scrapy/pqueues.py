@@ -1,7 +1,7 @@
 import hashlib
 import logging
 
-from scrapy.utils.misc import create_instance
+from scrapy.utils.misc import build_from_crawler
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +72,8 @@ class ScrapyPriorityQueue:
         self.curprio = min(startprios)
 
     def qfactory(self, key):
-        return create_instance(
+        return build_from_crawler(
             self.downstream_queue_cls,
-            None,
             self.crawler,
             self.key + "/" + str(key),
         )

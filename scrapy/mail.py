@@ -3,6 +3,7 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
+
 import logging
 from email import encoders as Encoders
 from email.mime.base import MIMEBase

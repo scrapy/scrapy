@@ -13,6 +13,11 @@ Scrapy provides this functionality out of the box with the Feed Exports, which
 allows you to generate feeds with the scraped items, using multiple
 serialization formats and storage backends.
 
+This page provides detailed documentation for all feed export features. If you
+are looking for a step-by-step guide, check out `Zyte’s export guides`_.
+
+.. _Zyte’s export guides: https://docs.zyte.com/web-scraping/guides/export/index.html#exporting-scraped-data
+
 .. _topics-feed-format:
 
 Serialization formats
@@ -385,7 +390,13 @@ Each plugin is a class that must implement the following methods:
 
 .. method:: close(self)
 
-    Close the target file object.
+    Clean up the plugin.
+
+    For example, you might want to close a file wrapper that you might have
+    used to compress data written into the file received in the ``__init__``
+    method.
+
+    .. warning:: Do not close the file from the ``__init__`` method.
 
 To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You
 can then access those parameters from the ``__init__`` method of your plugin.

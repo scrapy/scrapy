@@ -1,6 +1,7 @@
 """
 Extension for processing data before they are exported to feeds.
 """
+
 from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase
@@ -42,7 +43,6 @@ class GzipPlugin:
 
     def close(self) -> None:
         self.gzipfile.close()
-        self.file.close()
 
 
 class Bz2Plugin:
@@ -69,7 +69,6 @@ class Bz2Plugin:
 
     def close(self) -> None:
         self.bz2file.close()
-        self.file.close()
 
 
 class LZMAPlugin:
@@ -111,7 +110,6 @@ class LZMAPlugin:
 
     def close(self) -> None:
         self.lzmafile.close()
-        self.file.close()
 
 
 # io.IOBase is subclassed here, so that exporters can use the PostProcessingManager

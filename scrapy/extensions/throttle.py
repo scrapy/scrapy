@@ -16,6 +16,11 @@ class AutoThrottle:
         self.target_concurrency = crawler.settings.getfloat(
             "AUTOTHROTTLE_TARGET_CONCURRENCY"
         )
+        if self.target_concurrency <= 0.0:
+            raise NotConfigured(
+                f"AUTOTHROTTLE_TARGET_CONCURRENCY "
+                f"({self.target_concurrency!r}) must be higher than 0."
+            )
         crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(
             self._response_downloaded, signal=signals.response_downloaded

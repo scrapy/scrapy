@@ -1,6 +1,7 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
+
 import collections.abc
 import gc
 import inspect
@@ -57,8 +58,7 @@ def iflatten(x: Iterable) -> Iterable:
     Similar to ``.flatten()``, but returns iterator instead"""
     for el in x:
         if is_listlike(el):
-            for el_ in iflatten(el):
-                yield el_
+            yield from iflatten(el)
         else:
             yield el
 
@@ -162,7 +162,7 @@ def re_rsearch(
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
-        matches = [match for match in pattern.finditer(chunk)]
+        matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()
             return offset + start, offset + end
@@ -286,13 +286,11 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping) -> dict:
-    ...
+def without_none_values(iterable: Mapping) -> dict: ...
 
 
 @overload
-def without_none_values(iterable: Iterable) -> Iterable:
-    ...
+def without_none_values(iterable: Iterable) -> Iterable: ...
 
 
 def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:

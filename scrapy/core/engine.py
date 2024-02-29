@@ -4,6 +4,7 @@ This is the Scrapy engine which controls the Scheduler, Downloader and Spider.
 For more information see docs/topics/architecture.rst
 
 """
+
 import logging
 from time import time
 from typing import (
@@ -34,7 +35,7 @@ from scrapy.settings import BaseSettings, Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -358,9 +359,7 @@ class ExecutionEngine:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
         nextcall = CallLaterOnce(self._next_request)
-        scheduler = create_instance(
-            self.scheduler_cls, settings=None, crawler=self.crawler
-        )
+        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         start_requests = yield self.scraper.spidermw.process_start_requests(
             start_requests, spider
         )

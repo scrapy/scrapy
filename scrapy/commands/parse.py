@@ -1,3 +1,4 @@
+import functools
 import inspect
 import json
 import logging
@@ -251,39 +252,40 @@ class Command(BaseRunSpiderCommand):
 
         return scraped_data
 
+    def _get_callback(self, *, spider, opts, response=None):
+        cb = None
+        if response:
+            cb = response.meta["_callback"]
+        if not cb:
+            if opts.callback:
+                cb = opts.callback
+            elif response and opts.rules and self.first_response == response:
+                cb = self.get_callback_from_rules(spider, response)
+                if not cb:
+                    raise ValueError(
+                        f"Cannot find a rule that matches {response.url!r} in spider: "
+                        f"{spider.name}"
+                    )
+            else:
+                cb = "parse"
+
+        if not callable(cb):
+            cb_method = getattr(spider, cb, None)
+            if callable(cb_method):
+                cb = cb_method
+            else:
+                raise ValueError(
+                    f"Cannot find callback {cb!r} in spider: {spider.name}"
+                )
+        return cb
+
     def prepare_request(self, spider, request, opts):
         def callback(response, **cb_kwargs):
             # memorize first request
             if not self.first_response:
                 self.first_response = response
 
-            # determine real callback
-            cb = response.meta["_callback"]
-            if not cb:
-                if opts.callback:
-                    cb = opts.callback
-                elif opts.rules and self.first_response == response:
-                    cb = self.get_callback_from_rules(spider, response)
-
-                    if not cb:
-                        logger.error(
-                            "Cannot find a rule that matches %(url)r in spider: %(spider)s",
-                            {"url": response.url, "spider": spider.name},
-                        )
-                        return
-                else:
-                    cb = "parse"
-
-            if not callable(cb):
-                cb_method = getattr(spider, cb, None)
-                if callable(cb_method):
-                    cb = cb_method
-                else:
-                    logger.error(
-                        "Cannot find callback %(callback)r in spider: %(spider)s",
-                        {"callback": cb, "spider": spider.name},
-                    )
-                    return
+            cb = self._get_callback(spider=spider, opts=opts, response=response)
 
             # parse items and requests
             depth = response.meta["_depth"]
@@ -303,6 +305,9 @@ class Command(BaseRunSpiderCommand):
 
         request.meta["_depth"] = 1
         request.meta["_callback"] = request.callback
+        if not request.callback and not opts.rules:
+            cb = self._get_callback(spider=spider, opts=opts)
+            functools.update_wrapper(callback, cb)
         request.callback = callback
         return request
 

@@ -247,6 +247,37 @@ class RedirectMiddlewareTest(unittest.TestCase):
         perc_encoded_utf8_url = "http://scrapytest.org/a%C3%A7%C3%A3o"
         self.assertEqual(perc_encoded_utf8_url, req_result.url)
 
+    def test_cross_domain_header_dropping(self):
+        safe_headers = {"A": "B"}
+        original_request = Request(
+            "https://example.com",
+            headers={"Cookie": "a=b", "Authorization": "a", **safe_headers},
+        )
+
+        internal_response = Response(
+            "https://example.com",
+            headers={"Location": "https://example.com/a"},
+            status=301,
+        )
+        internal_redirect_request = self.mw.process_response(
+            original_request, internal_response, self.spider
+        )
+        self.assertIsInstance(internal_redirect_request, Request)
+        self.assertEqual(original_request.headers, internal_redirect_request.headers)
+
+        external_response = Response(
+            "https://example.com",
+            headers={"Location": "https://example.org/a"},
+            status=301,
+        )
+        external_redirect_request = self.mw.process_response(
+            original_request, external_response, self.spider
+        )
+        self.assertIsInstance(external_redirect_request, Request)
+        self.assertEqual(
+            safe_headers, external_redirect_request.headers.to_unicode_dict()
+        )
+
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
     def setUp(self):

@@ -2,8 +2,10 @@
 from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
+
 import shutil
 from pathlib import Path
+from tempfile import mkdtemp
 
 import OpenSSL.SSL
 from twisted.internet import defer, reactor
@@ -24,7 +26,7 @@ from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Headers, Request
 from scrapy.settings import Settings
-from scrapy.utils.misc import create_instance
+from scrapy.utils.misc import build_from_settings
 from scrapy.utils.python import to_bytes, to_unicode
 from tests.mockserver import (
     BrokenDownloadResource,
@@ -274,8 +276,7 @@ class WebClientTestCase(unittest.TestCase):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -440,8 +441,7 @@ class WebClientSSLTestCase(unittest.TestCase):
         return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"payload", PayloadResource())
@@ -470,8 +470,8 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
     def testPayload(self):
         s = "0123456789" * 10
         settings = Settings({"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers})
-        client_context_factory = create_instance(
-            ScrapyClientContextFactory, settings=settings, crawler=None
+        client_context_factory = build_from_settings(
+            ScrapyClientContextFactory, settings
         )
         return getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
@@ -482,8 +482,8 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         settings = Settings(
             {"DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"}
         )
-        client_context_factory = create_instance(
-            ScrapyClientContextFactory, settings=settings, crawler=None
+        client_context_factory = build_from_settings(
+            ScrapyClientContextFactory, settings
         )
         d = getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory

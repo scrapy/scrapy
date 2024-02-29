@@ -2,6 +2,7 @@
 This module provides some useful functions for working with
 scrapy.http.Response objects
 """
+
 import os
 import re
 import tempfile
@@ -29,9 +30,9 @@ def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
     return _baseurl_cache[response]
 
 
-_metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]" = (
-    WeakKeyDictionary()
-)
+_metaref_cache: (
+    "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]"
+) = WeakKeyDictionary()
 
 
 def get_meta_refresh(
@@ -54,6 +55,18 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     return f"{status_int} {to_unicode(message)}"
 
 
+def _remove_html_comments(body):
+    start = body.find(b"<!--")
+    while start != -1:
+        end = body.find(b"-->", start + 1)
+        if end == -1:
+            return body[:start]
+        else:
+            body = body[:start] + body[end + 3 :]
+            start = body.find(b"<!--")
+    return body
+
+
 def open_in_browser(
     response: Union[
         "scrapy.http.response.html.HtmlResponse",
@@ -61,8 +74,21 @@ def open_in_browser(
     ],
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
-    """Open the given response in a local web browser, populating the <base>
-    tag for external links to work
+    """Open *response* in a local web browser, adjusting the `base tag`_ for
+    external links to work, e.g. so that images and styles are displayed.
+
+    .. _base tag: https://www.w3schools.com/tags/tag_base.asp
+
+    For example:
+
+    .. code-block:: python
+
+        from scrapy.utils.response import open_in_browser
+
+
+        def parse_details(self, response):
+            if "item name" not in response.body:
+                open_in_browser(response)
     """
     from scrapy.http import HtmlResponse, TextResponse
 
@@ -70,9 +96,9 @@ def open_in_browser(
     body = response.body
     if isinstance(response, HtmlResponse):
         if b"<base" not in body:
-            repl = rf'\1<base href="{response.url}">'
-            body = re.sub(b"<!--.*?-->", b"", body, flags=re.DOTALL)
-            body = re.sub(rb"(<head(?:>|\s.*?>))", to_bytes(repl), body)
+            _remove_html_comments(body)
+            repl = rf'\0<base href="{response.url}">'
+            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
         ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"

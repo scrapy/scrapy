@@ -3,6 +3,7 @@
 See documentation in docs/topics/shell.rst
 
 """
+
 import os
 import signal
 

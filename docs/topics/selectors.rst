@@ -1032,10 +1032,8 @@ whereas the CSS lookup is translated into XPath and thus runs more efficiently,
 so performance-wise its uses are limited to situations that are not easily
 described with CSS selectors.
 
-Parsel also simplifies adding your own XPath extensions.
-
-.. autofunction:: parsel.xpathfuncs.set_xpathfunc
-
+Parsel also simplifies adding your own XPath extensions with 
+:func:`~parsel.xpathfuncs.set_xpathfunc`.
 
 .. _topics-selectors-ref:
 

@@ -5,6 +5,7 @@ library.
 Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
+
 import re
 from typing import TYPE_CHECKING, Iterable, Optional, Type, Union, cast
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse

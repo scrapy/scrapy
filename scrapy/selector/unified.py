@@ -1,6 +1,7 @@
 """
 XPath selectors based on lxml
 """
+
 from typing import Any, Optional, Type, Union
 
 from parsel import Selector as _ParselSelector

@@ -1,4 +1,5 @@
 """Helper functions which don't fit anywhere else"""
+
 import ast
 import hashlib
 import inspect
@@ -25,6 +26,7 @@ from typing import (
     cast,
 )
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 
@@ -142,6 +144,13 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
        Raises ``TypeError`` if the resulting instance is ``None`` (e.g. if an
        extension has not been implemented correctly).
     """
+    warnings.warn(
+        "The create_instance() function is deprecated. "
+        "Please use build_from_crawler() or build_from_settings() instead.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     if settings is None:
         if crawler is None:
             raise ValueError("Specify at least one of settings and crawler.")
@@ -150,6 +159,45 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
         instance = objcls.from_crawler(crawler, *args, **kwargs)
         method_name = "from_crawler"
     elif hasattr(objcls, "from_settings"):
+        instance = objcls.from_settings(settings, *args, **kwargs)
+        method_name = "from_settings"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+    return instance
+
+
+def build_from_crawler(objcls, crawler, /, *args, **kwargs):
+    """Construct a class instance using its ``from_crawler`` constructor.
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
+
+    Raises ``TypeError`` if the resulting instance is ``None``.
+    """
+    if hasattr(objcls, "from_crawler"):
+        instance = objcls.from_crawler(crawler, *args, **kwargs)
+        method_name = "from_crawler"
+    elif hasattr(objcls, "from_settings"):
+        instance = objcls.from_settings(crawler.settings, *args, **kwargs)
+        method_name = "from_settings"
+    else:
+        instance = objcls(*args, **kwargs)
+        method_name = "__new__"
+    if instance is None:
+        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+    return instance
+
+
+def build_from_settings(objcls, settings, /, *args, **kwargs):
+    """Construct a class instance using its ``from_settings`` constructor.
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
+
+    Raises ``TypeError`` if the resulting instance is ``None``.
+    """
+    if hasattr(objcls, "from_settings"):
         instance = objcls.from_settings(settings, *args, **kwargs)
         method_name = "from_settings"
     else:

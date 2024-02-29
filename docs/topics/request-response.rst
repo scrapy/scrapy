@@ -193,18 +193,47 @@ Request objects
         :meth:`replace`.
 
     .. attribute:: Request.meta
+       :value: {}
 
-        A dict that contains arbitrary metadata for this request. This dict is
-        empty for new Requests, and is usually  populated by different Scrapy
-        components (extensions, middlewares, etc). So the data contained in this
-        dict depends on the extensions you have enabled.
+        A dictionary of arbitrary metadata for the request.
 
-        See :ref:`topics-request-meta` for a list of special meta keys
-        recognized by Scrapy.
+        You may extend request metadata as you see fit.
 
-        This dict is :doc:`shallow copied <library/copy>` when the request is
-        cloned using the ``copy()`` or ``replace()`` methods, and can also be
-        accessed, in your spider, from the ``response.meta`` attribute.
+        Request metadata can also be accessed through the
+        :attr:`~scrapy.http.Response.meta` attribute of a response.
+
+        To pass data from one spider callback to another, consider using
+        :attr:`cb_kwargs` instead. However, request metadata may be the right
+        choice in certain scenarios, such as to maintain some debugging data
+        across all follow-up requests (e.g. the source URL).
+
+        A common use of request metadata is to define request-specific
+        parameters for Scrapy components (extensions, middlewares, etc.). For
+        example, if you set ``dont_retry`` to ``True``,
+        :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` will never
+        retry that request, even if it fails. See :ref:`topics-request-meta`.
+
+        You may also use request metadata in your custom Scrapy components, for
+        example, to keep request state information relevant to your component.
+        For example,
+        :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware` uses the
+        ``retry_times`` metadata key to keep track of how many times a request
+        has been retried so far.
+
+        Copying all the metadata of a previous request into a new, follow-up
+        request in a spider callback is a bad practice, because request
+        metadata may include metadata set by Scrapy components that is not
+        meant to be copied into other requests. For example, copying the
+        ``retry_times`` metadata key into follow-up requests can lower the
+        amount of retries allowed for those follow-up requests.
+
+        You should only copy all request metadata from one request to another
+        if the new request is meant to replace the old request, as is often the
+        case when returning a request from a :ref:`downloader middleware
+        <topics-downloader-middleware>` method.
+
+        Also mind that the :meth:`copy` and :meth:`replace` request methods
+        :doc:`shallow-copy <library/copy>` request metadata.
 
     .. attribute:: Request.cb_kwargs
 
@@ -440,60 +469,6 @@ import path.
 
 .. autoclass:: scrapy.utils.request.RequestFingerprinter
 
-
-.. setting:: REQUEST_FINGERPRINTER_IMPLEMENTATION
-
-REQUEST_FINGERPRINTER_IMPLEMENTATION
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 2.7
-
-Default: ``'2.6'``
-
-Determines which request fingerprinting algorithm is used by the default
-request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
-
-Possible values are:
-
--   ``'2.6'`` (default)
-
-    This implementation uses the same request fingerprinting algorithm as
-    Scrapy 2.6 and earlier versions.
-
-    Even though this is the default value for backward compatibility reasons,
-    it is a deprecated value.
-
--   ``'2.7'``
-
-    This implementation was introduced in Scrapy 2.7 to fix an issue of the
-    previous implementation.
-
-    New projects should use this value. The :command:`startproject` command
-    sets this value in the generated ``settings.py`` file.
-
-If you are using the default value (``'2.6'``) for this setting, and you are
-using Scrapy components where changing the request fingerprinting algorithm
-would cause undesired results, you need to carefully decide when to change the
-value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
-setting to a custom request fingerprinter class that implements the 2.6 request
-fingerprinting algorithm and does not log this warning (
-:ref:`2.6-request-fingerprinter` includes an example implementation of such a
-class).
-
-Scenarios where changing the request fingerprinting algorithm may cause
-undesired results include, for example, using the HTTP cache middleware (see
-:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
-Changing the request fingerprinting algorithm would invalidate the current
-cache, requiring you to redownload all requests again.
-
-Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'2.7'`` in
-your settings to switch already to the request fingerprinting implementation
-that will be the only request fingerprinting implementation available in a
-future version of Scrapy, and remove the deprecation warning triggered by using
-the default value (``'2.6'``).
-
-
-.. _2.6-request-fingerprinter:
 .. _custom-request-fingerprinter:
 
 Writing your own request fingerprinter
@@ -702,6 +677,7 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
@@ -1328,3 +1304,13 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
+
+JsonResponse objects
+--------------------
+
+.. class:: JsonResponse(url[, ...])
+
+    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` 
+    that is used when the response has a `JSON MIME type 
+    <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type` 
+    header.
