@@ -27,7 +27,10 @@ jobs:
         - python-version: "3.12"
           env:
             TOXENV: py
-        - python-version: "3.12"
+        - python-version: "3.13.0-alpha.2"
+          env:
+            TOXENV: py
+        - python-version: "3.13.0-alpha.2"
           env:
             TOXENV: asyncio
 
