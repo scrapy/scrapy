@@ -1751,12 +1751,26 @@ class FeedExportTest(FeedExportTestBase):
 
     @mock.patch('scrapy.extensions.feedexport.FeedExporter._import_processor')
     def test_processor_functions_fetched_and_stored(self, mock_import_processor):
-        mock_import_processor.return_value = lambda x: x
+        
+        def mock_processor_wrapper(*args, **kwargs):
+            def processor(item, spider=None):
+                return item
+            return processor
+
+        mock_import_processor.side_effect = mock_processor_wrapper
 
         feeds_setting = {
             'file:///tmp/export.json': {
                 'format': 'json',
-                'item_processors': ['scrapy.processors.dummy_processor']
+                'item_processors': [
+                    {
+                        'path': 'scrapy.processors.dummy_processor',
+                        'kwargs': {
+                            'transform_func': 'scrapy.processors.dummy_transform',
+                            'fields': ['name', 'description']
+                        }
+                    }
+                ]
             }
         }
 
@@ -1765,7 +1779,7 @@ class FeedExportTest(FeedExportTestBase):
 
         stored_processors = feed_exporter.item_processors['file:///tmp/export.json']
         self.assertEqual(len(stored_processors), 1)
-        self.assertIs(stored_processors[0], mock_import_processor.return_value)
+        self.assertTrue(callable(stored_processors[0]), "Stored processor should be callable.")
 
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):

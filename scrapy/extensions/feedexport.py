@@ -682,11 +682,24 @@ class FeedExporter:
         new_params = uripar_function(params, spider)
         return new_params if new_params is not None else params
     
-    def _import_processor(self, path):
+    def _import_processor(self, processor_info):
         try:
-            module_name, function_name = path.rsplit('.', 1)
+            module_name, function_name = processor_info["path"].rsplit('.', 1)
             module = importlib.import_module(module_name)
-            return getattr(module, function_name)
+            processor_func = getattr(module, function_name)
+
+            def _processor_wrapper(item, spider=None):
+                # wrapper to apply kwargs
+                kwargs = processor_info.get('kwargs', {})
+                for key, value in kwargs.items():
+                    if isinstance(value, str) and '.' in value:
+                        module_name, attr_name = value.rsplit('.', 1)
+                        kwargs_module = importlib.import_module(module_name)
+                        kwargs[key] = getattr(kwargs_module, attr_name)
+                return processor_func(item, spider=spider, **kwargs)
+        
+            return _processor_wrapper
+        
         except ImportError as e:
             raise NotConfigured(f"Error importing processor function {path}: {e}")
         except AttributeError as e:
