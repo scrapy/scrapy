@@ -562,7 +562,7 @@ class FeedExporter:
                 )  # if slot doesn't accept item, continue with next slot
                 continue
 
-            item = self._process_item(item,self.item_processors)
+            item = self._process_item(item)
 
             slot.start_exporting()
             slot.exporter.export_item(item)
@@ -712,8 +712,8 @@ class FeedExporter:
         item_filter_class = load_object(feed_options.get("item_filter", ItemFilter))
         return item_filter_class(feed_options)
     
-    def _process_item(self, item, processor_functions):
-        for processor_function in processor_functions.values():
-            if processor_function != []:
-                item = processor_function(item)
+    def _process_item(self, item):
+        for processors in self.item_processors.values():
+            for function in processors:
+                item = function(item)
         return item
