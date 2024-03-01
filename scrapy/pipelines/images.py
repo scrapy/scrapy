@@ -17,11 +17,10 @@ from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline
+from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
 
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
-from scrapy.utils.misc import md5sum
 from scrapy.utils.python import get_func_args, to_bytes
 
 
@@ -128,7 +127,7 @@ class ImagesPipeline(FilesPipeline):
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
-                checksum = md5sum(buf)
+                checksum = _md5sum(buf)
             width, height = image.size
             self.store.persist_file(
                 path,
@@ -228,9 +227,9 @@ class ImagesPipeline(FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None, *, item=None):
-        image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # nosec
         return f"full/{image_guid}.jpg"
 
     def thumb_path(self, request, thumb_id, response=None, info=None, *, item=None):
-        thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # nosec
         return f"thumbs/{thumb_id}/{thumb_guid}.jpg"

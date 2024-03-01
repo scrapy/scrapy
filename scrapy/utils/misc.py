@@ -113,7 +113,15 @@ def md5sum(file: IO) -> str:
     >>> md5sum(BytesIO(b'file content to hash'))
     '784406af91dd5a54fbb9c84c2236595a'
     """
-    m = hashlib.md5()
+    warnings.warn(
+        (
+            "The scrapy.utils.misc.md5sum function is deprecated, and will be "
+            "removed in a future version of Scrapy."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    m = hashlib.md5()  # nosec
     while True:
         d = file.read(8096)
         if not d:
