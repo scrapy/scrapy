@@ -16,7 +16,7 @@ from ftplib import FTP
 from io import BytesIO
 from os import PathLike
 from pathlib import Path
-from typing import DefaultDict, Optional, Set, Union
+from typing import IO, DefaultDict, Optional, Set, Union
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -31,7 +31,6 @@ from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
@@ -40,6 +39,23 @@ logger = logging.getLogger(__name__)
 
 def _to_string(path: Union[str, PathLike]) -> str:
     return str(path)  # convert a Path object to string
+
+
+def _md5sum(file: IO) -> str:
+    """Calculate the md5 checksum of a file-like object without reading its
+    whole content in memory.
+
+    >>> from io import BytesIO
+    >>> _md5sum(BytesIO(b'file content to hash'))
+    '784406af91dd5a54fbb9c84c2236595a'
+    """
+    m = hashlib.md5(usedforsecurity=False)
+    while True:
+        d = file.read(8096)
+        if not d:
+            break
+        m.update(d)
+    return m.hexdigest()
 
 
 class FileException(Exception):
@@ -70,7 +86,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = md5sum(f)
+            checksum = _md5sum(f)
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -299,7 +315,7 @@ class FTPFilesStore:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
                 last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
-                m = hashlib.md5()
+                m = hashlib.md5(usedforsecurity=False)
                 ftp.retrbinary(f"RETR {file_path}", m.update)
                 return {"last_modified": last_modified, "checksum": m.hexdigest()}
             # The file doesn't exist
@@ -531,7 +547,7 @@ class FilesPipeline(MediaPipeline):
     def file_downloaded(self, response, request, info, *, item=None):
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = md5sum(buf)
+        checksum = _md5sum(buf)
         buf.seek(0)
         self.store.persist_file(path, buf, info)
         return checksum
@@ -542,7 +558,9 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None, *, item=None):
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        media_guid = hashlib.sha1(
+            to_bytes(request.url), usedforsecurity=False
+        ).hexdigest()
         media_ext = Path(request.url).suffix
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise
