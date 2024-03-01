@@ -7,7 +7,7 @@ SitemapSpider, its API is subject to change without notice.
 from typing import Any, Dict, Generator, Iterator, Optional
 from urllib.parse import urljoin
 
-import lxml.etree
+import lxml.etree  # nosec
 
 
 class Sitemap:
@@ -18,7 +18,7 @@ class Sitemap:
         xmlp = lxml.etree.XMLParser(
             recover=True, remove_comments=True, resolve_entities=False
         )
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
+        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)  # nosec
         rt = self._root.tag
         self.type = self._root.tag.split("}", 1)[1] if "}" in rt else rt
 
