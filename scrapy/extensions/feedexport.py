@@ -562,6 +562,8 @@ class FeedExporter:
                 )  # if slot doesn't accept item, continue with next slot
                 continue
 
+            item = self._process_item(item,self.item_processors)
+
             slot.start_exporting()
             slot.exporter.export_item(item)
             slot.itemcount += 1
