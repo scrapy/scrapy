@@ -1781,6 +1781,91 @@ class FeedExportTest(FeedExportTestBase):
         self.assertEqual(len(stored_processors), 1)
         self.assertTrue(callable(stored_processors[0]), "Stored processor should be callable.")
 
+    @mock.patch('scrapy.extensions.feedexport.FeedExporter._import_processor')
+    def test_processor_functions_with_multiple_arguments(self, mock_import_processor):
+        
+        def mock_processor_wrapper(*args, **kwargs):
+            def processor(item, spider=None):
+                return item
+            return processor
+
+        mock_import_processor.side_effect = mock_processor_wrapper
+
+        feeds_setting = {
+            'file:///tmp/export.json': {
+                'format': 'json',
+                'item_processors': [
+                    {
+                        'path': 'scrapy.processors.complex_processor',
+                        'kwargs': {
+                            'arg1': 'value1',
+                            'arg2': 'value2',
+                            'arg3': 'value3'
+                        }
+                    }
+                ]
+            }
+        }
+
+        crawler = get_crawler(settings_dict={'FEEDS': feeds_setting})
+        feed_exporter = FeedExporter.from_crawler(crawler)
+
+        stored_processors = feed_exporter.item_processors['file:///tmp/export.json']
+        self.assertEqual(len(stored_processors), 1)
+        self.assertTrue(callable(stored_processors[0]), "Stored processor should be callable.")
+
+    @mock.patch('scrapy.extensions.feedexport.FeedExporter._import_processor')
+    def test_handling_processor_function_import_error(self, mock_import_processor):
+        
+        mock_import_processor.side_effect = NotConfigured("Error importing processor function ...")
+
+        feeds_setting = {
+            'file:///tmp/export.json': {
+                'format': 'json',
+                'item_processors': [
+                    {
+                        'path': 'scrapy.processors.nonexistent_processor',
+                        'kwargs': {}
+                    }
+                ]
+            }
+        }
+
+        with self.assertRaises(NotConfigured):
+            crawler = get_crawler(settings_dict={'FEEDS': feeds_setting})
+            FeedExporter.from_crawler(crawler)
+
+    @mock.patch('scrapy.extensions.feedexport.FeedExporter._import_processor')
+    def test_processor_function_modifies_item_correctly(self, mock_import_processor):
+        
+        def mock_processor_wrapper(*args, **kwargs):
+            def processor(item, spider=None):
+                # Example modification: add a new field
+                item['processed'] = True
+                return item
+            return processor
+
+        mock_import_processor.side_effect = mock_processor_wrapper
+
+        feeds_setting = {
+            'file:///tmp/export.json': {
+                'format': 'json',
+                'item_processors': [
+                    {
+                        'path': 'scrapy.processors.modifying_processor',
+                        'kwargs': {}
+                    }
+                ]
+            }
+        }
+
+        crawler = get_crawler(settings_dict={'FEEDS': feeds_setting})
+        feed_exporter = FeedExporter.from_crawler(crawler)
+
+        test_item = {}
+        processed_item = feed_exporter.item_processors['file:///tmp/export.json'][0](test_item)
+        
+        self.assertTrue(processed_item.get('processed'), "Processor should add 'processed': True to the item.")
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
     __test__ = True
