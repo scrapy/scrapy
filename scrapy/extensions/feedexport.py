@@ -685,6 +685,11 @@ class FeedExporter:
         return new_params if new_params is not None else params
     
     def _import_processor(self, processor_info):
+        """
+        Imports processor function from a dictionary containing its info and 
+        wraps it with its keyword arguments to be used for item processing before
+        export.
+        """
         try:
             module_name, function_name = processor_info["path"].rsplit('.', 1)
             module = importlib.import_module(module_name)
