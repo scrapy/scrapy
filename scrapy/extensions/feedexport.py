@@ -703,9 +703,9 @@ class FeedExporter:
             return _processor_wrapper
         
         except ImportError as e:
-            raise NotConfigured(f"Error importing processor function {path}: {e}")
+            raise NotConfigured(f"Error importing processor function {processor_info["path"]}: {e}")
         except AttributeError as e:
-            raise NotConfigured(f"Processor function {path} not found: {e}")
+            raise NotConfigured(f"Processor function {processor_info["path"]} not found: {e}")
 
     def _load_filter(self, feed_options):
         # load the item filter if declared else load the default filter class
