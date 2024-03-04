@@ -14,6 +14,7 @@ from tempfile import NamedTemporaryFile
 from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 import importlib
+import inspect
 
 from twisted.internet import defer, threads
 from twisted.internet.defer import DeferredList
@@ -722,5 +723,5 @@ class FeedExporter:
     def _process_item(self, item):
         for processors in self.item_processors.values():
             for function in processors:
-                item = function(item)
+                item = function(item,spider=self.spider)
         return item
