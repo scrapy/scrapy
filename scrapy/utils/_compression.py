@@ -7,6 +7,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 try:
     import brotli
 except ImportError:
+    import brotlicffi as brotli
+except ImportError:
     pass
 else:
     try:
