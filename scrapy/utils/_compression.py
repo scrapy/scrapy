@@ -5,9 +5,10 @@ from warnings import warn
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 try:
-    import brotli
-except ImportError:
-    import brotlicffi as brotli
+    try:
+        import brotli
+    except ImportError:
+        import brotlicffi as brotli
 except ImportError:
     pass
 else:
