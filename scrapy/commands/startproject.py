@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import string
@@ -5,13 +6,14 @@ from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
+from typing import List, Tuple, Union
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
 
-TEMPLATES_TO_RENDER = (
+TEMPLATES_TO_RENDER: Tuple[Tuple[str, ...], ...] = (
     ("scrapy.cfg",),
     ("${project_name}", "settings.py.tmpl"),
     ("${project_name}", "items.py.tmpl"),
@@ -22,7 +24,7 @@ TEMPLATES_TO_RENDER = (
 IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
 
 
-def _make_writable(path):
+def _make_writable(path: Union[str, os.PathLike]) -> None:
     current_permissions = os.stat(path).st_mode
     os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
 
@@ -31,14 +33,14 @@ class Command(ScrapyCommand):
     requires_project = False
     default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "<project_name> [project_dir]"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Create new project"
 
-    def _is_valid_name(self, project_name):
-        def _module_exists(module_name):
+    def _is_valid_name(self, project_name: str) -> bool:
+        def _module_exists(module_name: str) -> bool:
             spec = find_spec(module_name)
             return spec is not None and spec.loader is not None
 
@@ -53,7 +55,7 @@ class Command(ScrapyCommand):
             return True
         return False
 
-    def _copytree(self, src: Path, dst: Path):
+    def _copytree(self, src: Path, dst: Path) -> None:
         """
         Since the original function always creates the directory, to resolve
         the issue a new function had to be created. It's a simple copy and
@@ -84,7 +86,7 @@ class Command(ScrapyCommand):
         copystat(src, dst)
         _make_writable(dst)
 
-    def run(self, args, opts):
+    def run(self, args: List[str], opts: argparse.Namespace) -> None:
         if len(args) not in (1, 2):
             raise UsageError()
 
@@ -105,7 +107,9 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(Path(self.templates_dir), project_dir.resolve())
-        move(project_dir / "module", project_dir / project_name)
+        # On 3.8 shutil.move doesn't fully support Path args, but it supports our use case
+        # See https://bugs.python.org/issue32689
+        move(project_dir / "module", project_dir / project_name)  # type: ignore[arg-type]
         for paths in TEMPLATES_TO_RENDER:
             tplfile = Path(
                 project_dir,

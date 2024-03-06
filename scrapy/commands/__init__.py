@@ -3,61 +3,62 @@ Base class for Scrapy commands
 """
 
 import argparse
+import builtins
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from twisted.python import failure
 
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import Crawler, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 
 
 class ScrapyCommand:
-    requires_project = False
+    requires_project: bool = False
     crawler_process: Optional[CrawlerProcess] = None
 
     # default settings to be used for this command instead of global defaults
     default_settings: Dict[str, Any] = {}
 
-    exitcode = 0
+    exitcode: int = 0
 
     def __init__(self) -> None:
         self.settings: Any = None  # set in scrapy.cmdline
 
-    def set_crawler(self, crawler):
+    def set_crawler(self, crawler: Crawler) -> None:
         if hasattr(self, "_crawler"):
             raise RuntimeError("crawler already set")
-        self._crawler = crawler
+        self._crawler: Crawler = crawler
 
-    def syntax(self):
+    def syntax(self) -> str:
         """
         Command syntax (preferably one-line). Do not include command name.
         """
         return ""
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         """
         A short description of the command
         """
         return ""
 
-    def long_desc(self):
+    def long_desc(self) -> str:
         """A long description of the command. Return short description when not
         available. It cannot contain newlines since contents will be formatted
         by optparser which removes newlines and wraps text.
         """
         return self.short_desc()
 
-    def help(self):
+    def help(self) -> str:
         """An extensive help for the command. It will be shown when using the
         "help" command. It can contain newlines since no post-formatting will
         be applied to its contents.
         """
         return self.long_desc()
 
-    def add_options(self, parser):
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
         """
         Populate option parse with options available for this command
         """
@@ -92,7 +93,7 @@ class ScrapyCommand:
         )
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
-    def process_options(self, args, opts):
+    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
@@ -129,8 +130,8 @@ class BaseRunSpiderCommand(ScrapyCommand):
     Common class used to share functionality between the crawl, parse and runspider commands
     """
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "-a",
             dest="spargs",
@@ -162,8 +163,8 @@ class BaseRunSpiderCommand(ScrapyCommand):
             help="format to use for dumping items",
         )
 
-    def process_options(self, args, opts):
-        ScrapyCommand.process_options(self, args, opts)
+    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
+        super().process_options(args, opts)
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
@@ -183,7 +184,13 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
     Help Formatter for scrapy command line help messages.
     """
 
-    def __init__(self, prog, indent_increment=2, max_help_position=24, width=None):
+    def __init__(
+        self,
+        prog: str,
+        indent_increment: int = 2,
+        max_help_position: int = 24,
+        width: Optional[int] = None,
+    ):
         super().__init__(
             prog,
             indent_increment=indent_increment,
@@ -191,11 +198,12 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
             width=width,
         )
 
-    def _join_parts(self, part_strings):
-        parts = self.format_part_strings(part_strings)
+    def _join_parts(self, part_strings: Iterable[str]) -> str:
+        # scrapy.commands.list shadows builtins.list
+        parts = self.format_part_strings(builtins.list(part_strings))
         return super()._join_parts(parts)
 
-    def format_part_strings(self, part_strings):
+    def format_part_strings(self, part_strings: List[str]) -> List[str]:
         """
         Underline and title case command line help message headers.
         """
