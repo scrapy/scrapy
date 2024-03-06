@@ -147,9 +147,8 @@ class CookiesMiddleware:
             cookies = tuple({"name": k, "value": v} for k, v in request.cookies.items())
         else:
             cookies = request.cookies
-        if urlparse_cached(request).scheme == "https":
-            for cookie in cookies:
-                cookie.setdefault("secure", True)
+        for cookie in cookies:
+            cookie.setdefault("secure", urlparse_cached(request).scheme == "https")
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
         response = Response(request.url, headers={"Set-Cookie": formatted})
         return jar.make_cookies(response, request)

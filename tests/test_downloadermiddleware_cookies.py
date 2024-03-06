@@ -416,19 +416,19 @@ class CookiesMiddlewareTest(TestCase):
                     "scrapy.downloadermiddlewares.cookies",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/1>:"
-                    " {'value': 'bar'} ('name' is missing)",
+                    " {'value': 'bar', 'secure': False} ('name' is missing)",
                 ),
                 (
                     "scrapy.downloadermiddlewares.cookies",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/2>:"
-                    " {'name': 'foo'} ('value' is missing)",
+                    " {'name': 'foo', 'secure': False} ('value' is missing)",
                 ),
                 (
                     "scrapy.downloadermiddlewares.cookies",
                     "WARNING",
                     "Invalid cookie found in request <GET http://example.org/3>:"
-                    " {'name': 'foo', 'value': None} ('value' is missing)",
+                    " {'name': 'foo', 'value': None, 'secure': False} ('value' is missing)",
                 ),
             )
         self.assertCookieValEqual(req1.headers["Cookie"], "key=value1")
