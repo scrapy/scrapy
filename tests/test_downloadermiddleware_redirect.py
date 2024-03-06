@@ -270,6 +270,23 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertIsInstance(internal_redirect_request, Request)
         self.assertEqual(original_request.headers, internal_redirect_request.headers)
 
+        # Redirects to the same origin (same scheme, same domain, same port)
+        # keep all headers also when the scheme is http.
+        http_request = Request(
+            "http://example.com",
+            headers={**safe_headers, **cookie_header, **authorization_header},
+        )
+        http_response = Response(
+            "http://example.com",
+            headers={"Location": "http://example.com/a"},
+            status=301,
+        )
+        http_redirect_request = self.mw.process_response(
+            http_request, http_response, self.spider
+        )
+        self.assertIsInstance(http_redirect_request, Request)
+        self.assertEqual(http_request.headers, http_redirect_request.headers)
+
         # For default ports, whether the port is explicit or implicit does not
         # affect the outcome, it is still the same origin.
         to_explicit_port_response = Response(
@@ -334,10 +351,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         # A scheme upgrade (http → https) drops the Authorization header
         # because the origin changes, but keeps the Cookie header because the
         # domain remains the same.
-        http_request = Request(
-            "http://example.com",
-            headers={**safe_headers, **cookie_header, **authorization_header},
-        )
         upgrade_response = Response(
             "http://example.com",
             headers={"Location": "https://example.com/a"},

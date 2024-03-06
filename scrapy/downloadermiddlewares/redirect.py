@@ -38,18 +38,19 @@ def _build_redirect_request(source_request, *, url, **kwargs):
             or default_ports.get(parsed_redirect_request.scheme),
         )
 
-        if redirect_scheme != "https" or source_host != redirect_host:
-            if has_cookie_header:
-                del redirect_request.headers["Cookie"]
+        if has_cookie_header and (
+            (source_scheme != redirect_scheme and redirect_scheme != "https")
+            or source_host != redirect_host
+        ):
+            del redirect_request.headers["Cookie"]
 
-        if (
+        # https://fetch.spec.whatwg.org/#ref-for-cors-non-wildcard-request-header-name
+        if has_authorization_header and (
             source_scheme != redirect_scheme
             or source_host != redirect_host
             or source_port != redirect_port
         ):
-            # https://fetch.spec.whatwg.org/#ref-for-cors-non-wildcard-request-header-name
-            if has_authorization_header:
-                del redirect_request.headers["Authorization"]
+            del redirect_request.headers["Authorization"]
 
     return redirect_request
 
