@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 _split_domain = TLDExtract(include_psl_private_domains=True)
+_UNSET = object()
 
 
 def _is_public_domain(domain):
@@ -104,6 +105,7 @@ class CookiesMiddleware:
         Decode from bytes if necessary.
         """
         decoded = {}
+        flags = set()
         for key in ("name", "value", "path", "domain"):
             if cookie.get(key) is None:
                 if key in ("name", "value"):
@@ -123,10 +125,16 @@ class CookiesMiddleware:
                         cookie,
                     )
                     decoded[key] = cookie[key].decode("latin1", errors="replace")
-
+        for flag in ("secure",):
+            value = cookie.get(flag, _UNSET)
+            if value is _UNSET or not value:
+                continue
+            flags.add(flag)
         cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
         for key, value in decoded.items():  # path, domain
             cookie_str += f"; {key.capitalize()}={value}"
+        for flag in flags:  # secure
+            cookie_str += f"; {flag.capitalize()}"
         return cookie_str
 
     def _get_request_cookies(self, jar, request):
@@ -136,9 +144,12 @@ class CookiesMiddleware:
         if not request.cookies:
             return []
         if isinstance(request.cookies, dict):
-            cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
+            cookies = tuple({"name": k, "value": v} for k, v in request.cookies.items())
         else:
             cookies = request.cookies
+        if urlparse_cached(request).scheme == "https":
+            for cookie in cookies:
+                cookie.setdefault("secure", True)
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
         response = Response(request.url, headers={"Set-Cookie": formatted})
         return jar.make_cookies(response, request)

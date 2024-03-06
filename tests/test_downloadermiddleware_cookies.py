@@ -14,6 +14,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 
+UNSET = object()
+
 
 def _cookie_to_set_cookie_value(cookie):
     """Given a cookie defined as a dictionary with name and value keys, and
@@ -731,4 +733,107 @@ class CookiesMiddlewareTest(TestCase):
             "https://co.uk",
             "co.uk",
             cookies=True,
+        )
+
+    def _test_cookie_redirect_scheme_change(
+        self, secure, from_scheme, to_scheme, cookies1, cookies2, cookies3
+    ):
+        """When a redirect causes the URL scheme to change from *from_scheme*
+        to *to_scheme*, while domain and port remain the same, and given a
+        cookie on the initial request with its secure attribute set to
+        *secure*, check if the cookie should be set on the Cookie header of the
+        initial request (*cookies1*), if it should be kept by the redirect
+        middleware (*cookies2*), and if it should be present on the Cookie
+        header in the redirected request (*cookie3*)."""
+        cookie_kwargs = {}
+        if secure is not UNSET:
+            cookie_kwargs["secure"] = secure
+        input_cookies = [{"name": "a", "value": "b", **cookie_kwargs}]
+
+        request1 = Request(f"{from_scheme}://a.example", cookies=input_cookies)
+        self.mw.process_request(request1, self.spider)
+        cookies = request1.headers.get("Cookie")
+        self.assertEqual(cookies, b"a=b" if cookies1 else None)
+
+        response = Response(
+            f"{from_scheme}://a.example",
+            headers={"Location": f"{to_scheme}://a.example"},
+            status=301,
+        )
+        self.assertEqual(
+            self.mw.process_response(request1, response, self.spider),
+            response,
+        )
+
+        request2 = self.redirect_middleware.process_response(
+            request1,
+            response,
+            self.spider,
+        )
+        self.assertIsInstance(request2, Request)
+        cookies = request2.headers.get("Cookie")
+        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+
+        self.mw.process_request(request2, self.spider)
+        cookies = request2.headers.get("Cookie")
+        self.assertEqual(cookies, b"a=b" if cookies3 else None)
+
+    def test_cookie_redirect_secure_undefined_downgrade(self):
+        self._test_cookie_redirect_scheme_change(
+            secure=UNSET,
+            from_scheme="https",
+            to_scheme="http",
+            cookies1=True,
+            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies3=False,
+        )
+
+    def test_cookie_redirect_secure_undefined_upgrade(self):
+        self._test_cookie_redirect_scheme_change(
+            secure=UNSET,
+            from_scheme="http",
+            to_scheme="https",
+            cookies1=True,
+            cookies2=True,
+            cookies3=True,
+        )
+
+    def test_cookie_redirect_secure_false_downgrade(self):
+        self._test_cookie_redirect_scheme_change(
+            secure=False,
+            from_scheme="https",
+            to_scheme="http",
+            cookies1=True,
+            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies3=True,
+        )
+
+    def test_cookie_redirect_secure_false_upgrade(self):
+        self._test_cookie_redirect_scheme_change(
+            secure=False,
+            from_scheme="http",
+            to_scheme="https",
+            cookies1=True,
+            cookies2=True,
+            cookies3=True,
+        )
+
+    def test_cookie_redirect_secure_true_downgrade(self):
+        self._test_cookie_redirect_scheme_change(
+            secure=True,
+            from_scheme="https",
+            to_scheme="http",
+            cookies1=True,
+            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies3=False,
+        )
+
+    def test_cookie_redirect_secure_true_upgrade(self):
+        self._test_cookie_redirect_scheme_change(
+            secure=True,
+            from_scheme="http",
+            to_scheme="https",
+            cookies1=False,
+            cookies2=False,
+            cookies3=True,
         )
