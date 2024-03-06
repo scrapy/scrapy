@@ -22,7 +22,7 @@ else:
                 "working in a future version of Scrapy. brotlipy itself is "
                 "deprecated, it has been superseded by brotlicffi. "
                 "Please, uninstall brotlipy "
-                "and install brotli instead. brotlipy has the same import "
+                "and install brotli or brotlicffi instead. brotlipy has the same import "
                 "name as brotli, so keeping both installed is strongly "
                 "discouraged."
             ),
