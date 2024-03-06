@@ -5,7 +5,10 @@ from warnings import warn
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 try:
-    import brotli
+    try:
+        import brotli
+    except ImportError:
+        import brotlicffi as brotli
 except ImportError:
     pass
 else:
@@ -17,9 +20,9 @@ else:
                 "You have brotlipy installed, and Scrapy will use it, but "
                 "Scrapy support for brotlipy is deprecated and will stop "
                 "working in a future version of Scrapy. brotlipy itself is "
-                "deprecated, it has been superseded by brotlicffi (not "
-                "currently supported by Scrapy). Please, uninstall brotlipy "
-                "and install brotli instead. brotlipy has the same import "
+                "deprecated, it has been superseded by brotlicffi. "
+                "Please, uninstall brotlipy "
+                "and install brotli or brotlicffi instead. brotlipy has the same import "
                 "name as brotli, so keeping both installed is strongly "
                 "discouraged."
             ),
