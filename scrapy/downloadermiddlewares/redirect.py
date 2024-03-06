@@ -38,7 +38,7 @@ def _build_redirect_request(source_request, *, url, **kwargs):
             or default_ports.get(parsed_redirect_request.scheme),
         )
 
-        if source_scheme != redirect_scheme or source_host != redirect_host:
+        if redirect_scheme != "https" or source_host != redirect_host:
             if has_cookie_header:
                 del redirect_request.headers["Cookie"]
 
