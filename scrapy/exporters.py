@@ -6,10 +6,9 @@ import csv
 import marshal
 import pickle  # nosec
 import pprint
-from collections.abc import Mapping
 from io import BytesIO, TextIOWrapper
 from json import JSONEncoder
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple, Union
 from xml.sax.saxutils import XMLGenerator  # nosec
 from xml.sax.xmlreader import AttributesImpl  # nosec
 
