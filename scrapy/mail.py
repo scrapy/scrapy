@@ -14,10 +14,11 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from twisted import version as twisted_version
-from twisted.internet import defer, ssl
+from twisted.internet import ssl
+from twisted.internet.defer import Deferred
 from twisted.python.versions import Version
 
 from scrapy.settings import BaseSettings
@@ -85,9 +86,10 @@ class MailSender:
         mimetype="text/plain",
         charset=None,
         _callback=None,
-    ):
+    ) -> Optional[Deferred]:
         from twisted.internet import reactor
 
+        msg: MIMEBase
         if attachs:
             msg = MIMEMultipart()
         else:
@@ -134,7 +136,7 @@ class MailSender:
                     "mailattachs": len(attachs),
                 },
             )
-            return
+            return None
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))
         dfd.addCallbacks(
@@ -178,7 +180,7 @@ class MailSender:
         from twisted.internet import reactor
 
         msg = BytesIO(msg)
-        d = defer.Deferred()
+        d = Deferred()
 
         factory = self._create_sender_factory(to_addrs, msg, d)
 
