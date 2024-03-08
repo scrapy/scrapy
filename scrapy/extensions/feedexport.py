@@ -11,7 +11,7 @@ import warnings
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Type, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -21,6 +21,7 @@ from zope.interface import Interface, implementer
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.exporters import BaseItemExporter
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
@@ -324,12 +325,12 @@ class FeedSlot:
         filter,
         feed_options,
         spider,
-        exporters,
+        exporters: Dict[str, Type[BaseItemExporter]],
         settings,
         crawler,
     ):
         self.file = None
-        self.exporter = None
+        self.exporter: Optional[BaseItemExporter] = None
         self.storage = storage
         # feed params
         self.batch_id = batch_id
@@ -341,7 +342,7 @@ class FeedSlot:
         # exporter params
         self.feed_options = feed_options
         self.spider = spider
-        self.exporters = exporters
+        self.exporters: Dict[str, Type[BaseItemExporter]] = exporters
         self.settings = settings
         self.crawler = crawler
         # flags
@@ -373,7 +374,7 @@ class FeedSlot:
     def _get_instance(self, objcls, *args, **kwargs):
         return build_from_crawler(objcls, self.crawler, *args, **kwargs)
 
-    def _get_exporter(self, file, format, *args, **kwargs):
+    def _get_exporter(self, file, format, *args, **kwargs) -> BaseItemExporter:
         return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
     def finish_exporting(self):
