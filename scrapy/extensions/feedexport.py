@@ -11,7 +11,7 @@ import warnings
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import IO, Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urlparse
 
 from twisted.internet import defer, threads
@@ -21,7 +21,6 @@ from zope.interface import Interface, implementer
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.exporters import BaseItemExporter
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
@@ -325,12 +324,12 @@ class FeedSlot:
         filter,
         feed_options,
         spider,
-        exporters: Dict[str, Type[BaseItemExporter]],
+        exporters,
         settings,
         crawler,
     ):
         self.file = None
-        self.exporter: Optional[BaseItemExporter] = None
+        self.exporter = None
         self.storage = storage
         # feed params
         self.batch_id = batch_id
@@ -342,7 +341,7 @@ class FeedSlot:
         # exporter params
         self.feed_options = feed_options
         self.spider = spider
-        self.exporters: Dict[str, Type[BaseItemExporter]] = exporters
+        self.exporters = exporters
         self.settings = settings
         self.crawler = crawler
         # flags
@@ -374,7 +373,7 @@ class FeedSlot:
     def _get_instance(self, objcls, *args, **kwargs):
         return build_from_crawler(objcls, self.crawler, *args, **kwargs)
 
-    def _get_exporter(self, file, format, *args, **kwargs) -> BaseItemExporter:
+    def _get_exporter(self, file, format, *args, **kwargs):
         return self._get_instance(self.exporters[format], file, *args, **kwargs)
 
     def finish_exporting(self):
@@ -397,7 +396,8 @@ class FeedExporter:
         exporter = cls(crawler)
         crawler.signals.connect(exporter.open_spider, signals.spider_opened)
         crawler.signals.connect(exporter.close_spider, signals.spider_closed)
-        crawler.signals.connect(exporter.item_scraped, signals.item_scraped)
+        # crawler.signals.connect(exporter.item_scraped, signals.item_scraped)
+        crawler.signals.connect(exporter.item_scraped, signals.item_processors)
         return exporter
 
     def __init__(self, crawler):
@@ -549,6 +549,23 @@ class FeedExporter:
             crawler=getattr(self, "crawler", None),
         )
         return slot
+
+    def _run_processors(self, items, *processors):
+        processed_items = items
+
+        for processor in processors:
+            # Apply the processor function to each item in the list
+            processed_items = [processed_item for item in processed_items for processed_item in processor(item)]
+
+        return processed_items
+
+    def item_processors(self, item, spider):
+        # Run the item into thrue the item_processors_methods
+        exported_items = self._run_processors([item], *self.item_processors_methods)
+
+        # Call item_scraped method with each new item
+        for item in exported_items:
+            self.item_scraped(item, spider)
 
     def item_scraped(self, item, spider):
         slots = []
