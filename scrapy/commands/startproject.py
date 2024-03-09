@@ -13,12 +13,13 @@ from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
 
+projectString = "${project_name}"
 TEMPLATES_TO_RENDER: Tuple[Tuple[str, ...], ...] = (
     ("scrapy.cfg",),
-    ("${project_name}", "settings.py.tmpl"),
-    ("${project_name}", "items.py.tmpl"),
-    ("${project_name}", "pipelines.py.tmpl"),
-    ("${project_name}", "middlewares.py.tmpl"),
+    (projectString, "settings.py.tmpl"),
+    (projectString, "items.py.tmpl"),
+    (projectString, "pipelines.py.tmpl"),
+    (projectString, "middlewares.py.tmpl"),
 )
 
 IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
