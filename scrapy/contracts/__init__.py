@@ -182,7 +182,7 @@ def _create_testcase(method, desc):
     spider = method.__self__.name
 
     class ContractTestCase(TestCase):
-        def __str__(_self):
+        def __str__(self):
             return f"[{spider}] {method.__name__} ({desc})"
 
     name = f"{spider}_{method.__name__}"
