@@ -2,6 +2,11 @@
 This is a middleware to respect robots.txt policies. To activate it you must
 enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
+The robots exclusion standard, also known as the robots exclusion protocol or
+simply robots.txt, is a standard used by websites to communicate with web crawlers 
+and other web robots. The standard specifies how to inform the web robot about
+which areas of the website should not be processed or scanned.
+
 """
 
 from __future__ import annotations
