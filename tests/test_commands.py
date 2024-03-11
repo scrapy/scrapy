@@ -991,7 +991,6 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = "myspider.pyw"
 
     def setUp(self):
-        # https://github.com/scrapy/scrapy/issues/6286
         if platform.system() != "Windows":
             raise unittest.SkipTest("Windows required for .pyw files")
 
