@@ -6,7 +6,7 @@ from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase
 from lzma import LZMAFile
-from typing import Any, BinaryIO, Dict, List
+from typing import Any, BinaryIO, Dict, List, cast
 
 from scrapy.utils.misc import load_object
 
@@ -142,7 +142,7 @@ class PostProcessingManager(IOBase):
         :return: returns number of bytes written
         :rtype: int
         """
-        return self.head_plugin.write(data)
+        return cast(int, self.head_plugin.write(data))
 
     def tell(self) -> int:
         return self.file.tell()
