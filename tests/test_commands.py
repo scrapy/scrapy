@@ -987,9 +987,13 @@ class MySpider(scrapy.Spider):
         self.assertIn("The value of FOO is 42", log)
 
 
-@skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = "myspider.pyw"
+
+    def setUp(self):
+        if platform.system() != "Windows":
+            raise unittest.SkipTest("Windows required for .pyw files")
+        return super().setUp()
 
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
