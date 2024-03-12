@@ -993,6 +993,7 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     def setUp(self):
         if platform.system() != "Windows":
             raise unittest.SkipTest("Windows required for .pyw files")
+        return super().setUp()
 
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
