@@ -62,7 +62,7 @@ class AutoThrottle:
     ) -> None:
         key, slot = self._get_slot(request, spider)
         latency = request.meta.get("download_latency")
-        if latency is None or slot is None:
+        if latency is None or slot is None or slot.throttle is False:
             return
 
         olddelay = slot.delay
