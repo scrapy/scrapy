@@ -1,8 +1,8 @@
 import sys
 from io import StringIO
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, call, patch
 
-from scrapy.commands.check import Command
+from scrapy.commands.check import Command, TextTestResult
 from tests.test_commands import CommandTest
 
 
@@ -99,6 +99,55 @@ class CheckSpider(scrapy.Spider):
             raise Exception('SCRAPY_CHECK not set')
         """
         self._test_contract(parse_def=parse_def)
+
+    def test_printSummary_with_unsuccessful_test_result_without_errors_and_without_failures(
+        self,
+    ):
+        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        start_time = 1.0
+        stop_time = 2.0
+        result.testsRun = 5
+        result.failures = []
+        result.errors = []
+        result.unexpectedSuccesses = ["a", "b"]
+        with patch.object(result.stream, "write") as mock_write:
+            result.printSummary(start_time, stop_time)
+            mock_write.assert_has_calls([call("FAILED"), call("\n")])
+
+    def test_printSummary_with_unsuccessful_test_result_with_only_failures(self):
+        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        start_time = 1.0
+        stop_time = 2.0
+        result.testsRun = 5
+        result.failures = [(self, "failure")]
+        result.errors = []
+        with patch.object(result.stream, "writeln") as mock_write:
+            result.printSummary(start_time, stop_time)
+            mock_write.assert_called_with(" (failures=1)")
+
+    def test_printSummary_with_unsuccessful_test_result_with_only_errors(self):
+        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        start_time = 1.0
+        stop_time = 2.0
+        result.testsRun = 5
+        result.failures = []
+        result.errors = [(self, "error")]
+        with patch.object(result.stream, "writeln") as mock_write:
+            result.printSummary(start_time, stop_time)
+            mock_write.assert_called_with(" (errors=1)")
+
+    def test_printSummary_with_unsuccessful_test_result_with_both_failures_and_errors(
+        self,
+    ):
+        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        start_time = 1.0
+        stop_time = 2.0
+        result.testsRun = 5
+        result.failures = [(self, "failure")]
+        result.errors = [(self, "error")]
+        with patch.object(result.stream, "writeln") as mock_write:
+            result.printSummary(start_time, stop_time)
+            mock_write.assert_called_with(" (failures=1, errors=1)")
 
     @patch("scrapy.commands.check.ContractsManager")
     def test_run_with_opts_list_prints_spider(self, cm_cls_mock):
