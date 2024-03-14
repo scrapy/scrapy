@@ -397,7 +397,8 @@ class FeedExporter:
         exporter = cls(crawler)
         crawler.signals.connect(exporter.open_spider, signals.spider_opened)
         crawler.signals.connect(exporter.close_spider, signals.spider_closed)
-        crawler.signals.connect(exporter.item_scraped, signals.item_scraped)
+        # crawler.signals.connect(exporter.item_scraped, signals.item_scraped)
+        crawler.signals.connect(exporter.item_scraped, signals.item_processors)
         return exporter
 
     def __init__(self, crawler):
@@ -549,6 +550,23 @@ class FeedExporter:
             crawler=getattr(self, "crawler", None),
         )
         return slot
+
+    def _run_processors(self, items, *processors):
+        processed_items = items
+
+        for processor in processors:
+            # Apply the processor function to each item in the list
+            processed_items = [processed_item for item in processed_items for processed_item in processor(item)]
+
+        return processed_items
+
+    def item_processors(self, item, spider):
+        # Run the item into thrue the item_processors_methods
+        exported_items = self._run_processors([item], *self.item_processors_methods)
+
+        # Call item_scraped method with each new item
+        for item in exported_items:
+            self.item_scraped(item, spider)
 
     def item_scraped(self, item, spider):
         slots = []
