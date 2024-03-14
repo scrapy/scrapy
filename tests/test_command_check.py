@@ -1,6 +1,6 @@
 import sys
 from io import StringIO
-from unittest.mock import Mock, call, PropertyMock, patch
+from unittest.mock import Mock, PropertyMock, call, patch
 
 from scrapy.commands.check import Command, TextTestResult
 from tests.test_commands import CommandTest
