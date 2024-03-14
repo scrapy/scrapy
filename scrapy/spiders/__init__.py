@@ -17,11 +17,16 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    # typing.Concatenate requires Python 3.10
     # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from typing_extensions import Concatenate, Self
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
+    CallbackT = Callable[Concatenate[Response, ...], Any]
 
 
 class Spider(object_ref):
@@ -79,10 +84,14 @@ class Spider(object_ref):
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         return self.parse(response, **kwargs)
 
-    def parse(self, response: Response, **kwargs: Any) -> Any:
-        raise NotImplementedError(
-            f"{self.__class__.__name__}.parse callback is not defined"
-        )
+    if TYPE_CHECKING:
+        parse: CallbackT
+    else:
+
+        def parse(self, response: Response, **kwargs: Any) -> Any:
+            raise NotImplementedError(
+                f"{self.__class__.__name__}.parse callback is not defined"
+            )
 
     @classmethod
     def update_settings(cls, settings: BaseSettings) -> None:
