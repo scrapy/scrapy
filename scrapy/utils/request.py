@@ -44,7 +44,9 @@ def _serialize_headers(
             yield from request.headers.getlist(header)
 
 
-_fingerprint_cache: "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
+_fingerprint_cache: (
+    "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
+)
 _fingerprint_cache = WeakKeyDictionary()
 
 
@@ -109,13 +111,12 @@ def fingerprint(
             "headers": headers,
         }
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()
+        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()  # nosec
     return cache[cache_key]
 
 
 class RequestFingerprinterProtocol(Protocol):
-    def fingerprint(self, request: Request) -> bytes:
-        ...
+    def fingerprint(self, request: Request) -> bytes: ...
 
 
 class RequestFingerprinter:

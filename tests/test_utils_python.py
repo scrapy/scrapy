@@ -175,7 +175,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertTrue(equal_attributes(a, b, ["x", "y"]))
 
         a.y = 1
-        # differente attributes
+        # different attributes
         self.assertFalse(equal_attributes(a, b, ["x", "y"]))
 
         # test callable

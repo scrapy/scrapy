@@ -2,7 +2,7 @@ import random
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, Deque, Dict, Set, Tuple, cast
+from typing import TYPE_CHECKING, Any, Deque, Dict, Optional, Set, Tuple, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -24,10 +24,18 @@ if TYPE_CHECKING:
 class Slot:
     """Downloader slot"""
 
-    def __init__(self, concurrency: int, delay: float, randomize_delay: bool):
+    def __init__(
+        self,
+        concurrency: int,
+        delay: float,
+        randomize_delay: bool,
+        *,
+        throttle: Optional[bool] = None,
+    ):
         self.concurrency: int = concurrency
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
+        self.throttle = throttle
 
         self.active: Set[Request] = set()
         self.queue: Deque[Tuple[Request, Deferred]] = deque()
@@ -40,7 +48,7 @@ class Slot:
 
     def download_delay(self) -> float:
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # nosec
         return self.delay
 
     def close(self) -> None:
@@ -52,13 +60,15 @@ class Slot:
         return (
             f"{cls_name}(concurrency={self.concurrency!r}, "
             f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r})"
+            f"randomize_delay={self.randomize_delay!r}, "
+            f"throttle={self.throttle!r})"
         )
 
     def __str__(self) -> str:
         return (
             f"<downloader.Slot concurrency={self.concurrency!r} "
             f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
+            f"throttle={self.throttle!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
             f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
@@ -127,7 +137,8 @@ class Downloader:
                 slot_settings.get("delay", delay),
             )
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
-            new_slot = Slot(conc, delay, randomize_delay)
+            throttle = slot_settings.get("throttle", None)
+            new_slot = Slot(conc, delay, randomize_delay, throttle=throttle)
             self.slots[key] = new_slot
 
         return key, self.slots[key]

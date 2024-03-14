@@ -3,6 +3,7 @@ HttpError Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
+
 from __future__ import annotations
 
 import logging

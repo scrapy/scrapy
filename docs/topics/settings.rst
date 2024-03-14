@@ -835,7 +835,7 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
-----------------
+--------------
 
 Default: ``{}``
 
@@ -844,7 +844,12 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
+            "quotes.toscrape.com": {
+                "concurrency": 1,
+                "delay": 2,
+                "randomize_delay": False,
+                "throttle": False,
+            },
             "books.toscrape.com": {"delay": 3, "randomize_delay": False},
         }
 
@@ -855,6 +860,9 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
     -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+
+    There is no global setting for ``throttle``, whose default value is
+    ``None``.
 
 
 .. setting:: DOWNLOAD_TIMEOUT

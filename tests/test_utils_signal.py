@@ -75,9 +75,6 @@ class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
         await defer.succeed(42)
         return "OK"
 
-    def test_send_catch_log(self):
-        return super().test_send_catch_log()
-
 
 @mark.only_asyncio()
 class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
@@ -86,9 +83,6 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
         assert arg == "test"
         await asyncio.sleep(0.2)
         return await get_from_asyncio_queue("OK")
-
-    def test_send_catch_log(self):
-        return super().test_send_catch_log()
 
 
 class SendCatchLogTest2(unittest.TestCase):

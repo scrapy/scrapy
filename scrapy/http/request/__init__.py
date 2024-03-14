@@ -4,6 +4,7 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+
 import inspect
 from typing import (
     Any,
@@ -231,12 +232,16 @@ class Request(object_ref):
         """
         d = {
             "url": self.url,  # urls are safe (safe_string_url)
-            "callback": _find_method(spider, self.callback)
-            if callable(self.callback)
-            else self.callback,
-            "errback": _find_method(spider, self.errback)
-            if callable(self.errback)
-            else self.errback,
+            "callback": (
+                _find_method(spider, self.callback)
+                if callable(self.callback)
+                else self.callback
+            ),
+            "errback": (
+                _find_method(spider, self.errback)
+                if callable(self.errback)
+                else self.errback
+            ),
             "headers": dict(self.headers),
         }
         for attr in self.attributes:

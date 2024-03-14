@@ -3,6 +3,7 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
+
 import logging
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice

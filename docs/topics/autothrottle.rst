@@ -47,6 +47,18 @@ effect, but there are some important differences:
 
 AutoThrottle doesn't have these issues.
 
+Disabling throttling on a downloader slot
+=========================================
+
+It is possible to disable AutoThrottle for a specific download slot at run time
+by setting its ``throttle`` attribute to ``False``, e.g. using
+:setting:`DOWNLOAD_SLOTS`.
+
+Note, however, that AutoThrottle still determines the starting delay of every
+slot by setting the ``download_delay`` attribute on the running spider. You
+might want to set a custom value for the ``delay`` attribute of the slot, e.g.
+using :setting:`DOWNLOAD_SLOTS`.
+
 Throttling algorithm
 ====================
 
@@ -131,7 +143,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY
 Default: ``1.0``
 
 Average number of requests Scrapy should be sending in parallel to remote
-websites.
+websites. It must be higher than ``0.0``.
 
 By default, AutoThrottle adjusts the delay to send a single
 concurrent request to each of the remote websites. Set this option to

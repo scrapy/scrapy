@@ -172,8 +172,8 @@ TELNETCONSOLE_PORT
 
 Default: ``[6023, 6073]``
 
-The port range to use for the telnet console. If set to ``None`` or ``0``, a
-dynamically assigned port is used.
+The port range to use for the telnet console. If set to ``None``, a dynamically
+assigned port is used.
 
 
 .. setting:: TELNETCONSOLE_HOST

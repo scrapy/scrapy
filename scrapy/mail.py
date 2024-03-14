@@ -3,6 +3,9 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
+
+from __future__ import annotations
+
 import logging
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
@@ -11,13 +14,20 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
+from typing import TYPE_CHECKING, Optional
 
 from twisted import version as twisted_version
-from twisted.internet import defer, ssl
+from twisted.internet import ssl
+from twisted.internet.defer import Deferred
 from twisted.python.versions import Version
 
+from scrapy.settings import BaseSettings
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +65,7 @@ class MailSender:
         self.debug = debug
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_settings(cls, settings: BaseSettings) -> Self:
         return cls(
             smtphost=settings["MAIL_HOST"],
             mailfrom=settings["MAIL_FROM"],
@@ -76,9 +86,10 @@ class MailSender:
         mimetype="text/plain",
         charset=None,
         _callback=None,
-    ):
+    ) -> Optional[Deferred]:
         from twisted.internet import reactor
 
+        msg: MIMEBase
         if attachs:
             msg = MIMEMultipart()
         else:
@@ -125,7 +136,7 @@ class MailSender:
                     "mailattachs": len(attachs),
                 },
             )
-            return
+            return None
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))
         dfd.addCallbacks(
@@ -169,7 +180,7 @@ class MailSender:
         from twisted.internet import reactor
 
         msg = BytesIO(msg)
-        d = defer.Deferred()
+        d = Deferred()
 
         factory = self._create_sender_factory(to_addrs, msg, d)
 
@@ -202,7 +213,7 @@ class MailSender:
             to_addrs,
             msg,
             d,
-            **factory_keywords
+            **factory_keywords,
         )
         factory.noisy = False
         return factory

@@ -3,7 +3,7 @@ Scheduler queues
 """
 
 import marshal
-import pickle
+import pickle  # nosec
 from os import PathLike
 from pathlib import Path
 from typing import Union
