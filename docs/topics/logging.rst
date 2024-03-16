@@ -170,6 +170,12 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
+* :setting:`LOG_FILE_ROTATE`
+* :setting:`LOG_FILE_ROTATE_WHEN`
+* :setting:`LOG_FILE_ROTATE_INTERVAL`
+* :setting:`LOG_FILE_ROTATE_BACKEUP_COUNT`
+* :setting:`LOG_FILE_ROTATE_UTC`
+* :setting:`LOG_FILE_ROTATE_AT_TIME`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -193,6 +199,33 @@ respectively.
 If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
+
+When :setting:`LOG_FILE_ROTATE` is enabled, time-based log rotation is activated.
+This feature appends date-and-time information to log file extensions, formatted as
+%Y-%m-%d_%H-%M-%S or a leading portion based on the rollover interval.
+
+The :setting:`LOG_FILE_ROTATE_WHEN` setting determines the timing for log file
+replacement and rotation. Its default value is ``midnight``, but it can be set
+to various intervals:
+
+- ``S`` for seconds,
+- ``M`` for minutes,
+- ``H`` for hours,
+- ``D`` for days,
+- ``W0`` to ``W6`` for specific weekdays (in this case, the interval value is ignored).
+
+:setting:`LOG_FILE_ROTATE_INTERVAL` determines the frequency of the log file rotation.
+It specifies the interval at which the log files are rotated, depending on the unit set
+by :setting:`LOG_FILE_ROTATE_WHEN`. For instance, if `LOG_FILE_ROTATE_WHEN` is set to ``H``
+(hours), and `LOG_FILE_ROTATE_INTERVAL` is set to `6`, the log files will rotate every 6 hours.
+
+If :setting:`LOG_FILE_ROTATE_UTC` is true, UTC times are used for rotation; otherwise,
+local time is used. The :setting:`LOG_FILE_ROTATE_BACKUP_COUNT`, if nonzero, limits the
+number of backup files retained. Upon rollover, the oldest file is deleted if creating a
+new one would exceed this limit. If :setting:`LOG_FILE_ROTATE_AT_TIME` is set
+and not ``None``, it specifies the exact time of day for rollover and is used to calculate
+the initial rollover timing.
+
 
 Command-line options
 --------------------

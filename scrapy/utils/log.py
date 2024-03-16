@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 from logging.config import dictConfig
+from logging.handlers import TimedRotatingFileHandler
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union, cast
 
@@ -147,7 +148,19 @@ def _get_handler(settings: Settings) -> logging.Handler:
     if filename:
         mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
         encoding = settings.get("LOG_ENCODING")
-        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
+        if settings.getbool("LOG_FILE_ROTATE", False):
+            handler = TimedRotatingFileHandler(
+                filename,
+                encoding=encoding,
+                when=settings.get("LOG_FILE_ROTATE_WHEN", "midnight"),
+                interval=settings.get("LOG_FILE_ROTATE_INTERVAL", 1),
+                backupCount=settings.get("LOG_FILE_ROTATE_BACKUP_COUNT", 0),
+                delay=settings.get("LOG_FILE_ROTATE_DELAY", False),
+                utc=settings.get("LOG_FILE_ROTATE_UTC", False),
+                atTime=settings.get("LOG_FILE_ROTATE_AT_TIME", None),
+            )
+        else:
+            handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
         handler = logging.StreamHandler()
     else:
