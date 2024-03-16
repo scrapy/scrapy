@@ -21,6 +21,7 @@ from twisted.web.server import NOT_DONE_YET, GzipEncoderFactory, Site
 from twisted.web.static import File
 from twisted.web.util import redirectTo
 
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 
@@ -271,9 +272,16 @@ class Root(resource.Resource):
 
 
 class MockServer:
+    def __init__(self, resource=None):
+        self._args = []
+        if resource:
+            resource_path = f"{resource.__module__}.{resource.__name__}"
+            self._args.append("--resource")
+            self._args.append(resource_path)
+
     def __enter__(self):
         self.proc = Popen(
-            [sys.executable, "-u", "-m", "tests.mockserver", "-t", "http"],
+            [sys.executable, "-u", "-m", "tests.mockserver", *self._args, "-t", "http"],
             stdout=PIPE,
             env=get_mockserver_env(),
         )
@@ -378,13 +386,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t", "--type", type=str, choices=("http", "dns"), default="http"
     )
+    parser.add_argument("--resource", type=str, default="tests.mockserver.Root")
     args = parser.parse_args()
 
     factory: ServerFactory
 
     if args.type == "http":
-        root = Root()
-        factory = Site(root)
+        resource = load_object(args.resource)()
+        factory = Site(resource)
         httpPort = reactor.listenTCP(0, factory)
         contextFactory = ssl_context_factory()
         httpsPort = reactor.listenSSL(0, factory, contextFactory)

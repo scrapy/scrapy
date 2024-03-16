@@ -24,6 +24,8 @@ item_dropped = object()
 item_error = object()
 feed_slot_closed = object()
 feed_exporter_closed = object()
+start_request_returned = object()
+start_requests_exhausted = object()
 
 # for backward compatibility
 stats_spider_opened = spider_opened
