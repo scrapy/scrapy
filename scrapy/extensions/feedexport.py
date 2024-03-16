@@ -521,6 +521,8 @@ class FeedExporter:
 
     def _handle_store_success(self, f, logmsg, spider, slot_type):
         logger.info("Stored %s", logmsg, extra={"spider": spider})
+        feed_uri = logmsg.split(":")[-1].strip()
+        self.crawler.stats.set_value(f"feedexport/feed_url/{feed_uri.split('/')[-1]}", feed_uri)
         self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
 
     def _start_new_batch(self, batch_id, uri, feed_options, spider, uri_template):
