@@ -95,6 +95,17 @@ class CookiesMiddleware:
         if request.meta.get("dont_merge_cookies", False):
             return response
 
+        for cookie in response.headers.getlist("Set-Cookie"):
+            cookie_domain = cookie.split(b";")[1].split(b"=")[1]
+            cookie_domain = cookie_domain.decode("utf-8")
+            request_domain = urlparse_cached(request).hostname.lower()
+            if cookie_domain == '/':
+                continue
+            if cookie_domain not in request_domain:
+                # set cookie domain to request domain
+                cookie = cookie.replace(cookie_domain.encode(), request_domain.encode())
+                response.headers.setlist("Set-Cookie", [cookie])
+
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
