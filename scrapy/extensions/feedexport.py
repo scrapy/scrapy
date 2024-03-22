@@ -559,7 +559,7 @@ class FeedExporter:
                 continue
 
             slot.start_exporting()
-            defer.maybeDeferred(slot.exporter.export_item, item)
+            slot.exporter.export_item(item)
             slot.itemcount += 1
             # create new slot for each slot with itemcount == FEED_EXPORT_BATCH_ITEM_COUNT and close the old one
             if (
