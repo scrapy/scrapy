@@ -12,6 +12,7 @@ from twisted.internet import defer, protocol, ssl
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.python.failure import Failure
+from twisted.web._newclient import HTTPClientParser
 from twisted.web.client import (
     URI,
     Agent,
@@ -33,6 +34,11 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
 
 logger = logging.getLogger(__name__)
+
+
+# Monkey-patch to increase the maximum length for (header) lines, which is
+# 2**14 by default as of Twisted 22.10.0.
+HTTPClientParser.MAX_LENGTH = max(2**16, HTTPClientParser.MAX_LENGTH)
 
 
 class HTTP11DownloadHandler:
