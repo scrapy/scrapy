@@ -30,6 +30,10 @@ class HttpAuthMiddleware:
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
+    def __init__(self):
+        self.auth = None
+        self.domain = None
+
     def spider_opened(self, spider: Spider) -> None:
         usr = getattr(spider, "http_user", "")
         pwd = getattr(spider, "http_pass", "")
@@ -40,8 +44,16 @@ class HttpAuthMiddleware:
     def process_request(
         self, request: Request, spider: Spider
     ) -> Union[Request, Response, None]:
-        auth = getattr(self, "auth", None)
-        if auth and b"Authorization" not in request.headers:
-            if not self.domain or url_is_from_any_domain(request.url, [self.domain]):
-                request.headers[b"Authorization"] = auth
+        if b"Authorization" in request.headers:
+            return None
+        usr = request.meta.get("http_user", "")
+        pwd = request.meta.get("http_pass", "")
+        if usr or pwd:
+            auth = basic_auth_header(usr, pwd)
+        elif not self.domain or url_is_from_any_domain(request.url, [self.domain]):
+            auth = self.auth
+        else:
+            auth = None
+        if auth:
+            request.headers[b"Authorization"] = auth
         return None
