@@ -1,5 +1,7 @@
 from twisted.trial import unittest
 
+from scrapy.robotstxt import decode_robotstxt
+
 
 def reppy_available():
     # check if reppy parser is installed
@@ -139,6 +141,25 @@ class BaseRobotParserTest:
         self.assertFalse(
             rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt")
         )
+
+
+class DecodeRobotsTxtTest(unittest.TestCase):
+    def test_native_string_conversion(self):
+        robotstxt_body = "User-agent: *\nDisallow: /\n".encode("utf-8")
+        decoded_content = decode_robotstxt(
+            robotstxt_body, spider=None, to_native_str_type=True
+        )
+        self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
+
+    def test_decode_utf8(self):
+        robotstxt_body = "User-agent: *\nDisallow: /\n".encode("utf-8")
+        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
+
+    def test_decode_non_utf8(self):
+        robotstxt_body = b"User-agent: *\n\xFFDisallow: /\n"
+        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
 
 
 class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):

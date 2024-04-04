@@ -12,7 +12,7 @@ def decode_robotstxt(robotstxt_body, spider, to_native_str_type=False):
         if to_native_str_type:
             robotstxt_body = to_unicode(robotstxt_body)
         else:
-            robotstxt_body = robotstxt_body.decode("utf-8")
+            robotstxt_body = robotstxt_body.decode("utf-8", errors="ignore")
     except UnicodeDecodeError:
         # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
         # Switch to 'allow all' state.
