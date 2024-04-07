@@ -479,7 +479,7 @@ class FilesPipeline(MediaPipeline):
     def media_downloaded(self, response, request, info, *, item=None):
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in [200, 201]:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -489,13 +489,17 @@ class FilesPipeline(MediaPipeline):
             raise FileException("download-error")
 
         if not response.body:
-            logger.warning(
-                "File (empty-content): Empty file from %(request)s referred "
-                "in <%(referer)s>: no-content",
-                {"request": request, "referer": referer},
-                extra={"spider": info.spider},
-            )
-            raise FileException("empty-content")
+            if response.status == 201 and 'Location' in response.headers:
+                extra_request = Request(response.headers['Location'], callback=self.file_downloaded, meta={'info': info, 'item': item})
+                return extra_request
+            else:
+                logger.warning(
+                    "File (empty-content): Empty file from %(request)s referred "
+                    "in <%(referer)s>: no-content",
+                    {"request": request, "referer": referer},
+                    extra={"spider": info.spider},
+                )
+                raise FileException("empty-content")
 
         status = "cached" if "cached" in response.flags else "downloaded"
         logger.debug(
