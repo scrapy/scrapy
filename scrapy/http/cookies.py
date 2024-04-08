@@ -171,7 +171,7 @@ class WrappedRequest:
 
     def get_header(self, name, default=None):
         value = self.request.headers.get(name, default)
-        return to_unicode(value, errors="replace") if value else value
+        return to_unicode(value, errors="replace") if value is not None else None
 
     def header_items(self):
         return [
