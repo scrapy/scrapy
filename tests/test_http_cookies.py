@@ -43,6 +43,7 @@ class WrappedRequestTest(TestCase):
     def test_get_header(self):
         self.assertEqual(self.wrapped.get_header("content-type"), "text/html")
         self.assertEqual(self.wrapped.get_header("xxxxx", "def"), "def")
+        self.assertEqual(self.wrapped.get_header("xxxxx"), None)
 
     def test_header_items(self):
         self.assertEqual(self.wrapped.header_items(), [("Content-Type", ["text/html"])])

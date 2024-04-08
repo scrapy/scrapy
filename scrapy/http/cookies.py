@@ -170,7 +170,8 @@ class WrappedRequest:
         return name in self.request.headers
 
     def get_header(self, name, default=None):
-        return to_unicode(self.request.headers.get(name, default), errors="replace")
+        value = self.request.headers.get(name, default)
+        return to_unicode(value, errors="replace") if value else value
 
     def header_items(self):
         return [
