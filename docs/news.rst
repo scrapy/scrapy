@@ -3,6 +3,87 @@
 Release notes
 =============
 
+.. _release-2.11.2:
+
+Scrapy 2.11.2 (unreleased)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>` is now
+    enforced for all requests, not only for requests from spider callbacks.
+
+    Please, see the `c39f-6wj3-w3x6 security advisory`_ for more information.
+
+    .. _c39f-6wj3-w3x6 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-c39f-6wj3-w3x6
+
+    (:issue:`1042`)
+
+-   Redirects to non-HTTP protocols are no longer followed.
+
+    Please, see the `23j4-mw76-5v7h security advisory`_ for more information.
+
+    .. _23j4-mw76-5v7h security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-23j4-mw76-5v7h
+
+    (:issue:`457`)
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    scheme (``http://`` or ``https://``) or port, even if the domain is the
+    same.
+
+    Please, see the `4qqq-9vqf-3h3f security advisory`_ for more information.
+
+    .. _4qqq-9vqf-3h3f security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-4qqq-9vqf-3h3f
+
+-   When using system proxy settings that are different for ``http://`` and
+    ``https://``, redirects to a different URL scheme will now also trigger the
+    corresponding change in proxy settings for the redirected request.
+
+    Please, see the `jm3v-qxmh-hxwv security advisory`_ for more information.
+
+    .. _jm3v-qxmh-hxwv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-jm3v-qxmh-hxwv
+
+    (:issue:`767`)
+
+-   :class:`scrapy.http.request.rpc.XmlRpcRequest` now uses
+    `defusedxml.xmlrpc`_ to protect against some attacks. (:issue:`6250`,
+    :issue:`6251`)
+
+    .. _defusedxml.xmlrpc: https://github.com/tiran/defusedxml?tab=readme-ov-file#defusedxmlxmlrpc
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   For a more secure default behavior, cookies without the new ``secure``
+    attribute in requests for URLs with the ``https://`` scheme will get
+    ``secure`` set to ``True`` by default.
+
+    For example, if ``Request("https://example.com", cookies={"a": "b"})``
+    redirects to ``http://example.com``, the ``a=b`` cookie would no longer be
+    sent to ``http://example.com``. To change that, set ``secure`` to ``False``
+    in the original request: ``Request("https://example.com", cookies=[{"name":
+    "a", "value": "b", "secure": False}])``.
+
+
+New features
+~~~~~~~~~~~~
+
+-   When specifying request cookies, it is now possible to specify the
+    ``secure`` boolean attribute. When ``True``, cookies will only be included
+    in requests with an ``https://`` scheme.
+
+Bug fixes
+~~~~~~~~~
+
+-   Restored support for brotlipy_, which had been dropped in Scrapy 2.11.1 in
+    favor of brotli_. (:issue:`6261`)
+
+    .. _brotli: https://github.com/google/brotli
+
+    .. note:: brotlipy is deprecated, both in Scrapy and upstream. Use brotli
+        instead if you can.
+
 .. _release-2.11.1:
 
 Scrapy 2.11.1 (2024-02-14)
