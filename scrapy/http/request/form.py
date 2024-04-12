@@ -152,6 +152,21 @@ def _get_form(
         return cast(FormElement, form)
 
 
+def _get_filtered_mapped_inputs(inputs, formdata_keys):
+    return [
+        (k, "" if v is None else v)
+        for k, v in (_value(e) for e in inputs)
+        if k and k not in formdata_keys
+    ]
+
+
+def _append_clickable_if_required(dont_click, clickdata, form, formdata, values):
+    if not dont_click:
+        clickable = _get_clickable(clickdata, form)
+        if clickable and clickable[0] not in formdata and clickable[0] is not None:
+            values.append(clickable)
+
+
 def _get_inputs(
     form: FormElement,
     formdata: FormdataType,
@@ -175,16 +190,9 @@ def _get_inputs(
         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
         namespaces={"re": "http://exslt.org/regular-expressions"},
     )
-    values: List[FormdataKVType] = [
-        (k, "" if v is None else v)
-        for k, v in (_value(e) for e in inputs)
-        if k and k not in formdata_keys
-    ]
 
-    if not dont_click:
-        clickable = _get_clickable(clickdata, form)
-        if clickable and clickable[0] not in formdata and not clickable[0] is None:
-            values.append(clickable)
+    values = _get_filtered_mapped_inputs(inputs, formdata_keys)
+    _append_clickable_if_required(dont_click, clickdata, form, formdata, values)
 
     if isinstance(formdata, dict):
         formdata = formdata.items()  # type: ignore[assignment]
