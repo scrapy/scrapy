@@ -5,12 +5,15 @@ from typing import IO, Union
 from os import PathLike
 
 
-def ftp_makedirs_cwd(ftp: FTP, path: Union[str, PathLike[str]], first_call: bool = True) -> None:
+def ftp_makedirs_cwd(
+    ftp: FTP, path: Union[str, PathLike], first_call: bool = True
+) -> None:
     """Set the current directory of the FTP connection given in the ``ftp``
     argument (as a ftplib.FTP object), creating all parent directories if they
     don't exist. The ftplib.FTP object must be already connected and logged in.
     """
     try:
+        path = str(path)
         ftp.cwd(path)
     except error_perm:
         ftp_makedirs_cwd(ftp, dirname(path), False)
@@ -21,7 +24,7 @@ def ftp_makedirs_cwd(ftp: FTP, path: Union[str, PathLike[str]], first_call: bool
 
 def ftp_store_file(
     *,
-    path: Union[str, PathLike[str]],
+    path: Union[str, PathLike],
     file: IO,
     host: str,
     port: int,
@@ -34,6 +37,7 @@ def ftp_store_file(
     to the directory extracted from given path, then uploads the file to server
     """
     with FTP() as ftp:
+        path = str(path)
         ftp.connect(host, port)
         ftp.login(username, password)
         if use_active_mode:
