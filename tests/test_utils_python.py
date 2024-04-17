@@ -1,6 +1,5 @@
 import functools
 import operator
-import platform
 
 from twisted.trial import unittest
 
