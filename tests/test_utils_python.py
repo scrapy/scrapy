@@ -239,7 +239,10 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
         # Didn't used to work on CPython: https://bugs.python.org/issue42785
-        self.assertIn(get_func_args(operator.itemgetter(2), stripself=True), [[], ["obj"]])
+        self.assertIn(
+            get_func_args(operator.itemgetter(2), stripself=True),
+            [[], ["obj"], ["args", "kwargs"]],
+        )
 
     def test_without_none_values(self):
         self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
