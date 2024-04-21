@@ -489,8 +489,12 @@ class FilesPipeline(MediaPipeline):
             raise FileException("download-error")
 
         if not response.body:
-            if response.status == 201 and 'Location' in response.headers:
-                extra_request = Request(response.headers['Location'], callback=self.file_downloaded, meta={'info': info, 'item': item})
+            if response.status == 201 and "Location" in response.headers:
+                extra_request = Request(
+                    response.headers["Location"],
+                    callback=self.file_downloaded,
+                    meta={"info": info, "item": item},
+                )
                 return extra_request
             else:
                 logger.warning(
