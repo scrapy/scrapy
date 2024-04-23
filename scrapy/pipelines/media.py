@@ -31,7 +31,6 @@ class MediaPipeline:
 
     def __init__(self, download_func=None, settings=None):
         self.download_func = download_func
-        self._expects_item = {}
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)

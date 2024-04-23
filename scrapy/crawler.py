@@ -186,9 +186,23 @@ class Crawler:
         return None
 
     def get_addon(self, cls):
+        """Return the run-time instance of an :ref:`add-on <topics-addons>` of
+        the specified class or a subclass, or ``None`` if none is found.
+
+        .. versionadded:: 2.12
+        """
         return self._get_component(cls, self.addons.addons)
 
     def get_downloader_middleware(self, cls):
+        """Return the run-time instance of a :ref:`downloader middleware
+        <topics-downloader-middleware>` of the specified class or a subclass,
+        or ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the crawl engine has been created,
+        e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
+        """
         if not self.engine:
             raise RuntimeError(
                 "Crawler.get_downloader_middleware() can only be called after "
@@ -197,6 +211,16 @@ class Crawler:
         return self._get_component(cls, self.engine.downloader.middleware.middlewares)
 
     def get_extension(self, cls):
+        """Return the run-time instance of an :ref:`extension
+        <topics-extensions>` of the specified class or a subclass,
+        or ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the extension manager has been
+        created, e.g. at signals :signal:`engine_started` or
+        :signal:`spider_opened`.
+        """
         if not self.extensions:
             raise RuntimeError(
                 "Crawler.get_extension() can only be called after the "
@@ -205,6 +229,15 @@ class Crawler:
         return self._get_component(cls, self.extensions.middlewares)
 
     def get_item_pipeline(self, cls):
+        """Return the run-time instance of a :ref:`item pipeline
+        <topics-item-pipeline>` of the specified class or a subclass, or
+        ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the crawl engine has been created,
+        e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
+        """
         if not self.engine:
             raise RuntimeError(
                 "Crawler.get_item_pipeline() can only be called after the "
@@ -213,6 +246,15 @@ class Crawler:
         return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
 
     def get_spider_middleware(self, cls):
+        """Return the run-time instance of a :ref:`spider middleware
+        <topics-spider-middleware>` of the specified class or a subclass, or
+        ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the crawl engine has been created,
+        e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
+        """
         if not self.engine:
             raise RuntimeError(
                 "Crawler.get_spider_middleware() can only be called after the "
