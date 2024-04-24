@@ -24,7 +24,7 @@ from zope.interface.verify import verifyClass
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
@@ -154,9 +154,14 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
-            yield maybeDeferred(self.engine.start)
+            try:
+                start_requests = iter(self.spider.start_requests())
+                yield self.engine.open_spider(self.spider, start_requests)
+                yield maybeDeferred(self.engine.start)
+            except CloseSpider as e:
+                yield self.engine.close_spider_before_start(
+                    self.spider, reason=e.reason
+                )
         except Exception:
             self.crawling = False
             if self.engine is not None:

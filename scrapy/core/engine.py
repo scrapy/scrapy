@@ -399,6 +399,18 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             self.close_spider(self.spider, reason=ex.reason)
 
+    def close_spider_before_start(self, spider: Spider, reason: str = "cancelled"):
+        if self.slot is not None:
+            raise RuntimeError("Engine slot is already assigned. Use self.close_spider")
+
+        self.start()
+        nextcall_none = CallLaterOnce(lambda: None)
+        scheduler = create_instance(
+            self.scheduler_cls, settings=None, crawler=self.crawler
+        )
+        self.slot = Slot((), True, nextcall_none, scheduler)
+        return self.close_spider(spider, reason)
+
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
         """Close (cancel) spider and clear all its outstanding requests"""
         if self.slot is None:
