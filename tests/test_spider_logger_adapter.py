@@ -14,9 +14,21 @@ from scrapy.utils.spider_logger_adapter import SpiderLoggerAdapter
             {"extra": {"log_extra": "info"}},
             {"extra": {"log_extra": "info", "spider": "test"}},
         ),
-        ({"spider": "test"}, {"extra": None}, {"extra": {"spider": "test"}}),
-        (None, {"extra": {"log_extra": "info"}}, {"extra": {"log_extra": "info"}}),
-        (None, {"extra": None}, {"extra": None}),
+        (
+            {"spider": "test"},
+            {"extra": None},
+            {"extra": {"spider": "test"}},
+        ),
+        (
+            None,
+            {"extra": {"log_extra": "info"}},
+            {"extra": {"log_extra": "info"}},
+        ),
+        (
+            None,
+            {"extra": None},
+            {"extra": None},
+        ),
         (
             {"spider": "test"},
             {"extra": {"spider": "test2"}},
