@@ -13,6 +13,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy import signals
 from scrapy.http import Request, Response
+from scrapy.utils.spider_logger_adapter import SpiderLoggerAdapter
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
@@ -42,9 +43,9 @@ class Spider(object_ref):
             self.start_urls: List[str] = []
 
     @property
-    def logger(self) -> logging.LoggerAdapter:
+    def logger(self) -> SpiderLoggerAdapter:
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {"spider": self})
+        return SpiderLoggerAdapter(logger, {"spider": self})
 
     def log(self, message: Any, level: int = logging.DEBUG, **kw: Any) -> None:
         """Log the given message at the given log level
