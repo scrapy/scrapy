@@ -1,14 +1,15 @@
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any, MutableMapping, Tuple
 
 
 class SpiderLoggerAdapter(logging.LoggerAdapter):
-    def process(self, msg: str, kwargs: Dict) -> Tuple[str, Dict[str, Any]]:
+    def process(
+        self, msg: str, kwargs: MutableMapping[str, Any]
+    ) -> Tuple[str, MutableMapping[str, Any]]:
         """Method that augments logging with additional 'extra' data"""
-        extra = kwargs.get("extra")
-        if not isinstance(extra, dict):
-            kwargs["extra"] = self.extra
-        elif isinstance(self.extra, dict):
+        if isinstance(kwargs.get("extra"), MutableMapping):
             kwargs["extra"].update(self.extra)
+        else:
+            kwargs["extra"] = self.extra
 
         return msg, kwargs

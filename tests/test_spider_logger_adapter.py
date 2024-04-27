@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional
+from typing import Any, Dict, Mapping, MutableMapping
 
 import pytest
 
@@ -20,16 +20,6 @@ from scrapy.utils.spider_logger_adapter import SpiderLoggerAdapter
             {"extra": {"spider": "test"}},
         ),
         (
-            None,
-            {"extra": {"log_extra": "info"}},
-            {"extra": {"log_extra": "info"}},
-        ),
-        (
-            None,
-            {"extra": None},
-            {"extra": None},
-        ),
-        (
             {"spider": "test"},
             {"extra": {"spider": "test2"}},
             {"extra": {"spider": "test"}},
@@ -37,7 +27,7 @@ from scrapy.utils.spider_logger_adapter import SpiderLoggerAdapter
     ),
 )
 def test_spider_logger_adapter_process(
-    base_extra: Optional[Dict], log_extra: Dict, expected_extra: Dict
+    base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: Dict
 ):
     logger = logging.getLogger("test")
     spider_logger_adapter = SpiderLoggerAdapter(logger, base_extra)
