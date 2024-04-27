@@ -10,7 +10,6 @@
 # serve to show the default.
 
 import sys
-from datetime import datetime
 from pathlib import Path
 
 # If your extensions are in another directory, add it here. If the directory
@@ -48,7 +47,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Scrapy"
-copyright = f"2008–{datetime.now().year}, Scrapy developers"
+copyright = "Scrapy developers"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
