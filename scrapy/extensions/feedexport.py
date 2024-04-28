@@ -403,7 +403,7 @@ class FeedSlot:
         spider: Spider,
         exporters: Dict[str, Type[BaseItemExporter]],
         settings: BaseSettings,
-        crawler: Optional[Crawler],
+        crawler: Crawler,
     ):
         self.file: Optional[IO[bytes]] = None
         self.exporter: Optional[BaseItemExporter] = None
@@ -420,7 +420,7 @@ class FeedSlot:
         self.spider: Spider = spider
         self.exporters: Dict[str, Type[BaseItemExporter]] = exporters
         self.settings: BaseSettings = settings
-        self.crawler: Optional[Crawler] = crawler
+        self.crawler: Crawler = crawler
         # flags
         self.itemcount: int = 0
         self._exporting: bool = False
@@ -651,7 +651,7 @@ class FeedExporter:
             spider=spider,
             exporters=self.exporters,
             settings=self.settings,
-            crawler=cast(Optional[Crawler], getattr(self, "crawler", None)),
+            crawler=self.crawler,
         )
         return slot
 
