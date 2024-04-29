@@ -7,10 +7,18 @@ See documentation in docs/topics/item.rst
 from __future__ import annotations
 
 from abc import ABCMeta
-from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
-from typing import TYPE_CHECKING, Any, Dict, Iterator, KeysView, NoReturn, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    KeysView,
+    MutableMapping,
+    NoReturn,
+    Tuple,
+)
 
 from scrapy.utils.trackref import object_ref
 
