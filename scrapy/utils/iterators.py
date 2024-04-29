@@ -3,7 +3,6 @@ import logging
 import re
 from io import StringIO
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -24,9 +23,6 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
-
-if TYPE_CHECKING:
-    from lxml._types import SupportsReadClose  # nosec
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +94,7 @@ def xmliter_lxml(
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
-        cast("SupportsReadClose[bytes]", reader),
+        reader,
         encoding=reader.encoding,
         events=("end", "start-ns"),
         resolve_entities=False,
