@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Type
 
+from twisted.internet.defer import Deferred
+
 from scrapy import Request, Spider
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response
 from scrapy.settings import BaseSettings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
@@ -74,7 +75,7 @@ class S3DownloadHandler:
     def from_crawler(cls, crawler: Crawler, **kwargs: Any) -> Self:
         return cls(crawler.settings, crawler=crawler, **kwargs)
 
-    def download_request(self, request: Request, spider: Spider) -> Response:
+    def download_request(self, request: Request, spider: Spider) -> Deferred:
         p = urlparse_cached(request)
         scheme = "https" if request.meta.get("is_secure") else "http"
         bucket = p.hostname
