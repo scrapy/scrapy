@@ -8,6 +8,7 @@ from twisted.internet.base import DelayedCall
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.web.client import URI
+from twisted.web.iweb import IPolicyForHTTPS
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
@@ -54,7 +55,7 @@ class ScrapyH2Agent:
 
     def __init__(
         self,
-        context_factory,
+        context_factory: IPolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
         bind_address: Optional[bytes] = None,

@@ -27,11 +27,11 @@ from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer
 from zope.interface import implementer
 
-from scrapy import signals
+from scrapy import Request, Spider, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
 from scrapy.exceptions import StopDownload
-from scrapy.http import Headers
+from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -67,7 +67,7 @@ class HTTP11DownloadHandler:
     def from_crawler(cls, crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request, spider):
+    def download_request(self, request: Request, spider: Spider) -> Response:
         """Return a deferred for the HTTP download"""
         agent = ScrapyAgent(
             contextFactory=self._contextFactory,
