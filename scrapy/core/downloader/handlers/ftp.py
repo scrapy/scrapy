@@ -32,15 +32,19 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, BinaryIO, Dict, Optional
 from urllib.parse import unquote
 
+from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
+from twisted.python.failure import Failure
 
+from scrapy import Request, Spider
 from scrapy.crawler import Crawler
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
+from scrapy.settings import BaseSettings
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
@@ -50,20 +54,20 @@ if TYPE_CHECKING:
 
 
 class ReceivedDataProtocol(Protocol):
-    def __init__(self, filename=None):
-        self.__filename = filename
-        self.body = open(filename, "wb") if filename else BytesIO()
-        self.size = 0
+    def __init__(self, filename: Optional[str] = None):
+        self.__filename: Optional[str] = filename
+        self.body: BinaryIO = open(filename, "wb") if filename else BytesIO()
+        self.size: int = 0
 
-    def dataReceived(self, data):
+    def dataReceived(self, data: bytes) -> None:
         self.body.write(data)
         self.size += len(data)
 
     @property
-    def filename(self):
+    def filename(self) -> Optional[str]:
         return self.__filename
 
-    def close(self):
+    def close(self) -> None:
         self.body.close() if self.filename else self.body.seek(0)
 
 
@@ -73,12 +77,12 @@ _CODE_RE = re.compile(r"\d+")
 class FTPDownloadHandler:
     lazy = False
 
-    CODE_MAPPING = {
+    CODE_MAPPING: Dict[str, int] = {
         "550": 404,
         "default": 503,
     }
 
-    def __init__(self, settings):
+    def __init__(self, settings: BaseSettings):
         self.default_user = settings["FTP_USER"]
         self.default_password = settings["FTP_PASSWORD"]
         self.passive_mode = settings["FTP_PASSIVE_MODE"]
@@ -87,7 +91,7 @@ class FTPDownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings)
 
-    def download_request(self, request, spider):
+    def download_request(self, request: Request, spider: Spider) -> Deferred:
         from twisted.internet import reactor
 
         parsed_url = urlparse_cached(request)
@@ -99,10 +103,10 @@ class FTPDownloadHandler:
         creator = ClientCreator(
             reactor, FTPClient, user, password, passive=passive_mode
         )
-        dfd = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
+        dfd: Deferred = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
         return dfd.addCallback(self.gotClient, request, unquote(parsed_url.path))
 
-    def gotClient(self, client, request, filepath):
+    def gotClient(self, client: FTPClient, request: Request, filepath: str) -> Deferred:
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         return client.retrieveFile(filepath, protocol).addCallbacks(
@@ -112,15 +116,18 @@ class FTPDownloadHandler:
             errbackArgs=(request,),
         )
 
-    def _build_response(self, result, request, protocol):
+    def _build_response(
+        self, result: Any, request: Request, protocol: ReceivedDataProtocol
+    ) -> Response:
         self.result = result
         protocol.close()
         headers = {"local filename": protocol.filename or "", "size": protocol.size}
         body = to_bytes(protocol.filename or protocol.body.read())
         respcls = responsetypes.from_args(url=request.url, body=body)
-        return respcls(url=request.url, status=200, body=body, headers=headers)
+        # hints for Headers-related types may need to be fixed to not use AnyStr
+        return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
 
-    def _failed(self, result, request):
+    def _failed(self, result: Failure, request: Request) -> Response:
         message = result.getErrorMessage()
         if result.type == CommandFailed:
             m = _CODE_RE.search(message)
@@ -130,4 +137,5 @@ class FTPDownloadHandler:
                 return Response(
                     url=request.url, status=httpcode, body=to_bytes(message)
                 )
+        assert result.type
         raise result.type(result.value)
