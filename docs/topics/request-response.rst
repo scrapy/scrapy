@@ -799,7 +799,7 @@ fields with form data from :class:`Response` objects.
 
 .. class:: scrapy.http.request.form.FormRequest
 .. class:: scrapy.http.FormRequest
-.. class:: scrapy.FormRequest(url, [formdata, ...])
+.. class:: scrapy.FormRequest(url, [formdata, is_multipart, ...])
 
     The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
     remaining arguments are the same as for the :class:`Request` class and are
@@ -810,10 +810,14 @@ fields with form data from :class:`Response` objects.
        body of the request.
     :type formdata: dict or collections.abc.Iterable
 
+    :param is_multipart: is a boolean flag to determine if the ``Content-Type`` should be sent
+        as ``multipart/form-data``.
+    :type is_multipart: bool
+
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
+    .. classmethod:: FormRequest.from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, is_multipart=False, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
@@ -861,6 +865,10 @@ fields with form data from :class:`Response` objects.
           this parameter is ``None``, the field will not be included in the
           request, even if it was present in the response ``<form>`` element.
        :type formdata: dict
+
+       :param is_multipart: if True, the form will be sent using the header
+        ``Content-Type: multipart/form-data``.
+        :type is_multipart: bool
 
        :param clickdata: attributes to lookup the control clicked. If it's not
          given, the form data will be submitted simulating a click on the
