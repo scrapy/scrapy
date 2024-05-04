@@ -34,7 +34,11 @@ class FormRequest(Request):
     valid_form_methods = ["GET", "POST"]
 
     def __init__(
-        self, *args: Any, formdata: FormdataType = None, **kwargs: Any
+        self,
+        *args: Any,
+        formdata: FormdataType = None,
+        is_multipart: bool = False,
+        **kwargs: Any,
     ) -> None:
         if formdata and kwargs.get("method") is None:
             kwargs["method"] = "POST"
@@ -46,7 +50,12 @@ class FormRequest(Request):
             form_query_str = _urlencode(items, self.encoding)
             if self.method == "POST":
                 self.headers.setdefault(
-                    b"Content-Type", b"application/x-www-form-urlencoded"
+                    b"Content-Type",
+                    (
+                        b"application/x-www-form-urlencoded"
+                        if not is_multipart
+                        else b"multipart/form-data"
+                    ),
                 )
                 self._set_body(form_query_str)
             else:

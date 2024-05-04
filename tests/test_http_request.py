@@ -514,6 +514,37 @@ class FormRequestTest(RequestTest):
             r3.body, b"colours=red&colours=blue&colours=green&price=%C2%A3+100"
         )
 
+    def test_multipart_formdata(self):
+        data = {"foo": "bar"}
+        r1 = self.request_class(
+            "http://www.example.com", formdata=data, is_multipart=True
+        )
+        self.assertEqual(r1.headers[b"Content-Type"], b"multipart/form-data")
+
+    def test_from_response_multipart_formdata(self):
+        response = _buildresponse(
+            b"""<form action="post.php" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="foo" value="bar">
+            <input type="hidden" name="foo" value="baz">
+            <input type="hidden" name="bar" value="baz">
+            </form>""",
+            url="http://www.example.com/this/list.html",
+        )
+        req = self.request_class.from_response(
+            response,
+            formdata={"fullname": ["john", "doe"], "age": "30"},
+            is_multipart=True,
+        )
+
+        self.assertEqual(req.method, "POST")
+        self.assertEqual(req.headers[b"Content-type"], b"multipart/form-data")
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req)
+        self.assertEqual(set(fs[b"foo"]), {b"bar", b"baz"})
+        self.assertEqual(set(fs[b"fullname"]), {b"john", b"doe"})
+        self.assertEqual(fs[b"bar"], [b"baz"])
+        self.assertEqual(fs[b"age"], [b"30"])
+
     def test_from_response_post(self):
         response = _buildresponse(
             b"""<form action="post.php" method="POST">
