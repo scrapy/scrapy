@@ -59,7 +59,8 @@ class S3DownloadHandler:
             assert aws_access_key_id is not None
             assert aws_secret_access_key is not None
             SignerCls = botocore.auth.AUTH_TYPE_MAPS["s3"]
-            self._signer = SignerCls(
+            # botocore.auth.BaseSigner doesn't have an __init__() with args, only subclasses do
+            self._signer = SignerCls(  # type: ignore[call-arg]
                 botocore.credentials.Credentials(
                     aws_access_key_id, aws_secret_access_key, aws_session_token
                 )
