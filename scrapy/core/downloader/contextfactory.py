@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from typing import TYPE_CHECKING, Any, List, Optional
 
@@ -24,6 +26,9 @@ from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 @implementer(IPolicyForHTTPS)
@@ -62,7 +67,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         method: int = SSL.SSLv23_METHOD,
         *args: Any,
         **kwargs: Any,
-    ):
+    ) -> Self:
         tls_verbose_logging: bool = settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )

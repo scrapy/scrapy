@@ -28,17 +28,25 @@ In case of status 200 request, response.headers will come with two keys:
     'Size' - with size of the downloaded data
 """
 
+from __future__ import annotations
+
 import re
 from io import BytesIO
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
 
+from scrapy.crawler import Crawler
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class ReceivedDataProtocol(Protocol):
@@ -76,7 +84,7 @@ class FTPDownloadHandler:
         self.passive_mode = settings["FTP_PASSIVE_MODE"]
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings)
 
     def download_request(self, request, spider):

@@ -1,8 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class S3DownloadHandler:
@@ -57,7 +65,7 @@ class S3DownloadHandler:
         self._download_http = _http_handler.download_request
 
     @classmethod
-    def from_crawler(cls, crawler, **kwargs):
+    def from_crawler(cls, crawler, **kwargs) -> Self:
         return cls(crawler.settings, crawler=crawler, **kwargs)
 
     def download_request(self, request, spider):

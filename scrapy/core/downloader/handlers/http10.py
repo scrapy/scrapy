@@ -1,8 +1,16 @@
 """Download handlers for http and https schemes
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class HTTP10DownloadHandler:
@@ -17,7 +25,7 @@ class HTTP10DownloadHandler:
         self._crawler = crawler
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler) -> Self:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request, spider):
