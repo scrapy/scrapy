@@ -57,8 +57,8 @@ class LxmlParserLinkExtractor:
         unique=False,
         strip=True,
         canonicalized=False,
-        all_tags = False,
-        all_attrs = False,
+        all_tags=False,
+        all_attrs=False,
     ):
         self.scan_tag = tag if callable(tag) else partial(operator.eq, tag)
         self.scan_attr = attr if callable(attr) else partial(operator.eq, attr)
@@ -150,8 +150,8 @@ class LxmlLinkExtractor:
         restrict_css=(),
         strip=True,
         restrict_text=None,
-        all_tags = False,
-        all_attrs = False,
+        all_tags=False,
+        all_attrs=False,
     ):
         all_tags = tags is None
         all_attrs = attrs is None

@@ -495,19 +495,15 @@ class Base:
                 ],
             )
 
-            lx = self.extractor_cls(
-                attrs=None
-                )
-            #self.assertEqual(lx.extract_links(self.response), [])
-            #logger.info(lx.extract_links(self.response))
+            lx = self.extractor_cls(attrs=None)
             self.assertEqual(
                 lx.extract_links(self.response),
                 [
                     Link(url="http://example.com/sample1.html", text=""),
-                    Link(url='http://example.com/sample1', text=''),
+                    Link(url="http://example.com/sample1", text=""),
                     Link(url="http://example.com/sample2.html", text="sample 2"),
                     Link(url="http://example.com/sample3.html", text="sample 3 text"),
-                    Link(url='http://example.com/sample%203', text='sample 3 text'),
+                    Link(url="http://example.com/sample%203", text="sample 3 text"),
                     Link(
                         url="http://example.com/sample3.html#foo",
                         text="sample 3 repetition with fragment",
@@ -526,7 +522,6 @@ class Base:
             response = HtmlResponse("http://example.com/index.html", body=html)
 
             lx = self.extractor_cls(tags=None)
-            #self.assertEqual(lx.extract_links(response), [])
             self.assertEqual(
                 lx.extract_links(response),
                 [
