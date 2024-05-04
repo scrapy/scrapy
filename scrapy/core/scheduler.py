@@ -6,7 +6,6 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
-from queuelib.queue import BaseQueue
 from twisted.internet.defer import Deferred
 
 from scrapy.crawler import Crawler
@@ -19,6 +18,9 @@ from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    # requires queuelib >= 1.6.2
+    from queuelib.queue import BaseQueue
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 

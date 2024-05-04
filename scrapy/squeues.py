@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def _with_mkdir(queue_class: Type[queue.BaseQueue]) -> Type[queue.BaseQueue]:
-    class DirectoriesCreated(queue_class):
+    class DirectoriesCreated(queue_class):  # type: ignore[valid-type,misc]
         def __init__(self, path: Union[str, PathLike], *args: Any, **kwargs: Any):
             dirname = Path(path).parent
             if not dirname.exists():
@@ -37,7 +37,7 @@ def _serializable_queue(
     serialize: Callable[[Any], bytes],
     deserialize: Callable[[bytes], Any],
 ) -> Type[queue.BaseQueue]:
-    class SerializableQueue(queue_class):
+    class SerializableQueue(queue_class):  # type: ignore[valid-type,misc]
         def push(self, obj: Any) -> None:
             s = serialize(obj)
             super().push(s)
@@ -71,7 +71,7 @@ def _serializable_queue(
 def _scrapy_serialization_queue(
     queue_class: Type[queue.BaseQueue],
 ) -> Type[queue.BaseQueue]:
-    class ScrapyRequestQueue(queue_class):
+    class ScrapyRequestQueue(queue_class):  # type: ignore[valid-type,misc]
         def __init__(self, crawler: Crawler, key: str):
             self.spider = crawler.spider
             super().__init__(key)
@@ -110,7 +110,7 @@ def _scrapy_serialization_queue(
 def _scrapy_non_serialization_queue(
     queue_class: Type[queue.BaseQueue],
 ) -> Type[queue.BaseQueue]:
-    class ScrapyRequestQueue(queue_class):
+    class ScrapyRequestQueue(queue_class):  # type: ignore[valid-type,misc]
         @classmethod
         def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
             return cls()
@@ -142,17 +142,18 @@ def _pickle_serialize(obj: Any) -> bytes:
         raise ValueError(str(e)) from e
 
 
+# queue.*Queue aren't subclasses of queue.BaseQueue
 _PickleFifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue), _pickle_serialize, pickle.loads
+    _with_mkdir(queue.FifoDiskQueue), _pickle_serialize, pickle.loads  # type: ignore[arg-type]
 )
 _PickleLifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue), _pickle_serialize, pickle.loads
+    _with_mkdir(queue.LifoDiskQueue), _pickle_serialize, pickle.loads  # type: ignore[arg-type]
 )
 _MarshalFifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.FifoDiskQueue), marshal.dumps, marshal.loads
+    _with_mkdir(queue.FifoDiskQueue), marshal.dumps, marshal.loads  # type: ignore[arg-type]
 )
 _MarshalLifoSerializationDiskQueue = _serializable_queue(
-    _with_mkdir(queue.LifoDiskQueue), marshal.dumps, marshal.loads
+    _with_mkdir(queue.LifoDiskQueue), marshal.dumps, marshal.loads  # type: ignore[arg-type]
 )
 
 # public queue classes
@@ -160,5 +161,5 @@ PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQu
 PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)
 MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDiskQueue)
 MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)
-FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)
-LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)
+FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)  # type: ignore[arg-type]
+LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)  # type: ignore[arg-type]
