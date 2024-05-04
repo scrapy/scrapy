@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class HTTP10DownloadHandler:
     lazy = False
 
-    def __init__(self, settings, crawler=None):
+    def __init__(self, settings, crawler):
         self.HTTPClientFactory = load_object(settings["DOWNLOADER_HTTPCLIENTFACTORY"])
         self.ClientContextFactory = load_object(
             settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]

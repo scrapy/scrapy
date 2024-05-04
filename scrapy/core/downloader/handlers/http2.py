@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class H2DownloadHandler:
-    def __init__(self, settings: Settings, crawler: Optional[Crawler] = None):
+    def __init__(self, settings: Settings, crawler: Crawler):
         self._crawler = crawler
 
         from twisted.internet import reactor

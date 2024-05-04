@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 class HTTP11DownloadHandler:
     lazy = False
 
-    def __init__(self, settings, crawler=None):
+    def __init__(self, settings, crawler):
         self._crawler = crawler
 
         from twisted.internet import reactor
