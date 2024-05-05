@@ -5,7 +5,18 @@ Link extractor based on lxml.html
 import logging
 import operator
 from functools import partial
-from typing import Any, Callable, Iterable, List, Optional, Set, Tuple, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Pattern,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 from urllib.parse import urljoin, urlparse
 
 from lxml import etree  # nosec
@@ -146,7 +157,7 @@ class LxmlParserLinkExtractor:
         return links
 
 
-_RegexT = Union[str, re.Pattern[str]]
+_RegexT = Union[str, Pattern[str]]
 _RegexOrSeveralT = Union[_RegexT, Iterable[_RegexT]]
 
 
@@ -179,8 +190,8 @@ class LxmlLinkExtractor:
             strip=strip,
             canonicalized=not canonicalize,
         )
-        self.allow_res: List[re.Pattern[str]] = self._compile_regexes(allow)
-        self.deny_res: List[re.Pattern[str]] = self._compile_regexes(deny)
+        self.allow_res: List[Pattern[str]] = self._compile_regexes(allow)
+        self.deny_res: List[Pattern[str]] = self._compile_regexes(deny)
 
         self.allow_domains: Set[str] = set(arg_to_iter(allow_domains))
         self.deny_domains: Set[str] = set(arg_to_iter(deny_domains))
@@ -194,10 +205,10 @@ class LxmlLinkExtractor:
             deny_extensions = IGNORED_EXTENSIONS
         self.canonicalize: bool = canonicalize
         self.deny_extensions: Set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
-        self.restrict_text: List[re.Pattern[str]] = self._compile_regexes(restrict_text)
+        self.restrict_text: List[Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
-    def _compile_regexes(value: Optional[_RegexOrSeveralT]) -> List[re.Pattern[str]]:
+    def _compile_regexes(value: Optional[_RegexOrSeveralT]) -> List[Pattern[str]]:
         return [
             x if isinstance(x, re.Pattern) else re.compile(x)
             for x in arg_to_iter(value)

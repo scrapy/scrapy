@@ -7,7 +7,7 @@ For more info see docs/topics/link-extractors.rst
 """
 
 import re
-from typing import Iterable
+from typing import Iterable, Pattern
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
@@ -111,7 +111,7 @@ IGNORED_EXTENSIONS = [
 ]
 
 
-def _matches(url: str, regexs: Iterable[re.Pattern[str]]) -> bool:
+def _matches(url: str, regexs: Iterable[Pattern[str]]) -> bool:
     return any(r.search(url) for r in regexs)
 
 
