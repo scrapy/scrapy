@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 import scrapy
 from scrapy import Request
 from scrapy.commands import ScrapyCommand
-from scrapy.http import Response
+from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
 
 
@@ -61,5 +61,6 @@ class _BenchSpider(scrapy.Spider):
         return [scrapy.Request(url, dont_filter=True)]
 
     def parse(self, response: Response) -> Any:  # type: ignore[override]
+        assert isinstance(Response, TextResponse)
         for link in self.link_extractor.extract_links(response):
             yield scrapy.Request(link.url, callback=self.parse)
