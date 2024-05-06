@@ -57,23 +57,27 @@ class LxmlParserLinkExtractor:
         unique=False,
         strip=True,
         canonicalized=False,
+        all_tags=False,
+        all_attrs=False,
     ):
         self.scan_tag = tag if callable(tag) else partial(operator.eq, tag)
         self.scan_attr = attr if callable(attr) else partial(operator.eq, attr)
         self.process_attr = process if callable(process) else _identity
         self.unique = unique
         self.strip = strip
+        self.all_tags = all_tags
+        self.all_attrs = all_attrs
         self.link_key = (
             operator.attrgetter("url") if canonicalized else _canonicalize_link_url
         )
 
     def _iter_links(self, document):
         for el in document.iter(etree.Element):
-            if not self.scan_tag(_nons(el.tag)):
+            if not self.scan_tag(_nons(el.tag)) and not self.all_tags:
                 continue
             attribs = el.attrib
             for attrib in attribs:
-                if not self.scan_attr(attrib):
+                if not self.scan_attr(attrib) and not self.all_attrs:
                     continue
                 yield (el, attrib, attribs[attrib])
 
@@ -146,7 +150,11 @@ class LxmlLinkExtractor:
         restrict_css=(),
         strip=True,
         restrict_text=None,
+        all_tags=False,
+        all_attrs=False,
     ):
+        all_tags = tags is None
+        all_attrs = attrs is None
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         self.link_extractor = LxmlParserLinkExtractor(
             tag=partial(operator.contains, tags),
@@ -155,6 +163,8 @@ class LxmlLinkExtractor:
             process=process_value,
             strip=strip,
             canonicalized=not canonicalize,
+            all_attrs=all_attrs,
+            all_tags=all_tags,
         )
         self.allow_res = [
             x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)
