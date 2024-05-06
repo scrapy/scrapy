@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
     from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
 
+
 class HTTP10DownloadHandler:
     lazy = False
 
