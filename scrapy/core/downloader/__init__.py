@@ -143,7 +143,7 @@ class Downloader:
 
         return key, self.slots[key]
 
-    def _get_slot_key(self, request: Request, spider: Any) -> str:
+    def _get_slot_key(self, request: Request, spider: Optional[Spider]) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
             return cast(str, request.meta[self.DOWNLOAD_SLOT])
 
