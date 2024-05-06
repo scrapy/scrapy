@@ -4,24 +4,37 @@ Images Pipeline
 See documentation in topics/media-pipeline.rst
 """
 
+from __future__ import annotations
+
 import functools
 import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
 from os import PathLike
-from typing import Dict, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Tuple, Type, Union, cast
 
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.pipelines.files import (
+    FileException,
+    FilesPipeline,
+    FTPFilesStore,
+    GCSFilesStore,
+    S3FilesStore,
+    _md5sum,
+)
 
 # TODO: from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import get_func_args, to_bytes
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class NoimagesDrop(DropItem):
@@ -96,8 +109,8 @@ class ImagesPipeline(FilesPipeline):
         self._deprecated_convert_image = None
 
     @classmethod
-    def from_settings(cls, settings):
-        s3store = cls.STORE_SCHEMES["s3"]
+    def from_settings(cls, settings) -> Self:
+        s3store: Type[S3FilesStore] = cast(Type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
         s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
@@ -107,11 +120,15 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
         s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
 
-        gcs_store = cls.STORE_SCHEMES["gs"]
+        gcs_store: Type[GCSFilesStore] = cast(
+            Type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
+        )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
 
-        ftp_store = cls.STORE_SCHEMES["ftp"]
+        ftp_store: Type[FTPFilesStore] = cast(
+            Type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
+        )
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")

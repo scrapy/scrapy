@@ -1,11 +1,14 @@
 """Download handlers for http and https schemes"""
 
+from __future__ import annotations
+
 import ipaddress
 import logging
 import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
+from typing import TYPE_CHECKING
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import defer, protocol, ssl
@@ -32,6 +35,11 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.python import to_bytes, to_unicode
 
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,7 +64,7 @@ class HTTP11DownloadHandler:
         self._disconnect_timeout = 1
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler) -> Self:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request, spider):

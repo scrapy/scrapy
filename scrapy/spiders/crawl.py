@@ -5,14 +5,20 @@ for scraping typical web sites that requires crawling pages.
 See documentation in docs/topics/spiders.rst
 """
 
+from __future__ import annotations
+
 import copy
-from typing import AsyncIterable, Awaitable, Sequence
+from typing import TYPE_CHECKING, AsyncIterable, Awaitable, Sequence
 
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 def _identity(x):
@@ -140,9 +146,9 @@ class CrawlSpider(Spider):
             self._rules[-1]._compile(self)
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    def from_crawler(cls, crawler, *args, **kwargs) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
-        spider._follow_links = crawler.settings.getbool(
+        spider._follow_links = crawler.settings.getbool(  # type: ignore[attr-defined]
             "CRAWLSPIDER_FOLLOW_LINKS", True
         )
         return spider
