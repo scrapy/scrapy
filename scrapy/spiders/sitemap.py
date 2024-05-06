@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 from typing import TYPE_CHECKING, Any
@@ -26,7 +28,7 @@ class SitemapSpider(Spider):
     _warn_size: int
 
     @classmethod
-    def from_crawler(cls, crawler: "Crawler", *args: Any, **kwargs: Any) -> "Self":
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider._max_size = getattr(
             spider, "download_maxsize", spider.settings.getint("DOWNLOAD_MAXSIZE")

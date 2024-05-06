@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from time import time
-from typing import Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urldefrag
 
 from twisted.internet.base import DelayedCall
@@ -16,9 +18,9 @@ from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
-H2DownloadHandlerOrSubclass = TypeVar(
-    "H2DownloadHandlerOrSubclass", bound="H2DownloadHandler"
-)
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class H2DownloadHandler:
@@ -31,9 +33,7 @@ class H2DownloadHandler:
         self._context_factory = load_context_factory_from_settings(settings, crawler)
 
     @classmethod
-    def from_crawler(
-        cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler
-    ) -> H2DownloadHandlerOrSubclass:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred:
