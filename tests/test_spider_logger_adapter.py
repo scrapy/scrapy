@@ -174,3 +174,15 @@ class LoggingWithExtraTestCase(TestCase):
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
+
+    def test_overwrite_spider_extra(self):
+        log_message = "Foo message"
+        extra = {"important_info": "foo", "spider": "shouldn't change"}
+        self.spider.log_error(log_message, extra)
+        log_contents = self.log_stream.getvalue()
+        log_contents = json.loads(log_contents)
+
+        assert log_contents["levelname"] == "ERROR"
+        assert log_contents["message"] == log_message
+        assert self.regex_pattern.match(log_contents["spider"])
+        assert log_contents["important_info"] == extra["important_info"]
