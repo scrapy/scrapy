@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, Type
 
+from twisted.internet.defer import Deferred
+
+from scrapy import Request, Spider
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
+from scrapy.settings import BaseSettings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
@@ -16,14 +21,14 @@ if TYPE_CHECKING:
 class S3DownloadHandler:
     def __init__(
         self,
-        settings,
+        settings: BaseSettings,
         *,
-        crawler=None,
-        aws_access_key_id=None,
-        aws_secret_access_key=None,
-        aws_session_token=None,
-        httpdownloadhandler=HTTPDownloadHandler,
-        **kw,
+        crawler: Crawler,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
+        httpdownloadhandler: Type[HTTPDownloadHandler] = HTTPDownloadHandler,
+        **kw: Any,
     ):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
@@ -51,6 +56,8 @@ class S3DownloadHandler:
         if kw:
             raise TypeError(f"Unexpected keyword arguments: {kw}")
         if not self.anon:
+            assert aws_access_key_id is not None
+            assert aws_secret_access_key is not None
             SignerCls = botocore.auth.AUTH_TYPE_MAPS["s3"]
             self._signer = SignerCls(
                 botocore.credentials.Credentials(
@@ -65,10 +72,10 @@ class S3DownloadHandler:
         self._download_http = _http_handler.download_request
 
     @classmethod
-    def from_crawler(cls, crawler, **kwargs) -> Self:
+    def from_crawler(cls, crawler: Crawler, **kwargs: Any) -> Self:
         return cls(crawler.settings, crawler=crawler, **kwargs)
 
-    def download_request(self, request, spider):
+    def download_request(self, request: Request, spider: Spider) -> Deferred:
         p = urlparse_cached(request)
         scheme = "https" if request.meta.get("is_secure") else "http"
         bucket = p.hostname
@@ -85,6 +92,7 @@ class S3DownloadHandler:
                 headers=request.headers.to_unicode_dict(),
                 data=request.body,
             )
+            assert self._signer
             self._signer.add_auth(awsrequest)
             request = request.replace(url=url, headers=awsrequest.headers.items())
         return self._download_http(request, spider)

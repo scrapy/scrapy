@@ -21,6 +21,7 @@ from scrapy.core.downloader.tls import (
     ScrapyClientTLSOptions,
     openssl_methods,
 )
+from scrapy.crawler import Crawler
 from scrapy.settings import BaseSettings
 from scrapy.utils.misc import build_from_crawler, load_object
 
@@ -102,7 +103,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
-        ctx = self.getCertificateOptions().getContext()
+        ctx: SSL.Context = self.getCertificateOptions().getContext()
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
         return ctx
 
@@ -165,7 +166,9 @@ class AcceptableProtocolsContextFactory:
         return options
 
 
-def load_context_factory_from_settings(settings, crawler):
+def load_context_factory_from_settings(
+    settings: BaseSettings, crawler: Crawler
+) -> IPolicyForHTTPS:
     ssl_method = openssl_methods[settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
     context_factory_cls = load_object(settings["DOWNLOADER_CLIENTCONTEXTFACTORY"])
     # try method-aware context factory
