@@ -78,6 +78,28 @@ class DelaySpider(MetaSpider):
         self.t2_err = time.time()
 
 
+class LogSpider(MetaSpider):
+    name = "log"
+
+    def log_debug(self, message: str):
+        self.logger.debug(message)
+
+    def log_info(self, message: str):
+        self.logger.info(message)
+
+    def log_warning(self, message: str):
+        self.logger.warning(message)
+
+    def log_error(self, message: str):
+        self.logger.error(message)
+
+    def log_critical(self, message: str):
+        self.logger.critical(message)
+
+    def parse(self, response):
+        pass
+
+
 class SlowSpider(DelaySpider):
     name = "slow"
 
