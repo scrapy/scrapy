@@ -4,6 +4,7 @@ Some spiders used for testing and benchmarking
 
 import asyncio
 import time
+from typing import Optional
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -79,22 +80,22 @@ class DelaySpider(MetaSpider):
 
 
 class LogSpider(MetaSpider):
-    name = "log"
+    name = "log_spider"
 
-    def log_debug(self, message: str):
-        self.logger.debug(message)
+    def log_debug(self, message: str, extra: Optional[dict] = None):
+        self.logger.debug(message, extra=extra)
 
-    def log_info(self, message: str):
-        self.logger.info(message)
+    def log_info(self, message: str, extra: Optional[dict] = None):
+        self.logger.info(message, extra=extra)
 
-    def log_warning(self, message: str):
-        self.logger.warning(message)
+    def log_warning(self, message: str, extra: Optional[dict] = None):
+        self.logger.warning(message, extra=extra)
 
-    def log_error(self, message: str):
-        self.logger.error(message)
+    def log_error(self, message: str, extra: Optional[dict] = None):
+        self.logger.error(message, extra=extra)
 
-    def log_critical(self, message: str):
-        self.logger.critical(message)
+    def log_critical(self, message: str, extra: Optional[dict] = None):
+        self.logger.critical(message, extra=extra)
 
     def parse(self, response):
         pass
