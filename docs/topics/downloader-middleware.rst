@@ -876,13 +876,13 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``[]``
+Default: ``['noscript']``
 
 Meta tags within these tags are ignored.
 
 .. versionchanged:: 2.0
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``['script', 'noscript']`` to ``[]``.
+   ``[]`` to ``['noscript']``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
