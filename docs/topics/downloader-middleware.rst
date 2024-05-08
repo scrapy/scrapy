@@ -884,7 +884,7 @@ Meta tags within these tags are ignored.
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``['script', 'noscript']`` to ``[]``.
 
-.. versionchanges:: VERSION
+.. versionchanged:: VERSION
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``[]`` to ``['noscript']``.
 
