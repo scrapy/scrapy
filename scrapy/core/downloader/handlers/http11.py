@@ -239,15 +239,14 @@ class TunnelingAgent(Agent):
 
     def __init__(
         self,
+        *,
         reactor: ReactorBase,
         proxyConf: Tuple[str, int, Optional[bytes]],
-        contextFactory: Optional[IPolicyForHTTPS] = None,
+        contextFactory: IPolicyForHTTPS,
         connectTimeout: Optional[float] = None,
         bindAddress: Optional[bytes] = None,
         pool: Optional[HTTPConnectionPool] = None,
     ):
-        # TODO make this arg required instead
-        assert contextFactory is not None
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
         self._proxyConf: Tuple[str, int, Optional[bytes]] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
@@ -335,18 +334,16 @@ class ScrapyAgent:
 
     def __init__(
         self,
-        contextFactory: Optional[IPolicyForHTTPS] = None,
+        *,
+        contextFactory: IPolicyForHTTPS,
         connectTimeout: float = 10,
         bindAddress: Optional[bytes] = None,
         pool: Optional[HTTPConnectionPool] = None,
         maxsize: int = 0,
         warnsize: int = 0,
         fail_on_dataloss: bool = True,
-        crawler: Optional[Crawler] = None,
+        crawler: Crawler,
     ):
-        # TODO make these args required instead
-        assert contextFactory is not None
-        assert crawler is not None
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
         self._bindAddress: Optional[bytes] = bindAddress
