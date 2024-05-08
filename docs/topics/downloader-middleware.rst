@@ -876,7 +876,7 @@ Whether the Meta Refresh middleware will be enabled.
 METAREFRESH_IGNORE_TAGS
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Default: ``['noscript']``
+Default: ``[]``
 
 Meta tags within these tags are ignored.
 
