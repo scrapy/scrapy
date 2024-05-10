@@ -4,10 +4,10 @@ Release notes
 =============
 
 
-.. _release-2.11.2:
+.. _release-VERSION:
 
-Scrapy 2.11.2
---------------------------
+Scrapy VERSION (YYYY-MM-DD)
+---------------------------
 
 Deprecations
 ~~~~~~~~~~~~
