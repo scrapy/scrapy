@@ -1,4 +1,5 @@
 import random
+import warnings
 from collections import deque
 from datetime import datetime
 from time import time
@@ -10,6 +11,7 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.settings import BaseSettings
@@ -125,7 +127,7 @@ class Downloader:
         return len(self.active) >= self.total_concurrency
 
     def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
-        key = self._get_slot_key(request, spider)
+        key = self.get_slot_key(request)
         if key not in self.slots:
             slot_settings = self.per_slot_settings.get(key, {})
             conc = (
@@ -143,7 +145,7 @@ class Downloader:
 
         return key, self.slots[key]
 
-    def _get_slot_key(self, request: Request, spider: Optional[Spider]) -> str:
+    def get_slot_key(self, request: Request) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
             return cast(str, request.meta[self.DOWNLOAD_SLOT])
 
@@ -152,6 +154,14 @@ class Downloader:
             key = dnscache.get(key, key)
 
         return key
+
+    def _get_slot_key(self, request: Request, spider: Optional[Spider]) -> str:
+        warnings.warn(
+            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_slot_key(request)
 
     def _enqueue_request(self, request: Request, spider: Spider) -> Deferred:
         key, slot = self._get_slot(request, spider)
