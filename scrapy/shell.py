@@ -231,7 +231,9 @@ def _request_deferred(request: Request) -> defer.Deferred:
     d: defer.Deferred = defer.Deferred()
     d.addBoth(_restore_callbacks)
     if request.callback:
-        d.addCallbacks(request.callback, request.errback)
+        d.addCallback(request.callback)
+    if request.errback:
+        d.addErrback(request.errback)
 
     request.callback, request.errback = d.callback, d.errback
     return d

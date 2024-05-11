@@ -2,6 +2,8 @@
 This module contains essential stuff that should've come with Python itself ;)
 """
 
+from __future__ import annotations
+
 import collections.abc
 import gc
 import inspect
@@ -11,6 +13,7 @@ import weakref
 from functools import partial, wraps
 from itertools import chain
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     AsyncIterable,
@@ -25,11 +28,20 @@ from typing import (
     Optional,
     Pattern,
     Tuple,
+    TypeVar,
     Union,
     overload,
 )
 
 from scrapy.utils.asyncgen import as_async_generator
+
+if TYPE_CHECKING:
+    # typing.Concatenate and typing.ParamSpec require Python 3.10
+    from typing_extensions import Concatenate, ParamSpec
+
+    _P = ParamSpec("_P")
+
+_T = TypeVar("_T")
 
 
 def flatten(x: Iterable) -> list:
@@ -169,14 +181,17 @@ def re_rsearch(
     return None
 
 
-def memoizemethod_noargs(method: Callable) -> Callable:
+_SelfT = TypeVar("_SelfT")
+
+
+def memoizemethod_noargs(method: Callable[Concatenate[_SelfT, _P], _T]) -> Callable:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
-    cache: weakref.WeakKeyDictionary[Any, Any] = weakref.WeakKeyDictionary()
+    cache: weakref.WeakKeyDictionary[_SelfT, _T] = weakref.WeakKeyDictionary()
 
     @wraps(method)
-    def new_method(self: Any, *args: Any, **kwargs: Any) -> Any:
+    def new_method(self: _SelfT, *args: _P.args, **kwargs: _P.kwargs) -> _T:
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]

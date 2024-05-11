@@ -1,8 +1,21 @@
+from __future__ import annotations
+
 import asyncio
 import sys
 from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
 from contextlib import suppress
-from typing import Any, Callable, Dict, List, Optional, Sequence, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
@@ -12,6 +25,14 @@ from twisted.internet.tcp import Port
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
+
+if TYPE_CHECKING:
+    # typing.ParamSpec requires Python 3.10
+    from typing_extensions import ParamSpec
+
+    _P = ParamSpec("_P")
+
+_T = TypeVar("_T")
 
 
 def listen_tcp(portrange: List[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]
@@ -32,14 +53,14 @@ def listen_tcp(portrange: List[int], host: str, factory: ServerFactory) -> Port:
                 raise
 
 
-class CallLaterOnce:
+class CallLaterOnce(Generic[_T]):
     """Schedule a function to be called in the next reactor loop, but only if
     it hasn't been already scheduled since the last time it ran.
     """
 
-    def __init__(self, func: Callable, *a: Any, **kw: Any):
-        self._func: Callable = func
-        self._a: Sequence[Any] = a
+    def __init__(self, func: Callable[_P, _T], *a: _P.args, **kw: _P.kwargs):
+        self._func: Callable[_P, _T] = func
+        self._a: Tuple[Any, ...] = a
         self._kw: Dict[str, Any] = kw
         self._call: Optional[DelayedCall] = None
 
@@ -53,7 +74,7 @@ class CallLaterOnce:
         if self._call:
             self._call.cancel()
 
-    def __call__(self) -> Any:
+    def __call__(self) -> _T:
         self._call = None
         return self._func(*self._a, **self._kw)
 

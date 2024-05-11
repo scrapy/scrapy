@@ -154,12 +154,8 @@ class MailSender:
             return None
 
         dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))
-        dfd.addCallbacks(
-            callback=self._sent_ok,
-            errback=self._sent_failed,
-            callbackArgs=(to, cc, subject, len(attachs)),
-            errbackArgs=(to, cc, subject, len(attachs)),
-        )
+        dfd.addCallback(self._sent_ok, to, cc, subject, len(attachs))
+        dfd.addErrback(self._sent_failed, to, cc, subject, len(attachs))
         reactor.addSystemEventTrigger("before", "shutdown", lambda: dfd)
         return dfd
 

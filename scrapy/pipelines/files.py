@@ -459,7 +459,8 @@ class FilesPipeline(MediaPipeline):
 
         path = self.file_path(request, info=info, item=item)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
-        dfd.addCallbacks(_onsuccess, lambda _: None)
+        dfd.addCallback(_onsuccess)
+        dfd.addErrback(lambda _: None)
         dfd.addErrback(
             lambda f: logger.error(
                 self.__class__.__name__ + ".store.stat_file",
