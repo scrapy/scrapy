@@ -13,7 +13,6 @@ from twisted.internet.defer import Deferred
 
 from scrapy import signals
 from scrapy.http import Request, Response
-from scrapy.utils.spider_logger_adapter import SpiderLoggerAdapter
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
@@ -23,6 +22,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+    from scrapy.utils.log import SpiderLoggerAdapter
 
 
 class Spider(object_ref):
@@ -44,6 +44,8 @@ class Spider(object_ref):
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
+        from scrapy.utils.log import SpiderLoggerAdapter
+
         logger = logging.getLogger(self.name)
         return SpiderLoggerAdapter(logger, {"spider": self})
 
