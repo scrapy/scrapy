@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import CallbackT
 
 
 _T = TypeVar("_T")
@@ -73,7 +74,7 @@ class Rule:
     def __init__(
         self,
         link_extractor: Optional[LinkExtractor] = None,
-        callback: Union[Callable, str, None] = None,
+        callback: Union[CallbackT, str, None] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         follow: Optional[bool] = None,
         process_links: Union[ProcessLinksT, str, None] = None,
@@ -81,7 +82,7 @@ class Rule:
         errback: Union[Callable[[Failure], Any], str, None] = None,
     ):
         self.link_extractor: LinkExtractor = link_extractor or _default_link_extractor
-        self.callback: Union[Callable, str, None] = callback
+        self.callback: Union[CallbackT, str, None] = callback
         self.errback: Union[Callable[[Failure], Any], str, None] = errback
         self.cb_kwargs: Dict[str, Any] = cb_kwargs or {}
         self.process_links: Union[ProcessLinksT, str] = process_links or _identity
@@ -92,7 +93,7 @@ class Rule:
 
     def _compile(self, spider: Spider) -> None:
         # this replaces method names with methods and we can't express this in type hints
-        self.callback = _get_method(self.callback, spider)
+        self.callback = cast("CallbackT", _get_method(self.callback, spider))
         self.errback = cast(Callable[[Failure], Any], _get_method(self.errback, spider))
         self.process_links = cast(
             ProcessLinksT, _get_method(self.process_links, spider)
@@ -152,7 +153,7 @@ class CrawlSpider(Spider):
         rule = self._rules[cast(int, response.meta["rule"])]
         return self._parse_response(
             response,
-            cast(Callable, rule.callback),
+            cast("CallbackT", rule.callback),
             {**rule.cb_kwargs, **cb_kwargs},
             rule.follow,
         )
@@ -166,7 +167,7 @@ class CrawlSpider(Spider):
     async def _parse_response(
         self,
         response: Response,
-        callback: Optional[Callable],
+        callback: Optional[CallbackT],
         cb_kwargs: Dict[str, Any],
         follow: bool = True,
     ) -> AsyncIterable[Any]:

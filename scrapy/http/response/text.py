@@ -41,7 +41,9 @@ from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
-    from scrapy.http.request import CookiesT, Request
+    from twisted.python.failure import Failure
+
+    from scrapy.http.request import CallbackT, CookiesT, Request
     from scrapy.selector import Selector, SelectorList
 
 
@@ -179,7 +181,7 @@ class TextResponse(Response):
     def follow(
         self,
         url: Union[str, Link, parsel.Selector],
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
@@ -188,7 +190,7 @@ class TextResponse(Response):
         encoding: Optional[str] = None,
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
     ) -> Request:
@@ -232,7 +234,7 @@ class TextResponse(Response):
     def follow_all(
         self,
         urls: Union[Iterable[Union[str, Link]], parsel.SelectorList, None] = None,
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
@@ -241,7 +243,7 @@ class TextResponse(Response):
         encoding: Optional[str] = None,
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
         css: Optional[str] = None,

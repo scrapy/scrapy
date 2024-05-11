@@ -12,7 +12,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AnyStr,
-    Callable,
     Dict,
     Iterable,
     List,
@@ -37,8 +36,17 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from twisted.python.failure import Failure
+
+    # typing.Concatenate requires Python 3.10
     # typing.NotRequired and typing.Self require Python 3.11
-    from typing_extensions import NotRequired, Self
+    from typing_extensions import Concatenate, NotRequired, Self
+
+    from scrapy.http import Response
+
+    CallbackT = Callable[Concatenate[Response, ...], Any]
 
 
 class VerboseCookie(TypedDict):
@@ -110,7 +118,7 @@ class Request(object_ref):
     def __init__(
         self,
         url: str,
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
@@ -119,7 +127,7 @@ class Request(object_ref):
         encoding: str = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         flags: Optional[List[str]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -137,8 +145,8 @@ class Request(object_ref):
             )
         if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
-        self.callback: Optional[Callable] = callback
-        self.errback: Optional[Callable] = errback
+        self.callback: Optional[CallbackT] = callback
+        self.errback: Optional[Callable[[Failure], Any]] = errback
 
         self.cookies: CookiesT = cookies or {}
         self.headers: Headers = Headers(headers or {}, encoding=encoding)

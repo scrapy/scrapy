@@ -16,6 +16,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    cast,
 )
 from unittest import TestCase, TestResult
 
@@ -62,7 +63,7 @@ class Contract:
                     if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                         raise TypeError("Contracts don't support async callbacks")
                     return list(  # pylint: disable=return-in-finally
-                        iterate_spider_output(cb_result)
+                        cast(Iterable[Any], iterate_spider_output(cb_result))
                     )
 
             request.callback = wrapper
@@ -79,7 +80,7 @@ class Contract:
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                     raise TypeError("Contracts don't support async callbacks")
-                output = list(iterate_spider_output(cb_result))
+                output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)
@@ -195,7 +196,7 @@ class ContractsManager:
         def cb_wrapper(response: Response, **cb_kwargs: Any) -> None:
             try:
                 output = cb(response, **cb_kwargs)
-                output = list(iterate_spider_output(output))
+                output = list(cast(Iterable[Any], iterate_spider_output(output)))
             except Exception:
                 case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
