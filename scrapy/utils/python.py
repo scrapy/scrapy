@@ -184,7 +184,9 @@ def re_rsearch(
 _SelfT = TypeVar("_SelfT")
 
 
-def memoizemethod_noargs(method: Callable[Concatenate[_SelfT, _P], _T]) -> Callable:
+def memoizemethod_noargs(
+    method: Callable[Concatenate[_SelfT, _P], _T]
+) -> Callable[Concatenate[_SelfT, _P], _T]:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
