@@ -27,7 +27,6 @@ from typing import (
 
 from twisted.python.failure import Failure
 
-from scrapy.crawler import Crawler
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
@@ -38,6 +37,8 @@ from scrapy.utils.spider import iterate_spider_output
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
 
 
 _T = TypeVar("_T")
