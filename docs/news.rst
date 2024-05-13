@@ -3,6 +3,20 @@
 Release notes
 =============
 
+
+.. _release-VERSION:
+
+Scrapy VERSION (YYYY-MM-DD)
+---------------------------
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :func:`scrapy.core.downloader.Downloader._get_slot_key` is now deprecated.
+    Consider using its corresponding public method get_slot_key() instead.
+    (:issue:`6340`)
+
+
 .. _release-2.11.1:
 
 Scrapy 2.11.1 (2024-02-14)
@@ -160,6 +174,9 @@ Deprecation removals
 -   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
     1.0.0, use :attr:`CrawlerRunner.spider_loader
     <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
+
+-   The :func:`scrapy.utils.response.response_httprepr` function, deprecated in
+    Scrapy 2.6.0, has now been removed. (:issue:`6111`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -425,7 +442,7 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   Settings correponding to :setting:`DOWNLOAD_DELAY`,
+-   Settings corresponding to :setting:`DOWNLOAD_DELAY`,
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
@@ -1255,6 +1272,9 @@ Deprecations
 
         Instead, call :meth:`~scrapy.core.engine.ExecutionEngine.open_spider`
         first to set the :class:`~scrapy.Spider` object.
+
+-   :func:`scrapy.utils.response.response_httprepr` is now deprecated.
+    (:issue:`4972`)
 
 
 New features

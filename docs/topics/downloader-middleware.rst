@@ -884,6 +884,10 @@ Meta tags within these tags are ignored.
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``['script', 'noscript']`` to ``[]``.
 
+.. versionchanged:: VERSION
+   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
+   ``[]`` to ``['noscript']``.
+
 .. setting:: METAREFRESH_MAXDELAY
 
 METAREFRESH_MAXDELAY
@@ -1039,8 +1043,8 @@ RobotsTxtMiddleware
 
     * :ref:`Protego <protego-parser>` (default)
     * :ref:`RobotFileParser <python-robotfileparser>`
-    * :ref:`Reppy <reppy-parser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
+    * :ref:`Reppy <reppy-parser>` (deprecated)
 
     You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
@@ -1133,6 +1137,7 @@ In order to use this parser:
 
     .. warning:: `Upstream issue #122
         <https://github.com/seomoz/reppy/issues/122>`_ prevents reppy usage in Python 3.9+.
+        Because of this the Reppy parser is deprecated.
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
   ``scrapy.robotstxt.ReppyRobotParser``

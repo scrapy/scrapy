@@ -9,7 +9,7 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 class DownloadHandlers:
     def __init__(self, crawler: "Crawler"):
         self._crawler: "Crawler" = crawler
-        self._schemes: Dict[
-            str, Union[str, Callable]
-        ] = {}  # stores acceptable schemes on instancing
+        self._schemes: Dict[str, Union[str, Callable]] = (
+            {}
+        )  # stores acceptable schemes on instancing
         self._handlers: Dict[str, Any] = {}  # stores instanced handlers for schemes
         self._notconfigured: Dict[str, str] = {}  # remembers failed handlers
         handlers: Dict[str, Union[str, Callable]] = without_none_values(
@@ -55,10 +55,9 @@ class DownloadHandlers:
             dhcls = load_object(path)
             if skip_lazy and getattr(dhcls, "lazy", True):
                 return None
-            dh = create_instance(
-                objcls=dhcls,
-                settings=self._crawler.settings,
-                crawler=self._crawler,
+            dh = build_from_crawler(
+                dhcls,
+                self._crawler,
             )
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)

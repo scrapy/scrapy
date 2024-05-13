@@ -27,10 +27,11 @@ from mitmproxy.tools.main import mitmdump
 sys.argv[0] = "mitmdump"
 sys.exit(mitmdump())
         """
-        cert_path = Path(__file__).parent.resolve() / "keys" / "mitmproxy-ca.pem"
+        cert_path = Path(__file__).parent.resolve() / "keys"
         self.proc = Popen(
             [
                 sys.executable,
+                "-u",
                 "-c",
                 script,
                 "--listen-host",
@@ -39,14 +40,14 @@ sys.exit(mitmdump())
                 "0",
                 "--proxyauth",
                 f"{self.auth_user}:{self.auth_pass}",
-                "--certs",
-                str(cert_path),
+                "--set",
+                f"confdir={cert_path}",
                 "--ssl-insecure",
             ],
             stdout=PIPE,
         )
         line = self.proc.stdout.readline().decode("utf-8")
-        host_port = re.search(r"listening at http://([^:]+:\d+)", line).group(1)
+        host_port = re.search(r"listening at (?:http://)?([^:]+:\d+)", line).group(1)
         address = f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
         return address
 

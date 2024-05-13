@@ -3,9 +3,10 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
-from argparse import Namespace
+
+from argparse import ArgumentParser, Namespace
 from threading import Thread
-from typing import List, Type
+from typing import Any, Dict, List, Type
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
@@ -23,20 +24,20 @@ class Command(ScrapyCommand):
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
     }
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[url|file]"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Interactive scraping console"
 
-    def long_desc(self):
+    def long_desc(self) -> str:
         return (
             "Interactive console for scraping the given url or file. "
             "Use ./file.html syntax or full path for local file."
         )
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+    def add_options(self, parser: ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "-c",
             dest="code",
@@ -51,7 +52,7 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def update_vars(self, vars):
+    def update_vars(self, vars: Dict[str, Any]) -> None:
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
@@ -87,7 +88,8 @@ class Command(ScrapyCommand):
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         shell.start(url=url, redirect=not opts.no_redirect)
 
-    def _start_crawler_thread(self):
+    def _start_crawler_thread(self) -> None:
+        assert self.crawler_process
         t = Thread(
             target=self.crawler_process.start,
             kwargs={"stop_after_crawl": False, "install_signal_handlers": False},

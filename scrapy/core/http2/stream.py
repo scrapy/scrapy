@@ -2,7 +2,6 @@ import logging
 from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
@@ -15,6 +14,7 @@ from twisted.web.client import ResponseFailed
 from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
@@ -111,17 +111,17 @@ class Stream:
         # Metadata of an HTTP/2 connection stream
         # initialized when stream is instantiated
         self.metadata: Dict = {
-            "request_content_length": 0
-            if self._request.body is None
-            else len(self._request.body),
+            "request_content_length": (
+                0 if self._request.body is None else len(self._request.body)
+            ),
             # Flag to keep track whether the stream has initiated the request
             "request_sent": False,
             # Flag to track whether we have logged about exceeding download warnsize
             "reached_warnsize": False,
             # Each time we send a data frame, we will decrease value by the amount send.
-            "remaining_content_length": 0
-            if self._request.body is None
-            else len(self._request.body),
+            "remaining_content_length": (
+                0 if self._request.body is None else len(self._request.body)
+            ),
             # Flag to keep track whether client (self) have closed this stream
             "stream_closed_local": False,
             # Flag to keep track whether the server has closed the stream
@@ -185,7 +185,7 @@ class Stream:
 
     def check_request_url(self) -> bool:
         # Make sure that we are sending the request to the correct URL
-        url = urlparse(self._request.url)
+        url = urlparse_cached(self._request)
         return (
             url.netloc == str(self._protocol.metadata["uri"].host, "utf-8")
             or url.netloc == str(self._protocol.metadata["uri"].netloc, "utf-8")
@@ -194,7 +194,7 @@ class Stream:
         )
 
     def _get_request_headers(self) -> List[Tuple[str, str]]:
-        url = urlparse(self._request.url)
+        url = urlparse_cached(self._request)
 
         path = url.path
         if url.query:
@@ -228,8 +228,8 @@ class Stream:
 
         content_length_name = self._request.headers.normkey(b"Content-Length")
         for name, values in self._request.headers.items():
-            for value in values:
-                value = str(value, "utf-8")
+            for value_bytes in values:
+                value = str(value_bytes, "utf-8")
                 if name == content_length_name:
                     if value != content_length:
                         logger.warning(

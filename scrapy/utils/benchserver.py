@@ -14,7 +14,7 @@ class Root(Resource):
     def render(self, request):
         total = _getarg(request, b"total", 100, int)
         show = _getarg(request, b"show", 10, int)
-        nlist = [random.randint(1, total) for _ in range(show)]
+        nlist = [random.randint(1, total) for _ in range(show)]  # nosec
         request.write(b"<html><head></head><body>")
         args = request.args.copy()
         for nl in nlist:

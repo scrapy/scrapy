@@ -1,9 +1,10 @@
+import argparse
 import sys
 from importlib import import_module
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import Union
+from typing import List, Union
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
@@ -27,16 +28,16 @@ class Command(BaseRunSpiderCommand):
     requires_project = False
     default_settings = {"SPIDER_LOADER_WARN_ONLY": True}
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <spider_file>"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Run a self-contained spider (without creating a project)"
 
-    def long_desc(self):
+    def long_desc(self) -> str:
         return "Run the spider defined in the given file"
 
-    def run(self, args, opts):
+    def run(self, args: List[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
             raise UsageError()
         filename = Path(args[0])
@@ -51,6 +52,7 @@ class Command(BaseRunSpiderCommand):
             raise UsageError(f"No spider found in file: {filename}\n")
         spidercls = spclasses.pop()
 
+        assert self.crawler_process
         self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
 

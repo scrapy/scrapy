@@ -399,12 +399,7 @@ In code that receives an item, such as methods of :ref:`item pipelines
 <topics-spider-middleware>`, it is a good practice to use the
 :class:`~itemadapter.ItemAdapter` class and the
 :func:`~itemadapter.is_item` function to write code that works for
-any :ref:`supported item type <item-types>`:
-
-.. autoclass:: itemadapter.ItemAdapter
-
-.. autofunction:: itemadapter.is_item
-
+any supported item type.
 
 Other classes related to items
 ==============================

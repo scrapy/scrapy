@@ -5,7 +5,9 @@ This package contains a collection of Link Extractors.
 
 For more info see docs/topics/link-extractors.rst
 """
+
 import re
+from typing import Iterable, Pattern
 
 # common file extensions that are not followed if they occur in links
 IGNORED_EXTENSIONS = [
@@ -67,12 +69,22 @@ IGNORED_EXTENSIONS = [
     "webm",
     # office suites
     "xls",
+    "xlsm",
     "xlsx",
+    "xltm",
+    "xltx",
+    "potm",
+    "potx",
     "ppt",
+    "pptm",
     "pptx",
     "pps",
     "doc",
+    "docb",
+    "docm",
     "docx",
+    "dotm",
+    "dotx",
     "odt",
     "ods",
     "odg",
@@ -86,17 +98,24 @@ IGNORED_EXTENSIONS = [
     "dmg",
     "iso",
     "apk",
+    "jar",
+    "sh",
+    "rb",
+    "js",
+    "hta",
+    "bat",
+    "cpl",
+    "msi",
+    "msp",
+    "py",
 ]
 
 
-_re_type = type(re.compile("", 0))
-
-
-def _matches(url, regexs):
+def _matches(url: str, regexs: Iterable[Pattern[str]]) -> bool:
     return any(r.search(url) for r in regexs)
 
 
-def _is_valid_url(url):
+def _is_valid_url(url: str) -> bool:
     return url.split("://", 1)[0] in {"http", "https", "file", "ftp"}
 
 

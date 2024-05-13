@@ -12,5 +12,6 @@ from scrapy.http.request.json_request import JsonRequest
 from scrapy.http.request.rpc import XmlRpcRequest
 from scrapy.http.response import Response
 from scrapy.http.response.html import HtmlResponse
+from scrapy.http.response.json import JsonResponse
 from scrapy.http.response.text import TextResponse
 from scrapy.http.response.xml import XmlResponse

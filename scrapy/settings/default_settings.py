@@ -177,7 +177,7 @@ FILES_STORE_S3_ACL = "private"
 FILES_STORE_GCS_ACL = ""
 
 FTP_USER = "anonymous"
-FTP_PASSWORD = "guest"
+FTP_PASSWORD = "guest"  # nosec
 FTP_PASSIVE_MODE = True
 
 GCS_PROJECT_ID = None
@@ -205,6 +205,8 @@ ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 ITEM_PIPELINES = {}
 ITEM_PIPELINES_BASE = {}
+
+JOBDIR = None
 
 LOG_ENABLED = True
 LOG_ENCODING = "utf-8"
@@ -237,7 +239,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
-METAREFRESH_IGNORE_TAGS = []
+METAREFRESH_IGNORE_TAGS = ["noscript"]
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ""
@@ -258,7 +260,7 @@ REFERER_ENABLED = True
 REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
 
 REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.6"
+REQUEST_FINGERPRINTER_IMPLEMENTATION = "SENTINEL"
 
 RETRY_ENABLED = True
 RETRY_TIMES = 2  # initial response + 2 retries = 3 requests

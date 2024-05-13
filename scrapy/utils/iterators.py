@@ -3,7 +3,6 @@ import logging
 import re
 from io import StringIO
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -18,15 +17,12 @@ from typing import (
 )
 from warnings import warn
 
-from lxml import etree
+from lxml import etree  # nosec
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
-
-if TYPE_CHECKING:
-    from lxml._types import SupportsReadClose
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +94,10 @@ def xmliter_lxml(
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
-        cast("SupportsReadClose[bytes]", reader),
+        reader,
         encoding=reader.encoding,
         events=("end", "start-ns"),
+        resolve_entities=False,
         huge_tree=True,
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
@@ -225,18 +222,17 @@ def csviter(
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes]) -> str:
-    ...
+def _body_or_str(obj: Union[Response, str, bytes]) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str:
-    ...
+def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[False]) -> bytes:
-    ...
+def _body_or_str(
+    obj: Union[Response, str, bytes], unicode: Literal[False]
+) -> bytes: ...
 
 
 def _body_or_str(
@@ -250,10 +246,10 @@ def _body_or_str(
         )
     if isinstance(obj, Response):
         if not unicode:
-            return cast(bytes, obj.body)
+            return obj.body
         if isinstance(obj, TextResponse):
             return obj.text
-        return cast(bytes, obj.body).decode("utf-8")
+        return obj.body.decode("utf-8")
     if isinstance(obj, str):
         return obj if unicode else obj.encode("utf-8")
     return obj.decode("utf-8") if unicode else obj

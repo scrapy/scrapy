@@ -140,7 +140,7 @@ Example:
 
 The data flow with Spider Middleware v2 is as follows:
 
-1. When a response arrives from the engine, it it passed through all the spider
+1. When a response arrives from the engine, it is passed through all the spider
    middlewares (in descending order). The result of each middleware
    ``process_response`` is kept and then returned along with the spider
    callback result

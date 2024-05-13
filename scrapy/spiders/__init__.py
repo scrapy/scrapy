@@ -3,6 +3,7 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,11 +17,16 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    # typing.Concatenate requires Python 3.10
     # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from typing_extensions import Concatenate, Self
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
+    CallbackT = Callable[Concatenate[Response, ...], Any]
 
 
 class Spider(object_ref):
@@ -33,7 +39,7 @@ class Spider(object_ref):
 
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
-            self.name = name
+            self.name: str = name
         elif not getattr(self, "name", None):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
@@ -61,8 +67,8 @@ class Spider(object_ref):
         return spider
 
     def _set_crawler(self, crawler: Crawler) -> None:
-        self.crawler = crawler
-        self.settings = crawler.settings
+        self.crawler: Crawler = crawler
+        self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self) -> Iterable[Request]:
@@ -78,10 +84,14 @@ class Spider(object_ref):
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         return self.parse(response, **kwargs)
 
-    def parse(self, response: Response, **kwargs: Any) -> Any:
-        raise NotImplementedError(
-            f"{self.__class__.__name__}.parse callback is not defined"
-        )
+    if TYPE_CHECKING:
+        parse: CallbackT
+    else:
+
+        def parse(self, response: Response, **kwargs: Any) -> Any:
+            raise NotImplementedError(
+                f"{self.__class__.__name__}.parse callback is not defined"
+            )
 
     @classmethod
     def update_settings(cls, settings: BaseSettings) -> None:

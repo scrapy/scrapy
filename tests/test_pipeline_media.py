@@ -15,7 +15,6 @@ from scrapy.pipelines.images import ImagesPipeline
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
@@ -23,9 +22,9 @@ from scrapy.utils.test import get_crawler
 try:
     from PIL import Image  # noqa: imported just to check for the import error
 except ImportError:
-    skip_pillow: Optional[
-        str
-    ] = "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
+    skip_pillow: Optional[str] = (
+        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
+    )
 else:
     skip_pillow = None
 
@@ -60,7 +59,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         assert self.pipe.media_to_download(request, self.info) is None
 
     def test_default_get_media_requests(self):
-        item = dict(name="name")
+        item = {"name": "name"}
         assert self.pipe.get_media_requests(item, self.info) is None
 
     def test_default_media_downloaded(self):
@@ -74,7 +73,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         assert self.pipe.media_failed(fail, request, self.info) is fail
 
     def test_default_item_completed(self):
-        item = dict(name="name")
+        item = {"name": "name"}
         assert self.pipe.item_completed([], item, self.info) is item
 
         # Check that failures are logged by default
@@ -99,7 +98,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
     @inlineCallbacks
     def test_default_process_item(self):
-        item = dict(name="name")
+        item = {"name": "name"}
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
 
@@ -227,11 +226,11 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         rsp = Response("http://url1")
         req = Request(
             "http://url1",
-            meta=dict(response=rsp),
+            meta={"response": rsp},
             callback=self._callback,
             errback=self._errback,
         )
-        item = dict(requests=req)
+        item = {"requests": req}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item["results"], [(True, rsp)])
         self.assertEqual(
@@ -251,11 +250,11 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         fail = Failure(Exception())
         req = Request(
             "http://url1",
-            meta=dict(response=fail),
+            meta={"response": fail},
             callback=self._callback,
             errback=self._errback,
         )
-        item = dict(requests=req)
+        item = {"requests": req}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item["results"], [(False, fail)])
         self.assertEqual(
@@ -273,10 +272,10 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_mix_of_success_and_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
         rsp1 = Response("http://url1")
-        req1 = Request("http://url1", meta=dict(response=rsp1))
+        req1 = Request("http://url1", meta={"response": rsp1})
         fail = Failure(Exception())
-        req2 = Request("http://url2", meta=dict(response=fail))
-        item = dict(requests=[req1, req2])
+        req2 = Request("http://url2", meta={"response": fail})
+        item = {"requests": [req1, req2]}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item["results"], [(True, rsp1), (False, fail)])
         m = self.pipe._mockcalled
@@ -295,7 +294,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_get_media_requests(self):
         # returns single Request (without callback)
         req = Request("http://url")
-        item = dict(requests=req)  # pass a single item
+        item = {"requests": req}  # pass a single item
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
         self.assertIn(self.fingerprint(req), self.info.downloaded)
@@ -303,7 +302,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         # returns iterable of Requests
         req1 = Request("http://url1")
         req2 = Request("http://url2")
-        item = dict(requests=iter([req1, req2]))
+        item = {"requests": iter([req1, req2])}
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
         assert self.fingerprint(req1) in self.info.downloaded
@@ -312,17 +311,17 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_results_are_cached_across_multiple_items(self):
         rsp1 = Response("http://url1")
-        req1 = Request("http://url1", meta=dict(response=rsp1))
-        item = dict(requests=req1)
+        req1 = Request("http://url1", meta={"response": rsp1})
+        item = {"requests": req1}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertTrue(new_item is item)
         self.assertEqual(new_item["results"], [(True, rsp1)])
 
         # rsp2 is ignored, rsp1 must be in results because request fingerprints are the same
         req2 = Request(
-            req1.url, meta=dict(response=Response("http://donot.download.me"))
+            req1.url, meta={"response": Response("http://donot.download.me")}
         )
-        item = dict(requests=req2)
+        item = {"requests": req2}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertTrue(new_item is item)
         self.assertEqual(self.fingerprint(req1), self.fingerprint(req2))
@@ -331,11 +330,11 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     @inlineCallbacks
     def test_results_are_cached_for_requests_of_single_item(self):
         rsp1 = Response("http://url1")
-        req1 = Request("http://url1", meta=dict(response=rsp1))
+        req1 = Request("http://url1", meta={"response": rsp1})
         req2 = Request(
-            req1.url, meta=dict(response=Response("http://donot.download.me"))
+            req1.url, meta={"response": Response("http://donot.download.me")}
         )
-        item = dict(requests=[req1, req2])
+        item = {"requests": [req1, req2]}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertTrue(new_item is item)
         self.assertEqual(new_item["results"], [(True, rsp1), (True, rsp1)])
@@ -360,16 +359,16 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         def rsp2_func():
             self.fail("it must cache rsp1 result and must not try to redownload")
 
-        req1 = Request("http://url", meta=dict(response=rsp1_func))
-        req2 = Request(req1.url, meta=dict(response=rsp2_func))
-        item = dict(requests=[req1, req2])
+        req1 = Request("http://url", meta={"response": rsp1_func})
+        req2 = Request(req1.url, meta={"response": rsp2_func})
+        item = {"requests": [req1, req2]}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item["results"], [(True, rsp1), (True, rsp1)])
 
     @inlineCallbacks
     def test_use_media_to_download_result(self):
-        req = Request("http://url", meta=dict(result="ITSME", response=self.fail))
-        item = dict(requests=req)
+        req = Request("http://url", meta={"result": "ITSME", "response": self.fail})
+        item = {"requests": req}
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item["results"], [(True, "ITSME")])
         self.assertEqual(
@@ -425,102 +424,6 @@ class MockedMediaPipelineDeprecatedMethods(ImagesPipeline):
     def image_downloaded(self, response, request, info):
         self._mockcalled.append("image_downloaded")
         return super().image_downloaded(response, request, info)
-
-
-class MediaPipelineDeprecatedMethodsTestCase(unittest.TestCase):
-    skip = skip_pillow
-
-    def setUp(self):
-        settings_dict = {
-            "IMAGES_STORE": "store-uri",
-            "IMAGES_THUMBS": {"small": (50, 50)},
-        }
-        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
-        self.pipe = MockedMediaPipelineDeprecatedMethods.from_crawler(crawler)
-        self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider(None)
-        self.item = dict(image_urls=["http://picsum.photos/id/1014/200/300"], images=[])
-
-    def _assert_method_called_with_warnings(self, method, message, warnings):
-        self.assertIn(method, self.pipe._mockcalled)
-        warningShown = False
-        for warning in warnings:
-            if (
-                warning["message"] == message
-                and warning["category"] == ScrapyDeprecationWarning
-            ):
-                warningShown = True
-        self.assertTrue(warningShown)
-
-    @inlineCallbacks
-    def test_media_to_download_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "media_to_download(self, request, info) is deprecated, "
-            "please use media_to_download(self, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("media_to_download", message, warnings)
-
-    @inlineCallbacks
-    def test_media_downloaded_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "media_downloaded(self, response, request, info) is deprecated, "
-            "please use media_downloaded(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("media_downloaded", message, warnings)
-
-    @inlineCallbacks
-    def test_file_downloaded_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "file_downloaded(self, response, request, info) is deprecated, "
-            "please use file_downloaded(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("file_downloaded", message, warnings)
-
-    @inlineCallbacks
-    def test_file_path_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "file_path(self, request, response=None, info=None) is deprecated, "
-            "please use file_path(self, request, response=None, info=None, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("file_path", message, warnings)
-
-    @inlineCallbacks
-    def test_thumb_path_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "thumb_path(self, request, thumb_id, response=None, info=None) is deprecated, "
-            "please use thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("thumb_path", message, warnings)
-
-    @inlineCallbacks
-    def test_get_images_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "get_images(self, response, request, info) is deprecated, "
-            "please use get_images(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("get_images", message, warnings)
-
-    @inlineCallbacks
-    def test_image_downloaded_called(self):
-        yield self.pipe.process_item(self.item, None)
-        warnings = self.flushWarnings([MediaPipeline._compatible])
-        message = (
-            "image_downloaded(self, response, request, info) is deprecated, "
-            "please use image_downloaded(self, response, request, info, *, item=None)"
-        )
-        self._assert_method_called_with_warnings("image_downloaded", message, warnings)
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):

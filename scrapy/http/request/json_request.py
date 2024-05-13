@@ -8,16 +8,17 @@ See documentation in docs/topics/request-response.rst
 import copy
 import json
 import warnings
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from scrapy.http.request import Request
-from scrapy.utils.deprecate import create_deprecated_class
 
 
 class JsonRequest(Request):
     attributes: Tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
 
-    def __init__(self, *args, dumps_kwargs: Optional[dict] = None, **kwargs) -> None:
+    def __init__(
+        self, *args: Any, dumps_kwargs: Optional[dict] = None, **kwargs: Any
+    ) -> None:
         dumps_kwargs = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
         dumps_kwargs.setdefault("sort_keys", True)
         self._dumps_kwargs = dumps_kwargs
@@ -43,7 +44,7 @@ class JsonRequest(Request):
     def dumps_kwargs(self) -> dict:
         return self._dumps_kwargs
 
-    def replace(self, *args, **kwargs) -> Request:
+    def replace(self, *args: Any, **kwargs: Any) -> Request:
         body_passed = kwargs.get("body", None) is not None
         data = kwargs.pop("data", None)
         data_passed = data is not None
@@ -58,6 +59,3 @@ class JsonRequest(Request):
     def _dumps(self, data: dict) -> str:
         """Convert to JSON"""
         return json.dumps(data, **self._dumps_kwargs)
-
-
-JSONRequest = create_deprecated_class("JSONRequest", JsonRequest)

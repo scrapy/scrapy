@@ -3,9 +3,21 @@ HttpError Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-import logging
 
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional
+
+from scrapy import Spider
+from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Response
+from scrapy.settings import BaseSettings
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +25,23 @@ logger = logging.getLogger(__name__)
 class HttpError(IgnoreRequest):
     """A non-200 response was filtered"""
 
-    def __init__(self, response, *args, **kwargs):
+    def __init__(self, response: Response, *args: Any, **kwargs: Any):
         self.response = response
         super().__init__(*args, **kwargs)
 
 
 class HttpErrorMiddleware:
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings)
 
-    def __init__(self, settings):
-        self.handle_httpstatus_all = settings.getbool("HTTPERROR_ALLOW_ALL")
-        self.handle_httpstatus_list = settings.getlist("HTTPERROR_ALLOWED_CODES")
+    def __init__(self, settings: BaseSettings):
+        self.handle_httpstatus_all: bool = settings.getbool("HTTPERROR_ALLOW_ALL")
+        self.handle_httpstatus_list: List[int] = settings.getlist(
+            "HTTPERROR_ALLOWED_CODES"
+        )
 
-    def process_spider_input(self, response, spider):
+    def process_spider_input(self, response: Response, spider: Spider) -> None:
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
@@ -45,8 +59,11 @@ class HttpErrorMiddleware:
             return
         raise HttpError(response, "Ignoring non-200 response")
 
-    def process_spider_exception(self, response, exception, spider):
+    def process_spider_exception(
+        self, response: Response, exception: Exception, spider: Spider
+    ) -> Optional[Iterable[Any]]:
         if isinstance(exception, HttpError):
+            assert spider.crawler.stats
             spider.crawler.stats.inc_value("httperror/response_ignored_count")
             spider.crawler.stats.inc_value(
                 f"httperror/response_ignored_status_count/{response.status}"
@@ -57,3 +74,4 @@ class HttpErrorMiddleware:
                 extra={"spider": spider},
             )
             return []
+        return None

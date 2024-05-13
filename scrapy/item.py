@@ -4,13 +4,27 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
+from __future__ import annotations
+
 from abc import ABCMeta
-from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
-from typing import Dict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    KeysView,
+    MutableMapping,
+    NoReturn,
+    Tuple,
+)
 
 from scrapy.utils.trackref import object_ref
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 class Field(dict):
@@ -23,7 +37,9 @@ class ItemMeta(ABCMeta):
     .. _metaclass: https://realpython.com/python-metaclasses
     """
 
-    def __new__(mcs, class_name, bases, attrs):
+    def __new__(
+        mcs, class_name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]
+    ) -> ItemMeta:
         classcell = attrs.pop("__classcell__", None)
         new_bases = tuple(base._class for base in bases if hasattr(base, "_class"))
         _class = super().__new__(mcs, "x_" + class_name, new_bases, attrs)
@@ -44,7 +60,7 @@ class ItemMeta(ABCMeta):
         return super().__new__(mcs, class_name, bases, new_attrs)
 
 
-class Item(MutableMapping, object_ref, metaclass=ItemMeta):
+class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
     """
     Base class for scraped items.
 
@@ -69,51 +85,51 @@ class Item(MutableMapping, object_ref, metaclass=ItemMeta):
 
     fields: Dict[str, Field]
 
-    def __init__(self, *args, **kwargs):
-        self._values = {}
+    def __init__(self, *args: Any, **kwargs: Any):
+        self._values: Dict[str, Any] = {}
         if args or kwargs:  # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).items():
                 self[k] = v
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         return self._values[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:
         if key in self.fields:
             self._values[key] = value
         else:
             raise KeyError(f"{self.__class__.__name__} does not support field: {key}")
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         del self._values[key]
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> NoReturn:
         if name in self.fields:
             raise AttributeError(f"Use item[{name!r}] to get field value")
         raise AttributeError(name)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if not name.startswith("_"):
             raise AttributeError(f"Use item[{name!r}] = {value!r} to set field value")
         super().__setattr__(name, value)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._values)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._values)
 
     __hash__ = object_ref.__hash__
 
-    def keys(self):
+    def keys(self) -> KeysView[str]:
         return self._values.keys()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return pformat(dict(self))
 
-    def copy(self):
+    def copy(self) -> Self:
         return self.__class__(self)
 
-    def deepcopy(self):
+    def deepcopy(self) -> Self:
         """Return a :func:`~copy.deepcopy` of this item."""
         return deepcopy(self)

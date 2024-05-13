@@ -673,8 +673,7 @@ class FeedExportTestBase(ABC, unittest.TestCase):
             name = "testspider"
 
             def parse(self, response):
-                for item in items:
-                    yield item
+                yield from items
 
         data = yield self.run_and_export(TestSpider, settings)
         return data
@@ -1732,6 +1731,7 @@ class FeedExportTest(FeedExportTestBase):
 
             def store(self, file):
                 Storage.store_file = file
+                Storage.file_was_closed = file.closed
                 file.close()
 
         settings = {
@@ -1747,6 +1747,7 @@ class FeedExportTest(FeedExportTestBase):
         }
         yield self.exported_no_data(settings)
         self.assertIs(Storage.open_file, Storage.store_file)
+        self.assertFalse(Storage.file_was_closed)
 
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
@@ -2696,8 +2697,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             name = "testspider"
 
             def parse(self, response):
-                for item in items:
-                    yield item
+                yield from items
 
         with MockServer() as server:
             TestSpider.start_urls = [server.url("/")]
@@ -2833,200 +2833,6 @@ class FeedExportInitTest(unittest.TestCase):
         crawler = get_crawler(settings_dict=settings)
         exporter = FeedExporter.from_crawler(crawler)
         self.assertIsInstance(exporter, FeedExporter)
-
-
-class StdoutFeedStorageWithoutFeedOptions(StdoutFeedStorage):
-    def __init__(self, uri):
-        super().__init__(uri)
-
-
-class StdoutFeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    def test_init(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": StdoutFeedStorageWithoutFeedOptions},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="StdoutFeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-
-class FileFeedStorageWithoutFeedOptions(FileFeedStorage):
-    def __init__(self, uri):
-        super().__init__(uri)
-
-
-class FileFeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    maxDiff = None
-
-    def test_init(self):
-        with tempfile.NamedTemporaryFile() as temp:
-            settings_dict = {
-                "FEED_URI": f"file:///{temp.name}",
-                "FEED_STORAGES": {"file": FileFeedStorageWithoutFeedOptions},
-            }
-            with pytest.warns(
-                ScrapyDeprecationWarning,
-                match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-            ):
-                crawler = get_crawler(settings_dict=settings_dict)
-                feed_exporter = FeedExporter.from_crawler(crawler)
-        spider = scrapy.Spider("default")
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="FileFeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-
-class S3FeedStorageWithoutFeedOptions(S3FeedStorage):
-    def __init__(self, uri, access_key, secret_key, acl, endpoint_url, **kwargs):
-        super().__init__(uri, access_key, secret_key, acl, endpoint_url, **kwargs)
-
-
-class S3FeedStorageWithoutFeedOptionsWithFromCrawler(S3FeedStorage):
-    @classmethod
-    def from_crawler(cls, crawler, uri):
-        return super().from_crawler(crawler, uri)
-
-
-class S3FeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    maxDiff = None
-
-    def setUp(self):
-        skip_if_no_boto()
-
-    def test_init(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": S3FeedStorageWithoutFeedOptions},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="S3FeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-    def test_from_crawler(self):
-        settings_dict = {
-            "FEED_URI": "file:///tmp/foobar",
-            "FEED_STORAGES": {"file": S3FeedStorageWithoutFeedOptionsWithFromCrawler},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="S3FeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-
-class FTPFeedStorageWithoutFeedOptions(FTPFeedStorage):
-    def __init__(self, uri, use_active_mode=False):
-        super().__init__(uri)
-
-
-class FTPFeedStorageWithoutFeedOptionsWithFromCrawler(FTPFeedStorage):
-    @classmethod
-    def from_crawler(cls, crawler, uri):
-        return super().from_crawler(crawler, uri)
-
-
-class FTPFeedStoragePreFeedOptionsTest(unittest.TestCase):
-    """Make sure that any feed exporter created by users before the
-    introduction of the ``feed_options`` parameter continues to work as
-    expected, and simply issues a warning."""
-
-    maxDiff = None
-
-    def test_init(self):
-        settings_dict = {
-            "FEED_URI": "ftp://localhost/foo",
-            "FEED_STORAGES": {"ftp": FTPFeedStorageWithoutFeedOptions},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="FTPFeedStorageWithoutFeedOptions does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
-
-    def test_from_crawler(self):
-        settings_dict = {
-            "FEED_URI": "ftp://localhost/foo",
-            "FEED_STORAGES": {"ftp": FTPFeedStorageWithoutFeedOptionsWithFromCrawler},
-        }
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
-        ):
-            crawler = get_crawler(settings_dict=settings_dict)
-            feed_exporter = FeedExporter.from_crawler(crawler)
-
-        spider = scrapy.Spider("default")
-        spider.crawler = crawler
-
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="FTPFeedStorageWithoutFeedOptionsWithFromCrawler.from_crawler does not support "
-            "the 'feed_options' keyword argument.",
-        ):
-            feed_exporter.open_spider(spider)
 
 
 class URIParamsTest:

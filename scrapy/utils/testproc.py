@@ -11,7 +11,7 @@ from twisted.python.failure import Failure
 
 
 class ProcessTest:
-    command = None
+    command: Optional[str] = None
     prefix = [sys.executable, "-m", "scrapy.cmdline"]
     cwd = os.getcwd()  # trial chdirs to temp dir
 

@@ -1,6 +1,7 @@
 """
 Some spiders used for testing and benchmarking
 """
+
 import asyncio
 import time
 from urllib.parse import urlencode
@@ -301,8 +302,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get("seed"))
-        for req in super().parse(response):
-            yield req
+        yield from super().parse(response)
 
 
 class SingleRequestSpider(MetaSpider):

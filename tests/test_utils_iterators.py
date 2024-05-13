@@ -355,7 +355,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response)
 
-        result = [row for row in csv]
+        result = list(csv)
         self.assertEqual(
             result,
             [
@@ -377,7 +377,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response, delimiter="\t")
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -394,7 +394,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv1 = csviter(response1, quotechar="'")
 
         self.assertEqual(
-            [row for row in csv1],
+            list(csv1),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -407,7 +407,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv2 = csviter(response2, delimiter="|", quotechar="'")
 
         self.assertEqual(
-            [row for row in csv2],
+            list(csv2),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -422,7 +422,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response)
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"'id'": "1", "'name'": "'alpha'", "'value'": "'foobar'"},
                 {
@@ -441,7 +441,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response, delimiter="\t")
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -458,7 +458,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response, headers=[h.decode("utf-8") for h in headers])
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -475,7 +475,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response)
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -546,6 +546,6 @@ class TestHelper(unittest.TestCase):
 
     def _assert_type_and_value(self, a, b, obj):
         self.assertTrue(
-            type(a) is type(b), f"Got {type(a)}, expected {type(b)} for { obj!r}"
+            type(a) is type(b), f"Got {type(a)}, expected {type(b)} for {obj!r}"
         )
         self.assertEqual(a, b)

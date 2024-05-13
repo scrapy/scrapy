@@ -7,6 +7,7 @@ from io import BytesIO
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import Dict, List
 from unittest import mock
 from urllib.parse import urlparse
 
@@ -220,7 +221,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         file_path = CustomFilesPipeline.from_settings(
             Settings({"FILES_STORE": self.tempdir})
         ).file_path
-        item = dict(path="path-to-store-file")
+        item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         self.assertEqual(file_path(request, item=item), "full/path-to-store-file")
 
@@ -308,11 +309,11 @@ class FilesPipelineTestCaseFieldsDataClass(
 class FilesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    file_urls = attr.ib(default=lambda: [])
-    files = attr.ib(default=lambda: [])
+    file_urls: List[str] = attr.ib(default=lambda: [])
+    files: List[Dict[str, str]] = attr.ib(default=lambda: [])
     # overridden fields
-    custom_file_urls = attr.ib(default=lambda: [])
-    custom_files = attr.ib(default=lambda: [])
+    custom_file_urls: List[str] = attr.ib(default=lambda: [])
+    custom_files: List[Dict[str, str]] = attr.ib(default=lambda: [])
 
 
 class FilesPipelineTestCaseFieldsAttrsItem(
@@ -690,7 +691,3 @@ def _prepare_request_object(item_url, flags=None):
         item_url,
         meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
     )
-
-
-if __name__ == "__main__":
-    unittest.main()

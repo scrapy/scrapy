@@ -1,6 +1,10 @@
 name: Checks
 on: [push, pull_request]
 
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -14,6 +18,9 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: typing
+        - python-version: 3.8
+          env:
+            TOXENV: typing-tests
         - python-version: "3.11"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs
@@ -22,7 +29,7 @@ jobs:
             TOXENV: twinecheck
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -38,5 +45,5 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: pre-commit/action@v3.0.0

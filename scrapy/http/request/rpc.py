@@ -4,8 +4,9 @@ This module implements the XmlRpcRequest class which is a more convenient class
 
 See documentation in docs/topics/request-response.rst
 """
+
 import xmlrpc.client as xmlrpclib
-from typing import Optional
+from typing import Any, Optional
 
 import defusedxml.xmlrpc
 
@@ -18,7 +19,7 @@ DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 
 
 class XmlRpcRequest(Request):
-    def __init__(self, *args, encoding: Optional[str] = None, **kwargs):
+    def __init__(self, *args: Any, encoding: Optional[str] = None, **kwargs: Any):
         if "body" not in kwargs and "params" in kwargs:
             kw = dict((k, kwargs.pop(k)) for k in DUMPS_ARGS if k in kwargs)
             kwargs["body"] = xmlrpclib.dumps(**kw)

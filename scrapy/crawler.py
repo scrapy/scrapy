@@ -12,7 +12,6 @@ from twisted.internet.defer import (
     inlineCallbacks,
     maybeDeferred,
 )
-from zope.interface.exceptions import DoesNotImplement
 
 try:
     # zope >= 5.0 only supports MultipleInvalid
@@ -40,7 +39,7 @@ from scrapy.utils.log import (
     log_reactor_info,
     log_scrapy_info,
 )
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     install_reactor,
@@ -110,10 +109,9 @@ class Crawler:
         lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
-        self.request_fingerprinter = create_instance(
+        self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-            settings=self.settings,
-            crawler=self,
+            self,
         )
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]
@@ -180,6 +178,48 @@ class Crawler:
             assert self.engine
             yield maybeDeferred(self.engine.stop)
 
+    @staticmethod
+    def _get_component(component_class, components):
+        for component in components:
+            if isinstance(component, component_class):
+                return component
+        return None
+
+    def get_addon(self, cls):
+        return self._get_component(cls, self.addons.addons)
+
+    def get_downloader_middleware(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_downloader_middleware() can only be called after "
+                "the crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.downloader.middleware.middlewares)
+
+    def get_extension(self, cls):
+        if not self.extensions:
+            raise RuntimeError(
+                "Crawler.get_extension() can only be called after the "
+                "extension manager has been created."
+            )
+        return self._get_component(cls, self.extensions.middlewares)
+
+    def get_item_pipeline(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_item_pipeline() can only be called after the "
+                "crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
+
+    def get_spider_middleware(self, cls):
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_spider_middleware() can only be called after the "
+                "crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
+
 
 class CrawlerRunner:
     """
@@ -205,19 +245,7 @@ class CrawlerRunner:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
-        excs = (
-            (DoesNotImplement, MultipleInvalid) if MultipleInvalid else DoesNotImplement
-        )
-        try:
-            verifyClass(ISpiderLoader, loader_cls)
-        except excs:
-            warnings.warn(
-                "SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does "
-                "not fully implement scrapy.interfaces.ISpiderLoader interface. "
-                "Please add all missing methods to avoid unexpected runtime errors.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        verifyClass(ISpiderLoader, loader_cls)
         return loader_cls.from_settings(settings.frozencopy())
 
     def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
@@ -417,7 +445,9 @@ class CrawlerProcess(CrawlerRunner):
             d.addBoth(self._stop_reactor)
 
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
-        resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
+        # We pass self, which is CrawlerProcess, instead of Crawler here,
+        # which works because the default resolvers only use crawler.settings.
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))

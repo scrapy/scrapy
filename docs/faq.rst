@@ -409,6 +409,23 @@ or :class:`~scrapy.signals.headers_received` signals and raising a
 :ref:`topics-stop-response-download` topic for additional information and examples.
 
 
+.. _faq-blank-request:
+
+How can I make a blank request?
+-------------------------------
+
+.. code-block:: python
+    
+    from scrapy import Request
+
+
+    blank_request = Request("data:,")
+
+In this case, the URL is set to a data URI scheme. Data URLs allow you to include data 
+in-line in web pages as if they were external resources. The "data:" scheme with an empty 
+content (",") essentially creates a request to a data URL without any specific content.
+
+
 Running ``runspider`` I get ``error: No spider found in file: <filename>``
 --------------------------------------------------------------------------
 

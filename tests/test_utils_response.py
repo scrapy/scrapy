@@ -1,12 +1,10 @@
 import unittest
-import warnings
 from pathlib import Path
 from time import process_time
 from urllib.parse import urlparse
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response, TextResponse
 from scrapy.utils.python import to_bytes
 from scrapy.utils.response import (
@@ -14,7 +12,6 @@ from scrapy.utils.response import (
     get_base_url,
     get_meta_refresh,
     open_in_browser,
-    response_httprepr,
     response_status_message,
 )
 
@@ -23,35 +20,6 @@ __doctests__ = ["scrapy.utils.response"]
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")
-
-    def test_response_httprepr(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-
-            r1 = Response("http://www.example.com")
-            self.assertEqual(response_httprepr(r1), b"HTTP/1.1 200 OK\r\n\r\n")
-
-            r1 = Response(
-                "http://www.example.com",
-                status=404,
-                headers={"Content-type": "text/html"},
-                body=b"Some body",
-            )
-            self.assertEqual(
-                response_httprepr(r1),
-                b"HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body",
-            )
-
-            r1 = Response(
-                "http://www.example.com",
-                status=6666,
-                headers={"Content-type": "text/html"},
-                body=b"Some body",
-            )
-            self.assertEqual(
-                response_httprepr(r1),
-                b"HTTP/1.1 6666 \r\nContent-Type: text/html\r\n\r\nSome body",
-            )
 
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"
