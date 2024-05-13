@@ -3,6 +3,46 @@
 Release notes
 =============
 
+.. _release-2.11.2:
+
+Scrapy 2.11.2 (2024-05-DD)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>` is now
+    enforced for all requests, and not only requests from spider callbacks.
+    (:issue:`1042`, :issue:`2241`, :issue:`6358`)
+
+-   defusedxml_ is now used to make
+    :class:`scrapy.http.request.rpc.XmlRpcRequest` more secure.
+    (:issue:`6250`, :issue:`6251`)
+
+    .. _defusedxml: https://github.com/tiran/defusedxml
+
+Bug fixes
+~~~~~~~~~
+
+-   Restore brotlipy_ support, broken in Scrapy 2.11.1.
+    (:issue:`6261`)
+
+-   Make :setting:`METAREFRESH_IGNORE_TAGS` ``["noscript"]`` by default.
+
+    This prevents
+    :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware` from
+    following redirects that would not be followed by web browsers with
+    JavaScript enabled.
+
+    (:issue:`6342`, :issue:`6347`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Packaging and test fixes.
+    (:issue:`6286`, :issue:`6290`, :issue:`6312`, :issue:`6316`, :issue:`6344`)
+
+
 .. _release-2.11.1:
 
 Scrapy 2.11.1 (2024-02-14)
