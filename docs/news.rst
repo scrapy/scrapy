@@ -67,7 +67,8 @@ Bug fixes
     <topics-media-pipeline>` now logs exceptions before stripping them.
     (:issue:`5067`, :issue:`5068`)
 
--   Fix the signature of callbacks when passed to the :command:`parse` command.
+-   When passing a callback to the :command:`parse` command, build the callback
+    callable with the right signature.
     (:issue:`6182`)
 
 Documentation
