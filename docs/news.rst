@@ -11,6 +11,26 @@ Scrapy 2.11.2 (2024-05-DD)
 Security bug fixes
 ~~~~~~~~~~~~~~~~~~
 
+-   Redirects to non-HTTP protocols are no longer followed. Please, see the
+    `23j4-mw76-5v7h security advisory`_ for more information. (:issue:`457`)
+
+    .. _23j4-mw76-5v7h security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-23j4-mw76-5v7h
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    scheme (``http://`` or ``https://``) or port, even if the domain is the
+    same. Please, see the `4qqq-9vqf-3h3f security advisory`_ for more
+    information.
+
+    .. _4qqq-9vqf-3h3f security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-4qqq-9vqf-3h3f
+
+-   When using system proxy settings that are different for ``http://`` and
+    ``https://``, redirects to a different URL scheme will now also trigger the
+    corresponding change in proxy settings for the redirected request. Please,
+    see the `jm3v-qxmh-hxwv security advisory`_ for more information.
+    (:issue:`767`)
+
+    .. _jm3v-qxmh-hxwv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-jm3v-qxmh-hxwv
+
 -   :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>` is now
     enforced for all requests, and not only requests from spider callbacks.
     (:issue:`1042`, :issue:`2241`, :issue:`6358`)
@@ -27,8 +47,13 @@ Security bug fixes
 Bug fixes
 ~~~~~~~~~
 
--   Restore brotlipy_ support.
-    (:issue:`6261`)
+-   Restored support for brotlipy_, which had been dropped in Scrapy 2.11.1 in
+    favor of brotli_. (:issue:`6261`)
+
+    .. _brotli: https://github.com/google/brotli
+
+    .. note:: brotlipy is deprecated, both in Scrapy and upstream. Use brotli
+        instead if you can.
 
 -   Make :setting:`METAREFRESH_IGNORE_TAGS` ``["noscript"]`` by default. This
     prevents
