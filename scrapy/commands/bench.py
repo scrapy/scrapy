@@ -60,7 +60,7 @@ class _BenchSpider(scrapy.Spider):
         url = f"{self.baseurl}?{urlencode(qargs, doseq=True)}"
         return [scrapy.Request(url, dont_filter=True)]
 
-    def parse(self, response: Response) -> Any:  # type: ignore[override]
+    def parse(self, response: Response) -> Any:
         assert isinstance(Response, TextResponse)
         for link in self.link_extractor.extract_links(response):
             yield scrapy.Request(link.url, callback=self.parse)
