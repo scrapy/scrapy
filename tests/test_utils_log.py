@@ -206,7 +206,8 @@ class LoggingWithExtraTestCase(TestCase):
         self.log_stream = StringIO()
         handler = logging.StreamHandler(self.log_stream)
         formatter = logging.Formatter(
-            '{"levelname": "%(levelname)s", "message": "%(message)s", "spider": "%(spider)s", "important_info": "%(important_info)s"}'
+            '{"levelname": "%(levelname)s", "message": "%(message)s", '
+            '"spider": "%(spider)s", "important_info": "%(important_info)s"}'
         )
         handler.setFormatter(formatter)
         logger = logging.getLogger("log_spider")
