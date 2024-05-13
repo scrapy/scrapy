@@ -247,13 +247,18 @@ class RedirectMiddlewareTest(unittest.TestCase):
         perc_encoded_utf8_url = "http://scrapytest.org/a%C3%A7%C3%A3o"
         self.assertEqual(perc_encoded_utf8_url, req_result.url)
 
-    def test_cross_domain_header_dropping(self):
+    def test_cross_origin_header_dropping(self):
         safe_headers = {"A": "B"}
+        cookie_header = {"Cookie": "a=b"}
+        authorization_header = {"Authorization": "Bearer 123456"}
+
         original_request = Request(
             "https://example.com",
-            headers={"Cookie": "a=b", "Authorization": "a", **safe_headers},
+            headers={**safe_headers, **cookie_header, **authorization_header},
         )
 
+        # Redirects to the same origin (same scheme, same domain, same port)
+        # keep all headers.
         internal_response = Response(
             "https://example.com",
             headers={"Location": "https://example.com/a"},
@@ -265,6 +270,71 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertIsInstance(internal_redirect_request, Request)
         self.assertEqual(original_request.headers, internal_redirect_request.headers)
 
+        # Redirects to the same origin (same scheme, same domain, same port)
+        # keep all headers also when the scheme is http.
+        http_request = Request(
+            "http://example.com",
+            headers={**safe_headers, **cookie_header, **authorization_header},
+        )
+        http_response = Response(
+            "http://example.com",
+            headers={"Location": "http://example.com/a"},
+            status=301,
+        )
+        http_redirect_request = self.mw.process_response(
+            http_request, http_response, self.spider
+        )
+        self.assertIsInstance(http_redirect_request, Request)
+        self.assertEqual(http_request.headers, http_redirect_request.headers)
+
+        # For default ports, whether the port is explicit or implicit does not
+        # affect the outcome, it is still the same origin.
+        to_explicit_port_response = Response(
+            "https://example.com",
+            headers={"Location": "https://example.com:443/a"},
+            status=301,
+        )
+        to_explicit_port_redirect_request = self.mw.process_response(
+            original_request, to_explicit_port_response, self.spider
+        )
+        self.assertIsInstance(to_explicit_port_redirect_request, Request)
+        self.assertEqual(
+            original_request.headers, to_explicit_port_redirect_request.headers
+        )
+
+        # For default ports, whether the port is explicit or implicit does not
+        # affect the outcome, it is still the same origin.
+        to_implicit_port_response = Response(
+            "https://example.com:433",
+            headers={"Location": "https://example.com/a"},
+            status=301,
+        )
+        to_implicit_port_redirect_request = self.mw.process_response(
+            original_request, to_implicit_port_response, self.spider
+        )
+        self.assertIsInstance(to_implicit_port_redirect_request, Request)
+        self.assertEqual(
+            original_request.headers, to_implicit_port_redirect_request.headers
+        )
+
+        # A port change drops the Authorization header because the origin
+        # changes, but keeps the Cookie header because the domain remains the
+        # same.
+        different_port_response = Response(
+            "https://example.com",
+            headers={"Location": "https://example.com:8080/a"},
+            status=301,
+        )
+        different_port_redirect_request = self.mw.process_response(
+            original_request, different_port_response, self.spider
+        )
+        self.assertIsInstance(different_port_redirect_request, Request)
+        self.assertEqual(
+            {**safe_headers, **cookie_header},
+            different_port_redirect_request.headers.to_unicode_dict(),
+        )
+
+        # A domain change drops both the Authorization and the Cookie header.
         external_response = Response(
             "https://example.com",
             headers={"Location": "https://example.org/a"},
@@ -276,6 +346,46 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertIsInstance(external_redirect_request, Request)
         self.assertEqual(
             safe_headers, external_redirect_request.headers.to_unicode_dict()
+        )
+
+        # A scheme upgrade (http → https) drops the Authorization header
+        # because the origin changes, but keeps the Cookie header because the
+        # domain remains the same.
+        upgrade_response = Response(
+            "http://example.com",
+            headers={"Location": "https://example.com/a"},
+            status=301,
+        )
+        upgrade_redirect_request = self.mw.process_response(
+            http_request, upgrade_response, self.spider
+        )
+        self.assertIsInstance(upgrade_redirect_request, Request)
+        self.assertEqual(
+            {**safe_headers, **cookie_header},
+            upgrade_redirect_request.headers.to_unicode_dict(),
+        )
+
+        # A scheme downgrade (https → http) drops the Authorization header
+        # because the origin changes, and the Cookie header because its value
+        # cannot indicate whether the cookies were secure (HTTPS-only) or not.
+        #
+        # Note: If the Cookie header is set by the cookie management
+        # middleware, as recommended in the docs, the dropping of Cookie on
+        # scheme downgrade is not an issue, because the cookie management
+        # middleware will add again the Cookie header to the new request if
+        # appropriate.
+        downgrade_response = Response(
+            "https://example.com",
+            headers={"Location": "http://example.com/a"},
+            status=301,
+        )
+        downgrade_redirect_request = self.mw.process_response(
+            original_request, downgrade_response, self.spider
+        )
+        self.assertIsInstance(downgrade_redirect_request, Request)
+        self.assertEqual(
+            safe_headers,
+            downgrade_redirect_request.headers.to_unicode_dict(),
         )
 
 
