@@ -771,7 +771,7 @@ OffsiteMiddleware
 
 .. class:: OffsiteMiddleware
 
-   .. versionadded:: VERSION
+   .. versionadded:: 2.11.2
 
    Filters out Requests for URLs outside the domains covered by the spider.
 
@@ -920,11 +920,11 @@ Meta tags within these tags are ignored.
 
 .. versionchanged:: 2.0
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``['script', 'noscript']`` to ``[]``.
+   ``["script", "noscript"]`` to ``[]``.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.11.2
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``[]`` to ``['noscript']``.
+   ``[]`` to ``["noscript"]``.
 
 .. setting:: METAREFRESH_MAXDELAY
 

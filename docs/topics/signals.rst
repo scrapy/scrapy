@@ -352,7 +352,7 @@ request_scheduled
 
     This signal does not support returning deferreds from its handlers.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.11.2
         Allow dropping requests with :exc:`~scrapy.exceptions.IgnoreRequest`.
 
     :param request: the request that reached the scheduler
