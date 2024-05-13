@@ -5,7 +5,7 @@ Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
 
-from typing import Any, Dict, Generator, Iterator, Optional
+from typing import Any, Dict, Generator, Iterator, Optional, Union
 from urllib.parse import urljoin
 
 import lxml.etree  # nosec
@@ -15,7 +15,7 @@ class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
-    def __init__(self, xmltext: str):
+    def __init__(self, xmltext: Union[str, bytes]):
         xmlp = lxml.etree.XMLParser(
             recover=True, remove_comments=True, resolve_entities=False
         )

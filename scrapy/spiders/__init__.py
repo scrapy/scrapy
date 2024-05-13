@@ -39,7 +39,7 @@ class Spider(object_ref):
 
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
-            self.name = name
+            self.name: str = name
         elif not getattr(self, "name", None):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
@@ -67,8 +67,8 @@ class Spider(object_ref):
         return spider
 
     def _set_crawler(self, crawler: Crawler) -> None:
-        self.crawler = crawler
-        self.settings = crawler.settings
+        self.crawler: Crawler = crawler
+        self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self) -> Iterable[Request]:
