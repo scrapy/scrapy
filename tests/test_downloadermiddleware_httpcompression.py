@@ -130,7 +130,10 @@ class HttpCompressionTest(TestCase):
 
     def test_process_response_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         response = self._getresponse("br")
@@ -448,7 +451,10 @@ class HttpCompressionTest(TestCase):
 
     def test_compression_bomb_setting_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         self._test_compression_bomb_setting("br")
@@ -486,7 +492,10 @@ class HttpCompressionTest(TestCase):
 
     def test_compression_bomb_spider_attr_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         self._test_compression_bomb_spider_attr("br")
@@ -522,7 +531,10 @@ class HttpCompressionTest(TestCase):
 
     def test_compression_bomb_request_meta_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         self._test_compression_bomb_request_meta("br")
@@ -568,7 +580,10 @@ class HttpCompressionTest(TestCase):
 
     def test_download_warnsize_setting_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         self._test_download_warnsize_setting("br")
@@ -616,7 +631,10 @@ class HttpCompressionTest(TestCase):
 
     def test_download_warnsize_spider_attr_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         self._test_download_warnsize_spider_attr("br")
@@ -662,7 +680,10 @@ class HttpCompressionTest(TestCase):
 
     def test_download_warnsize_request_meta_br(self):
         try:
-            import brotli  # noqa: F401
+            try:
+                import brotli  # noqa: F401
+            except ImportError:
+                import brotlicffi  # noqa: F401
         except ImportError:
             raise SkipTest("no brotli")
         self._test_download_warnsize_request_meta("br")

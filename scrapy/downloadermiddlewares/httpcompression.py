@@ -29,7 +29,10 @@ logger = getLogger(__name__)
 ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
 
 try:
-    import brotli  # noqa: F401
+    try:
+        import brotli  # noqa: F401
+    except ImportError:
+        import brotlicffi  # noqa: F401
 except ImportError:
     pass
 else:

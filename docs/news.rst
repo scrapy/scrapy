@@ -3,6 +3,20 @@
 Release notes
 =============
 
+
+.. _release-VERSION:
+
+Scrapy VERSION (YYYY-MM-DD)
+---------------------------
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :func:`scrapy.core.downloader.Downloader._get_slot_key` is now deprecated.
+    Consider using its corresponding public method get_slot_key() instead.
+    (:issue:`6340`)
+
+
 .. _release-2.11.1:
 
 Scrapy 2.11.1 (2024-02-14)

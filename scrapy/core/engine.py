@@ -347,7 +347,7 @@ class ExecutionEngine:
 
         assert self.spider is not None
         dwld = self.downloader.fetch(request, self.spider)
-        dwld.addCallbacks(_on_success)
+        dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
 
@@ -366,7 +366,8 @@ class ExecutionEngine:
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.spider = spider
         if hasattr(scheduler, "open"):
-            yield scheduler.open(spider)
+            if d := scheduler.open(spider):
+                yield d
         yield self.scraper.open_spider(spider)
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)

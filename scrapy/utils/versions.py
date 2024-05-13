@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 import cryptography
 import cssselect
-import lxml.etree
+import lxml.etree  # nosec
 import parsel
 import twisted
 import w3lib

@@ -1,3 +1,8 @@
+import argparse
+from typing import List, cast
+
+from twisted.python.failure import Failure
+
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 
@@ -5,13 +10,13 @@ from scrapy.exceptions import UsageError
 class Command(BaseRunSpiderCommand):
     requires_project = True
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <spider>"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Run a spider"
 
-    def run(self, args, opts):
+    def run(self, args: List[str], opts: argparse.Namespace) -> None:
         if len(args) < 1:
             raise UsageError()
         elif len(args) > 1:
@@ -20,10 +25,11 @@ class Command(BaseRunSpiderCommand):
             )
         spname = args[0]
 
+        assert self.crawler_process
         crawl_defer = self.crawler_process.crawl(spname, **opts.spargs)
 
         if getattr(crawl_defer, "result", None) is not None and issubclass(
-            crawl_defer.result.type, Exception
+            cast(Failure, crawl_defer.result).type, Exception
         ):
             self.exitcode = 1
         else:

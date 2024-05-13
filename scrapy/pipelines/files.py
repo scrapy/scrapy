@@ -4,6 +4,8 @@ Files Pipeline
 See documentation in topics/media-pipeline.rst
 """
 
+from __future__ import annotations
+
 import base64
 import functools
 import hashlib
@@ -16,7 +18,7 @@ from ftplib import FTP
 from io import BytesIO
 from os import PathLike
 from pathlib import Path
-from typing import DefaultDict, Optional, Set, Union
+from typing import IO, TYPE_CHECKING, DefaultDict, Optional, Set, Type, Union, cast
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -31,15 +33,35 @@ from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.misc import md5sum
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
 
 def _to_string(path: Union[str, PathLike]) -> str:
     return str(path)  # convert a Path object to string
+
+
+def _md5sum(file: IO) -> str:
+    """Calculate the md5 checksum of a file-like object without reading its
+    whole content in memory.
+
+    >>> from io import BytesIO
+    >>> _md5sum(BytesIO(b'file content to hash'))
+    '784406af91dd5a54fbb9c84c2236595a'
+    """
+    m = hashlib.md5()  # nosec
+    while True:
+        d = file.read(8096)
+        if not d:
+            break
+        m.update(d)
+    return m.hexdigest()
 
 
 class FileException(Exception):
@@ -70,7 +92,7 @@ class FSFilesStore:
             return {}
 
         with absolute_path.open("rb") as f:
-            checksum = md5sum(f)
+            checksum = _md5sum(f)
 
         return {"last_modified": last_modified, "checksum": checksum}
 
@@ -299,7 +321,7 @@ class FTPFilesStore:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
                 last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
-                m = hashlib.md5()
+                m = hashlib.md5()  # nosec
                 ftp.retrbinary(f"RETR {file_path}", m.update)
                 return {"last_modified": last_modified, "checksum": m.hexdigest()}
             # The file doesn't exist
@@ -369,8 +391,8 @@ class FilesPipeline(MediaPipeline):
         super().__init__(download_func=download_func, settings=settings)
 
     @classmethod
-    def from_settings(cls, settings):
-        s3store = cls.STORE_SCHEMES["s3"]
+    def from_settings(cls, settings) -> Self:
+        s3store: Type[S3FilesStore] = cast(Type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
         s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
@@ -380,11 +402,15 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
-        gcs_store = cls.STORE_SCHEMES["gs"]
+        gcs_store: Type[GCSFilesStore] = cast(
+            Type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
+        )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
 
-        ftp_store = cls.STORE_SCHEMES["ftp"]
+        ftp_store: Type[FTPFilesStore] = cast(
+            Type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
+        )
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
@@ -433,7 +459,8 @@ class FilesPipeline(MediaPipeline):
 
         path = self.file_path(request, info=info, item=item)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
-        dfd.addCallbacks(_onsuccess, lambda _: None)
+        dfd.addCallback(_onsuccess)
+        dfd.addErrback(lambda _: None)
         dfd.addErrback(
             lambda f: logger.error(
                 self.__class__.__name__ + ".store.stat_file",
@@ -531,7 +558,7 @@ class FilesPipeline(MediaPipeline):
     def file_downloaded(self, response, request, info, *, item=None):
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
-        checksum = md5sum(buf)
+        checksum = _md5sum(buf)
         buf.seek(0)
         self.store.persist_file(path, buf, info)
         return checksum
@@ -542,7 +569,7 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None, *, item=None):
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()
+        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # nosec
         media_ext = Path(request.url).suffix
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise

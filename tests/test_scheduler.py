@@ -25,7 +25,7 @@ class MockDownloader:
     def __init__(self):
         self.slots = {}
 
-    def _get_slot_key(self, request, spider):
+    def get_slot_key(self, request):
         if Downloader.DOWNLOAD_SLOT in request.meta:
             return request.meta[Downloader.DOWNLOAD_SLOT]
 
@@ -273,14 +273,14 @@ class DownloaderAwareSchedulerTestMixin:
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             # pylint: disable=protected-access
-            slot = downloader._get_slot_key(request, None)
+            slot = downloader.get_slot_key(request)
             dequeued_slots.append(slot)
             downloader.increment(slot)
             requests.append(request)
 
         for request in requests:
             # pylint: disable=protected-access
-            slot = downloader._get_slot_key(request, None)
+            slot = downloader.get_slot_key(request)
             downloader.decrement(slot)
 
         self.assertTrue(

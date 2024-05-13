@@ -1,18 +1,41 @@
+from __future__ import annotations
+
 import asyncio
 import sys
 from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
 from contextlib import suppress
-from typing import Any, Callable, Dict, Optional, Sequence, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
 from twisted.internet.base import DelayedCall
+from twisted.internet.protocol import ServerFactory
+from twisted.internet.tcp import Port
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 
+if TYPE_CHECKING:
+    # typing.ParamSpec requires Python 3.10
+    from typing_extensions import ParamSpec
 
-def listen_tcp(portrange, host, factory):
+    _P = ParamSpec("_P")
+
+_T = TypeVar("_T")
+
+
+def listen_tcp(portrange: List[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 
@@ -20,8 +43,6 @@ def listen_tcp(portrange, host, factory):
         raise ValueError(f"invalid portrange: {portrange}")
     if not portrange:
         return reactor.listenTCP(0, factory, interface=host)
-    if not hasattr(portrange, "__iter__"):
-        return reactor.listenTCP(portrange, factory, interface=host)
     if len(portrange) == 1:
         return reactor.listenTCP(portrange[0], factory, interface=host)
     for x in range(portrange[0], portrange[1] + 1):
@@ -32,14 +53,14 @@ def listen_tcp(portrange, host, factory):
                 raise
 
 
-class CallLaterOnce:
+class CallLaterOnce(Generic[_T]):
     """Schedule a function to be called in the next reactor loop, but only if
     it hasn't been already scheduled since the last time it ran.
     """
 
-    def __init__(self, func: Callable, *a: Any, **kw: Any):
-        self._func: Callable = func
-        self._a: Sequence[Any] = a
+    def __init__(self, func: Callable[_P, _T], *a: _P.args, **kw: _P.kwargs):
+        self._func: Callable[_P, _T] = func
+        self._a: Tuple[Any, ...] = a
         self._kw: Dict[str, Any] = kw
         self._call: Optional[DelayedCall] = None
 
@@ -53,7 +74,7 @@ class CallLaterOnce:
         if self._call:
             self._call.cancel()
 
-    def __call__(self) -> Any:
+    def __call__(self) -> _T:
         self._call = None
         return self._func(*self._a, **self._kw)
 
